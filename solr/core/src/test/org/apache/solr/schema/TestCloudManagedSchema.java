@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -56,26 +56,23 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   public void test() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/cores");
+    var request = new GenericSolrRequest(METHOD.GET, "/admin/cores", SolrRequestType.ADMIN, params);
     int which = r.nextInt(clients.size());
 
-    // create a client that does not have the /collection1 as part of the URL.
-    try (SolrClient rootClient =
-        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
-      NamedList<?> namedListResponse = rootClient.request(request);
-      final var statusByCore =
-          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              namedListResponse.get("status"),
-              new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
-      final String coreName = statusByCore.keySet().stream().findFirst().get();
-      final var collectionStatus = statusByCore.get(coreName);
-      // Make sure the upgrade to managed schema happened
-      assertEquals(
-          "Schema resource name differs from expected name",
-          "managed-schema.xml",
-          collectionStatus.schema);
-    }
+    // use a client that does not have the /collection1 as part of the URL.
+    var rootClient = jettys.get(which).getSolrClient();
+    NamedList<?> namedListResponse = rootClient.request(request);
+    final var statusByCore =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            namedListResponse.get("status"),
+            new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
+    final String coreName = statusByCore.keySet().stream().findFirst().get();
+    final var collectionStatus = statusByCore.get(coreName);
+    // Make sure the upgrade to managed schema happened
+    assertEquals(
+        "Schema resource name differs from expected name",
+        "managed-schema.xml",
+        collectionStatus.schema);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

@@ -79,6 +79,8 @@ grant {
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
   // needed by jacoco to dump coverage
   permission java.lang.RuntimePermission "shutdownHooks";
+  // needed by jacoco to write the per-jvm code coverage output
+  permission java.io.FilePermission "${user.dir}${/}jacoco.exec", "write";
   // needed by org.apache.logging.log4j
   permission java.lang.RuntimePermission "getenv.*";
   permission java.lang.RuntimePermission "getClassLoader";
@@ -165,6 +167,8 @@ grant {
   permission java.security.SecurityPermission "putProviderProperty.BC";
   permission java.security.SecurityPermission "removeProviderProperty.BC";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.allow_non-der_tbscert";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
 
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
@@ -250,7 +254,6 @@ grant {
   permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}properties", "read,readlink";
   permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}active_config", "read,readlink";
   permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}configurations${/}config_default", "read,readlink";
-
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";

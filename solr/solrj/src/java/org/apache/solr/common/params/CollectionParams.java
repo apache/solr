@@ -30,11 +30,6 @@ public interface CollectionParams {
 
   String NAME = "name";
 
-  /**
-   * @deprecated use {@link #SOURCE_NODE} instead
-   */
-  @Deprecated String FROM_NODE = "fromNode";
-
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
   String SOURCE_NODES = "sourceNodes";
@@ -69,6 +64,10 @@ public interface CollectionParams {
     public boolean isHigherOrEqual(LockLevel that) {
       return height >= that.height;
     }
+
+    public boolean isEqual(LockLevel that) {
+      return height == that.height;
+    }
   }
 
   /**
@@ -98,8 +97,6 @@ public interface CollectionParams {
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
-    ADDROLE(true, LockLevel.NONE),
-    REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
     COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock
     REQUESTSTATUS(false, LockLevel.NONE),
@@ -124,9 +121,10 @@ public interface CollectionParams {
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
-    // only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks
+    REPRIORITIZE_OVERSEER(true, LockLevel.NONE),
+    // only for testing. it just waits for specified time
     MOCK_COLL_TASK(false, LockLevel.COLLECTION),
     MOCK_SHARD_TASK(false, LockLevel.SHARD),
     // TODO when we have a node level lock use it here
@@ -136,7 +134,7 @@ public interface CollectionParams {
     // TODO when we have a node level lock use it here
     BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
-    MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
+    MOCK_REPLICA_TASK(true, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),

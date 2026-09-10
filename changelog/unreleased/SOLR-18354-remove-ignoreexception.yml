@@ -1,0 +1,11 @@
+title: >
+  Removed the deprecated `SolrTestCaseJ4.ignoreException(String)`, `unIgnoreException(String)`, and
+  `resetExceptionIgnores()` methods. Use `ErrorLogMuter` instead (`try (ErrorLogMuter muter =
+  ErrorLogMuter.regex("pattern")) { ... }`). This affects test code written against the
+  `solr-test-framework` artifact.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18354
+    url: https://issues.apache.org/jira/browse/SOLR-18354

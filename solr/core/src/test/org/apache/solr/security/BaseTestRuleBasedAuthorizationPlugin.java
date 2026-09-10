@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -36,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.handler.ReplicationHandler;
@@ -214,7 +213,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "LIST"))),
+            new MapSolrParams(Map.of("action", "LIST"))),
         STATUS_OK);
 
     checkRules(
@@ -228,7 +227,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "LIST"))),
+            new MapSolrParams(Map.of("action", "LIST"))),
         STATUS_OK);
 
     checkRules(
@@ -240,7 +239,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         PROMPT_FOR_CREDENTIALS);
 
     checkRules(
@@ -252,7 +251,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "RELOAD"))),
+            new MapSolrParams(Map.of("action", "RELOAD"))),
         PROMPT_FOR_CREDENTIALS);
 
     checkRules(
@@ -266,7 +265,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         FORBIDDEN);
 
     checkRules(
@@ -280,7 +279,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         STATUS_OK);
 
     checkRules(
@@ -292,7 +291,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new SearchHandler(),
             "collectionRequests",
-            singletonList(new CollectionRequest("mycoll")),
+            List.of(new CollectionRequest("mycoll")),
             "userPrincipal",
             "joe"),
         FORBIDDEN);
@@ -311,7 +310,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new ReplicationHandler(),
             "collectionRequests",
-            singletonList(new CollectionRequest("mycoll"))),
+            List.of(new CollectionRequest("mycoll"))),
         STATUS_OK); // Replication requires "READ" permission, which Tim has
 
     checkRules(
@@ -325,7 +324,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new ReplicationHandler(),
             "collectionRequests",
-            singletonList(new CollectionRequest("mycoll"))),
+            List.of(new CollectionRequest("mycoll"))),
         FORBIDDEN); // User cio has role 'su' which does not have 'read' permission
 
     checkRules(
@@ -339,7 +338,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CollectionsHandler(),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         STATUS_OK);
   }
 
@@ -359,7 +358,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CoreAdminHandler(null),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         PROMPT_FOR_CREDENTIALS);
 
     checkRules(
@@ -373,7 +372,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CoreAdminHandler(null),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         FORBIDDEN);
 
     checkRules(
@@ -387,7 +386,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CoreAdminHandler(null),
             "params",
-            new MapSolrParams(singletonMap("action", "STATUS"))),
+            new MapSolrParams(Map.of("action", "STATUS"))),
         STATUS_OK);
 
     checkRules(
@@ -401,7 +400,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new CoreAdminHandler(null),
             "params",
-            new MapSolrParams(singletonMap("action", "CREATE"))),
+            new MapSolrParams(Map.of("action", "CREATE"))),
         STATUS_OK);
   }
 
@@ -421,7 +420,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new DumpRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "VAL1"))),
+            new MapSolrParams(Map.of("key", "VAL1"))),
         PROMPT_FOR_CREDENTIALS);
 
     checkRules(
@@ -435,7 +434,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new DumpRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "Val1"))),
+            new MapSolrParams(Map.of("key", "Val1"))),
         PROMPT_FOR_CREDENTIALS);
 
     checkRules(
@@ -449,7 +448,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new DumpRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "Val1"))),
+            new MapSolrParams(Map.of("key", "Val1"))),
         PROMPT_FOR_CREDENTIALS);
 
     checkRules(
@@ -465,7 +464,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new DumpRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "Val1"))),
+            new MapSolrParams(Map.of("key", "Val1"))),
         FORBIDDEN);
 
     checkRules(
@@ -481,7 +480,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new DumpRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "Val2"))),
+            new MapSolrParams(Map.of("key", "Val2"))),
         STATUS_OK);
 
     checkRules(
@@ -497,7 +496,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new DumpRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "VAL2"))),
+            new MapSolrParams(Map.of("key", "VAL2"))),
         FORBIDDEN);
   }
 
@@ -524,7 +523,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new UpdateRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "VAL2"))),
+            new MapSolrParams(Map.of("key", "VAL2"))),
         FORBIDDEN,
         customRules);
   }
@@ -554,7 +553,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(singletonMap("key", "VAL2"))),
+            new MapSolrParams(Map.of("key", "VAL2"))),
         STATUS_OK);
 
     handler = new PropertiesRequestHandler();
@@ -601,7 +600,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new UpdateRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "VAL2"))),
+            new MapSolrParams(Map.of("key", "VAL2"))),
         STATUS_OK);
 
     handler = new PropertiesRequestHandler();
@@ -648,7 +647,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             new UpdateRequestHandler(),
             "params",
-            new MapSolrParams(singletonMap("key", "VAL2"))),
+            new MapSolrParams(Map.of("key", "VAL2"))),
         FORBIDDEN);
 
     handler = new PropertiesRequestHandler();
@@ -671,6 +670,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressForbidden(reason = "singletonList(null) is intentional")
   public void testGetPermissionNamesForRoles() {
     // Tests the method that maps role(s) to permissions, used by SystemInfoHandler to provide UI
     // with logged-in user's permissions
@@ -689,8 +689,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       assertEquals(
           Set.of("collection-admin-read"),
           plugin.getPermissionNamesForRoles(Collections.singletonList(null)));
-      assertEquals(
-          Set.of("freeforall"), plugin.getPermissionNamesForRoles(Collections.singletonList("*")));
+      assertEquals(Set.of("freeforall"), plugin.getPermissionNamesForRoles(List.of("*")));
     } catch (IOException e) {
       ; // swallow error, otherwise you have to add a _lot_ of exceptions to methods.
     }
@@ -870,7 +869,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     public List<CollectionRequest> getCollectionRequests() {
       Object collectionRequests = values.get("collectionRequests");
       if (collectionRequests instanceof String) {
-        return singletonList(new CollectionRequest((String) collectionRequests));
+        return List.of(new CollectionRequest((String) collectionRequests));
       }
       return (List<CollectionRequest>) collectionRequests;
     }

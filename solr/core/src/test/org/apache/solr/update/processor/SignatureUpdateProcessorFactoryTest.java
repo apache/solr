@@ -17,8 +17,8 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
@@ -294,8 +294,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), mmparams);
     try {
-      req.setContentStreams(
-          Collections.singletonList(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
+      req.setContentStreams(List.of(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();
       h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());

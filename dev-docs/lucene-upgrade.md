@@ -1,20 +1,3 @@
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
- -->
-
 # Lucene upgrade steps
 
 ## Read
@@ -23,15 +6,15 @@ https://lucene.apache.org/core/9_4_0/MIGRATE.html
 
 ## Start
 
-Create a new branch locally e.g. `git checkout -b lucene1040 -t origin/main` for upgrading to Lucene 10.4.0 version.
+Create a new branch locally e.g. `git checkout -b lucene1051 -t origin/main` for upgrading to Lucene 10.5.1 version.
 
 ## Build
 
 ### `gradle/libs.versions.toml` update
 
 ```
-- apache-lucene:*=10.3.0
-+ apache-lucene:*=10.4.0
+-apache-lucene = "10.4.0"
++apache-lucene = "10.5.1"
 ```
 
 ### lockfiles update
@@ -47,6 +30,10 @@ Create a new branch locally e.g. `git checkout -b lucene1040 -t origin/main` for
 
 git add solr/licenses
 ```
+
+Note that `updateLicenses` compiles Solr, because it enumerates the JARs on the
+compile and runtime classpaths. If Lucene made signature changes, fix the code
+first (see below) and then come back to this step.
 
 ## Code
 

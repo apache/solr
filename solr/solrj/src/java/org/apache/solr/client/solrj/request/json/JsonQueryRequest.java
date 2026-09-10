@@ -102,6 +102,26 @@ public class JsonQueryRequest extends QueryRequest {
   }
 
   /**
+   * Specify the queries parameter sent as a part of JSON request.
+   *
+   * <p>This method would be helpful in setting the queries parameter specially for Combined Query
+   * Component {@code CombinedQueryComponent} use case.
+   *
+   * <p><b>Example:</b> You wish to send the JSON request:
+   *
+   * <pre>{@code {'limit': 5, 'queries': {'query1': {'lucene':
+   * {'df':'genre_s', 'query': 'scifi'}}}, 'query2': {'knn': {'f': 'vector', 'query': [0.1, 0.43]}}}}
+   * </pre>
+   *
+   * @param queriesJson a Map of values representing the query subtree of the JSON request you wish
+   *     to send.
+   */
+  public JsonQueryRequest setQueries(Map<String, Object> queriesJson) {
+    jsonRequestMap.put("queries", queriesJson);
+    return this;
+  }
+
+  /**
    * Specify the query sent as a part of this JSON request.
    *
    * <p>This method may be called multiple times, but each call overwrites the value specified by

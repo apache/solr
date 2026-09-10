@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -257,7 +256,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
               // to wait indefinitely when using coreNodeName but usage of core name alone will
               // return immediately
               descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
-              return Collections.singletonList(descriptor);
+              return List.of(descriptor);
             }
           };
       ZkController zkController = null;
@@ -374,8 +373,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
                   TimeUnit.SECONDS,
                   collectionState ->
                       Optional.ofNullable(collectionState)
-                              .map(DocCollection::getReplicas)
-                              .map(List::size)
+                              .map(c -> (int) c.replicaStream().count())
                               .orElse(0)
                           == 3);
         }
@@ -390,11 +388,10 @@ public class ZkControllerTest extends SolrCloudTestCase {
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
         ClusterState clusterState = zkController.getClusterState();
 
-        Map<String, List<Replica>> replicasOnNode =
-            clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
-        assertNotNull("There should be replicas on the existing node", replicasOnNode);
-        List<Replica> replicas = replicasOnNode.get(collectionName);
-        assertNotNull("There should be replicas for the collection on the existing node", replicas);
+        List<Replica> replicas =
+            clusterState.getCollection(collectionName).getReplicasOnNode(nodeName);
+        assertFalse(
+            "There should be replicas for the collection on the existing node", replicas.isEmpty());
         assertEquals(
             "Wrong number of replicas for the collection on the existing node", 1, replicas.size());
         for (Replica replica : replicas) {

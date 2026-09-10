@@ -36,7 +36,6 @@
 
   <shardHandlerFactory name="shardHandlerFactory"
                        class="org.apache.solr.handler.component.TrackingShardHandlerFactory">
-    <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:90000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
   </shardHandlerFactory>

@@ -28,7 +28,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
@@ -83,8 +82,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
     Random r = random();
     String[][] expectVals = indexDocs(client, r);
 
-    try (SolrCore core =
-        ((EmbeddedSolrServer) client).getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       RefCounted<SolrIndexSearcher> sref = core.getSearcher();
       try (Closeable c = sref::decref) {
         SolrIndexSearcher s = sref.get();

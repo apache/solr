@@ -142,6 +142,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
         createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 404);
   }
 
@@ -152,6 +153,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
             params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 404);
   }
 
@@ -162,6 +164,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 400);
   }
 
@@ -176,6 +179,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
                 "text/plain; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 400);
   }
 
@@ -201,5 +205,12 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
     // Non-known content types are rejected with 400 error
     expectThrows(SolrException.class, () -> ShowFileRequestHandler.getSafeContentType("foo/bar"));
+  }
+
+  private void closeResponseStream(NamedList<Object> response) throws IOException {
+    InputStream stream = (InputStream) response.get("stream");
+    if (stream != null) {
+      stream.close();
+    }
   }
 }

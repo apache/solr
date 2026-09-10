@@ -26,10 +26,15 @@ configure(rootProject) {
     failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
     formats = ['ALL']
     skipProjects = [':solr:solr-ref-guide', ':missing-doclet']
-    skipConfigurations = ['unifiedClasspath', 'permitUnusedDeclared']
+    skipConfigurations = ['unifiedClasspath']
     suppressionFile = file("${resources}/exclusions.xml")
     analyzers {
       assemblyEnabled = false
+    }
+    nvd {
+      // NVD heavily rate-limits the CVE data feed for unauthenticated requests.
+      // Get a free key from https://nvd.nist.gov/developers/request-an-api-key
+      apiKey = project.findProperty("nvdApiKey") ?: System.getenv("NVD_API_KEY")
     }
   }
 

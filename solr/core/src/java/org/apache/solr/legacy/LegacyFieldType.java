@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexOptions;
  *
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public final class LegacyFieldType extends FieldType {
   private LegacyNumericType numericType;
   private int numericPrecisionStep = LegacyNumericUtils.PRECISION_STEP_DEFAULT;
@@ -47,7 +47,7 @@ public final class LegacyFieldType extends FieldType {
    * @see #numericType()
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public void setNumericType(LegacyNumericType type) {
     checkIfFrozen();
     numericType = type;
@@ -62,7 +62,7 @@ public final class LegacyFieldType extends FieldType {
    * @see #setNumericType(LegacyNumericType)
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public LegacyNumericType numericType() {
     return numericType;
   }
@@ -76,7 +76,7 @@ public final class LegacyFieldType extends FieldType {
    * @see #numericPrecisionStep()
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public void setNumericPrecisionStep(int precisionStep) {
     checkIfFrozen();
     if (precisionStep < 1) {
@@ -95,7 +95,7 @@ public final class LegacyFieldType extends FieldType {
    * @see #setNumericPrecisionStep(int)
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public int numericPrecisionStep() {
     return numericPrecisionStep;
   }

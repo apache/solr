@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,7 +79,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
         Assign.AssignRequest assignRequest =
             new Assign.AssignRequestBuilder()
                 .forCollection(sourceReplica.getCollection())
-                .forShard(Collections.singletonList(sourceReplica.getShard()))
+                .forShard(List.of(sourceReplica.getShard()))
                 .assignReplicas(ReplicaCount.of(sourceReplica.getType(), 1))
                 .onNodes(
                     ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream()

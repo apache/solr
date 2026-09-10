@@ -92,6 +92,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     map.put(VectorSimilarityQParserPlugin.NAME, new VectorSimilarityQParserPlugin());
     map.put(FuzzyQParserPlugin.NAME, new FuzzyQParserPlugin());
     map.put(NumericRangeQParserPlugin.NAME, new NumericRangeQParserPlugin());
+    map.put(IntervalsQParserPlugin.NAME, new IntervalsQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

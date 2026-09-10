@@ -16,92 +16,116 @@
  */
 package org.apache.solr.ui.views.configsets
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
+import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.generated.resources.Res
+import org.apache.solr.ui.generated.resources.cd_clear_field
+import org.apache.solr.ui.generated.resources.close
 import org.apache.solr.ui.generated.resources.nav_configsets
 import org.apache.solr.ui.generated.resources.no_configsets
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigsetsDropdown(
-    selectedConfigSet: String,
-    selectConfigset: (String) -> Unit,
-    availableConfigsets: List<Configset>,
+    viewModel: ConfigsetsViewModel,
     modifier: Modifier = Modifier,
+    enableReset: Boolean = false,
+) {
+    val model by viewModel.uiState.collectAsState()
+
+    ConfigsetsDropdown(
+        configsets = model.configsets,
+        selectedConfigset = model.selectedConfigset,
+        selectConfigset = viewModel::selectConfigset,
+        modifier = modifier,
+        enableReset = enableReset,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConfigsetsDropdown(
+    selectedConfigset: String?,
+    configsets: List<Configset>,
+    selectConfigset: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    enableReset: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val enabled = availableConfigsets.isNotEmpty()
+    val enabled = configsets.isNotEmpty()
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier,
     ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            modifier = Modifier.widthIn(min = 256.dp).weight(1f),
-        ) {
-            OutlinedTextField(
-                value = selectedConfigSet,
-                onValueChange = {},
-                readOnly = true,
-                enabled = enabled,
-                label = { Text(stringResource(Res.string.nav_configsets)) },
-                placeholder = {
-                    if (availableConfigsets.isEmpty()) {
-                        Text(
-                            modifier = Modifier.testTag("no_configsets_placeholder"),
-                            text = stringResource(Res.string.no_configsets),
-                        )
-                    }
-                },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier
-                    .menuAnchor(
-                        type = MenuAnchorType.PrimaryNotEditable,
-                        enabled = enabled,
-                    )
-                    .fillMaxWidth()
-                    .testTag("configsets_dropdown"),
-            )
-            ExposedDropdownMenu(
-                modifier = Modifier.testTag("configsets_exposed_dropdown_menu"),
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                availableConfigsets.forEach { configset ->
-                    DropdownMenuItem(
-                        modifier = Modifier.testTag(tag = configset.name),
-                        text = { Text(configset.name) },
-                        onClick = {
-                            selectConfigset(configset.name)
-                            expanded = false
-                        },
+        OutlinedTextField(
+            value = selectedConfigset ?: "",
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            singleLine = true,
+            label = { Text(stringResource(Res.string.nav_configsets)) },
+            placeholder = {
+                if (configsets.isEmpty()) {
+                    Text(
+                        modifier = Modifier.testTag("no_configsets_placeholder"),
+                        text = stringResource(Res.string.no_configsets),
                     )
                 }
+            },
+            trailingIcon = {
+                if (enableReset && !selectedConfigset.isNullOrEmpty()) {
+                    IconButton(onClick = { selectConfigset("") }) {
+                        Icon(
+                            painter = painterResource(Res.drawable.close),
+                            contentDescription = stringResource(Res.string.cd_clear_field),
+                        )
+                    }
+                } else {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                }
+            },
+            modifier = Modifier
+                .menuAnchor(
+                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                    enabled = enabled,
+                )
+                .testTag("configsets_dropdown"),
+        )
+        ExposedDropdownMenu(
+            modifier = Modifier.testTag("configsets_exposed_dropdown_menu"),
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            configsets.forEach { configset ->
+                DropdownMenuItem(
+                    modifier = Modifier.testTag(tag = configset.name),
+                    text = { Text(configset.name) },
+                    onClick = {
+                        selectConfigset(configset.name)
+                        expanded = false
+                    },
+                )
             }
         }
     }

@@ -19,7 +19,6 @@ package org.apache.solr.cloud.overseer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
@@ -56,7 +55,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertEquals("xyz", collection.getName());
     assertEquals(1, collection.getSlicesMap().size());
 
-    ClusterState state = new ClusterState(Set.of(), Collections.singletonMap("xyz", collection));
+    ClusterState state = new ClusterState(Set.of(), Map.of("xyz", collection));
     message =
         new ZkNodeProps(
             Map.of(

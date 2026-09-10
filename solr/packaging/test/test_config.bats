@@ -43,10 +43,10 @@ teardown() {
 
   run solr config -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "'value' is a required option."
-  
+
   run solr config -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
-  
+
   run solr config -c COLL_NAME --action unset-property --property updateHandler.autoCommit.maxDocs --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully unset-property updateHandler.autoCommit.maxDocs"
 }
@@ -59,7 +59,7 @@ teardown() {
   assert_output --partial "assuming solr url is http://localhost:${SOLR_PORT}."
 }
 
-@test "connecting to solr via various solr urls and zk hosts" {
+@test "connecting to solr via various connection types" {
   solr create -c COLL_NAME
 
   run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs --value 100 -s http://localhost:${SOLR_PORT}
@@ -69,6 +69,9 @@ teardown() {
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
 
   run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs --value 100 --zk-host localhost:${ZK_PORT}
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs --value 100 --solr-connection http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
 
 }

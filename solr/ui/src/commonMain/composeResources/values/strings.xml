@@ -18,8 +18,12 @@
 
 <resources>
   <!-- Actions (action) -->
+  <string name="action_cancel">Cancel</string>
   <string name="action_connect">Connect</string>
+  <string name="action_create_configset">Create Configset</string>
+  <string name="action_edit_solrconfig">Edit solrconfig.xml</string>
   <string name="action_go_back">Go Back</string>
+  <string name="action_import_configset">Import Configset</string>
   <string name="action_logout">Logout</string>
   <string name="action_sign_in_with_credentials">Sign In with Credentials</string>
   <string name="action_sign_in_with_realm">Sign In with %1$s</string>
@@ -27,6 +31,7 @@
 
   <!-- Content Descriptions (cd) -->
   <string name="cd_back_navigation">Back Navigation</string>
+  <string name="cd_clear_field">Clear field</string>
   <string name="cd_solr_logo">Solr Logo</string>
 
   <!-- Descriptions (desc) -->
@@ -66,8 +71,10 @@
   <string name="ph_solr_url">http://127.0.0.1:8983/</string>
 
   <!-- Titles (title) -->
-  <string name="title_welcome_to_solr">Welcome to Solr Admin UI</string>
+  <string name="title_create_configset">Create Configset</string>
+  <string name="title_import_configset">Import Configset</string>
   <string name="title_sign_in_to_solr">Sign In to Solr</string>
+  <string name="title_welcome_to_solr">Welcome to Solr Admin UI</string>
 
   <!-- General Text -->
   <string name="authenticating">Authenticating...</string>
@@ -88,8 +95,10 @@
   <string name="zookeeper">Zookeeper</string>
 
   <!-- Input Labels -->
-  <string name="label_username">Username</string>
+  <string name="label_configset_name">Configset Name</string>
   <string name="label_password">Password</string>
+  <string name="label_select_configset_file">Select Configset File</string>
+  <string name="label_username">Username</string>
 
   <!-- Uncategorized -->
 </resources>

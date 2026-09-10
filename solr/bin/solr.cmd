@@ -383,6 +383,9 @@ IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="--verbose" goto set_verbose
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn
+IF "%1"=="-c" goto set_cloud_mode
+IF "%1"=="-cloud" goto set_cloud_mode
+IF "%1"=="--cloud" goto set_cloud_mode
 IF "%1"=="--user-managed" goto set_user_managed_mode
 IF "%1"=="--server-dir" goto set_server_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
@@ -444,7 +447,21 @@ set SOLR_LOG_LEVEL=WARN
 SHIFT
 goto parse_args
 
+:set_cloud_mode
+IF "%SOLR_MODE%"=="user-managed" (
+  set "SCRIPT_ERROR=Cannot combine -c/--cloud with --user-managed; choose one."
+  goto invalid_cmd_line
+)
+@echo WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.
+set CLOUD_FLAG_SET=true
+SHIFT
+goto parse_args
+
 :set_user_managed_mode
+IF "%CLOUD_FLAG_SET%"=="true" (
+  set "SCRIPT_ERROR=Cannot combine -c/--cloud with --user-managed; choose one."
+  goto invalid_cmd_line
+)
 set SOLR_MODE=user-managed
 set "PASS_TO_RUN_EXAMPLE=--user-managed !PASS_TO_RUN_EXAMPLE!"
 SHIFT

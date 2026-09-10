@@ -17,7 +17,7 @@
 
 package org.apache.solr.ui.views.navigation
 
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,10 +49,10 @@ fun <T : Enum<T>, C : Any> NavigationTabs(
 ) {
     val slot by component.tabSlot.subscribeAsState()
 
-    val currentTab = slot.child?.configuration?.tab
+    val currentTab = slot.child?.configuration
     val currentTabIndex = currentTab?.ordinal ?: 0
 
-    ScrollableTabRow(
+    PrimaryScrollableTabRow(
         modifier = modifier,
         selectedTabIndex = currentTabIndex,
         edgePadding = 16.dp,
@@ -63,6 +63,39 @@ fun <T : Enum<T>, C : Any> NavigationTabs(
             Tab(
                 selected = selected,
                 onClick = { component.onNavigate(tab) },
+                text = {
+                    Text(
+                        text = stringResource(mapper(tab)),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+fun <T : Enum<T>> NavigationTabs(
+    tabs: EnumEntries<T>,
+    selectedTab: T,
+    onSelectTab: (T) -> Unit,
+    mapper: (T) -> StringResource,
+    modifier: Modifier = Modifier,
+) {
+    val currentTabIndex = selectedTab.ordinal ?: 0
+
+    PrimaryScrollableTabRow(
+        modifier = modifier,
+        selectedTabIndex = currentTabIndex,
+        edgePadding = 16.dp,
+    ) {
+        tabs.forEach { tab ->
+            val selected = selectedTab == tab
+
+            Tab(
+                selected = selected,
+                onClick = { onSelectTab(tab) },
                 text = {
                     Text(
                         text = stringResource(mapper(tab)),

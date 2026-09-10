@@ -18,7 +18,6 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.function.Predicate;
 
 public class ConditionalKeyMapWriter implements MapWriter {
@@ -79,9 +78,5 @@ public class ConditionalKeyMapWriter implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     if (delegate != null) delegate.writeMap(new EntryWriterWrapper(ew, predicate));
-  }
-
-  public static Predicate<CharSequence> dedupeKeyPredicate(Set<CharSequence> keys) {
-    return (k) -> keys.add(k);
   }
 }

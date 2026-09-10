@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -558,10 +557,8 @@ public class AuditEvent {
           "^/api/node.*$",
           "^/api/cluster.*$");
 
-  private static final List<String> STREAMING_PATH_REGEXES =
-      Collections.singletonList(".*/stream.*");
-  private static final List<String> INDEXING_PATH_REGEXES =
-      Collections.singletonList(".*/update.*");
+  private static final List<String> STREAMING_PATH_REGEXES = List.of(".*/stream.*");
+  private static final List<String> INDEXING_PATH_REGEXES = List.of(".*/update.*");
   private static final List<String> SEARCH_PATH_REGEXES =
       Arrays.asList(".*/select.*", ".*/query.*");
 

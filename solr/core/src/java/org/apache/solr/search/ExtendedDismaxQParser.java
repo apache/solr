@@ -1488,6 +1488,7 @@ public class ExtendedDismaxQParser extends QParser {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality") // Analyzer identity, not equality, is what matters here
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();
@@ -1723,7 +1724,7 @@ public class ExtendedDismaxQParser extends QParser {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       schema = req.getSchema();
       // req.getSearcher() here causes searcher refcount imbalance
-      minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams);
+      minShouldMatch = SolrPluginUtils.parseMinShouldMatch(schema, solrParams);
       userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
         // req.getSearcher() here causes searcher refcount imbalance

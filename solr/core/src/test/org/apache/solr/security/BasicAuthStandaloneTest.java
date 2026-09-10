@@ -22,12 +22,10 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -38,12 +36,8 @@ import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
@@ -75,66 +69,58 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
 
-    HttpClient httpClient;
-    SolrClient solrClient = null;
+    var solrClient = jetty.getSolrClient();
+    HttpClient httpClient = solrClient.getHttpClient();
+    String baseUrl = buildUrl(jetty.getLocalPort());
+
+    verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
+
+    // Write security.json locally. Should cause security to be initialized
+    securityConfHandler.persistConf(
+        new SecurityConfHandler.SecurityConfig()
+            .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
+    securityConfHandler.securityConfEdited();
+    verifySecurityStatus(
+        httpClient, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+
+    String command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
+
+    doHttpPost(httpClient, baseUrl + authcPrefix, command, null, null, 401);
+    verifySecurityStatus(httpClient, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
+
+    command = "{\n" + "'set-user': {'harry':'HarryIsUberCool'}\n" + "}";
+
+    doHttpPost(httpClient, baseUrl + authcPrefix, command, "solr", "SolrRocks");
+    verifySecurityStatus(
+        httpClient,
+        baseUrl + authcPrefix,
+        "authentication/credentials/harry",
+        NOT_NULL_PREDICATE,
+        20);
+
+    // Read file from SOLR_HOME and verify that it contains our new user
+    assertTrue(
+        new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), UTF_8)
+            .contains("harry"));
+
+    // Edit authorization
+    verifySecurityStatus(
+        httpClient, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
+    doHttpPost(
+        httpClient,
+        baseUrl + authzPrefix,
+        "{'set-permission': {'name': 'update', 'role':'updaterole'}}",
+        "solr",
+        "SolrRocks");
+    command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
+    doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
     try {
-      httpClient = jetty.getSolrClient().getHttpClient();
-      String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
-
-      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
-
-      // Write security.json locally. Should cause security to be initialized
-      securityConfHandler.persistConf(
-          new SecurityConfHandler.SecurityConfig()
-              .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
-      securityConfHandler.securityConfEdited();
+      solrClient.query("collection1", new MapSolrParams(Map.of("q", "foo")));
+      fail("Should return a 401 response");
+    } catch (Exception e) {
+      // Test that the second doPost request to /security/authorization went through
       verifySecurityStatus(
-          httpClient, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-
-      String command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
-
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, null, null, 401);
-      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
-
-      command = "{\n" + "'set-user': {'harry':'HarryIsUberCool'}\n" + "}";
-
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, "solr", "SolrRocks");
-      verifySecurityStatus(
-          httpClient,
-          baseUrl + authcPrefix,
-          "authentication/credentials/harry",
-          NOT_NULL_PREDICATE,
-          20);
-
-      // Read file from SOLR_HOME and verify that it contains our new user
-      assertTrue(
-          new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), UTF_8)
-              .contains("harry"));
-
-      // Edit authorization
-      verifySecurityStatus(
-          httpClient, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
-      doHttpPost(
-          httpClient,
-          baseUrl + authzPrefix,
-          "{'set-permission': {'name': 'update', 'role':'updaterole'}}",
-          "solr",
-          "SolrRocks");
-      command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
-      try {
-        solrClient.query("collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
-        fail("Should return a 401 response");
-      } catch (Exception e) {
-        // Test that the second doPost request to /security/authorization went through
-        verifySecurityStatus(
-            httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
-      }
-    } finally {
-      if (solrClient != null) {
-        solrClient.close();
-      }
+          httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
     }
   }
 

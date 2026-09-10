@@ -61,6 +61,7 @@ class HttpEnvironmentStoreClient(
 
                 Result.success(javaProperties)
             }
+
             else -> Result.failure(Exception("Unknown error"))
             // TODO Add proper error handling
         }

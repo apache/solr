@@ -37,7 +37,7 @@ The simplest possible `security.json` for registering the plugin without configu
 {
   "authentication": {
     "class":"solr.JWTAuthPlugin",
-    "blockUnknown":"false"
+    "blockUnknown": false
   }
 }
 ----
@@ -56,13 +56,13 @@ blockUnknown         ; Set to `false` to if you need to perform configuration th
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
 requireIss           ; Fails requests that lacks an `iss` (issuer) claim                          ; `true`
-requireExp           ; Fails requests that lacks an `exp` (expiry time) claim                     ; `true`
+requireExp           ; Fails requests that lacks an `exp` (expiry time) claim. A clock skew tolerance of 30 seconds is applied, so tokens expired within the last 30 seconds are still accepted. ; `true`
 algAllowlist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim       ; What claim id to pull principal from                    ; `sub`
 rolesClaim           ; What claim id to pull user roles from. Both top-level claim and nested claim is supported. Use `someClaim.child` syntax to address a claim `child` nested within the `someClaim` object. The claim must then either contain a space separated list of roles or a JSON array. The roles can then be used to define fine-grained access in an Authorization plugin       ; By default the scopes from `scope` claim are passed on as user roles
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ;
-adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
+adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, falls back to the first entry in `scope` if configured, otherwise to the hardcoded value `solr`
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
 trustedCerts         ; One or more X.509 SSL certificates in plaintext PEM or PKCS#7 formats, that should be trusted when talking to IdPs. Newlines must be replaced with `\n`. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
 trustedCertsFile     ; Path to a file of type PEM, DER or PKCS#7, containing one or more X.509 SSL certificates that should be trusted when talking to IdPs. Can also be an array of file paths. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
@@ -84,7 +84,7 @@ clientId             ; Client identifier for use with OpenID Connect. Required t
 jwksUrl              ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
 jwk                  ; As an alternative to `jwksUrl` you may provide a static JSON object containing the public key(s) of the issuer. The format is either JWK or JWK Set, see https://tools.ietf.org/html/rfc7517#appendix-A[RFC7517] for examples. ;
 iss                  ; Unique issuer id as configured on the IdP. Incoming tokens must have a matching `iss` claim. Also used to resolve issuer when multiple issuers configured.      ; Auto configured if `wellKnownUrl` is provided
-aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` if configured
+aud                  ; Validates that the `aud` (audience) claim equals this string. When set on any issuer, all tokens must include a matching `aud` claim.      ; If no issuer configures `aud`, audience validation is skipped for all tokens
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 tokenEndpoint; The URL for the Id Provider's token endpoint ; Auto configured if `wellKnownUrl` is provided
 authorizationFlow; Specifies the OAuth 2.0 flow to be used. Supported flows are 'implicit' and 'code_pkce' (for authorization code with 'Proof Key for Code Exchange'). Note: 'implicit' is deprecated and it is highly recommended to use 'code_pkce' instead. ; implicit
@@ -105,6 +105,7 @@ Below is an example of the former:
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
+    "blockUnknown": true,
     "jwksUrl": "https://my.key.server/jwk.json"
   }
 }
@@ -118,6 +119,7 @@ This example shows configuration using https://openid.net/specs/openid-connect-d
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
+    "blockUnknown": true,
     "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration",
     "clientId": "xyz",
     "redirectUris": "https://my.solr.server:8983/solr/"

@@ -17,6 +17,7 @@
 // under the License.
 
 SolrCloud is highly available and fault tolerant in reads and writes.
+For a precise statement of what a successful update does and does not guarantee, see xref:solrcloud-update-consistency.adoc[].
 
 == Write Side Fault Tolerance
 

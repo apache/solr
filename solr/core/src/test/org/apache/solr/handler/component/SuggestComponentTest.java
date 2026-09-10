@@ -60,15 +60,14 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     waitForWarming();
     // rebuild suggesters with empty index
     assertQ(
-        req("qt", rh, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
   }
 
   @Test
   public void testDocumentBased() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             "suggest_fuzzy_doc_dict",
@@ -85,8 +84,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             "suggest_fuzzy_doc_dict",
@@ -106,8 +104,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testExpressionBased() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             "suggest_fuzzy_doc_expr_dict",
@@ -127,8 +124,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testFileBased() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             "suggest_fuzzy_file_based",
@@ -148,8 +144,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testMultiSuggester() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             "suggest_fuzzy_doc_dict",
@@ -176,8 +171,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testBuildAllSuggester() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD_ALL,
             "true",
@@ -188,15 +182,14 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "//str[@name='command'][.='buildAll']");
 
     assertQ(
-        req("qt", rh, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
   }
 
   @Test
   public void testReloadAllSuggester() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_RELOAD_ALL,
             "true",
@@ -207,7 +200,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "//str[@name='command'][.='reloadAll']");
 
     assertQ(
-        req("qt", rh, SuggesterParams.SUGGEST_RELOAD_ALL, "true"),
+        reqWithPath(rh, SuggesterParams.SUGGEST_RELOAD_ALL, "true"),
         "//str[@name='command'][.='reloadAll']");
   }
 
@@ -216,8 +209,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     String fakeSuggesterName = "does-not-exist";
     assertQEx(
         "No suggester named " + fakeSuggesterName + " was configured",
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             fakeSuggesterName,
@@ -231,7 +223,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "'"
             + SuggesterParams.SUGGEST_DICT
             + "' parameter not specified and no default suggester configured",
-        req("qt", rh, SuggesterParams.SUGGEST_Q, "exampel", SuggesterParams.SUGGEST_COUNT, "5"),
+        reqWithPath(rh, SuggesterParams.SUGGEST_Q, "exampel", SuggesterParams.SUGGEST_COUNT, "5"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -281,8 +273,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // Validate that the suggester was built on new/reload core
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -302,8 +293,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // buildOnCommit=false, this doc should not be in the suggester yet
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -318,8 +308,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     reloadCore(random().nextBoolean());
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -377,8 +366,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
             .txt());
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -392,18 +380,12 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // build the suggester manually
     assertQ(
-        req(
-            "qt",
-            rh,
-            SuggesterParams.SUGGEST_DICT,
-            suggester,
-            SuggesterParams.SUGGEST_BUILD,
-            "true"),
+        reqWithPath(
+            rh, SuggesterParams.SUGGEST_DICT, suggester, SuggesterParams.SUGGEST_BUILD, "true"),
         "//str[@name='command'][.='build']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -419,8 +401,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // Validate that the suggester was loaded on new/reload core
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -440,8 +421,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     waitForWarming();
     // buildOnCommit=false, this doc should not be in the suggester yet
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -456,8 +436,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     reloadCore(random().nextBoolean());
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -471,18 +450,12 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // build the suggester manually
     assertQ(
-        req(
-            "qt",
-            rh,
-            SuggesterParams.SUGGEST_DICT,
-            suggester,
-            SuggesterParams.SUGGEST_BUILD,
-            "true"),
+        reqWithPath(
+            rh, SuggesterParams.SUGGEST_DICT, suggester, SuggesterParams.SUGGEST_BUILD, "true"),
         "//str[@name='command'][.='build']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -541,18 +514,12 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // build the suggester manually
     assertQ(
-        req(
-            "qt",
-            rh,
-            SuggesterParams.SUGGEST_DICT,
-            suggester,
-            SuggesterParams.SUGGEST_BUILD,
-            "true"),
+        reqWithPath(
+            rh, SuggesterParams.SUGGEST_DICT, suggester, SuggesterParams.SUGGEST_BUILD, "true"),
         "//str[@name='command'][.='build']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -568,8 +535,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // Validate that the suggester was loaded on core reload
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -585,8 +551,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // Validate that the suggester was loaded on new core
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggester,
@@ -654,8 +619,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // verify that this suggester is built (there was a commit in setUp)
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggesterFuzzy,
@@ -676,8 +640,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // The suggester should be empty
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggesterFuzzy,
@@ -691,8 +654,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // build the suggester manually
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggesterFuzzy,
@@ -702,8 +664,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // validate the suggester is built again
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggesterFuzzy,
@@ -755,8 +716,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     reloadCore(createNewCores);
     // verify that this suggester is built (should build on startup)
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggestStartup,
@@ -776,8 +736,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     waitForWarming();
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggestStartup,
@@ -791,8 +750,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
 
     // build the suggester manually
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggestStartup,
@@ -801,8 +759,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "//str[@name='command'][.='build']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_DICT,
             suggestStartup,
@@ -830,6 +787,6 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
       waitForWarming();
     }
 
-    assertQ(req("qt", "/select", "q", "*:*"), "//*[@numFound='11']");
+    assertQ(reqWithPath("/select", "q", "*:*"), "//*[@numFound='11']");
   }
 }

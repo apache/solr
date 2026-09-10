@@ -20,10 +20,10 @@ package org.apache.solr.security;
 import io.opentelemetry.api.common.Attributes;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -88,7 +88,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
           .setHttpMethod("POST")
           .setMessage("Error occurred")
           .setDate(SAMPLE_DATE)
-          .setSolrParams(Collections.singletonMap("action", Collections.singletonList("DELETE")))
+          .setSolrParams(Map.of("action", List.of("DELETE")))
           .setResource("/admin/collections");
   protected static final AuditEvent EVENT_UPDATE =
       new AuditEvent(AuditEvent.EventType.COMPLETED)
@@ -97,7 +97,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
           .setRequestType(AuditEvent.RequestType.UPDATE)
           .setMessage("Success")
           .setDate(SAMPLE_DATE)
-          .setCollections(Collections.singletonList("updatecoll"))
+          .setCollections(List.of("updatecoll"))
           .setRequestType(AuditEvent.RequestType.UPDATE)
           .setResource("/update");
   protected static final AuditEvent EVENT_STREAMING =
@@ -107,7 +107,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
           .setRequestType(AuditEvent.RequestType.STREAMING)
           .setMessage("Success")
           .setDate(SAMPLE_DATE)
-          .setCollections(Collections.singletonList("streamcoll"))
+          .setCollections(List.of("streamcoll"))
           .setResource("/stream");
   protected static final AuditEvent EVENT_HEALTH_API =
       new AuditEvent(AuditEvent.EventType.COMPLETED)
@@ -152,7 +152,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   @Test
   public void init() {
     config = new HashMap<>();
-    config.put("eventTypes", Collections.singletonList("REJECTED"));
+    config.put("eventTypes", List.of("REJECTED"));
     config.put("async", false);
     plugin.init(config);
     assertTrue(plugin.shouldLog(EVENT_REJECTED.getEventType()));
@@ -174,7 +174,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
 
   @Test(expected = SolrException.class)
   public void invalidMuteRule() {
-    config.put("muteRules", Collections.singletonList("foo:bar"));
+    config.put("muteRules", List.of("foo:bar"));
     plugin.init(config);
   }
 

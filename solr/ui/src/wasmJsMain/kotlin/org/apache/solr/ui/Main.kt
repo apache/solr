@@ -17,7 +17,6 @@
 
 package org.apache.solr.ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -34,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.components.root.integration.SimpleRootComponent
 import org.apache.solr.ui.utils.DefaultAppComponentContext
+import org.apache.solr.ui.utils.defaultSolrUrl
 import org.apache.solr.ui.utils.getDefaultClient
 import org.apache.solr.ui.views.root.RootContent
 import org.apache.solr.ui.views.theme.SolrTheme
@@ -68,8 +68,7 @@ fun main() {
         return
     }
 
-    // TODO Set default request url to values from window location
-    val httpClient = getDefaultClient()
+    val httpClient = getDefaultClient(url = Url(defaultSolrUrl()))
 
     val component: RootComponent = SimpleRootComponent(
         componentContext = componentContext,
@@ -79,7 +78,7 @@ fun main() {
     )
 
     ComposeViewport(document.body!!) {
-        SolrTheme(useDarkTheme = isSystemInDarkTheme()) {
+        SolrTheme(useDarkTheme = false) {
             Surface(modifier = Modifier.fillMaxSize()) {
                 RootContent(component)
             }

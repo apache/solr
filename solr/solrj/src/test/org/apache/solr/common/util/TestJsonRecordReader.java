@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -178,7 +177,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     JsonRecordReader streamer;
     List<Map<String, Object>> records;
 
-    streamer = JsonRecordReader.getInst("/b", Collections.singletonList("/b/**"));
+    streamer = JsonRecordReader.getInst("/b", List.of("/b/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(3, records.size());
     assertEquals("records " + records, 3l, ((Map) records.get(0)).get("t"));
@@ -190,7 +189,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
       assertNotNull("records " + records, record.get("d"));
     }
 
-    streamer = JsonRecordReader.getInst("/", Collections.singletonList("/**"));
+    streamer = JsonRecordReader.getInst("/", List.of("/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(1, records.size());
     assertEquals(3, ((List) ((Map) records.get(0)).get("c")).size());
@@ -222,7 +221,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     JsonRecordReader streamer;
     List<Map<String, Object>> records;
 
-    streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("/**"));
+    streamer = JsonRecordReader.getInst("/exams", List.of("/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
     for (Map<String, Object> record : records) {
@@ -232,7 +231,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
       assertTrue(record.containsKey("marks"));
     }
 
-    streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("$FQN:/**"));
+    streamer = JsonRecordReader.getInst("/exams", List.of("$FQN:/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
     for (Map<String, Object> record : records) {
@@ -242,7 +241,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
       assertTrue(record.containsKey("exams.marks"));
     }
 
-    streamer = JsonRecordReader.getInst("/", Collections.singletonList("txt:/**"));
+    streamer = JsonRecordReader.getInst("/", List.of("txt:/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(1, records.size());
     assertEquals(9, ((List) records.get(0).get("txt")).size());
@@ -307,7 +306,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     JsonRecordReader streamer;
     List<Map<String, Object>> records;
 
-    streamer = JsonRecordReader.getInst("/a/b", Collections.singletonList("title_s:/a/b/title"));
+    streamer = JsonRecordReader.getInst("/a/b", List.of("title_s:/a/b/title"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
   }
@@ -335,7 +334,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     JsonRecordReader streamer;
     List<Map<String, Object>> records;
 
-    streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("/**"));
+    streamer = JsonRecordReader.getInst("/exams", List.of("/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(4, records.size());
 
@@ -352,7 +351,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     List<Map<String, Object>> records;
 
     final AtomicReference<WeakReference<String>> ref = new AtomicReference<>();
-    streamer = JsonRecordReader.getInst("/", Collections.singletonList("$FQN:/**"));
+    streamer = JsonRecordReader.getInst("/", List.of("$FQN:/**"));
     streamer.streamRecords(
         new StringReader(json),
         (record, path) -> {
@@ -706,7 +705,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
             + "               }}]}}]";
 
     RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json));
-    JsonRecordReader recordReader = JsonRecordReader.getInst("/", Collections.singletonList("/**"));
+    JsonRecordReader recordReader = JsonRecordReader.getInst("/", List.of("/**"));
     try {
       recordReader.streamRecords(parser, (record, path) -> {}); /*don't care*/
     } catch (RuntimeException e) {

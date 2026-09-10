@@ -145,7 +145,9 @@
   --nav-height--desktop: var(--body-min-height);
   --nav-panel-menu-height: calc(100% - var(--drawer-height));
   --nav-panel-explore-height: calc(50% + var(--drawer-height));
-  --nav-width: calc(270 / var(--rem-base) * 1rem);
+  /* Solr Changes - Start */
+  --nav-width: calc(300 / var(--rem-base) * 1rem);
+  /* Solr Changes - End */
   --toc-top: calc(var(--body-top) + var(--toolbar-height));
   --toc-height: calc(100vh - var(--toc-top) - 2.5rem);
   --toc-width: calc(162 / var(--rem-base) * 1rem);

@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  ConcurrentUpdateSolrClient now identifies the target server when an update fails to connect,
+  instead of reporting a bare connection error with no URL.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-7177
+    url: https://issues.apache.org/jira/browse/SOLR-7177

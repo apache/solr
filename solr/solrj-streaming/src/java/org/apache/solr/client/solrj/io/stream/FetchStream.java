@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -53,7 +54,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   private TupleStream stream;
   private StreamContext streamContext;
   private Iterator<Tuple> tuples;
@@ -68,14 +69,14 @@ public class FetchStream extends TupleStream implements Expressible {
   private boolean appendKey = true;
 
   public FetchStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String on,
       String fieldList,
       int batchSize)
       throws IOException {
-    init(zkHost, collection, tupleStream, on, fieldList, batchSize);
+    init(solrConnection, collection, tupleStream, on, fieldList, batchSize);
   }
 
   public FetchStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -88,7 +89,6 @@ public class FetchStream extends TupleStream implements Expressible {
     StreamExpressionNamedParameter flParam = factory.getNamedOperand(expression, "fl");
     StreamExpressionNamedParameter batchSizeParam =
         factory.getNamedOperand(expression, "batchSize");
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     String on = null;
     String fl = null;
@@ -122,36 +122,20 @@ public class FetchStream extends TupleStream implements Expressible {
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
 
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    init(zkHost, collectionName, stream, on, fl, batchSize);
+    init(solrConnection, collectionName, stream, on, fl, batchSize);
   }
 
   private void init(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       TupleStream tupleStream,
       String on,
       String fieldList,
       int batchSize)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.stream = tupleStream;
     this.batchSize = batchSize;
@@ -264,7 +248,7 @@ public class FetchStream extends TupleStream implements Expressible {
       params.add("rows", Integer.toString(batchSize));
       params.add(SORT, "_version_ desc");
 
-      CloudSolrStream cloudSolrStream = new CloudSolrStream(zkHost, collection, params);
+      CloudSolrStream cloudSolrStream = new CloudSolrStream(solrConnection, collection, params);
       StreamContext newContext = new StreamContext();
       newContext.setSolrClientCache(streamContext.getSolrClientCache());
       newContext.setObjectCache(streamContext.getObjectCache());

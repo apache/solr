@@ -160,11 +160,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testInConjunction() {
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:(paintable pine apple good ness)",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.SPELLCHECK_BUILD,
@@ -232,11 +231,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testCollate() {
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:(paintable pine apple godness)",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.SPELLCHECK_BUILD,
@@ -268,11 +266,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='collation'][10]/lst[@name='misspellingsAndCorrections']/str[@name='apple']='ample'",
         "//lst[@name='collation'][10]/lst[@name='misspellingsAndCorrections']/str[@name='godness']='goodness'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:(pine AND apple)",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.COMPONENT_NAME,
@@ -291,11 +288,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:(pineapple)'",
         "//lst[@name='collation'][3 ]/str[@name='collationQuery']='lowerfilt:((pi AND ne) AND ample)'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:pine AND NOT lowerfilt:apple",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.COMPONENT_NAME,
@@ -313,11 +309,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:line AND NOT lowerfilt:ample'",
         "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:(pi AND ne) AND NOT lowerfilt:ample'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:pine NOT lowerfilt:apple",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.COMPONENT_NAME,
@@ -335,11 +330,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:line NOT lowerfilt:ample'",
         "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:(pi AND ne) NOT lowerfilt:ample'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:(+pine -apple)",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.COMPONENT_NAME,
@@ -357,11 +351,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:(+line -ample)'",
         "//lst[@name='collation'][2 ]/str[@name='collationQuery']='lowerfilt:(+pi +ne -ample)'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "lowerfilt:(+printableinpuntableplantable)",
-            "qt",
-            "/spellCheckWithWordbreak",
             "indent",
             "true",
             SpellCheckComponent.COMPONENT_NAME,
@@ -378,11 +371,10 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
             "1"),
         "//lst[@name='collation'][1 ]/str[@name='collationQuery']='lowerfilt:(+printable +in +puntable +plantable)'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckWithWordbreak",
             "q",
             "zxcv AND qwtp AND fghj",
-            "qt",
-            "/spellCheckWithWordbreak",
             "defType",
             "edismax",
             "qf",

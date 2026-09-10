@@ -40,11 +40,10 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
     try {
       String handler = "/withlog";
       req =
-          req(
+          reqWithPath(
+              "/withlog",
               "indent",
               "true",
-              "qt",
-              "/withlog",
               "q",
               "aa",
               "rows",
@@ -69,11 +68,10 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
     try {
       String handler = "/withlog";
       req =
-          req(
+          reqWithPath(
+              "/withlog",
               "indent",
               "true",
-              "qt",
-              "/withlog",
               "q",
               "aa",
               "rows",
@@ -98,11 +96,10 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
     try {
       String handler = "/withlog";
       req =
-          req(
+          reqWithPath(
+              "/withlog",
               "indent",
               "true",
-              "qt",
-              "/withlog",
               "q",
               "aa",
               "rows",

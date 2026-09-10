@@ -16,11 +16,10 @@
  */
 
 plugins {
+  id 'java-library'
   alias(libs.plugins.swagger3.core)
   alias(libs.plugins.openapi.generator)
 }
-
-apply plugin: 'java-library'
 
 description = 'API - Interfaces and classes used to represent Solrs APIs'
 
@@ -72,7 +71,6 @@ dependencies {
   implementation libs.semver4j.semver4j
 
   testImplementation project(':solr:test-framework')
-  testImplementation project(':solr:api')
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
   testImplementation libs.apache.lucene.testframework

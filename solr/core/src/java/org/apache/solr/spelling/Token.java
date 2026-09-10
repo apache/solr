@@ -53,7 +53,7 @@ import org.apache.lucene.util.BytesRef;
  *       can be reset, clone it again.
  * </ul>
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, PayloadAttribute {
 
   // TODO Refactor the spellchecker API to use TokenStreams properly, rather than this hack

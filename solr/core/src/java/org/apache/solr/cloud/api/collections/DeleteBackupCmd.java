@@ -270,7 +270,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
           "Backup ID [" + bid + "] not found; cannot be deleted");
     }
 
-    deleteBackupIds(backupPath, repository, Collections.singleton(backupId), results);
+    deleteBackupIds(backupPath, repository, Set.of(backupId), results);
   }
 
   static final class PurgeGraph {

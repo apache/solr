@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.Utils.toJSON;
 
@@ -26,13 +24,10 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -53,7 +48,7 @@ public class CommandOperation {
   public String getStr(String key, String def) {
     if (ROOT_OBJ.equals(key)) {
       Object obj = getRootPrimitive();
-      return obj == def ? null : String.valueOf(obj);
+      return obj == null ? def : String.valueOf(obj);
     }
     Object o = getMapVal(key);
     return o == null ? def : String.valueOf(o);
@@ -145,7 +140,7 @@ public class CommandOperation {
         if (l.isEmpty()) return def;
         return l;
       } else {
-        return singletonList(String.valueOf(v));
+        return List.of(String.valueOf(v));
       }
     }
   }
@@ -176,19 +171,6 @@ public class CommandOperation {
   public void addError(String s) {
     if (errors.contains(s)) return;
     errors.add(s);
-  }
-
-  /** Get all the values from the metadata for the command without the specified keys */
-  public Map<String, Object> getValuesExcluding(String... keys) {
-    getMapVal(null);
-    if (hasError()) return Map.of(); // just to verify the type is Map
-    @SuppressWarnings("unchecked")
-    LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
-    if (keys == null) return cp;
-    for (String key : keys) {
-      cp.remove(key);
-    }
-    return cp;
   }
 
   public List<String> getErrors() {
@@ -228,7 +210,7 @@ public class CommandOperation {
             if (value instanceof List && !singletonCommands.contains(key)) {
               vals = (List<?>) value;
             } else {
-              vals = Collections.singletonList(value);
+              vals = List.of(value);
             }
             for (Object val : vals) {
               operations.add(new CommandOperation(String.valueOf(key), val));
@@ -261,11 +243,7 @@ public class CommandOperation {
    */
   public static List<CommandOperation> parse(Reader rdr, Set<String> singletonCommands)
       throws IOException {
-    JSONParser parser = new JSONParser(rdr);
-    parser.setFlags(
-        parser.getFlags()
-            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
-            | JSONParser.OPTIONAL_OUTER_BRACES);
+    JSONParser parser = Utils.getJSONParser(rdr);
 
     ObjectBuilder ob = new ObjectBuilder(parser);
 
@@ -315,48 +293,7 @@ public class CommandOperation {
 
   @Override
   public String toString() {
-    return new String(toJSON(singletonMap(name, commandData)), StandardCharsets.UTF_8);
-  }
-
-  public static List<CommandOperation> readCommands(
-      Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
-      throws IOException {
-    return readCommands(streams, resp, Set.of());
-  }
-
-  /**
-   * Read commands from request streams
-   *
-   * @param streams the streams
-   * @param resp solr query response
-   * @param singletonCommands , commands that cannot be repeated
-   * @return parsed list of commands
-   * @throws IOException if there is an error while parsing the stream
-   */
-  @SuppressWarnings({"unchecked"})
-  public static List<CommandOperation> readCommands(
-      Iterable<ContentStream> streams,
-      @SuppressWarnings({"rawtypes"}) NamedList resp,
-      Set<String> singletonCommands)
-      throws IOException {
-    if (streams == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
-    }
-    ArrayList<CommandOperation> ops = new ArrayList<>();
-    for (ContentStream stream : streams) {
-
-      if ("application/javabin".equals(stream.getContentType())) {
-        ops.addAll(parse(stream.getStream(), singletonCommands));
-      } else {
-        ops.addAll(parse(stream.getReader(), singletonCommands));
-      }
-    }
-    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
-    if (!errList.isEmpty()) {
-      resp.add(CommandOperation.ERR_MSGS, errList);
-      return null;
-    }
-    return ops;
+    return new String(toJSON(Map.of(name, commandData)), StandardCharsets.UTF_8);
   }
 
   public static List<CommandOperation> clone(List<CommandOperation> ops) {

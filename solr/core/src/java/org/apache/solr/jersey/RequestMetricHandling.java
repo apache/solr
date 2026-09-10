@@ -113,7 +113,7 @@ public class RequestMetricHandling {
 
       // Increment the timeout count if responseHeader indicates a timeout
       if (responseContext.hasEntity()
-          && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+          && responseContext.getEntity() instanceof SolrJerseyResponse) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
           metrics.numTimeouts.inc();

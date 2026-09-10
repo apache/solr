@@ -19,17 +19,20 @@ package org.apache.solr.common.util;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.solr.common.SolrCloseable;
 
 /** Simple object cache with a type-safe accessor. */
-public class ObjectCache extends MapBackedCache<String, Object> implements SolrCloseable {
+public class ObjectCache implements SolrCloseable {
 
+  protected final ConcurrentMap<String, Object> map;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   public ObjectCache() {
-    super(new ConcurrentHashMap<>());
+    this.map = new ConcurrentHashMap<>();
   }
 
   private void ensureNotClosed() {
@@ -38,28 +41,24 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
     }
   }
 
-  @Override
   public Object put(String key, Object val) {
     ensureNotClosed();
-    return super.put(key, val);
+    return map.put(key, val);
   }
 
-  @Override
   public Object get(String key) {
     ensureNotClosed();
-    return super.get(key);
+    return map.get(key);
   }
 
-  @Override
   public Object remove(String key) {
     ensureNotClosed();
-    return super.remove(key);
+    return map.remove(key);
   }
 
-  @Override
   public void clear() {
     ensureNotClosed();
-    super.clear();
+    map.clear();
   }
 
   public <T> T get(String key, Class<T> clazz) {
@@ -71,11 +70,14 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
     }
   }
 
+  public Object computeIfAbsent(String key, Function<String, ?> mappingFunction) {
+    ensureNotClosed();
+    return map.computeIfAbsent(key, mappingFunction);
+  }
+
   public <T> T computeIfAbsent(
       String key, Class<T> clazz, Function<String, ? extends T> mappingFunction) {
-    ensureNotClosed();
-    Object o = super.computeIfAbsent(key, mappingFunction);
-    return clazz.cast(o);
+    return clazz.cast(computeIfAbsent(key, mappingFunction));
   }
 
   @Override
@@ -91,8 +93,10 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
       // owns this ObjectCache, which is useful for plugins to register objects
       // which should be closed before being garbage-collected.
       for (Object value : map.values()) {
-        if (value instanceof Closeable) {
-          ((Closeable) value).close();
+        if (value instanceof Closeable closeable) {
+          closeable.close();
+        } else if (value instanceof ExecutorService executor) {
+          ExecutorUtil.shutdownAndAwaitTermination(executor);
         }
       }
       map.clear();

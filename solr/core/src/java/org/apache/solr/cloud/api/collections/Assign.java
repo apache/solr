@@ -297,7 +297,7 @@ public class Assign {
     AssignRequest assignRequest =
         new AssignRequestBuilder()
             .forCollection(collectionName)
-            .forShard(Collections.singletonList(shard))
+            .forShard(List.of(shard))
             .assignReplicas(numReplicas)
             .onNodes(createNodeList)
             .build();

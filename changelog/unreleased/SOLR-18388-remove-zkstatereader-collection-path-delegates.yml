@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated static ZkStateReader.getCollectionPath and getCollectionPathRoot delegates; use the equivalent methods on DocCollection instead.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18388
+    url: https://issues.apache.org/jira/browse/SOLR-18388

@@ -95,14 +95,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   protected Set<CacheValue> removeEntries = new HashSet<>();
 
-  private Double maxWriteMBPerSecFlush;
-
-  private Double maxWriteMBPerSecMerge;
-
-  private Double maxWriteMBPerSecRead;
-
-  private Double maxWriteMBPerSecDefault;
-
   private boolean closed;
 
   public interface CloseListener {
@@ -231,6 +223,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   // be sure the method is called with the sync lock on this object
   // returns true if we closed the cacheValue, false if it will be closed later
+  @SuppressWarnings("ReferenceEquality") // CacheValue identity, not equality, is what matters here
   private boolean closeCacheValue(CacheValue cacheValue, Set<CacheValue> deferRemove) {
     log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
@@ -308,6 +301,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     return vals.stream().sorted((a, b) -> b.path.compareTo(a.path)).collect(Collectors.toList());
   }
 
+  @SuppressWarnings("ReferenceEquality") // CacheValue identity, not equality, is what matters here
   private boolean maybeDeferClose(CacheValue maybeDefer) {
     assert maybeDefer.deleteOnClose;
     for (CacheValue maybeChildPath : byPathCache.values()) {
@@ -389,6 +383,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * java.lang.String, boolean)
    */
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // same instance back from filterDirectory means "unfiltered"
   public final Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException {
     String fullPath = normalize(path);
@@ -471,11 +467,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   @Override
   public void init(NamedList<?> args) {
-    maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
-    maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
-    maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
-    maxWriteMBPerSecDefault = (Double) args.get("maxWriteMBPerSecDefault");
-
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
       dataHomePath =

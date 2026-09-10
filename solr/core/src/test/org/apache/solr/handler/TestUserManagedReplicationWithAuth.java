@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     // leader with Basic auth enabled via security.json
     leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
@@ -231,8 +232,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     ModifiableSolrParams disablePollParams = new ModifiableSolrParams();
     disablePollParams.set(COMMAND, CMD_DISABLE_POLL);
     disablePollParams.set(CommonParams.WT, JAVABIN);
-    disablePollParams.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(disablePollParams);
+    QueryRequest req = new QueryRequest(ReplicationHandler.PATH, disablePollParams);
     withBasicAuth(req);
 
     final var baseUrl = buildUrl(Jetty.getLocalPort());
@@ -252,14 +252,13 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(COMMAND, CMD_FETCH_INDEX);
     solrParams.set(CommonParams.WT, JAVABIN);
-    solrParams.set(CommonParams.QT, ReplicationHandler.PATH);
     solrParams.set("leaderUrl", srcUrl);
     solrParams.set("wait", "true");
     if (authEnabled) {
       solrParams.set("httpBasicAuthUser", user);
       solrParams.set("httpBasicAuthPassword", pass);
     }
-    QueryRequest req = new QueryRequest(solrParams);
+    QueryRequest req = new QueryRequest(ReplicationHandler.PATH, solrParams);
     return req;
   }
 }

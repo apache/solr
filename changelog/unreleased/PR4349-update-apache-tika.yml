@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Update org.apache.tika:tika-core to v3.3.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4349
+  url: https://github.com/apache/solr/pull/4349

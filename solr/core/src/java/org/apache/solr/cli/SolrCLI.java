@@ -43,8 +43,8 @@ import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.cli.help.TableDefinition;
 import org.apache.commons.cli.help.TextHelpAppendable;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -70,7 +70,7 @@ public class SolrCLI implements CLIO {
     }
 
     if (Arrays.asList("-v", "--version").contains(args[0])) {
-      // select the version tool to be run
+      // select the version tool to be run, printing the CLIENT version
       args = new String[] {"version"};
     }
     if (Arrays.asList("upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "updateacls")
@@ -143,7 +143,7 @@ public class SolrCLI implements CLIO {
     argList.addAll(dashDList);
 
     // for SSL support, try to accommodate relative paths set for SSL store props
-    String solrInstallDir = System.getProperty("solr.install.dir");
+    String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     if (solrInstallDir != null) {
       checkSslStoreSysProp(solrInstallDir, "keyStore");
       checkSslStoreSysProp(solrInstallDir, "trustStore");
@@ -154,7 +154,7 @@ public class SolrCLI implements CLIO {
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
     String sysProp = "javax.net.ssl." + key;
-    String keyStore = System.getProperty(sysProp);
+    String keyStore = EnvUtils.getProperty(sysProp);
     if (keyStore == null) return;
 
     Path keyStoreFile = Path.of(keyStore);
@@ -397,10 +397,8 @@ public class SolrCLI implements CLIO {
 
   public static NamedList<Object> postJsonToSolr(
       SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
-    ContentStreamBase.StringStream contentStream = new ContentStreamBase.StringStream(jsonBody);
-    contentStream.setContentType(JSON_CONTENT_TYPE);
-    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest(updatePath);
-    req.addContentStream(contentStream);
+    ContentWriterUpdateRequest req = new ContentWriterUpdateRequest(updatePath);
+    req.addContentWithType(jsonBody, JSON_CONTENT_TYPE);
     return solrClient.request(req);
   }
 
@@ -480,10 +478,8 @@ public class SolrCLI implements CLIO {
   }
 
   public static void print(String color, Object message) {
-    String RESET = "\u001B[0m";
-
     if (color != null) {
-      CLIO.out(color + message + RESET);
+      CLIO.out(color + message + CLIUtils.RESET);
     } else {
       CLIO.out(String.valueOf(message));
     }

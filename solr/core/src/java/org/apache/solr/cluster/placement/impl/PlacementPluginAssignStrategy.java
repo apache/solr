@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,13 +40,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.CollectionUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PlacementPlugin plugin;
 
@@ -127,7 +122,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private Replica findReplica(
       SolrCloudManager solrCloudManager, org.apache.solr.cluster.Replica replica) {
-    DocCollection collection = null;
+    DocCollection collection;
     try {
       collection =
           solrCloudManager

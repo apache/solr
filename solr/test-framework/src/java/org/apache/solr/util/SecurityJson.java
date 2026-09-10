@@ -16,10 +16,9 @@
  */
 package org.apache.solr.util;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -48,9 +47,9 @@ public final class SecurityJson {
                   "class",
                   RuleBasedAuthorizationPlugin.class.getName(),
                   "user-role",
-                  singletonMap(USER, "admin"),
+                  Map.of(USER, "admin"),
                   "permissions",
-                  singletonList(Map.of("name", "all", "role", "admin"))),
+                  List.of(Map.of("name", "all", "role", "admin"))),
               "authentication",
               Map.of(
                   "class",
@@ -58,5 +57,5 @@ public final class SecurityJson {
                   "blockUnknown",
                   true,
                   "credentials",
-                  singletonMap(USER, getSaltedHashedValue(PASS)))));
+                  Map.of(USER, getSaltedHashedValue(PASS)))));
 }

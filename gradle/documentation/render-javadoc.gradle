@@ -196,7 +196,7 @@ configure(subprojects) {
       task
           .project
           .configurations.implementation.allDependencies.withType(ProjectDependency).collect {dep ->
-        def otherProject = dep.dependencyProject
+        def otherProject = task.project.project(dep.path)
         return otherProject.tasks.findByName(task.name)
       }.findAll {
         // Do not depend on disabled tasks or tasks that do not exist
@@ -294,7 +294,7 @@ class RenderJavadocTask extends DefaultTask {
   File taskResources
 
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
-  private Set findRenderTasksInDependencies() {
+  Set findRenderTasksInDependencies() {
     Set found = []
     def collectDeps
     collectDeps = {task ->

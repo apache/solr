@@ -71,13 +71,12 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testLuke() {
 
-    assertQ("basic luke request failed", req("qt", "/admin/luke"), "//int[@name='numDocs'][.='2']");
+    assertQ(
+        "basic luke request failed", reqWithPath("/admin/luke"), "//int[@name='numDocs'][.='2']");
 
     assertQ(
         "luke show schema failed",
-        req(
-            "qt", "/admin/luke",
-            "show", "schema"),
+        reqWithPath("/admin/luke", "show", "schema"),
         "//int[@name='numDocs'][.='2']",
         "//null[@name='uniqueKeyField']");
   }
@@ -111,11 +110,12 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
 
         assertQ(
             "failure w/handler: '" + handler + "'",
-            req(
-                "qt", handler,
-                // this should be fairly innocuous for any type of query
-                "q", "foo:bar",
-                "omitHeader", "false"),
+            reqWithPath(
+                handler, // this should be fairly innocuous for any type of query
+                "q",
+                "foo:bar",
+                "omitHeader",
+                "false"),
             "//lst[@name='responseHeader']");
       } catch (Exception e) {
         throw new RuntimeException("exception w/handler: '" + handler + "'", e);

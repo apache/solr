@@ -18,9 +18,11 @@ package org.apache.solr.update;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.ErrorLogMuter;
 
 public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
 
+  @SuppressWarnings("try")
   public void testUpdateNoTLog() throws Exception {
     try {
       System.setProperty("solr.index.updatelog.enabled", "false");
@@ -39,19 +41,21 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       assertU(commit());
 
       // updating docs should fail
-      ignoreException("updateLog");
-      SolrException ex =
-          expectThrows(
-              SolrException.class,
-              () -> addAndGetVersion(sdoc("id", "1", "val_i", map("inc", -666)), null));
+      SolrException ex;
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("updateLog")) {
+        ex =
+            expectThrows(
+                SolrException.class,
+                () -> addAndGetVersion(sdoc("id", "1", "val_i", map("inc", -666)), null));
+      }
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().contains("unless <updateLog/> is configured"));
-      resetExceptionIgnores();
     } finally {
       deleteCore();
     }
   }
 
+  @SuppressWarnings("try")
   public void testUpdateNoDistribProcessor() throws Exception {
     try {
       initCore("solrconfig-tlog.xml", "schema15.xml");
@@ -64,19 +68,20 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       addAndGetVersion(sdoc("id", "1", "val_i", "42"), params("update.chain", "nodistrib"));
       assertU(commit());
 
-      ignoreException("DistributedUpdateProcessorFactory");
       // updating docs should fail
-      SolrException ex =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                addAndGetVersion(
-                    sdoc("id", "1", "val_i", map("inc", -666)),
-                    params("update.chain", "nodistrib"));
-              });
+      SolrException ex;
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("DistributedUpdateProcessorFactory")) {
+        ex =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  addAndGetVersion(
+                      sdoc("id", "1", "val_i", map("inc", -666)),
+                      params("update.chain", "nodistrib"));
+                });
+      }
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().contains("DistributedUpdateProcessorFactory"));
-      resetExceptionIgnores();
     } finally {
       deleteCore();
     }

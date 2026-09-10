@@ -54,7 +54,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   private static final String configName = "solrCloudCollectionConfig";
   private static final Map<String, String>
       collectionProperties // ensure indexes survive core shutdown
-      = Collections.singletonMap("solr.directoryFactory", "solr.StandardDirectoryFactory");
+      = Map.of("solr.directoryFactory", "solr.StandardDirectoryFactory");
 
   @Override
   public void setUp() throws Exception {

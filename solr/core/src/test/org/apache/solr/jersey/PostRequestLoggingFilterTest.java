@@ -21,12 +21,19 @@ import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessage
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.UriInfo;
+import java.io.ByteArrayInputStream;
+import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -94,6 +101,45 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
         PostRequestLoggingFilter.filterAndStringifyQueryParameters(queryParams);
 
     assertEquals("paramName1=paramValue1&paramName2=paramValue2", queryParamStr);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCachingJsonMessageBodyReaderDelegateUsesConfiguredObjectMapper()
+      throws Exception {
+    final var delegate = new MessageBodyReaders.CachingJsonMessageBodyReader().getDelegate();
+
+    // Mapper SolrJacksonMapper.createObjectMapper creates a mapper with FAIL_ON_UNKNOWN_PROPERTIES
+    // set to false, hence we expect a json with an unknown field to be deserialized without any
+    // exception
+    final var entityStream =
+        new ByteArrayInputStream(
+            "{\"name\": \"test\", \"unknownField\": \"someValue\"}"
+                .getBytes(StandardCharsets.UTF_8));
+
+    final var result =
+        (CreateCollectionRequestBody)
+            delegate.readFrom(
+                (Class<Object>) (Class<?>) CreateCollectionRequestBody.class,
+                CreateCollectionRequestBody.class,
+                new Annotation[0],
+                MediaType.APPLICATION_JSON_TYPE,
+                new MultivaluedHashMap<>(),
+                entityStream);
+
+    assertEquals("test", result.name);
+  }
+
+  @Test
+  public void testCachingJsonMessageBodyReaderDelegateReusingObjectMapper() {
+    final var delegate =
+        (JacksonJsonProvider) new MessageBodyReaders.CachingJsonMessageBodyReader().getDelegate();
+    final var delegate2 =
+        (JacksonJsonProvider) new MessageBodyReaders.CachingJsonMessageBodyReader().getDelegate();
+
+    ObjectMapper mapper1 = delegate2.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
+    ObjectMapper mapper2 = delegate.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
+    assertSame(mapper1, mapper2);
   }
 
   @Test

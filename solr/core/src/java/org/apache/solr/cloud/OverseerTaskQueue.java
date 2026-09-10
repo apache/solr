@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,32 +113,26 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public void remove(QueueEvent event, boolean setResult)
       throws KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_remove_event");
-    try {
-      String path = event.getId();
+    String path = event.getId();
 
-      // Set response data in the response node
-      if (setResult) {
-        String responsePath =
-            dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
+    // Set response data in the response node
+    if (setResult) {
+      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
 
-        try {
-          zookeeper.setData(responsePath, event.getBytes());
-        } catch (KeeperException.NoNodeException ignored) {
-          // we must handle the race case where the node no longer exists
-          log.info(
-              "Response ZK path: {} doesn't exist. Requestor may have disconnected from ZooKeeper",
-              responsePath);
-        }
-      }
-
-      // Remove the request node
       try {
-        zookeeper.delete(path, -1);
+        zookeeper.setData(responsePath, event.getBytes());
       } catch (KeeperException.NoNodeException ignored) {
+        // we must handle the race case where the node no longer exists
+        log.info(
+            "Response ZK path: {} doesn't exist. Requestor may have disconnected from ZooKeeper",
+            responsePath);
       }
-    } finally {
-      time.stop();
+    }
+
+    // Remove the request node
+    try {
+      zookeeper.delete(path, -1);
+    } catch (KeeperException.NoNodeException ignored) {
     }
   }
 
@@ -232,7 +225,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           SolrException.ErrorCode.CONFLICT,
           "Solr is shutting down, no more overseer tasks may be offered");
     }
-    Timer.Context time = stats.time(dir + "_offer");
     try {
       // Create and watch the response node before creating the request node;
       // otherwise we may miss the response.
@@ -255,7 +247,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       zookeeper.delete(watchID, -1);
       return event;
     } finally {
-      time.stop();
       pendingResponses.decrementAndGet();
     }
   }
@@ -276,20 +267,12 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
     log.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
-    Timer.Context time;
-    if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
-    else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
-
-    try {
-      for (Pair<String, byte[]> element :
-          peekElements(n, waitMillis, child -> !excludeSet.test(dir + "/" + child))) {
-        topN.add(new QueueEvent(dir + "/" + element.first(), element.second(), null));
-      }
-      printQueueEventsListElementIds(topN);
-      return topN;
-    } finally {
-      time.stop();
+    for (Pair<String, byte[]> element :
+        peekElements(n, waitMillis, child -> !excludeSet.test(dir + "/" + child))) {
+      topN.add(new QueueEvent(dir + "/" + element.first(), element.second(), null));
     }
+    printQueueEventsListElementIds(topN);
+    return topN;
   }
 
   private static void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {

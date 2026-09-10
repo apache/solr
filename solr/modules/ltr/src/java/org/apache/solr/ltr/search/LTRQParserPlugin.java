@@ -41,6 +41,7 @@ import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
@@ -74,6 +75,9 @@ public class LTRQParserPlugin extends QParserPlugin
 
   /** query parser plugin:the param that will select how the number of document to rerank */
   public static final String RERANK_DOCS = "reRankDocs";
+
+  /** query parser plugin: include the candidate cutoff in the response header */
+  public static final String ECHO_RERANK_CUTOFF = "echoReRankCutoff";
 
   /** query parser plugin: default interleaving algorithm */
   public static final String DEFAULT_INTERLEAVING_ALGORITHM = Interleaving.TEAM_DRAFT;
@@ -229,6 +233,12 @@ public class LTRQParserPlugin extends QParserPlugin
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Must rerank at least 1 document");
       }
+
+      req.getContext()
+          .put(
+              AbstractReRankQuery.RERANK_CUTOFF_ECHO_REQUEST_CONTEXT_KEY,
+              localParams.getBool(ECHO_RERANK_CUTOFF, false));
+
       if (!isInterleaving) {
         SolrQueryRequestContextUtils.setScoringQueries(req, new LTRScoringQuery[] {rerankingQuery});
         return new LTRQuery(rerankingQuery, reRankDocs);

@@ -283,7 +283,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class);
 
     List<Tuple> tuples;
@@ -336,7 +336,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class)
@@ -458,7 +458,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("innerJoin", InnerJoinStream.class)
@@ -631,7 +631,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     StreamFactory factory =
         new StreamFactory()
-            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
             .withFunctionName("search", CloudSolrStream.class)
             .withFunctionName("select", SelectStream.class)
             .withFunctionName("hashJoin", HashJoinStream.class)

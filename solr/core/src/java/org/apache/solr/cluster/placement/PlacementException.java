@@ -39,9 +39,4 @@ public class PlacementException extends Exception {
   public PlacementException(Throwable cause) {
     super(cause);
   }
-
-  protected PlacementException(
-      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
-  }
 }

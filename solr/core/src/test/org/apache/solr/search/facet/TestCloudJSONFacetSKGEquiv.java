@@ -142,7 +142,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
+      CLIENTS.add(jetty.newSolrClient(COLLECTION_NAME));
     }
 
     final int numDocs = atLeast(100);
@@ -821,10 +821,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           // it ignores the order of the keys in each bucket...
           final String pathToMismatch =
               BaseDistributedSearchTestCase.compare(
-                  expected,
-                  actual,
-                  0,
-                  Collections.singletonMap("buckets", BaseDistributedSearchTestCase.UNORDERED));
+                  expected, actual, 0, Map.of("buckets", BaseDistributedSearchTestCase.UNORDERED));
           if (null != pathToMismatch) {
             log.error("{}: expected = {}", options, expected);
             log.error("{}: actual = {}", options, actual);

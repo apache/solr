@@ -20,6 +20,7 @@ import java.io.IOException;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -29,13 +30,19 @@ public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
+    if (rawLockType != null
+        && DirectoryFactory.LOCK_TYPE_NONE.equalsIgnoreCase(rawLockType.trim())) {
+      return NoLockFactory.INSTANCE;
+    }
     if (!(rawLockType == null
         || DirectoryFactory.LOCK_TYPE_SINGLE.equalsIgnoreCase(rawLockType.trim()))) {
       throw new SolrException(
           ErrorCode.FORBIDDEN,
           "RAMDirectory can only be used with the '"
               + DirectoryFactory.LOCK_TYPE_SINGLE
-              + "' lock factory type.");
+              + "' or '"
+              + DirectoryFactory.LOCK_TYPE_NONE
+              + "' lock factory types.");
     }
     return new SingleInstanceLockFactory();
   }

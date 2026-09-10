@@ -267,14 +267,14 @@ public class PostTool extends ToolBase {
         .addOption(PARAMS_OPTION)
         .addOption(FORMAT_OPTION)
         .addOption(DRY_RUN_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     solrUpdateUrl = null;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+    if (CLIUtils.hasConnectionOption(cli)) {
       String url =
           CLIUtils.normalizeSolrUrl(cli)
               + "/solr/"

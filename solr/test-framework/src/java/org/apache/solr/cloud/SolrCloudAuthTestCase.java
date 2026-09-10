@@ -28,7 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +65,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final List<String> AUTH_METRICS_METER_KEYS =
       Arrays.asList("solr_authentication_errors", "count");
   private static final List<String> AUTH_METRICS_TIMER_KEYS =
-      Collections.singletonList("solr_authentication_request_times_nanoseconds");
+      List.of("solr_authentication_request_times_nanoseconds");
 
   @SuppressWarnings({"rawtypes"})
   public static final Predicate NOT_NULL_PREDICATE = o -> o != null;

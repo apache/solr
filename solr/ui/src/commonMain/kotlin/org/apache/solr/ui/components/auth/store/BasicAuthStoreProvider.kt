@@ -74,10 +74,12 @@ class BasicAuthStoreProvider(
         override fun executeIntent(intent: Intent) {
             when (intent) {
                 is Intent.Authenticate -> authenticate()
+
                 is Intent.UpdateUsername -> {
                     state().error?.let { publish(Label.ErrorReset) }
                     dispatch(Message.UsernameUpdated(intent.username))
                 }
+
                 is Intent.UpdatePassword -> {
                     state().error?.let { publish(Label.ErrorReset) }
                     dispatch(Message.PasswordUpdated(intent.password))
@@ -109,6 +111,7 @@ class BasicAuthStoreProvider(
             val mappedError: Throwable = when (error) {
                 // Unauthorized response means that the credentials are invalid
                 is UnauthorizedException -> InvalidCredentialsException()
+
                 else -> error
             }
 

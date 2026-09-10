@@ -218,7 +218,7 @@ public class RealTimeGetComponent extends SearchComponent {
     }
 
     final SolrCore core = req.getCore();
-    SchemaField idField = core.getLatestSchema().getUniqueKeyField();
+    SchemaField idField = req.getSchema().getUniqueKeyField();
     FieldType fieldType = idField.getType();
 
     SolrDocumentList docList = new SolrDocumentList();
@@ -275,9 +275,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
                 SolrDocument doc;
                 if (oper == UpdateLog.ADD) {
-                  doc =
-                      toSolrDoc(
-                          (SolrInputDocument) entry.get(entry.size() - 1), core.getLatestSchema());
+                  doc = toSolrDoc((SolrInputDocument) entry.get(entry.size() - 1), req.getSchema());
                   // toSolrDoc filtered copy-field targets already
                   if (transformer != null) {
                     transformer.transform(doc, -1, DocIterationInfo.NONE); // unknown docID
@@ -351,7 +349,7 @@ public class RealTimeGetComponent extends SearchComponent {
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
         Document luceneDocument =
             docFetcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
-        SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
+        SolrDocument doc = toSolrDoc(luceneDocument, searcherInfo.getSearcher().getSchema());
         if (reuseDvIters == null) {
           reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
         }
@@ -562,7 +560,7 @@ public class RealTimeGetComponent extends SearchComponent {
     try {
       // now fetch last document from index, and merge partialDoc on top of it
       SolrIndexSearcher searcher = searcherHolder.get();
-      SchemaField idField = core.getLatestSchema().getUniqueKeyField();
+      SchemaField idField = searcher.getSchema().getUniqueKeyField();
       Term idTerm = new Term(idField.getName(), idBytes);
 
       int docid = searcher.getFirstMatch(idTerm);
@@ -584,10 +582,7 @@ public class RealTimeGetComponent extends SearchComponent {
         searcher
             .getDocFetcher()
             .decorateDocValueFields(
-                doc,
-                docid,
-                Collections.singleton(VERSION_FIELD),
-                new DocValuesIteratorCache(searcher, false));
+                doc, docid, Set.of(VERSION_FIELD), new DocValuesIteratorCache(searcher, false));
       }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
@@ -648,6 +643,8 @@ public class RealTimeGetComponent extends SearchComponent {
    *
    * @see #getInputDocumentFromTlog(SolrCore, BytesRef, AtomicLong, Set, Resolution)
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   private static SolrInputDocument getInputDocumentFromTlog(
       SolrCore core,
       BytesRef idBytes,
@@ -760,6 +757,8 @@ public class RealTimeGetComponent extends SearchComponent {
    * @param resolveStrategy {@link Resolution#DOC} or {@link Resolution#ROOT_WITH_CHILDREN}.
    * @see Resolution
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   public static SolrInputDocument getInputDocument(
       SolrCore core,
       BytesRef idBytes,
@@ -787,12 +786,12 @@ public class RealTimeGetComponent extends SearchComponent {
         int docId =
             searcher.getFirstMatch(
                 new Term(
-                    core.getLatestSchema().getUniqueKeyField().getName(),
+                    searcher.getSchema().getUniqueKeyField().getName(),
                     resolveStrategy == Resolution.ROOT_WITH_CHILDREN ? rootIdBytes : idBytes));
         if (docId < 0) return null;
 
         if (resolveStrategy == Resolution.ROOT_WITH_CHILDREN
-            && core.getLatestSchema().isUsableForChildDocs()) {
+            && searcher.getSchema().isUsableForChildDocs()) {
           // check that this doc is in fact a root document as a prevention measure
           if (!hasRootTerm(searcher, rootIdBytes)) {
             throw new SolrException(
@@ -803,7 +802,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
         SolrDocument solrDoc =
             fetchSolrDoc(searcher, docId, makeReturnFields(core, onlyTheseFields, resolveStrategy));
-        sid = toSolrInputDocument(solrDoc, core.getLatestSchema()); // filters copy-field targets
+        sid = toSolrInputDocument(solrDoc, searcher.getSchema()); // filters copy-field targets
         // the assertions above furthermore guarantee the result corresponds to idBytes
       } finally {
         searcherHolder.decref();

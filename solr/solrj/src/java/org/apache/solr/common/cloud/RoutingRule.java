@@ -29,7 +29,7 @@ public class RoutingRule extends ZkNodeProps {
   private final String targetCollectionName;
   private final Long expireAt;
 
-  public RoutingRule(String routeKey, Map<String, Object> propMap) {
+  public RoutingRule(Map<String, Object> propMap) {
     super(propMap);
     this.routeRangesStr = (String) propMap.get("routeRanges");
     String[] rangesArr = this.routeRangesStr.split(",");

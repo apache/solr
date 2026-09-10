@@ -62,11 +62,11 @@
     <Set name="outputAggregationSize"><Property name="solr.jetty.output.aggregation.size" default="8192" /></Set>
     <Set name="requestHeaderSize"><Property name="solr.jetty.request.header.size" default="8192" /></Set>
     <Set name="responseHeaderSize"><Property name="solr.jetty.response.header.size" default="8192" /></Set>
+    <Set name="maxResponseHeaderSize"><Property name="solr.jetty.response.header.size.max" default="16384" /></Set>
     <Set name="sendServerVersion"><Property name="solr.jetty.send.server.version" default="false" /></Set>
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
     <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>
-    <Set name="relativeRedirectAllowed">true</Set><!-- can remove in Jetty 12, which has this default -->
     <!-- Uncomment to enable handling of X-Forwarded- style headers
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
@@ -188,40 +188,47 @@
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
 
-    <Call name="addBean">
-      <Arg>
-        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-          <Set name="contexts">
-            <Ref refid="Contexts" />
-          </Set>
-          <Call name="addAppProvider">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
-                <Set name="EnvironmentName">core</Set>
-                <Set name="monitoredDirName"><Property name="jetty.base" default="."/>/contexts</Set>
-                <Set name="scanInterval">0</Set>
-              </New>
-            </Arg>
-          </Call>
+    <!-- =========================================================== -->
+    <!-- Deploy the Solr webapp.                                      -->
+    <!-- Solr serves a single, statically-known webapp, so we add it  -->
+    <!-- directly to the context collection rather than using Jetty's -->
+    <!-- directory-scanning deployer (the DeploymentManager /         -->
+    <!-- ContextProvider API was removed in Jetty 12.1).              -->
+    <!-- =========================================================== -->
+    <Ref refid="Contexts">
+      <Call name="addHandler">
+        <Arg>
+          <New class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+            <Set name="contextPath">/solr</Set>
+            <Set name="war"><Property name="jetty.base"/>/solr-webapp/webapp</Set>
+            <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
+            <Set name="extractWAR">false</Set>
 
-          <!-- Add a customize step to the deployment lifecycle -->
-          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
-          <Call name="insertLifeCycleNode">
-            <Arg>deployed</Arg>
-            <Arg>starting</Arg>
-            <Arg>customise</Arg>
-          </Call>
-          <Call name="addLifeCycleBinding">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.bindings.DebugBinding">
-                <Arg>customise</Arg>
-              </New>
-            </Arg>
-          </Call>
-          -->
-
-        </New>
-      </Arg>
-    </Call>
+            <!--
+            The rest of this is necessary to deduplicate jetty server jars in our server build.
+            Jetty disallows "server" classes that are loaded via the server classloader (live in
+            server/lib/ or server/lib/ext/) from being used by the Webapp. Solr has a need for many
+            of these classes, especially http and http2 for its HTTP Client libraries. Setting
+            parentLoaderPriority=true and hiding the "-org.eclipse.jetty." server classes lets the
+            webapp load them from the server classloader instead of duplicating the jars into
+            WEB-INF/lib/.
+            Documentation: https://jetty.org/docs/jetty/12.1/programming-guide/server/http.html#handler-use-webapp-context-class-loading
+            -->
+            <Set name="parentLoaderPriority">true</Set>
+            <Call name="addHiddenClassMatcher">
+              <Arg>
+                <New class="org.eclipse.jetty.util.ClassMatcher">
+                  <Arg>
+                    <Array type="java.lang.String">
+                      <Item>-org.eclipse.jetty.</Item>
+                    </Array>
+                  </Arg>
+                </New>
+              </Arg>
+            </Call>
+          </New>
+        </Arg>
+      </Call>
+    </Ref>
 
 </Configure>

@@ -68,7 +68,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
   /**
    * Create a metric attribute.
    *
-   * @param name short-hand name that identifies this attribute.
+   * @param name shorthand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
    */
   public MetricImpl(String name, String internalName) {
@@ -78,7 +78,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
   /**
    * Create a metric attribute.
    *
-   * @param name short-hand name that identifies this attribute.
+   * @param name shorthand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
    * @param converter optional raw value converter. If null then {@link #IDENTITY_CONVERTER} will be
    *     used.
@@ -90,7 +90,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
   /**
    * Create a metric attribute with labels.
    *
-   * @param name short-hand name that identifies this attribute.
+   * @param name shorthand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
    * @param labelKey optional label key for Prometheus format labeled metrics.
    * @param labelValue optional label value for Prometheus format labeled metrics.

@@ -27,7 +27,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,16 +46,16 @@ import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
@@ -93,19 +92,25 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     }
     Map<String, Function<?, ?>> responses = new HashMap<>();
     NamedList<Object> okResponse = new NamedList<>();
-    okResponse.add("responseHeader", new NamedList<>(Collections.singletonMap("status", 0)));
+    okResponse.add("responseHeader", new NamedList<>(Map.of("status", 0)));
 
-    LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
+    LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
     try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
         CloudSolrClient cloudClient =
-            new RandomizingCloudSolrClientBuilder(clusterStateProvider)
-                .withLBHttpSolrClient(mockLbclient)
-                .build()) {
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider) {
+              @Override
+              protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
+                return mockLbclient;
+              }
+            }.build()) {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      byte[] coll1StateBytes = COLL1_STATE.getBytes(UTF_8);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> stateMap =
+          (Map<String, Object>) Utils.fromJSON(coll1StateBytes, 0, coll1StateBytes.length);
       ClusterState cs =
-          ClusterState.createFromJson(
-              1, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
+          ClusterState.createFromCollectionMap(1, stateMap, Set.of(), Instant.now(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
@@ -297,9 +302,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  private LBHttpSolrClient getMockLbHttpSolrClient(Map<String, Function<?, ?>> responses)
+  private LBJettySolrClient getMockLbHttpSolrClient(Map<String, Function<?, ?>> responses)
       throws Exception {
-    LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
+    var mockLbclient = mock(LBJettySolrClient.class);
 
     when(mockLbclient.request(any(LBSolrClient.Req.class)))
         .then(
@@ -332,7 +337,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
       @Override
       public List<String> resolveAlias(String collection) {
-        return Collections.singletonList(collection);
+        return List.of(collection);
       }
 
       @Override
@@ -343,9 +348,12 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
   private DocCollection loadCollection(String collection, int version) throws Exception {
+    byte[] coll1StateBytes = COLL1_STATE.getBytes(UTF_8);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stateMap =
+        (Map<String, Object>) Utils.fromJSON(coll1StateBytes, 0, coll1StateBytes.length);
     ClusterState state =
-        ClusterState.createFromJson(
-            version, COLL1_STATE.getBytes(UTF_8), Set.of(), Instant.now(), null);
+        ClusterState.createFromCollectionMap(version, stateMap, Set.of(), Instant.now(), null);
     return state.getCollectionOrNull(collection);
   }
 
@@ -421,6 +429,11 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       return provider;
     }
 
+    @Override
+    public HttpSolrClient getHttpClient() {
+      throw new UnsupportedOperationException();
+    }
+
     @FunctionalInterface
     interface Invocation {
       NamedList<Object> invoke(SolrRequest<?> request, List<String> inputCollections)
@@ -440,11 +453,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     @Override
     public ModifiableSolrParams getParams() {
       return params;
-    }
-
-    @Override
-    public Collection<ContentStream> getContentStreams() {
-      return null;
     }
 
     @Override

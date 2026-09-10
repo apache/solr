@@ -690,7 +690,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   private long computeBufferedOps() {
     return switch (state) {
-        // numRecords counts header as a record
+      // numRecords counts header as a record
       case BUFFERING -> (bufferTlog == null ? 0 : bufferTlog.numRecords() - 1);
       case APPLYING_BUFFERED -> {
         if (tlog == null) yield 0;
@@ -734,6 +734,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /* Takes over ownership of the log, keeping it until no longer needed
     and then decrementing its reference and dropping it.
   */
+  @SuppressWarnings(
+      "ReferenceEquality") // TransactionLog identity, not equality, is what matters here
   protected synchronized void addOldLog(TransactionLog oldLog, boolean removeOld) {
     if (oldLog == null) return;
 
@@ -1460,7 +1462,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     tlog.incref();
 
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
-    LogReplayer replayer = new LogReplayer(Collections.singletonList(tlog), false, true);
+    LogReplayer replayer = new LogReplayer(List.of(tlog), false, true);
 
     updateLocks.blockUpdates();
     try {
@@ -1546,6 +1548,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param commitVersion any updates that have version larger than the commitVersion will be copied
    *     over
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // TransactionLog identity, not equality, is what matters here
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
     copyOverOldUpdatesCounter.inc();
 
@@ -1701,7 +1705,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     close(committed, false);
   }
 
-  @SuppressWarnings("try")
+  @SuppressWarnings({
+    "try",
+    "ReferenceEquality" // TransactionLog identity, not equality, is what matters here
+  })
   public void close(boolean committed, boolean deleteOnClose) {
     try (Closeable c = releaseTlogDir) {
       recoveryExecutor.shutdown(); // no new tasks
@@ -2059,7 +2066,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
-    LogReplayer replayer = new LogReplayer(Collections.singletonList(bufferTlog), true);
+    LogReplayer replayer = new LogReplayer(List.of(bufferTlog), true);
     return cs.submit(
         () -> {
           replayer.run();

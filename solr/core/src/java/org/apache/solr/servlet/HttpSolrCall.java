@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
@@ -37,7 +38,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -55,6 +55,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -200,8 +201,12 @@ public class HttpSolrCall {
     return core;
   }
 
+  /**
+   * If the request has been created, return its parameters (merges URL and body if applicable);
+   * otherwise, return only the URL query parameters.
+   */
   public SolrParams getQueryParams() {
-    return queryParams;
+    return solrReq != null ? solrReq.getParams() : queryParams;
   }
 
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
@@ -317,9 +322,8 @@ public class HttpSolrCall {
       }
     }
 
-    String msg = "no handler, collection, or core for " + path;
-    sendError(404, msg);
-    log.info(msg); // not "error" since Solr isn't necessarily at fault
+    sendError(404, "no handler, collection, or core for " + path);
+    log.info("path={} status=404", path); // not "error" since Solr isn't necessarily at fault
     action = RETURN;
   }
 
@@ -429,6 +433,8 @@ public class HttpSolrCall {
   }
 
   /** This method processes the request. */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether we're still at the outermost exception, by identity
   public Action call() throws IOException {
 
     if (cores == null) {
@@ -621,7 +627,8 @@ public class HttpSolrCall {
     log.info("Proxying request to: {}", coreUrlAndPath);
     try {
       response.reset(); // clear all headers and status
-      HttpClient httpClient = cores.getDefaultHttpSolrClient().getHttpClient();
+      HttpClient httpClient =
+          ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
       HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrlAndPath + queryStr);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
@@ -738,6 +745,10 @@ public class HttpSolrCall {
 
   protected void handleAdmin(SolrQueryResponse solrResp) {
     SolrCore.preDecorateResponse(solrReq, solrResp);
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
+    }
     handler.handleRequest(solrReq, solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
   }
@@ -760,8 +771,7 @@ public class HttpSolrCall {
     if (collectionParam == null
         && // if collection param already exists, we may need to over-write it
         core != null
-        && collections.equals(
-            Collections.singletonList(core.getCoreDescriptor().getCollectionName()))) {
+        && collections.equals(List.of(core.getCoreDescriptor().getCollectionName()))) {
       return;
     }
     String newCollectionParam = StrUtils.join(collections, ',');

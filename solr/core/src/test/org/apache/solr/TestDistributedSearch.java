@@ -35,6 +35,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -58,6 +59,7 @@ import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -615,18 +617,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // basic spellcheck testing
     query(
-        "q",
-        "toyata",
-        "fl",
-        "id,lowerfilt",
-        "spellcheck",
-        true,
-        "spellcheck.q",
-        "toyata",
-        "qt",
         "/spellCheckCompRH_Direct",
-        "shards.qt",
-        "/spellCheckCompRH_Direct");
+        params(
+            "q", "toyata",
+            "fl", "id,lowerfilt",
+            "spellcheck", "true",
+            "spellcheck.q", "toyata",
+            "shards.qt", "/spellCheckCompRH_Direct"));
 
     stress = 0; // turn off stress... we want to tex max combos in min time
     for (int i = 0; i < 25 * RANDOM_MULTIPLIER; i++) {
@@ -1520,8 +1517,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // SOLR 3161 ensure shards.qt=/update fails (anything but search handler really)
     // Also see TestRemoteStreaming#testQtUpdateFails()
 
-    unIgnoreException("isShard is only acceptable");
-
     // test debugging
     // handle.put("explain", UNORDERED);
     handle.put("explain", SKIPVAL); // internal docids differ, idf differs w/o global idf
@@ -1592,6 +1587,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     Thread.sleep(100);
 
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1610,6 +1606,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true");
 
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1627,6 +1624,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // test group query
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1651,6 +1649,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true");
 
     queryPartialResults(
+        "/select",
         upShards,
         upClients,
         "q",
@@ -1665,6 +1664,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true");
 
     queryPartialResults(
+        "/spellCheckCompRH_Direct",
         upShards,
         upClients,
         "q",
@@ -1673,8 +1673,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "true",
         "spellcheck.q",
         "toyata",
-        "qt",
-        "/spellCheckCompRH_Direct",
         "shards.qt",
         "/spellCheckCompRH_Direct",
         ShardParams.SHARDS_INFO,
@@ -1907,7 +1905,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   protected void queryPartialResults(
-      final List<String> upShards, final List<SolrClient> upClients, Object... q) throws Exception {
+      String requestHandler,
+      final List<String> upShards,
+      final List<SolrClient> upClients,
+      Object... q)
+      throws Exception {
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -1916,7 +1918,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
-    final QueryResponse controlRsp = controlClient.query(params);
+    final QueryResponse controlRsp =
+        new QueryRequest(requestHandler, params).process(controlClient);
     // if time.allowed is specified then even a control response can return a partialResults header
     if (params.get(CommonParams.TIME_ALLOWED) == null) {
       validateControlData(controlRsp);
@@ -1928,7 +1931,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     if (upClients.size() == 0) {
       return;
     }
-    QueryResponse rsp = queryRandomUpServer(params, upClients);
+    QueryResponse rsp = queryRandomUpServer(requestHandler, params, upClients);
 
     comparePartialResponses(rsp, upShards);
 
@@ -1948,7 +1951,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   int which = r.nextInt(upClients.size());
                   SolrClient client = upClients.get(which);
                   try {
-                    QueryResponse rsp = client.query(new ModifiableSolrParams(params));
+                    QueryResponse rsp =
+                        new QueryRequest(requestHandler, new ModifiableSolrParams(params))
+                            .process(client);
                     if (verifyStress) {
                       comparePartialResponses(rsp, upShards);
                     }
@@ -1971,7 +1976,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   protected QueryResponse queryRandomUpServer(
-      ModifiableSolrParams params, List<SolrClient> upClients)
+      String requestHandler, ModifiableSolrParams params, List<SolrClient> upClients)
       throws SolrServerException, IOException {
     // query a random "up" server
     SolrClient client;
@@ -1982,7 +1987,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       client = upClients.get(which);
     }
 
-    return client.query(params);
+    return new QueryRequest(requestHandler, params).process(client);
   }
 
   protected void comparePartialResponses(QueryResponse rsp, List<String> upShards) {
@@ -2052,49 +2057,48 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         control.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
+  @SuppressWarnings("try")
   private void validateCommonQueryParameters() {
-    ignoreException("parameter cannot be negative");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("parameter cannot be negative")) {
+      SolrException e1 =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                SolrQuery query = new SolrQuery();
+                query.setParam("start", "non_numeric_value").setQuery("*");
+                QueryResponse resp = query(query);
+              });
+      assertEquals(ErrorCode.BAD_REQUEST.code, e1.code());
 
-    SolrException e1 =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              SolrQuery query = new SolrQuery();
-              query.setParam("start", "non_numeric_value").setQuery("*");
-              QueryResponse resp = query(query);
-            });
-    assertEquals(ErrorCode.BAD_REQUEST.code, e1.code());
+      SolrException e2 =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                SolrQuery query = new SolrQuery();
+                query.setStart(-1).setQuery("*");
+                QueryResponse resp = query(query);
+              });
+      assertEquals(ErrorCode.BAD_REQUEST.code, e2.code());
 
-    SolrException e2 =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              SolrQuery query = new SolrQuery();
-              query.setStart(-1).setQuery("*");
-              QueryResponse resp = query(query);
-            });
-    assertEquals(ErrorCode.BAD_REQUEST.code, e2.code());
+      SolrException e3 =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                SolrQuery query = new SolrQuery();
+                query.setRows(-1).setStart(0).setQuery("*");
+                QueryResponse resp = query(query);
+              });
+      assertEquals(ErrorCode.BAD_REQUEST.code, e3.code());
 
-    SolrException e3 =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              SolrQuery query = new SolrQuery();
-              query.setRows(-1).setStart(0).setQuery("*");
-              QueryResponse resp = query(query);
-            });
-    assertEquals(ErrorCode.BAD_REQUEST.code, e3.code());
-
-    SolrException e4 =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              SolrQuery query = new SolrQuery();
-              query.setParam("rows", "non_numeric_value").setQuery("*");
-              QueryResponse resp = query(query);
-            });
-    assertEquals(ErrorCode.BAD_REQUEST.code, e4.code());
-
-    resetExceptionIgnores();
+      SolrException e4 =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                SolrQuery query = new SolrQuery();
+                query.setParam("rows", "non_numeric_value").setQuery("*");
+                QueryResponse resp = query(query);
+              });
+      assertEquals(ErrorCode.BAD_REQUEST.code, e4.code());
+    }
   }
 }

@@ -324,11 +324,11 @@ public class FacetHeatmap extends FacetRequest {
         // A PNG graphic; compressed. Good for large & dense heatmaps; hard to consume.
         return asPngBytes(columns, rows, counts, debugInfo);
 
-        // TODO case UTFGRID  https://github.com/mapbox/utfgrid-spec
-        // TODO case skipList: //A sequence of values; negative values are actually how many 0's to
-        // insert. Good for small or large but sparse heatmaps.
-        // TODO auto choose png or skipList; use skipList when < ~25% full or <= ~512 cells remember
-        // to augment error list below when we add more formats.
+      // TODO case UTFGRID  https://github.com/mapbox/utfgrid-spec
+      // TODO case skipList: //A sequence of values; negative values are actually how many 0's to
+      // insert. Good for small or large but sparse heatmaps.
+      // TODO auto choose png or skipList; use skipList when < ~25% full or <= ~512 cells remember
+      // to augment error list below when we add more formats.
       default:
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown format: " + format);
     }

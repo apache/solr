@@ -15,30 +15,29 @@
  * limitations under the License.
  */
 
+import javax.inject.Inject
+
+interface ExecOperationsHolder {
+  @Inject
+  ExecOperations getExecOperations()
+}
+
 allprojects {
   apply plugin: 'base'
 
   group "org.apache"
 
-  // def lucenePrereleaseBuild = '9'
-
   // Repositories to fetch dependencies from.
-  repositories {
-    mavenCentral()
-    /* Reenable this if we need it again in future
-    maven {
-      name "LucenePrerelease${lucenePrereleaseBuild}"
-      url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
-    }
-    */
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
-  project.archivesBaseName = project.path
-      .replaceAll("^:", "")
-      .replace(':', '-')
-      .replace("-modules-", "-")
+  project.base {
+    archivesName = project.path
+        .replaceAll("^:", "")
+        .replace(':', '-')
+        .replace("-modules-", "-")
+  }
 
   project.ext {
     // Utility method to support passing overrides via -P or -D.
@@ -110,7 +109,8 @@ allprojects {
           }
         }
 
-        result = project.exec {ExecSpec execSpec ->
+        def execOps = project.objects.newInstance(ExecOperationsHolder).execOperations
+        result = execOps.exec {ExecSpec execSpec ->
           project.configure(execSpec, closure)
 
           saveIgnoreExitValue = execSpec.ignoreExitValue

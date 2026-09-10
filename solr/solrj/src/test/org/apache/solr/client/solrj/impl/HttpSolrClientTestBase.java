@@ -27,10 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -57,6 +57,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
@@ -106,7 +107,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  protected abstract <B extends HttpSolrClientBuilderBase<?, ?>> B builder(
+  protected abstract <B extends HttpSolrClient.BuilderBase<?, ?>> B builder(
       String url, int connectionTimeout, int socketTimeout);
 
   protected abstract String expectedUserAgent();
@@ -235,9 +236,9 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
 
-  public void testGetById(HttpSolrClientBase client) throws Exception {
+  public void testGetById(HttpSolrClient client) throws Exception {
     DebugServlet.clear();
-    Collection<String> ids = Collections.singletonList("a");
+    Collection<String> ids = List.of("a");
     try {
       client.getById("a");
     } catch (RemoteSolrException ignored) {
@@ -263,7 +264,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
    * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
    * even when not on the list of ErrorCodes solr may return.
    */
-  public void testSolrExceptionCodeNotFromSolr(HttpSolrClientBase client)
+  public void testSolrExceptionCodeNotFromSolr(HttpSolrClient client)
       throws IOException, SolrServerException {
     final int status = 527;
     assertEquals(
@@ -287,7 +288,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     XML
   }
 
-  protected void testUpdate(HttpSolrClientBase client, WT wt, String contentType, String docIdValue)
+  protected void testUpdate(HttpSolrClient client, WT wt, String contentType, String docIdValue)
       throws Exception {
     DebugServlet.clear();
     UpdateRequest req = new UpdateRequest();
@@ -327,7 +328,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
   }
 
   protected void testCollectionParameters(
-      HttpSolrClientBase baseUrlClient, HttpSolrClientBase collection1UrlClient)
+      HttpSolrClient baseUrlClient, HttpSolrClient collection1UrlClient)
       throws IOException, SolrServerException {
     try {
       SolrInputDocument doc = new SolrInputDocument();
@@ -359,7 +360,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     }
   }
 
-  protected void verifyServletState(HttpSolrClientBase client, SolrRequest<?> request) {
+  protected void verifyServletState(HttpSolrClient client, SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {
@@ -387,7 +388,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     final String clientUrl = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
-    try (HttpSolrClientBase client =
+    try (HttpSolrClient client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
@@ -405,7 +406,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       // test without server query params
       DebugServlet.clear();
     }
-    try (HttpSolrClientBase client =
+    try (HttpSolrClient client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of())
             .build()) {
@@ -421,7 +422,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       // test with both request and server query params
       DebugServlet.clear();
     }
-    try (HttpSolrClientBase client =
+    try (HttpSolrClient client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
             .build()) {
@@ -434,7 +435,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       }
       verifyServletState(client, req);
     }
-    try (HttpSolrClientBase client =
+    try (HttpSolrClient client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
             .build()) {
@@ -457,7 +458,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     }
   }
 
-  protected void testGetRawStream(HttpSolrClientBase client) throws Exception {
+  protected void testGetRawStream(HttpSolrClient client) throws Exception {
     DebugServlet.clear();
     final var req = new QueryRequest(params("q", "*:*"));
     req.setResponseParser(new InputStreamResponseParser("xml"));
@@ -470,15 +471,14 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     IOUtils.closeQuietly((InputStream) stream);
   }
 
-  protected void testSetCredentialsExplicitly(HttpSolrClientBase client) {
+  @SuppressWarnings("try")
+  protected void testSetCredentialsExplicitly(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
@@ -490,16 +490,15 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         authorizationHeader);
   }
 
-  protected void testPerRequestCredentials(HttpSolrClientBase client) {
+  @SuppressWarnings("try")
+  protected void testPerRequestCredentials(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     r.setBasicAuthCredentials("foo3", "per-request");
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
@@ -512,29 +511,27 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         authorizationHeader);
   }
 
-  protected void testNoCredentials(HttpSolrClientBase client) {
+  @SuppressWarnings("try")
+  protected void testNoCredentials(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertFalse(
         "Expecting no authorization header but got: " + DebugServlet.headers,
         DebugServlet.headers.containsKey("authorization"));
   }
 
-  protected void testUseOptionalCredentials(HttpSolrClientBase client) {
+  @SuppressWarnings("try")
+  protected void testUseOptionalCredentials(HttpSolrClient client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNotNull(
@@ -546,16 +543,15 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
         authorizationHeader);
   }
 
-  protected void testUseOptionalCredentialsWithNull(HttpSolrClientBase client) {
+  @SuppressWarnings("try")
+  protected void testUseOptionalCredentialsWithNull(HttpSolrClient client) {
     // username foo, password with embedded colon separator is "expli:cit".
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-    try {
-      ignoreException("Error from server");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Error from server")) {
       client.request(r);
     } catch (Exception e) {
       // expected
     }
-    unIgnoreException("Error from server");
     assertTrue(DebugServlet.headers.size() > 0);
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNull(
@@ -565,21 +561,19 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
   protected void testUpdateAsync() throws Exception {
     ResponseParser rp = new XMLResponseParser();
     String url = solrTestRule.getBaseUrl();
-    HttpSolrClientBuilderBase<?, ?> b =
+    HttpSolrClient.BuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
     CountDownLatch latch = new CountDownLatch(limit);
 
-    try (HttpSolrClientBase client = b.build()) {
+    try (HttpSolrClient client = b.build()) {
 
       // ensure the collection is empty to start
       client.deleteByQuery(DEFAULT_COLLECTION, "*:*");
       client.commit(DEFAULT_COLLECTION);
       QueryResponse qr =
           client.query(
-              DEFAULT_COLLECTION,
-              new MapSolrParams(Collections.singletonMap("q", "*:*")),
-              SolrRequest.METHOD.POST);
+              DEFAULT_COLLECTION, new MapSolrParams(Map.of("q", "*:*")), SolrRequest.METHOD.POST);
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
@@ -595,9 +589,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
       // check that the correct number of documents were added
       qr =
           client.query(
-              DEFAULT_COLLECTION,
-              new MapSolrParams(Collections.singletonMap("q", "*:*")),
-              SolrRequest.METHOD.POST);
+              DEFAULT_COLLECTION, new MapSolrParams(Map.of("q", "*:*")), SolrRequest.METHOD.POST);
       assertEquals(limit, qr.getResults().getNumFound());
 
       // clean up
@@ -606,22 +598,21 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     }
   }
 
-  protected void testQueryAsync(HttpSolrClientBuilderBase<?, ?> builder) throws Exception {
+  protected void testQueryAsync(HttpSolrClient.BuilderBase<?, ?> builder) throws Exception {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
     int limit = 10;
 
     List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
-    try (HttpSolrClientBase client = builder.build()) {
+    try (HttpSolrClient client = builder.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
             ("id=KEY-" + i),
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
                 + i
                 + "</str></doc></result></response>");
-        QueryRequest query =
-            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        QueryRequest query = new QueryRequest(new MapSolrParams(Map.of("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
         futures.add(client.requestAsync(query));
       }
@@ -645,11 +636,11 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
     String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b =
+    HttpSolrClient.BuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
-    try (HttpSolrClientBase client = b.build()) {
-      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+    try (HttpSolrClient client = b.build()) {
+      QueryRequest query = new QueryRequest(new MapSolrParams(Map.of("id", "1")));
       CompletableFuture<NamedList<Object>> future = client.requestAsync(query, DEFAULT_COLLECTION);
       ExecutionException ee = null;
       try {

@@ -23,6 +23,7 @@
 ** xref:solr-indexing.adoc[]
 ** xref:searching-in-solr.adoc[]
 ** xref:relevance.adoc[]
+** xref:cluster-types.adoc[]
 ** xref:solr-glossary.adoc[]
 
 * xref:solr-tutorial.adoc[]

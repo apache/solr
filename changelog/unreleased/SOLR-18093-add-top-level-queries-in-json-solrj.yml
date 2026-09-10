@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Add top-level "queries" support to JsonQueryRequest in SolrJ
+type: added
+authors:
+  - name: Sonu Sharma
+    nick: ercsonusharma
+links:
+  - name: SOLR-18093
+    url: https://issues.apache.org/jira/browse/SOLR-18093

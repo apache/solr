@@ -36,7 +36,6 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -265,6 +264,8 @@ public class TimeRoutedAlias extends RoutedAlias {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // Aliases is replaced wholesale, so identity means "possibly changed"
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases = zkStateReader.getAliases();
     if (this.parsedCollectionsAliases != aliases) {
@@ -673,7 +674,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       String mostRecentTime = mostRecentCol.substring(getAliasName().length() + sepLen);
       Instant parsed = DATE_TIME_FORMATTER.parse(mostRecentTime, Instant::from);
       String nextCol = calcNextCollection(parsed);
-      return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
+      return List.of(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
     } else {
       return List.of();
     }

@@ -24,7 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPRIORITIZE_OVERSEER;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 import io.opentelemetry.api.internal.StringUtils;
@@ -365,13 +365,8 @@ public class ZkController implements Closeable {
             });
 
     zkStateReader.createClusterStateWatchersAndUpdate(); // and reads cluster properties
-
     // note: Can't read cluster properties until createClusterState ^ is called
-    final String urlSchemeFromClusterProp =
-        zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
-    // this must happen after zkStateReader has initialized the cluster props
-    this.baseURL = URLUtil.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
-
+    this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
     // Now that zkStateReader is available, read OVERSEER_ENABLED.
     final boolean overseerEnabled =
         Boolean.parseBoolean(
@@ -2315,7 +2310,7 @@ public class ZkController implements Closeable {
         // listeners
         try (SolrClient client =
             new HttpJettySolrClient.Builder(leaderBaseUrl)
-                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withHttpClient((HttpJettySolrClient) getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
@@ -2547,34 +2542,17 @@ public class ZkController implements Closeable {
     }
   }
 
-  public void checkOverseerDesignate() {
-    try {
-      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat());
-      if (data == null) return;
-      Map<?, ?> roles = (Map<?, ?>) Utils.fromJSON(data);
-      if (roles == null) return;
-      List<?> nodeList = (List<?>) roles.get("overseer");
-      if (nodeList == null) return;
-      if (nodeList.contains(getNodeName())) {
-        setPreferredOverseer();
-      }
-    } catch (NoNodeException nne) {
-      return;
-    } catch (Exception e) {
-      log.warn("could not read the overseer designate ", e);
-    }
-  }
-
   public void setPreferredOverseer() throws KeeperException, InterruptedException {
     MapWriter props =
         ew ->
-            ew.put(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT))
-                .put(getNodeName(), getNodeName())
-                .put("role", "overseer")
-                .put("persist", "false");
-    log.warn(
-        "Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.",
-        props.jsonStr());
+            ew.put(
+                Overseer.QUEUE_OPERATION,
+                REPRIORITIZE_OVERSEER.toString().toLowerCase(Locale.ROOT));
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Asking the Overseer to re-run node prioritization for this preferred overseer: {}",
+          props.jsonStr());
+    }
     getOverseerCollectionQueue().offer(props);
   }
 
@@ -2980,8 +2958,17 @@ public class ZkController implements Closeable {
     log.info("Publish node={} as DOWN", nodeName);
 
     ClusterState clusterState = getClusterState();
-    Map<String, List<Replica>> replicasPerCollectionOnNode =
-        clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
+    Map<String, List<Replica>> replicasPerCollectionOnNode = new HashMap<>();
+    clusterState
+        .collectionStream()
+        .forEach(
+            col -> {
+              List<Replica> replicas = col.getReplicasOnNode(nodeName);
+              if (!replicas.isEmpty()) {
+                replicasPerCollectionOnNode.put(col.getName(), replicas);
+              }
+            });
+
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       // Note that with the current implementation, when distributed cluster state updates are
       // enabled, we mark the node down synchronously from this thread, whereas the Overseer cluster

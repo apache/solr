@@ -1,0 +1,9 @@
+title: Update com.diffplug.spotless to v8
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3715
+  url: https://github.com/apache/solr/pull/3715
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

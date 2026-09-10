@@ -47,6 +47,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
@@ -68,6 +69,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "singletonMap with null value is intentional")
   public void testFileStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -171,18 +173,17 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
         final var fetchReq = new FileStoreApi.FetchFile("/package/mypkg/v1.0/runtimelibs.jar2");
         fetchReq.setGetFrom("someFakeSolrNode:8983_solr");
-        try (final var solrClient = jettySolrRunner.newClient()) {
-          final var expectedExc =
-              expectThrows(
-                  RemoteSolrException.class,
-                  () -> {
-                    fetchReq.process(solrClient);
-                  });
-          assertEquals(400, expectedExc.code());
-          assertThat(
-              expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
-          assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
-        }
+        final var solrClient = jettySolrRunner.getSolrClient();
+        final var expectedExc =
+            expectThrows(
+                RemoteSolrException.class,
+                () -> {
+                  fetchReq.process(solrClient);
+                });
+        assertEquals(400, expectedExc.code());
+        assertThat(
+            expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
+        assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
       }
 
       // Delete Jars

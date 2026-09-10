@@ -134,6 +134,9 @@ In the example below, the scores for the top 1000 documents matching the query "
 q=phone&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=1 reRankOperator=replace}&rqq={!func v=div(1,sum(1,price))}
 ----
 
+xref:query-guide:dense-vector-search.adoc[Dense vector fields] can also be used for re-ranking via the xref:query-guide:function-queries.adoc#vectorsimilarity-function[vectorSimilarity()] function query.
+This computes exact vector similarity only for the re-ranked candidate documents. See xref:query-guide:dense-vector-search.adoc#vector-reranking[Usage in Re-Ranking Query] for examples and details.
+
 
 === LTR Query Parser
 

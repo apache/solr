@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
@@ -38,8 +37,7 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
 
     TrackingShardHandlerFactory.setTrackingQueue(jettys, trackingQueue);
     // sanity check that our control jetty has the correct configs as well
-    TrackingShardHandlerFactory.setTrackingQueue(
-        Collections.singletonList(controlJetty), trackingQueue);
+    TrackingShardHandlerFactory.setTrackingQueue(List.of(controlJetty), trackingQueue);
 
     query("q", "*:*", "fl", "id", "sort", "id asc");
 
@@ -50,6 +48,6 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
       }
     }
     TrackingShardHandlerFactory.setTrackingQueue(jettys, null);
-    TrackingShardHandlerFactory.setTrackingQueue(Collections.singletonList(controlJetty), null);
+    TrackingShardHandlerFactory.setTrackingQueue(List.of(controlJetty), null);
   }
 }

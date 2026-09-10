@@ -47,17 +47,14 @@ configure(rootProject) {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn ':solr:documentation:assemble'
+    dependsOn ':solr:documentation:documentation'
   }
-
-  assemble.dependsOn documentation
 }
 
 // docroot will point to Lucene and Solr relative directory for each sub-project.
 configure(project(':solr:documentation')) {
   ext {
     docroot = file("${buildDir}/site")
-    docrootMinimal = file("${buildDir}/minimalSite")
 
     markdownSrc = file("src/markdown")
     assets = file("src/assets")
@@ -80,12 +77,11 @@ configure(project(':solr:documentation')) {
     into project.docroot
   }
 
-  assemble {
-    dependsOn documentation
-  }
-
   configurations {
-    site
+    // Not part of 'assemble': only built on demand (e.g. by the release process or the ref guide build).
+    site {
+      visible = false
+    }
   }
 
   artifacts {
@@ -93,49 +89,10 @@ configure(project(':solr:documentation')) {
       builtBy documentation
     }
   }
-
-  task documentationMinimal() {
-    group = 'documentation'
-    description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
-    dependsOn 'copyMiniDocumentationAssets',
-        'createMiniDocumentationIndex',
-        'copyChangesToHtmlForMiniSite'
-  }
-
-  task copyChangesToHtmlForMiniSite(type: Copy) {
-    dependsOn 'copyDocumentationAssets'
-    dependsOn 'markdownToHtml'
-
-    from project.docroot
-    into project.docrootMinimal
-    include 'changes/**'
-    dependsOn 'changesToHtml'
-  }
-
-  task copyMiniDocumentationAssets(type: Copy) {
-    includeEmptyDirs = false
-    from('src/assets')
-    into project.docrootMinimal
-  }
-
-  assemble {
-    dependsOn documentationMinimal
-  }
-
-  configurations {
-    minimalSite
-  }
-
-  artifacts {
-    minimalSite project.docrootMinimal, {
-      builtBy documentationMinimal
-    }
-  }
 }
 
 configure(project(":solr")) {
   ext {
     docroot = project('documentation').docroot
-    docrootMinimal = project('documentation').docrootMinimal
   }
 }

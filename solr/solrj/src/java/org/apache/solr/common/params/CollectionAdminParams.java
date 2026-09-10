@@ -29,8 +29,6 @@ public interface CollectionAdminParams {
 
   String COUNT_PROP = "count";
 
-  String ROLE = "role";
-
   /**
    * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore
    * operation).
@@ -124,4 +122,6 @@ public interface CollectionAdminParams {
   String PROPERTY_PREFIX = "property.";
 
   String PER_REPLICA_STATE = CollectionStateProps.PER_REPLICA_STATE;
+
+  String CALLING_LOCK_ID_HEADER = "callingLockId";
 }

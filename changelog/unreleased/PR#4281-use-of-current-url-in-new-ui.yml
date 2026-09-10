@@ -1,0 +1,10 @@
+title: using window.location.origin rather than hard coded URL
+type: fixed
+authors:
+  - name: Renato Haeberli
+
+links:
+  - name: PR#4281
+    url: https://github.com/apache/solr/pull/4281
+
+

@@ -35,7 +35,11 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API implementation for ConfigsetsApi.Clone */
+/**
+ * V2 API implementation for creating a new configset form an existing one.
+ *
+ * <p>This API (GET /v2/configsets) is analogous to the v1 /admin/configs?action=CREATE command.
+ */
 public class CloneConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.Clone {
 
   @Inject

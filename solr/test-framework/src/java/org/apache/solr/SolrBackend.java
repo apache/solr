@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -117,7 +117,7 @@ public interface SolrBackend extends AutoCloseable {
   default String getBaseUrl(Random r) {
     // Get live nodes and pick one randomly
     SolrClient adminClient = getSolrClient();
-    if (adminClient instanceof HttpSolrClientBase httpSolrClient) {
+    if (adminClient instanceof HttpSolrClient httpSolrClient) {
       return httpSolrClient.getBaseURL();
     } else if (adminClient instanceof CloudSolrClient cloudClient) {
       var liveNodes = cloudClient.getClusterStateProvider().getLiveNodes();

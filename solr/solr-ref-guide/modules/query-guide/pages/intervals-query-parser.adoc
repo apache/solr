@@ -1,0 +1,738 @@
+= Intervals Query Parser
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Intervals Query Parser builds Lucene interval queries from a xref:json-request-api.adoc[JSON DSL] description.
+Interval queries allow you to express positional constraints such as "these terms must appear within N positions of each other" or "this phrase must appear before that one".
+See the {lucene-javadocs}/queries/org/apache/lucene/queries/intervals/package-summary.html[Lucene Intervals package documentation] for a detailed description of the underlying interval machinery.
+
+== Query Format
+
+Intervals Query Parser may be invoked with the lagacy syntax
+
+```
+q={!intervals df=text_field}{"phrase":{"terms":["quick","brown","fox"]}}&...
+```
+
+In the JSON Request API the interval rule may be embedded directly under an `intervals` key in JSON Query DSL.
+
+[source,json]
+----
+{
+  "query": {
+    "intervals": {
+      "use_field": "another_text_field",
+      "phrase": {
+        "terms": ["quick", "brown", "fox"]
+      }
+    }
+  }
+}
+----
+
+The target field is specified via a top-level `use_field` property or via the `df` local or query param as a fallback.
+
+== Parameters
+
+`df`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A fallback for the field to run the intervals query against.
+May be specified as a local param inside `{! }` or as a regular query param.
+
+== Interval Rules
+
+Each rule object contains a key that identifies the rule type, mapped to an object of rule parameters. The root rule may also include a top-level `use_field` property as described above.
+
+=== `match`
+
+Analyzes query text and matches documents where the resulting tokens appear according to positional constraints.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`query`
+|Yes
+|—
+|The text to analyze and match.
+
+|`max_gaps`
+|No
+|`-1` (unlimited)
+|Maximum number of gaps (positions) between matched terms.
+
+|`ordered`
+|No
+|`false`
+|When `true`, terms must appear in the order given.
+
+|`use_field`
+|No
+|—
+|Analyze using a different field's analyzer and match against that field.
+
+|`analyzer`
+|No
+|—
+|Name of a field type to use as the analyzer (overrides field default).
+
+|`filter`
+|No
+|—
+|A <<filter-operators,filter operator>> to apply after matching.
+|===
+
+Example:
+
+[source,json]
+----
+{ "match": { "query": "apache solr", "max_gaps": 1, "ordered": true } }
+----
+
+=== `term`
+
+Matches a single exact term without analysis.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`value`
+|Yes
+|—
+|The exact term to match.
+
+|`use_field`
+|No
+|—
+|Match against this field instead of the query field.
+|===
+
+Example:
+
+[source,json]
+----
+{ "term": { "value": "solr" } }
+----
+
+=== `phrase`
+
+Matches a sequence of terms or interval rules in order with no gaps.
+
+Accepts either a `terms` array of strings (for a simple phrase) or an `intervals` array of rule objects (to combine other rules into a phrase).
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`terms`
+|One of `terms` / `intervals` required
+|—
+|Array of exact string terms forming the phrase.
+
+|`intervals`
+|One of `terms` / `intervals` required
+|—
+|Array of rule objects that must match in sequence.
+|===
+
+Example using strings:
+
+[source,json]
+----
+{ "phrase": { "terms": ["apache", "solr"] } }
+----
+
+Example using nested rules:
+
+[source,json]
+----
+{ "phrase": { "intervals": [ { "term": { "value": "apache" } }, { "term": { "value": "solr" } } ] } }
+----
+
+=== `prefix`
+
+Matches all terms starting with a given prefix.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`prefix`
+|Yes
+|—
+|The prefix string. Normalized using the field's multi-term analyzer.
+
+|`use_field`
+|No
+|—
+|Operate on this field instead.
+
+|`analyzer`
+|No
+|—
+|Field type name to use for normalization.
+|===
+
+Example:
+
+[source,json]
+----
+{ "prefix": { "prefix": "sol" } }
+----
+
+=== `wildcard`
+
+Matches terms using a wildcard pattern (`*` and `?`).
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`pattern`
+|Yes
+|—
+|The wildcard pattern. Normalized using the field's multi-term analyzer.
+
+|`use_field`
+|No
+|—
+|Operate on this field instead.
+
+|`analyzer`
+|No
+|—
+|Field type name to use for normalization.
+|===
+
+Example:
+
+[source,json]
+----
+{ "wildcard": { "pattern": "sol*" } }
+----
+
+=== `regexp`
+
+Matches terms using a regular expression.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`pattern`
+|Yes
+|—
+|The regular expression pattern.
+
+|`max_expansions`
+|No
+|`128`
+|Maximum number of terms to expand the regexp to.
+
+|`use_field`
+|No
+|—
+|Operate on this field instead.
+|===
+
+Example:
+
+[source,json]
+----
+{ "regexp": { "pattern": "sol.r" } }
+----
+
+=== `fuzzy`
+
+Matches terms within a given edit distance of the supplied term.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`term`
+|Yes
+|—
+|The term to match fuzzily. Normalized using the field's multi-term analyzer.
+
+|`fuzziness`
+|No
+|`AUTO`
+|Edit distance: `0`, `1`, `2`, `AUTO`, or `AUTO:<low>,<high>`.
+
+|`prefix_length`
+|No
+|`0`
+|Number of leading characters that must match exactly.
+
+|`transpositions`
+|No
+|`true`
+|Whether transpositions count as a single edit.
+
+|`use_field`
+|No
+|—
+|Operate on this field instead.
+
+|`analyzer`
+|No
+|—
+|Field type name to use for normalization.
+|===
+
+Example:
+
+[source,json]
+----
+{ "fuzzy": { "term": "solr", "fuzziness": "AUTO" } }
+----
+
+=== `range`
+
+Matches terms within a lexicographic range.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`lower_term`
+|No
+|—
+|Lower bound of the range (inclusive by default).
+
+|`upper_term`
+|No
+|—
+|Upper bound of the range (exclusive by default).
+
+|`include_lower`
+|No
+|`true`
+|Whether to include the lower bound.
+
+|`include_upper`
+|No
+|`false`
+|Whether to include the upper bound.
+
+|`max_expansions`
+|No
+|`128`
+|Maximum number of terms to expand to.
+|===
+
+Example:
+
+[source,json]
+----
+{ "range": { "lower_term": "aaa", "upper_term": "zzz" } }
+----
+
+== Combining Rules
+
+=== `all_of`
+
+Matches documents where all supplied intervals match in the same field, optionally ordered and within a maximum gap.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`intervals`
+|Yes
+|—
+|Array of rule objects that must all match.
+
+|`ordered`
+|No
+|`false`
+|When `true`, intervals must match in the order listed.
+
+|`max_gaps`
+|No
+|`-1` (unlimited)
+|Maximum gap between matched intervals.
+
+|`filter`
+|No
+|—
+|A <<filter-operators,filter operator>> to apply after matching.
+|===
+
+Example — ordered phrase with a gap:
+
+[source,json]
+----
+{
+  "all_of": {
+    "ordered": true,
+    "max_gaps": 2,
+    "intervals": [
+      { "match": { "query": "apache solr" } },
+      { "term":  { "value": "search" } }
+    ]
+  }
+}
+----
+
+=== `any_of`
+
+Matches documents where at least one of the supplied intervals matches.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`intervals`
+|Yes
+|—
+|Array of rule objects, any of which may match.
+
+|`filter`
+|No
+|—
+|A <<filter-operators,filter operator>> to apply after matching.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "any_of": {
+    "intervals": [
+      { "term": { "value": "apache" } },
+      { "term": { "value": "lucene" } }
+    ]
+  }
+}
+----
+
+=== `at_least`
+
+Matches documents where at least `min_should_match` of the supplied intervals match.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`min_should_match`
+|Yes
+|—
+|Minimum number of interval rules that must match.
+
+|`intervals`
+|Yes
+|—
+|Array of rule objects.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "at_least": {
+    "min_should_match": 2,
+    "intervals": [
+      { "term": { "value": "apache" } },
+      { "term": { "value": "solr" } },
+      { "term": { "value": "search" } }
+    ]
+  }
+}
+----
+
+== Positional Constraints
+
+=== `max_width`
+
+Restricts a source interval to span at most `width` positions.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`width`
+|Yes
+|—
+|Maximum allowed span width in positions.
+
+|`source`
+|Yes
+|—
+|A rule object to constrain.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "max_width": {
+    "width": 5,
+    "source": { "match": { "query": "apache solr" } }
+  }
+}
+----
+
+=== `extend`
+
+Extends an interval by adding extra positions before and/or after it.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`before`
+|No
+|`0`
+|Number of positions to extend before the interval.
+
+|`after`
+|No
+|`0`
+|Number of positions to extend after the interval.
+
+|`source`
+|Yes
+|—
+|A rule object to extend.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "extend": {
+    "before": 1,
+    "after": 1,
+    "source": { "term": { "value": "solr" } }
+  }
+}
+----
+
+=== `within`
+
+Matches documents where a `source` interval occurs within `positions` of a `reference` interval.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`positions`
+|Yes
+|—
+|Maximum number of positions separating the two intervals.
+
+|`source`
+|Yes
+|—
+|The interval that must be near the reference.
+
+|`reference`
+|Yes
+|—
+|The reference interval.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "within": {
+    "positions": 3,
+    "source":    { "term": { "value": "solr" } },
+    "reference": { "term": { "value": "apache" } }
+  }
+}
+----
+
+=== `not_within`
+
+Matches documents where a `source` interval does *not* occur within `positions` of a `reference` interval.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`positions`
+|Yes
+|—
+|Exclusion distance in positions.
+
+|`source`
+|Yes
+|—
+|The interval that must not be near the reference.
+
+|`reference`
+|Yes
+|—
+|The reference interval.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "not_within": {
+    "positions": 5,
+    "source":    { "term": { "value": "slow" } },
+    "reference": { "term": { "value": "solr" } }
+  }
+}
+----
+
+=== `unordered_no_overlaps`
+
+Matches documents where two intervals appear in either order without overlapping.
+Exactly two intervals must be supplied.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`intervals`
+|Yes
+|—
+|Array of exactly two rule objects.
+|===
+
+Example:
+
+[source,json]
+----
+{
+  "unordered_no_overlaps": {
+    "intervals": [
+      { "term": { "value": "apache" } },
+      { "term": { "value": "solr" } }
+    ]
+  }
+}
+----
+
+=== `no_intervals`
+
+Always produces no intervals (matches no documents for the given rule).
+Useful as a placeholder or for testing.
+
+[%autowidth,frame=none]
+|===
+|Parameter |Required |Default |Description
+
+|`reason`
+|No
+|`"no_intervals rule"`
+|An optional message explaining why this rule produces no intervals.
+|===
+
+Example:
+
+[source,json]
+----
+{ "no_intervals": { "reason": "disabled for testing" } }
+----
+
+== Filter Operators
+
+The `match`, `all_of`, and `any_of` rules accept an optional `filter` parameter.
+A filter restricts matches based on the positional relationship between the source interval and a second (filter) interval.
+
+The `filter` object contains exactly one of the following operators as its key, mapped to a nested rule object:
+
+[%autowidth,frame=none]
+|===
+|Operator |Description
+
+|`after`
+|Source must appear after the filter interval.
+
+|`before`
+|Source must appear before the filter interval.
+
+|`contained_by`
+|Source must be contained within the filter interval.
+
+|`containing`
+|Source must contain the filter interval.
+
+|`not_contained_by`
+|Source must not be contained within the filter interval.
+
+|`not_containing`
+|Source must not contain the filter interval.
+
+|`not_overlapping`
+|Source must not overlap the filter interval.
+
+|`overlapping`
+|Source must overlap the filter interval.
+|===
+
+Example — match "solr" only when it appears after "apache":
+
+[source,json]
+----
+{
+  "match": {
+    "query": "solr",
+    "filter": {
+      "after": { "term": { "value": "apache" } }
+    }
+  }
+}
+----
+
+== Full Example
+
+Find documents where the `title` field contains the phrase "apache solr" followed within 5 positions by the word "search":
+
+[source,text]
+----
+q={!intervals df=title}$titleQuery
+----
+
+[source,text]
+----
+json={
+  "query": {
+    "intervals": {
+        "use_field":"title",
+        "all_of": {
+          "ordered": true,
+          "max_gaps": 5,
+          "intervals": [
+            { "match": { "query": "apache solr", "max_gaps": 0, "ordered": true } },
+            { "term":  { "value": "search" } }
+          ]
+        }
+    }
+  }
+}
+----

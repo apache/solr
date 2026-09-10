@@ -20,7 +20,6 @@ package org.apache.solr.ltr.model;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.ltr.TestRerankBase;
@@ -66,15 +65,13 @@ public class TestWrapperModel extends TestRerankBase {
 
     // wrapper model with features
     WrapperModel wrapperModelWithFeatures =
-        new StubWrapperModel(
-            "testModel", Collections.singletonList(new ValueFeature("val", Map.of())), List.of());
+        new StubWrapperModel("testModel", List.of(new ValueFeature("val", Map.of())), List.of());
     ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
     assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
     // wrapper model with norms
     WrapperModel wrapperModelWithNorms =
-        new StubWrapperModel(
-            "testModel", List.of(), Collections.singletonList(IdentityNormalizer.INSTANCE));
+        new StubWrapperModel("testModel", List.of(), List.of(IdentityNormalizer.INSTANCE));
     e = expectThrows(ModelException.class, wrapperModelWithNorms::validate);
     assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
 

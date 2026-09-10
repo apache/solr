@@ -16,8 +16,6 @@
  */
 package org.apache.solr.response.transform;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.ByteArrayOutputStream;
@@ -41,7 +39,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -50,7 +48,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
@@ -86,9 +83,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     "class",
                     RuleBasedAuthorizationPlugin.class.getName(),
                     "user-role",
-                    singletonMap(USER, "admin"),
+                    Map.of(USER, "admin"),
                     "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
+                    List.of(Map.of("name", "all", "role", "admin"))),
                 "authentication",
                 Map.of(
                     "class",
@@ -96,7 +93,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     "blockUnknown",
                     true,
                     "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)),
+                    Map.of(USER, getSaltedHashedValue(PASS)),
                     "forwardCredentials", // forward basic auth credentials during internode
                     // requests instead of relying on PKI authentication; the test should pass
                     // regardless of the setting here, but "true" is the more interesting case that
@@ -415,8 +412,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         }
         upd.append("</update>");
 
-        ContentStreamUpdateRequest req = withBasicAuth(new ContentStreamUpdateRequest("/update"));
-        req.addContentStream(new ContentStreamBase.StringStream(upd.toString(), "text/xml"));
+        ContentWriterUpdateRequest req = withBasicAuth(new ContentWriterUpdateRequest("/update"));
+        req.addContentWithType(upd.toString(), "text/xml");
         cluster.getSolrClient().request(req, collection);
         upd.setLength("<update>".length());
       }

@@ -16,11 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-import com.cybozu.labs.langdetect.Language;
-import java.io.IOException;
+import io.github.azagniotov.language.Language;
+import io.github.azagniotov.language.LanguageDetectionOrchestrator;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -32,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Identifies the language of a set of input fields using
- * https://github.com/shuyo/language-detection
+ * https://github.com/azagniotov/language-detection
  *
  * <p>See <a
  * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html">Detecting
@@ -44,9 +41,15 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final LanguageDetectionOrchestrator orchestrator;
+
   public LangDetectLanguageIdentifierUpdateProcessor(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      UpdateRequestProcessor next,
+      LanguageDetectionOrchestrator orchestrator) {
     super(req, rsp, next);
+    this.orchestrator = orchestrator;
   }
 
   /**
@@ -58,30 +61,16 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
    */
   @Override
   protected List<DetectedLanguage> detectLanguage(Reader solrDocReader) {
-    try {
-      Detector detector = DetectorFactory.create();
-      detector.setMaxTextLength(maxTotalChars);
-
-      // TODO Work around bug in LangDetect 1.1 which does not expect a -1 return value at end of
-      // stream,
-      // but instead only looks at ready()
-      if (solrDocReader instanceof SolrInputDocumentReader) {
-        ((SolrInputDocumentReader) solrDocReader).setEodReturnValue(0);
-      }
-      detector.append(solrDocReader);
-
-      ArrayList<Language> langlist = detector.getProbabilities();
-      ArrayList<DetectedLanguage> solrLangList = new ArrayList<>();
-      for (Language l : langlist) {
-        solrLangList.add(new DetectedLanguage(l.lang, l.prob));
-      }
-      return solrLangList;
-    } catch (LangDetectException e) {
-      log.debug("Could not determine language, returning empty list: ", e);
-      return List.of();
-    } catch (IOException e) {
-      log.warn("Could not determine language.", e);
-      return List.of();
+    String text = SolrInputDocumentReader.asString(solrDocReader);
+    List<Language> langlist = orchestrator.detectAll(text);
+    ArrayList<DetectedLanguage> solrLangList = new ArrayList<>();
+    for (Language l : langlist) {
+      solrLangList.add(
+          new DetectedLanguage(l.getIsoCode639_1().toString(), (double) l.getProbability()));
     }
+    if (solrLangList.isEmpty()) {
+      log.debug("Could not determine language, returning empty list");
+    }
+    return solrLangList;
   }
 }

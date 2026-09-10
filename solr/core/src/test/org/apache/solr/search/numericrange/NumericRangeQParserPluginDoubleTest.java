@@ -24,8 +24,20 @@ import org.junit.Test;
 /**
  * Tests for {@link NumericRangeQParserPlugin} using {@link
  * org.apache.solr.schema.numericrange.DoubleRangeField} fields.
+ *
+ * <p>Each 1D scenario picks its field at random (via {@link #randomField}) from the equivalent
+ * indexed-only and indexed+docValues variants, so both the non-docValues and docValues code paths
+ * get incidental coverage across seeds while the assertions stay identical.
  */
 public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
+
+  /** 1D double range: indexed-only field and its indexed+docValues sibling (both stored). */
+  private static final String[] ONE_D = {"double_range", "double_range_dv"};
+
+  /** Randomly returns one of the given field variants so DV / non-DV both get covered. */
+  private static String randomField(String... variants) {
+    return variants[random().nextInt(variants.length)];
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -41,28 +53,29 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DIntersectsQuery() {
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 2.0]"));
-    assertU(adoc("id", "2", "double_range", "[1.5 TO 2.5]"));
-    assertU(adoc("id", "3", "double_range", "[0.5 TO 0.8]"));
-    assertU(adoc("id", "4", "double_range", "[2.0 TO 3.0]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[1.0 TO 2.0]"));
+    assertU(adoc("id", "2", f, "[1.5 TO 2.5]"));
+    assertU(adoc("id", "3", f, "[0.5 TO 0.8]"));
+    assertU(adoc("id", "4", f, "[2.0 TO 3.0]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=double_range}[1.2 TO 1.8]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[1.2 TO 1.8]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
-        "//result/doc/str[@name='double_range'][.='[1.0 TO 2.0]']",
-        "//result/doc/str[@name='double_range'][.='[1.5 TO 2.5]']");
+        "//result/doc/str[@name='" + f + "'][.='[1.0 TO 2.0]']",
+        "//result/doc/str[@name='" + f + "'][.='[1.5 TO 2.5]']");
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=double_range}[0.0 TO 1.0]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[0.0 TO 1.0]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=double_range}[1.75 TO 2.25]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[1.75 TO 2.25]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
@@ -71,46 +84,48 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DWithinQuery() {
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 2.0]"));
-    assertU(adoc("id", "2", "double_range", "[1.5 TO 2.5]"));
-    assertU(adoc("id", "3", "double_range", "[0.5 TO 0.8]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[1.0 TO 2.0]"));
+    assertU(adoc("id", "2", f, "[1.5 TO 2.5]"));
+    assertU(adoc("id", "3", f, "[0.5 TO 0.8]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=double_range}[0.0 TO 3.0]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0.0 TO 3.0]"),
         "//result[@numFound='3']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=double_range}[1.0 TO 2.0]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[1.0 TO 2.0]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=double_range}[0.0 TO 1.0]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0.0 TO 1.0]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='3']");
   }
 
   @Test
   public void test1DContainsQuery() {
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 2.0]"));
-    assertU(adoc("id", "2", "double_range", "[1.5 TO 2.5]"));
-    assertU(adoc("id", "3", "double_range", "[0.5 TO 3.0]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[1.0 TO 2.0]"));
+    assertU(adoc("id", "2", f, "[1.5 TO 2.5]"));
+    assertU(adoc("id", "3", f, "[0.5 TO 3.0]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=double_range}[1.6 TO 1.7]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[1.6 TO 1.7]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
         "//result/doc/str[@name='id'][.='3']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=double_range}[0.0 TO 4.0]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[0.0 TO 4.0]"),
         "//result[@numFound='0']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=double_range}[1.0 TO 2.0]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[1.0 TO 2.0]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
@@ -118,14 +133,15 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DCrossesQuery() {
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 2.0]"));
-    assertU(adoc("id", "2", "double_range", "[1.5 TO 2.5]"));
-    assertU(adoc("id", "3", "double_range", "[0.5 TO 0.8]"));
-    assertU(adoc("id", "4", "double_range", "[1.2 TO 1.8]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[1.0 TO 2.0]"));
+    assertU(adoc("id", "2", f, "[1.5 TO 2.5]"));
+    assertU(adoc("id", "3", f, "[0.5 TO 0.8]"));
+    assertU(adoc("id", "4", f, "[1.2 TO 1.8]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=\"crosses\" field=double_range}[1.5 TO 2.5]"),
+        req("q", "{!numericRange criteria=\"crosses\" field=" + f + "}[1.5 TO 2.5]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='4']");
@@ -213,27 +229,29 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNegativeValues() {
-    assertU(adoc("id", "1", "double_range", "[-1.0 TO -0.5]"));
-    assertU(adoc("id", "2", "double_range", "[-0.75 TO -0.25]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[-1.0 TO -0.5]"));
+    assertU(adoc("id", "2", f, "[-0.75 TO -0.25]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=double_range}[-0.8 TO -0.6]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[-0.8 TO -0.6]"),
         "//result[@numFound='2']");
   }
 
   @Test
   public void testPointRange() {
-    assertU(adoc("id", "1", "double_range", "[1.5 TO 1.5]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[1.5 TO 1.5]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=double_range}[1.5 TO 1.5]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[1.5 TO 1.5]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=double_range}[0.5 TO 1.75]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[0.5 TO 1.75]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
@@ -307,31 +325,33 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFullRange() {
+    String f = randomField(ONE_D);
     // doc 1: narrow range, fully inside the query range  → should NOT match (doc contains query)
     // doc 2: wide range that fully contains the query range → should match
     // doc 3: range that only partially overlaps            → should NOT match
-    assertU(adoc("id", "1", "double_range", "[1.3 TO 1.6]")); // No match
-    assertU(adoc("id", "2", "double_range", "[1.0 TO 2.0]")); // Match!
-    assertU(adoc("id", "3", "double_range", "[1.5 TO 2.5]")); // No match
+    assertU(adoc("id", "1", f, "[1.3 TO 1.6]")); // No match
+    assertU(adoc("id", "2", f, "[1.0 TO 2.0]")); // Match!
+    assertU(adoc("id", "3", f, "[1.5 TO 2.5]")); // No match
     assertU(commit());
 
     // Contains semantics: find indexed ranges that fully contain [1.2 TO 1.8]
     assertQ(
-        req("q", "double_range:[1.2 TO 1.8]"),
+        req("q", f + ":[1.2 TO 1.8]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='2']");
   }
 
   @Test
   public void testGetFieldQueryFullRangeMultipleMatches() {
-    assertU(adoc("id", "1", "double_range", "[0.0 TO 10.0]")); // Match!
-    assertU(adoc("id", "2", "double_range", "[1.0 TO 2.0]")); // Match!
-    assertU(adoc("id", "3", "double_range", "[1.0 TO 1.99]")); // No match - max too low
-    assertU(adoc("id", "4", "double_range", "[1.01 TO 2.0]")); // No match - min too high
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[0.0 TO 10.0]")); // Match!
+    assertU(adoc("id", "2", f, "[1.0 TO 2.0]")); // Match!
+    assertU(adoc("id", "3", f, "[1.0 TO 1.99]")); // No match - max too low
+    assertU(adoc("id", "4", f, "[1.01 TO 2.0]")); // No match - min too high
     assertU(commit());
 
     assertQ(
-        req("q", "double_range:[1.0 TO 2.0]"),
+        req("q", f + ":[1.0 TO 2.0]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -339,15 +359,16 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQuerySingleBound() {
+    String f = randomField(ONE_D);
     // Single-bound syntax: double_range:1.5 is sugar for contains([1.5 TO 1.5])
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 2.0]")); // Match!
-    assertU(adoc("id", "2", "double_range", "[1.5 TO 1.5]")); // Match!
-    assertU(adoc("id", "3", "double_range", "[1.0 TO 1.49]")); // No match - max below 1.5
-    assertU(adoc("id", "4", "double_range", "[1.51 TO 3.0]")); // No match - min above 1.5
+    assertU(adoc("id", "1", f, "[1.0 TO 2.0]")); // Match!
+    assertU(adoc("id", "2", f, "[1.5 TO 1.5]")); // Match!
+    assertU(adoc("id", "3", f, "[1.0 TO 1.49]")); // No match - max below 1.5
+    assertU(adoc("id", "4", f, "[1.51 TO 3.0]")); // No match - min above 1.5
     assertU(commit());
 
     assertQ(
-        req("q", "double_range:1.5"),
+        req("q", f + ":1.5"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -371,7 +392,8 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFieldFormatting() {
-    assertU(adoc("id", "1", "double_range", "[1.0 TO 2.0]"));
+    String f1 = randomField(ONE_D);
+    assertU(adoc("id", "1", f1, "[1.0 TO 2.0]"));
     assertU(adoc("id", "2", "double_range_2d", "[1.0,2.0 TO 3.0,4.0]"));
     assertU(adoc("id", "3", "double_range_3d", "[0.5,1.0,1.5 TO 2.5,3.0,3.5]"));
     assertU(adoc("id", "4", "double_range_4d", "[0.1,0.2,0.3,0.4 TO 1.1,1.2,1.3,1.4]"));
@@ -391,7 +413,7 @@ public class NumericRangeQParserPluginDoubleTest extends SolrTestCaseJ4 {
     assertQ(
         req("q", "id:1"),
         "//result[@numFound='1']",
-        "//result/doc/str[@name='double_range'][.='[1.0 TO 2.0]']");
+        "//result/doc/str[@name='" + f1 + "'][.='[1.0 TO 2.0]']");
 
     // Verify 2D field returns correctly formatted value
     assertQ(

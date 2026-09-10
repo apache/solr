@@ -162,8 +162,7 @@ public class TestRealTimeGet extends TestRTGBase {
             "false"));
     assertJQ(req("q", "id:1"), "/response/numFound==0");
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             "/get",
             "id",
             "1",
@@ -181,7 +180,7 @@ public class TestRealTimeGet extends TestRTGBase {
             + ", a_b:false, a_bd:true, a_bdS:false,  a_bs:[true,false],a_bds:[true,false],a_bdsS:[true,false]"
             + "       }}");
     assertJQ(
-        req("qt", "/get", "ids", "1", "fl", "id"),
+        reqWithPath("/get", "ids", "1", "fl", "id"),
         "=={"
             + "  'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':["
             + "      {"
@@ -195,8 +194,7 @@ public class TestRealTimeGet extends TestRTGBase {
     // a cut-n-paste of the first big query, but this time it will be retrieved from the index
     // rather than the transaction log
     assertJQ(
-        req(
-            "qt",
+        reqWithPath(
             "/get",
             "id",
             "1",
@@ -209,9 +207,9 @@ public class TestRealTimeGet extends TestRTGBase {
             + ", a_l:-9999999999, a_ld:-9999999999, a_ldS:-9999999999,  a_ls:[1,9999999999],a_lds:[1,9999999999],a_ldsS:[1,9999999999]"
             + "       }}");
 
-    assertJQ(req("qt", "/get", "id", "1", "fl", "id"), "=={'doc':{'id':'1'}}");
+    assertJQ(reqWithPath("/get", "id", "1", "fl", "id"), "=={'doc':{'id':'1'}}");
     assertJQ(
-        req("qt", "/get", "ids", "1", "fl", "id"),
+        reqWithPath("/get", "ids", "1", "fl", "id"),
         "=={"
             + "  'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':["
             + "      {"
@@ -221,28 +219,30 @@ public class TestRealTimeGet extends TestRTGBase {
     assertU(delI("1"));
 
     assertJQ(req("q", "id:1"), "/response/numFound==1");
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':null}");
     assertJQ(
-        req("qt", "/get", "ids", "1"),
+        reqWithPath("/get", "ids", "1"),
         "=={'response':{'numFound':0,'start':0,'numFoundExact':true,'docs':[]}}");
 
     assertU(adoc("id", "10"));
     assertU(adoc("id", "11"));
-    assertJQ(req("qt", "/get", "id", "10", "fl", "id"), "=={'doc':{'id':'10'}}");
+    assertJQ(reqWithPath("/get", "id", "10", "fl", "id"), "=={'doc':{'id':'10'}}");
     assertU(delQ("id:10 foo_s:abcdef"));
-    assertJQ(req("qt", "/get", "id", "10"), "=={'doc':null}");
-    assertJQ(req("qt", "/get", "id", "11", "fl", "id"), "=={'doc':{'id':'11'}}");
+    assertJQ(reqWithPath("/get", "id", "10"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "11", "fl", "id"), "=={'doc':{'id':'11'}}");
 
     // multivalued field
     assertU(adoc("id", "12", "val_ls", "1", "val_ls", "2"));
     assertJQ(req("q", "id:12"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "12", "fl", "id,val_ls"), "=={'doc':{'id':'12', 'val_ls':[1,2]}}");
+        reqWithPath("/get", "id", "12", "fl", "id,val_ls"),
+        "=={'doc':{'id':'12', 'val_ls':[1,2]}}");
 
     assertU(commit());
 
     assertJQ(
-        req("qt", "/get", "id", "12", "fl", "id,val_ls"), "=={'doc':{'id':'12', 'val_ls':[1,2]}}");
+        reqWithPath("/get", "id", "12", "fl", "id,val_ls"),
+        "=={'doc':{'id':'12', 'val_ls':[1,2]}}");
     assertJQ(req("q", "id:12"), "/response/numFound==1");
 
     SolrQueryRequest req = req();
@@ -255,7 +255,7 @@ public class TestRealTimeGet extends TestRTGBase {
     assertU(adoc("id", "13"));
 
     // this should not need to open another realtime searcher
-    assertJQ(req("qt", "/get", "id", "11", "fl", "id", "fq", "id:11"), "=={doc:{id:'11'}}");
+    assertJQ(reqWithPath("/get", "id", "11", "fl", "id", "fq", "id:11"), "=={doc:{id:'11'}}");
 
     // assert that the same realtime searcher is still in effect (i.e. that we didn't
     // open a new searcher when we didn't have to).
@@ -266,29 +266,20 @@ public class TestRealTimeGet extends TestRTGBase {
     realtimeHolder2.decref();
 
     // filter most likely different segment
-    assertJQ(req("qt", "/get", "id", "12", "fl", "id", "fq", "id:11"), "=={doc:null}");
+    assertJQ(reqWithPath("/get", "id", "12", "fl", "id", "fq", "id:11"), "=={doc:null}");
 
     // filter most likely same different segment
-    assertJQ(req("qt", "/get", "id", "12", "fl", "id", "fq", "id:13"), "=={doc:null}");
+    assertJQ(reqWithPath("/get", "id", "12", "fl", "id", "fq", "id:13"), "=={doc:null}");
 
-    assertJQ(req("qt", "/get", "id", "12", "fl", "id", "fq", "id:12"), "=={doc:{id:'12'}}");
+    assertJQ(reqWithPath("/get", "id", "12", "fl", "id", "fq", "id:12"), "=={doc:{id:'12'}}");
 
     assertU(adoc("id", "14"));
     assertU(adoc("id", "15"));
 
     // id list, with some in index and some not, first id from index. Also test multiple fq params.
     assertJQ(
-        req(
-            "qt",
-            "/get",
-            "ids",
-            "12,14,13,15",
-            "fl",
-            "id",
-            "fq",
-            "id:[10 TO 14]",
-            "fq",
-            "id:[13 TO 19]"),
+        reqWithPath(
+            "/get", "ids", "12,14,13,15", "fl", "id", "fq", "id:[10 TO 14]", "fq", "id:[13 TO 19]"),
         "/response/docs==[{id:'14'},{id:'13'}]");
 
     assertU(adoc("id", "16"));
@@ -296,20 +287,20 @@ public class TestRealTimeGet extends TestRTGBase {
 
     // id list, with some in index and some not, first id from tlog
     assertJQ(
-        req("qt", "/get", "ids", "17,16,15,14", "fl", "id", "fq", "id:[15 TO 16]"),
+        reqWithPath("/get", "ids", "17,16,15,14", "fl", "id", "fq", "id:[15 TO 16]"),
         "/response/docs==[{id:'16'},{id:'15'}]");
 
     // more complex filter
     assertJQ(
-        req("qt", "/get", "ids", "17,16,15,14", "fl", "id", "fq", "{!frange l=15 u=16}id"),
+        reqWithPath("/get", "ids", "17,16,15,14", "fl", "id", "fq", "{!frange l=15 u=16}id"),
         "/response/docs==[{id:'16'},{id:'15'}]");
 
     // test with negative filter
     assertJQ(
-        req("qt", "/get", "ids", "15,14", "fl", "id", "fq", "-id:15"),
+        reqWithPath("/get", "ids", "15,14", "fl", "id", "fq", "-id:15"),
         "/response/docs==[{id:'14'}]");
     assertJQ(
-        req("qt", "/get", "ids", "17,16,15,14", "fl", "id", "fq", "-id:[15 TO 17]"),
+        reqWithPath("/get", "ids", "17,16,15,14", "fl", "id", "fq", "-id:[15 TO 17]"),
         "/response/docs==[{id:'14'}]");
 
     realtimeHolder.decref();
@@ -326,11 +317,11 @@ public class TestRealTimeGet extends TestRTGBase {
     assertJQ(req("q", "id:1"), "/response/numFound==0");
 
     // test version is there from rtg
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // test version is there from the index
     assertU(commit());
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // simulate an update from the leader
     version += 10;
@@ -339,7 +330,7 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
     // test version is there from rtg
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // simulate reordering: test that a version less than that does not take effect
     updateJ(
@@ -347,7 +338,7 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
     // test that version hasn't changed
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // simulate reordering: test that a delete w/ version less than that does not take affect
     // TODO: also allow passing version on delete instead of on URL?
@@ -356,7 +347,7 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", Long.toString(version - 1)));
 
     // test that version hasn't changed
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // make sure reordering detection also works after a commit
     assertU(commit());
@@ -367,7 +358,7 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
     // test that version hasn't changed
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // simulate reordering: test that a delete operation w/ version less than that does not take
     // effect
@@ -376,7 +367,7 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", Long.toString(version - 1)));
 
     // test that version hasn't changed
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     // now simulate a normal delete from the leader
     version += 5;
@@ -390,7 +381,7 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
     // test that it's still deleted
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':null}");
 
     // test that we can remember the version of a delete operation after a commit
     assertU(commit());
@@ -399,14 +390,14 @@ public class TestRealTimeGet extends TestRTGBase {
     long version2 = deleteByQueryAndGetVersion("id:2", null);
 
     // test that it's still deleted
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':null}");
 
     version = addAndGetVersion(sdoc("id", "2"), null);
     version2 = deleteByQueryAndGetVersion("id:2", null);
     assertTrue(Math.abs(version2) > version);
 
     // test that it's deleted
-    assertJQ(req("qt", "/get", "id", "2"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "2"), "=={'doc':null}");
 
     version2 = Math.abs(version2) + 1000;
     updateJ(
@@ -421,8 +412,8 @@ public class TestRealTimeGet extends TestRTGBase {
         "id:(3 4 5 6)",
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", Long.toString(-(version2 + 150))));
 
-    assertJQ(req("qt", "/get", "id", "3"), "=={'doc':null}");
-    assertJQ(req("qt", "/get", "id", "4", "fl", "id"), "=={'doc':{'id':'4'}}");
+    assertJQ(reqWithPath("/get", "id", "3"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "4", "fl", "id"), "=={'doc':{'id':'4'}}");
 
     updateJ(
         jsonAdd(sdoc("id", "5", "_version_", Long.toString(version2 + 201))),
@@ -432,8 +423,8 @@ public class TestRealTimeGet extends TestRTGBase {
         params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
     // the DBQ should also have caused id:6 to be removed
-    assertJQ(req("qt", "/get", "id", "5", "fl", "id"), "=={'doc':{'id':'5'}}");
-    assertJQ(req("qt", "/get", "id", "6"), "=={'doc':null}");
+    assertJQ(reqWithPath("/get", "id", "5", "fl", "id"), "=={'doc':{'id':'5'}}");
+    assertJQ(reqWithPath("/get", "id", "6"), "=={'doc':null}");
 
     assertU(commit());
   }
@@ -574,7 +565,8 @@ public class TestRealTimeGet extends TestRTGBase {
     long lastVersion = version2;
 
     // sanity test that we see the right version via rtg
-    assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + lastVersion + "}}");
+    assertJQ(
+        reqWithPath("/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + lastVersion + "}}");
   }
 
   //    @Test
@@ -883,14 +875,13 @@ public class TestRealTimeGet extends TestRTGBase {
                   boolean filteredOut = false;
                   SolrQueryRequest sreq;
                   if (realTime) {
-                    ModifiableSolrParams p =
-                        params("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                    ModifiableSolrParams p = params("wt", "json", "ids", Integer.toString(id));
                     if (rand.nextInt(100) < filteredGetPercent) {
                       int idToFilter = rand.nextBoolean() ? id : rand.nextInt(ndocs);
                       filteredOut = idToFilter != id;
                       p.add("fq", "id:" + idToFilter);
                     }
-                    sreq = req(p);
+                    sreq = reqWithPath("/get", p);
                   } else {
                     sreq =
                         req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");

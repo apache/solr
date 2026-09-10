@@ -17,17 +17,17 @@
 
 package org.apache.solr.update.processor;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.Cache;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.util.ConcurrentLRUCache;
 
 /**
  * Adds new fields to documents based on a template pattern specified via Template.field request
@@ -41,7 +41,7 @@ import org.apache.solr.util.ConcurrentLRUCache;
  */
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
   private Cache<String, Resolved> templateCache =
-      new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
+      Caffeine.newBuilder().initialCapacity(10).maximumSize(1000).build();
   public static final String NAME = "template";
 
   @Override
@@ -79,17 +79,20 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
 
   public static Resolved getResolved(
       String template, Cache<String, Resolved> cache, Pattern pattern) {
-    Resolved r = cache == null ? null : cache.get(template);
-    if (r == null) {
-      r = new Resolved();
-      Matcher m = pattern.matcher(template);
-      while (m.find()) {
-        String variable = m.group(1);
-        r.startIndexes.add(m.start(0));
-        r.endOffsets.add(m.end(0));
-        r.variables.add(variable);
-      }
-      if (cache != null) cache.put(template, r);
+    if (cache == null) {
+      return resolve(template, pattern);
+    }
+    return cache.get(template, t -> resolve(t, pattern));
+  }
+
+  private static Resolved resolve(String template, Pattern pattern) {
+    Resolved r = new Resolved();
+    Matcher m = pattern.matcher(template);
+    while (m.find()) {
+      String variable = m.group(1);
+      r.startIndexes.add(m.start(0));
+      r.endOffsets.add(m.end(0));
+      r.variables.add(variable);
     }
     return r;
   }

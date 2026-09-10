@@ -23,7 +23,7 @@ package org.apache.solr.cluster.placement;
  */
 public interface Metric<T> {
 
-  /** Return the short-hand name that identifies this attribute. */
+  /** Return the shorthand name that identifies this attribute. */
   String getName();
 
   /** Return the internal name of a Solr metric associated with this attribute. */

@@ -19,8 +19,11 @@ package org.apache.solr.schema.numericrange;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.document.DoubleRange;
+import org.apache.lucene.document.DoubleRangeDocValuesField;
+import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.schema.SchemaField;
@@ -99,6 +102,17 @@ public class DoubleRangeField extends AbstractNumericRangeField {
     RangeValue rangeValue = parseRangeValue(valueStr);
 
     return new DoubleRange(field.getName(), rangeValue.mins, rangeValue.maxs);
+  }
+
+  @Override
+  protected BytesRef encodePackedValue(String field, NumericRangeValue rangeValue) {
+    RangeValue rv = (RangeValue) rangeValue;
+    return new DoubleRangeDocValuesField(field, rv.mins, rv.maxs).binaryValue();
+  }
+
+  @Override
+  protected int bytesPerDimension() {
+    return Double.BYTES;
   }
 
   /**
@@ -196,27 +210,43 @@ public class DoubleRangeField extends AbstractNumericRangeField {
   }
 
   @Override
-  public Query newContainsQuery(String fieldName, NumericRangeValue rangeValue) {
-    final var rv = (RangeValue) rangeValue;
-    return DoubleRange.newContainsQuery(fieldName, rv.mins, rv.maxs);
+  public Query newContainsQuery(SchemaField field, NumericRangeValue rangeValue) {
+    RangeValue rv = (RangeValue) rangeValue;
+    return maybeWrapWithDocValues(
+        field,
+        QueryType.CONTAINS,
+        rangeValue,
+        DoubleRange.newContainsQuery(field.getName(), rv.mins, rv.maxs));
   }
 
   @Override
-  public Query newIntersectsQuery(String fieldName, NumericRangeValue rangeValue) {
-    final var rv = (RangeValue) rangeValue;
-    return DoubleRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
+  public Query newIntersectsQuery(SchemaField field, NumericRangeValue rangeValue) {
+    RangeValue rv = (RangeValue) rangeValue;
+    return maybeWrapWithDocValues(
+        field,
+        QueryType.INTERSECTS,
+        rangeValue,
+        DoubleRange.newIntersectsQuery(field.getName(), rv.mins, rv.maxs));
   }
 
   @Override
-  public Query newWithinQuery(String fieldName, NumericRangeValue rangeValue) {
-    final var rv = (RangeValue) rangeValue;
-    return DoubleRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
+  public Query newWithinQuery(SchemaField field, NumericRangeValue rangeValue) {
+    RangeValue rv = (RangeValue) rangeValue;
+    return maybeWrapWithDocValues(
+        field,
+        QueryType.WITHIN,
+        rangeValue,
+        DoubleRange.newWithinQuery(field.getName(), rv.mins, rv.maxs));
   }
 
   @Override
-  public Query newCrossesQuery(String fieldName, NumericRangeValue rangeValue) {
-    final var rv = (RangeValue) rangeValue;
-    return DoubleRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
+  public Query newCrossesQuery(SchemaField field, NumericRangeValue rangeValue) {
+    RangeValue rv = (RangeValue) rangeValue;
+    return maybeWrapWithDocValues(
+        field,
+        QueryType.CROSSES,
+        rangeValue,
+        DoubleRange.newCrossesQuery(field.getName(), rv.mins, rv.maxs));
   }
 
   @Override
@@ -261,7 +291,9 @@ public class DoubleRangeField extends AbstractNumericRangeField {
     if (numDimensions == 1) {
       mins[0] = min;
       maxs[0] = max;
-      return DoubleRange.newContainsQuery(field.getName(), mins, maxs);
+      // Route through newContainsQuery so the standard field:[X TO Y] syntax also picks up the
+      // docValues optimization when the field has docValues.
+      return newContainsQuery(field, new RangeValue(mins, maxs));
     } else {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,

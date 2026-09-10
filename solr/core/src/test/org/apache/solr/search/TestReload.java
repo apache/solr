@@ -37,13 +37,13 @@ public class TestReload extends TestRTGBase {
     assertU(commit("softCommit", "true")); // should cause a RTG searcher to be opened
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,_version_"),
+        reqWithPath("/get", "id", "1", "fl", "id,_version_"),
         "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     h.reload();
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id,_version_"),
+        reqWithPath("/get", "id", "1", "fl", "id,_version_"),
         "=={'doc':{'id':'1','_version_':" + version + "}}");
 
     assertU(commit("softCommit", "true")); // open a normal (caching) NRT searcher
@@ -75,7 +75,7 @@ public class TestReload extends TestRTGBase {
         // RTG should always be able to see the last version
         // System.out.println("!!! rtg");
         assertJQ(
-            req("qt", "/get", "id", "1", "fl", "id,_version_"),
+            reqWithPath("/get", "id", "1", "fl", "id,_version_"),
             "=={'doc':{'id':'1','_version_':" + version + "}}");
       }
 

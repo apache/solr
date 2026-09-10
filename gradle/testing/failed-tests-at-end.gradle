@@ -20,7 +20,7 @@
 def failedTests = new LinkedHashSet() // for dedupe due to weird afterTest classMethod issue
 
 def genFailInfo(def task, TestDescriptor desc) {
-  boolean isSuite = (desc.name == 'classMethod')
+  boolean isSuite = (desc.name == 'classMethod' || desc.name == 'initializationError')
   def name = isSuite ? desc.className : "${desc.className}.${desc.name}"
   def historyUrl = "https://develocity.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className"
   if (!isSuite) { // is test method specific

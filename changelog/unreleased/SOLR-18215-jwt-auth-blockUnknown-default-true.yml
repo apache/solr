@@ -1,0 +1,8 @@
+title: JWT Authentication `blockUnknown` now defaults to `true`, blocking unauthenticated requests by default. Previously the code defaulted to `false` despite the reference guide documenting `true`. Users relying on pass-through must explicitly set `blockUnknown` to `false` in their security.json.
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18215
+    url: https://issues.apache.org/jira/browse/SOLR-18215

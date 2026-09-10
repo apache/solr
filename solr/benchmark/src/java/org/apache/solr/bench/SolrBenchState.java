@@ -19,7 +19,6 @@ package org.apache.solr.bench;
 import static org.apache.commons.io.file.PathUtils.deleteDirectory;
 import static org.apache.solr.bench.BaseBenchState.log;
 
-import com.codahale.metrics.Meter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -37,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -396,7 +396,8 @@ public class SolrBenchState {
   @SuppressForbidden(reason = "Benchmarks may use JDK ExecutorService impls")
   private void indexParallel(String collection, Docs docs, int docCount)
       throws InterruptedException {
-    Meter meter = new Meter();
+    AtomicLong meterCount = new AtomicLong();
+    long meterStartNanos = System.nanoTime();
     ExecutorService executorService =
         Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors(),
@@ -406,10 +407,11 @@ public class SolrBenchState {
             new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
     scheduledExecutor.scheduleAtFixedRate(
         () -> {
-          if (meter.getCount() == docCount) {
+          long count = meterCount.get();
+          if (count == docCount) {
             scheduledExecutor.shutdown();
           } else {
-            log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
+            logIndexingRate(count, meterStartNanos);
           }
         },
         10,
@@ -427,7 +429,7 @@ public class SolrBenchState {
               SolrInputDocument doc = docs.inputDocument();
               // log("add doc " + doc);
               updateRequest.add(doc);
-              meter.mark();
+              meterCount.incrementAndGet();
 
               try {
                 client.requestWithBaseUrl(url, updateRequest, collection);
@@ -451,7 +453,8 @@ public class SolrBenchState {
 
   private void indexBatch(String collection, Docs docs, int docCount, int batchSize)
       throws SolrServerException, IOException {
-    Meter meter = new Meter();
+    long meterCount = 0;
+    long meterStartNanos = System.nanoTime();
     List<SolrInputDocument> batch = new ArrayList<>(batchSize);
     for (int i = 1; i <= docCount; i++) {
       batch.add(docs.inputDocument());
@@ -459,19 +462,19 @@ public class SolrBenchState {
         UpdateRequest updateRequest = new UpdateRequest();
         updateRequest.add(batch);
         client.requestWithBaseUrl(nodes.get(0), updateRequest, collection);
-        meter.mark(batch.size());
+        meterCount += batch.size();
         batch.clear();
-        log(meter.getCount() + " docs at " + (long) meter.getMeanRate() + " doc/s");
+        logIndexingRate(meterCount, meterStartNanos);
       }
     }
     if (!batch.isEmpty()) {
       UpdateRequest updateRequest = new UpdateRequest();
       updateRequest.add(batch);
       client.requestWithBaseUrl(nodes.get(0), updateRequest, collection);
-      meter.mark(batch.size());
+      meterCount += batch.size();
       batch = null;
     }
-    log(meter.getCount() + " docs at " + (long) meter.getMeanRate() + " doc/s");
+    logIndexingRate(meterCount, meterStartNanos);
   }
 
   /**
@@ -585,5 +588,11 @@ public class SolrBenchState {
             + name
             + " CWD="
             + Path.of("").toAbsolutePath());
+  }
+
+  private static void logIndexingRate(long docCount, long startNanos) {
+    long elapsedSec = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos);
+    long rate = elapsedSec > 0 ? docCount / elapsedSec : 0;
+    log(docCount + " docs at " + rate + " doc/s");
   }
 }

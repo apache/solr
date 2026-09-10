@@ -160,7 +160,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    */
   protected static String getConfig(String envName, Map<String, String> env) {
     String sysName = envNameToSyspropName(envName);
-    String sysValue = System.getProperty(sysName);
+    String sysValue = EnvUtils.getProperty(sysName);
     String envValue = env.get(envName);
     return sysValue != null ? sysValue : envValue;
   }

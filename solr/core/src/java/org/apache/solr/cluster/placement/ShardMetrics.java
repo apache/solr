@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 /**
- * Shard-level metrics. Currently this is just a container for replica-level metrics but future
+ * Shard-level metrics. Currently, this is just a container for replica-level metrics but future
  * versions may add other primitive shard-level metrics.
  */
 public interface ShardMetrics {

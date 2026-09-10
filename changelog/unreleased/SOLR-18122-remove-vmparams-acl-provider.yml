@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove deprecated VMParamsAllAndReadonlyDigestZkACLProvider; use a combination of DigestZkACLProvider and VMParamsZkCredentialsInjector instead.
+type: removed
+authors:
+  - name: Utsav Parmar
+links:
+  - name: SOLR-18122
+    url: https://issues.apache.org/jira/browse/SOLR-18122
