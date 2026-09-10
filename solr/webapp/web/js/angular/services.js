@@ -361,14 +361,6 @@ solrAdminServices.factory('Metrics',
        }
        return resource;
 }])
-.factory('Schema',
-   ['$resource', function($resource) {
-     return $resource(':core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"},
-       check: {method: "GET", headers: {doNotIntercept: "true"}},
-       post: {method: "POST"}
-     });
-}])
 .factory('Config',
    ['$resource', function($resource) {
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
