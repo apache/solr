@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.Map;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,7 +35,13 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.handler.component.MergeStrategy;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -198,6 +206,15 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             });
   }
 
+  public void testReplacedSearcherCanBeGarbageCollected() throws Exception {
+    WeakReference<SolrIndexSearcher> replacedSearcher = registerCurrentSearcherForGcCheck();
+
+    assertU(adoc("id", "gc-" + System.nanoTime(), "field1_s", "foo"));
+    openNewSearcherAndWait();
+
+    assertEventuallyReleased(replacedSearcher);
+  }
+
   public void testMinExactCountMoreRows() throws IOException {
     h.getCore()
         .withSearcher(
@@ -285,6 +302,35 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
               return null;
             });
+  }
+
+  private WeakReference<SolrIndexSearcher> registerCurrentSearcherForGcCheck() {
+    RefCounted<SolrIndexSearcher> holder = h.getCore().getRegisteredSearcher();
+    try {
+      return new WeakReference<>(holder.get());
+    } finally {
+      holder.decref();
+    }
+  }
+
+  private void openNewSearcherAndWait() throws IOException {
+    SolrParams params = new MapSolrParams(Map.of(UpdateParams.WAIT_SEARCHER, "true"));
+    h.getCore()
+        .getUpdateHandler()
+        .commit(new CommitUpdateCommand(new SolrQueryRequestBase(h.getCore(), params) {}, false));
+  }
+
+  private void assertEventuallyReleased(WeakReference<?> reference) throws Exception {
+    for (int i = 0; i < 50 && reference.get() != null; i++) {
+      byte[][] pressure = new byte[8][];
+      for (int j = 0; j < pressure.length; j++) {
+        pressure[j] = new byte[64 * 1024];
+      }
+      pressure = null;
+      System.gc();
+      Thread.sleep(20L);
+    }
+    assertNull("replaced searcher should be releasable after close", reference.get());
   }
 
   private static final class FixedScoreReRankQuery extends RankQuery {
