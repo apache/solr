@@ -141,6 +141,8 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
       return size() == 0;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // backdoorE is a unique sentinel; identity check is intentional
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
       E e = queue.poll(timeout, unit);
       if (e == null) {

@@ -80,6 +80,8 @@ public class CategoryRoutedAlias extends RoutedAlias {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // Aliases is replaced wholesale, so identity means "possibly changed"
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases =
         zkStateReader.getAliases(); // note: might be different from last request

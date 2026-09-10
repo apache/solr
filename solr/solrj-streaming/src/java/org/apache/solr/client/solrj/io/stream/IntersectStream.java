@@ -47,6 +47,7 @@ public class IntersectStream extends TupleStream implements Expressible {
   private PushBackStream streamB;
   private TupleStream originalStreamB;
   private StreamEqualitor eq;
+  private StreamComparator crossStreamComparator;
 
   public IntersectStream(TupleStream streamA, TupleStream streamB, StreamEqualitor eq)
       throws IOException {
@@ -94,15 +95,23 @@ public class IntersectStream extends TupleStream implements Expressible {
   private void init(TupleStream streamA, TupleStream streamB, StreamEqualitor eq)
       throws IOException {
     this.streamA = new PushBackStream(streamA);
-    this.streamB = new PushBackStream(new UniqueStream(streamB, eq));
+    // dedup streamB using only its own (right-side) field(s); using the full, possibly
+    // asymmetric eq here would compare streamB's field against a field it doesn't have.
+    this.streamB =
+        new PushBackStream(new UniqueStream(streamB, StreamEqualitor.deriveRightEqualitor(eq)));
     this.originalStreamB = streamB; // hold onto this for toExpression
     this.eq = eq;
 
     // streamA and streamB must both be sorted so that comp can be derived from
-    if (!eq.isDerivedFrom(streamA.getStreamSort()) || !eq.isDerivedFrom(streamB.getStreamSort())) {
+    if (!eq.isDerivedFromLeft(this.streamA.getStreamSort())
+        || !eq.isDerivedFromRight(this.streamB.getStreamSort())) {
       throw new IOException(
           "Invalid IntersectStream - both substream comparators (sort) must be a superset of this stream's equalitor.");
     }
+
+    // comparator used to order a streamA tuple against a streamB tuple; unlike either stream's own
+    // sort, it carries eq's (possibly different) left/right field names.
+    crossStreamComparator = StreamEqualitor.deriveComparator(eq, this.streamA.getStreamSort());
   }
 
   @Override
@@ -203,13 +212,14 @@ public class IntersectStream extends TupleStream implements Expressible {
       }
 
       // We're not at the end, and they're not equal. We now need to decide which we can
-      // throw away. This is accomplished by checking which is less than the other. The
-      // one that is less (determined by the sort) can be tossed. The other should
-      // be pushed back and the loop continued. We don't have to worry about an == 0
-      // result because we already know tuples a and b are not equal. And because eq
-      // is derived from the sorts of both streamA and streamB we can rest assured that
-      // equality is not a possibility.
-      int aComp = streamA.getStreamSort().compare(a, b);
+      // throw away. This is accomplished by checking which is less than the other, using
+      // crossStreamComparator - a comparator built from eq's (possibly different) left/right
+      // field names, since streamA's own sort comparator only knows streamA's field and would
+      // read null off of b. The one that is less can be tossed. The other should be pushed back
+      // and the loop continued. We don't have to worry about an == 0 result because we already
+      // know tuples a and b are not equal.
+      eq.assertFieldsPresent(a, b);
+      int aComp = crossStreamComparator.compare(a, b);
       if (aComp < 0) {
         streamB.pushBack(b);
       } else {
