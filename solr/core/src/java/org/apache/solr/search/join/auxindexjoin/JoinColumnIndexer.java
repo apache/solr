@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -271,7 +272,7 @@ final class JoinColumnIndexer {
     Map<String, JoinColumnModel> unwrittenMappings = loadedMappings;
     IndexSearcher freshJoinSearcher = joinIndex.acquire();
     try {
-      if (freshJoinSearcher != observedAbsentSearcher) {
+      if (!Objects.equals(freshJoinSearcher, observedAbsentSearcher)) {
         Map<String, JoinSegmentReference> alreadyPersisted =
             JoinIndexUtils.extractExistingJoinColumns(freshJoinSearcher, ownedPairs::contains);
         if (!alreadyPersisted.isEmpty()) {
