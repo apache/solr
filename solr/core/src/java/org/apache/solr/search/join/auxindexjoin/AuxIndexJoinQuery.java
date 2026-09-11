@@ -202,7 +202,7 @@ class AuxIndexJoinQuery extends Query {
     // different ordinal spaces, so queries over different searcher instances must not be
     // considered equal
     return joinIndex == other.joinIndex
-        && fromSearcher == other.fromSearcher
+        && Objects.equals(fromSearcher, other.fromSearcher)
         && fromField.equals(other.fromField)
         && fromQuery.equals(other.fromQuery)
         && toField.equals(other.toField);

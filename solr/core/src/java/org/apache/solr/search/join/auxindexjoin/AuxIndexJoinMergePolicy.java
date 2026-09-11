@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -319,9 +320,15 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     }
     Set<String> both = new HashSet<>();
     // iterate the smaller side; a fat segment carries a thousand pairs, the queue up to four
-    Set<String> smaller =
-        pairFieldNames.size() <= reapSnapshot.size() ? pairFieldNames : reapSnapshot;
-    Set<String> larger = smaller == pairFieldNames ? reapSnapshot : pairFieldNames;
+    Set<String> smaller;
+    Set<String> larger;
+    if (pairFieldNames.size() <= reapSnapshot.size()) {
+      smaller = pairFieldNames;
+      larger = reapSnapshot;
+    } else {
+      smaller = reapSnapshot;
+      larger = pairFieldNames;
+    }
     for (String name : smaller) {
       if (larger.contains(name)) {
         both.add(name);
@@ -746,7 +753,7 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
             fromField,
             fromDirectoryKey,
             (previous, current) -> previous.equals(current) ? previous : AMBIGUOUS_FROM_INDEX);
-    if (seen == AMBIGUOUS_FROM_INDEX) {
+    if (Objects.equals(seen, AMBIGUOUS_FROM_INDEX)) {
       if (warnedAmbiguousFromFields.add(fromField)) { // once per field, not once per sample
         log.warn(
             "AUXIJOIN sidecar: more than one index joins on field {}, so stranded columns of that "
