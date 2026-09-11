@@ -42,6 +42,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
+|solr.cloud.prs.enabled|solr.prs.default|false|Controls the default value for Per-Replica State (PRS) when creating a collection that doesn't explicitly specify the `PRS` parameter.
+
+|solr.cloud.skip.autorecovery.enabled|solrcloud.skip.autorecovery|false|Controls whether automatic recovery of out-of-sync replicas is skipped in SolrCloud mode. Intended for testing and diagnostics, not production use.
+
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
 
 |solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
@@ -117,6 +121,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 |solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.
 
 |solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
+
+|solr.tracing.host.name|solr.traceHostName|Value of `solr.host.advertise`|Overrides the host name added to the trace ID generated for a request, when no trace ID is present on an incoming request.
+
+|solr.tracing.id.header|solr.traceIdHeader|X-Trace-Id|Specifies the HTTP header name used to propagate the trace ID between Solr nodes.
 
 |solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
 

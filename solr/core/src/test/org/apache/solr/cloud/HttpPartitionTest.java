@@ -173,7 +173,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
       waitForState(testCollectionName, notLeaders.get(0).getName(), RECOVERING, 10000);
 
-      System.clearProperty("solrcloud.skip.autorecovery");
+      System.clearProperty("solr.cloud.skip.autorecovery.enabled");
       JettySolrRunner notLeaderJetty = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       String notLeaderNodeName = notLeaderJetty.getNodeName();
       notLeaderJetty.stop();

@@ -38,11 +38,11 @@ import org.apache.solr.logging.MDCLoggingContext;
 public class SimplePropagator implements TextMapPropagator {
 
   private static final String TRACE_HOST_NAME =
-      EnvUtils.getProperty("solr.traceHostName", EnvUtils.getProperty("solr.host.advertise"));
+      EnvUtils.getProperty("solr.tracing.host.name", EnvUtils.getProperty("host"));
   private static final TextMapPropagator INSTANCE = new SimplePropagator();
   private static final ContextKey<String> TRACE_ID_KEY = ContextKey.named("trace_id");
 
-  static final String TRACE_ID = EnvUtils.getProperty("solr.traceIdHeader", "X-Trace-Id");
+  static final String TRACE_ID = EnvUtils.getProperty("solr.tracing.id.header", "X-Trace-Id");
   private static final List<String> FIELDS = List.of(TRACE_ID);
 
   private static final AtomicLong traceCounter = new AtomicLong(0);

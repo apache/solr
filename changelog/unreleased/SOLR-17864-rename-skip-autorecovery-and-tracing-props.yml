@@ -1,0 +1,11 @@
+title: >
+  Renamed the system properties solrcloud.skip.autorecovery to
+  solr.cloud.skip.autorecovery.enabled, solr.traceHostName to solr.tracing.host.name, and
+  solr.traceIdHeader to solr.tracing.id.header, to follow Solr's standard system property naming
+  convention. The old names still work but are deprecated.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17864
+    url: https://issues.apache.org/jira/browse/SOLR-17864

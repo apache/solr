@@ -32,7 +32,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solrcloud.skip.autorecovery", "true");
+    System.setProperty("solr.cloud.skip.autorecovery.enabled", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
   }
 

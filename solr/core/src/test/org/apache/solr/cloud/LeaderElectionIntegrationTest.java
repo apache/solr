@@ -32,7 +32,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("solrcloud.skip.autorecovery", "true");
+    System.setProperty("solr.cloud.skip.autorecovery.enabled", "true");
   }
 
   @Override

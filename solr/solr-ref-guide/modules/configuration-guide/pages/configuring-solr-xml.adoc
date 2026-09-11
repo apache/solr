@@ -333,7 +333,7 @@ This is the same system property used in the `_default` configset for the xref:c
 +
 Comma-separated list of regex patterns to match sysProps that should be redacted to hide sensitive information.
 +
-The allow-list can also be configured with the `solr.hiddenSysProps` system property,
+The allow-list can also be configured with the `solr.responses.hidden.sys.props` system property,
 or via the `SOLR_HIDDEN_SYS_PROPS` environment variable.
 +
 By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It will also hide any sysProp that contains

@@ -54,7 +54,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
-    System.setProperty("solrcloud.skip.autorecovery", "true");
+    System.setProperty("solr.cloud.skip.autorecovery.enabled", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("solr.port.listen", "0000");
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
