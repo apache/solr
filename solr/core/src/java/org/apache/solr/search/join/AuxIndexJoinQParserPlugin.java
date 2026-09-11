@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.IndexSearcher;
@@ -279,7 +280,7 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
       SharedManager shared = open.get(path);
       if (shared != null) {
         shared.refCount++;
-        if (shared.directoryFactory != core.getDirectoryFactory()) {
+        if (!Objects.equals(shared.directoryFactory, core.getDirectoryFactory())) {
           // a reload that doesn't pass its SolrCoreState on (the index dir changed) brings a new
           // DirectoryFactory: the sidecar keeps the directory it was opened with, which the old
           // factory closes when the old core goes away

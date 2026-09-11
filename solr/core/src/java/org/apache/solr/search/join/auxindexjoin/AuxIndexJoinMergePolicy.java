@@ -269,35 +269,37 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
                   this::drainReaped));
     }
     if (spec != null) {
-      log.info(
-          "AUXIJOIN sidecar compaction: {} doc-aligned merge(s) of {} segments each, {} column "
-              + "purge(s) and {} dead segment(s) dropped, out of {} segments ({} compactable, {} "
-              + "merging, {} pairs pending removal, {} segment(s) reapable now, {} of those too "
-              + "little dead to be worth rewriting{}{}), on {}",
-          aligned,
-          mergeSegmentsAtOnce,
-          purged,
-          dead,
-          segmentInfos.size(),
-          compactable.size(),
-          merging.size(),
-          pendingPairRemovals.size(),
-          reapableBySegment.size(),
-          notWorthIt,
-          bestDeclined == null
-              ? ""
-              : String.format(
-                  Locale.ROOT,
-                  " -- the best of them, %s, offers %d of %d bytes (%d of %d columns) against a"
-                      + " %d byte threshold",
-                  bestDeclined.info().info.name,
-                  bestDeclined.reclaimableBytes(),
-                  bestDeclined.sizeInBytes(),
-                  bestDeclined.dead().size(),
-                  bestDeclined.width(),
-                  minReclaimableBytesToPurge),
-          queueUnderPressure ? ", threshold waived: queue over high water" : "",
-          mergeTrigger);
+      if (log.isInfoEnabled()) {
+        log.info(
+            "AUXIJOIN sidecar compaction: {} doc-aligned merge(s) of {} segments each, {} column "
+                + "purge(s) and {} dead segment(s) dropped, out of {} segments ({} compactable, {} "
+                + "merging, {} pairs pending removal, {} segment(s) reapable now, {} of those too "
+                + "little dead to be worth rewriting{}{}), on {}",
+            aligned,
+            mergeSegmentsAtOnce,
+            purged,
+            dead,
+            segmentInfos.size(),
+            compactable.size(),
+            merging.size(),
+            pendingPairRemovals.size(),
+            reapableBySegment.size(),
+            notWorthIt,
+            bestDeclined == null
+                ? ""
+                : String.format(
+                    Locale.ROOT,
+                    " -- the best of them, %s, offers %d of %d bytes (%d of %d columns) against a"
+                        + " %d byte threshold",
+                    bestDeclined.info().info.name,
+                    bestDeclined.reclaimableBytes(),
+                    bestDeclined.sizeInBytes(),
+                    bestDeclined.dead().size(),
+                    bestDeclined.width(),
+                    minReclaimableBytesToPurge),
+            queueUnderPressure ? ", threshold waived: queue over high water" : "",
+            mergeTrigger);
+      }
     } else if (log.isDebugEnabled()) {
       log.debug(
           "AUXIJOIN sidecar: nothing to do on {}, {} segments ({} compactable, {} merging, {} pairs"
@@ -348,10 +350,12 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
     pendingPairRemovals.removeAll(reaped);
     pendingPairRemovalsOrder.removeAll(reaped);
     reapedPairCount.addAndGet(reaped.size());
-    log.info(
-        "AUXIJOIN sidecar: reaped {} dead pair column(s), {} still pending",
-        reaped.size(),
-        pendingPairRemovals.size());
+    if (log.isInfoEnabled()) {
+      log.info(
+          "AUXIJOIN sidecar: reaped {} dead pair column(s), {} still pending",
+          reaped.size(),
+          pendingPairRemovals.size());
+    }
   }
 
   private static MergeSpecification added(MergeSpecification spec, OneMerge merge) {
