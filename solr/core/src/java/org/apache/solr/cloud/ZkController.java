@@ -225,6 +225,8 @@ public class ZkController implements Closeable {
   private final CloudConfig cloudConfig;
   private final NodesSysPropsCacher sysPropsCacher;
 
+  private final Compressor compressor;
+
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
   private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
@@ -324,7 +326,9 @@ public class ZkController implements Closeable {
 
     addOnReconnectListener(getConfigDirListener());
 
-    final var compressor = createCompressor();
+    compressor =
+        loadPluginOrDefault(
+            Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
 
     zkClient =
         new SolrZkClient.Builder()
@@ -382,7 +386,7 @@ public class ZkController implements Closeable {
     // These "distributed" things replace the Overseer when that's disabled
     this.distributedClusterStateUpdater =
         new DistributedClusterStateUpdater(
-            !overseerEnabled, cloudConfig.getMinStateByteLenForCompression(), createCompressor());
+            !overseerEnabled, cloudConfig.getMinStateByteLenForCompression(), compressor);
     this.distributedCommandRunner =
         !overseerEnabled
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
@@ -401,9 +405,8 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  public Compressor createCompressor() {
-    return loadPluginOrDefault(
-        Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
+  public Compressor getCompressor() {
+    return compressor;
   }
 
   private void onDisconnect(boolean sessionExpired) {
