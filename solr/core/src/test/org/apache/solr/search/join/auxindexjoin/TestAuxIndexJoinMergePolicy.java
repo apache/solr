@@ -30,6 +30,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -479,7 +480,7 @@ public class TestAuxIndexJoinMergePolicy extends SolrTestCase {
   private static List<String> fieldsOf(IndexReader sidecar, String pairFieldName) {
     List<String> found = new ArrayList<>();
     for (LeafReaderContext leaf : sidecar.leaves()) {
-      for (org.apache.lucene.index.FieldInfo fieldInfo : leaf.reader().getFieldInfos()) {
+      for (FieldInfo fieldInfo : leaf.reader().getFieldInfos()) {
         if (fieldInfo.name.endsWith(pairFieldName)) {
           found.add(leaf.reader().toString() + ":" + fieldInfo.name);
         }

@@ -156,8 +156,8 @@ public class TestJoinColumnModel extends SolrTestCase {
       assertEquals("at from-doc " + fromDoc, denseHit, sparseCursor.advanceExact(fromDoc));
       assertEquals("at from-doc " + fromDoc, toDocByFromDoc[fromDoc] >= 0, denseHit);
       if (denseHit) {
-        assertEquals(toDocByFromDoc[fromDoc], (int) denseCursor.nextValue());
-        assertEquals(toDocByFromDoc[fromDoc], (int) sparseCursor.nextValue());
+        assertEquals(toDocByFromDoc[fromDoc], denseCursor.nextValue());
+        assertEquals(toDocByFromDoc[fromDoc], sparseCursor.nextValue());
       }
       assertEquals(fromDoc, sparseCursor.docID());
     }
