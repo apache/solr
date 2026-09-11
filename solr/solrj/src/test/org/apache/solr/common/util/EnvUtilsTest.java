@@ -143,6 +143,34 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
+  public void legacyPropertyNameLookupFallsBackToCurrentPropertyWhenOnlyThatIsSet() {
+    // Simulates an un-migrated ${bootstrap_confdir:...} token in a user's own solr.xml: nobody
+    // ever sets the legacy name as a real system property, only the current one -- e.g. because
+    // the user followed current docs after upgrading, without touching their old config file.
+    EnvUtils.setProperty("solr.configset.bootstrap.confdir", "/opt/solr/configsets/mine");
+    try {
+      assertEquals(
+          "/opt/solr/configsets/mine",
+          EnvUtils.getProperty("bootstrap_confdir", "should-not-see-this-default"));
+    } finally {
+      System.clearProperty("solr.configset.bootstrap.confdir");
+    }
+  }
+
+  @Test
+  public void legacyInvertedPropertyNameLookupFallsBackToCurrentPropertyFlipped() {
+    // Same gap, but for a boolean-inverted mapping: an un-migrated ${solr.hideStackTrace:false}
+    // token should honor solr.responses.stacktrace.enabled once that's set, with the value
+    // correctly flipped back to the legacy property's sense.
+    EnvUtils.setProperty("solr.responses.stacktrace.enabled", "true");
+    try {
+      assertFalse(EnvUtils.getPropertyAsBool("solr.hideStackTrace", true));
+    } finally {
+      System.clearProperty("solr.responses.stacktrace.enabled");
+    }
+  }
+
+  @Test
   public void testFlippingDisabledToEnabledPropertyName() {
 
     var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");
