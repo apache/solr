@@ -154,6 +154,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SchemaDesignerApi();
     })
+.factory('SchemaV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaApi();
+    })
 .factory('Collections',
   ['$resource', function ($resource) {
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
@@ -192,10 +198,10 @@ solrAdminServices.factory('Metrics',
   }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
+    // Tree browsing (formerly "simple"/"detail") moved to ZookeeperReadV2; this factory now only
+    // covers the graph view's cluster state read, which has no v2 equivalent.
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
-      "simple": {},
-      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
-      "detail": {params: {detail: "true", path: "@path"}}
+      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}}
     });
   }])
 .factory('ZookeeperStatus',
@@ -204,10 +210,38 @@ solrAdminServices.factory('Metrics',
       "monitor": {}
     });
   }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
+.factory('ZookeeperReadV2',
+  ['$http', function($http) {
+    // Hand-rolled rather than the generated solrApi.ZookeeperReadApi client: the generated
+    // ApiClient.buildUrl() runs encodeURIComponent() on the whole zkPath value, turning its '/'
+    // separators into %2F, which Jetty's URI-ambiguity checks reject for any path beyond a
+    // single segment (even the root path "/" itself). SolrJ's generated Java client avoids this
+    // by not encoding path params at all; we do the same here by building the URL ourselves.
+    return {
+      listNodes: function(zkPath, opts) {
+        opts = opts || {};
+        var params = {};
+        if (opts.children !== undefined) {
+          params.children = opts.children;
+        }
+        return $http.get('/api/cluster/zookeeper/children' + zkPath, {params: params});
+      },
+      readNode: function(zkPath) {
+        // Content is raw znode bytes, not JSON -- skip Angular's default JSON-parsing attempt
+        // (the server's Content-Type is negotiated and may say application/json even when the
+        // body itself is plain text or XML).
+        return $http.get('/api/cluster/zookeeper/data' + zkPath, {
+          transformResponse: [function(data) { return data; }]
+        });
+      }
+    };
   }])
+.factory('NodeV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.NodeApi();
+    })
 .factory('Threads',
   ['$resource', function($resource) {
     // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
@@ -352,14 +386,6 @@ solrAdminServices.factory('Metrics',
            return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
-}])
-.factory('Schema',
-   ['$resource', function($resource) {
-     return $resource(':core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"},
-       check: {method: "GET", headers: {doNotIntercept: "true"}},
-       post: {method: "POST"}
-     });
 }])
 .factory('Config',
    ['$resource', function($resource) {
