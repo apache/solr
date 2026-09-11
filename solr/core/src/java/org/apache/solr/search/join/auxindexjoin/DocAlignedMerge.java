@@ -66,12 +66,13 @@ import org.apache.lucene.util.Bits;
  *
  * <p><b>How it hooks into Lucene.</b> {@link IndexWriter} merges by concatenating whatever {@link
  * #wrapForMerge} hands back, so this merge hands back nothing for all inputs but one: every input
- * except the last is wrapped as fully deleted ({@link Bits.MatchNoBits}, {@code numDocs() == 0}) so
- * it contributes no doc, and the last is replaced by a {@link ParallelLeafReader} over <em>all</em>
- * the inputs -- the reader that aligns fields by doc id. Concatenating {@code [nothing, ...,
- * nothing, union]} is the union. This relies on {@code IndexWriter#mergeMiddle} calling {@code
- * wrapForMerge} exactly once per segment, in {@link #segments} order, and only then starting the
- * merge, so that by the last call every input reader is known; the count is enforced below.
+ * except the last is wrapped as fully deleted ({@link org.apache.lucene.util.Bits.MatchNoBits},
+ * {@code numDocs() == 0}) so it contributes no doc, and the last is replaced by a {@link
+ * ParallelLeafReader} over <em>all</em> the inputs -- the reader that aligns fields by doc id.
+ * Concatenating {@code [nothing, ..., nothing, union]} is the union. This relies on {@code
+ * IndexWriter#mergeMiddle} calling {@code wrapForMerge} exactly once per segment, in {@link
+ * #segments} order, and only then starting the merge, so that by the last call every input reader
+ * is known; the count is enforced below.
  *
  * <p><b>Reaping rides along.</b> The columns of pairs queued for removal are dropped while the
  * segment is being rewritten anyway: {@link #wrapForMerge} hides their fields from every input, so

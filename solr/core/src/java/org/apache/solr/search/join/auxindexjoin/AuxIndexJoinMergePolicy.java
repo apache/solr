@@ -528,11 +528,11 @@ final class AuxIndexJoinMergePolicy extends MergePolicy {
   private static final int MAX_PENDING_PAIR_REMOVALS = 4096;
 
   /**
-   * Pending removals past which purges ignore {@link #DEFAULT_MIN_DEAD_PERCENT_TO_PURGE}. That
-   * threshold trades heap for I/O -- every name it declines to act on pins a column nobody can read
-   * again -- and the trade stops being sensible once the queue is itself what threatens the
-   * process. Half the queue's cap leaves room to work the backlog off before it starts evicting
-   * names, which would strand their columns for good.
+   * Pending removals past which purges ignore {@link #MAX_PENDING_PAIR_REMOVALS}. That threshold
+   * trades heap for I/O -- every name it declines to act on pins a column nobody can read again --
+   * and the trade stops being sensible once the queue is itself what threatens the process. Half
+   * the queue's cap leaves room to work the backlog off before it starts evicting names, which
+   * would strand their columns for good.
    */
   private static final int PENDING_PURGE_HIGH_WATER = MAX_PENDING_PAIR_REMOVALS / 2;
 
