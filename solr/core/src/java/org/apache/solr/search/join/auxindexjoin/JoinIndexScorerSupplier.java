@@ -700,7 +700,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // cells still reading the model they were built from; this refresh is their chance to let it go
     Map<String, LeafJoin> modelBacked = new LinkedHashMap<>();
     Set<LeafJoin> resolveTarget =
-        (Objects.equals(newJoinIndexSearcher, this.lastSeenJoinSearcher)) ? loadReference : refreshReference;
+        (Objects.equals(newJoinIndexSearcher, this.lastSeenJoinSearcher))
+            ? loadReference
+            : refreshReference;
     for (LeafJoin task : leafJoins) {
       if (task.joinSegmentRef != null) {
         resolveTarget.add(task);
