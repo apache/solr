@@ -759,23 +759,18 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings("deprecation")
   public void testCollationWithQueryLimitsSupportsPartialResults() throws Exception {
     // Create a SpellingResult with multiple suggestions to test collation
     SpellingResult result = new SpellingResult();
 
     // Add tokens with multiple suggestions to generate many possible collations
-    Token token1 = new Token();
-    token1.copyBuffer("test".toCharArray(), 0, 4);
-    token1.setOffset(0, 4);
+    SpellCheckToken token1 = new SpellCheckToken("test", 0, 4);
     result.add(token1, "best", 1);
     result.add(token1, "rest", 2);
     result.add(token1, "nest", 3);
     result.add(token1, "fest", 4);
 
-    Token token2 = new Token();
-    token2.copyBuffer("query".toCharArray(), 0, 5);
-    token2.setOffset(5, 10);
+    SpellCheckToken token2 = new SpellCheckToken("query", 5, 10);
     result.add(token2, "quarry", 1);
     result.add(token2, "quiry", 2);
     result.add(token2, "quary", 3);
