@@ -23,7 +23,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.response.ResponseNormalizer;
+import org.apache.solr.client.solrj.response.ResponseCanonicalizer;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -92,7 +92,7 @@ public class JsonMapResponseParser extends ResponseParser {
     return CONTENT_TYPES;
   }
 
-  private static final SolrParams REQUEST_PARAMS =
+  private static final SolrParams CANONICAL_PARAMS =
       SolrParams.of(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_MAP);
 
   /**
@@ -103,13 +103,13 @@ public class JsonMapResponseParser extends ResponseParser {
    */
   @Override
   public SolrParams getAdditionalRequestParams() {
-    return canonical ? REQUEST_PARAMS : null;
+    return canonical ? CANONICAL_PARAMS : null;
   }
 
   @Override
   public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
       throws IOException {
     NamedList<Object> parsed = processResponse(body, encoding);
-    return canonical ? ResponseNormalizer.normalize(parsed) : parsed;
+    return canonical ? ResponseCanonicalizer.canonicalize(parsed) : parsed;
   }
 }

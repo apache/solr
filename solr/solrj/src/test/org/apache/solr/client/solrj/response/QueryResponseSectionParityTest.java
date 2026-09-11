@@ -37,7 +37,7 @@ public class QueryResponseSectionParityTest extends SolrTestCase {
             .processResponse(
                 new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "UTF-8");
     QueryResponse r = new QueryResponse();
-    r.setResponse(ResponseNormalizer.normalize(parsed));
+    r.setResponse(ResponseCanonicalizer.canonicalize(parsed));
     return r;
   }
 

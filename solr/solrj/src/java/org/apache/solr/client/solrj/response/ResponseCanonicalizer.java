@@ -40,30 +40,30 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  *
  * @lucene.internal
  */
-public final class ResponseNormalizer {
+public final class ResponseCanonicalizer {
 
-  private ResponseNormalizer() {}
+  private ResponseCanonicalizer() {}
 
-  /** Returns a normalized copy of the given response NamedList. */
-  public static NamedList<Object> normalize(NamedList<Object> response) {
+  /** Returns a canonical copy of the given response NamedList. */
+  public static NamedList<Object> canonicalize(NamedList<Object> response) {
     if (response == null) {
       return null;
     }
     SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(response.size());
     for (Map.Entry<String, Object> e : response) {
-      out.add(e.getKey(), normalizeValue(e.getValue()));
+      out.add(e.getKey(), canonicalizeValue(e.getValue()));
     }
     return out;
   }
 
   @SuppressWarnings("unchecked")
-  private static Object normalizeValue(Object val) {
+  private static Object canonicalizeValue(Object val) {
     if (val instanceof SolrDocumentList || val instanceof SolrDocument) {
       // Already canonical (binary/XML produce these directly); leave untouched. Must precede the
       // List/Map branches since SolrDocumentList is a List and SolrDocument is a Map.
       return val;
     } else if (val instanceof NamedList<?> in) {
-      // Already canonical (binary/XML), but its children may still need normalizing. Keep the
+      // Already canonical (binary/XML), but its children may still need canonicalizing. Keep the
       // concrete type: a SimpleOrderedMap asserts unique keys, which a general NamedList does not,
       // so promoting one to the other would change the contract of the value.
       NamedList<Object> out =
@@ -71,7 +71,7 @@ public final class ResponseNormalizer {
               ? new SimpleOrderedMap<>(in.size())
               : new NamedList<>(in.size());
       for (Map.Entry<String, ?> e : in) {
-        out.add(e.getKey(), normalizeValue(e.getValue()));
+        out.add(e.getKey(), canonicalizeValue(e.getValue()));
       }
       return out;
     } else if (val instanceof Map<?, ?> raw) {
@@ -85,13 +85,13 @@ public final class ResponseNormalizer {
       // A JSON object has unique keys by construction, so it maps onto SimpleOrderedMap.
       SimpleOrderedMap<Object> out = new SimpleOrderedMap<>(m.size());
       for (Map.Entry<String, Object> e : m.entrySet()) {
-        out.add(e.getKey(), normalizeValue(e.getValue()));
+        out.add(e.getKey(), canonicalizeValue(e.getValue()));
       }
       return out;
     } else if (val instanceof List<?> in) {
       List<Object> out = new ArrayList<>(in.size());
       for (Object item : in) {
-        out.add(normalizeValue(item));
+        out.add(canonicalizeValue(item));
       }
       return out;
     }
@@ -139,7 +139,7 @@ public final class ResponseNormalizer {
           continue;
         }
         // The value may be a reconstructed SolrDocumentList, which addField would unwrap.
-        doc.setField(f.getKey(), normalizeValue(f.getValue()));
+        doc.setField(f.getKey(), canonicalizeValue(f.getValue()));
       }
     }
     return doc;

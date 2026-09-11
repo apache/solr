@@ -29,13 +29,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
-/** Intensive tests for {@link ResponseNormalizer}. */
-public class ResponseNormalizerTest extends SolrTestCase {
+/** Intensive tests for {@link ResponseCanonicalizer}. */
+public class ResponseCanonicalizerTest extends SolrTestCase {
 
   @Test
   public void testNullAndEmpty() {
-    assertNull(ResponseNormalizer.normalize(null));
-    assertEquals(0, ResponseNormalizer.normalize(new NamedList<>()).size());
+    assertNull(ResponseCanonicalizer.canonicalize(null));
+    assertEquals(0, ResponseCanonicalizer.canonicalize(new NamedList<>()).size());
   }
 
   @Test
@@ -45,7 +45,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new SimpleOrderedMap<>();
     in.add("responseHeader", header);
 
-    NamedList<Object> out = ResponseNormalizer.normalize(in);
+    NamedList<Object> out = ResponseCanonicalizer.canonicalize(in);
     assertTrue(out.get("responseHeader") instanceof NamedList);
     assertEquals(0, ((NamedList<?>) out.get("responseHeader")).get("status"));
   }
@@ -59,7 +59,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("mid", mid);
 
-    NamedList<Object> out = ResponseNormalizer.normalize(in);
+    NamedList<Object> out = ResponseCanonicalizer.canonicalize(in);
     Object midOut = out.get("mid");
     assertTrue("mid should be NamedList", midOut instanceof NamedList);
     Object innerOut = ((NamedList<?>) midOut).get("inner");
@@ -80,7 +80,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("response", response);
 
-    NamedList<Object> out = ResponseNormalizer.normalize(in);
+    NamedList<Object> out = ResponseCanonicalizer.canonicalize(in);
     Object r = out.get("response");
     assertTrue("response should be SolrDocumentList", r instanceof SolrDocumentList);
     SolrDocumentList docs = (SolrDocumentList) r;
@@ -100,7 +100,8 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("response", response);
 
-    SolrDocumentList docs = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
+    SolrDocumentList docs =
+        (SolrDocumentList) ResponseCanonicalizer.canonicalize(in).get("response");
     assertEquals(0L, docs.getNumFound());
     assertTrue(docs.isEmpty());
   }
@@ -124,7 +125,8 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("response", response);
 
-    SolrDocumentList docs = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
+    SolrDocumentList docs =
+        (SolrDocumentList) ResponseCanonicalizer.canonicalize(in).get("response");
     SolrDocument parentDoc = docs.get(0);
     Object nested = parentDoc.getFieldValue("nested");
     assertTrue("nested docList field reconstructed", nested instanceof SolrDocumentList);
@@ -168,7 +170,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     in.add("response", response);
 
     SolrDocument parentDoc =
-        ((SolrDocumentList) ResponseNormalizer.normalize(in).get("response")).get(0);
+        ((SolrDocumentList) ResponseCanonicalizer.canonicalize(in).get("response")).get(0);
 
     Object single = parentDoc.getFieldValue("lonely");
     assertTrue("a named child must be a SolrDocument, not a map", single instanceof SolrDocument);
@@ -207,7 +209,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     in.add("response", response);
 
     SolrDocument parentDoc =
-        ((SolrDocumentList) ResponseNormalizer.normalize(in).get("response")).get(0);
+        ((SolrDocumentList) ResponseCanonicalizer.canonicalize(in).get("response")).get(0);
     assertTrue(
         "an object with no nest marker must stay a NamedList",
         parentDoc.getFieldValue("someStruct") instanceof NamedList);
@@ -222,7 +224,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("things", new ArrayList<>(Arrays.asList(a, b)));
 
-    NamedList<Object> out = ResponseNormalizer.normalize(in);
+    NamedList<Object> out = ResponseCanonicalizer.canonicalize(in);
     List<?> things = (List<?>) out.get("things");
     assertTrue(things.get(0) instanceof NamedList);
     assertEquals(1, ((NamedList<?>) things.get(0)).get("x"));
@@ -237,7 +239,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("responseHeader", header);
 
-    NamedList<Object> out = ResponseNormalizer.normalize(in);
+    NamedList<Object> out = ResponseCanonicalizer.canonicalize(in);
     NamedList<?> h = (NamedList<?>) out.get("responseHeader");
     assertEquals(0L, h.get("status"));
     assertEquals(7L, h.get("QTime"));
@@ -251,7 +253,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new NamedList<>();
     in.add("x", notDocs);
 
-    assertTrue(ResponseNormalizer.normalize(in).get("x") instanceof NamedList);
+    assertTrue(ResponseCanonicalizer.canonicalize(in).get("x") instanceof NamedList);
   }
 
   /**
@@ -269,7 +271,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new SimpleOrderedMap<>();
     in.add("section", plain);
 
-    Object out = ResponseNormalizer.normalize(in).get("section");
+    Object out = ResponseCanonicalizer.canonicalize(in).get("section");
     assertTrue("must stay a NamedList", out instanceof NamedList);
     assertFalse(
         "a plain NamedList must not become a SimpleOrderedMap", out instanceof SimpleOrderedMap);
@@ -291,7 +293,7 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new SimpleOrderedMap<>();
     in.add("section", inner);
 
-    Object out = ResponseNormalizer.normalize(in).get("section");
+    Object out = ResponseCanonicalizer.canonicalize(in).get("section");
     assertTrue("must stay a SimpleOrderedMap", out instanceof SimpleOrderedMap);
   }
 
@@ -312,7 +314,8 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new SimpleOrderedMap<>();
     in.add("response", docList);
 
-    SolrDocumentList out = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
+    SolrDocumentList out =
+        (SolrDocumentList) ResponseCanonicalizer.canonicalize(in).get("response");
     SolrDocument outParent = out.get(0);
     assertTrue("child documents must be reconstructed", outParent.hasChildDocuments());
     assertEquals(1, outParent.getChildDocuments().size());
@@ -339,7 +342,8 @@ public class ResponseNormalizerTest extends SolrTestCase {
     NamedList<Object> in = new SimpleOrderedMap<>();
     in.add("response", docList);
 
-    SolrDocumentList out = (SolrDocumentList) ResponseNormalizer.normalize(in).get("response");
+    SolrDocumentList out =
+        (SolrDocumentList) ResponseCanonicalizer.canonicalize(in).get("response");
     SolrDocument outKid = out.get(0).getChildDocuments().get(0);
     assertTrue("grandchildren must be reconstructed", outKid.hasChildDocuments());
     assertEquals("grandkid1", outKid.getChildDocuments().get(0).getFieldValue("id"));
