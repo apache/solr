@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Solr creates 2 main {@link SdkMeterProvider}'s (solr.jvm, solr.node) as well as an additional
  * provider for every {@link SolrCore} JVM metrics and registry are collected from {@link
- * io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics}
+ * io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry}
  *
  * <p>The SolrMetricManager acts as a bridge between Solr and OpenTelemetry SDK providing the
  * following:
