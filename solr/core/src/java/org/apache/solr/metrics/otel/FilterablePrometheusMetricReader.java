@@ -20,7 +20,6 @@ import static java.util.stream.Collectors.toList;
 
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.metrics.export.CollectionRegistration;
@@ -51,11 +50,6 @@ public class FilterablePrometheusMetricReader implements MetricReader, MultiColl
   private static final Set<String> PROM_SUFFIXES =
       Set.of("_total", "_sum", "_bucket", "_created", "_info");
 
-  // PrometheusMetricReader's constructor became package-private in favor of a builder (see
-  // https://github.com/open-telemetry/opentelemetry-java/blob/main/exporters/prometheus/src/main/java/io/opentelemetry/exporter/prometheus/PrometheusMetricReader.java),
-  // so it can no longer be subclassed -- this wraps one instead. The builder's defaults already
-  // match what this used to construct explicitly (otelScopeLabelsEnabled=true, no resource
-  // attribute filter).
   private final PrometheusMetricReader delegate;
 
   public FilterablePrometheusMetricReader(
@@ -70,11 +64,6 @@ public class FilterablePrometheusMetricReader implements MetricReader, MultiColl
   @Override
   public AggregationTemporality getAggregationTemporality(InstrumentType instrumentType) {
     return delegate.getAggregationTemporality(instrumentType);
-  }
-
-  @Override
-  public Aggregation getDefaultAggregation(InstrumentType instrumentType) {
-    return delegate.getDefaultAggregation(instrumentType);
   }
 
   @Override
@@ -182,9 +171,7 @@ public class FilterablePrometheusMetricReader implements MetricReader, MultiColl
         case InfoSnapshot ignored -> {
           // Do nothing for InfoSnapshots. Always filter it out
         }
-        default -> {
-          log.error("Unknown metric snapshot type {}", metricSnapshot.getClass());
-        }
+        default -> log.error("Unknown metric snapshot type {}", metricSnapshot.getClass());
       }
     }
     return filteredSnapshots.build();
