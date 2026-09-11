@@ -104,7 +104,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/info"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
 
     String payload =
         "{\n"

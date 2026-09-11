@@ -57,14 +57,6 @@
         "omitHeader": true
       }
     },
-    "/admin/ping": {
-      "class": "solr.PingRequestHandler",
-      "useParams":"_ADMIN_PING",
-      "invariants": {
-        "echoParams": "all",
-        "q": "{!lucene}*:*"
-      }
-    },
     "/admin/segments": {
       "class": "solr.SegmentsInfoRequestHandler",
       "useParams":"_ADMIN_SEGMENTS"

@@ -1155,14 +1155,6 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
-  public void testPingHandler() throws Exception {
-    SolrClient client = getSolrClient();
-
-    // should be ok
-    client.ping();
-  }
-
-  @Test
   public void testFaceting() throws Exception {
     SolrClient client = getSolrClient();
 

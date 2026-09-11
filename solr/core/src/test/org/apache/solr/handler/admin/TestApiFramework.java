@@ -60,7 +60,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
-import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -91,7 +90,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         new PluginBag<>(SolrRequestHandler.class, null, false);
     coreHandlers.put("/schema", new SchemaHandler());
     coreHandlers.put("/config", new SolrConfigHandler());
-    coreHandlers.put("/admin/ping", new PingRequestHandler());
 
     Map<String, String> parts = new HashMap<>();
     String fullPath = "/collections/hello/shards";

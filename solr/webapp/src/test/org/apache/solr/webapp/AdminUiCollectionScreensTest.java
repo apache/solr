@@ -101,7 +101,6 @@ public class AdminUiCollectionScreensTest extends AdminUiTestBase {
     openPage(coreName + "/core-overview", By.id("dashboard"));
     waitForPageContains("Num Docs");
     waitForPageContains(Integer.toString(NUM_DOCS));
-    // the ping widget answers 503 when the configset has no healthcheck file
-    assertNoSevereConsoleErrors("/admin/ping");
+    assertNoSevereConsoleErrors();
   }
 }

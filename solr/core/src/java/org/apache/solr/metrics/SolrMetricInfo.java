@@ -29,7 +29,7 @@ public final class SolrMetricInfo {
    * Creates a new instance of {@link SolrMetricInfo}.
    *
    * @param category the category of the metric (e.g. `QUERY`)
-   * @param scope the scope of the metric (e.g. `/admin/ping`)
+   * @param scope the scope of the metric (e.g. `/admin/segments`)
    * @param name the name of the metric (e.g. `Requests`)
    */
   public SolrMetricInfo(SolrInfoBean.Category category, String scope, String name) {

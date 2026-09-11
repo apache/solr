@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Ping, Constants) {
+function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Constants) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
@@ -54,40 +54,10 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
     );
   };
 
-  $scope.refreshPing = function() {
-    Ping.status({core: $routeParams.core}, function(data) {
-      if (data.error) {
-        $scope.healthcheckStatus = false;
-        if (data.error.code == 503) {
-          $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
-        }
-      } else {
-        $scope.healthcheckStatus = data.status == "enabled";
-      }
-    });
-  };
-
-  $scope.toggleHealthcheck = function() {
-    if ($scope.healthcheckStatus) {
-      Ping.disable(
-        {core: $routeParams.core},
-        function(data) {$scope.healthcheckStatus = false},
-        function(error) {$scope.healthcheckMessage = error}
-      );
-    } else {
-      Ping.enable(
-        {core: $routeParams.core},
-        function(data) {$scope.healthcheckStatus = true},
-        function(error) {$scope.healthcheckMessage = error}
-      );
-    }
-  };
-
   $scope.refresh = function() {
     $scope.refreshIndex();
     $scope.refreshReplication();
     $scope.refreshInfo();
-    $scope.refreshPing();
   };
 
   $scope.refresh();
