@@ -34,10 +34,10 @@ solrAdminApp.controller('CloudController',
             treeSubController($scope, Zookeeper);
         } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, Zookeeper, ClusterV2, ApiErrorHandler);
+            graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
+            nodesSubController($scope, $timeout, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
+var nodesSubController = function($scope, $timeout, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -216,28 +216,34 @@ var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metri
         }
       }
 
-      live_nodes = data.cluster.live_nodes;
-      for (n in data.cluster.live_nodes) {
-        node = data.cluster.live_nodes[n];
-        if (!(node in nodes)) {
-          var hostName = node.split(":")[0];
-          nodes[node] = {};
-          nodes[node]['host'] = hostName;
-        }
-        ensureNodeInHosts(node, hosts);
-      }
+      ClusterV2.listClusterNodes(function (error, nodesData, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); return; }
 
-      // Make sure nodes are sorted alphabetically to align with rowspan in table
-      for (var host in hosts) {
-        hosts[host].nodes.sort();
-      }
+          live_nodes = nodesData.nodes;
+          for (n in live_nodes) {
+            node = live_nodes[n];
+            if (!(node in nodes)) {
+              var hostName = node.split(":")[0];
+              nodes[node] = {};
+              nodes[node]['host'] = hostName;
+            }
+            ensureNodeInHosts(node, hosts);
+          }
 
-      $scope.nodes = nodes;
-      $scope.hosts = hosts;
-      $scope.live_nodes = live_nodes;
+          // Make sure nodes are sorted alphabetically to align with rowspan in table
+          for (var host in hosts) {
+            hosts[host].nodes.sort();
+          }
 
-      $scope.Math = window.Math;
-      $scope.reload();
+          $scope.nodes = nodes;
+          $scope.hosts = hosts;
+          $scope.live_nodes = live_nodes;
+
+          $scope.Math = window.Math;
+          $scope.reload();
+        });
+      });
     });
   };
 
@@ -744,7 +750,7 @@ function secondsForHumans ( seconds ) {
     return returntext.trim() === '' ? '0m' : returntext.trim();
 }
 
-var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler) {
+var graphSubController = function ($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler) {
     $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
@@ -782,10 +788,12 @@ var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler
 
     $scope.initGraph = function() {
         ClusterV2.listClusterNodes(function (error, data, response) {
-            if (error) { ApiErrorHandler.handle(response); return; }
-            var live_nodes = {};
-            for (var i = 0; i < data.nodes.length; i++) {
-                live_nodes[data.nodes[i]] = true;
+            $timeout(function() {
+                if (error) { ApiErrorHandler.handle(response); return; }
+
+                var live_nodes = {};
+                for (var i = 0; i < data.nodes.length; i++) {
+                    live_nodes[data.nodes[i]] = true;
             }
 
             var params = {view: "graph"};
@@ -942,6 +950,7 @@ var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler
                     $scope.graphData = graph_data;
                     $scope.leafCount = leaf_count;
                 });
+          });
         });
     };
 
