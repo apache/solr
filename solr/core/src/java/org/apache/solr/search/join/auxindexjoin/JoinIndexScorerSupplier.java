@@ -31,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -197,7 +198,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         for (Entry<LeafJoin, JoinColumnModel> entry : refreshed.justWritten) {
           entry.getKey().bind(entry.getValue());
         }
-        assert JoinIndexScorerSupplier.this.lastSeenJoinSearcher == freshSearcher;
+        assert Objects.equals(JoinIndexScorerSupplier.this.lastSeenJoinSearcher, freshSearcher);
         for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
           if (falseNegToDocsBits == null) {
             this.shift = approximation.docID();
@@ -699,7 +700,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // cells still reading the model they were built from; this refresh is their chance to let it go
     Map<String, LeafJoin> modelBacked = new LinkedHashMap<>();
     Set<LeafJoin> resolveTarget =
-        (newJoinIndexSearcher == this.lastSeenJoinSearcher) ? loadReference : refreshReference;
+        (Objects.equals(newJoinIndexSearcher, this.lastSeenJoinSearcher)) ? loadReference : refreshReference;
     for (LeafJoin task : leafJoins) {
       if (task.joinSegmentRef != null) {
         resolveTarget.add(task);
@@ -834,7 +835,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         justWritten.add(new SimpleEntry<>(cell, entry.getValue()));
       }
     }
-    assert this.lastSeenJoinSearcher == newJoinIndexSearcher;
+    assert Objects.equals(this.lastSeenJoinSearcher, newJoinIndexSearcher);
     return new TaskRefreshResult(joinSegments, justWritten);
   }
 
