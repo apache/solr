@@ -75,6 +75,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // FieldType identity, not equality, is what matters here
   public void inform(IndexSchema schema) {
     this.schema = schema;
     FieldType numberType = schema.getFieldTypeByName(numberTypeName);

@@ -55,8 +55,6 @@ public class V2CollectionBackupApiTest extends MockV2APITest {
     requestBody.repository = "someRepoName";
     requestBody.followAliases = true;
     requestBody.backupStrategy = COPY_FILES_STRATEGY;
-    requestBody.snapshotName = "someSnapshotName";
-    requestBody.incremental = true;
     requestBody.maxNumBackupPoints = 123;
     requestBody.async = "someId";
 
@@ -71,14 +69,12 @@ public class V2CollectionBackupApiTest extends MockV2APITest {
         CollectionParams.CollectionAction.BACKUP,
         requestBody.async,
         message -> {
-          assertEquals(message.toString(), 9, message.size());
+          assertEquals(message.toString(), 7, message.size());
           assertEquals("someCollectionName", message.get("collection"));
           assertEquals("/some/location", message.get("location"));
           assertEquals("someRepoName", message.get("repository"));
           assertEquals(true, message.get("followAliases"));
           assertEquals("copy-files", message.get("indexBackup"));
-          assertEquals("someSnapshotName", message.get("commitName"));
-          assertEquals(true, message.get("incremental"));
           assertEquals(123, message.get("maxNumBackupPoints"));
           assertEquals("someBackupName", message.get("name"));
         });
@@ -99,11 +95,10 @@ public class V2CollectionBackupApiTest extends MockV2APITest {
     validateRunCommand(
         CollectionParams.CollectionAction.BACKUP,
         message -> {
-          assertEquals(5, message.size());
+          assertEquals(4, message.size());
           assertEquals("someCollectionName", message.get("collection"));
           assertEquals("/some/location", message.get("location"));
           assertEquals("someBackupName", message.get("name"));
-          assertEquals(true, message.get("incremental"));
           assertEquals("copy-files", message.get("indexBackup"));
         });
   }
@@ -118,8 +113,6 @@ public class V2CollectionBackupApiTest extends MockV2APITest {
     params.set("repository", "someRepoName");
     params.set("followAliases", "true");
     params.set("indexBackup", COPY_FILES_STRATEGY);
-    params.set("commitName", "someSnapshotName");
-    params.set("incremental", "true");
     params.set("maxNumBackupPoints", "123");
     params.set("async", "someId");
 
@@ -129,8 +122,6 @@ public class V2CollectionBackupApiTest extends MockV2APITest {
     assertEquals("someRepoName", requestBody.repository);
     assertEquals(Boolean.TRUE, requestBody.followAliases);
     assertEquals("copy-files", requestBody.backupStrategy);
-    assertEquals("someSnapshotName", requestBody.snapshotName);
-    assertEquals(Boolean.TRUE, requestBody.incremental);
     assertEquals(Integer.valueOf(123), requestBody.maxNumBackupPoints);
     assertEquals("someId", requestBody.async);
   }
