@@ -1102,7 +1102,6 @@ public class CoreContainer {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-      zkSys.getZkController().checkOverseerDesignate();
     }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
@@ -1445,6 +1444,7 @@ public class CoreContainer {
     return coreSorter;
   }
 
+  @SuppressWarnings("ReferenceEquality") // SolrCore identity, not equality, is what matters here
   protected SolrCore registerCore(
       CoreDescriptor cd, SolrCore core, boolean registerInZk, boolean skipRecovery) {
     if (core == null) {

@@ -45,7 +45,7 @@ public class ThreadDumpServlet extends HttpServlet {
   @Override
   public void init() throws ServletException {
     try {
-      // Some PaaS like Google App Engine blacklist java.lang.managament
+      // Some PaaS like Google App Engine blacklist java.lang.management
       this.threadDump = new ThreadDump(ManagementFactory.getThreadMXBean());
     } catch (NoClassDefFoundError ncdfe) {
       this.threadDump = null; // we won't be able to provide thread dump

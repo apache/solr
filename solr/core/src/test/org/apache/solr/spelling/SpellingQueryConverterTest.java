@@ -16,10 +16,15 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.IOException;
 import java.util.List;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
@@ -32,17 +37,17 @@ import org.junit.Test;
 public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
-  public void test() {
+  public void test() throws IOException {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
-    Collection<Token> tokens = converter.convert("field:foo");
+    List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert("field:foo"));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not: " + 1, 1, tokens.size());
   }
 
   @Test
-  public void testNumeric() {
+  public void testNumeric() throws IOException {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
@@ -58,7 +63,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     };
     int[] tokensToExpect = {1, 1, 2, 2, 2, 2, 2, 2};
     for (int i = 0; i < queries.length; i++) {
-      Collection<Token> tokens = converter.convert(queries[i]);
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert(queries[i]));
       assertEquals(
           "tokens Size: " + tokens.size() + " is not: " + tokensToExpect[i],
           tokens.size(),
@@ -67,24 +72,24 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
-  public void testSpecialChars() {
+  public void testSpecialChars() throws IOException {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
     String original = "field_with_underscore:value_with_underscore";
-    Collection<Token> tokens = converter.convert(original);
+    List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert(original));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     original = "field_with_digits123:value_with_digits123";
-    tokens = converter.convert(original);
+    tokens = SpellCheckToken.drain(converter.convert(original));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     original = "field-with-hyphens:value-with-hyphens";
-    tokens = converter.convert(original);
+    tokens = SpellCheckToken.drain(converter.convert(original));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
@@ -97,7 +102,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     //    assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     original = "foo:bar^5.0";
-    tokens = converter.convert(original);
+    tokens = SpellCheckToken.drain(converter.convert(original));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
@@ -105,22 +110,16 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     String firstKeyword = "value1";
     String secondKeyword = "value2";
     original = "field-with-parenthesis:(" + firstKeyword + " " + secondKeyword + ")";
-    tokens = converter.convert(original);
+    tokens = SpellCheckToken.drain(converter.convert(original));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
-    assertEquals(
-        "first Token is not " + firstKeyword,
-        new ArrayList<>(tokens).get(0).toString(),
-        firstKeyword);
-    assertEquals(
-        "second Token is not " + secondKeyword,
-        new ArrayList<>(tokens).get(1).toString(),
-        secondKeyword);
+    assertEquals("first Token is not " + firstKeyword, tokens.get(0).toString(), firstKeyword);
+    assertEquals("second Token is not " + secondKeyword, tokens.get(1).toString(), secondKeyword);
   }
 
-  private boolean isOffsetCorrect(String s, Collection<Token> tokens) {
-    for (Token token : tokens) {
+  private boolean isOffsetCorrect(String s, List<SpellCheckToken> tokens) {
+    for (SpellCheckToken token : tokens) {
       int start = token.startOffset();
       int end = token.endOffset();
       if (!s.substring(start, end).equals(token.toString())) return false;
@@ -129,50 +128,52 @@ public class SpellingQueryConverterTest extends SolrTestCase {
   }
 
   @Test
-  public void testUnicode() {
+  public void testUnicode() throws IOException {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
 
     // chinese text value
-    Collection<Token> tokens = converter.convert("text_field:我购买了道具和服装。");
+    List<SpellCheckToken> tokens =
+        SpellCheckToken.drain(converter.convert("text_field:我购买了道具和服装。"));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
 
-    tokens = converter.convert("text_购field:我购买了道具和服装。");
+    tokens = SpellCheckToken.drain(converter.convert("text_购field:我购买了道具和服装。"));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
 
-    tokens = converter.convert("text_field:我购xyz买了道具和服装。");
+    tokens = SpellCheckToken.drain(converter.convert("text_field:我购xyz买了道具和服装。"));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
   }
 
   @Test
-  public void testMultipleClauses() {
+  public void testMultipleClauses() throws IOException {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
 
     // two field:value pairs should give two tokens
-    Collection<Token> tokens = converter.convert("买text_field:我购买了道具和服装。 field2:bar");
+    List<SpellCheckToken> tokens =
+        SpellCheckToken.drain(converter.convert("买text_field:我购买了道具和服装。 field2:bar"));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
 
     // a field:value pair and a search term should give two tokens
-    tokens = converter.convert("text_field:我购买了道具和服装。 bar");
+    tokens = SpellCheckToken.drain(converter.convert("text_field:我购买了道具和服装。 bar"));
     assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
   }
 
   @Test
-  public void testRequiredOrProhibitedFlags() {
+  public void testRequiredOrProhibitedFlags() throws IOException {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
 
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("aaa bbb ccc"));
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert("aaa bbb ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 should be optional",
@@ -185,7 +186,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
           !hasRequiredFlag(tokens.get(2)) && !hasProhibitedFlag(tokens.get(2)));
     }
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("+aaa bbb -ccc"));
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert("+aaa bbb -ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 should be required",
@@ -198,7 +199,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
           !hasRequiredFlag(tokens.get(2)) && hasProhibitedFlag(tokens.get(2)));
     }
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("aaa AND bbb ccc"));
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert("aaa AND bbb ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 doesn't precede n.b.o.",
@@ -211,7 +212,7 @@ public class SpellingQueryConverterTest extends SolrTestCase {
           !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
     }
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("aaa OR bbb OR ccc"));
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert("aaa OR bbb OR ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 doesn't precede n.b.o.",
@@ -224,7 +225,8 @@ public class SpellingQueryConverterTest extends SolrTestCase {
           !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
     }
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("aaa AND bbb NOT ccc"));
+      List<SpellCheckToken> tokens =
+          SpellCheckToken.drain(converter.convert("aaa AND bbb NOT ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 doesn't precede n.b.o.",
@@ -236,7 +238,8 @@ public class SpellingQueryConverterTest extends SolrTestCase {
           !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
     }
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("aaa NOT bbb AND ccc"));
+      List<SpellCheckToken> tokens =
+          SpellCheckToken.drain(converter.convert("aaa NOT bbb AND ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 precedes n.b.o.", hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
@@ -247,7 +250,8 @@ public class SpellingQueryConverterTest extends SolrTestCase {
           !hasNBOFlag(tokens.get(2)) && hasInBooleanFlag(tokens.get(0)));
     }
     {
-      List<Token> tokens = new ArrayList<>(converter.convert("aaa AND NOT bbb AND ccc"));
+      List<SpellCheckToken> tokens =
+          SpellCheckToken.drain(converter.convert("aaa AND NOT bbb AND ccc"));
       assertTrue("Should have 3 tokens", tokens != null && tokens.size() == 3);
       assertTrue(
           "token 1 precedes n.b.o.", hasNBOFlag(tokens.get(0)) && hasInBooleanFlag(tokens.get(0)));
@@ -259,22 +263,64 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     }
   }
 
-  private boolean hasRequiredFlag(Token t) {
-    return (t.getFlags() & QueryConverter.REQUIRED_TERM_FLAG) == QueryConverter.REQUIRED_TERM_FLAG;
+  /**
+   * A query word whose analysis throws is skipped, and the query's other words are still converted.
+   */
+  @Test
+  public void testWordFailingAnalysisIsSkipped() throws IOException {
+    SpellingQueryConverter converter = new SpellingQueryConverter();
+    converter.init(new NamedList<>());
+    converter.setAnalyzer(
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new WhitespaceTokenizer();
+            return new TokenStreamComponents(source, new FailOnTermFilter(source, "bbb"));
+          }
+        });
+
+    List<SpellCheckToken> tokens = SpellCheckToken.drain(converter.convert("aaa bbb ccc"));
+
+    assertEquals(List.of("aaa", "ccc"), tokens.stream().map(SpellCheckToken::text).toList());
   }
 
-  private boolean hasProhibitedFlag(Token t) {
-    return (t.getFlags() & QueryConverter.PROHIBITED_TERM_FLAG)
-        == QueryConverter.PROHIBITED_TERM_FLAG;
+  /** Fails on one term, the way a filter reading an external dictionary would on a bad read. */
+  private static class FailOnTermFilter extends TokenFilter {
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final String failOn;
+
+    FailOnTermFilter(TokenStream input, String failOn) {
+      super(input);
+      this.failOn = failOn;
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (!input.incrementToken()) {
+        return false;
+      }
+      if (failOn.contentEquals(termAtt)) {
+        throw new IOException("analysis of '" + failOn + "' failed");
+      }
+      return true;
+    }
   }
 
-  private boolean hasNBOFlag(Token t) {
-    return (t.getFlags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG)
+  private boolean hasRequiredFlag(SpellCheckToken t) {
+    return (t.flags() & QueryConverter.REQUIRED_TERM_FLAG) == QueryConverter.REQUIRED_TERM_FLAG;
+  }
+
+  private boolean hasProhibitedFlag(SpellCheckToken t) {
+    return (t.flags() & QueryConverter.PROHIBITED_TERM_FLAG) == QueryConverter.PROHIBITED_TERM_FLAG;
+  }
+
+  private boolean hasNBOFlag(SpellCheckToken t) {
+    return (t.flags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG)
         == QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
   }
 
-  private boolean hasInBooleanFlag(Token t) {
-    return (t.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG)
+  private boolean hasInBooleanFlag(SpellCheckToken t) {
+    return (t.flags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG)
         == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG;
   }
 }

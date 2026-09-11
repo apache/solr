@@ -487,7 +487,9 @@ limitations under the License.
             </div>
             <div id="analyze-buttons">
               <p class="clearfix note" ng-show="sampleMessage && !fileUpload && !sampleDocuments"><span>{{sampleMessage}}</span></p>
-              <button type="submit" ng-click="doAnalyze()" id="analyze" ng-show="currentSchema && (hasDocsOnServer || sampleDocuments || fileUpload)"><span>Analyze Documents</span></button>
+              <button type="submit" ng-click="doAnalyze()" id="analyze"
+                      ng-show="currentSchema && (hasDocsOnServer || sampleDocuments || fileUpload)"
+                      ng-disabled="preparingSchema || updateWorking"><span>Analyze Documents</span></button>
             </div>
           </form>
         </div>

@@ -32,8 +32,8 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    if (EnvUtils.getProperty("host") == null) {
-      System.setProperty("host", "localhost");
+    if (EnvUtils.getProperty("solr.host.advertise") == null) {
+      System.setProperty("solr.host.advertise", "localhost");
     }
   }
 

@@ -1,0 +1,11 @@
+title: >
+  AllowListUrlChecker now detects URL schemes with URLUtil#hasScheme, the same helper used when
+  building shard URLs, parsing scheme prefixes consistently and rejecting invalid schemes.
+type: fixed
+authors:
+  - name: Rajat Raghav
+    nick: Xclow3n
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18293
+    url: https://issues.apache.org/jira/browse/SOLR-18293
