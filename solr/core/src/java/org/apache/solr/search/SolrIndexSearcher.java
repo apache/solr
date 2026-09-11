@@ -799,7 +799,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         @Override
         public SimScorer scorer(
             float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-          throw new UnsupportedOperationException("should never be invoked here!");
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR, "Similarity.scorer(...) should never be invoked here!");
         }
       };
 
