@@ -38,6 +38,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
+import org.apache.solr.util.QueryLimitsTestInjectionRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.hamcrest.Matcher;
@@ -91,6 +92,7 @@ public class SolrTestCase extends LuceneTestCase {
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(new LogLevelTestRule())
+          .around(new QueryLimitsTestInjectionRule())
           .around(
               new TestRuleAdapter() {
                 @Override
@@ -159,6 +161,9 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.forceSync", "no");
       System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
+
+    // sometimes use QueryLimits in tests
+    QueryLimitsTestInjectionRule.enabled = rarely();
   }
 
   /**

@@ -20,8 +20,10 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.CallerSpecificQueryLimit;
+import org.apache.solr.util.QueryLimitsTestInjectionRule;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
@@ -42,6 +44,11 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
       }
     }
     assertU(commit());
+  }
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    QueryLimitsTestInjectionRule.enabled = false;
   }
 
   @After

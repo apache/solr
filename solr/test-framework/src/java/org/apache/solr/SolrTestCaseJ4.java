@@ -116,7 +116,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.QueryLimit;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
@@ -287,12 +286,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     ExecutorUtil.resetThreadLocalProviders();
     OpenTelemetryConfigurator.resetForTest();
-
-    // TODO: use rarely()
-    withQueryTimeout = true;
-    if (withQueryTimeout) {
-      log.info("###Test is configured to use QueryLimits");
-    }
   }
 
   @AfterClass
@@ -491,20 +484,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (withQueryTimeout) {
-      TestInjection.queryTimeout =
-          new QueryLimit() {
-            @Override
-            public Object currentValue() {
-              return "No-Op injected QueryLimit";
-            }
-
-            @Override
-            public boolean shouldExit() {
-              return false;
-            }
-          };
-    }
     if (log.isInfoEnabled()) {
       log.info("###Starting {}", getTestName()); // returns <unknown>???
     }
@@ -615,8 +594,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static Path testSolrHome;
 
   protected static SolrConfig solrConfig;
-
-  protected static boolean withQueryTimeout;
 
   /**
    * Harness initialized by create[Default]Core[Container].
