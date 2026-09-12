@@ -2,8 +2,7 @@
 
 title: >
   SolrJ's QueryResponse and other response objects can now read a JSON response, via the new
-  `JsonMapResponseParser.canonical()`; previously their accessors could throw ClassCastException.
-  The plain `JsonMapResponseParser` constructor keeps returning the raw Maps and Lists it always did.
+  `CanonicalJsonResponseParser`; previously their accessors could throw ClassCastException.
 type: added
 authors:
   - name: Serhiy Bzhezytskyy

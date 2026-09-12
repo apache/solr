@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -60,7 +61,7 @@ public class ResponseParserCanonicalResponseTest extends SolrTestCase {
   @Test
   public void testJsonMapParserCanonicalResponseIsConverted() throws Exception {
     NamedList<Object> out =
-        JsonMapResponseParser.canonical().processCanonicalResponse(json(), null);
+        new CanonicalJsonResponseParser().processCanonicalResponse(json(), null);
     assertTrue("header must be a NamedList", out.get("responseHeader") instanceof NamedList);
     assertTrue(
         "response must be a SolrDocumentList", out.get("response") instanceof SolrDocumentList);

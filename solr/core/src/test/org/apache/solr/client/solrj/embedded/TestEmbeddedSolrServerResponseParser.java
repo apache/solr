@@ -22,7 +22,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
@@ -62,7 +62,7 @@ public class TestEmbeddedSolrServerResponseParser extends SolrTestCase {
     SolrQuery q = new SolrQuery("id:1");
     q.addFacetField("name_s");
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(JsonMapResponseParser.canonical());
+    req.setResponseParser(new CanonicalJsonResponseParser());
 
     QueryResponse rsp = req.process(solrTestRule.getSolrClient());
 
@@ -103,7 +103,7 @@ public class TestEmbeddedSolrServerResponseParser extends SolrTestCase {
     SolrQuery q = new SolrQuery("id:10");
     q.setFields("*", "[child]");
     QueryRequest req = new QueryRequest(q);
-    req.setResponseParser(JsonMapResponseParser.canonical());
+    req.setResponseParser(new CanonicalJsonResponseParser());
 
     QueryResponse rsp = req.process(client);
 

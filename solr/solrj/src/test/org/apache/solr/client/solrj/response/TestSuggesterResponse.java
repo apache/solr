@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
-import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
@@ -144,7 +144,7 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
         switch (random().nextInt(3)) {
           case 0 -> new JavaBinResponseParser();
           case 1 -> new XMLResponseParser();
-          default -> JsonMapResponseParser.canonical();
+          default -> new CanonicalJsonResponseParser();
         };
     return solrTestRule.newSolrClientBuilder().withResponseParser(randomParser).build();
   }

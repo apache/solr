@@ -25,15 +25,15 @@ import org.junit.Test;
 
 /**
  * Each test feeds a JSON (json.nl=map) response for one QueryResponse section through the
- * normalizer and asserts the typed accessor works. Sections with a numeric cast (grouping, facets,
- * spellcheck) also guard the Number widening; the rest guard the structural Map -&gt; NamedList /
- * SolrDocumentList reconstruction the section relies on.
+ * canonicalizer and asserts the typed accessor works. Sections with a numeric cast (grouping,
+ * facets, spellcheck) also guard the Number widening; the rest guard the structural Map -&gt;
+ * NamedList / SolrDocumentList reconstruction the section relies on.
  */
 public class QueryResponseSectionParityTest extends SolrTestCase {
 
   private static QueryResponse parse(String json) throws Exception {
     NamedList<Object> parsed =
-        JsonMapResponseParser.canonical()
+        new JsonMapResponseParser()
             .processResponse(
                 new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "UTF-8");
     QueryResponse r = new QueryResponse();

@@ -23,12 +23,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.response.ResponseCanonicalizer;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -37,31 +34,6 @@ import org.noggit.ObjectBuilder;
  * Parses the input as a JSON {@link Map}, and puts the entries onto the response {@link NamedList}.
  */
 public class JsonMapResponseParser extends ResponseParser {
-
-  private final boolean canonical;
-
-  /** Returns the response as the JSON declares it: {@code Map}s and {@code List}s. */
-  public JsonMapResponseParser() {
-    this(false);
-  }
-
-  private JsonMapResponseParser(boolean canonical) {
-    this.canonical = canonical;
-  }
-
-  /**
-   * A parser that converts the response to the canonical shape SolrJ's response objects expect --
-   * {@link NamedList} trees with {@link org.apache.solr.common.SolrDocumentList} for document
-   * sections -- so that {@code QueryResponse} and its siblings can read a JSON response. It also
-   * asks for {@code json.nl=map}, without which a {@code NamedList} cannot be reconstructed.
-   *
-   * <p>Callers that re-serialise the response or read its raw structure want the plain constructor
-   * instead; this conversion would change what they see.
-   */
-  public static JsonMapResponseParser canonical() {
-    return new JsonMapResponseParser(true);
-  }
-
   @Override
   public String getWriterType() {
     return "json";
@@ -90,26 +62,5 @@ public class JsonMapResponseParser extends ResponseParser {
   @Override
   public Set<String> getContentTypes() {
     return CONTENT_TYPES;
-  }
-
-  private static final SolrParams CANONICAL_PARAMS =
-      SolrParams.of(JsonTextWriter.JSON_NL_STYLE, JsonTextWriter.JSON_NL_MAP);
-
-  /**
-   * Asks for {@code json.nl=map}, so that a {@link NamedList} written by the server arrives as a
-   * JSON object and {@link #processCanonicalResponse} can restore it as a {@code NamedList}. Under
-   * the default {@code json.nl=flat} the keys and values are flattened into one array, and the
-   * structure cannot be recovered.
-   */
-  @Override
-  public SolrParams getAdditionalRequestParams() {
-    return canonical ? CANONICAL_PARAMS : null;
-  }
-
-  @Override
-  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
-      throws IOException {
-    NamedList<Object> parsed = processResponse(body, encoding);
-    return canonical ? ResponseCanonicalizer.canonicalize(parsed) : parsed;
   }
 }

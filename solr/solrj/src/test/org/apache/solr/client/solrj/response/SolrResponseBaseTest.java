@@ -32,7 +32,7 @@ public class SolrResponseBaseTest extends SolrTestCase {
   public void testStatusAndQTimeWithJsonParser() throws Exception {
     String json = "{\"responseHeader\":{\"status\":0,\"QTime\":7}}";
     NamedList<Object> parsed =
-        JsonMapResponseParser.canonical()
+        new JsonMapResponseParser()
             .processResponse(
                 new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "UTF-8");
 

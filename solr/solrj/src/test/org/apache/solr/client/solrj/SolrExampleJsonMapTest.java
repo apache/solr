@@ -17,16 +17,16 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 
-/** Runs the example tests over {@link JsonMapResponseParser}. */
+/** Runs the example tests over {@link CanonicalJsonResponseParser}. */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJsonMapTest extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient() {
     return solrTestRule
         .newSolrClientBuilder()
-        .withResponseParser(JsonMapResponseParser.canonical())
+        .withResponseParser(new CanonicalJsonResponseParser())
         .build();
   }
 }

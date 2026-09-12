@@ -23,7 +23,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
-import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -31,9 +31,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * End-to-end: a real HTTP query with the JSON map response parser must return a fully typed
- * QueryResponse, proving SolrRequest.process() normalizes the non-canonical JSON response at the
- * boundary before the response classes read it (SOLR-17316).
+ * End-to-end: a real HTTP query with {@link CanonicalJsonResponseParser} must return a fully typed
+ * QueryResponse, i.e. the parser's canonical form reaches the response classes over the client's
+ * response path (SOLR-17316).
  */
 public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
 
@@ -60,7 +60,7 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
     try (SolrClient client =
         solrTestRule
             .newSolrClientBuilder()
-            .withResponseParser(JsonMapResponseParser.canonical())
+            .withResponseParser(new CanonicalJsonResponseParser())
             .build()) {
       assertTypedResponse(client);
     }
@@ -71,7 +71,7 @@ public class QueryResponseJsonParserIntegrationTest extends SolrTestCase {
   public void testTypedQueryResponseOverJsonJdk() throws Exception {
     try (SolrClient client =
         new HttpJdkSolrClient.Builder(solrTestRule.getBaseUrl())
-            .withResponseParser(JsonMapResponseParser.canonical())
+            .withResponseParser(new CanonicalJsonResponseParser())
             .build()) {
       assertTypedResponse(client);
     }
