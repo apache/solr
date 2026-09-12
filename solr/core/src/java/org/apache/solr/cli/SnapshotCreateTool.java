@@ -44,6 +44,10 @@ public class SnapshotCreateTool extends ToolBase {
           .desc("Name of the snapshot to produce")
           .get();
 
+  /** Parameters for the snapshot-create command, independent of the command line parser. */
+  record SnapshotCreateParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
   public SnapshotCreateTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -64,10 +68,18 @@ public class SnapshotCreateTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      createSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotCreateParams params =
+        new SnapshotCreateParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    createSnapshot(params);
+  }
+
+  void createSnapshot(SnapshotCreateParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      createSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 
