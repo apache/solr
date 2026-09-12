@@ -22,12 +22,12 @@
 = bin/solr create
 :page-toclevels: 2
 
-// tag::picocli-generated-man-section-name[]
-== Name
-
-bin/solr create - Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
-
-// end::picocli-generated-man-section-name[]
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
 
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
@@ -85,15 +85,8 @@ Creates a core or collection depending on whether Solr is running in standalone 
 
 // end::picocli-generated-man-section-options[]
 
-// tag::picocli-generated-man-section-arguments[]
-// end::picocli-generated-man-section-arguments[]
-
-// tag::picocli-generated-man-section-commands[]
-// end::picocli-generated-man-section-commands[]
-
 // tag::picocli-generated-man-section-exit-status[]
-==  Exit Codes:
-
+== Exit Codes
 *0*::
   Collection or core created successfully.
 
@@ -103,8 +96,7 @@ Creates a core or collection depending on whether Solr is running in standalone 
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
-==  Examples:
-
+== Examples
 [%hardbreaks]
   # Create a collection or core
   bin/solr create -c myCollection

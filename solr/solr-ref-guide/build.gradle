@@ -593,6 +593,15 @@ def ASF_LICENSE_HEADER = """\
 // under the License.
 """
 
+def EXPERIMENTAL_NOTICE = """\
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
+"""
+
 def DO_NOT_EDIT_NOTICE = """\
 //
 // DO NOT EDIT -- this page is auto-generated from picocli annotations.
@@ -699,7 +708,7 @@ String markRequiredOptionsAndArgs(String content) {
 // Post-process a raw ManPageGenerator AsciiDoc file for Antora compatibility.
 // The title lives inside the man-section-header block, so we replace the whole
 // header block with an Antora-compatible page title + attributes.
-String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNotice) {
+String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNotice, String experimentalNotice) {
   def content = rawFile.text
   def baseName = rawFile.name.replace('.adoc', '')
   def newTitle = cliFileNameToTitle(baseName)
@@ -741,24 +750,64 @@ String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNot
   content = content.replace("// tag::picocli-generated-full-manpage[]\n", '')
   content = content.replace("// end::picocli-generated-full-manpage[]\n", '')
 
+  // The Name section repeats the Description verbatim for every command, and the page title
+  // already names the command, so drop it.
+  content = content.replaceAll(
+    /(?s)\/\/ tag::picocli-generated-man-section-name\[\].*?\/\/ end::picocli-generated-man-section-name\[\]\n\n?/, '')
+
+  // Drop tag comment pairs left empty because the command has no such section.
+  content = content.replaceAll(
+    /(?m)^\/\/ tag::(picocli-generated-[^\[]+)\[\]\n\/\/ end::\1\[\]\n\n?/, '')
+
+  // picocli emits man-page style headings; match the house style used by every other page.
+  content = content.replaceAll(/(?m)^==\s+(.*?):\s*$/, '== $1')
+
+  // Inserted last, after the blanket 'xref:solr-' -> 'xref:cli/solr-' rewrite above, which would
+  // otherwise redirect this notice's own link into pages/cli/.
+  content = content.replace(":page-toclevels: 2\n", ":page-toclevels: 2\n\n" + experimentalNotice)
+
   return asfHeader + doNotEditNotice + "\n" + content.stripTrailing() + "\n"
 }
 
 // Build the CLI sub-page nav entries from the generated .adoc files in destDir.
 // Returns a list of nav lines like "** xref:cli/solr-start.adoc[start]"
+// Build the "Migrated Commands" table for the hand-written cli/index.adoc, so that the list of
+// migrated commands cannot drift from the set of generated pages.
+String buildCliCommandTable(File cliDir) {
+  def files = ((cliDir.listFiles() ?: []) as List<File>)
+    .findAll { it.name.startsWith('solr-') && it.name.endsWith('.adoc') }
+    .sort { it.name }
+  def rows = files.collect { file ->
+    def baseName = file.name.replace('.adoc', '')
+    "|xref:cli/${file.name}[${cliFileNameToTitle(baseName)}]"
+  }
+  return "[cols=\"1\",options=\"header\"]\n|===\n|Command\n\n" + rows.join('\n') + "\n|==="
+}
+
 List<String> buildCliNavEntries(File cliDir) {
   // Sort so that parent commands always precede their children.
   // The trick: append '\u0000' (NUL, ASCII 0) to the stem before sorting.
   // NUL < '-' (ASCII 45), so "solr-zk\0" < "solr-zk-cp\0", placing the parent first.
   def files = ((cliDir.listFiles() ?: []) as List<File>)
-    .findAll { it.name.endsWith('.adoc') }
+    .findAll { it.name.startsWith('solr-') && it.name.endsWith('.adoc') }
     .sort { (it.name.replace('.adoc', '') + '\u0000') }
+  def stems = files.collect { it.name.replace('.adoc', '') } as Set
   return files.collect { file ->
     def baseName = file.name.replace('.adoc', '')
-    def parts = baseName.split('-')
-    // depth: "solr-start" has 2 parts → "**", "solr-zk-ls" has 3 parts → "***"
-    def stars = '*' * parts.length
     def label = cliFileNameToNavLabel(baseName)
+    // Nest under the deepest ancestor that is itself a generated page. Counting dashes instead
+    // would mis-nest a command whose own name contains one, e.g. a future "snapshot-create"
+    // would be filed under a "solr-snapshot" page that does not exist.
+    def depth = 0
+    for (def stem = baseName; stem.contains('-'); ) {
+      stem = stem.substring(0, stem.lastIndexOf('-'))
+      if (stems.contains(stem)) {
+        depth++
+      }
+    }
+    // Generated pages hang off cli/index.adoc, which itself sits under the control script page,
+    // so the shallowest generated page is already three levels deep.
+    def stars = '*' * (depth + 3)
     "${stars} xref:cli/${file.name}[${label}]"
   }
 }
@@ -809,15 +858,29 @@ task generateCliDocs {
     def rawFiles = runManPageGenerator(rawOutputDir)
 
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE)
+      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
       new File(destDir, rawFile.name).text = processed
+    }
+
+    // Refresh the command table in the hand-written landing page
+    def indexFile = new File(destDir, 'index.adoc')
+    if (indexFile.exists()) {
+      def indexContent = indexFile.text
+      if (indexContent.contains('// CLI-DOCS-TABLE-START')) {
+        def table = buildCliCommandTable(destDir)
+        indexFile.text = indexContent.replaceAll(
+          /(?s)\/\/ CLI-DOCS-TABLE-START.*?\/\/ CLI-DOCS-TABLE-END/,
+          "// CLI-DOCS-TABLE-START\n${table}\n// CLI-DOCS-TABLE-END")
+      } else {
+        logger.warn("cli/index.adoc does not contain // CLI-DOCS-TABLE-START marker; table not updated.")
+      }
     }
 
     // Update the CLI nav section in deployment-nav.adoc between marker comments
     def navContent = navFile.text
     if (navContent.contains('// CLI-DOCS-START')) {
       def navEntries = buildCliNavEntries(destDir).join('\n')
-      def replacement = "// CLI-DOCS-START\n* xref:solr-control-script-reference.adoc[]\n${navEntries}\n// CLI-DOCS-END"
+      def replacement = "// CLI-DOCS-START\n${navEntries}\n// CLI-DOCS-END"
       navContent = navContent.replaceAll(/(?s)\/\/ CLI-DOCS-START.*?\/\/ CLI-DOCS-END/, replacement)
       navFile.text = navContent
     } else {
@@ -851,7 +914,7 @@ task checkCliDocsUpToDate {
     def issues = []
 
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE)
+      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
       def committed = new File(committedDir, rawFile.name)
       if (!committed.exists()) {
         issues << "MISSING committed file (new command): ${rawFile.name}"

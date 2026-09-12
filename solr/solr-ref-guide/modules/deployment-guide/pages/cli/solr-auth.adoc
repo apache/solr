@@ -22,12 +22,12 @@
 = bin/solr auth
 :page-toclevels: 2
 
-// tag::picocli-generated-man-section-name[]
-== Name
-
-bin/solr auth - Updates or enables/disables authentication. Must be run on the Solr server itself.
-
-// end::picocli-generated-man-section-name[]
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
 
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
@@ -97,12 +97,8 @@ _enable|disable_::
 
 // end::picocli-generated-man-section-arguments[]
 
-// tag::picocli-generated-man-section-commands[]
-// end::picocli-generated-man-section-commands[]
-
 // tag::picocli-generated-man-section-exit-status[]
-==  Exit Codes:
-
+== Exit Codes
 *0*::
   Authentication was enabled or disabled successfully.
 
@@ -112,8 +108,7 @@ _enable|disable_::
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
-==  Examples:
-
+== Examples
 [%hardbreaks]
   # Enable basic authentication with the given credentials
   bin/solr auth enable --type basicAuth --credentials solr:SolrRocks

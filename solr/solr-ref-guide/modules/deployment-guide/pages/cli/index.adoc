@@ -1,0 +1,94 @@
+= Experimental picocli Command Line Interface
+:page-toclevels: 2
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr is migrating the `bin/solr` command line tool from Apache Commons CLI to https://picocli.info/[picocli].
+While that work is in progress, both implementations ship together and the picocli one can be enabled on request.
+
+[WARNING]
+====
+The picocli command line interface is *experimental* and disabled by default.
+
+* Only some commands have been migrated so far.
+* Options, defaults and error messages may change without notice between releases.
+* Where this implementation and the default one differ, xref:solr-control-script-reference.adoc[] describes what `bin/solr` actually does by default.
+
+Do not depend on it in scripts or automation yet.
+====
+
+== Enabling It
+
+Set `SOLR_PICOCLI` in your `solr.in.sh` (or `solr.in.cmd` on Windows):
+
+[source,bash]
+----
+SOLR_PICOCLI=true
+----
+
+Or set the equivalent system property for a single invocation:
+
+[source,bash]
+----
+SOLR_TOOL_OPTS="-Dsolr.picocli=true" bin/solr status
+----
+
+Unset it, or set it to anything other than `true`, to return to the default implementation.
+
+== Migrated Commands
+
+The commands below have been migrated and have a reference page generated from their source annotations.
+Any command not listed here is unavailable when the picocli implementation is enabled, and reports an unmatched argument.
+
+// CLI-DOCS-TABLE-START
+[cols="1",options="header"]
+|===
+|Command
+
+|xref:cli/solr-auth.adoc[bin/solr auth]
+|xref:cli/solr-create.adoc[bin/solr create]
+|xref:cli/solr-delete.adoc[bin/solr delete]
+|xref:cli/solr-start.adoc[bin/solr start]
+|xref:cli/solr-status.adoc[bin/solr status]
+|xref:cli/solr-stop.adoc[bin/solr stop]
+|xref:cli/solr-version.adoc[bin/solr version]
+|xref:cli/solr-zk-cp.adoc[bin/solr zk cp]
+|xref:cli/solr-zk-downconfig.adoc[bin/solr zk downconfig]
+|xref:cli/solr-zk-ls.adoc[bin/solr zk ls]
+|xref:cli/solr-zk-mkroot.adoc[bin/solr zk mkroot]
+|xref:cli/solr-zk-mv.adoc[bin/solr zk mv]
+|xref:cli/solr-zk-rm.adoc[bin/solr zk rm]
+|xref:cli/solr-zk-upconfig.adoc[bin/solr zk upconfig]
+|xref:cli/solr-zk-updateacls.adoc[bin/solr zk updateacls]
+|xref:cli/solr-zk.adoc[bin/solr zk]
+|===
+// CLI-DOCS-TABLE-END
+
+== Known Limitations
+
+In addition to the commands that have not been migrated yet:
+
+* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
+* `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
+  This matches the default implementation, but means `--fail-on-exists false` does not disable the check.
+* Error messages for invalid or mutually exclusive options are worded differently from the default implementation.
+* `bin/solr zk --help` lays its sub-command help out differently from the default implementation.
+
+== Reporting Problems
+
+Please report anything that behaves differently from xref:solr-control-script-reference.adoc[] against
+https://issues.apache.org/jira/browse/SOLR-17697[SOLR-17697].

@@ -22,12 +22,12 @@
 = bin/solr delete
 :page-toclevels: 2
 
-// tag::picocli-generated-man-section-name[]
-== Name
-
-bin/solr delete - Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.
-
-// end::picocli-generated-man-section-name[]
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
 
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
@@ -78,15 +78,8 @@ Deletes a collection or core depending on whether Solr is running in SolrCloud o
 
 // end::picocli-generated-man-section-options[]
 
-// tag::picocli-generated-man-section-arguments[]
-// end::picocli-generated-man-section-arguments[]
-
-// tag::picocli-generated-man-section-commands[]
-// end::picocli-generated-man-section-commands[]
-
 // tag::picocli-generated-man-section-exit-status[]
-==  Exit Codes:
-
+== Exit Codes
 *0*::
   Collection or core deleted successfully.
 
@@ -96,8 +89,7 @@ Deletes a collection or core depending on whether Solr is running in SolrCloud o
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
-==  Examples:
-
+== Examples
 [%hardbreaks]
   # Delete a collection in SolrCloud mode
   bin/solr delete -c myCollection
