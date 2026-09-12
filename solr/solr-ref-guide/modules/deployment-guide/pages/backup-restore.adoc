@@ -129,7 +129,7 @@ The name of the commit which was used while taking a snapshot using the CREATESN
 
 === Backup Status
 
-The `backup` operation can be monitored to see if it has completed by sending the `details` command to the `/replication` handler, as in this example:
+The `backup` operation can be monitored by sending the `details` command to the `/replication` handler, as in this example:
 
 .Status API Example
 [source,text]
@@ -137,7 +137,35 @@ The `backup` operation can be monitored to see if it has completed by sending th
 http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 ----
 
-.Output Snippet
+The `backup` section of the response describes the most recent backup on the core, whether it is still running or has already finished.
+While a backup is in progress, `status` is one of:
+
+`waiting for commit`::
+The backup has been requested, but its index commit -- and with it the list of files to copy -- has not been resolved yet.
+No file counts are reported.
+
+`running`::
+The backup's files are being copied.
+`fileCount` is the total number of files to copy, and `finishedFileCount` how many of them have been copied so far.
+
+.Output Snippet: a running backup
+[source,xml]
+----
+<lst name="backup">
+  <str name="startTime">2022-02-11T17:19:33.271461700Z</str>
+  <str name="status">running</str>
+  <str name="snapshotName">my_backup</str>
+  <str name="directoryName">snapshot.my_backup</str>
+  <int name="fileCount">10</int>
+  <int name="finishedFileCount">4</int>
+</lst>
+----
+
+`snapshotName` is only reported for a named backup.
+
+Once the backup completes, `status` becomes `success`:
+
+.Output Snippet: a completed backup
 [source,xml]
 ----
 <lst name="backup">
@@ -151,7 +179,10 @@ http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 </lst>
 ----
 
-If it failed then a `snapShootException` will be sent in the response.
+If it failed then an `exception` will be sent in the response.
+
+The reported status is retained until the next backup is started on the core, or until the core is reloaded.
+A `success` may therefore describe an earlier backup rather than one that was just requested; a newly requested backup replaces it with `waiting for commit` as soon as it is accepted.
 
 === Restore API
 

@@ -27,6 +27,13 @@ change across versions of the dependency, so when updating be SURE to
 update them to the recent version. This also allows others to see
 what changed with respect to licensing in the commit diff.
 
+LICENSE/NOTICE files are only required for jars that ship in the binary
+distribution (runtime dependencies of the server, modules and
+cross-dc-manager, plus Jetty's start.jar, which is packaged separately and is
+not on any runtime classpath). Checksum (.sha1) files are required for all
+dependencies, including test-only ones. Unreferenced files in this directory
+fail the "gradlew licenses" check and must be deleted.
+
 ---
 
 Any changes made to this directory should be noted in the changelog,

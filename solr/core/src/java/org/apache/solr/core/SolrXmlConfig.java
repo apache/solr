@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -126,12 +127,11 @@ public class SolrXmlConfig {
 
     // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
-    Map<String, String> coreAdminHandlerActions =
-        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asShallowMap()
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
+    Map<String, String> coreAdminHandlerActions = new LinkedHashMap<>();
+    for (Entry<String, Object> entry :
+        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")) {
+      coreAdminHandlerActions.put(entry.getKey(), entry.getValue().toString());
+    }
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {

@@ -31,8 +31,9 @@ import org.locationtech.spatial4j.shape.Shape;
  * org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
  *
  * @lucene.internal
+ * @deprecated Internal helper for {@link BBoxStrategy}, which is deprecated.
  */
-@Deprecated
+@Deprecated(since = "9.0")
 class BBoxValueSource extends ShapeValuesSource {
 
   private final BBoxStrategy strategy;

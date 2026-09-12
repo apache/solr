@@ -112,13 +112,13 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   public void testLuke() {
 
     // test that Luke can handle all the field types
-    assertQ(req("qt", "/admin/luke", "id", "SOLR1000"));
+    assertQ(reqWithPath("/admin/luke", "id", "SOLR1000"));
 
     final int numFlags = EnumSet.allOf(FieldFlag.class).size();
 
     assertQ(
         "Not all flags (" + numFlags + ") mentioned in info->key",
-        req("qt", "/admin/luke"),
+        reqWithPath("/admin/luke"),
         numFlags + "=count(//lst[@name='info']/lst[@name='key']/str)");
 
     // code should be the same for all fields, but just in case do several
@@ -129,7 +129,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       final String xp = getFieldXPathPrefix(f);
       assertQ(
           "Not as many schema flags as expected (" + numFlags + ") for " + f,
-          req("qt", "/admin/luke", "fl", f),
+          reqWithPath("/admin/luke", "fl", f),
           numFlags + "=string-length(" + xp + "[@name='schema'])");
     }
 
@@ -140,13 +140,13 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       final String xp = getFieldXPathPrefix(f);
       assertQ(
           "Not as many index flags as expected (" + numFlags + ") for " + f,
-          req("qt", "/admin/luke", "fl", f),
+          reqWithPath("/admin/luke", "fl", f),
           numFlags + "=string-length(" + xp + "[@name='index'])");
 
       final String hxp = getFieldXPathHistogram(f);
       assertQ(
           "Historgram field should be present for field " + f,
-          req("qt", "/admin/luke", "fl", f),
+          reqWithPath("/admin/luke", "fl", f),
           hxp + "[@name='histogram']");
     }
   }
@@ -169,7 +169,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFlParam() {
-    SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s", "show", "all");
+    SolrQueryRequest req = reqWithPath("/admin/luke", "fl", "solr_t solr_s", "show", "all");
     try {
       // First, determine that the two fields ARE there
       String response = h.query(req);
@@ -186,7 +186,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
             TestHarness.validateXPath(response, getFieldXPathPrefix(f) + "[@name='index']"));
       }
       // Insure * works
-      req = req("qt", "/admin/luke", "fl", "*");
+      req = reqWithPath("/admin/luke", "fl", "*");
       response = h.query(req);
       for (String f :
           Arrays.asList("solr_t", "solr_s", "solr_ti", "solr_td", "solr_dt", "solr_b")) {
@@ -202,25 +202,25 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     final String f = "name";
     for (String n : new String[] {"2", "3", "100", "99999"}) {
       assertQ(
-          req("qt", "/admin/luke", "fl", f, "numTerms", n),
+          reqWithPath("/admin/luke", "fl", f, "numTerms", n),
           field(f) + "lst[@name='topTerms']/int[@name='Apache']",
           field(f) + "lst[@name='topTerms']/int[@name='Solr']",
           "count(" + field(f) + "lst[@name='topTerms']/int)=2");
     }
 
     assertQ(
-        req("qt", "/admin/luke", "fl", f, "numTerms", "1"),
+        reqWithPath("/admin/luke", "fl", f, "numTerms", "1"),
         // no guarantee which one we find
         "count(" + field(f) + "lst[@name='topTerms']/int)=1");
 
     assertQ(
-        req("qt", "/admin/luke", "fl", f, "numTerms", "0"),
+        reqWithPath("/admin/luke", "fl", f, "numTerms", "0"),
         "count(" + field(f) + "lst[@name='topTerms']/int)=0");
 
     // field with no terms shouldn't error
     for (String n : new String[] {"0", "1", "2", "100", "99999"}) {
       assertQ(
-          req("qt", "/admin/luke", "fl", "bogus_s", "numTerms", n),
+          reqWithPath("/admin/luke", "fl", "bogus_s", "numTerms", n),
           "count(" + field(f) + "lst[@name='topTerms']/int)=0");
     }
   }
@@ -234,7 +234,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     try {
       assertQ(
-          req("qt", "/admin/luke", "show", "schema"),
+          reqWithPath("/admin/luke", "show", "schema"),
           "//lst[@name='custom_tc_string']/lst[@name='indexAnalyzer']",
           "//lst[@name='custom_tc_string']/lst[@name='queryAnalyzer']",
           "0=count(//lst[@name='custom_tc_string']/lst[@name='indexAnalyzer']/lst[@name='filters'])",
@@ -249,7 +249,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testCopyFieldLists() throws Exception {
-    SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
+    SolrQueryRequest req = reqWithPath("/admin/luke", "show", "schema");
 
     String xml = h.query(req);
     String r =
@@ -284,7 +284,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
         "<copyField source=\"*\" dest=\"catchall_t\"/> is missing from the schema",
         foundCatchAllCopyField);
 
-    SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema", "indent", "on");
+    SolrQueryRequest req = reqWithPath("/admin/luke", "show", "schema", "indent", "on");
     String xml = h.query(req);
     String result =
         TestHarness.validateXPath(
@@ -323,7 +323,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
       assertQ(
           "index flags should be present for solr_s despite deletion in segment",
-          req("qt", "/admin/luke", "fl", "solr_s"),
+          reqWithPath("/admin/luke", "fl", "solr_s"),
           getFieldXPathPrefix("solr_s") + "[@name='index']");
 
       // Now test the inverse: delete the edges and keep the middle. The first term
@@ -342,7 +342,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
       assertQ(
           "index flags should be present for solr_s when edges are deleted",
-          req("qt", "/admin/luke", "fl", "solr_s"),
+          reqWithPath("/admin/luke", "fl", "solr_s"),
           getFieldXPathPrefix("solr_s") + "[@name='index']");
     } finally {
       deleteCore();

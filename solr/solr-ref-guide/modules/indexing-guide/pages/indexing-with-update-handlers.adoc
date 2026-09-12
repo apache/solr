@@ -135,7 +135,7 @@ Blocks until a new searcher is opened and registered as the main query searcher,
 +
 Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process.
 Resulting segments will respect `maxMergedSegmentMB`.
-This option only applies in a `<commit> operation`.
+This option only applies in a `<commit>` operation.
 +
 WARNING: `expungeDeletes` is less expensive than optimize, but the same warnings apply.
 
@@ -148,7 +148,7 @@ WARNING: `expungeDeletes` is less expensive than optimize, but the same warnings
 +
 Makes a best effort attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved.
 Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
-This option only applies in a `<optimize` operation.
+This option only applies in a `<optimize>` operation.
 Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting.
 
 Here are examples of `<commit>` and `<optimize>` using optional attributes:

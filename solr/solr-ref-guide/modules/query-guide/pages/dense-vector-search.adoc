@@ -355,6 +355,8 @@ Apache Solr provides three query parsers that work with the `DenseVectorField` f
 
 All parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (without needing to compute their vector similarity distances).
 
+While field queries and bounded range queries are not supported on `DenseVectorField`, existence queries such as `vector:*` (or the equivalent `vector:[* TO *]`) can be used to match documents that have a value for the vector field.
+
 Common parameters for all query parsers are:
 
 `f`::

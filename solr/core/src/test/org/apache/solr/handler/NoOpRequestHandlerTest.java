@@ -41,7 +41,7 @@ public class NoOpRequestHandlerTest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              try (SolrQueryRequest req = req("qt", "/schema")) {
+              try (SolrQueryRequest req = reqWithPath("/schema")) {
                 SolrQueryResponse rsp = new SolrQueryResponse();
                 h.getCore().execute(h.getCore().getRequestHandler("/schema"), req, rsp);
                 if (rsp.getException() != null) {
@@ -66,7 +66,7 @@ public class NoOpRequestHandlerTest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              try (SolrQueryRequest req = req("qt", "/schema/fields")) {
+              try (SolrQueryRequest req = reqWithPath("/schema/fields")) {
                 SolrQueryResponse rsp = new SolrQueryResponse();
                 h.getCore().execute(h.getCore().getRequestHandler("/schema"), req, rsp);
                 if (rsp.getException() != null) {

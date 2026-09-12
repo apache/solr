@@ -52,6 +52,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -976,26 +977,23 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-13203 * */
+  @SuppressWarnings("try")
   public void testUfDynamicField() {
-    try {
-      ignoreException("dynamic field");
-
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("dynamic field")) {
       SolrException exception =
           expectThrows(
               SolrException.class, () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("dynamic field name must start or end with *", exception.getMessage());
-    } finally {
-      resetExceptionIgnores();
     }
 
     // simple test to validate dynamic uf parsing works
     assertQ(req("uf", "trait* id", "defType", "edismax"));
   }
 
+  @SuppressWarnings("try")
   public void testCyclicAliasing() {
-    try {
-      ignoreException(".*Field aliases lead to a cycle.*");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*Field aliases lead to a cycle.*")) {
 
       SolrException e =
           expectThrows(
@@ -1110,8 +1108,6 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                           "f.myalias.qf",
                           "who")));
       assertCyclicDetectionErrorMessage(e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 
@@ -3380,5 +3376,34 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertEquals(
         "org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
         exception.getMessage());
+  }
+
+  /** SOLR-504: a missing or blank "pf" must not add an empty/no-op boolean clause to the query */
+  @Test
+  public void testPfMissingOrBlankAddsNoEmptyClause() throws Exception {
+    final String expectedNoPf = "+((subject:hello | title:hello) (subject:world | title:world))";
+    final String expectedRealPf = expectedNoPf + " (subject:\"hello world\")";
+
+    for (String defType : List.of("dismax", "edismax")) {
+      try (SolrQueryRequest req = req("qf", "subject title", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedNoPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+      try (SolrQueryRequest req = req("qf", "subject title", "pf", "", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedNoPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+      // sanity check: a real pf *does* add a (non-empty) phrase clause
+      try (SolrQueryRequest req = req("qf", "subject title", "pf", "subject", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedRealPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+    }
   }
 }

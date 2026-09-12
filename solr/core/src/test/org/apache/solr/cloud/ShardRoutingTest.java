@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.SequencedMap;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ServletFixtures;
 import org.junit.BeforeClass;
@@ -325,7 +327,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
       client.add(sdoc("id", "b!doc", "foo_i", map("inc", 1)));
       expectedVal++;
 
-      QueryResponse rsp = client.query(params("qt", "/get", "id", "b!doc"));
+      QueryResponse rsp = new QueryRequest("/get", params("id", "b!doc")).process(client);
       Object val = ((Map) rsp.getResponse().get("doc")).get("foo_i");
       assertEquals((Integer) expectedVal, val);
     }
@@ -350,7 +352,9 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   }
 
   void doRTG(String ids) throws Exception {
-    doQuery(ids, "qt", "/get", "ids", ids);
+    final var expectedIds = StrUtils.splitSmart(ids, ",", true);
+    final var request = new QueryRequest("/get", params("ids", ids));
+    doQuery(expectedIds, request);
   }
 
   // TODO: refactor some of this stuff into the SolrJ client... it should be easier to use

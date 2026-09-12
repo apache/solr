@@ -109,8 +109,6 @@ import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.SolrComparisonBoolFunction;
 import org.apache.solr.search.function.distance.GeoDistValueSourceParser;
-import org.apache.solr.search.function.distance.GeohashFunction;
-import org.apache.solr.search.function.distance.GeohashHaversineFunction;
 import org.apache.solr.search.function.distance.HaversineFunction;
 import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
 import org.apache.solr.search.function.distance.StringDistanceFunction;
@@ -460,32 +458,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
         });
 
-    addParser(
-        "ghhsin",
-        new ValueSourceParser() {
-          @Override
-          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            double radius = fp.parseDouble();
-
-            ValueSource gh1 = fp.parseValueSource();
-            ValueSource gh2 = fp.parseValueSource();
-
-            return new GeohashHaversineFunction(gh1, gh2, radius);
-          }
-        });
-
-    addParser(
-        "geohash",
-        new ValueSourceParser() {
-          @Override
-          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-
-            ValueSource lat = fp.parseValueSource();
-            ValueSource lon = fp.parseValueSource();
-
-            return new GeohashFunction(lat, lon);
-          }
-        });
     addParser(
         "strdist",
         new ValueSourceParser() {
@@ -898,7 +870,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
                   SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
             }
 
-            IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+            IndexSchema schema = fp.getReq().getSchema();
             PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
 
             if (decoder == null) {

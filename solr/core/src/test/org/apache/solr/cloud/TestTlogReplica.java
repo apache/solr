@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrClient;
@@ -59,6 +60,8 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexWriter;
@@ -197,7 +200,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       DocCollection docCollection = getCollectionState(collectionName);
       assertNotNull(docCollection);
       assertEquals("Expecting 2 shards", 2, docCollection.getSlices().size());
-      assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
+      assertEquals("Expecting 4 replicas per shard", 8, docCollection.replicaStream().count());
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
@@ -254,50 +257,49 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    Replica sliceLeader = s.getLeader();
+    SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       // TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (SolrClient tlogReplicaClient = getHttpSolrClient(r)) {
-        while (true) {
-          try {
-            assertEquals(
-                "Replica " + r.getName() + " not up to date after 10 seconds",
-                1,
-                tlogReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-            JettySolrRunner jetty =
-                cluster.getJettySolrRunners().stream()
-                    .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
-                    .findFirst()
-                    .orElse(null);
-            assertNotNull("Could not find jetty for replica " + r, jetty);
+      SolrClient tlogReplicaClient = cluster.getSolrClient(r);
+      while (true) {
+        try {
+          assertEquals(
+              "Replica " + r.getName() + " not up to date after 10 seconds",
+              1,
+              tlogReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+          JettySolrRunner jetty =
+              cluster.getJettySolrRunners().stream()
+                  .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
+                  .findFirst()
+                  .orElse(null);
+          assertNotNull("Could not find jetty for replica " + r, jetty);
 
-            try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
-              var cumulativeAddsDatapoint =
-                  SolrMetricTestUtils.getGaugeDatapoint(
-                      core,
-                      "solr_core_update_cumulative_ops",
-                      SolrMetricTestUtils.newCloudLabelsBuilder(core)
-                          .label("category", "UPDATE")
-                          .label("ops", "adds")
-                          .build());
-              assertNotNull("Could not find cumulative adds metric", cumulativeAddsDatapoint);
-              assertEquals(
-                  "Append replicas should receive all updates. Replica: " + r,
-                  1.0,
-                  cumulativeAddsDatapoint.getValue(),
-                  0.0);
-            }
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(100);
-            }
+          try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
+            var cumulativeAddsDatapoint =
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    core,
+                    "solr_core_update_cumulative_ops",
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            assertNotNull("Could not find cumulative adds metric", cumulativeAddsDatapoint);
+            assertEquals(
+                "Append replicas should receive all updates. Replica: " + r,
+                1.0,
+                cumulativeAddsDatapoint.getValue(),
+                0.0);
+          }
+          break;
+        } catch (AssertionError e) {
+          if (t.hasTimedOut()) {
+            throw e;
+          } else {
+            Thread.sleep(100);
           }
         }
       }
@@ -440,9 +442,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    Replica sliceLeader = s.getLeader();
+    SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
     waitForNumDocsInAllReplicas(
         1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
@@ -718,7 +720,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private List<Replica> getNonLeaderReplicas(String collectionName) {
-    return getCollectionState(collectionName).getReplicas().stream()
+    return getCollectionState(collectionName)
+        .replicaStream()
         .filter((r) -> !r.getBool("leader", false))
         .collect(Collectors.toList());
   }
@@ -891,10 +894,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     updates.add(simulatedDBQ("inplace_updatable_int:5", 3L));
     updates.add(simulatedUpdateRequest(1L, "id", 1, "inplace_updatable_int", 6, "_version_", 2L));
     for (JettySolrRunner solrRunner : getSolrRunner(false)) {
-      try (SolrClient client = solrRunner.newClient()) {
-        for (UpdateRequest up : updates) {
-          up.process(client, collectionName);
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (UpdateRequest up : updates) {
+        up.process(client, collectionName);
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
@@ -976,7 +978,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     waitForNumDocsInAllReplicas(
         numDocs,
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()),
         timeout);
@@ -995,20 +998,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
-        while (true) {
-          try {
-            assertEquals(
-                "Replica " + r.getName() + " not up to date after " + timeout + " seconds",
-                numDocs,
-                replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(100);
-            }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      while (true) {
+        try {
+          assertEquals(
+              "Replica " + r.getName() + " not up to date after " + timeout + " seconds",
+              numDocs,
+              replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
+          break;
+        } catch (AssertionError e) {
+          if (t.hasTimedOut()) {
+            throw e;
+          } else {
+            Thread.sleep(100);
           }
         }
       }
@@ -1062,15 +1064,17 @@ public class TestTlogReplica extends SolrCloudTestCase {
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
     return (liveNodes, collectionState) -> {
-      for (Replica r : collectionState.getReplicas()) {
-        if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
-          return false;
-        }
-        if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
-          return false;
-        }
-        if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
-          return false;
+      for (Slice slice : collectionState) {
+        for (Replica r : slice.getReplicas()) {
+          if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
+            return false;
+          }
+          if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
+          if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
         }
       }
       return true;
@@ -1106,62 +1110,60 @@ public class TestTlogReplica extends SolrCloudTestCase {
     };
   }
 
-  private List<SolrCore> getSolrCore(boolean isLeader) {
-    List<SolrCore> rs = new ArrayList<>();
-
+  /**
+   * Invokes {@code consumer} for each core, across the cluster, whose leader/replica status matches
+   * {@code isLeader}.
+   */
+  private void forEachMatchingCloudDescriptor(
+      boolean isLeader, BiConsumer<JettySolrRunner, CoreDescriptor> consumer) {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
-
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      if (solrRunner.getCoreContainer() == null) continue;
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
+      CoreContainer coreContainer = solrRunner.getCoreContainer();
+      if (coreContainer == null) continue;
+      for (CoreDescriptor coreDescriptor : coreContainer.getCoreDescriptors()) {
+        CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (Objects.equals(slice.getLeader(), replica) && isLeader) {
-          rs.add(solrCore);
-        } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
-          rs.add(solrCore);
+        if (Objects.equals(slice.getLeader(), replica) == isLeader) {
+          consumer.accept(solrRunner, coreDescriptor);
         }
       }
     }
+  }
+
+  /** NOT INC-REF'ED. Assumption: the returned cores are not closed or going to be closed yet. */
+  private List<SolrCore> getSolrCore(boolean isLeader) {
+    List<SolrCore> rs = new ArrayList<>();
+    forEachMatchingCloudDescriptor(
+        isLeader,
+        (solrRunner, coreDescriptor) -> {
+          SolrCore solrCore = solrRunner.getCoreContainer().getCore(coreDescriptor.getName());
+          solrCore.close(); // dec-ref.
+          rs.add(solrCore);
+        });
     return rs;
   }
 
   private void checkRTG(int from, int to, List<JettySolrRunner> solrRunners) throws Exception {
     for (JettySolrRunner solrRunner : solrRunners) {
-      try (SolrClient client = solrRunner.newClient()) {
-        for (int i = from; i <= to; i++) {
-          SolrQuery query = new SolrQuery();
-          query.set("distrib", false);
-          query.setRequestHandler("/get");
-          query.set("id", i);
-          QueryResponse res = client.query(collectionName, query);
-          assertNotNull(
-              "Can not find doc " + i + " in " + solrRunner.getBaseUrl(),
-              res.getResponse().get("doc"));
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (int i = from; i <= to; i++) {
+        SolrQuery query = new SolrQuery();
+        query.set("distrib", false);
+        query.setRequestHandler("/get");
+        query.set("id", i);
+        QueryResponse res = client.query(collectionName, query);
+        assertNotNull(
+            "Can not find doc " + i + " in " + solrRunner.getBaseUrl(),
+            res.getResponse().get("doc"));
       }
     }
   }
 
   private List<JettySolrRunner> getSolrRunner(boolean isLeader) {
     List<JettySolrRunner> rs = new ArrayList<>();
-    CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
-    for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      if (solrRunner.getCoreContainer() == null) continue;
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
-        Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (Objects.equals(slice.getLeader(), replica) && isLeader) {
-          rs.add(solrRunner);
-        } else if (!Objects.equals(slice.getLeader(), replica) && !isLeader) {
-          rs.add(solrRunner);
-        }
-      }
-    }
+    forEachMatchingCloudDescriptor(isLeader, (solrRunner, coreDescriptor) -> rs.add(solrRunner));
     return rs;
   }
 

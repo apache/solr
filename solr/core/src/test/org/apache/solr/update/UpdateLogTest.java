@@ -200,7 +200,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     // sanity check that the update log has one document, and RTG returns the document
     assertEquals(1, ulog.map.size());
     assertJQ(
-        req("qt", "/get", "id", "1"),
+        reqWithPath("/get", "id", "1"),
         "=={'doc':{ 'id':'1', 'val1_i_dvo':3, '_version_':102, 'title_s':'title1', "
             // fields with default values
             + "'inplace_updatable_int_with_default':666, 'inplace_updatable_float_with_default':42.0}}");
@@ -215,7 +215,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
       assertTrue(String.valueOf(ulog.prevMap), ulog.prevMap == null || ulog.prevMap.size() == 0);
       assertTrue(String.valueOf(ulog.prevMap2), ulog.prevMap2 == null || ulog.prevMap2.size() == 0);
       // verify that the document is deleted, by doing an RTG call
-      assertJQ(req("qt", "/get", "id", "1"), "=={'doc':null}");
+      assertJQ(reqWithPath("/get", "id", "1"), "=={'doc':null}");
     } else { // dbi
       List<?> entry = ((List<?>) ulog.lookup(DOC_1_INDEXED_ID));
       assertEquals(

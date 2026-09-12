@@ -1318,7 +1318,7 @@ public class SimpleFacets {
       final ParsedParams parsed = parseParams(FacetParams.FACET_INTERVAL, field);
       String[] intervalStrs =
           parsed.required.getFieldParams(parsed.facetValue, FacetParams.FACET_INTERVAL_SET);
-      SchemaField schemaField = searcher.getCore().getLatestSchema().getField(parsed.facetValue);
+      SchemaField schemaField = searcher.getSchema().getField(parsed.facetValue);
       if (parsed.params.getBool(GroupParams.GROUP_FACET, false)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,

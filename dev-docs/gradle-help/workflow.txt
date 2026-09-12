@@ -53,6 +53,7 @@ Other validation and checks
 Generate a report of dependencies with known OWASP vulnerabilities:
 gradlew :dependencyCheckAnalyze
 open ./build/reports/dependency-check-report.html
+(requires an NVD API key, see dev-docs/FAQ.adoc)
 
 Additional General Options
 ==========================

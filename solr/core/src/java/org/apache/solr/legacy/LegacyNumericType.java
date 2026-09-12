@@ -22,7 +22,7 @@ package org.apache.solr.legacy;
  * @since 3.2
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public enum LegacyNumericType {
   /** 32-bit integer numeric type */
   INT,

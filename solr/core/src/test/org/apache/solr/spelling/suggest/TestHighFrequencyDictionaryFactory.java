@@ -36,8 +36,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4 {
 
     assertU(commit());
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "",
@@ -51,8 +50,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4 {
 
     // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chagn",
@@ -71,8 +69,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4 {
             + "']/lst[@name='chagn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chacn",
@@ -91,8 +88,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4 {
             + "']/lst[@name='chacn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chagr",
@@ -108,8 +104,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4 {
             + "']/lst[@name='chagr']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='charge']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "chanr",
@@ -122,8 +117,7 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4 {
             + "']/lst[@name='chanr']/int[@name='numFound'][.='3']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             REQUEST_URI,
             "q",
             "cyhnce",

@@ -6,14 +6,15 @@
   "dependencyDashboard": false,
   "enabledManagers": ["gradle", "github-actions"],
   "labels": ["exempt-stale"],
+  "milestone": 1,
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [
-      "./gradlew resolveAndLockAll collectJarInfos --write-locks",
+      "./gradlew resolveAndLockAll --write-locks",
       "./gradlew kotlinUpgradeYarnLock",
       "./gradlew updateLicenses"
     ],
-    "fileFilters": ["solr/licenses/*.sha1", "solr/**/gradle.lockfile"],
+    "fileFilters": ["solr/licenses/*.sha1", "**/gradle.lockfile", "settings-gradle.lockfile"],
     "executionMode": "branch"
   },
   "packageRules": [

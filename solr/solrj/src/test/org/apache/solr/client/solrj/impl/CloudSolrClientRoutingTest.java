@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -148,7 +147,8 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
+        cluster
+            .newSolrClientBuilder()
             .withDefaultCollection(collectionName)
             .sendUpdatesOnlyToShardLeaders()
             .sendDirectUpdatesToShardLeadersOnly()

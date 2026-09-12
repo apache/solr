@@ -21,8 +21,6 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -170,11 +168,8 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
   }
 
   private CloudSolrClient newCloudSolrClient() {
-    var builder =
-        new CloudSolrClient.Builder(
-            List.of(cluster.getZkServer().getZkAddress()), Optional.empty());
-    var client = builder.build();
-    client.connect();
+    var client = cluster.newSolrClientBuilder().build();
+    client.getClusterStateProvider().getLiveNodes(); // force the connection now
     return client;
   }
 

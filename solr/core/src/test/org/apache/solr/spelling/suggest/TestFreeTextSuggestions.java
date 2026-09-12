@@ -25,13 +25,12 @@ public class TestFreeTextSuggestions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
-    assertQ(req("qt", URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
+    assertQ(reqWithPath(URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
 
   public void test() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "foo b",
@@ -43,8 +42,7 @@ public class TestFreeTextSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo b']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo bar']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "foo ",
@@ -57,8 +55,7 @@ public class TestFreeTextSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo ']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='foo bee']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "foo",
@@ -69,8 +66,7 @@ public class TestFreeTextSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo']/int[@name='numFound'][.='1']",
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo']");
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI,
             "q",
             "b",

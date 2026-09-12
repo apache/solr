@@ -35,7 +35,7 @@ public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
     sb.append("/select?");
 
     if (params.length == 0) {
-      sb.append("q=solr&qt=standard");
+      sb.append("q=solr");
     } else {
       for (int i = 0; i < params.length / 2; i++) {
         if (i > 0) sb.append("&");

@@ -26,7 +26,8 @@ import org.apache.solr.client.api.model.ActiveTaskDetails;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.admin.api.ActiveTask;
+import org.apache.solr.handler.admin.api.GetTaskStatus;
+import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -102,6 +103,6 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ActiveTask.class);
+    return List.of(ListActiveTasks.class, GetTaskStatus.class);
   }
 }

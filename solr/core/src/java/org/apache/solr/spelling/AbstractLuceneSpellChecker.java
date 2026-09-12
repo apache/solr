@@ -132,19 +132,19 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    SpellingResult result = new SpellingResult(options.tokens);
+    SpellingResult result = new SpellingResult();
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy =
         (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
-    for (Token token : options.tokens) {
-      if (token.length() == 0) {
+    for (SpellCheckToken token : options.tokens) {
+      String tokenText = token.text();
+      if (tokenText.isEmpty()) {
         result.add(token, List.of());
         continue;
       }
-      String tokenText = new String(token.buffer(), 0, token.length());
       term = new Term(field, tokenText);
       int docFreq = 0;
       if (reader != null) {

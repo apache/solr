@@ -19,8 +19,10 @@ package org.apache.solr.util;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.sun.management.OperatingSystemMXBean;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -43,6 +46,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -272,6 +276,39 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   }
 
   /**
+   * Reads a real CPU usage value from the metrics, guarding against a regression where a renamed
+   * JVM metric made {@link CPUCircuitBreaker#calculateLiveCPUUsage()} silently return -1. Gated by
+   * an independent native-CPU probe so that a name regression fails here rather than being mistaken
+   * for an unsupported machine (both otherwise yield -1).
+   */
+  public void testCPUCircuitBreakerReadsLiveUsage() {
+    Assume.assumeTrue("No native CPU measurement on this machine", nativeCpuMeasurementSupported());
+
+    double usage = new ExposedCPUCircuitBreaker(h.getCoreContainer()).liveCPUUsage();
+    assertTrue("Expected CPU usage >= 0 but got " + usage, usage >= 0);
+  }
+
+  @SuppressForbidden(reason = "Probing com.sun OperatingSystemMXBean for native CPU support")
+  private static boolean nativeCpuMeasurementSupported() {
+    if (!(ManagementFactory.getOperatingSystemMXBean() instanceof OperatingSystemMXBean osBean)) {
+      return false;
+    }
+    // getCpuLoad() needs two samples and may return a negative value on the first calls
+    for (int i = 0; i < 10; i++) {
+      if (osBean.getCpuLoad() >= 0) {
+        return true;
+      }
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Common assert method to be reused in tests
    *
    * @param circuitBreaker the breaker to test
@@ -438,6 +475,17 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     @Override
     protected double calculateLiveCPUUsage() {
       return Double.MAX_VALUE;
+    }
+  }
+
+  /** Exposes the real (protected) CPU usage calculation for testing. */
+  private static class ExposedCPUCircuitBreaker extends CPUCircuitBreaker {
+    public ExposedCPUCircuitBreaker(CoreContainer coreContainer) {
+      super(coreContainer);
+    }
+
+    double liveCPUUsage() {
+      return calculateLiveCPUUsage();
     }
   }
 

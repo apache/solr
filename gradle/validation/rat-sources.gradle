@@ -246,6 +246,9 @@ allprojects {
       }
     })
     inputFileTrees.add(defaultScanFileTree)
+
+    // RAT is noisy, even when there's no problem.  So log at DEBUG
+    logging.captureStandardOutput(LogLevel.DEBUG)
   }
 }
 

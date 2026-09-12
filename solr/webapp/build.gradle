@@ -22,6 +22,17 @@ plugins {
 
 description = 'Solr webapp'
 
+ext {
+  // The Selenium-based Admin UI tests execute external binaries (selenium-manager,
+  // chromedriver) and probe well-known browser install locations plus $PATH and
+  // $CHROME_BIN for a Chrome binary. Expressing this in the shared solr-tests.policy
+  // would require FilePermission execute grants on arbitrary, machine-dependent paths
+  // (effectively <<ALL FILES>> execute), weakening the sandbox for every test module.
+  // Following the precedent of the extraction and s3-repository modules, the security
+  // manager is disabled for this module's tests instead.
+  useSecurityManager = false
+}
+
 configurations {
   war {}
   serverLib
@@ -42,6 +53,61 @@ dependencies {
 
   if (gradle.ext.withUiModule) {
     generatedUIBundle project(path: ":solr:ui", configuration: "wasmJsUIBundle")
+  }
+
+  // Browser-based tests of the AngularJS Admin UI (see src/test)
+  testImplementation project(':solr:core')
+  testImplementation project(':solr:solrj')
+  testImplementation project(':solr:test-framework')
+  // puts the /sql handler on the in-JVM server classpath so the SQL screen works
+  testRuntimeOnly project(':solr:modules:sql')
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.eclipse.jetty.ee10.servlet
+  testImplementation libs.jakarta.servlet.api
+  testImplementation libs.junit.junit
+  testImplementation(libs.selenium.chromedriver, {
+    // solr-core already provides the opentelemetry api/sdk that selenium's optional
+    // tracing uses; the remaining excludes are compile-time-only annotation jars
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.instrumentation'
+    exclude group: 'io.opentelemetry.semconv'
+    exclude group: 'com.google.auto.service'
+    exclude group: 'org.jspecify'
+  })
+}
+
+// Configure all Test tasks (including the generated beast test_N tasks, which do not
+// inherit the default test suite wiring in this war project):
+// - test classes/classpath so `gradlew -p solr/webapp beast -Ptests.dups=N` works
+// - forward the browser-binary override for the Admin UI tests to the forked test JVM
+tasks.withType(Test).configureEach {
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = sourceSets.test.runtimeClasspath
+  def chromeBinary = providers.systemProperty('tests.selenium.chrome.binary').orNull
+  if (chromeBinary != null) {
+    systemProperty 'tests.selenium.chrome.binary', chromeBinary
+  }
+
+  // the Admin UI tests exercise the generated js-client bundle; a stub would only grow
+  // stale as the UI adopts more of the v2 API, so without the bundle the tests cannot
+  // run at all. The bundle (and thereby its node/npm toolchain) is only wired in when
+  // the tests are explicitly enabled, keeping node off the default test build chain.
+  def seleniumEnabled = Boolean.parseBoolean(Objects.toString(propertyOrDefault('tests.selenium', 'false')))
+  if (seleniumEnabled && gradle.ext.withJsClient) {
+    def jsClientBundle = configurations.generatedJSClientBundle
+    inputs.files(jsClientBundle).withPropertyName('jsClientBundle')
+    doFirst {
+      systemProperty 'tests.ui.jsclient.bundle', new File(jsClientBundle.singleFile, 'index.js')
+    }
+  } else if (seleniumEnabled) {
+    doFirst {
+      throw new GradleException('Cannot run the Admin UI tests (-Ptests.selenium=true): ' +
+          '-PdisableJsClient=true excludes the js-client bundle they need. Drop one of the two flags.')
+    }
+  } else if (!gradle.ext.withJsClient) {
+    enabled = false
+    logger.warn('NOTE: :solr:webapp tests are disabled because -PdisableJsClient=true ' +
+        'excludes the js-client bundle the Admin UI tests need.')
   }
 }
 

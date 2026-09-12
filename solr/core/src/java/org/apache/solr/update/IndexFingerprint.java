@@ -200,7 +200,7 @@ public class IndexFingerprint implements MapWriter {
     if (o instanceof Map) {
       map = (Map<String, Object>) o;
     } else if (o instanceof NamedList) {
-      map = ((NamedList<Object>) o).asShallowMap();
+      map = new SimpleOrderedMap<>((NamedList<Object>) o);
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type " + o);
     }

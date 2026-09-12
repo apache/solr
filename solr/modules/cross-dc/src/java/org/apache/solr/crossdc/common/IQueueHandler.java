@@ -21,7 +21,7 @@ public interface IQueueHandler<T> {
     /** Item was successfully processed */
     HANDLED,
 
-    /** Item was not processed, and the consumer should shutdown */
+    /** Item was not processed, and the consumer should shut down */
     NOT_HANDLED_SHUTDOWN,
 
     /** Item processing failed, and the item should be retried immediately */

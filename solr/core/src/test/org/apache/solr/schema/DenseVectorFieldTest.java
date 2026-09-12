@@ -149,8 +149,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type1.getKnnAlgorithm(), is("hnsw"));
       assertThat(type1.getHnswM(), is(10));
       assertThat(type1.getHnswEfConstruction(), is(40));
-      assertThat(type1.getHnswMaxConn(), is(type1.getHnswM()));
-      assertThat(type1.getHnswBeamWidth(), is(type1.getHnswEfConstruction()));
 
       SchemaField vector2 = schema.getField("vector2");
       assertNotNull(vector2);
@@ -161,8 +159,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type2.getKnnAlgorithm(), is("hnsw"));
       assertThat(type2.getHnswM(), is(6));
       assertThat(type2.getHnswEfConstruction(), is(60));
-      assertThat(type2.getHnswMaxConn(), is(type2.getHnswM()));
-      assertThat(type2.getHnswBeamWidth(), is(type2.getHnswEfConstruction()));
 
       SchemaField vector3 = schema.getField("vector3");
       assertNotNull(vector3);
@@ -174,8 +170,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type3.getKnnAlgorithm(), is("hnsw"));
       assertThat(type3.getHnswM(), is(8));
       assertThat(type3.getHnswEfConstruction(), is(46));
-      assertThat(type3.getHnswMaxConn(), is(type3.getHnswM()));
-      assertThat(type3.getHnswBeamWidth(), is(type3.getHnswEfConstruction()));
 
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
@@ -186,8 +180,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(typeDefault.getDimension(), is(4));
       assertThat(typeDefault.getHnswM(), is(16));
       assertThat(typeDefault.getHnswEfConstruction(), is(100));
-      assertThat(typeDefault.getHnswMaxConn(), is(typeDefault.getHnswM()));
-      assertThat(typeDefault.getHnswBeamWidth(), is(typeDefault.getHnswEfConstruction()));
     } finally {
       deleteCore();
     }
@@ -556,18 +548,36 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
   }
 
-  /** Not Supported */
   @Test
-  public void query_existenceSearch_shouldThrowException() throws Exception {
+  public void query_existenceSearch_shouldMatchDocumentsWithVector() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
-      assertQEx(
-          "Running Existence queries on a dense vector field should raise an Exception",
-          "Range Queries are not supported for Dense Vector fields."
-              + " Please use the {!knn} query parser to run K nearest neighbors search queries.",
-          req("q", "vector:[* TO *]", "fl", "vector"),
-          SolrException.ErrorCode.BAD_REQUEST);
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "1");
+      doc1.addField("vector", List.of(1.0f, 2.0f, 3.0f, 4.0f));
+      assertU(adoc(doc1));
+
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField("id", "2");
+      assertU(adoc(doc2));
+
+      assertU(commit());
+
+      assertJQ(
+          req("q", "vector:[* TO *]", "fl", "id", "sort", "id asc"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='1'");
+
+      assertJQ(
+          req("q", "vector:*", "fl", "id", "sort", "id asc"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='1'");
+
+      assertJQ(
+          req("q", "-vector:*", "fl", "id", "sort", "id asc"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='2'");
     } finally {
       deleteCore();
     }

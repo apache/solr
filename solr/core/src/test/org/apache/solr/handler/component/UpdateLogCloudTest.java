@@ -22,6 +22,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -90,7 +91,10 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
           .equals(getCollectionState(COLLECTION).getLeader("shard1").getBaseUrl())) {
         specialIdx = solrClients.size();
       }
-      solrClients.add(jettySolrRunner.newClient());
+      // own clients on purpose: this test stops and restarts a node, which the runner's
+      // cached client does not survive
+      solrClients.add(
+          new HttpJettySolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build());
     }
 
     new UpdateRequest()
@@ -129,7 +133,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   private void implTest(SolrClient solrClient, int numExpected) throws Exception {
 
-    final QueryRequest reqV = new QueryRequest(params("qt", "/get", "getVersions", "12345"));
+    final QueryRequest reqV = new QueryRequest("/get", params("getVersions", "12345"));
     final NamedList<?> rspV = solrClient.request(reqV, COLLECTION);
     final List<Long> versions = (List<Long>) rspV.get("versions");
     assertEquals(versions.toString(), numExpected, versions.size());
@@ -145,9 +149,8 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     for (boolean skipDbq : new boolean[] {false, true}) {
       final QueryRequest reqU =
           new QueryRequest(
+              "/get",
               params(
-                  "qt",
-                  "/get",
                   "getUpdates",
                   minVersion + "..." + maxVersion,
                   "skipDbq",

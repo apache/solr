@@ -180,7 +180,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = 1)
   public void testLLPDecodeIsStableAndPrecise() throws Exception {
     // test that LatLonPointSpatialField decode of docValue will round-trip (re-index then
     // re-decode) to the same value

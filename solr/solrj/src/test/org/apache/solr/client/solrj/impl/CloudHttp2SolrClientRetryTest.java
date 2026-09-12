@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue;
 
-import java.util.List;
-import java.util.Optional;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -59,9 +57,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
             .useHttp1_1(true)
             .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
 
-    var cloudSolrclientBuilder =
-        new CloudSolrClient.Builder(
-            List.of(cluster.getZkServer().getZkAddress()), Optional.empty());
+    var cloudSolrclientBuilder = cluster.newSolrClientBuilder();
     cloudSolrclientBuilder.withHttpClientBuilder(
         random().nextBoolean() ? jettyClientBuilder : jdkClientBuilder);
 

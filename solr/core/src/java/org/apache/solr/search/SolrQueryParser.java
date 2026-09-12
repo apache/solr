@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search;
 
+import java.util.List;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Query;
 import org.apache.solr.parser.QueryParser;
 
 /** Solr's default query parser, a schema-driven superset of the classic lucene query parser. */
@@ -23,5 +26,11 @@ public class SolrQueryParser extends QueryParser {
 
   public SolrQueryParser(QParser parser, String defaultField) {
     super(defaultField, parser);
+  }
+
+  @Override
+  protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError {
+    Query q = super.getBooleanQuery(clauses);
+    return (parser.isAutoFixPureNegative()) ? QueryUtils.makeQueryable(q) : q;
   }
 }

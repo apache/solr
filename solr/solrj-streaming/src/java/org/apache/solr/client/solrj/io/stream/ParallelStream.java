@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.URLUtil;
 
 /**
  * The ParallelStream decorates a TupleStream implementation and pushes it to N workers for parallel
@@ -297,10 +298,14 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
         paramsLoc.set("workerID", w);
 
         paramsLoc.set("expr", pushStream.toString());
-        paramsLoc.set("qt", "/stream");
 
         String url = shardUrls.get(w);
-        SolrStream solrStream = new SolrStream(url, paramsLoc);
+        SolrStream solrStream =
+            new SolrStream(
+                URLUtil.extractBaseUrl(url),
+                URLUtil.extractCoreFromCoreUrl(url),
+                "/stream",
+                paramsLoc);
         solrStream.setStreamContext(streamContext);
         solrStreams.add(solrStream);
       }

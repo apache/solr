@@ -53,8 +53,10 @@ import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -571,7 +573,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
       boolean allContainersEmpty = true;
       for (JettySolrRunner jetty : jettys) {
         CoreContainer cc = jetty.getCoreContainer();
-        if (cc != null && cc.getCores().size() != 0) {
+        if (cc != null && !cc.getLoadedCoreNames().isEmpty()) {
           allContainersEmpty = false;
         }
       }
@@ -668,7 +670,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
         k -> {
           CloudSolrClient solrClient = newSolrClient(collectionName);
 
-          solrClient.connect();
+          solrClient.getClusterStateProvider().getLiveNodes(); // force the connection now
           if (log.isInfoEnabled()) {
             log.info(
                 "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
@@ -690,6 +692,14 @@ public class MiniSolrCloudCluster implements SolrBackend {
                 .withConnectionTimeout(15, TimeUnit.SECONDS)
                 .withIdleTimeout(90, TimeUnit.SECONDS))
         .build(); // we choose 90 because we run in some harsh envs
+  }
+
+  /**
+   * Returns a new {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} pointed at this
+   * cluster.
+   */
+  public CloudSolrClient.Builder newSolrClientBuilder() {
+    return new CloudSolrClient.Builder(getZkServer().getZkAddress());
   }
 
   public SolrZkClient getZkClient() {
@@ -730,12 +740,46 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   /** Return the jetty that a particular replica resides on */
   public JettySolrRunner getReplicaJetty(Replica replica) {
-    for (JettySolrRunner jetty : jettys) {
+    return findReplicaJetty(jettys, replica);
+  }
+
+  /** Returns the runner among {@code runners} that hosts {@code replica}. */
+  static JettySolrRunner findReplicaJetty(Collection<JettySolrRunner> runners, Replica replica) {
+    for (JettySolrRunner jetty : runners) {
       if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString())) return jetty;
+      // a proxied jetty registers its replicas under the proxy's port
+      if (replica.getCoreUrl().startsWith(jetty.getProxyBaseUrl().toString())) return jetty;
     }
     throw new IllegalArgumentException(
         "Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
+  }
+
+  /** Return the jetty for a node, identified by either its node name or its base URL. */
+  public JettySolrRunner getJetty(String nodeNameOrUrl) {
+    return findJetty(jettys, nodeNameOrUrl);
+  }
+
+  /** Returns the runner among {@code runners} identified by node name or base URL. */
+  static JettySolrRunner findJetty(Collection<JettySolrRunner> runners, String nodeNameOrUrl) {
+    for (JettySolrRunner jetty : runners) {
+      if (jetty.isStopped()) continue;
+      if (nodeNameOrUrl.equals(jetty.getNodeName())
+          || nodeNameOrUrl.equals(jetty.getBaseUrl().toString())) {
+        return jetty;
+      }
+    }
+    throw new IllegalArgumentException("Cannot find Jetty for node " + nodeNameOrUrl);
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close the returned client -- it delegates to the jetty's own shared
+   * client, which the jetty itself owns.
+   */
+  public SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        getReplicaJetty(replica).getSolrClient(), replica.getCoreName());
   }
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */

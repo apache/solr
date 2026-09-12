@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -130,7 +129,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
     protected CloudSolrClient createSolrClient() {
       log.debug("Creating new SolrClient...");
-      return new CloudSolrClient.Builder(List.of(zkConnectString), Optional.empty()).build();
+      return new CloudSolrClient.Builder(zkConnectString).build();
     }
 
     @Override
@@ -362,7 +361,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     log.trace("Entered pollAndProcessRequests loop");
     try {
       try {
-        partitionManager.checkOffsetUpdates();
+        partitionManager.checkOffsetsAndUpdate();
       } catch (Throwable e) {
         log.error("Error while checking offset updates, shutting down", e);
         return false;
@@ -379,6 +378,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       int currentCollapsed = 0;
 
       ConsumerRecord<String, MirroredSolrRequest<?>> lastRecord = null;
+      // the last record merged into updateReqBatch - not the same as lastRecord once a
+      // subsequent record has triggered a flush of that batch
+      ConsumerRecord<String, MirroredSolrRequest<?>> batchLastRecord = null;
 
       for (TopicPartition partition : records.partitions()) {
         if (log.isTraceEnabled()) {
@@ -389,8 +391,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
         PartitionManager.PartitionWork partitionWork = partitionManager.getPartitionWork(partition);
         PartitionManager.WorkUnit workUnit = new PartitionManager.WorkUnit(partition);
-        workUnit.nextOffset = PartitionManager.getOffsetForPartition(partitionRecords);
-        partitionWork.partitionQueue.add(workUnit);
         try {
           ModifiableSolrParams lastUpdateParams = null;
           for (ConsumerRecord<String, MirroredSolrRequest<?>> requestRecord : partitionRecords) {
@@ -418,19 +418,6 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             if (log.isTraceEnabled()) {
               log.trace("-- picked type={}, params={}", req.getType(), params);
             }
-            if (topicDebug) {
-              solrReq.addHeader("topic.debug", "true");
-              solrReq.addHeader("record.topic", requestRecord.topic());
-              solrReq.addHeader("record.partition", String.valueOf(requestRecord.partition()));
-              solrReq.addHeader("record.offset", String.valueOf(requestRecord.offset()));
-              solrReq.addHeader("record.timestamp", String.valueOf(requestRecord.timestamp()));
-              solrReq.addHeader("record.key", requestRecord.key());
-              solrReq.addHeader("workUnit.nextOffset", String.valueOf(workUnit.nextOffset));
-              solrReq.addHeader("workUnit.partition", String.valueOf(workUnit.partition));
-              solrReq.addHeader("workUnit.topic", workUnit.topic);
-              solrReq.addHeader("workUnit.items", String.valueOf(workUnit.workItems.size()));
-            }
-
             // determine if it's an UPDATE with deletes, or if the existing batch has deletes
             boolean hasDeletes = false;
             if (type == MirroredSolrRequest.Type.UPDATE) {
@@ -457,13 +444,27 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               }
               // send previous batch, if any
               if (updateReqBatch != null) {
-                sendBatch(updateReqBatch, type, lastRecord, workUnit);
+                sendBatch(updateReqBatch, type, batchLastRecord, workUnit);
               }
               updateReqBatch = null;
               currentCollapsed = 0;
               workUnit = new PartitionManager.WorkUnit(partition);
-              workUnit.nextOffset = PartitionManager.getOffsetForPartition(partitionRecords);
-              partitionWork.partitionQueue.add(workUnit);
+            }
+
+            // this record belongs to the current work unit
+            partitionWork.assignRecord(workUnit, requestRecord.offset());
+
+            if (topicDebug) {
+              solrReq.addHeader("topic.debug", "true");
+              solrReq.addHeader("record.topic", requestRecord.topic());
+              solrReq.addHeader("record.partition", String.valueOf(requestRecord.partition()));
+              solrReq.addHeader("record.offset", String.valueOf(requestRecord.offset()));
+              solrReq.addHeader("record.timestamp", String.valueOf(requestRecord.timestamp()));
+              solrReq.addHeader("record.key", requestRecord.key());
+              solrReq.addHeader("workUnit.nextOffset", String.valueOf(workUnit.nextOffset));
+              solrReq.addHeader("workUnit.partition", String.valueOf(workUnit.partition));
+              solrReq.addHeader("workUnit.topic", workUnit.topic);
+              solrReq.addHeader("workUnit.items", String.valueOf(workUnit.workItems.size()));
             }
 
             lastUpdateParams = params;
@@ -482,6 +483,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                 metrics.incrementCollapsedCounter();
                 currentCollapsed++;
               }
+              batchLastRecord = requestRecord;
               UpdateRequest update = (UpdateRequest) solrReq;
               MirroredSolrRequest.setParams(updateReqBatch, params);
 
@@ -511,11 +513,11 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
           }
 
           if (updateReqBatch != null) {
-            sendBatch(updateReqBatch, MirroredSolrRequest.Type.UPDATE, lastRecord, workUnit);
+            sendBatch(updateReqBatch, MirroredSolrRequest.Type.UPDATE, batchLastRecord, workUnit);
             updateReqBatch = null;
           }
           try {
-            partitionManager.checkForOffsetUpdates(partition);
+            partitionManager.checkOffsetsAndUpdate(partition);
           } catch (Throwable e) {
             log.error("Error while checking offset updates, shutting down", e);
             return false;
@@ -543,7 +545,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       }
 
       try {
-        partitionManager.checkOffsetUpdates();
+        partitionManager.checkOffsetsAndUpdate();
       } catch (Throwable e) {
         log.error("Error while checking offset updates, shutting down", e);
         return false;

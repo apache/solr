@@ -417,7 +417,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     // NOTE: not using SolrClient.getById or getByIds because we want to force choice of "id" vs
     // "ids" params
-    final ModifiableSolrParams params = params("qt", "/get");
+    final ModifiableSolrParams params = params();
 
     // random fq -- nothing fancy, secondary concern for our test
     final Integer FQ_MAX = usually() ? null : random().nextInt();
@@ -481,7 +481,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     final Object rsp; // only here for an assertion message
 
-    var qr = new QueryRequest(params);
+    var qr = new QueryRequest("/get", params);
     final SolrDocumentList docs =
         switch (wt) {
           case "javabin" -> { // the most common case

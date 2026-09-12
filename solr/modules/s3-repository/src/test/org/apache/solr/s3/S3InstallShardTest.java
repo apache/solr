@@ -17,9 +17,10 @@
 
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
 import org.apache.solr.handler.admin.api.InstallShardData;
@@ -35,7 +36,12 @@ import software.amazon.awssdk.regions.Region;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 public class S3InstallShardTest extends AbstractInstallShardTest {
 
   private static final String BUCKET_NAME = S3InstallShardTest.class.getSimpleName();
@@ -61,9 +67,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -78,7 +82,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
+                .replace("ENDPOINT", s3MockContainer.getHttpEndpoint()))
         .configure();
 
     bootstrapBackupRepositoryData("/");

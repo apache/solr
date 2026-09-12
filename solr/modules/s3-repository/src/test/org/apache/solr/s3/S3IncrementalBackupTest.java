@@ -17,10 +17,12 @@
 
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
@@ -30,8 +32,15 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.Nightly
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 @LogLevel(
     value =
         "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
@@ -41,9 +50,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   public static final String SOLR_XML =
       "<solr>\n"
@@ -127,7 +134,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
                 .replace("BAD_BUCKET", BUCKET_NAME)
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
+                .replace("ENDPOINT", s3MockContainer.getHttpEndpoint()))
         .configure();
   }
 
