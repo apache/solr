@@ -43,6 +43,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.util.QueryLimitsTestInjectionRule;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
@@ -463,8 +464,14 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
             queryService.awaitTermination(
                 1, TimeUnit.SECONDS)); // All queries after should be very fast
 
-        assertEquals(
-            "Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+        if (QueryLimitsTestInjectionRule.enabled) {
+          assertTrue(
+              "Create multiple DocSet-s outside of cache because of possible query timeouts",
+              TestInjection.countDocSetDelays.get() > 0);
+        } else {
+          assertEquals(
+              "Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+        }
       }
       TestInjection.countDocSetDelays.set(0);
     }
