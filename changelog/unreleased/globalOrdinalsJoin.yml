@@ -1,0 +1,9 @@
+title: The `{!globalOrdinalsJoin joinField=join_s_dv which="type_s:parent"}` query parser joins on single index by the same single-value docValues string field.
+type: added
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhludnev
+    email: mkhl@apache.org
+links:
+  - name: GITHUB#4881
+    url: https://github.com/apache/solr/pull/4881
