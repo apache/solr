@@ -279,7 +279,6 @@ public class TestSetPropertyConfigApis extends SolrCloudTestCase {
 
   private static void processAndAssertSuccess(final CollectionAdminRequest.Create op)
       throws Exception {
-    op.setWaitForFinalState(true);
     assertTrue(op.process(cluster.getSolrClient()).isSuccess());
   }
 

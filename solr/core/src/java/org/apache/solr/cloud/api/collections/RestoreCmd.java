@@ -65,6 +65,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -358,6 +359,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       propMap.put(
           CollectionHandlingUtils.CREATE_NODE_SET,
           CollectionHandlingUtils.CREATE_NODE_SET_EMPTY); // no cores
+      // no cores are created here (see above), but keep this call's contract independent of the
+      // operator-configurable default regardless -- restore does its own waiting elsewhere.
+      propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, "false");
       propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
@@ -452,6 +456,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         propMap.put(COLLECTION_PROP, restoreCollection.getName());
         propMap.put(SHARD_ID_PROP, sliceName);
         propMap.put(REPLICA_TYPE, numReplicas.getLeaderType().name());
+        // the onComplete callback below drives this method's own countDownLatch; don't let
+        // AddReplicaCmd's own wait run (and block on) first.
+        propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, "false");
 
         // Get the first node matching the shard to restore in
         String node;
@@ -567,6 +574,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(COLLECTION_PROP, restoreCollection.getName());
             propMap.put(SHARD_ID_PROP, slice.getName());
             propMap.put(REPLICA_TYPE, typeToCreate.name());
+            // restore does its own waiting elsewhere; don't let AddReplicaCmd's own wait
+            // (bounded by its default 10-minute timeout, per shard) run here instead.
+            propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, "false");
 
             // Get the first node matching the shard to restore in
             String node;
