@@ -56,6 +56,7 @@ if (propertyOrEnvOrDefault('refguide.include',
     'SOLR_REF_GUIDE_INCLUDE',
     "${defaultRefGuideInclude}").toBoolean()) {
   check.dependsOn 'checkSiteLinks'
+  check.dependsOn 'checkCliDocsUpToDate'
   assemble.dependsOn 'buildLocalSite'
 }
 
@@ -639,13 +640,35 @@ Set<String> extractRequiredTokens(String synopsis, java.util.regex.Pattern patte
 // per-option required marker, so we use the synopsis bracketing as the source of
 // truth instead of reaching into the CommandSpec.
 // See https://github.com/remkop/picocli/issues/2519.
+// Normalize a generated CLI page before comparing committed vs freshly generated content.
+// Absorbs cosmetic churn (line endings, trailing whitespace, blank-line runs and the
+// generator's tag comments) so that a picocli upgrade does not fail `check` repo-wide
+// for a purely presentational difference.
+String normalizeCliDoc(String content) {
+  return content
+    .replace('\r\n', '\n')
+    .replaceAll(/(?m)^\/\/ (tag|end)::picocli-generated-[^\n]*$/, '')
+    .replaceAll(/(?m)[ \t]+$/, '')
+    .replaceAll(/\n{3,}/, '\n\n')
+    .trim()
+}
+
 String markRequiredOptionsAndArgs(String content) {
   final String MARKER = '*(required)*'
   final def OPTION_NAME = ~/(-{1,2}[a-zA-Z][a-zA-Z0-9-]*)/
   final def POSITIONAL_NAME = ~/(<[^<>\s]+>)/
 
   def synopsisMatch = content =~ /(?s)== Synopsis\n\n\.{4}\n(.*?)\n\.{4}/
-  if (!synopsisMatch.find()) return content
+  if (!synopsisMatch.find()) {
+    // Required-ness is inferred by re-parsing the synopsis picocli generated, because
+    // ManPageGenerator emits no per-option required marker (picocli #2519). If the
+    // synopsis format ever changes, fail loudly rather than silently publishing pages
+    // with every '*(required)*' marker missing.
+    throw new GradleException(
+      "Could not locate the Synopsis block while post-processing a generated CLI page. " +
+      "The picocli ManPageGenerator output format has probably changed; " +
+      "markRequiredOptionsAndArgs in solr-ref-guide/build.gradle needs updating.")
+  }
 
   def synopsisText = synopsisMatch.group(1).replaceAll(/\s+/, ' ')
   def requiredOpts = extractRequiredTokens(synopsisText, OPTION_NAME)
@@ -773,7 +796,11 @@ task generateCliDocs {
   def navFile = file("modules/deployment-guide/deployment-nav.adoc")
 
   inputs.files(configurations.cliClasspath)
-  outputs.dir(destDir)
+  // destDir and navFile live in the source tree, so they are deliberately not declared
+  // as task outputs: Gradle's stale-output cleanup would be entitled to delete committed
+  // documentation. This is a developer-invoked regeneration task, so always run it.
+  // checkCliDocsUpToDate is the incremental half of this pair.
+  outputs.upToDateWhen { false }
 
   doLast {
     rawOutputDir.mkdirs()
@@ -810,8 +837,12 @@ task checkCliDocsUpToDate {
   def rawOutputDir = file("${buildDir}/generated-cli-docs-check")
   def committedDir = file("modules/deployment-guide/pages/cli")
 
+  def stampFile = file("${buildDir}/cli-docs-check.stamp")
+
   inputs.files(configurations.cliClasspath)
   inputs.dir(committedDir)
+  outputs.dir(rawOutputDir)
+  outputs.file(stampFile)
 
   doLast {
     rawOutputDir.mkdirs()
@@ -825,9 +856,7 @@ task checkCliDocsUpToDate {
       if (!committed.exists()) {
         issues << "MISSING committed file (new command): ${rawFile.name}"
       } else {
-        def processedNorm = processed.replace('\r\n', '\n')
-        def committedNorm = committed.text.replace('\r\n', '\n')
-        if (processedNorm != committedNorm) {
+        if (normalizeCliDoc(processed) != normalizeCliDoc(committed.text)) {
           issues << "OUT OF DATE: ${rawFile.name}"
         }
       }
@@ -836,7 +865,10 @@ task checkCliDocsUpToDate {
     // Check for committed pages that are no longer generated (deleted commands)
     if (committedDir.exists()) {
       def generatedNames = rawFiles.collect { it.name }.toSet()
-      ((committedDir.listFiles() ?: []) as List<File>).findAll { it.name.endsWith('.adoc') }.each { committed ->
+      // Only sweep generated pages; hand-written pages such as index.adoc are not generated.
+      ((committedDir.listFiles() ?: []) as List<File>).findAll {
+        it.name.startsWith('solr-') && it.name.endsWith('.adoc')
+      }.each { committed ->
         if (!generatedNames.contains(committed.name)) {
           issues << "STALE (command removed): ${committed.name}"
         }
@@ -846,13 +878,16 @@ task checkCliDocsUpToDate {
     if (!issues.isEmpty()) {
       throw new GradleException(
         "CLI docs are out of date. Run './gradlew :solr:solr-ref-guide:generateCliDocs' to regenerate.\n" +
+        "This also applies after changing the picocli version, since the generated wording\n" +
+        "can change without any annotation having been touched.\n" +
         "Issues:\n" + issues.collect { "  - ${it}" }.join('\n'))
     }
+    stampFile.parentFile.mkdirs()
+    stampFile.text = "CLI docs verified at ${new Date()}\n"
     logger.lifecycle("CLI docs are up to date.")
   }
 }
 
-check.dependsOn checkCliDocsUpToDate
 
 /*
  Compiling, Testing and Validation for the java examples in the Solr Ref Guide
