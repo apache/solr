@@ -234,6 +234,10 @@ public class SolrCLI implements CLIO {
     return newTool(toolType, runtime);
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
+   *     command line itself.
+   */
   @Deprecated
   public static CommandLine parseCmdLine(Tool tool, String[] args) throws IOException {
     // the parser doesn't like -D props
@@ -289,6 +293,10 @@ public class SolrCLI implements CLIO {
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli instantiates
+   *     subcommands itself.
+   */
   @Deprecated
   private static Tool newTool(String toolType, ToolRuntime runtime) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool(runtime);
@@ -352,6 +360,9 @@ public class SolrCLI implements CLIO {
 
   // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces.
+   */
   @Deprecated
   private static void deprecatedHandlerStdErr(Option o) {
     // Deprecated options without a description act as "stealth" options
@@ -367,6 +378,10 @@ public class SolrCLI implements CLIO {
   }
 
   /** Parses the command-line arguments passed by the user. */
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
+   *     command line itself.
+   */
   @Deprecated
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) throws IOException {
     Options options = tool.getOptions();
@@ -409,6 +424,10 @@ public class SolrCLI implements CLIO {
   }
 
   /** Prints tool help for a given tool */
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
+   *     help from the command's annotations.
+   */
   @Deprecated
   public static void printToolHelp(Tool tool) throws IOException {
     HelpFormatter formatter = getFormatter();
@@ -428,6 +447,10 @@ public class SolrCLI implements CLIO {
         autoGenerateUsage);
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
+   *     help from the command's annotations.
+   */
   @Deprecated
   @SuppressForbidden(reason = "System.out for formatting")
   public static HelpFormatter getFormatter() {
@@ -467,7 +490,8 @@ public class SolrCLI implements CLIO {
   /**
    * Scans Jar files on the classpath for Tool implementations to activate.
    *
-   * @deprecated With Picocli we no longer need to scan the classpath for Tool implementations?
+   * @deprecated Picocli resolves subcommands from the {@code @Command(subcommands = ...)}
+   *     declaration on {@link SolrCLI}, so no classpath scanning is needed.
    */
   @Deprecated
   private static List<Class<? extends Tool>> findToolClassesInPackage(String packageName) {
@@ -493,6 +517,9 @@ public class SolrCLI implements CLIO {
     return toolClasses;
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces.
+   */
   @Deprecated
   private static Set<String> findClasses(String path, String packageName) throws Exception {
     Set<String> classes = new TreeSet<>();
@@ -550,6 +577,10 @@ public class SolrCLI implements CLIO {
         numSeconds);
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders the
+   *     top-level usage help from annotations.
+   */
   @Deprecated
   private static void printHelp() {
 
