@@ -18,7 +18,11 @@ package org.apache.solr.core;
 
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.CallerSpecificQueryLimit;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
@@ -47,6 +51,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   @After
   public void tearDownCore() {
     deleteCore();
+    TestInjection.reset();
   }
 
   @Test
@@ -78,5 +83,56 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertTrue(
         "there should be at least " + maxCount + " calls from ExitableTermsEnum: " + callCounts,
         callCounts.get(callerExpr) >= maxCount);
+  }
+
+  /**
+   * Checks that a custom {@link Similarity} configured on the core is honored when scoring with
+   * query limits enabled (Regression test for SOLR-18305).
+   */
+  @Test
+  public void testCustomSimilarity() throws Exception {
+    System.setProperty("solr.similarity", DummySimilarityFactory.class.getName());
+    initCore("solrconfig-minimal.xml", "schema-tiny.xml");
+
+    assertU(adoc("id", "1", "aaa_t", "a1"));
+    assertU(commit());
+
+    // Check the dummy similarity is used as expected with no query limits.
+    // The returned doc has score 42.0, in both the result and the debug explanation plan.
+    String q = "aaa_t:a1";
+    assertQ(
+        req("q", q, "fl", "id,score", "debug", "results"),
+        "//result[@numFound = '1']",
+        "//result/doc[1]/float[@name='score'][.='42.0']",
+        "//lst[@name='debug']/lst[@name='explain']/str[@name='1'][contains(text(),'DummySimilarity')]",
+        "//lst[@name='debug']/lst[@name='explain']/str[@name='1'][contains(text(),'42.0 = score')]");
+
+    // Similar assertion as before, the only difference is we add a query limit with parameter
+    // 'timeAllowed=xxx'
+    assertQ(
+        req("q", q, "fl", "id,score", "debug", "results", "timeAllowed", "60000"),
+        "//result[@numFound = '1']",
+        "//result/doc[1]/float[@name='score'][.='42.0']",
+        "//lst[@name='debug']/lst[@name='explain']/str[@name='1'][contains(text(),'DummySimilarity')]",
+        "//lst[@name='debug']/lst[@name='explain']/str[@name='1'][contains(text(),'42.0 = score')]");
+  }
+
+  public static class DummySimilarityFactory extends SimilarityFactory {
+    public static class DummySimilarity extends Similarity {
+      @Override
+      public SimScorer scorer(
+          float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+        return new Similarity.SimScorer() {
+          public float score(float freq, long norm) {
+            return 42f;
+          }
+        };
+      }
+    }
+
+    @Override
+    public Similarity getSimilarity() {
+      return new DummySimilarity();
+    }
   }
 }
