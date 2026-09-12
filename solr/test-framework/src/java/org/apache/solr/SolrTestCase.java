@@ -163,7 +163,7 @@ public class SolrTestCase extends LuceneTestCase {
     }
 
     // sometimes use QueryLimits in tests
-    QueryLimitsTestInjectionRule.enabled = rarely();
+    QueryLimitsTestInjectionRule.setEnabled(rarely());
   }
 
   /**

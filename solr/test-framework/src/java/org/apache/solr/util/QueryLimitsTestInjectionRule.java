@@ -27,9 +27,28 @@ import org.slf4j.LoggerFactory;
 public class QueryLimitsTestInjectionRule implements TestRule {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static boolean enabled;
+  private static boolean enabled;
 
-  public static void setQueryLimits(boolean active) {
+  @Override
+  public Statement apply(final Statement base, final Description description) {
+    if (!enabled) {
+      return base;
+    }
+    return new Statement() {
+      @Override
+      public void evaluate() throws Throwable {
+        try {
+          setupQueryLimits(enabled);
+          base.evaluate();
+        } finally {
+          // always reset the queryTimeout
+          setupQueryLimits(false);
+        }
+      }
+    };
+  }
+
+  private void setupQueryLimits(boolean active) {
     if (active) {
       log.info("###Test is configured to use QueryLimits");
       TestInjection.queryTimeout =
@@ -48,20 +67,8 @@ public class QueryLimitsTestInjectionRule implements TestRule {
       TestInjection.queryTimeout = null;
     }
   }
-
-  @Override
-  public Statement apply(final Statement base, final Description description) {
-    return new Statement() {
-      @Override
-      public void evaluate() throws Throwable {
-        try {
-          setQueryLimits(enabled);
-          base.evaluate();
-        } finally {
-          // always reset the queryTimeout
-          setQueryLimits(false);
-        }
-      }
-    };
+  
+  public static void setEnabled(boolean enabled) {
+    QueryLimitsTestInjectionRule.enabled = enabled;
   }
 }
