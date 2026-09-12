@@ -35,6 +35,8 @@ import picocli.CommandLine;
  * from it, and are not registered as picocli subcommands.
  */
 public abstract class ToolBase implements Tool, Callable<Integer> {
+  @CommandLine.Mixin private HelpMixin helpMixin;
+
   @CommandLine.Option(
       names = {"-v", "--verbose"},
       description = "Enable verbose mode.")

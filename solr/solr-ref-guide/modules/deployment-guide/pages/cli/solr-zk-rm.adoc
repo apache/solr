@@ -33,7 +33,7 @@ bin/solr zk rm - Remove a znode from ZooKeeper.
 == Synopsis
 
 ....
-bin/solr zk rm [-rv] [-s=<solrConnection>] [--solr-url=<solrUrl>]
+bin/solr zk rm [-hrv] [-s=<solrConnection>] [--solr-url=<solrUrl>]
                [-u=<credentials>] [-z=<zkHost>] <path>
 ....
 
@@ -48,6 +48,9 @@ Remove a znode from ZooKeeper.
 
 // tag::picocli-generated-man-section-options[]
 == Options
+
+*-h*, *--help*::
+  Print this help message and exit.
 
 *-r*, *--recursive*::
   Apply the command recursively.

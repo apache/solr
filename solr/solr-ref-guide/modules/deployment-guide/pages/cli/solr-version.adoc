@@ -33,7 +33,8 @@ bin/solr version - Prints the Solr version.
 == Synopsis
 
 ....
-bin/solr version [-v]
+bin/solr version [-hv] [-u=<credentials>] [-s=<solrConnection> |
+                 --solr-url=<solrUrl> | -z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -48,8 +49,23 @@ Prints the Solr version.
 // tag::picocli-generated-man-section-options[]
 == Options
 
+*-h*, *--help*::
+  Print this help message and exit.
+
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
+
+*-u*, *--credentials*=_<credentials>_::
+  Credentials in the format username:password. Example: --credentials solr:SolrRocks
+
 *-v*, *--verbose*::
   Enable verbose mode.
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
 
 // end::picocli-generated-man-section-options[]
 

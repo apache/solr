@@ -33,7 +33,7 @@ bin/solr zk ls - List the contents of a ZooKeeper node.
 == Synopsis
 
 ....
-bin/solr zk ls [-rv] [-s=<solrConnection>] [--solr-url=<solrUrl>]
+bin/solr zk ls [-hrv] [-s=<solrConnection>] [--solr-url=<solrUrl>]
                [-u=<credentials>] [-z=<zkHost>] <path>
 ....
 
@@ -48,6 +48,9 @@ List the contents of a ZooKeeper node.
 
 // tag::picocli-generated-man-section-options[]
 == Options
+
+*-h*, *--help*::
+  Print this help message and exit.
 
 *-r*, *--recursive*::
   Apply the command recursively.

@@ -27,7 +27,8 @@ public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvide
       case "<zkHost>" -> EnvUtils.getProperty("zkHost");
       case "<solrConnection>" -> EnvUtils.getProperty("solr-connection");
       case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
-      case "<port>" -> EnvUtils.getProperty("solr.port", "8983");
+      // Must match CLIUtils.getDefaultSolrUrl(), which reads solr.port.listen
+      case "<port>" -> EnvUtils.getProperty("solr.port.listen", "8983");
       case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
       default -> null;
     };

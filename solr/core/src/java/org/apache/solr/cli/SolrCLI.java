@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
 @picocli.CommandLine.Command(
     name = "solr",
     version = "Client version: " + SolrVersion.LATEST_STRING,
-    mixinStandardHelpOptions = true,
     synopsisHeading = "usage: bin/",
     commandListHeading = "\nCommands:\n",
     footer = {
@@ -83,9 +82,33 @@ import org.slf4j.LoggerFactory;
       CreateTool.class,
       DeleteTool.class
     })
-public class SolrCLI implements CLIO {
+public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @picocli.CommandLine.Mixin private HelpMixin helpMixin;
+
+  /**
+   * The commons-cli path maps both {@code -v} and {@code --version} to the version tool, so accept
+   * the same spellings here rather than picocli's {@code -V}-only standard option.
+   */
+  @picocli.CommandLine.Option(
+      names = {"-v", "-V", "--version"},
+      versionHelp = true,
+      description = "Print version information and exit.")
+  private boolean versionRequested;
+
+  @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
+
+  /**
+   * Invoked by picocli when {@code bin/solr} is run without a subcommand. Prints usage and exits
+   * non-zero, matching what the commons-cli path does for a missing command.
+   */
+  @Override
+  public Integer call() {
+    spec.commandLine().usage(spec.commandLine().getOut());
+    return 1;
+  }
 
   @SuppressForbidden(reason = "SolrCLI is a CLI entry point; System.exit is required here")
   public static void exit(int exitStatus) {
@@ -103,10 +126,58 @@ public class SolrCLI implements CLIO {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
-      exit(commandLine.execute(args));
+      addZkSubcommandHints(commandLine);
+      exit(commandLine.execute(stripEmptyLeadingArg(args)));
     } else {
       exit(parseWithCommonsCli(args));
     }
+  }
+
+  /**
+   * Sub-commands of {@code zk} that users commonly type without the {@code zk} prefix. The
+   * commons-cli path remaps these to a usage hint; register the same hint with picocli so both
+   * engines answer alike.
+   */
+  private static final List<String> ZK_SUBCOMMAND_NAMES =
+      List.of("upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "updateacls");
+
+  /** Prints the same hint the commons-cli path prints, then exits non-zero. */
+  @picocli.CommandLine.Command(hidden = true)
+  static class ZkSubcommandMisuse implements java.util.concurrent.Callable<Integer> {
+    @picocli.CommandLine.Spec picocli.CommandLine.Model.CommandSpec spec;
+
+    @Override
+    public Integer call() {
+      CLIO.err(
+          "You must invoke this subcommand using the zk command.   bin/solr zk "
+              + spec.name()
+              + ".");
+      return 1;
+    }
+  }
+
+  private static void addZkSubcommandHints(picocli.CommandLine cmd) {
+    for (String name : ZK_SUBCOMMAND_NAMES) {
+      picocli.CommandLine hint = new picocli.CommandLine(new ZkSubcommandMisuse());
+      hint.getCommandSpec().name(name);
+      // These exist only to explain the mistake, so accept whatever else was typed.
+      hint.setUnmatchedArgumentsAllowed(true);
+      hint.setUnmatchedOptionsArePositionalParams(true);
+      cmd.addSubcommand(name, hint);
+    }
+  }
+
+  /**
+   * The {@code bin/solr} script invokes the tool with a single empty argument when it wants the
+   * top-level help (see the {@code --help} handling in {@code bin/solr}). picocli would treat that
+   * empty string as an unknown subcommand, so drop it.
+   */
+  @VisibleForTesting
+  static String[] stripEmptyLeadingArg(String[] args) {
+    if (args.length > 0 && args[0].isEmpty()) {
+      return java.util.Arrays.copyOfRange(args, 1, args.length);
+    }
+    return args;
   }
 
   /**

@@ -33,7 +33,7 @@ bin/solr zk downconfig - Download a configset from ZooKeeper to the local filesy
 == Synopsis
 
 ....
-bin/solr zk downconfig [-v] -d=DIR -n=<confName> [-s=<solrConnection>]
+bin/solr zk downconfig [-hv] -d=DIR -n=<confName> [-s=<solrConnection>]
                        [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
 ....
 
@@ -67,6 +67,9 @@ In either case, _pre-existing configurations at the destination will be overwrit
 * `-d /path/to/configset/destination`
 +
 
+
+*-h*, *--help*::
+  Print this help message and exit.
 
 *-n*, *--conf-name*=_<confName>_::
   *(required)* Configset name in ZooKeeper.

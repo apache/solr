@@ -33,8 +33,8 @@ bin/solr zk cp - Copy files or folders to/from ZooKeeper or ZooKeeper to ZooKeep
 == Synopsis
 
 ....
-bin/solr zk cp [-rv] [-s=<solrConnection>] [--solr-home=DIR] [--solr-url=<solrUrl>]
-               [-u=<credentials>] [-z=<zkHost>] <src> <dst>
+bin/solr zk cp [-hrv] [-s=<solrConnection>] [--solr-home=DIR]
+               [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>] <src> <dst>
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -54,6 +54,9 @@ and the last element of the <src> path will be appended unless <src> also ends i
 
 // tag::picocli-generated-man-section-options[]
 == Options
+
+*-h*, *--help*::
+  Print this help message and exit.
 
 *-r*, *--recursive*::
   Apply the command recursively.
