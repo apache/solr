@@ -209,7 +209,7 @@ public class RunExampleTool extends ToolBase {
    *
    * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
    */
-  record RunExampleParams(boolean userManaged, String zkHost, int port, StartSolrParams start) {}
+  record RunExampleParams(boolean isCloudMode, String zkHost, int port, StartSolrParams start) {}
 
   /**
    * Parameters for running the multi-node cloud example, independent of the command line parser.
@@ -321,7 +321,7 @@ public class RunExampleTool extends ToolBase {
               startParams));
     } else {
       runExample(
-          new RunExampleParams(cli.hasOption(USER_MANAGED_OPTION), zkHost, port, startParams));
+          new RunExampleParams(!cli.hasOption(USER_MANAGED_OPTION), zkHost, port, startParams));
     }
   }
 
@@ -395,11 +395,10 @@ public class RunExampleTool extends ToolBase {
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isCloudMode = !params.userManaged();
     String zkHost = params.zkHost();
     int port = params.port();
     Map<String, Object> nodeStatus =
-        startSolr(solrHomeDir, isCloudMode, params.start(), port, zkHost, 30);
+        startSolr(solrHomeDir, params.isCloudMode(), params.start(), port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
