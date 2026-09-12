@@ -29,8 +29,36 @@ import org.apache.solr.common.cloud.SolrZkClient;
  *
  * <p>Set ACL properties by directly manipulating ZooKeeper.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "updateacls",
+    description =
+        "Recursively re-applies ZooKeeper ACLs to a znode and all its descendants."
+            + " The ACLs are determined by the ZkACLProvider configured via the zkACLProvider"
+            + " system property (pass via SOLR_TOOL_OPTS). Without a custom provider, the"
+            + " default OPEN_ACL_UNSAFE ACLs are applied.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Apply ACLs to the root Solr znode",
+      "  bin/solr zk updateacls /solr -z localhost:9983",
+      "",
+      "  # Apply ACLs to a specific configset",
+      "  bin/solr zk updateacls /configs/myconfig -z localhost:9983"
+    })
 public class UpdateACLTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      description = "The ZooKeeper znode path to update ACLs for.")
+  private String path;
+
+  public UpdateACLTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public UpdateACLTool(ToolRuntime runtime) {
     super(runtime);
@@ -53,7 +81,6 @@ public class UpdateACLTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-
     String zkHost = CLIUtils.getZkHost(cli);
     String path = cli.getArgs()[0];
 
@@ -67,8 +94,30 @@ public class UpdateACLTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
+      doUpdateAcls(zkClient, path);
+    }
+  }
 
-      zkClient.updateACLs(path);
+  private void doUpdateAcls(SolrZkClient zkClient, String path) throws Exception {
+    zkClient.updateACLs(path);
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    String zkHost = zkOpts.resolveZkHost();
+
+    if (!ZkController.checkChrootPath(zkHost, true)) {
+      throw new IllegalStateException(
+          "A chroot was specified in zkHost but the znode doesn't exist.");
+    }
+
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      doUpdateAcls(zkClient, path);
+      return 0;
     }
   }
 }

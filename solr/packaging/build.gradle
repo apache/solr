@@ -335,6 +335,8 @@ task integrationTests(type: BatsTask) {
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
   environment BATS_LIB_PREFIX: batsLibsDir
+  // TODO: SOLR-17697 picocli, run all BATS tests using picocli.
+  //environment SOLR_PICOCLI: 'true'
 }
 
 abstract class BatsTask extends Exec {

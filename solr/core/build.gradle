@@ -96,6 +96,8 @@ dependencies {
   implementation libs.commonscodec.commonscodec
 
   implementation libs.commonscli.commonscli
+  implementation libs.picocli
+  annotationProcessor libs.picocli.codegen
 
   implementation libs.locationtech.spatial4j
 
@@ -199,4 +201,24 @@ dependencies {
   })
 
   testImplementation libs.opentelemetry.sdk.testing
+}
+
+// Expose a configuration for CLI doc generation in the solr-ref-guide project.
+// This bundles the full runtime classpath plus picocli-codegen (ManPageGenerator)
+// and the compiled CLI classes so that generateCliDocs can invoke ManPageGenerator.
+configurations {
+  cliDocsRuntime {
+    canBeResolved = true
+    canBeConsumed = true
+    // Inherit all runtime dependencies (implementation + runtimeOnly transitively)
+    extendsFrom configurations.runtimeClasspath
+  }
+}
+
+dependencies {
+  // picocli-codegen provides ManPageGenerator (not in runtime, only needed for doc gen)
+  cliDocsRuntime libs.picocli.codegen
+  // Include the compiled CLI classes themselves
+  cliDocsRuntime files(sourceSets.main.output.classesDirs)
+  cliDocsRuntime files(sourceSets.main.output.resourcesDir)
 }

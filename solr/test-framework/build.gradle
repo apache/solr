@@ -61,6 +61,8 @@ dependencies {
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
   implementation libs.commonscli.commonscli
+  implementation libs.picocli
+  annotationProcessor libs.picocli.codegen
   implementation libs.opentelemetry.api
   implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
