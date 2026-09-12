@@ -1,0 +1,7 @@
+title: Fix Solr emitting duplicate/conflicting JVM metrics from both runtime-telemetry-java8 and runtime-telemetry-java17 OTel scopes on Java 17, by migrating to the unified opentelemetry-runtime-telemetry module (upgraded to 2.31.1-alpha) that replaced the java8/java17 split.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18407
+    url: https://issues.apache.org/jira/browse/SOLR-18407

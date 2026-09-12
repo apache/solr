@@ -24,7 +24,9 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetryBuilder;
+import io.opentelemetry.instrumentation.runtimetelemetry.internal.Experimental;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import org.apache.lucene.util.SuppressForbidden;
@@ -37,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class OtelRuntimeJvmMetrics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private RuntimeMetrics runtimeMetrics;
+  private RuntimeTelemetry runtimeMetrics;
   private ObservableLongGauge systemMemoryGauge;
   private boolean isInitialized = false;
 
@@ -75,11 +77,19 @@ public class OtelRuntimeJvmMetrics {
             return OpenTelemetry.noop().getPropagators();
           }
         };
-    this.runtimeMetrics =
-        RuntimeMetrics.builder(otel)
-            // TODO: We should have this configurable to enable/disable specific JVM metrics
-            .enableAllFeatures()
-            .build();
+    // The runtime-telemetry-java8/java17 split was unified into this single module (see
+    // https://github.com/open-telemetry/opentelemetry-java-instrumentation/pull/16087). Used this
+    // way (as a library, not via the OTel javaagent), its extra metric sets are only reachable
+    // through this internal-but-public "Experimental" bridge, not system properties -- those are
+    // only read by the javaagent's own auto-configuration. The two calls below reproduce the old
+    // library's .enableAllFeatures() breadth (buffers, file descriptors, GC cause, network I/O,
+    // etc.) and activate JFR, which -- unlike the old java8/java17 split this module replaced --
+    // suppresses each metric's JMX series whenever its JFR series can serve as a full replacement,
+    // instead of emitting both.
+    RuntimeTelemetryBuilder builder = RuntimeTelemetry.builder(otel);
+    Experimental.setEmitExperimentalMetrics(builder, true);
+    Experimental.setEmitExperimentalJfrMetrics(builder, true);
+    this.runtimeMetrics = builder.build();
     java.lang.management.OperatingSystemMXBean osMxBean =
         ManagementFactory.getOperatingSystemMXBean();
     if (osMxBean instanceof com.sun.management.OperatingSystemMXBean extOsMxBean) {
