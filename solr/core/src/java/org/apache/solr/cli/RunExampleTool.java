@@ -389,7 +389,7 @@ public class RunExampleTool extends ToolBase {
               + " is not a directory!");
   }
 
-  protected void runExample(RunExampleParams params) throws Exception {
+  void runExample(RunExampleParams params) throws Exception {
     String exampleName = params.start().example();
     String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
     String configSet =
@@ -606,7 +606,7 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected void runCloudExample(CloudExampleParams params) throws Exception {
+  void runCloudExample(CloudExampleParams params) throws Exception {
 
     usingPromptInputs = params.promptInputs() != null;
     boolean prompt = !params.noPrompt();
@@ -773,7 +773,7 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected Map<String, Object> startSolr(
+  Map<String, Object> startSolr(
       Path solrHomeDir,
       boolean cloudMode,
       StartSolrParams params,
