@@ -225,6 +225,8 @@ public class ZkController implements Closeable {
   private final CloudConfig cloudConfig;
   private final NodesSysPropsCacher sysPropsCacher;
 
+  private final Compressor compressor;
+
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
   private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCommandRunner;
@@ -324,7 +326,7 @@ public class ZkController implements Closeable {
 
     addOnReconnectListener(getConfigDirListener());
 
-    final var compressor =
+    compressor =
         loadPluginOrDefault(
             Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
 
@@ -382,7 +384,9 @@ public class ZkController implements Closeable {
           "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
     }
     // These "distributed" things replace the Overseer when that's disabled
-    this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
+    this.distributedClusterStateUpdater =
+        new DistributedClusterStateUpdater(
+            !overseerEnabled, cloudConfig.getMinStateByteLenForCompression(), compressor);
     this.distributedCommandRunner =
         !overseerEnabled
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
@@ -399,6 +403,10 @@ public class ZkController implements Closeable {
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
     this.sysPropsCacher = new NodesSysPropsCacher(cc.getDefaultHttpSolrClient(), zkStateReader);
     assert ObjectReleaseTracker.track(this);
+  }
+
+  public Compressor getCompressor() {
+    return compressor;
   }
 
   private void onDisconnect(boolean sessionExpired) {
