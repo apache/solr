@@ -89,8 +89,6 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
    * unified {@code --solr-connection} (which accepts either form).
    *
    * @return OptionGroup that enforces only one of the connection options is supplied.
-   */
-  /**
    * @deprecated Only used by the commons-cli parser. Picocli tools mix in {@code ConnectionOptions}
    *     instead.
    */

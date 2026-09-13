@@ -448,8 +448,9 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
     }
   }
 
-  /** Parses the command-line arguments passed by the user. */
   /**
+   * Parses the command-line arguments passed by the user.
+   *
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
    *     command line itself.
    */
@@ -494,8 +495,9 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
     return cli;
   }
 
-  /** Prints tool help for a given tool */
   /**
+   * Prints tool help for a given tool.
+   *
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
    *     help from the command's annotations.
    */
