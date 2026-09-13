@@ -502,8 +502,10 @@ Peak memory therefore depends on the longest single line rather than on the size
 
 Blank lines are ignored, and a line that is not a single JSON Object fails the request reporting the offending line number.
 As with the other update formats, documents from earlier lines have already been submitted when a later line fails, so a failed bulk load may be partially applied; the reported line number tells you where to resume.
-A single line may not exceed 16 MB, which catches input that is not in fact newline delimited -- a whole JSON array on one line, for example.
-If you index unusually large documents, raise the limit with the `solr.ndjson.maxLineLength` system property (in characters), or per handler with a `maxLineLength` init argument:
+A single line is bounded so that input which is not in fact newline delimited -- a whole JSON array on one line, for example -- fails with a clear error rather than exhausting the heap.
+The default budget is a quarter of the max heap while parsing, which works out at roughly one character per 8 heap bytes: about 64 million characters on a 2 GB heap, or 256 million on an 8 GB heap.
+This is a backstop, not a limit on how large a document may be, so ordinary documents will not come close to it.
+Set it explicitly with the `solr.ndjson.maxLineLength` system property (in characters), or per handler with a `maxLineLength` init argument:
 
 [source,xml]
 ----

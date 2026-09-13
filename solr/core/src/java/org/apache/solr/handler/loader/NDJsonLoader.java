@@ -41,11 +41,12 @@ import org.noggit.ObjectBuilder;
  * as JSON Lines or JSONL) format; one JSON object per line, each representing a document to add.
  *
  * <p>Documents are parsed and indexed one line at a time, so peak memory depends on the longest
- * line rather than on the size of the input; a line may not exceed {@link #DEFAULT_MAX_LINE_LENGTH}
- * characters unless that is raised. Unlike {@link JsonLoader}, update commands such as {@code
- * delete} or {@code commit} are not recognized; use request parameters or a separate request for
- * those. As on the {@code /update/json/docs} path, a nested JSON object is always a child document,
- * so atomic updates are not expressible in this format.
+ * line rather than on the size of the input. A single line is bounded by {@link
+ * #MAX_LINE_LENGTH_PROP}, defaulting to a fraction of the heap, so that input which is not really
+ * newline delimited fails instead of exhausting the heap. Unlike {@link JsonLoader}, update
+ * commands such as {@code delete} or {@code commit} are not recognized; use request parameters or a
+ * separate request for those. As on the {@code /update/json/docs} path, a nested JSON object is
+ * always a child document, so atomic updates are not expressible in this format.
  */
 public class NDJsonLoader extends ContentStreamLoader {
 
@@ -53,14 +54,33 @@ public class NDJsonLoader extends ContentStreamLoader {
   public static final Set<String> CONTENT_TYPES =
       Set.of("application/x-ndjson", "application/jsonl", "application/x-jsonlines");
 
-  /** Characters a single line may span before the request is rejected. */
-  public static final int DEFAULT_MAX_LINE_LENGTH = 16 * 1024 * 1024;
-
-  /** System property overriding {@link #DEFAULT_MAX_LINE_LENGTH} for all update handlers. */
+  /** System property setting the characters a single line may span, for all update handlers. */
   public static final String MAX_LINE_LENGTH_PROP = "solr.ndjson.maxLineLength";
 
+  /** Smallest default line budget, so that a tiny heap still accepts ordinary documents. */
+  public static final int MIN_DEFAULT_MAX_LINE_LENGTH = 1024 * 1024;
+
+  /**
+   * Parsing a line costs roughly this many heap bytes per character, dominated by the doubling of
+   * the reader's line buffer plus the parsed document.
+   */
+  private static final int HEAP_BYTES_PER_CHAR = 8;
+
+  /** Share of the heap a single line may occupy while being parsed. */
+  private static final int HEAP_FRACTION = 4;
+
   private int maxLineLength =
-      EnvUtils.getPropertyAsInteger(MAX_LINE_LENGTH_PROP, DEFAULT_MAX_LINE_LENGTH);
+      EnvUtils.getPropertyAsInteger(MAX_LINE_LENGTH_PROP, defaultMaxLineLength());
+
+  /**
+   * The line budget to use when nothing is configured: enough characters to occupy {@code 1 /
+   * HEAP_FRACTION} of the heap while parsing. This is a backstop against input that is not really
+   * newline delimited, not a limit on how large a document may be, so it is deliberately generous.
+   */
+  public static int defaultMaxLineLength() {
+    long fromHeap = Runtime.getRuntime().maxMemory() / HEAP_FRACTION / HEAP_BYTES_PER_CHAR;
+    return Math.clamp(fromHeap, MIN_DEFAULT_MAX_LINE_LENGTH, Integer.MAX_VALUE);
+  }
 
   @Override
   public ContentStreamLoader init(SolrParams args) {

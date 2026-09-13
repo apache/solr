@@ -135,6 +135,20 @@ public class NDJsonLoaderTest extends SolrTestCase {
     assertThat(e.getMessage(), containsString("maxLineLength"));
   }
 
+  /** The default budget scales with the heap, so it is a backstop rather than a document limit. */
+  @Test
+  public void testDefaultMaxLineLengthScalesWithHeap() {
+    int expected =
+        Math.clamp(
+            Runtime.getRuntime().maxMemory() / 32,
+            NDJsonLoader.MIN_DEFAULT_MAX_LINE_LENGTH,
+            Integer.MAX_VALUE);
+    assertEquals(expected, NDJsonLoader.defaultMaxLineLength());
+    assertTrue(
+        "default must never drop below the floor",
+        NDJsonLoader.defaultMaxLineLength() >= NDJsonLoader.MIN_DEFAULT_MAX_LINE_LENGTH);
+  }
+
   /** The limit can be lowered globally, without redefining the implicit update handlers. */
   @Test
   public void testMaxLineLengthSystemProperty() {
