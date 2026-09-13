@@ -85,17 +85,22 @@ public class ZkRmTool extends ToolBase {
     String target = cli.getArgs()[0];
     boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
 
+    String znode = resolveZnode(target);
+
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      doRm(zkClient, zkHost, target, recursive);
+      doRm(zkClient, zkHost, znode, recursive);
     } catch (Exception e) {
       log.error("Could not complete rm operation for reason: ", e);
       throw (e);
     }
   }
 
-  private void doRm(SolrZkClient zkClient, String zkHost, String target, boolean recursive)
-      throws Exception {
+  /**
+   * Strips an optional {@code zk:} prefix and rejects the root node. Called before connecting, so
+   * that removing '/' is reported immediately rather than requiring a reachable ZooKeeper.
+   */
+  private static String resolveZnode(String target) throws SolrServerException {
     String znode = target;
     if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {
       znode = target.substring(3);
@@ -103,6 +108,11 @@ public class ZkRmTool extends ToolBase {
     if (znode.equals("/")) {
       throw new SolrServerException("You may not remove the root ZK node ('/')!");
     }
+    return znode;
+  }
+
+  private void doRm(SolrZkClient zkClient, String zkHost, String znode, boolean recursive)
+      throws Exception {
     if (!recursive && !zkClient.getChildren(znode, null).isEmpty()) {
       throw new SolrServerException(
           "ZooKeeper node " + znode + " has children and recursive has NOT been specified.");
@@ -120,13 +130,14 @@ public class ZkRmTool extends ToolBase {
   @Override
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
+    String znode = resolveZnode(path);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doRm(zkClient, zkHost, path, recursiveOpt.recursive);
+      doRm(zkClient, zkHost, znode, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {
       log.error("Could not complete rm operation for reason: ", e);

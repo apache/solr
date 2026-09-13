@@ -285,11 +285,13 @@ tasks.register('downloadBats') {
   }
 }
 
-task integrationTests(type: BatsTask) {
-  dependsOn installFullDist
-  dependsOn downloadBats
+// Shared configuration for the BATS suites. outputName keeps each suite's Solr home, logs and
+// reports apart; usePicocli selects the experimental CLI implementation for the run.
+def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
+  task.dependsOn installFullDist
+  task.dependsOn downloadBats
 
-  def integrationTestOutput = "$buildDir/test-output"
+  def integrationTestOutput = "$buildDir/$outputName"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
   var solrPort = Integer
@@ -304,39 +306,64 @@ task integrationTests(type: BatsTask) {
   }
 
   if (!Boolean.parseBoolean((String) project.findProperty('solr.bats.nightly'))) {
-    filterTags = '!nightly'
+    task.filterTags = '!nightly'
   }
 
-  inputs.dir(distDir)
-  inputs.dir('test')  // Track .bats test files and helper as inputs
-  outputs.dir(integrationTestOutput)
+  task.reportDir = integrationTestOutput
+  task.inputs.dir(distDir)
+  task.inputs.dir('test')  // Track .bats test files and helper as inputs
+  task.outputs.dir(integrationTestOutput)
 
-  doFirst {
+  task.doFirst {
     delete integrationTestOutput
     mkdir integrationTestOutput
     mkdir solrHome
     mkdir solrTestFailuresDir
 
     // TODO - if quiet then don't tee
-    standardOutput = new TeeOutputStream(System.out,
+    task.standardOutput = new TeeOutputStream(System.out,
         new FileOutputStream("$integrationTestOutput/test-output.txt"))
     println("Running BATS tests with Solr base port ${solrPort}")
   }
 
-  environment SOLR_TIP: distDir.toString()
-  environment SOLR_HOME: solrHome
-  environment SOLR_PID_DIR: solrHome
-  environment SOLR_PORT_LISTEN: solrPort
-  environment SOLR_PORT: solrPort
-  environment SOLR2_PORT: solrPort + 1
-  environment SOLR3_PORT: solrPort + 2
-  environment ZK_PORT: solrPort + 1000
-  environment SOLR_LOGS_DIR: "$solrHome/logs"
-  environment TEST_OUTPUT_DIR: integrationTestOutput
-  environment TEST_FAILURE_DIR: solrTestFailuresDir
-  environment BATS_LIB_PREFIX: batsLibsDir
-  // TODO: SOLR-17697 picocli, run all BATS tests using picocli.
-  //environment SOLR_PICOCLI: 'true'
+  task.environment SOLR_TIP: distDir.toString()
+  task.environment SOLR_HOME: solrHome
+  task.environment SOLR_PID_DIR: solrHome
+  task.environment SOLR_PORT_LISTEN: solrPort
+  task.environment SOLR_PORT: solrPort
+  task.environment SOLR2_PORT: solrPort + 1
+  task.environment SOLR3_PORT: solrPort + 2
+  task.environment ZK_PORT: solrPort + 1000
+  task.environment SOLR_LOGS_DIR: "$solrHome/logs"
+  task.environment TEST_OUTPUT_DIR: integrationTestOutput
+  task.environment TEST_FAILURE_DIR: solrTestFailuresDir
+  task.environment BATS_LIB_PREFIX: batsLibsDir
+  if (usePicocli) {
+    task.environment SOLR_PICOCLI: 'true'
+  }
+}
+
+task integrationTests(type: BatsTask) {
+  configureBatsTask(it, 'test-output', false)
+}
+
+// The same suites run against the experimental picocli CLI. Deliberately a curated list rather
+// than the whole suite, so the run stays short. A change that ports another tool to picocli
+// should add that tool's .bats file here.
+task integrationTestsPicocli(type: BatsTask) {
+  description = 'Runs the BATS suites for the migrated commands against the experimental picocli CLI.'
+  configureBatsTask(it, 'test-output-picocli', true)
+  // A suite belongs here only when every command it invokes has been migrated, not merely the
+  // command under test. test_auth.bats, for example, uses `solr assert` to wait for startup, so
+  // it cannot join until the assert command is migrated. test_help.bats asserts the exact wording
+  // of the commons-cli help output, which the picocli implementation words differently.
+  testFiles = [
+      'test/test_version.bats',
+      'test/test_status.bats',
+      'test/test_create.bats',
+      'test/test_delete_collection.bats',
+      'test/test_zk.bats',
+  ]
 }
 
 abstract class BatsTask extends Exec {
@@ -351,6 +378,10 @@ abstract class BatsTask extends Exec {
   @Input
   @Optional
   String filterTags = null
+
+  /** Where to write the junit report. Defaults to the project's test-output directory. */
+  @Internal
+  String reportDir = null
 
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
@@ -370,7 +401,7 @@ abstract class BatsTask extends Exec {
     if (filterTags) {
       batsArgs += ['--filter-tags', filterTags]
     }
-    batsArgs += ['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"]
+    batsArgs += ['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', reportDir ?: "$project.buildDir/test-output"]
     // Note: tests to run must be listed after all other arguments
     batsArgs += testFiles.empty ? [testDir] : testFiles
     setArgs(batsArgs)

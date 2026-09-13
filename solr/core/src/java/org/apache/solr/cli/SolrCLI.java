@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
 @picocli.CommandLine.Command(
     name = "solr",
     version = "Client version: " + SolrVersion.LATEST_STRING,
-    mixinStandardHelpOptions = true,
     synopsisHeading = "usage: bin/",
     commandListHeading = "\nCommands:\n",
     footer = {
@@ -83,9 +82,33 @@ import org.slf4j.LoggerFactory;
       CreateTool.class,
       DeleteTool.class
     })
-public class SolrCLI implements CLIO {
+public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @picocli.CommandLine.Mixin private HelpMixin helpMixin;
+
+  /**
+   * The commons-cli path maps both {@code -v} and {@code --version} to the version tool, so accept
+   * the same spellings here rather than picocli's {@code -V}-only standard option.
+   */
+  @picocli.CommandLine.Option(
+      names = {"-v", "-V", "--version"},
+      versionHelp = true,
+      description = "Print version information and exit.")
+  private boolean versionRequested;
+
+  @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
+
+  /**
+   * Invoked by picocli when {@code bin/solr} is run without a subcommand. Prints usage and exits
+   * non-zero, matching what the commons-cli path does for a missing command.
+   */
+  @Override
+  public Integer call() {
+    spec.commandLine().usage(spec.commandLine().getOut());
+    return 1;
+  }
 
   @SuppressForbidden(reason = "SolrCLI is a CLI entry point; System.exit is required here")
   public static void exit(int exitStatus) {
@@ -103,10 +126,23 @@ public class SolrCLI implements CLIO {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
-      exit(commandLine.execute(args));
+      exit(commandLine.execute(stripEmptyLeadingArg(args)));
     } else {
       exit(parseWithCommonsCli(args));
     }
+  }
+
+  /**
+   * The {@code bin/solr} script invokes the tool with a single empty argument when it wants the
+   * top-level help (see the {@code --help} handling in {@code bin/solr}). picocli would treat that
+   * empty string as an unknown subcommand, so drop it.
+   */
+  @VisibleForTesting
+  static String[] stripEmptyLeadingArg(String[] args) {
+    if (args.length > 0 && args[0].isEmpty()) {
+      return java.util.Arrays.copyOfRange(args, 1, args.length);
+    }
+    return args;
   }
 
   /**
@@ -234,6 +270,10 @@ public class SolrCLI implements CLIO {
     return newTool(toolType, runtime);
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
+   *     command line itself.
+   */
   @Deprecated
   public static CommandLine parseCmdLine(Tool tool, String[] args) throws IOException {
     // the parser doesn't like -D props
@@ -289,6 +329,10 @@ public class SolrCLI implements CLIO {
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli instantiates
+   *     subcommands itself.
+   */
   @Deprecated
   private static Tool newTool(String toolType, ToolRuntime runtime) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool(runtime);
@@ -352,6 +396,9 @@ public class SolrCLI implements CLIO {
 
   // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces.
+   */
   @Deprecated
   private static void deprecatedHandlerStdErr(Option o) {
     // Deprecated options without a description act as "stealth" options
@@ -366,7 +413,12 @@ public class SolrCLI implements CLIO {
     }
   }
 
-  /** Parses the command-line arguments passed by the user. */
+  /**
+   * Parses the command-line arguments passed by the user.
+   *
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
+   *     command line itself.
+   */
   @Deprecated
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) throws IOException {
     Options options = tool.getOptions();
@@ -408,7 +460,12 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
-  /** Prints tool help for a given tool */
+  /**
+   * Prints tool help for a given tool.
+   *
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
+   *     help from the command's annotations.
+   */
   @Deprecated
   public static void printToolHelp(Tool tool) throws IOException {
     HelpFormatter formatter = getFormatter();
@@ -428,6 +485,10 @@ public class SolrCLI implements CLIO {
         autoGenerateUsage);
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
+   *     help from the command's annotations.
+   */
   @Deprecated
   @SuppressForbidden(reason = "System.out for formatting")
   public static HelpFormatter getFormatter() {
@@ -467,7 +528,8 @@ public class SolrCLI implements CLIO {
   /**
    * Scans Jar files on the classpath for Tool implementations to activate.
    *
-   * @deprecated With Picocli we no longer need to scan the classpath for Tool implementations?
+   * @deprecated Picocli resolves subcommands from the {@code @Command(subcommands = ...)}
+   *     declaration on {@link SolrCLI}, so no classpath scanning is needed.
    */
   @Deprecated
   private static List<Class<? extends Tool>> findToolClassesInPackage(String packageName) {
@@ -493,6 +555,9 @@ public class SolrCLI implements CLIO {
     return toolClasses;
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces.
+   */
   @Deprecated
   private static Set<String> findClasses(String path, String packageName) throws Exception {
     Set<String> classes = new TreeSet<>();
@@ -550,6 +615,10 @@ public class SolrCLI implements CLIO {
         numSeconds);
   }
 
+  /**
+   * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders the
+   *     top-level usage help from annotations.
+   */
   @Deprecated
   private static void printHelp() {
 
