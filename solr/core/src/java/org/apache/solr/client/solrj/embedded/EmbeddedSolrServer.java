@@ -301,7 +301,7 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     // note: don't bother using the Reader variant; it often throws UnsupportedOperationException
-    return responseParser.processCanonicalResponse(byteBuffer.toInputStream(), null);
+    return responseParser.processResponse(byteBuffer.toInputStream(), null);
   }
 
   /** A list of streams, non-null. */

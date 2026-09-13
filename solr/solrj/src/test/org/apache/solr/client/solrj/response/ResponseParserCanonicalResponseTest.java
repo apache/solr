@@ -29,10 +29,9 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /**
- * Pins the {@link ResponseParser#processCanonicalResponse} contract: whatever a parser's natural
- * output looks like, this method returns the canonical shape the SolrJ response classes read — a
- * NamedList tree with SolrDocumentList for document sections. The conversion belongs to the parser,
- * so a client does not need to know which parsers require it.
+ * Pins {@link ResponseParser#processResponse}'s canonical-shape contract: a {@link NamedList} tree
+ * with {@link SolrDocumentList} for document sections. {@link JsonMapResponseParser} is the one
+ * deliberate exception — {@link CanonicalJsonResponseParser} is the subclass that converts.
  */
 public class ResponseParserCanonicalResponseTest extends SolrTestCase {
 
@@ -57,27 +56,26 @@ public class ResponseParserCanonicalResponseTest extends SolrTestCase {
         raw.get("response") instanceof SolrDocumentList);
   }
 
-  /** ... and processCanonicalResponse converts it, without the caller asking. */
+  /** ... and the canonical subclass converts it, without the caller asking. */
   @Test
-  public void testJsonMapParserCanonicalResponseIsConverted() throws Exception {
-    NamedList<Object> out =
-        new CanonicalJsonResponseParser().processCanonicalResponse(json(), null);
+  public void testCanonicalJsonResponseParserConverts() throws Exception {
+    NamedList<Object> out = new CanonicalJsonResponseParser().processResponse(json(), null);
     assertTrue("header must be a NamedList", out.get("responseHeader") instanceof NamedList);
     assertTrue(
         "response must be a SolrDocumentList", out.get("response") instanceof SolrDocumentList);
     assertEquals(1, ((SolrDocumentList) out.get("response")).getNumFound());
   }
 
-  /** Parsers that are canonical already inherit the default and are unchanged by it. */
+  /** A parser that is canonical by construction needs no conversion. */
   @Test
-  public void testCanonicalParsersPassThrough() throws Exception {
+  public void testXmlResponseParserIsAlreadyCanonical() throws Exception {
     String xml =
         """
         <?xml version="1.0" encoding="UTF-8"?>
         <response><lst name="responseHeader"><int name="status">0</int></lst></response>""";
     NamedList<Object> out =
         new XMLResponseParser()
-            .processCanonicalResponse(new ByteArrayInputStream(xml.getBytes(UTF_8)), null);
+            .processResponse(new ByteArrayInputStream(xml.getBytes(UTF_8)), null);
     assertTrue("header must be a NamedList", out.get("responseHeader") instanceof NamedList);
   }
 }

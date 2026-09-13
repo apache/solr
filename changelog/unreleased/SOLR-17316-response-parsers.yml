@@ -2,7 +2,7 @@
 
 title: >
   SolrJ's QueryResponse and other response objects can now read a JSON response, via the new
-  `CanonicalJsonResponseParser`; previously their accessors could throw ClassCastException.
+  `CanonicalJsonResponseParser`..
 type: added
 authors:
   - name: Serhiy Bzhezytskyy

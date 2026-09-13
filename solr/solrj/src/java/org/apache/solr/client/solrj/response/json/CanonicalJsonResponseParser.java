@@ -40,8 +40,8 @@ public class CanonicalJsonResponseParser extends JsonMapResponseParser {
 
   /**
    * Asks for {@code json.nl=map}, so that a {@link NamedList} written by the server arrives as a
-   * JSON object and {@link #processCanonicalResponse} can restore it as a {@code NamedList}. Under
-   * the default {@code json.nl=flat} the keys and values are flattened into one array, and the
+   * JSON object and {@link #processResponse} can restore it as a {@code NamedList}. Under the
+   * default {@code json.nl=flat} the keys and values are flattened into one array, and the
    * structure cannot be recovered.
    */
   @Override
@@ -50,8 +50,7 @@ public class CanonicalJsonResponseParser extends JsonMapResponseParser {
   }
 
   @Override
-  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
-      throws IOException {
-    return ResponseCanonicalizer.canonicalize(processResponse(body, encoding));
+  public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
+    return ResponseCanonicalizer.canonicalize(super.processResponse(body, encoding));
   }
 }

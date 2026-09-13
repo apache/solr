@@ -21,7 +21,7 @@ import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 
 /** Runs the example tests over {@link CanonicalJsonResponseParser}. */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class SolrExampleJsonMapTest extends SolrExampleTests {
+public class SolrExampleJsonTest extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient() {
     return solrTestRule

@@ -82,19 +82,4 @@ public abstract class ResponseParser {
    * @return the MIME types that this parser is capable of parsing. Never null.
    */
   public abstract Set<String> getContentTypes();
-
-  /**
-   * Parses the response and returns it in the canonical shape the SolrJ response classes expect: a
-   * {@link NamedList} tree with {@link org.apache.solr.common.SolrDocumentList} for document
-   * sections.
-   *
-   * <p>Most parsers produce that shape directly and inherit this method unchanged. A parser whose
-   * natural output is a raw structure of {@code Map}s and {@code List}s — such as the JSON map
-   * parser — overrides it to convert, so that the conversion is the parser's own responsibility
-   * rather than something a client has to know to apply.
-   */
-  public NamedList<Object> processCanonicalResponse(InputStream body, String encoding)
-      throws IOException {
-    return processResponse(body, encoding);
-  }
 }

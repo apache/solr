@@ -35,8 +35,9 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  * interpret the ambiguous flat arrays produced by {@code json.nl=flat}; a typed JSON parser should
  * request {@code json.nl=map} for its own reads.
  *
- * <p>Public only so that a {@link ResponseParser} in another package can reach it from {@link
- * ResponseParser#processCanonicalResponse}; it is not intended for callers.
+ * <p>Public only so that {@link
+ * org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser}, in another package, can
+ * call it from its own {@code processResponse}; it is not intended for callers.
  *
  * @lucene.internal
  */

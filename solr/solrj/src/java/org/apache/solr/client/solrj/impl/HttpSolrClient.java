@@ -242,7 +242,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
       NamedList<Object> rsp;
       try {
-        rsp = processor.processCanonicalResponse(is, encoding);
+        rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
         throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
       }
