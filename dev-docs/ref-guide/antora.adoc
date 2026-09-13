@@ -57,7 +57,13 @@ For each command registered in `org.apache.solr.cli.SolrCLI` that uses picocli a
 solr/solr-ref-guide/modules/deployment-guide/pages/cli/
 ----
 
-The generated pages are post-processed to be Antora-compatible (correct page title, `:page-toclevels:` attribute, ASF license header, DO NOT EDIT notice).
+The generated pages are post-processed to be Antora-compatible (correct page title, `:page-toclevels:` attribute, ASF license header, DO NOT EDIT notice, and the experimental warning).
+
+Two things about that post-processing are worth knowing before changing it:
+
+* Whether an option is required is worked out by re-parsing the synopsis that picocli generated, because `ManPageGenerator` emits no per-option marker (https://github.com/remkop/picocli/issues/2519[picocli#2519]).
+  A change to picocli's synopsis layout will therefore change the markers; the build fails loudly rather than silently publishing pages without them.
+* `runManPageGenerator` resolves `project.objects` and the `cliClasspath` configuration at execution time, which is not compatible with Gradle's configuration cache should it ever be enabled for this build.
 The navigation section in `deployment-nav.adoc` between the `// CLI-DOCS-START` and `// CLI-DOCS-END` markers is also updated automatically.
 
 The main landing page `solr-control-script-reference.adoc` provides an overview of the available tools with links to each man-page.
@@ -70,12 +76,27 @@ Run this after modifying any `@Command`, `@Option`, or `@Parameters` annotation 
 
 `./gradlew :solr:solr-ref-guide:checkCliDocsUpToDate`::
 Verifies that the committed pages in `pages/cli/` are in sync with the current annotations.
-This target is wired into `gradlew check`, so CI will catch annotation changes that were not followed by a `generateCliDocs` run.
+It is wired into `gradlew check` alongside the other ref-guide checks, so it is skipped when the ref guide is excluded with `-Prefguide.include=false`.
+Note that upgrading picocli can change the generated wording without any annotation having been touched; if the check fails after a version bump, re-run `generateCliDocs` and commit the result.
 
 === Adding docs for a new tool
 
-The new command will automatically appear in the generated pages and the navigation when running `gradlew generateCliDocs`.
-You will need to tie it in to the `solr-control-script-reference.adoc` yourself.
+The new command will automatically appear in the generated pages, in the navigation and in the command table on `pages/cli/index.adoc` when running `gradlew generateCliDocs`.
+
+`pages/cli/index.adoc` is the only hand-written page in that directory; everything matching `solr-*.adoc` is generated and must not be edited by hand.
+`solr-control-script-reference.adoc` documents the default (commons-cli) implementation and should not gain per-command links to the generated pages while the picocli implementation is experimental.
+
+=== What a tool migration should include
+
+When migrating a tool to picocli:
+
+* A `*PicocliTest` subclass of the tool's existing test that overrides only the invocation strategy, so every case runs on both implementations. See `ZkSubcommandsPicocliTest` for the pattern.
+* The tool's `.bats` file added to `integrationTestsPicocli` in `solr/packaging/build.gradle`, but only once *every* command that suite invokes has been migrated, not just the one under test.
+  `test_auth.bats`, for example, uses `solr assert` to wait for startup, so it cannot be added until the assert command is migrated.
+  Be aware that a failure part-way through that suite is especially awkward: `solr auth enable` appends `SOLR_AUTH_TYPE` and `SOLR_AUTHENTICATION_OPTS` to the `solr.in.sh` of the *built distribution* under `solr/packaging/build/`, so an aborted run leaves every later `bin/solr` invocation trying to authenticate.
+  If BATS runs start hanging for no apparent reason, check that file, and delete the distribution directory to force `installFullDist` to recreate it.
+* A `gradlew :solr:solr-ref-guide:generateCliDocs` run, with the result committed.
+* The tool registered in `SolrCLI`'s `subcommands` only once `callTool()` actually works; `SolrCLIPicocliTest` enforces the rules that apply to every registered command.
 
 == Building the HTML Site
 

@@ -86,7 +86,7 @@ In addition to the commands that have not been migrated yet:
 * `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
   This matches the default implementation, but means `--fail-on-exists false` does not disable the check.
 * Error messages for invalid or mutually exclusive options are worded differently from the default implementation.
-* `bin/solr zk --help` lays its sub-command help out differently from the default implementation.
+* Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
 
 == Reporting Problems
 

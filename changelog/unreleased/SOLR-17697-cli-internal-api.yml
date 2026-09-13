@@ -1,0 +1,11 @@
+title: >
+  Methods on the `org.apache.solr.cli` tool classes have been narrowed or had their signatures
+  changed, and the commons-cli based `Tool` API is deprecated. These classes are internal to the
+  `bin/solr` script and are not intended for embedding.
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-17697
+    url: https://issues.apache.org/jira/browse/SOLR-17697
