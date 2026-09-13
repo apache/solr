@@ -35,6 +35,7 @@ import org.apache.solr.handler.loader.CborLoader;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.handler.loader.JsonLoader;
+import org.apache.solr.handler.loader.NDJsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -83,11 +84,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
             if (type == null) { // Normal requests will not get here.
               throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Missing ContentType");
             }
-            int idx = type.indexOf(';');
-            if (idx > 0) {
-              type = type.substring(0, idx);
-            }
-            loader = loaders.get(type);
+            loader = loaders.get(baseContentType(type));
             if (loader == null) {
               throw new SolrException(
                   ErrorCode.UNSUPPORTED_MEDIA_TYPE,
@@ -122,6 +119,12 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
     loaders = Collections.unmodifiableMap(createDefaultLoaders(args));
   }
 
+  /** Strips any parameters, such as a charset, off of the given MIME type. */
+  public static String baseContentType(String type) {
+    int idx = type == null ? -1 : type.indexOf(';');
+    return idx > 0 ? type.substring(0, idx) : type;
+  }
+
   protected void setAssumeContentType(String ct) {
     invariants =
         SolrParams.wrapDefaults(SolrParams.of(UpdateParams.ASSUME_CONTENT_TYPE, ct), invariants);
@@ -143,12 +146,17 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
     registry.put("text/csv", registry.get("application/csv"));
     registry.put("text/xml", registry.get("application/xml"));
     registry.put("text/json", registry.get("application/json"));
+    ContentStreamLoader ndJsonLoader = new NDJsonLoader().init(p);
+    for (String contentType : NDJsonLoader.CONTENT_TYPES) {
+      registry.put(contentType, ndJsonLoader);
+    }
 
     pathVsLoaders.put(JSON_PATH, registry.get("application/json"));
     pathVsLoaders.put(DOC_PATH, registry.get("application/json"));
     pathVsLoaders.put(CSV_PATH, registry.get("application/csv"));
     pathVsLoaders.put(BIN_PATH, registry.get("application/javabin"));
     pathVsLoaders.put(CBOR_PATH, registry.get("application/cbor"));
+    pathVsLoaders.put(NDJSON_PATH, ndJsonLoader);
     return registry;
   }
 
@@ -167,7 +175,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
 
   @Override
   public String getDescription() {
-    return "Add documents using XML, CSV, JSON, or javabin.";
+    return "Add documents using XML, CSV, JSON, NDJSON, or javabin.";
   }
 
   @Override
@@ -180,4 +188,5 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
   public static final String CSV_PATH = "/update/csv";
   public static final String BIN_PATH = "/update/bin";
   public static final String CBOR_PATH = "/update/cbor";
+  public static final String NDJSON_PATH = "/update/ndjson";
 }

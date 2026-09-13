@@ -884,7 +884,8 @@ public class PostTool extends ToolBase {
         uri = new URI(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
-          || type.equals("application/json")) {
+          || type.equals("application/json")
+          || type.equals("application/jsonl")) {
         // Default handler
       } else {
         // SolrCell
