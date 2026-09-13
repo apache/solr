@@ -67,7 +67,7 @@ public class QueryLimitsTestInjectionRule implements TestRule {
       TestInjection.queryTimeout = null;
     }
   }
-  
+
   public static void setEnabled(boolean enabled) {
     QueryLimitsTestInjectionRule.enabled = enabled;
   }
