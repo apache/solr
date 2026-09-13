@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.NDJsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -35,13 +36,23 @@ public class NDJsonLoaderTest extends SolrTestCase {
 
   private static BufferingRequestProcessor load(String content, SolrParams params)
       throws Exception {
+    return load(new NDJsonLoader(), content, params);
+  }
+
+  private static BufferingRequestProcessor load(
+      ContentStreamLoader loader, String content, SolrParams params) throws Exception {
     BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
     try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
-      new NDJsonLoader()
-          .load(
-              req, new SolrQueryResponse(), new ContentStreamBase.StringStream(content), processor);
+      loader.load(
+          req, new SolrQueryResponse(), new ContentStreamBase.StringStream(content), processor);
     }
     return processor;
+  }
+
+  private static ContentStreamLoader loaderWithMaxLineLength(int maxLineLength) {
+    ModifiableSolrParams args = new ModifiableSolrParams();
+    args.set("maxLineLength", maxLineLength);
+    return new NDJsonLoader().init(args);
   }
 
   private static BufferingRequestProcessor load(String content) throws Exception {
@@ -60,6 +71,14 @@ public class NDJsonLoaderTest extends SolrTestCase {
         "SolrInputDocument(fields: [id=2, title=[a, b]])", p.addCommands.get(1).solrDoc.toString());
     assertTrue(p.deleteCommands.isEmpty());
     assertTrue(p.commitCommands.isEmpty());
+  }
+
+  @Test
+  public void testCarriageReturnLineEndings() throws Exception {
+    BufferingRequestProcessor p = load("{\"id\":\"1\"}\r\n{\"id\":\"2\"}\r\n");
+    assertEquals(2, p.addCommands.size());
+    assertEquals("SolrInputDocument(fields: [id=1])", p.addCommands.get(0).solrDoc.toString());
+    assertEquals("SolrInputDocument(fields: [id=2])", p.addCommands.get(1).solrDoc.toString());
   }
 
   @Test
@@ -102,6 +121,63 @@ public class NDJsonLoaderTest extends SolrTestCase {
         expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n[{\"id\":\"2\"}]\n"));
     assertThat(e.getMessage(), containsString("line 2"));
     assertThat(e.getMessage(), containsString("expected a JSON object"));
+  }
+
+  /** Input that is not really newline delimited must fail, not buffer onto the heap. */
+  @Test
+  public void testOverlongLineIsRejected() {
+    String oneLongLine = "[" + "{\"id\":\"1\"},".repeat(500) + "{\"id\":\"x\"}]";
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> load(loaderWithMaxLineLength(256), oneLongLine, new ModifiableSolrParams()));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("maxLineLength"));
+  }
+
+  /** The limit can be lowered globally, without redefining the implicit update handlers. */
+  @Test
+  public void testMaxLineLengthSystemProperty() {
+    System.setProperty(NDJsonLoader.MAX_LINE_LENGTH_PROP, "64");
+    try {
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  load(
+                      new NDJsonLoader(),
+                      "{\"id\":\"1\",\"title_s\":\"" + "x".repeat(200) + "\"}\n",
+                      new ModifiableSolrParams()));
+      assertThat(e.getMessage(), containsString("maxLineLength of 64"));
+    } finally {
+      System.clearProperty(NDJsonLoader.MAX_LINE_LENGTH_PROP);
+    }
+  }
+
+  /** An explicit handler arg wins over the system property. */
+  @Test
+  public void testHandlerArgOverridesSystemProperty() throws Exception {
+    System.setProperty(NDJsonLoader.MAX_LINE_LENGTH_PROP, "8");
+    try {
+      BufferingRequestProcessor p =
+          load(loaderWithMaxLineLength(4096), "{\"id\":\"1\"}\n", new ModifiableSolrParams());
+      assertEquals(1, p.addCommands.size());
+    } finally {
+      System.clearProperty(NDJsonLoader.MAX_LINE_LENGTH_PROP);
+    }
+  }
+
+  /** The budget is per line, so any number of lines under the limit must be accepted. */
+  @Test
+  public void testManyLinesEachUnderTheLimit() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < 5000; i++) {
+      sb.append("{\"id\":\"").append(i).append("\",\"title_s\":\"padding padding padding\"}\n");
+    }
+    assertTrue("test input should far exceed the limit in total", sb.length() > 100_000);
+    BufferingRequestProcessor p =
+        load(loaderWithMaxLineLength(256), sb.toString(), new ModifiableSolrParams());
+    assertEquals(5000, p.addCommands.size());
   }
 
   @Test

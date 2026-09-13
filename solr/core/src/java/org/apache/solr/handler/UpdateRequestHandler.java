@@ -21,6 +21,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -119,10 +120,16 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
     loaders = Collections.unmodifiableMap(createDefaultLoaders(args));
   }
 
-  /** Strips any parameters, such as a charset, off of the given MIME type. */
+  /**
+   * Normalizes a MIME type for loader lookup by stripping any parameters, such as a charset, and
+   * lower-casing it; media types are case-insensitive per RFC 9110.
+   */
   public static String baseContentType(String type) {
-    int idx = type == null ? -1 : type.indexOf(';');
-    return idx > 0 ? type.substring(0, idx) : type;
+    if (type == null) {
+      return null;
+    }
+    int idx = type.indexOf(';');
+    return (idx > 0 ? type.substring(0, idx) : type).trim().toLowerCase(Locale.ROOT);
   }
 
   protected void setAssumeContentType(String ct) {

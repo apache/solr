@@ -21,7 +21,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
-import java.util.Iterator;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
@@ -78,17 +77,33 @@ public class UpdateAPI {
     updateRequestHandler.handleRequest(req, rsp);
   }
 
+  /**
+   * Whether this request should be routed to the NDJSON loader. The rewritten path applies to every
+   * content stream of the request, so a request is only treated as NDJSON when all of its streams
+   * are; anything else keeps the historic {@code /update/json/docs} behavior.
+   */
   private static boolean isNdJson(SolrQueryRequest req) {
-    String contentType = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
-    if (contentType == null) {
-      Iterable<ContentStream> streams = req.getContentStreams();
-      Iterator<ContentStream> it = streams == null ? null : streams.iterator();
-      if (it == null || !it.hasNext()) {
+    String assumed = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
+    if (assumed != null) {
+      return isNdJsonContentType(assumed);
+    }
+    // Peeking is safe: content streams are always backed by a re-iterable List
+    Iterable<ContentStream> streams = req.getContentStreams();
+    if (streams == null) {
+      return false;
+    }
+    boolean any = false;
+    for (ContentStream stream : streams) {
+      if (!isNdJsonContentType(stream.getContentType())) {
         return false;
       }
-      contentType = it.next().getContentType();
+      any = true;
     }
-    contentType = UpdateRequestHandler.baseContentType(contentType);
-    return contentType != null && NDJsonLoader.CONTENT_TYPES.contains(contentType);
+    return any;
+  }
+
+  private static boolean isNdJsonContentType(String contentType) {
+    String base = UpdateRequestHandler.baseContentType(contentType);
+    return base != null && NDJsonLoader.CONTENT_TYPES.contains(base);
   }
 }

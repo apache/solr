@@ -355,6 +355,7 @@ NOTE: You can see the opposite export/import cycle using the `tr` parameter in t
 
 Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents.
 If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section xref:transforming-and-indexing-custom-json.adoc[].
+A stream of documents may also be sent as <<Newline Delimited JSON>>.
 
 === Solr-Style JSON
 
@@ -366,8 +367,6 @@ JSON formatted updates can take 3 basic forms, described in depth below:
 To differentiate this from a set of commands, the `json.command=false` request parameter is required.
 * <<Adding Multiple JSON Documents,A list of documents>>, expressed as a top level JSON Array containing a JSON Object per document.
 * <<Sending JSON Update Commands,A sequence of update commands>>, expressed as a top level JSON Object (a Map).
-
-A stream of documents may also be sent as <<Newline Delimited JSON>>.
 
 ==== Adding a Single JSON Document
 
@@ -496,11 +495,22 @@ curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr
 ----
 
 `application/jsonl` and `application/x-jsonlines` are accepted as aliases for `application/x-ndjson`.
-The xref:post-tool.adoc[] sends `.jsonl` files in this format automatically.
+The xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files in this format automatically.
 
 Because each document ends at a newline, Solr indexes the request one line at a time without parsing the whole request body first, and a producer can append documents to a file or stream without rewriting any enclosing structure.
-This makes the format a good fit for large bulk loads.
-Blank lines are ignored, and a line that is not a single JSON Object fails the request with the offending line number.
+Peak memory therefore depends on the longest single line rather than on the size of the request, which makes the format a good fit for large bulk loads.
+
+Blank lines are ignored, and a line that is not a single JSON Object fails the request reporting the offending line number.
+As with the other update formats, documents from earlier lines have already been submitted when a later line fails, so a failed bulk load may be partially applied; the reported line number tells you where to resume.
+A single line may not exceed 16 MB, which catches input that is not in fact newline delimited -- a whole JSON array on one line, for example.
+If you index unusually large documents, raise the limit with the `solr.ndjson.maxLineLength` system property (in characters), or per handler with a `maxLineLength` init argument:
+
+[source,xml]
+----
+<requestHandler name="/update" class="solr.UpdateRequestHandler">
+  <int name="maxLineLength">134217728</int>
+</requestHandler>
+----
 
 Unlike Solr-style JSON, NDJSON carries documents only; the `add`, `delete`, `commit`, `optimize`, and `rollback` commands are not recognized.
 Use request parameters such as `commit` and `commitWithin`, or a separate request, for those.

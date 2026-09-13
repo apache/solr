@@ -16,22 +16,24 @@
  */
 package org.apache.solr.handler;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.Matchers.containsString;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -42,11 +44,12 @@ public class NDJsonUpdateTest extends SolrTestCase {
 
   private static final String COLLECTION = "ndjson";
 
+  /** Three documents, a blank line to be skipped, and non-ASCII values to verify encoding. */
   private static final String NDJSON =
       "{\"id\":\"1\",\"title_s\":\"one\"}\n"
           + "\n"
-          + "{\"id\":\"2\",\"title_s\":\"two\"}\n"
-          + "{\"id\":\"3\",\"title_s\":\"three\"}\n";
+          + "{\"id\":\"2\",\"title_s\":\"Bl\u00e5b\u00e6rsyltet\u00f8y\"}\n"
+          + "{\"id\":\"3\",\"title_s\":\"\u65e5\u672c\u8a9e\"}\n";
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
@@ -56,11 +59,6 @@ public class NDJsonUpdateTest extends SolrTestCase {
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
     solrTestRule.newCollection(COLLECTION).withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
-  }
-
-  @AfterClass
-  public static void clearAllowPaths() {
-    System.clearProperty(ALLOW_PATHS_SYSPROP);
   }
 
   @Before
@@ -96,6 +94,33 @@ public class NDJsonUpdateTest extends SolrTestCase {
     assertIndexed();
   }
 
+  /** The dedicated path selects NDJSON regardless of the content type, as /update/csv does. */
+  @Test
+  public void testNdJsonPathWinsOverContentType() throws Exception {
+    post(new GenericSolrRequest(POST, "/update/ndjson", commitParams()), "application/json");
+    assertIndexed();
+
+    clearIndex();
+    post(
+        new GenericV2SolrRequest(POST, v2Path("/update/ndjson"), commitParams()),
+        "application/json");
+    assertIndexed();
+  }
+
+  @Test
+  public void testContentTypeWithCharsetParameter() throws Exception {
+    post(
+        new GenericSolrRequest(POST, "/update", commitParams()),
+        "application/x-ndjson; charset=utf-8");
+    assertIndexed();
+
+    clearIndex();
+    post(
+        new GenericV2SolrRequest(POST, v2Path("/update"), commitParams()),
+        "application/x-ndjson; charset=utf-8");
+    assertIndexed();
+  }
+
   @Test
   public void testV2UpdateStillDefaultsToJson() throws Exception {
     GenericV2SolrRequest req = new GenericV2SolrRequest(POST, v2Path("/update"), commitParams());
@@ -103,7 +128,7 @@ public class NDJsonUpdateTest extends SolrTestCase {
         "[{\"id\":\"1\"},{\"id\":\"2\"},{\"id\":\"3\"}]".getBytes(StandardCharsets.UTF_8),
         "application/json");
     req.process(solrTestRule.getAdminClient());
-    assertIndexed();
+    assertEquals(List.of("1", "2", "3"), query().stream().map(d -> d.get("id")).collect(toList()));
   }
 
   @Test
@@ -140,8 +165,18 @@ public class NDJsonUpdateTest extends SolrTestCase {
     req.process(v2 ? solrTestRule.getAdminClient() : solrTestRule.getSolrClient(COLLECTION));
   }
 
+  /** Asserts that the three documents of {@link #NDJSON} were indexed, blank line skipped. */
   private static void assertIndexed() throws Exception {
-    SolrClient client = solrTestRule.getSolrClient(COLLECTION);
-    assertEquals(3, client.query(new SolrQuery("*:*")).getResults().getNumFound());
+    SolrDocumentList docs = query();
+    assertEquals(3, docs.getNumFound());
+    assertEquals(List.of("1", "2", "3"), docs.stream().map(d -> d.get("id")).collect(toList()));
+    assertEquals(
+        List.of("one", "Bl\u00e5b\u00e6rsyltet\u00f8y", "\u65e5\u672c\u8a9e"),
+        docs.stream().map(d -> d.get("title_s")).collect(toList()));
+  }
+
+  private static SolrDocumentList query() throws Exception {
+    SolrQuery q = new SolrQuery("*:*").setSort("id", SolrQuery.ORDER.asc);
+    return solrTestRule.getSolrClient(COLLECTION).query(q).getResults();
   }
 }
