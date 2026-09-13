@@ -48,7 +48,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    QueryLimitsTestInjectionRule.enabled = false;
+    QueryLimitsTestInjectionRule.setEnabled(false);
   }
 
   @After

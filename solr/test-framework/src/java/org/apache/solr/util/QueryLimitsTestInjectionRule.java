@@ -71,4 +71,8 @@ public class QueryLimitsTestInjectionRule implements TestRule {
   public static void setEnabled(boolean enabled) {
     QueryLimitsTestInjectionRule.enabled = enabled;
   }
+
+  public static boolean isEnabled() {
+    return enabled;
+  }
 }
