@@ -1,5 +1,5 @@
 title: >
-  SOLR-18445: The /update handler now accepts newline delimited JSON (ND-JSON / JSON Lines),
+  The /update handler now accepts newline delimited JSON (ND-JSON / JSON Lines),
   selected by `Content-Type: application/x-ndjson` or by posting to the new `/update/ndjson`
   path. Documents are indexed one line at a time, which suits large bulk loads.
 type: added
