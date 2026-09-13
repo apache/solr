@@ -117,9 +117,9 @@ public class AnalysisResponseBase extends SolrResponseBase {
     String text = (String) tokenNL.get("text");
     String rawText = (String) tokenNL.get("rawText");
     String type = (String) tokenNL.get("type");
-    int start = (Integer) tokenNL.get("start");
-    int end = (Integer) tokenNL.get("end");
-    int position = (Integer) tokenNL.get("position");
+    int start = ((Number) tokenNL.get("start")).intValue();
+    int end = ((Number) tokenNL.get("end")).intValue();
+    int position = ((Number) tokenNL.get("position")).intValue();
     Boolean match = (Boolean) tokenNL.get("match");
     return new TokenInfo(
         text, rawText, type, start, end, position, (match == null ? false : match));

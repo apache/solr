@@ -52,6 +52,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,10 +152,15 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' param is used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    return wparams;
+
+    // The parser's own params take precedence over the request's, as wt does.
+    var params =
+        new ModifiableSolrParams(
+            SolrParams.wrapDefaults(
+                parserToUse.getAdditionalRequestParams(), solrRequest.getParams()));
+    // set() removes the param when the writer type is null, which is how a parser asks for no wt.
+    params.set(CommonParams.WT, parserToUse.getWriterType());
+    return params;
   }
 
   protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {

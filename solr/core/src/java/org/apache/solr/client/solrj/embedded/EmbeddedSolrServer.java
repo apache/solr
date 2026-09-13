@@ -244,6 +244,7 @@ public class EmbeddedSolrServer extends SolrClient {
       responseParser = new JavaBinResponseParser();
     }
     var addParams = SolrParams.of(CommonParams.WT, responseParser.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, responseParser.getAdditionalRequestParams());
     return SolrParams.wrapDefaults(addParams, params);
   }
 
