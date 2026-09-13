@@ -87,6 +87,8 @@ In addition to the commands that have not been migrated yet:
   This matches the default implementation, but means `--fail-on-exists false` does not disable the check.
 * Error messages for invalid or mutually exclusive options are worded differently from the default implementation.
 * Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
+* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the default implementation prints.
+  That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
 == Reporting Problems
 

@@ -126,44 +126,9 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
-      addZkSubcommandHints(commandLine);
       exit(commandLine.execute(stripEmptyLeadingArg(args)));
     } else {
       exit(parseWithCommonsCli(args));
-    }
-  }
-
-  /**
-   * Sub-commands of {@code zk} that users commonly type without the {@code zk} prefix. The
-   * commons-cli path remaps these to a usage hint; register the same hint with picocli so both
-   * engines answer alike.
-   */
-  private static final List<String> ZK_SUBCOMMAND_NAMES =
-      List.of("upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "updateacls");
-
-  /** Prints the same hint the commons-cli path prints, then exits non-zero. */
-  @picocli.CommandLine.Command(hidden = true)
-  static class ZkSubcommandMisuse implements java.util.concurrent.Callable<Integer> {
-    @picocli.CommandLine.Spec picocli.CommandLine.Model.CommandSpec spec;
-
-    @Override
-    public Integer call() {
-      CLIO.err(
-          "You must invoke this subcommand using the zk command.   bin/solr zk "
-              + spec.name()
-              + ".");
-      return 1;
-    }
-  }
-
-  private static void addZkSubcommandHints(picocli.CommandLine cmd) {
-    for (String name : ZK_SUBCOMMAND_NAMES) {
-      picocli.CommandLine hint = new picocli.CommandLine(new ZkSubcommandMisuse());
-      hint.getCommandSpec().name(name);
-      // These exist only to explain the mistake, so accept whatever else was typed.
-      hint.setUnmatchedArgumentsAllowed(true);
-      hint.setUnmatchedOptionsArePositionalParams(true);
-      cmd.addSubcommand(name, hint);
     }
   }
 
