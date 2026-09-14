@@ -109,8 +109,11 @@ public interface ExtractingParams {
   String RESOURCE_NAME = "resource.name";
 
   /**
-   * Optional. The password for this resource. Will be used instead of the rule based password
-   * lookup mechanisms
+   * The password for this resource, used instead of the rule based password lookup mechanisms.
+   *
+   * <p>Not currently supported by the {@code tikaserver} backend: TikaServer has no simple
+   * per-request way to accept a password, and setting this parameter is rejected with {@code
+   * BAD_REQUEST}. See {@link #PASSWORD_MAP_FILE}.
    */
   String RESOURCE_PASSWORD = "resource.password";
 
@@ -127,13 +130,14 @@ public interface ExtractingParams {
   String DEFAULT_FIELD = "defaultField";
 
   /**
-   * Optional. If specified, loads the file as a source for password lookups for Tika encrypted
-   * documents.
+   * If specified, loads the file as a source for password lookups for Tika encrypted documents.
    *
    * <p>File format is Java properties format with one key=value per line. The key is evaluated as a
    * regex against the file name, and the value is the password The rules are evaluated top-bottom,
    * i.e. the first match will be used If you want a fallback password to be always used, supply a
    * .*=&lt;defaultmypassword&gt; at the end
+   *
+   * <p>Not currently supported by the {@code tikaserver} backend: see {@link #RESOURCE_PASSWORD}.
    */
   String PASSWORD_MAP_FILE = "passwordsFile";
 
@@ -157,14 +161,4 @@ public interface ExtractingParams {
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
   String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
-
-  /**
-   * Optional raw JSON object sent as the "config" part of a per-request TikaServer configuration
-   * call (e.g. {@code {"pdf-parser":{"ocr":{"strategy":"no_ocr"}}}}). The server must have {@code
-   * allowPerRequestConfig=true} set, or the request is rejected with 403. Rejected with {@code
-   * BAD_REQUEST} for recursive (tikaserver.recursive) requests, since TikaServer has no XML-output
-   * variant of /rmeta/config (tracked upstream as <a
-   * href="https://issues.apache.org/jira/browse/TIKA-4881">TIKA-4881</a>).
-   */
-  String TIKASERVER_CONFIG_JSON = "tikaserver.config";
 }

@@ -41,20 +41,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RefCounted;
 import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
-import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.slf4j.Logger;
@@ -201,82 +195,28 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
     ensureSupportedTikaServerVersion();
 
-    ExtractionMetadata md = buildMetadataFromRequest(request);
-    String pwd = resolvePassword(request, md);
-    String configJson = resolveConfigJson(request, pwd);
+    // TikaServer's /tika and /rmeta endpoints return Markdown by default (TIKA-4663); Solr's
+    // SAX-based content handling requires XHTML/XML, hence the /xml path variants.
+    String url = baseUrl + (request.tikaServerRecursive ? "/rmeta/xml" : "/tika/xml");
 
     HttpClient client = acquiredResourcesRef.get().client;
+
+    Request req = client.newRequest(url).method("PUT");
     Duration effectiveTimeout =
         (request.tikaServerTimeoutSeconds != null && request.tikaServerTimeoutSeconds > 0)
             ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
             : defaultTimeout;
+    req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    // Also set idle timeout in case of heavy server side work like OCR
+    req.idleTimeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+
+    // Headers
+    String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
+    req.headers(h -> h.add("Accept", accept));
     String contentType = (request.streamType != null) ? request.streamType : request.contentType;
-
-    String url;
-    Request req;
-    if (configJson != null && request.tikaServerRecursive) {
-      // Tracked upstream: https://issues.apache.org/jira/browse/TIKA-4881
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Per-request TikaServer config (password or "
-              + ExtractingParams.TIKASERVER_CONFIG_JSON
-              + ") is not supported together with "
-              + ExtractingParams.TIKASERVER_RECURSIVE
-              + "=true: TikaServer 4.x has no XML-output variant of /rmeta/config"
-              + " (see https://issues.apache.org/jira/browse/TIKA-4881).");
+    if (contentType != null) {
+      req.headers(h -> h.add("Content-Type", contentType));
     }
-    if (configJson != null) {
-      // TikaServer accepts per-request parser config (including passwords) as a JSON "config"
-      // part on a multipart request, and requires allowPerRequestConfig=true on the server. Only
-      // non-recursive extraction is handled here, since TikaServer has no XML content-handler
-      // variant of /rmeta/config (checked above).
-      url = baseUrl + "/tika/config/xml";
-      req = client.newRequest(url).method("POST");
-      req.headers(h -> h.add("Accept", "text/xml"));
-
-      HttpFields.Mutable fileFields = HttpFields.build();
-      if (contentType != null) {
-        fileFields.add(HttpHeader.CONTENT_TYPE, contentType);
-      }
-      try (MultiPartRequestContent multiPart = new MultiPartRequestContent()) {
-        multiPart.addPart(
-            new MultiPart.ContentSourcePart(
-                "file",
-                request.resourceName,
-                fileFields,
-                new InputStreamRequestContent(inputStream)));
-        multiPart.addPart(
-            new MultiPart.ContentSourcePart(
-                "config",
-                null,
-                HttpFields.build().add(HttpHeader.CONTENT_TYPE, "application/json"),
-                new StringRequestContent(configJson)));
-        req.body(multiPart);
-      }
-    } else {
-      // TikaServer's /tika and /rmeta endpoints return Markdown by default (TIKA-4663); Solr's
-      // SAX-based content handling requires XHTML/XML, hence the /xml path variants.
-      url = baseUrl + (request.tikaServerRecursive ? "/rmeta/xml" : "/tika/xml");
-      req = client.newRequest(url).method("PUT");
-      String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
-      req.headers(h -> h.add("Accept", accept));
-      if (contentType != null) {
-        req.headers(h -> h.add("Content-Type", contentType));
-      }
-      if (request.resourceName != null) {
-        req.headers(
-            h ->
-                h.add(
-                    "Content-Disposition",
-                    "attachment; filename=\"" + request.resourceName + "\""));
-      }
-      if (contentType != null) {
-        req.body(new InputStreamRequestContent(contentType, inputStream));
-      } else {
-        req.body(new InputStreamRequestContent(inputStream));
-      }
-    }
-
     if (!request.tikaServerRequestHeaders.isEmpty()) {
       req.headers(
           h ->
@@ -286,9 +226,18 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
                   }));
     }
 
-    req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    // Also set idle timeout in case of heavy server side work like OCR
-    req.idleTimeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    if (request.resourceName != null) {
+      req.headers(
+          h ->
+              h.add(
+                  "Content-Disposition", "attachment; filename=\"" + request.resourceName + "\""));
+    }
+
+    if (contentType != null) {
+      req.body(new InputStreamRequestContent(contentType, inputStream));
+    } else {
+      req.body(new InputStreamRequestContent(inputStream));
+    }
 
     InputStreamResponseListener listener = new InputStreamResponseListener();
     req.send(listener);
@@ -459,52 +408,6 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
           SolrException.ErrorCode.SERVER_ERROR, rejectedTikaServerVersionMessage);
     }
     tikaServerVersionVerified = true;
-  }
-
-  /** Resolves the password to use for an encrypted document, or null if none applies. */
-  private String resolvePassword(ExtractionRequest request, ExtractionMetadata md) {
-    if (request.resourcePassword == null && request.passwordsMap == null) {
-      return null;
-    }
-    RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
-    if (request.resourcePassword != null) {
-      passwordProvider.setExplicitPassword(request.resourcePassword);
-    }
-    if (request.passwordsMap != null) {
-      passwordProvider.setPasswordMap(request.passwordsMap);
-    }
-    return passwordProvider.getPassword(md);
-  }
-
-  /**
-   * Builds the per-request TikaServer JSON "config" payload, merging any resolved password with any
-   * caller-supplied {@link ExtractingParams#TIKASERVER_CONFIG_JSON}. Returns null if neither
-   * applies, meaning no per-request config is needed.
-   */
-  @SuppressWarnings("unchecked")
-  private String resolveConfigJson(ExtractionRequest request, String pwd) {
-    Map<String, Object> config = new LinkedHashMap<>();
-    if (request.tikaServerConfigJson != null && !request.tikaServerConfigJson.isBlank()) {
-      Object parsed;
-      try {
-        parsed = Utils.fromJSONString(request.tikaServerConfigJson);
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Invalid JSON in " + ExtractingParams.TIKASERVER_CONFIG_JSON + ": " + e.getMessage(),
-            e);
-      }
-      if (!(parsed instanceof Map)) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            ExtractingParams.TIKASERVER_CONFIG_JSON + " must be a JSON object");
-      }
-      config.putAll((Map<String, Object>) parsed);
-    }
-    if (pwd != null && !config.containsKey("simple-password-provider")) {
-      config.put("simple-password-provider", Map.of("password", pwd));
-    }
-    return config.isEmpty() ? null : Utils.toJSONString(config);
   }
 
   private static class LimitingInputStream extends InputStream {

@@ -62,6 +62,8 @@ The ExtractingRequestHandler supports multiple backends, selectable with the `ex
 
 Solr delegates content extraction to an external Apache Tika Server process. This provides operational isolation (crashes or heavy parsing won't impact Solr), simplifies dependency management, and allows you to scale Tika independently of Solr.
 
+Solr's role is limited to sending each document to Tika Server and mapping the metadata and text it returns into Solr fields; Solr does not configure Tika Server's parsers on your behalf, so anything beyond how Tika Server behaves out of the box (parser options, OCR, password-protected documents, etc.) is configured directly on Tika Server itself -- see <<Parser-Specific Properties>> below and the https://tika.apache.org/[Apache Tika documentation].
+
 Example handler configuration:
 
 [source,xml]
@@ -367,10 +369,8 @@ Example: `multipartUploadLimitInKB=2048000`
 |Optional |Default: none
 |===
 +
-Defines a file path and name for a file of file name to password mappings.
-See the section <<Indexing Encrypted Documents>> for more information about using a password file.
-+
-Example: `passwordsFile=/path/to/passwords.txt`
+Not currently supported by the `tikaserver` backend; setting it is rejected with `BAD_REQUEST`.
+See <<Indexing Encrypted Documents>> below.
 
 // TODO: Feature exists but keep undocumented for now
 // `tikaserver.metadata.compatibility`::
@@ -383,18 +383,6 @@ Example: `passwordsFile=/path/to/passwords.txt`
 // When enabled, Solr Cell tries to map some common metadata to other common names, e.g. `dc:author` is mapped also to `Author`. This can be useful if switching from `local` to `tikaserver` backend, since `tikaserver` uses more industry standard name-spaced metadata keys.
 // +
 // Only applicable for `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
-
-`tikaserver.config`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-A raw JSON object sent as the per-request parser configuration for Tika Server (e.g., `{"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}`).
-See <<Parser-Specific Properties>> below for details and an important security note: this requires `allowPerRequestConfig=true` on the Tika Server, which is off by default.
-+
-Example: `tikaserver.config={"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}`
 
 `tikaserver.maxChars`::
 +
@@ -438,10 +426,8 @@ Example: `resource.name=mydoc.doc`
 |Optional |Default: none
 |===
 +
-Defines a password to use for a password-protected PDF or OOXML file.
-See the section <<Indexing Encrypted Documents>> for more information about using this parameter.
-+
-Example: `resource.password=secret`
+Not currently supported by the `tikaserver` backend; setting it is rejected with `BAD_REQUEST`.
+See <<Indexing Encrypted Documents>> below.
 
 `tikaserver.timeoutSeconds`::
 +
@@ -552,49 +538,14 @@ So you can use the other URPs without worrying about unexpected field additions.
 
 === Parser-Specific Properties
 
-Server-wide parser properties (things that should apply to every request) must be configured directly on your Tika Server instance, via its own JSON configuration file. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
+Parser-specific properties for Tika (OCR settings, per-parser options, etc.) must be configured directly on your Tika Server instance, via its own JSON configuration file. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
 
-For a single request, you can instead pass parser-specific options through Solr using the `tikaserver.config` parameter, whose value is a raw JSON object matching Tika Server's per-request configuration format.
-For example, to disable OCR for one request:
-
-[,console]
-----
-$ bin/solr post -c gettingstarted example/exampledocs/solr-word.pdf --params 'literal.id=doc1&tikaserver.config={"pdf-parser":{"ocr":{"strategy":"NO_OCR"}}}'
-----
-
-[IMPORTANT]
-====
-`tikaserver.config` requires your Tika Server to be started with `allowPerRequestConfig: true` in its own JSON configuration (under the `server` section).
-This is off by default, and Tika Server logs a warning when it is enabled, because it lets any client that can reach `/update/extract` inject arbitrary parser configuration, including options that spawn external processes such as OCR.
-Only enable it if you need per-request configuration, and treat access to your Solr instance's extraction endpoint accordingly.
-
-[source,json]
-----
-{
-  "server": {
-    "allowPerRequestConfig": true
-  }
-}
-----
-====
-
-`tikaserver.config` is combined with any password resolved from `resource.password` or `passwordsFile` (see <<Indexing Encrypted Documents>>) into a single request to Tika Server, and is only supported for non-recursive extraction (`tikaserver.recursive=false`, the default); Tika Server has no way to accept per-request configuration for recursive extraction while also returning the XHTML content Solr Cell needs (tracked upstream as https://issues.apache.org/jira/browse/TIKA-4881[TIKA-4881]).
+NOTE: In earlier versions of Solr Cell you could supply Tika configuration directly to Solr. This is no longer possible: Solr does not pass any per-request configuration to Tika Server.
 
 === Indexing Encrypted Documents
 
-The ExtractingRequestHandler will decrypt encrypted files and index their content if you supply a password in either `resource.password` in the request, or in a `passwordsFile` file.
-
-In the case of `passwordsFile`, the file supplied must be formatted so there is one line per rule.
-Each rule contains a file name regular expression, followed by "`=`", then the password in clear-text.
-Because the passwords are in clear-text, the file should have strict access restrictions.
-
-[source,plain]
-----
-# This is a comment
-myFileName = myPassword
-.*\.docx$ = myWordPassword
-.*\.pdf$ = myPdfPassword
-----
+`resource.password` and `passwordsFile` are not currently supported by the `tikaserver` backend and are rejected with `BAD_REQUEST` if set: TikaServer has no simple per-request way to accept a password outside of its own JSON parser-configuration mechanism, which Solr does not use.
+If you need to index encrypted documents, configure a password directly on your Tika Server instance -- see the https://tika.apache.org/[Apache Tika documentation] -- or decrypt the documents before sending them to Solr.
 
 === Extending the ExtractingRequestHandler
 

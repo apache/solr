@@ -938,123 +938,33 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
   }
 
   @Test
-  public void testPasswordProtected() throws Exception {
-    // PDF, Passwords from resource.password
-    loadLocal(
-        "extraction/encrypted-password-is-solrRules.pdf",
-        "fmap.created",
-        "extractedDate",
-        "fmap.producer",
-        "extractedProducer",
-        "fmap.creator",
-        "extractedCreator",
-        "fmap.Keywords",
-        "extractedKeywords",
-        "fmap.Creation-Date",
-        "extractedDate",
-        "uprefix",
-        "ignored_",
-        "fmap.Author",
-        "extractedAuthor",
-        "fmap.content",
-        "wdf_nocase",
-        "literal.id",
-        "pdfpwliteral",
-        "resource.name",
-        "encrypted-password-is-solrRules.pdf",
-        "resource.password",
-        "solrRules",
-        "fmap.Last-Modified",
-        "extractedDate");
+  public void testPasswordProtectedNotSupported() throws Exception {
+    // Encrypted-document extraction (resource.password / passwordsFile) is not currently
+    // supported by the tikaserver backend -- see ExtractingDocumentLoader.load(). Both params
+    // should fail fast with a clear error rather than a confusing downstream TikaServer failure.
+    expectThrows(
+        SolrException.class,
+        () ->
+            loadLocal(
+                "extraction/encrypted-password-is-solrRules.pdf",
+                "literal.id",
+                "pdfpwliteral",
+                "resource.name",
+                "encrypted-password-is-solrRules.pdf",
+                "resource.password",
+                "solrRules"));
 
-    // PDF, Passwords from passwords property file
-    loadLocal(
-        "extraction/encrypted-password-is-solrRules.pdf",
-        "fmap.created",
-        "extractedDate",
-        "fmap.producer",
-        "extractedProducer",
-        "fmap.creator",
-        "extractedCreator",
-        "fmap.Keywords",
-        "extractedKeywords",
-        "fmap.Creation-Date",
-        "extractedDate",
-        "uprefix",
-        "ignored_",
-        "fmap.Author",
-        "extractedAuthor",
-        "fmap.content",
-        "wdf_nocase",
-        "literal.id",
-        "pdfpwfile",
-        "resource.name",
-        "encrypted-password-is-solrRules.pdf",
-        "passwordsFile",
-        "passwordRegex.properties", // Passwords-file
-        "fmap.Last-Modified",
-        "extractedDate");
-
-    // DOCX, Explicit password
-    loadLocal(
-        "extraction/password-is-Word2010.docx",
-        "fmap.created",
-        "extractedDate",
-        "fmap.producer",
-        "extractedProducer",
-        "fmap.creator",
-        "extractedCreator",
-        "fmap.Keywords",
-        "extractedKeywords",
-        "fmap.Creation-Date",
-        "extractedDate",
-        "fmap.Author",
-        "extractedAuthor",
-        "fmap.content",
-        "wdf_nocase",
-        "uprefix",
-        "ignored_",
-        "literal.id",
-        "docxpwliteral",
-        "resource.name",
-        "password-is-Word2010.docx",
-        "resource.password",
-        "Word2010", // Explicit password
-        "fmap.Last-Modified",
-        "extractedDate");
-
-    // DOCX, Passwords from file
-    loadLocal(
-        "extraction/password-is-Word2010.docx",
-        "fmap.created",
-        "extractedDate",
-        "fmap.producer",
-        "extractedProducer",
-        "fmap.creator",
-        "extractedCreator",
-        "fmap.Keywords",
-        "extractedKeywords",
-        "fmap.Creation-Date",
-        "extractedDate",
-        "uprefix",
-        "ignored_",
-        "fmap.Author",
-        "extractedAuthor",
-        "fmap.content",
-        "wdf_nocase",
-        "literal.id",
-        "docxpwfile",
-        "resource.name",
-        "password-is-Word2010.docx",
-        "passwordsFile",
-        "passwordRegex.properties", // Passwords-file
-        "fmap.Last-Modified",
-        "extractedDate");
-
-    assertU(commit());
-    Thread.sleep(100);
-    assertQ(req("wdf_nocase:\"This is a test of PDF\""), "//*[@numFound='2']");
-    assertQ(req("wdf_nocase:\"Test password protected word doc\""), "//*[@numFound='2']");
+    expectThrows(
+        SolrException.class,
+        () ->
+            loadLocal(
+                "extraction/encrypted-password-is-solrRules.pdf",
+                "literal.id",
+                "pdfpwfile",
+                "resource.name",
+                "encrypted-password-is-solrRules.pdf",
+                "passwordsFile",
+                "passwordRegex.properties"));
   }
 
   SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args)

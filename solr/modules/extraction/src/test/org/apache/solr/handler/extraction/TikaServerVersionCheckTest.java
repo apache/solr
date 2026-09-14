@@ -16,14 +16,17 @@
  */
 package org.apache.solr.handler.extraction;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.junit.After;
 import org.junit.Test;
 
@@ -31,41 +34,50 @@ import org.junit.Test;
  * Verifies that {@link TikaServerExtractionBackend} rejects a TikaServer older than {@code 4.x}
  * with a clear diagnostic, rather than failing later with confusing 404s or missing metadata.
  *
- * <p>Uses a tiny in-process {@link HttpServer} stub for the {@code /version} endpoint instead of a
- * real Tika Server, since that's all this check depends on.
+ * <p>Uses a tiny in-process Jetty {@link Server} stub for the {@code /version} endpoint instead of
+ * a real Tika Server, since that's all this check depends on.
  */
 public class TikaServerVersionCheckTest extends SolrTestCaseJ4 {
 
-  private HttpServer server;
+  private Server server;
 
   @After
-  public void stopServer() {
+  public void stopServer() throws Exception {
     if (server != null) {
-      server.stop(0);
+      server.stop();
       server = null;
     }
   }
 
   private String startServerWithVersion(String versionResponseBody) throws Exception {
-    server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
-    server.createContext("/version", exchange -> serveText(exchange, versionResponseBody));
-    server.createContext(
-        "/tika/xml",
-        exchange ->
-            serveText(
-                exchange,
-                "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                    + "<head></head><body>hello world</body></html>"));
+    server = new Server();
+    ServerConnector connector = new ServerConnector(server);
+    connector.setHost("localhost");
+    server.addConnector(connector);
+    server.setHandler(
+        new Handler.Abstract() {
+          @Override
+          public boolean handle(Request request, Response response, Callback callback) {
+            String path = Request.getPathInContext(request);
+            String body;
+            if ("/version".equals(path)) {
+              body = versionResponseBody;
+            } else if ("/tika/xml".equals(path)) {
+              body =
+                  "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+                      + "<head></head><body>hello world</body></html>";
+            } else {
+              response.setStatus(404);
+              callback.succeeded();
+              return true;
+            }
+            response.setStatus(200);
+            Content.Sink.write(response, true, body, callback);
+            return true;
+          }
+        });
     server.start();
-    return "http://localhost:" + server.getAddress().getPort();
-  }
-
-  private static void serveText(HttpExchange exchange, String body) throws IOException {
-    byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-    exchange.sendResponseHeaders(200, bytes.length);
-    try (var os = exchange.getResponseBody()) {
-      os.write(bytes);
-    }
+    return "http://localhost:" + connector.getLocalPort();
   }
 
   private static ExtractionRequest newRequest() {

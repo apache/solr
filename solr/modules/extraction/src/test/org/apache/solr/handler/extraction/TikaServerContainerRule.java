@@ -17,7 +17,6 @@
 package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -25,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.MountableFile;
 
 /**
  * JUnit rule that manages a single Apache Tika Server Testcontainer. Declare as a
@@ -42,18 +40,8 @@ public class TikaServerContainerRule extends ExternalResource {
 
   public static final String TIKA_DOCKER_IMAGE = "apache/tika:4.0.0-full";
 
-  private final Path serverConfigFile;
   private GenericContainer<?> tika;
   private String baseUrl;
-
-  /**
-   * @param serverConfigFile optional Tika Server JSON config file to mount and start the container
-   *     with (via {@code -c}), e.g. to set {@code allowPerRequestConfig: true}. Null for the
-   *     container's default configuration.
-   */
-  public TikaServerContainerRule(Path serverConfigFile) {
-    this.serverConfigFile = serverConfigFile;
-  }
 
   @Override
   @SuppressWarnings("resource")
@@ -68,10 +56,6 @@ public class TikaServerContainerRule extends ExternalResource {
         new GenericContainer<>(TIKA_DOCKER_IMAGE)
             .withExposedPorts(9998)
             .waitingFor(Wait.forListeningPort());
-    if (serverConfigFile != null) {
-      tika.withCopyFileToContainer(MountableFile.forHostPath(serverConfigFile), "/tika-config.json")
-          .withCommand("-c", "/tika-config.json");
-    }
     tika.start();
     baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
   }
