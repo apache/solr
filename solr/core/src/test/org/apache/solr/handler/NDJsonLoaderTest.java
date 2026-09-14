@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import static org.hamcrest.Matchers.containsString;
 
+import java.util.Locale;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -45,6 +46,17 @@ public class NDJsonLoaderTest extends SolrTestCase {
     try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
       loader.load(
           req, new SolrQueryResponse(), new ContentStreamBase.StringStream(content), processor);
+    }
+    return processor;
+  }
+
+  private static BufferingRequestProcessor loadWithContentType(String content, String contentType)
+      throws Exception {
+    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
+    ContentStreamBase.StringStream stream = new ContentStreamBase.StringStream(content);
+    stream.setContentType(contentType);
+    try (SolrQueryRequest req = new SolrQueryRequestBase(null, new ModifiableSolrParams())) {
+      new NDJsonLoader().load(req, new SolrQueryResponse(), stream, processor);
     }
     return processor;
   }
@@ -192,6 +204,34 @@ public class NDJsonLoaderTest extends SolrTestCase {
     BufferingRequestProcessor p =
         load(loaderWithMaxLineLength(256), sb.toString(), new ModifiableSolrParams());
     assertEquals(5000, p.addCommands.size());
+  }
+
+  /** NDJSON is defined as UTF-8, and a charset saying so is accepted under any of its spellings. */
+  @Test
+  public void testAcceptsUtf8Charset() throws Exception {
+    for (String charset : new String[] {"utf-8", "UTF-8", "utf8", "\"UTF-8\""}) {
+      BufferingRequestProcessor p =
+          loadWithContentType(
+              "{\"id\":\"1\",\"title_s\":\"Bl\u00e5b\u00e6r\"}\n",
+              "application/x-ndjson; charset=" + charset);
+      assertEquals(charset, 1, p.addCommands.size());
+    }
+  }
+
+  @Test
+  public void testRejectsNonUtf8Charset() {
+    for (String charset :
+        new String[] {"iso-8859-1", "UTF-16", "windows-1252", "no-such-charset"}) {
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  loadWithContentType(
+                      "{\"id\":\"1\"}\n", "application/x-ndjson; charset=" + charset));
+      assertEquals(SolrException.ErrorCode.UNSUPPORTED_MEDIA_TYPE.code, e.code());
+      assertThat(e.getMessage(), containsString("must be UTF-8"));
+      assertThat(e.getMessage(), containsString(charset.toLowerCase(Locale.ROOT)));
+    }
   }
 
   @Test

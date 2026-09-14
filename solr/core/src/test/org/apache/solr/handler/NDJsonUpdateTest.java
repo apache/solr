@@ -121,6 +121,29 @@ public class NDJsonUpdateTest extends SolrTestCase {
     assertIndexed();
   }
 
+  /** NDJSON is defined as UTF-8, so any other declared charset is rejected rather than decoded. */
+  @Test
+  public void testNonUtf8CharsetIsRejected() {
+    RemoteSolrException e =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                post(
+                    new GenericSolrRequest(POST, "/update", commitParams()),
+                    "application/x-ndjson; charset=iso-8859-1"));
+    assertEquals(415, e.code());
+    assertThat(e.getMessage(), containsString("must be UTF-8"));
+
+    e =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                post(
+                    new GenericV2SolrRequest(POST, v2Path("/update"), commitParams()),
+                    "application/x-ndjson; charset=iso-8859-1"));
+    assertEquals(415, e.code());
+  }
+
   @Test
   public void testV2UpdateStillDefaultsToJson() throws Exception {
     GenericV2SolrRequest req = new GenericV2SolrRequest(POST, v2Path("/update"), commitParams());
