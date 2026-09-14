@@ -15,7 +15,7 @@
 [versions]
 adobe-testing-s3mock = "5.2.0"
 amazon-awssdk = "2.54.6"
-androidx-adaptive = "1.3.0-beta02"
+androidx-adaptive = "1.3.0-rc01"
 androidx-lifecycle = "2.11.0"
 androidx-navigation3 = "1.1.1"
 # @keep Antora version used in ref-guide
@@ -89,7 +89,7 @@ eclipse-ecj = "3.46.0"
 eclipse-jetty = "12.1.12"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.1.202607240634-r"
-essenty = "2.5.0"
+essenty = "2.6.0"
 fasterxml = "2.22.2"
 fasterxml-woodstox = "7.2.2"
 # @keep Flexmark used in classpath
@@ -142,7 +142,7 @@ jna = "5.19.1"
 # @keep for version alignment
 joda-time = "2.14.3"
 junit = "4.13.2"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 # @keep for version alignment
 kotlinx-atomicfu = "0.33.0"
 # @keep for version alignment
