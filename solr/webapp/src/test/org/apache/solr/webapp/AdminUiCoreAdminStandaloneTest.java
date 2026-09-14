@@ -63,8 +63,8 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
     openPage("swapa/core-overview", By.id("dashboard"));
     waitFor(By.cssSelector("#core-menu .query"));
     waitFor(By.cssSelector("#core-menu .replication"));
-    // the ping widget answers 503 when the configset has no healthcheck file
-    assertNoSevereConsoleErrors("/admin/ping");
+    waitForPageContains("Ping request handler is not configured with a healthcheck file.");
+    assertNoSevereConsoleErrors();
   }
 
   @Test
