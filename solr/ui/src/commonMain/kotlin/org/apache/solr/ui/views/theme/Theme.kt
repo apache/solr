@@ -52,9 +52,6 @@ fun SolrTheme(
         else -> lightScheme
     }
 
-    // System-rendered chrome (native title bar, context menus, etc.) follows the OS theme
-    // directly; androidx.compose.ui.LocalSystemTheme, the CompositionLocal that would let it
-    // follow useDarkTheme instead, is internal to the Compose UI module and not accessible here.
     CompositionLocalProvider(
         LocalExtendedTypography provides extendedTypography(),
         LocalExtendedColorScheme provides extendedColorScheme(useDarkTheme),
