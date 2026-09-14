@@ -18,21 +18,29 @@
 package org.apache.solr.jersey;
 
 import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessageBodyReader.DESERIALIZED_REQUEST_BODY_KEY;
+import static org.apache.solr.jersey.RequestContextKeys.NOT_FOUND_FLAG;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.UriInfo;
 import java.io.ByteArrayInputStream;
 import java.lang.annotation.Annotation;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -140,6 +148,41 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
     ObjectMapper mapper1 = delegate2.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
     ObjectMapper mapper2 = delegate.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
     assertSame(mapper1, mapper2);
+  }
+
+  @Test
+  public void testFilterDoesNotThrowWhenNoSolrQueryRequestAttached() throws Exception {
+    // solrQueryRequest can be null when the request failed before Jersey attached one to the
+    // request context (e.g. via CatchAllExceptionMapper); filter() must not NPE in that case.
+    final var mockRequestContext = mock(ContainerRequestContext.class);
+    final var mockResponseContext = mock(ContainerResponseContext.class);
+    final var mockUriInfo = mock(UriInfo.class);
+
+    when(mockRequestContext.getPropertyNames()).thenReturn(Set.of());
+    when(mockRequestContext.getProperty(SOLR_QUERY_REQUEST)).thenReturn(null);
+    when(mockRequestContext.getUriInfo()).thenReturn(mockUriInfo);
+    when(mockUriInfo.getAbsolutePath())
+        .thenReturn(URI.create("http://localhost/api/collections/foo"));
+    when(mockUriInfo.getQueryParameters()).thenReturn(new MultivaluedHashMap<>());
+
+    final var response = new SolrJerseyResponse();
+    response.responseHeader.status = 500;
+    response.responseHeader.qTime = 12;
+    when(mockResponseContext.hasEntity()).thenReturn(true);
+    when(mockResponseContext.getEntity()).thenReturn(response);
+
+    new PostRequestLoggingFilter().filter(mockRequestContext, mockResponseContext);
+  }
+
+  @Test
+  public void testFilterSkipsEntirelyForNotFoundRequests() throws Exception {
+    final var mockRequestContext = mock(ContainerRequestContext.class);
+    final var mockResponseContext = mock(ContainerResponseContext.class);
+    when(mockRequestContext.getPropertyNames()).thenReturn(Set.of(NOT_FOUND_FLAG));
+
+    new PostRequestLoggingFilter().filter(mockRequestContext, mockResponseContext);
+
+    verify(mockResponseContext, never()).hasEntity();
   }
 
   @Test
