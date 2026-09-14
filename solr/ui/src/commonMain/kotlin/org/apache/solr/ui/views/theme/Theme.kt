@@ -21,9 +21,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.InternalComposeUiApi
-import androidx.compose.ui.LocalSystemTheme
-import androidx.compose.ui.SystemTheme
 
 /**
  * Solr theme object that holds additional fields, like extended typography and extended colors.
@@ -45,7 +42,6 @@ object SolrTheme {
         get() = LocalExtendedColorScheme.current
 }
 
-@OptIn(InternalComposeUiApi::class)
 @Composable
 fun SolrTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
@@ -56,10 +52,12 @@ fun SolrTheme(
         else -> lightScheme
     }
 
+    // System-rendered chrome (native title bar, context menus, etc.) follows the OS theme
+    // directly; androidx.compose.ui.LocalSystemTheme, the CompositionLocal that would let it
+    // follow useDarkTheme instead, is internal to the Compose UI module and not accessible here.
     CompositionLocalProvider(
         LocalExtendedTypography provides extendedTypography(),
         LocalExtendedColorScheme provides extendedColorScheme(useDarkTheme),
-        LocalSystemTheme provides if (useDarkTheme) SystemTheme.Dark else SystemTheme.Light,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
