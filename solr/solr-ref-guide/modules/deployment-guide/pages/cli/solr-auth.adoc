@@ -1,0 +1,126 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr auth
+:page-toclevels: 2
+
+// tag::picocli-generated-man-section-name[]
+== Name
+
+bin/solr auth - Updates or enables/disables authentication. Must be run on the Solr server itself.
+
+// end::picocli-generated-man-section-name[]
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr auth [-v] --auth-conf-dir=DIR [--block-unknown=true|false]
+              [--prompt=true|false] [-s=<solrConnection>] --solr-include-file=FILE
+              [--solr-url=<solrUrl>] [--type=TYPE] [-u=<credentials>]
+              [--update-include-file-only=true|false] [-z=<zkHost>] enable|disable
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+Updates or enables/disables authentication. Must be run on the Solr server itself.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*--auth-conf-dir*=_DIR_::
+  *(required)* This is where any authentication related configuration files, if any, would be placed. Defaults to $SOLR_HOME.
+
+*--block-unknown*=_true|false_::
+  Blocks all access for unknown users (requires authentication for all endpoints).
+
+*--prompt*=_true|false_::
+  Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.
+
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--solr-include-file*=_FILE_::
+  *(required)* The Solr include file which contains overridable environment variables for configuring Solr configurations. Defaults to solr.in.sh or solr.in.cmd.
+
+*--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
+
+*--type*=_TYPE_::
+  The authentication mechanism to enable (currently only basicAuth). Defaults to 'basicAuth'.
+
+*-u*, *--credentials*=_<credentials>_::
+  Credentials in the format username:password. Example: --credentials solr:SolrRocks
+
+*--update-include-file-only*=_true|false_::
+  Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling authentication (i.e. don't update security.json).
+
+*-v*, *--verbose*::
+  Enable verbose mode.
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+== Arguments
+
+_enable|disable_::
+  Whether to enable or disable authentication.
+
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-commands[]
+// end::picocli-generated-man-section-commands[]
+
+// tag::picocli-generated-man-section-exit-status[]
+==  Exit Codes:
+
+*0*::
+  Authentication was enabled or disabled successfully.
+
+*1*::
+  Failed to enable or disable authentication; check output for details.
+
+// end::picocli-generated-man-section-exit-status[]
+
+// tag::picocli-generated-man-section-footer[]
+==  Examples:
+
+[%hardbreaks]
+  # Enable basic authentication with the given credentials
+  bin/solr auth enable --type basicAuth --credentials solr:SolrRocks
+
+[%hardbreaks]
+  # Enable basic authentication, prompting for credentials
+  bin/solr auth enable --type basicAuth --prompt true
+
+[%hardbreaks]
+  # Disable authentication
+  bin/solr auth disable
+
+// end::picocli-generated-man-section-footer[]
