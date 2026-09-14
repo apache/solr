@@ -75,7 +75,6 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.loader.NDJsonLoader;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -84,6 +83,9 @@ import org.xml.sax.SAXException;
 
 /** Supports post command in the bin/solr script. */
 public class PostTool extends ToolBase {
+
+  /** The media type the ND-JSON spec recommends; Solr also accepts other spellings. */
+  static final String NDJSON_MIME = "application/x-ndjson";
 
   public static final String DEFAULT_FILE_TYPES =
       "xml,json,jsonl,ndjson,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
@@ -223,8 +225,8 @@ public class PostTool extends ToolBase {
     mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
-    mimeMap.put("jsonl", "application/jsonl");
-    mimeMap.put("ndjson", "application/x-ndjson");
+    mimeMap.put("jsonl", NDJSON_MIME);
+    mimeMap.put("ndjson", NDJSON_MIME);
     mimeMap.put("pdf", "application/pdf");
     mimeMap.put("rtf", "text/rtf");
     mimeMap.put("html", "text/html");
@@ -887,7 +889,7 @@ public class PostTool extends ToolBase {
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
           || type.equals("application/json")
-          || NDJsonLoader.CONTENT_TYPES.contains(type)) {
+          || type.equals(NDJSON_MIME)) {
         // Default handler
       } else {
         // SolrCell

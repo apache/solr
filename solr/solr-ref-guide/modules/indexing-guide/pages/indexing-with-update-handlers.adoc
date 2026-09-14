@@ -494,8 +494,8 @@ curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr
 '
 ----
 
-`application/jsonl` and `application/x-jsonlines` are accepted as aliases for `application/x-ndjson`.
-The xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files in this format automatically.
+`application/x-ndjson` is the media type recommended by the ND-JSON specification; `application/jsonl` and `application/x-jsonlines` are accepted as aliases.
+The xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files as `application/x-ndjson` automatically.
 
 Because each document ends at a newline, Solr indexes the request one line at a time without parsing the whole request body first, and a producer can append documents to a file or stream without rewriting any enclosing structure.
 Peak memory therefore depends on the longest single line rather than on the size of the request, which makes the format a good fit for large bulk loads.
