@@ -30,6 +30,67 @@ All of the examples in this section assume you are running the "techproducts" So
 bin/solr start -e techproducts
 ----
 
+[[listshards]]
+== LIST SHARDS: List Shard Status
+
+Fetch shard-level status for a collection, without replica core or segment detail.
+
+This is a v2-only API. The closest v1 equivalent is xref:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS] for a single collection, which also returns per-replica detail.
+`GET /api/collections/_collection-name_` (xref:collection-management.adoc#colstatus[COLSTATUS]) is the other v2 way to inspect shards, but that payload includes replica and optional segment data.
+
+[tabs#listshards-request]
+======
+V2 API::
++
+====
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections/techproducts/shards
+----
+====
+======
+
+=== List Shards Response
+
+The response includes a `shards` object keyed by shard name. SolrJ provides `ShardsApi.ListShards` for this request.
+
+Each shard entry includes:
+
+`range`::
+Hash range assigned to the shard, when the collection uses a hash-based router. Omitted for implicit-router collections that have no range.
+`state`::
+Shard state (`active`, `inactive`, `construction`, `recovery`, or `recovery_failed`).
+`replicaHealth`::
+The same GREEN / YELLOW / ORANGE / RED signal xref:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS] reports as shard `health`: the fraction of replicas that are `ACTIVE` on a live node, plus whether an active leader is present. The field is named `replicaHealth` to avoid colliding with other v2 "health" concepts.
+`replicaCount`::
+Total number of replicas in the shard.
+`activeReplicaCount`::
+Number of replicas that are `ACTIVE` and on a live node.
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":3},
+  "shards":{
+    "shard1":{
+      "range":"80000000-ffffffff",
+      "state":"active",
+      "replicaHealth":"GREEN",
+      "replicaCount":2,
+      "activeReplicaCount":2},
+    "shard2":{
+      "range":"0-7fffffff",
+      "state":"active",
+      "replicaHealth":"GREEN",
+      "replicaCount":2,
+      "activeReplicaCount":2}}
+}
+----
+
+A missing collection returns HTTP 404.
+
 [[splitshard]]
 == SPLITSHARD: Split a Shard
 

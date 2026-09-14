@@ -44,6 +44,8 @@ No active replicas *OR* there's no shard leader.
 
 The collection health state is reported as the worst state of any shard, e.g., for a collection with all shards GREEN except for one YELLOW the collection health will be reported as YELLOW.
 
+To fetch only shard-level status for one collection, without replica core or segment detail, use xref:shard-management.adoc#listshards[GET /api/collections/_collection-name_/shards]. That response reports the same GREEN / YELLOW / ORANGE / RED signal as `replicaHealth`.
+
 [tabs#clusterstatus-request]
 ======
 V1 API::
