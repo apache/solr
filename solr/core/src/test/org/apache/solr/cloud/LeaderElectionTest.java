@@ -28,7 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.test.KillSession;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.SolrCuratorEvent;
+import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -106,18 +106,15 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ZkController zkController;
     LeaderElector elector;
 
-    public ElectorSetup(SolrCuratorEvent.EventAction onExpiredReconnection) {
+    public ElectorSetup(OnReconnect onReconnect) {
       zkClient =
           new SolrZkClient.Builder()
               .withUrl(server.getZkAddress())
               .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
               .withConnTimeOut(TIMEOUT, TimeUnit.MILLISECONDS)
               .build();
-      if (onExpiredReconnection != null) {
-        zkClient
-            .getCuratorFramework()
-            .getConnectionStateListenable()
-            .addListener(SolrCuratorEvent.EXPIRED_RECONNECTION.of(onExpiredReconnection));
+      if (onReconnect != null) {
+        zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onReconnect);
       }
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);

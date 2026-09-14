@@ -27,7 +27,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.internal.StringUtils;
 import java.io.Closeable;
 import java.io.IOException;
@@ -55,11 +54,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -86,12 +85,13 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.OnDisconnect;
+import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrCuratorEvent;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -213,10 +213,9 @@ public class ZkController implements Closeable {
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
           new SolrNamedThreadFactory("zkConnectionListenerCallback"));
-  private final ConnectionStateListener onExpiredReconnection =
-      SolrCuratorEvent.EXPIRED_RECONNECTION.of(this::onExpiredReconnection);
-  private final ConnectionStateListener onSessionExpiration =
-      SolrCuratorEvent.SESSION_EXPIRATION.of(this::onSessionExpiration);
+  private final OnReconnect onReconnect = this::onReconnect;
+  private final OnDisconnect onDisconnect = this::onDisconnect;
+  private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -256,8 +255,7 @@ public class ZkController implements Closeable {
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
   // synchronizing too long
-  private final HashSet<SolrCuratorEvent.EventAction> expiredReconnectionListeners =
-      new HashSet<>();
+  private final HashSet<OnReconnect> reconnectListeners = new HashSet<>();
 
   private class RegisterCoreAsync implements Callable<Object> {
 
@@ -326,7 +324,7 @@ public class ZkController implements Closeable {
             new DefaultZkCredentialsProvider());
     zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
 
-    addExpiredReconnectionListener(getConfigDirListener());
+    addOnReconnectListener(getConfigDirListener());
 
     final var compressor =
         loadPluginOrDefault(
@@ -346,11 +344,11 @@ public class ZkController implements Closeable {
     zkClient
         .getCuratorFramework()
         .getConnectionStateListenable()
-        .addListener(onExpiredReconnection, zkConnectionListenerCallbackExecutor);
+        .addListener(onReconnect, zkConnectionListenerCallbackExecutor);
     zkClient
         .getCuratorFramework()
         .getConnectionStateListenable()
-        .addListener(onSessionExpiration, zkConnectionListenerCallbackExecutor);
+        .addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
     // Refuse to start if ZK has a non-empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
@@ -405,7 +403,11 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  private void onSessionExpiration() {
+  private void onDisconnect(boolean sessionExpired) {
+    if (!sessionExpired) {
+      return;
+    }
+    zkSessionExpired.set(true);
     try {
       overseer.close();
     } catch (Exception e) {
@@ -415,7 +417,7 @@ public class ZkController implements Closeable {
     // Close outstanding leader elections
     List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
     for (CoreDescriptor descriptor : descriptors) {
-      closeExistingElectionContext(descriptor);
+      closeExistingElectionContext(descriptor, sessionExpired);
     }
 
     // Mark all cores as not leader
@@ -434,7 +436,10 @@ public class ZkController implements Closeable {
     return cc.getResourceLoader().newInstance(concretePluginClassName, basePluginType);
   }
 
-  private void onExpiredReconnection() {
+  private void onReconnect() {
+    if (!zkSessionExpired.compareAndSet(true, false)) {
+      return;
+    }
     // on reconnect, reload cloud info
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
@@ -511,34 +516,34 @@ public class ZkController implements Closeable {
       }
 
       // notify any other objects that need to know when the session was re-connected
-      HashSet<SolrCuratorEvent.EventAction> clonedListeners;
-      synchronized (expiredReconnectionListeners) {
-        clonedListeners = new HashSet<>(expiredReconnectionListeners);
+      HashSet<OnReconnect> clonedListeners;
+      synchronized (reconnectListeners) {
+        clonedListeners = new HashSet<>(reconnectListeners);
       }
-      // the ExpiredReconnection operation can be expensive per listener, so do that async in
+      // the OnReconnect operation can be expensive per listener, so do that async in
       // the background
-      for (SolrCuratorEvent.EventAction listener : clonedListeners) {
+      for (OnReconnect listener : clonedListeners) {
         try {
           if (executorService != null) {
             executorService.execute(
                 () -> {
                   try {
-                    listener.respond();
+                    listener.onReconnect();
                   } catch (Throwable exc) {
                     // not much we can do here other than warn in the log
                     log.warn(
-                        "Error when notifying ExpiredReconnection listener {} after session re-connected.",
+                        "Error when notifying OnReconnect listener {} after session re-connected.",
                         listener,
                         exc);
                   }
                 });
           } else {
-            listener.respond();
+            listener.onReconnect();
           }
         } catch (Throwable exc) {
           // not much we can do here other than warn in the log
           log.warn(
-              "Error when notifying ExpiredReconnection listener {} after session re-connected.",
+              "Error when notifying OnReconnect listener {} after session re-connected.",
               listener,
               exc);
         }
@@ -759,7 +764,7 @@ public class ZkController implements Closeable {
     }
   }
 
-  private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
+  private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
@@ -769,7 +774,11 @@ public class ZkController implements Closeable {
 
     if (prevContext != null) {
       prevContext.close();
-      electionContexts.remove(contextKey);
+      // Only remove the election contexts if the session expired, otherwise the ephemeral nodes
+      // will still exist
+      if (sessionExpired) {
+        electionContexts.remove(contextKey);
+      }
     }
 
     return contextKey;
@@ -779,14 +788,8 @@ public class ZkController implements Closeable {
     this.isClosed = true;
     try {
       // We do not want to react to connection state changes after we have started to close
-      zkClient
-          .getCuratorFramework()
-          .getConnectionStateListenable()
-          .removeListener(onExpiredReconnection);
-      zkClient
-          .getCuratorFramework()
-          .getConnectionStateListenable()
-          .removeListener(onSessionExpiration);
+      zkClient.getCuratorFramework().getConnectionStateListenable().removeListener(onReconnect);
+      zkClient.getCuratorFramework().getConnectionStateListenable().removeListener(onDisconnect);
       ExecutorUtil.shutdownNowAndAwaitTermination(zkConnectionListenerCallbackExecutor);
     } catch (Exception e) {
       log.warn(
@@ -2599,43 +2602,41 @@ public class ZkController implements Closeable {
    * expiration occurs; in most cases, listeners will be components that have watchers that need to
    * be re-created.
    */
-  public void addExpiredReconnectionListener(SolrCuratorEvent.EventAction listener) {
+  public void addOnReconnectListener(OnReconnect listener) {
     if (listener != null) {
-      synchronized (expiredReconnectionListeners) {
-        expiredReconnectionListeners.add(listener);
-        log.debug("Added new ExpiredReconnection listener {}", listener);
+      synchronized (reconnectListeners) {
+        reconnectListeners.add(listener);
+        log.debug("Added new OnReconnect listener {}", listener);
       }
     }
   }
 
   /**
-   * Removed a previously registered expired-reconnect listener, such as when a core is removed or
+   * Removed a previously registered OnReconnect listener, such as when a core is removed or
    * reloaded.
    */
-  public void removeExpiredReconnectionListener(SolrCuratorEvent.EventAction listener) {
+  public void removeOnReconnectListener(OnReconnect listener) {
     if (listener != null) {
       boolean wasRemoved;
-      synchronized (expiredReconnectionListeners) {
-        wasRemoved = expiredReconnectionListeners.remove(listener);
+      synchronized (reconnectListeners) {
+        wasRemoved = reconnectListeners.remove(listener);
       }
       if (wasRemoved) {
-        log.debug("Removed ExpiredReconnection listener {}", listener);
+        log.debug("Removed OnReconnect listener {}", listener);
       } else {
         log.warn(
-            "Was asked to remove ExpiredReconnection listener {}, but remove operation "
+            "Was asked to remove OnReconnect listener {}, but remove operation "
                 + "did not find it in the list of registered listeners.",
             listener);
       }
     }
   }
 
-  @VisibleForTesting
   @SuppressWarnings({"unchecked"})
-  Set<SolrCuratorEvent.EventAction> getCurrentExpiredReconnectionListeners() {
-    HashSet<SolrCuratorEvent.EventAction> clonedListeners;
-    synchronized (expiredReconnectionListeners) {
-      clonedListeners =
-          (HashSet<SolrCuratorEvent.EventAction>) expiredReconnectionListeners.clone();
+  Set<OnReconnect> getCurrentOnReconnectListeners() {
+    HashSet<OnReconnect> clonedListeners;
+    synchronized (reconnectListeners) {
+      clonedListeners = (HashSet<OnReconnect>) reconnectListeners.clone();
     }
     return clonedListeners;
   }
@@ -2886,7 +2887,7 @@ public class ZkController implements Closeable {
     }
   }
 
-  private SolrCuratorEvent.EventAction getConfigDirListener() {
+  public OnReconnect getConfigDirListener() {
     return () -> {
       synchronized (confDirectoryListeners) {
         for (String s : confDirectoryListeners.keySet()) {

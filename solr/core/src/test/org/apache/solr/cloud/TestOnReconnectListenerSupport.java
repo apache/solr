@@ -24,8 +24,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.SolrCuratorEvent;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -36,11 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZkTestBase {
+public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public TestExpiredReconnectionListenerSupport() {
+  public TestOnReconnectListenerSupport() {
     super();
     sliceCount = 2;
     fixShardCount(3);
@@ -80,12 +80,11 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
       leaderCoreId = leaderCore.getName() + ":" + leaderCore.getStartNanoTime();
     }
 
-    // verify the ZkIndexSchemaReader is a registered OnExpirationReconnection listener
-    Set<SolrCuratorEvent.EventAction> listeners =
-        zkController.getCurrentExpiredReconnectionListeners();
-    assertNotNull("ZkController returned null OnExpirationReconnection listeners", listeners);
+    // verify the ZkIndexSchemaReader is a registered OnReconnect listener
+    Set<OnReconnect> listeners = zkController.getCurrentOnReconnectListeners();
+    assertNotNull("ZkController returned null OnReconnect listeners", listeners);
     ZkIndexSchemaReader expectedListener = null;
-    for (SolrCuratorEvent.EventAction listener : listeners) {
+    for (OnReconnect listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader reader) {
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
@@ -96,7 +95,7 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
     assertNotNull(
         "ZkIndexSchemaReader for core "
             + leaderCoreName
-            + " not registered as an OnExpirationReconnection listener and should be",
+            + " not registered as an OnReconnect listener and should be",
         expectedListener);
 
     // reload the collection
@@ -107,8 +106,7 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
             + "' failed to reload within a reasonable amount of time!",
         wasReloaded);
 
-    // after reload, the new core should be registered as an OnExpirationReconnection listener and
-    // the old should
+    // after reload, the new core should be registered as an OnReconnect listener and the old should
     // not be
     String reloadedLeaderCoreId;
     try (SolrCore leaderCore = cores.getCore(leaderCoreName)) {
@@ -118,17 +116,17 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
     // they shouldn't be equal after reload
     assertNotEquals(leaderCoreId, reloadedLeaderCoreId);
 
-    listeners = zkController.getCurrentExpiredReconnectionListeners();
-    assertNotNull("ZkController returned null OnExpirationReconnection listeners", listeners);
+    listeners = zkController.getCurrentOnReconnectListeners();
+    assertNotNull("ZkController returned null OnReconnect listeners", listeners);
 
     expectedListener = null; // reset
-    for (SolrCuratorEvent.EventAction listener : listeners) {
+    for (OnReconnect listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader reader) {
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           fail(
               "Previous core "
                   + leaderCoreId
-                  + " should no longer be a registered OnExpirationReconnection listener! Current listeners: "
+                  + " should no longer be a registered OnReconnect listener! Current listeners: "
                   + listeners);
         } else if (reloadedLeaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
@@ -140,7 +138,7 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
     assertNotNull(
         "ZkIndexSchemaReader for core "
             + reloadedLeaderCoreId
-            + " not registered as an OnExpirationReconnection listener and should be",
+            + " not registered as an OnReconnect listener and should be",
         expectedListener);
 
     // try to clean up
@@ -151,18 +149,18 @@ public class TestExpiredReconnectionListenerSupport extends AbstractFullDistribZ
       log.warn("Could not delete collection {} after test completed", testCollectionName);
     }
 
-    listeners = zkController.getCurrentExpiredReconnectionListeners();
-    for (SolrCuratorEvent.EventAction listener : listeners) {
+    listeners = zkController.getCurrentOnReconnectListeners();
+    for (OnReconnect listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader reader) {
         if (reloadedLeaderCoreId.equals(reader.getUniqueCoreId())) {
           fail(
               "Previous core "
                   + reloadedLeaderCoreId
-                  + " should no longer be a registered OnExpirationReconnection listener after collection delete!");
+                  + " should no longer be a registered OnReconnect listener after collection delete!");
         }
       }
     }
 
-    log.info("TestOnExpirationReconnectionListenerSupport succeeded ... shutting down now!");
+    log.info("TestOnReconnectListenerSupport succeeded ... shutting down now!");
   }
 }

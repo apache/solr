@@ -21,7 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrCuratorEvent;
+import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.CloseHook;
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Keeps a ManagedIndexSchema up-to-date when changes are made to the serialized managed schema in
  * ZooKeeper
  */
-public class ZkIndexSchemaReader implements SolrCuratorEvent.EventAction {
+public class ZkIndexSchemaReader implements OnReconnect {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ManagedIndexSchemaFactory managedIndexSchemaFactory;
   private final SolrZkClient zkClient;
@@ -66,10 +66,10 @@ public class ZkIndexSchemaReader implements SolrCuratorEvent.EventAction {
             if (cc.isZooKeeperAware()) {
               if (log.isDebugEnabled()) {
                 log.debug(
-                    "Removing ZkIndexSchemaReader OnExpirationReconnection listener as core {} is shutting down.",
+                    "Removing ZkIndexSchemaReader OnReconnect listener as core {} is shutting down.",
                     core.getName());
               }
-              cc.getZkController().removeExpiredReconnectionListener(ZkIndexSchemaReader.this);
+              cc.getZkController().removeOnReconnectListener(ZkIndexSchemaReader.this);
             }
           }
 
@@ -84,7 +84,7 @@ public class ZkIndexSchemaReader implements SolrCuratorEvent.EventAction {
 
     this.schemaWatcher = createSchemaWatcher();
 
-    zkLoader.getZkController().addExpiredReconnectionListener(this);
+    zkLoader.getZkController().addOnReconnectListener(this);
   }
 
   public Object getSchemaUpdateLock() {
@@ -225,7 +225,7 @@ public class ZkIndexSchemaReader implements SolrCuratorEvent.EventAction {
    * the current schema from ZooKeeper.
    */
   @Override
-  public void respond() {
+  public void onReconnect() {
     try {
       // setup a new watcher to get notified when the managed schema changes
       schemaWatcher = createSchemaWatcher();
