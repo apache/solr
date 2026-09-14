@@ -30,13 +30,14 @@ interchangeably for this feature.
 
 When using the Solr Cell framework, it is helpful to keep the following in mind:
 
-* Tika will automatically attempt to determine the input document type (e.g., Word, PDF, HTML) and extract the content appropriately.
-If you like, you can explicitly specify a MIME type for Tika with the `stream.type` parameter.
-See http://tika.apache.org/{dep-version-tika}/formats.html for the file types supported.
-* Briefly, Tika internally works by synthesizing an XHTML document from the core content of the parsed document, which is passed to a configured http://www.saxproject.org/quickstart.html[SAX] ContentHandler provided by Solr Cell.
-Solr responds to SAX events to create one or more text fields from the content.
-Tika exposes document metadata as well (apart from the XHTML).
+* Tika automatically determines the input document type (e.g., Word, PDF, HTML) and extracts the content appropriately.
+You can explicitly specify a MIME type for Tika with the `stream.type` parameter.
+See https://tika.apache.org/docs/4.0.x/using-tika/index.html for the file types supported.
+* Tika Server synthesizes an XHTML document from the core content of the parsed document and returns it to Solr over HTTP (Solr specifically requests the XML output variant, since Tika Server's default output format is Markdown -- see <<Tika Server>> above).
+Solr Cell then parses that response with its own SAX parser, feeding the resulting events into a http://www.saxproject.org/quickstart.html[SAX] ContentHandler to create one or more text fields from the content.
+Tika Server exposes document metadata as well (apart from the XHTML).
 * Tika produces metadata such as `dc:title`, `dc:subject`, and `dc:author` according to specifications such as the DublinCore.
+Metadata that Tika itself generates (as opposed to metadata it reads from the document) is namespaced under a single `tk:` prefix, e.g. `tk:parsed-by`.
 The metadata available is highly dependent on the file types and what they, in turn, contain.
 Some of the general metadata created is described in the section <<Metadata Created by Tika>> below.
 Solr Cell supplies some metadata of its own too.
@@ -51,16 +52,16 @@ The next step after any update handler is the xref:configuration-guide:update-re
 
 This is provided via the `extraction` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
-The "techproducts" example included with Solr is pre-configured to have Solr Cell configured.
-If you are not using the example, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
+The "techproducts" example included with Solr already has Solr Cell configured.
+If you are not using that example, see the section <<solrconfig.xml Configuration>> below.
 
 == Extraction Backends
 
-The ExtractingRequestHandler supports multiple backends, selectable with the `extraction.backend` parameter. The only backend currently supported is the `tikaserver` backend, which uses an external Tika server process to do the extraction.
+The ExtractingRequestHandler supports multiple backends, selectable with the `extraction.backend` parameter. The only backend currently supported is the `tikaserver` backend, which uses an external Tika Server process to do the extraction.
 
 === Tika Server
 
-Solr delegates content extraction to an external Apache Tika Server process. This provides operational isolation (crashes or heavy parsing won't impact Solr), simplifies dependency management, and allows you to scale Tika independently of Solr.
+Solr delegates content extraction to an external Apache Tika Server process. This provides operational isolation (crashes or heavy parsing do not impact Solr), simplifies dependency management, and allows you to scale Tika independently of Solr.
 
 Solr's role is limited to sending each document to Tika Server and mapping the metadata and text it returns into Solr fields; Solr does not configure Tika Server's parsers on your behalf, so anything beyond how Tika Server behaves out of the box (parser options, OCR, password-protected documents, etc.) is configured directly on Tika Server itself -- see <<Parser-Specific Properties>> below and the https://tika.apache.org/[Apache Tika documentation].
 
@@ -89,7 +90,7 @@ NOTE: If Solr runs in Docker too, ensure both containers share a network and use
 
 You can try out the Tika framework using the `schemaless` example included in Solr.
 
-First we start a tika server on port 9998, using Docker.
+First, start a Tika Server on port 9998 using Docker.
 
 [source,bash]
 ----
@@ -105,7 +106,7 @@ The commands below will start Solr, create a core/collection named `gettingstart
 ----
 bin/solr start -e schemaless -Dsolr.modules=extraction
 
-# Configure the handler
+# Configure the handler at runtime
 curl -X POST -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/update/extract",
@@ -127,15 +128,15 @@ curl 'http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc1&c
 ----
 
 The URL above calls the `ExtractingRequestHandler`, uploads the file `solr-word.pdf`, and assigns it the unique ID `doc1`.
-Here's a closer look at the components of this command:
+Here is a closer look at the components of this command:
 
 * The `literal.id=doc1` parameter provides a unique ID for the document being indexed.
 Without this, the ID would be set to the absolute path to the file.
 +
 There are alternatives to this, such as mapping a metadata field to the ID, generating a new UUID, or generating an ID from a signature (hash) of the content.
 
-* The `commit=true parameter` causes Solr to perform a commit after indexing the document, making it immediately searchable.
-For optimum performance when loading many documents, don't call the commit command until you are done.
+* The `commit=true` parameter causes Solr to perform a commit after indexing the document, making it immediately searchable.
+For optimum performance when loading many documents, do not call the commit command until you are done.
 
 * The `-F` flag instructs curl to POST data using the Content-Type `multipart/form-data` and supports the uploading of binary files.
 The `@` symbol instructs curl to upload the attached file.
@@ -163,7 +164,7 @@ To do that, use the `uprefix` parameter to map unknown (to the schema) metadata 
 The dynamic field `ignored_*` is good for this purpose.
 
 For the fields you do want to map, explicitly set them using `fmap.IN=OUT` and/or ensure the field is defined in the schema.
-Here's an example:
+Here is an example:
 
 [,console]
 ----
@@ -172,10 +173,10 @@ $ bin/solr post -c gettingstarted example/exampledocs/solr-word.pdf --params "li
 
 [NOTE]
 ====
-The above example won't work as expected if you run it after you've already indexed the document one or more times.
+The above example does not work as expected if you run it after already indexing the document one or more times.
 
-Previously we added the document without these parameters, so all fields were added to the index at that time.
-The `uprefix` parameter only applies to fields that are _undefined_, so these won't be prefixed if the document is re-indexed later.
+The earlier example indexed the document without these parameters, so all fields were already added to the index at that time.
+The `uprefix` parameter only applies to fields that are _undefined_, so these fields are not prefixed when the document is re-indexed.
 However, you would see the new `last_modified_dt` field.
 
 The easiest way to try out the `uprefix` parameter is to start over with a fresh collection.
@@ -264,7 +265,7 @@ Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
 +
 If `true`, returns the extracted content from Tika without indexing the document.
 This returns the extracted XHTML as a string in the response.
-When viewing on a screen, it may be useful to set the `extractFormat` parameter for a response format other than XML to aid in viewing the embedded XHTML tags.
+To make the embedded XHTML tags easier to read on screen, set the `extractFormat` parameter to a response format other than XML.
 +
 Example: `extractOnly=true`
 
@@ -295,7 +296,7 @@ Output: For an example output (in XML), see https://cwiki.apache.org/confluence/
 Maps (moves) one field name to another.
 The `source_field` must be a field in incoming documents, and the value is the Solr field to map to.
 +
-Example: `fmap.content=text` causes the data in the `content` field generated by Tika to be moved to the Solr's `text` field.
+Example: `fmap.content=text` causes the data in the `content` field generated by Tika to be moved to Solr's `text` field.
 
 `ignoreTikaException`::
 +
@@ -454,7 +455,7 @@ Examples:
 Specifies the URL of the Tika Server instance to use for content extraction.
 This parameter is required and can only be configured in `solrconfig.xml`, not per request.
 +
-If your TikaServer is using HTTPS, it needs to use a verifiable SSL certificate. If using self-signed or custom Certificate Authority, you will need to add those to Solr's Truststore. The `tikaserver` backend currently does not have support for configuring custom certificates for Tika alone.
+If your Tika Server is using HTTPS, it must use a verifiable SSL certificate. If using a self-signed or custom Certificate Authority, add it to Solr's truststore. The `tikaserver` backend does not currently support configuring custom certificates for Tika alone.
 +
 Example: In `solrconfig.xml`: `<str name="tikaserver.url">http://localhost:9998</str>`.
 
@@ -481,7 +482,7 @@ In this case, you could additionally define a rule in the Schema to not index th
 |===
 +
 When extracting, only return Tika XHTML content that satisfies the given XPath expression.
-See http://tika.apache.org/{dep-version-tika}/ for details on the format of Tika XHTML, it varies with the format being parsed.
+See https://tika.apache.org/docs/4.0.x/using-tika/server/index.html for details on Tika Server's output formats; the structure of the XHTML varies with the format being parsed.
 Also see the section <<Defining XPath Expressions>> for an example.
 
 === solrconfig.xml Configuration
@@ -544,7 +545,7 @@ NOTE: In earlier versions of Solr Cell you could supply Tika configuration direc
 
 === Indexing Encrypted Documents
 
-`resource.password` and `passwordsFile` are not currently supported by the `tikaserver` backend and are rejected with `BAD_REQUEST` if set: TikaServer has no simple per-request way to accept a password outside of its own JSON parser-configuration mechanism, which Solr does not use.
+`resource.password` and `passwordsFile` are not currently supported by the `tikaserver` backend and are rejected with `BAD_REQUEST` if set: Tika Server has no simple per-request way to accept a password outside of its own JSON parser-configuration mechanism, which Solr does not use.
 If you need to index encrypted documents, configure a password directly on your Tika Server instance -- see the https://tika.apache.org/[Apache Tika documentation] -- or decrypt the documents before sending them to Solr.
 
 === Extending the ExtractingRequestHandler
@@ -575,7 +576,7 @@ Depending on how the file is uploaded, this may or may not be set.
 
 * `stream_content_type`: The content type of the stream, if available.
 
-IMPORTANT: It's recommended to use the `extractOnly` option before indexing to discover the values Solr will set for these metadata elements on your content.
+IMPORTANT: Use the `extractOnly` option before indexing to discover the values Solr will set for these metadata elements on your content.
 
 === Order of Input Processing
 
@@ -600,7 +601,7 @@ $ bin/solr post -c gettingstarted example/exampledocs/sample.html --params "lite
 
 === Using Literals to Define Custom Metadata
 
-To add in your own metadata, pass in the literal parameter along with the file:
+To add your own metadata, pass the literal parameter along with the file:
 
 [,console]
 ----
@@ -612,7 +613,7 @@ Every instance of the text will be "Bah".
 
 === Defining XPath Expressions
 
-The example below passes in an XPath expression to restrict the XHTML returned by Tika:
+The example below passes an XPath expression to restrict the XHTML returned by Tika:
 
 [,console]
 ----
@@ -622,7 +623,7 @@ $ bin/solr post -c gettingstarted --params "literal.id=doc5&captureAttr=true&def
 === Extracting Data without Indexing
 
 Solr allows you to extract data without indexing.
-You might want to do this if you're using Solr solely as an extraction server or if you're interested in testing Solr extraction.
+This is useful if you are using Solr solely as an extraction server, or to test how Solr extracts content before indexing it.
 
 The example below sets the `extractOnly=true` parameter to extract data without indexing it.
 
@@ -640,7 +641,7 @@ $ bin/solr post -c gettingstarted --params "extractOnly=true&wt=json&indent=true
 
 === Using Solr Cell with a POST Request
 
-The example below streams the file as the body of the POST, which does not, then, provide information to Solr about the name of the file.
+The example below streams the file as the body of the POST request, so Solr has no information about the name of the file.
 
 [source,bash]
 ----
@@ -650,11 +651,11 @@ curl "http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc6&d
 == Using Solr Cell with SolrJ
 
 SolrJ is a Java client that you can use to add documents to the index, update the index, or query the index.
-You'll find more information on SolrJ in xref:deployment-guide:solrj.adoc[].
+See xref:deployment-guide:solrj.adoc[] for more information on SolrJ.
 
-Here's an example of using Solr Cell and SolrJ to add documents to a Solr index.
+The example below uses Solr Cell and SolrJ to add documents to a Solr index.
 
-First, let's use SolrJ to create a new SolrClient, then we'll construct a request containing a ContentStream (essentially a wrapper around a file) and sent it to Solr:
+It uses SolrJ to create a new SolrClient, then constructs a request containing a ContentStream (essentially a wrapper around a file) and sends it to Solr:
 
 [source,java]
 ----
