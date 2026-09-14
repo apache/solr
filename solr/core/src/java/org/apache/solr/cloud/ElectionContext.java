@@ -134,9 +134,9 @@ public abstract class ElectionContext implements Closeable {
    * Deletes {@link #leaderPath} guarded by {@link #leaderZkNodeParentVersion}, so it only removes a
    * registration whose parent version still matches — i.e. our own, never a newer lineage's/host's.
    * Must only be called when {@link #leaderZkNodeParentVersion} is non-null. Callers own locking,
-   * any exception handling (e.g. treating {@link KeeperException.BadVersionException}/{@link
-   * NoNodeException} as "not ours / already gone"), and clearing {@link #leaderZkNodeParentVersion}
-   * afterward.
+   * any exception handling (e.g. treating {@link
+   * org.apache.zookeeper.KeeperException.BadVersionException}/{@link NoNodeException} as "not ours
+   * / already gone"), and clearing {@link #leaderZkNodeParentVersion} afterward.
    */
   protected void deleteLeaderNode() throws KeeperException, InterruptedException {
     zkClient.multi(

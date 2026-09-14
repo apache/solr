@@ -29,7 +29,6 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
-import org.jspecify.annotations.NonNull;
 import org.junit.Test;
 
 /**
@@ -184,7 +183,7 @@ public class OverseerElectionReconnectTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static @NonNull ZkTestServer buildZkTestServer(Path zkDir) throws Exception {
+  private static ZkTestServer buildZkTestServer(Path zkDir) throws Exception {
     ZkTestServer zkServer = new ZkTestServer(zkDir);
     // The coarse tick is load-bearing: the server reaps an expired session's ephemerals on a
     // tickTime-wide bucket, so it can lag the client's (Curator-injected) expiry by up to tickTime,
