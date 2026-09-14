@@ -29,6 +29,10 @@ public class QueryLimitsTestInjectionRule implements TestRule {
 
   private static boolean enabled;
 
+  public QueryLimitsTestInjectionRule(boolean enabled) {
+    QueryLimitsTestInjectionRule.enabled = enabled;
+  }
+
   @Override
   public Statement apply(final Statement base, final Description description) {
     if (!enabled) {
@@ -37,39 +41,37 @@ public class QueryLimitsTestInjectionRule implements TestRule {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
+        if (!enabled) {
+          base.evaluate();
+          return;
+        }
+        log.info("###Test is configured to use QueryLimits");
         try {
-          setupQueryLimits(enabled);
+          assert TestInjection.queryTimeout == null : "Disabled too late, or was init'ed elsewhere";
+          TestInjection.queryTimeout =
+              new QueryLimit() {
+                @Override
+                public Object currentValue() {
+                  return "No-Op injected QueryLimit";
+                }
+
+                @Override
+                public boolean shouldExit() {
+                  return false;
+                }
+              };
+
           base.evaluate();
         } finally {
           // always reset the queryTimeout
-          setupQueryLimits(false);
+          TestInjection.queryTimeout = null;
         }
       }
     };
   }
 
-  private void setupQueryLimits(boolean active) {
-    if (active) {
-      log.info("###Test is configured to use QueryLimits");
-      TestInjection.queryTimeout =
-          new QueryLimit() {
-            @Override
-            public Object currentValue() {
-              return "No-Op injected QueryLimit";
-            }
-
-            @Override
-            public boolean shouldExit() {
-              return false;
-            }
-          };
-    } else {
-      TestInjection.queryTimeout = null;
-    }
-  }
-
-  public static void setEnabled(boolean enabled) {
-    QueryLimitsTestInjectionRule.enabled = enabled;
+  public static void disable() {
+    QueryLimitsTestInjectionRule.enabled = false;
   }
 
   public static boolean isEnabled() {

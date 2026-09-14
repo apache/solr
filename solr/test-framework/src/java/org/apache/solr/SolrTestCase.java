@@ -92,7 +92,7 @@ public class SolrTestCase extends LuceneTestCase {
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(new LogLevelTestRule())
-          .around(new QueryLimitsTestInjectionRule())
+          .around(new QueryLimitsTestInjectionRule(rarely())) // sometimes use QueryLimits
           .around(
               new TestRuleAdapter() {
                 @Override
@@ -161,9 +161,6 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.forceSync", "no");
       System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
-
-    // sometimes use QueryLimits in tests
-    QueryLimitsTestInjectionRule.setEnabled(rarely());
   }
 
   /**
