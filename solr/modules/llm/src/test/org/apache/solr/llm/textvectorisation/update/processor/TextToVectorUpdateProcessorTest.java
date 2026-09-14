@@ -76,6 +76,9 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id,vector");
+    // *:* gives every doc the same score, so without an explicit sort the order between
+    // tied docs is arbitrary (depends on segment/merge timing), which made this flaky.
+    query.setSort("id", SolrQuery.ORDER.desc);
     return query;
   }
 
