@@ -99,13 +99,88 @@ public class NDJsonLoaderTest extends SolrTestCase {
     assertEquals(2, p.addCommands.size());
   }
 
+  /** A nested object flattens to dotted field names, as on the /update/json/docs path. */
   @Test
-  public void testChildDocuments() throws Exception {
+  public void testNestedObjectIsFlattenedByDefault() throws Exception {
     BufferingRequestProcessor p = load("{\"id\":\"1\",\"children\":[{\"id\":\"1a\"}]}\n");
     assertEquals(1, p.addCommands.size());
     assertEquals(
-        "SolrInputDocument(fields: [id=1, children=[SolrInputDocument(fields: [id=1a])]])",
+        "SolrInputDocument(fields: [id=1, children.id=1a])",
         p.addCommands.get(0).solrDoc.toString());
+  }
+
+  /** Nesting is declared with split, and the root must be listed first. */
+  @Test
+  public void testChildDocumentsViaSplit() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("split", "/|/children");
+    BufferingRequestProcessor p =
+        load("{\"id\":\"1\",\"children\":[{\"id\":\"1a\"},{\"id\":\"1b\"}]}\n", params);
+    assertEquals(1, p.addCommands.size());
+    assertEquals(
+        "SolrInputDocument(fields: [id=1, children=[SolrInputDocument(fields: [id=1a]), "
+            + "SolrInputDocument(fields: [id=1b])]])",
+        p.addCommands.get(0).solrDoc.toString());
+  }
+
+  /** Each line is already a document, so a split that skips the root makes no sense. */
+  @Test
+  public void testSplitMustStartAtRoot() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("split", "/children");
+    SolrException e =
+        expectThrows(SolrException.class, () -> load("{\"id\":\"1\",\"children\":[]}\n", params));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("must start at the document root"));
+  }
+
+  @Test
+  public void testSplitRejectsWildcards() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("split", "/|/a/*");
+    SolrException e = expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n", params));
+    assertThat(e.getMessage(), containsString("wildcards"));
+  }
+
+  /** srcField needs the recording parser, which NDJSON replaces with its own. */
+  @Test
+  public void testSrcFieldIsRejected() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("srcField", "_src_");
+    SolrException e = expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n", params));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("srcField is not supported"));
+  }
+
+  /** Field mappings still apply, so a caller can rename or select what gets indexed. */
+  @Test
+  public void testFieldMapping() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("f", "id:/id");
+    params.add("f", "title_s:/name");
+    BufferingRequestProcessor p =
+        load("{\"id\":\"1\",\"name\":\"one\",\"ignored\":\"x\"}\n", params);
+    assertEquals(
+        "SolrInputDocument(fields: [id=1, title_s=one])", p.addCommands.get(0).solrDoc.toString());
+  }
+
+  /** A document spanning lines breaks the format, and is reported where it starts. */
+  @Test
+  public void testDocumentSpanningLinesIsRejected() {
+    SolrException e =
+        expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n{\n\"id\":\"2\"}\n"));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("must be on a single line"));
+    assertThat(e.getMessage(), containsString("line 2"));
+  }
+
+  /** A whole JSON array is the classic "not really newline delimited" input. */
+  @Test
+  public void testTopLevelArrayIsRejected() {
+    SolrException e =
+        expectThrows(SolrException.class, () -> load("[{\"id\":\"1\"},{\"id\":\"2\"}]\n"));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("no enclosing array"));
   }
 
   @Test
@@ -133,6 +208,25 @@ public class NDJsonLoaderTest extends SolrTestCase {
         expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n[{\"id\":\"2\"}]\n"));
     assertThat(e.getMessage(), containsString("line 2"));
     assertThat(e.getMessage(), containsString("expected a JSON object"));
+  }
+
+  /** Records stream as they are parsed, so documents before a bad line are already submitted. */
+  @Test
+  public void testDocumentsBeforeAFailureAreSubmitted() {
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    expectThrows(
+        SolrException.class,
+        () -> {
+          try (SolrQueryRequest req = new SolrQueryRequestBase(null, new ModifiableSolrParams())) {
+            new NDJsonLoader()
+                .load(
+                    req,
+                    new SolrQueryResponse(),
+                    new ContentStreamBase.StringStream("{\"id\":\"1\"}\nnot json\n"),
+                    p);
+          }
+        });
+    assertEquals(1, p.addCommands.size());
   }
 
   /** Input that is not really newline delimited must fail, not buffer onto the heap. */
@@ -238,6 +332,6 @@ public class NDJsonLoaderTest extends SolrTestCase {
   public void testRejectsMultipleObjectsOnOneLine() {
     SolrException e =
         expectThrows(SolrException.class, () -> load("{\"id\":\"1\"} {\"id\":\"2\"}\n"));
-    assertThat(e.getMessage(), containsString("exactly one JSON object per line"));
+    assertThat(e.getMessage(), containsString("expected a newline between documents"));
   }
 }

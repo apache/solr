@@ -121,6 +121,18 @@ public class NDJsonUpdateTest extends SolrTestCase {
     assertIndexed();
   }
 
+  /** A nested object flattens into dotted field names, as on the /update/json/docs path. */
+  @Test
+  public void testNestedObjectIsFlattened() throws Exception {
+    GenericSolrRequest req = new GenericSolrRequest(POST, "/update", commitParams());
+    req.setRequiresCollection(true);
+    req.withContent(
+        "{\"id\":\"1\",\"child\":{\"title_s\":\"nested\"}}\n".getBytes(StandardCharsets.UTF_8),
+        "application/x-ndjson");
+    req.process(solrTestRule.getSolrClient(COLLECTION));
+    assertEquals("nested", query().get(0).getFieldValue("child.title_s"));
+  }
+
   /** NDJSON is defined as UTF-8, so any other declared charset is rejected rather than decoded. */
   @Test
   public void testNonUtf8CharsetIsRejected() {

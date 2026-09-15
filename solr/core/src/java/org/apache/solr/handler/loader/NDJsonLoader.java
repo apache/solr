@@ -16,46 +16,38 @@
  */
 package org.apache.solr.handler.loader;
 
-import static org.apache.solr.common.params.CommonParams.JSON;
-
-import java.io.BufferedReader;
-import java.io.FilterReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.eclipse.jetty.http.MimeTypes;
 import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
+import org.noggit.JSONParser.ParseException;
 
 /**
  * Loads documents in <a href="https://ndjson.org/">Newline Delimited JSON</a> (ND-JSON, also known
  * as JSON Lines or JSONL) format; one JSON object per line, each representing a document to add.
  *
- * <p>The format is defined as UTF-8, so a request declaring any other charset is rejected; a
- * request that declares none is read as UTF-8.
+ * <p>Documents are mapped exactly as on the {@code /update/json/docs} path: a nested JSON object is
+ * flattened into dotted field names unless the {@code split} parameter declares its path to be a
+ * nested document. Update commands such as {@code delete} or {@code commit} are not recognized; use
+ * request parameters or a separate request for those.
  *
- * <p>Documents are parsed and indexed one line at a time, so peak memory depends on the longest
- * line rather than on the size of the input. A single line is bounded by {@link
- * #MAX_LINE_LENGTH_PROP}, defaulting to a fraction of the heap, so that input which is not really
- * newline delimited fails instead of exhausting the heap. Unlike {@link JsonLoader}, update
- * commands such as {@code delete} or {@code commit} are not recognized; use request parameters or a
- * separate request for those. As on the {@code /update/json/docs} path, a nested JSON object is
- * always a child document, so atomic updates are not expressible in this format.
+ * <p>The only differences from that path are the restrictions the format itself implies, all
+ * enforced while streaming: the content must be UTF-8, every document sits on a line of its own, no
+ * line may exceed {@link #MAX_LINE_LENGTH_PROP} characters, and {@code split} must start at the
+ * document root, since a line is already one document.
  */
-public class NDJsonLoader extends ContentStreamLoader {
+public class NDJsonLoader extends JsonLoader {
 
   /** The content types that select this loader. */
   public static final Set<String> CONTENT_TYPES =
@@ -68,8 +60,9 @@ public class NDJsonLoader extends ContentStreamLoader {
   public static final int MIN_DEFAULT_MAX_LINE_LENGTH = 1024 * 1024;
 
   /**
-   * Parsing a line costs roughly this many heap bytes per character, dominated by the doubling of
-   * the reader's line buffer plus the parsed document.
+   * Parsing a line costs roughly this many heap bytes per character. Only the parsed record and the
+   * document built from it are held, never the line itself, which comes to less than this for a few
+   * large values and more for many small fields, so the estimate stays deliberately middling.
    */
   private static final int HEAP_BYTES_PER_CHAR = 8;
 
@@ -98,11 +91,6 @@ public class NDJsonLoader extends ContentStreamLoader {
   }
 
   @Override
-  public String getDefaultWT() {
-    return JSON;
-  }
-
-  @Override
   public void load(
       SolrQueryRequest req,
       SolrQueryResponse rsp,
@@ -110,37 +98,13 @@ public class NDJsonLoader extends ContentStreamLoader {
       UpdateRequestProcessor processor)
       throws Exception {
     assertUtf8(stream);
-    final int commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
-    final boolean overwrite = req.getParams().getBool(UpdateParams.OVERWRITE, true);
+    super.load(req, rsp, stream, processor);
+  }
 
-    long lineNumber = 0;
-    // Reused across lines; JSONParser(String) would copy each line into a fresh array instead
-    char[] chars = new char[512];
-    // Decoded here rather than via stream.getReader(), since the charset is known to be UTF-8
-    try (BufferedReader reader =
-        new BufferedReader(
-            new LineLengthGuard(
-                new InputStreamReader(stream.getStream(), StandardCharsets.UTF_8),
-                maxLineLength))) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        lineNumber++;
-        if (line.isBlank()) {
-          continue;
-        }
-        int length = line.length();
-        if (length > chars.length) {
-          chars = new char[length];
-        }
-        line.getChars(0, length, chars, 0);
-
-        AddUpdateCommand cmd = new AddUpdateCommand(req);
-        cmd.commitWithin = commitWithin;
-        cmd.overwrite = overwrite;
-        cmd.solrDoc = JsonLoader.buildDoc(parseLine(chars, length, lineNumber));
-        processor.processAdd(cmd);
-      }
-    }
+  @Override
+  protected SingleThreadedJsonLoader createLoader(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
+    return new SingleThreadedNDJsonLoader(req, rsp, processor, maxLineLength);
   }
 
   /**
@@ -156,86 +120,81 @@ public class NDJsonLoader extends ContentStreamLoader {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> parseLine(char[] line, int length, long lineNumber) {
-    final Object parsed;
-    final JSONParser parser;
-    try {
-      parser = new JSONParser(line, 0, length);
-      parsed = ObjectBuilder.getVal(parser);
-    } catch (JSONParser.ParseException | IOException e) {
-      throw bad(lineNumber, e.getMessage());
-    }
-    if (!(parsed instanceof Map)) {
-      throw bad(lineNumber, "expected a JSON object");
-    }
-    try {
-      if (parser.nextEvent() != JSONParser.EOF) {
-        throw bad(lineNumber, "expected exactly one JSON object per line");
-      }
-    } catch (JSONParser.ParseException | IOException e) {
-      throw bad(lineNumber, e.getMessage());
-    }
-    return (Map<String, Object>) parsed;
-  }
+  private static class SingleThreadedNDJsonLoader extends SingleThreadedJsonLoader {
 
-  private static SolrException bad(long lineNumber, String detail) {
-    return new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Cannot parse NDJSON at line " + lineNumber + ": " + detail);
-  }
-
-  /**
-   * Bounds how far the underlying reader may go without a line terminator, so that input which is
-   * not in fact newline delimited is rejected instead of being buffered into one huge line.
-   */
-  private static final class LineLengthGuard extends FilterReader {
     private final int maxLineLength;
-    private long sinceTerminator;
+    private NDJsonParser ndJsonParser;
 
-    LineLengthGuard(Reader in, int maxLineLength) {
-      super(in);
+    SingleThreadedNDJsonLoader(
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        UpdateRequestProcessor processor,
+        int maxLineLength) {
+      super(req, rsp, processor);
       this.maxLineLength = maxLineLength;
     }
 
+    /** As the base loader, but reporting a malformed document by line rather than by offset. */
     @Override
-    public int read() throws IOException {
-      int c = super.read();
-      if (c >= 0) {
-        sinceTerminator = (c == '\n' || c == '\r') ? 0 : sinceTerminator + 1;
-        checkLength();
-      }
-      return c;
-    }
-
-    @Override
-    public int read(char[] cbuf, int off, int len) throws IOException {
-      int read = super.read(cbuf, off, len);
-      int end = off + read;
-      int runStart = off;
-      for (int i = off; i < end; i++) {
-        if (cbuf[i] == '\n' || cbuf[i] == '\r') {
-          sinceTerminator += i - runStart;
-          checkLength();
-          sinceTerminator = 0;
-          runStart = i + 1;
-        }
-      }
-      if (read > 0) {
-        sinceTerminator += end - runStart;
-        checkLength();
-      }
-      return read;
-    }
-
-    private void checkLength() {
-      if (sinceTerminator > maxLineLength) {
+    public void load(
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        ContentStream stream,
+        UpdateRequestProcessor processor)
+        throws Exception {
+      // The charset is already known to be UTF-8, so the stream is decoded as such
+      try (Reader reader = new InputStreamReader(stream.getStream(), StandardCharsets.UTF_8)) {
+        processUpdate(reader);
+      } catch (ParseException e) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "NDJSON line exceeds maxLineLength of "
-                + maxLineLength
-                + " characters; is the input really newline delimited?");
+            "Cannot parse NDJSON at line " + ndJsonParser.getLineNumber() + ": " + e.getMessage());
       }
+    }
+
+    /** NDJSON carries documents only, so this is always the document path, never commands. */
+    @Override
+    void processUpdate(Reader reader) throws IOException {
+      SolrParams params = req.getParams();
+      if (params.get("srcField") != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "srcField is not supported for NDJSON; use the /update/json/docs path instead");
+      }
+      handleSplitMode(assertSplitStartsAtRoot(params.get("split")), params.getParams("f"), reader);
+    }
+
+    @Override
+    JSONParser createParser(Reader reader, String srcField) {
+      ndJsonParser = new NDJsonParser(reader, maxLineLength);
+      return ndJsonParser;
+    }
+
+    /**
+     * Each line is already a document, so the first {@code split} path has to be the root. Further
+     * paths are what declares a nested document, and must sit below it.
+     */
+    private static String assertSplitStartsAtRoot(String split) {
+      if (split == null) {
+        return "/";
+      }
+      String[] paths = split.split("\\|");
+      if (!"/".equals(paths[0].trim())) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "split must start at the document root for NDJSON, since each line is already one"
+                + " document; use split=/|"
+                + paths[0].trim()
+                + " rather than split="
+                + split);
+      }
+      for (String path : paths) {
+        if (path.indexOf('*') >= 0) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "split cannot contain wildcards: " + path);
+        }
+      }
+      return split;
     }
   }
 }
