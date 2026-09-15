@@ -288,9 +288,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     // exception occurred during parsing -- including a non-aborting one like a writeLimit
     // truncation -- but the body still carries whatever content was successfully extracted
     // (there's no envelope to carry the exception itself on these endpoints; use /rmeta for
-    // that). A request that extracted nothing at all (e.g. a wrong password) also gets 422, but
-    // with an empty body -- that's always a hard failure, regardless of ignoreTikaException.
-    // Peek the first byte to tell the two apart.
+    // that). A request that extracted nothing at all (e.g. an encrypted document TikaServer
+    // couldn't decrypt) also gets 422, but with an empty body -- that's always a hard failure,
+    // regardless of ignoreTikaException. Peek the first byte to tell the two apart.
     if (code == 422 && !request.tikaServerRecursive) {
       PushbackInputStream peekable = new PushbackInputStream(responseStream, 1);
       int firstByte = peekable.read();
@@ -300,7 +300,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
             "TikaServer "
                 + url
                 + " returned status 422 (Unprocessable Entity) with no content -- the document"
-                + " could not be parsed at all (check the password, if one was required).");
+                + " could not be parsed at all. If it's password-protected, note that Solr does"
+                + " not send a per-document password to TikaServer; the password must be"
+                + " configured directly on TikaServer itself.");
       }
       peekable.unread(firstByte);
       if (!request.ignoreTikaException) {
