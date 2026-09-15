@@ -1,4 +1,4 @@
-title: Update org.apache.tika:tika-core to v4
+title: Revamp Solr Extraction Module to work with Tika 4
 type: dependency_update
 authors:
 - name: solrbot
