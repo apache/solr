@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 public class QueryLimitsTestInjectionRule implements TestRule {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final BooleanSupplier FALSE = () -> false;
   private static BooleanSupplier enableSupplier;
 
   public QueryLimitsTestInjectionRule(BooleanSupplier enableSupplier) {
@@ -73,6 +72,6 @@ public class QueryLimitsTestInjectionRule implements TestRule {
 
   /** Disables for the whole test suite (class), not just for this individual test. */
   public static void disable() {
-    QueryLimitsTestInjectionRule.enableSupplier = FALSE;
+    QueryLimitsTestInjectionRule.enableSupplier = Boolean.FALSE::booleanValue;
   }
 }
