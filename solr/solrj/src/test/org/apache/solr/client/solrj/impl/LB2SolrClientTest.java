@@ -65,7 +65,8 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("tests.solr.directory.factory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty(
+        "tests.solr.directory.factory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
   }
 

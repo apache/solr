@@ -659,7 +659,8 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testFacetEnumSearch() throws Exception {
     assumeFalse(
-        "This requires docValues", System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
+        "This requires docValues",
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 

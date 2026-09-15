@@ -53,7 +53,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty(
-        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+        "tests.solr.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(CursorPagingTest.TEST_SOLRCONFIG_NAME, CursorPagingTest.TEST_SCHEMAXML_NAME);
   }
 

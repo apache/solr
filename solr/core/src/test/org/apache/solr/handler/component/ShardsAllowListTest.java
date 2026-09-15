@@ -55,7 +55,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   private static final String IMPLICIT_CLUSTER_KEY = "implicitCluster";
 
   private static final String EXPLICIT_ALLOW_LIST_PROPERTY =
-      "solr.tests.ShardsAllowListTest.explicitAllowList.";
+      "tests.solr.ShardsAllowListTest.explicitAllowList.";
   protected static final String COLLECTION_NAME = "ShardsAllowListTestCollection";
 
   private static int numShards;

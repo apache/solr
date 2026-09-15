@@ -35,7 +35,7 @@
          
          Instead use Solr defaults for almost everything
     -->
-    <lockType>${solr.tests.lockType:single}</lockType>
+    <lockType>${tests.solr.lockType:single}</lockType>
   </indexConfig>
   
   <directoryFactory name="DirectoryFactory"

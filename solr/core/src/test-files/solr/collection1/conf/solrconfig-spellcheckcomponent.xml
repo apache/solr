@@ -22,12 +22,12 @@
   <indexConfig>
     <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+    <maxBufferedDocs>${tests.solr.maxBufferedDocs}</maxBufferedDocs>
     <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
     <mergeScheduler class="${solr.tests.mergeScheduler}" />
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
-    <lockType>${solr.tests.lockType:single}</lockType>
+    <lockType>${tests.solr.lockType:single}</lockType>
   </indexConfig>
   <query>
     <useColdSearcher>false</useColdSearcher>

@@ -54,7 +54,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     // System.setProperty("solr.index.updatelog.enabled", "false"); // schema12 doesn't support
     // _version_
     System.setProperty("tests.solr.directory.factory", "solr.NRTCachingDirectoryFactory");
-    System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
+    System.setProperty("tests.solr.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
     // route_l needs docValues to be usable as a router.field when numerics are Point-based
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
       System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");

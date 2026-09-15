@@ -53,7 +53,7 @@
     <queryResultWindowSize>${solr.test.queryResultWindowSize:50}</queryResultWindowSize>
     <queryResultMaxDocsCached>500</queryResultMaxDocsCached>
     <!-- randomized so we exercise cursors using various paths in SolrIndexSearcher -->
-    <useFilterForSortedQuery>${solr.test.useFilterForSortedQuery}</useFilterForSortedQuery>
+    <useFilterForSortedQuery>${tests.solr.useFilterForSortedQuery}</useFilterForSortedQuery>
   </query>
 
   <requestHandler name="/select" class="solr.SearchHandler" default="true" />

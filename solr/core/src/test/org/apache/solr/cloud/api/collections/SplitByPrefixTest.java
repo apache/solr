@@ -50,7 +50,8 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("tests.solr.schema.managed.mutable", "true"); // needed by cloud-managed config set
+    System.setProperty(
+        "tests.solr.schema.managed.mutable", "true"); // needed by cloud-managed config set
 
     // clould-managed has the copyField from ID to id_prefix
     // cloud-minimal does not and thus histogram should be driven from the "id" field directly

@@ -535,7 +535,7 @@
   </fieldType>
 
 
-  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}" uninvertible="true"/>
+  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${tests.solr.id.docValues:false}" uninvertible="true"/>
   <field name="_root_" type="string" indexed="true" stored="false"/>
   <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField"/>
 

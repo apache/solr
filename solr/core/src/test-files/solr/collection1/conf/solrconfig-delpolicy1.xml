@@ -33,7 +33,7 @@
     <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
 
-    <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+    <maxBufferedDocs>${tests.solr.maxBufferedDocs}</maxBufferedDocs>
     <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
     
     <mergeScheduler class="${solr.tests.mergeScheduler}" />

@@ -31,7 +31,7 @@
       <str name="in.wrapped.prefix">in</str>
       <str name="in.in.class">org.apache.solr.util.RandomForceMergePolicyFactory</str>
     </mergePolicyFactory>
-    <lockType>${solr.tests.lockType:single}</lockType>
+    <lockType>${tests.solr.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler" />

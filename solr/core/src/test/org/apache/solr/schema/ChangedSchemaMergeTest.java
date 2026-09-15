@@ -65,8 +65,8 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       simfac1 = simfac2;
       simfac2 = tmp;
     }
-    System.setProperty("solr.test.simfac1", simfac1.getName());
-    System.setProperty("solr.test.simfac2", simfac2.getName());
+    System.setProperty("tests.solr.simfac1", simfac1.getName());
+    System.setProperty("tests.solr.simfac2", simfac2.getName());
 
     initCore();
   }

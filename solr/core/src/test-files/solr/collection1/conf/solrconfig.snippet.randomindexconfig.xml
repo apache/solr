@@ -30,7 +30,7 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
   
   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
 
-  <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+  <maxBufferedDocs>${tests.solr.maxBufferedDocs}</maxBufferedDocs>
   <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
   <maxCommitMergeWaitTime>${solr.tests.maxCommitMergeWaitTime:-1}</maxCommitMergeWaitTime>
   <ramPerThreadHardLimitMB>${tests.solr.ramPerThreadHardLimitMB}</ramPerThreadHardLimitMB>
@@ -44,7 +44,7 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
        use the single process lockType for speed - but tests that explicitly need
        to vary the lockType canset it as needed.
   -->
-  <lockType>${solr.tests.lockType:single}</lockType>
+  <lockType>${tests.solr.lockType:single}</lockType>
 
   <infoStream>${solr.tests.infostream:false}</infoStream>
 

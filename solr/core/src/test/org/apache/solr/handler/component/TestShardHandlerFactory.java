@@ -45,11 +45,11 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
       };
 
   private static final String LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE =
-      "solr.tests.loadBalancerRequestsMinimumAbsolute";
+      "tests.solr.loadBalancerRequestsMinimumAbsolute";
   private static final String LOAD_BALANCER_REQUESTS_MAX_FRACTION =
-      "solr.tests.loadBalancerRequestsMaximumFraction";
+      "tests.solr.loadBalancerRequestsMaximumFraction";
   private static final String SHARD_HANDLER_FACTORY_PROPERTY =
-      "solr.tests.defaultShardHandlerFactory";
+      "tests.solr.defaultShardHandlerFactory";
 
   private static int expectedLoadBalancerRequestsMinimumAbsolute = 0;
   private static float expectedLoadBalancerRequestsMaximumFraction = 1.0f;

@@ -32,9 +32,9 @@ public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
   @Before
   public void beforeSetupCore() throws Exception {
     System.setProperty(
-        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+        "tests.solr.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     System.setProperty(
-        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+        "tests.solr.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
     SchemaField uniqueKeyField = h.getCore().getLatestSchema().getUniqueKeyField();
     assertNull(

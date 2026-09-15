@@ -64,16 +64,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public static void beforeClass() {
     switch (random().nextInt(3)) {
       case 0:
-        System.setProperty("solr.tests.id.stored", "true");
-        System.setProperty("solr.tests.id.docValues", "true");
+        System.setProperty("tests.solr.id.stored", "true");
+        System.setProperty("tests.solr.id.docValues", "true");
         break;
       case 1:
-        System.setProperty("solr.tests.id.stored", "true");
-        System.setProperty("solr.tests.id.docValues", "false");
+        System.setProperty("tests.solr.id.stored", "true");
+        System.setProperty("tests.solr.id.docValues", "false");
         break;
       case 2:
-        System.setProperty("solr.tests.id.stored", "false");
-        System.setProperty("solr.tests.id.docValues", "true");
+        System.setProperty("tests.solr.id.stored", "false");
+        System.setProperty("tests.solr.id.docValues", "true");
         break;
       default:
         fail("Bad random number generated not between 0-2 inclusive");

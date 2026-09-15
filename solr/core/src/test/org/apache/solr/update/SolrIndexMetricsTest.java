@@ -82,7 +82,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIndexMetricsMajorAndMinorMerges() throws Exception {
-    System.setProperty("solr.tests.metrics.majorMergeDocs", "450");
+    System.setProperty("tests.solr.metrics.majorMergeDocs", "450");
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
 
     addDocs();

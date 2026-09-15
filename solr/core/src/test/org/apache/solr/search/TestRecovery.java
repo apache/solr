@@ -72,7 +72,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // TODO: fix this test to not require FSDirectory
   @Before
   public void beforeTest() throws Exception {
-    System.setProperty("tests.solr.directory.factory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty(
+        "tests.solr.directory.factory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig-tlog.xml", "schema15.xml");
 
     // validate that the schema was not changed to an unexpected state

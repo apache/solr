@@ -39,9 +39,9 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   private static final int MOST_DOCS = 100;
   private static final int ALL_DOCS = MOST_DOCS + 1;
-  private static final String TEST_UFFSQ_PROPNAME = "solr.test.useFilterForSortedQuery";
+  private static final String TEST_UFFSQ_PROPNAME = "tests.solr.useFilterForSortedQuery";
   static String RESTORE_UFFSQ_PROP;
-  private static final String TEST_QRC_WINDOW_SIZE_PROPNAME = "solr.test.queryResultWindowSize";
+  private static final String TEST_QRC_WINDOW_SIZE_PROPNAME = "tests.solr.queryResultWindowSize";
   static String RESTORE_QRC_WINDOW_SIZE_PROP;
   static boolean USE_FILTER_FOR_SORTED_QUERY;
 

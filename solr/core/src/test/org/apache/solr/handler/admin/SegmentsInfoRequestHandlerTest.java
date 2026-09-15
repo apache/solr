@@ -48,7 +48,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     //
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
     // Also prevent flushes
-    System.setProperty("solr.tests.maxBufferedDocs", "1000");
+    System.setProperty("tests.solr.maxBufferedDocs", "1000");
     System.setProperty("tests.solr.ramBufferSizeMB", "5000");
 
     System.setProperty("solr.index.updatelog.enabled", "false"); // no _version_ in our schema
