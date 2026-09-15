@@ -42,7 +42,7 @@ public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createClusterAndInitSysProperties() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     System.setProperty("solr.autoSoftCommit.maxTime", Integer.toString(AUTOSOFTCOMMIT_MAXTIME_MS));
     configureCluster(1)
         .addConfig(

@@ -145,5 +145,5 @@
     </analyzer>
   </fieldType>
   
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}"/>
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}"/>
 </schema>

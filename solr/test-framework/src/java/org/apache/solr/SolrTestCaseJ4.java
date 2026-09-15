@@ -160,9 +160,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY =
-      "solr.tests.mergePolicyFactory";
+      "tests.solr.mergePolicyFactory";
 
-  public static final String TEST_URL_ALLOW_LIST = "solr.tests.security.allow.urls";
+  public static final String TEST_URL_ALLOW_LIST = "tests.solr.security.allow.urls";
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
@@ -372,7 +372,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void useFactory(String factory) throws Exception {
     // allow calling more than once so a subclass can override a base class
     if (!changedFactory) {
-      savedFactory = System.getProperty("solr.DirectoryFactory");
+      savedFactory = System.getProperty("tests.solr.directory.factory");
     }
 
     if (factory == null) {
@@ -381,7 +381,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
               ? "solr.NRTCachingDirectoryFactory"
               : "solr.StandardDirectoryFactory"; // test the default most of the time
     }
-    System.setProperty("solr.directoryFactory", factory);
+    System.setProperty("tests.solr.directory.factory", factory);
     changedFactory = true;
   }
 
@@ -389,7 +389,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (!changedFactory) return;
     changedFactory = false;
     if (savedFactory != null) {
-      System.setProperty("solr.directoryFactory", savedFactory);
+      System.setProperty("tests.solr.directory.factory", savedFactory);
       savedFactory = null;
     }
   }
@@ -458,17 +458,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
 
-    System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
+    System.setProperty("tests.solr.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
     System.setProperty(
-        "solr.tests.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
-    System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
+        "tests.solr.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
+    System.setProperty("tests.solr.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
 
     String mergeSchedulerClass = iwc.getMergeScheduler().getClass().getName();
     if (mergeSchedulerClass.contains("$")) {
       // anonymous subclass - we can't instantiate via the resource loader, so use CMS instead
       mergeSchedulerClass = "org.apache.lucene.index.ConcurrentMergeScheduler";
     }
-    System.setProperty("solr.tests.mergeScheduler", mergeSchedulerClass);
+    System.setProperty("tests.solr.mergeScheduler", mergeSchedulerClass);
     randomizeNumericTypesProperties();
   }
 
@@ -2681,7 +2681,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #NUMERIC_POINTS_SYSPROP
    */
-  public static final String USE_NUMERIC_POINTS_SYSPROP = "solr.tests.use.numeric.points";
+  public static final String USE_NUMERIC_POINTS_SYSPROP = "tests.solr.use.numeric.points";
 
   /**
    * The name of a sysprop that will either <code>true</code> or <code>false</code> indicating if
@@ -2691,7 +2691,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  public static final String NUMERIC_POINTS_SYSPROP = "solr.tests.numeric.points";
+  public static final String NUMERIC_POINTS_SYSPROP = "tests.solr.numeric.points";
 
   /**
    * The name of a sysprop that will be either <code>true</code> or <code>false</code> indicating if
@@ -2703,9 +2703,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  public static final String NUMERIC_DOCVALUES_SYSPROP = "solr.tests.numeric.dv";
+  public static final String NUMERIC_DOCVALUES_SYSPROP = "tests.solr.numeric.dv.enabled";
 
-  public static final String UPDATELOG_SYSPROP = "solr.tests.ulog";
+  public static final String UPDATELOG_SYSPROP = "tests.solr.ulog";
 
   /**
    * Sets various sys props related to user specified or randomized choices regarding the types of
@@ -2759,7 +2759,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     for (Map.Entry<Class<?>, String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
       System.setProperty(
-          "solr.tests." + entry.getKey().getSimpleName() + "FieldType", entry.getValue());
+          "tests.solr." + entry.getKey().getSimpleName() + "FieldType", entry.getValue());
     }
   }
 

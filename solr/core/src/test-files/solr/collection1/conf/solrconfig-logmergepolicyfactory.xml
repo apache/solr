@@ -19,14 +19,14 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <indexConfig>
     <!-- set some values to -1 to force the use of internal lucene defaults -->
     <maxBufferedDocs>-1</maxBufferedDocs>
     <ramBufferSizeMB>-1</ramBufferSizeMB>
 
-    <mergePolicyFactory class="${solr.test.log.merge.policy.factory}">
+    <mergePolicyFactory class="${tests.solr.log.merge.policy.factory}">
       <int name="mergeFactor">11</int>
       <int name="maxMergeDocs">456</int>
     </mergePolicyFactory>

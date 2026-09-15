@@ -54,7 +54,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void initSysProperties() {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "true");
   }
 

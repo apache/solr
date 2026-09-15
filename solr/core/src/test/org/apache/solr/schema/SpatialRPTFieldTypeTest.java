@@ -57,7 +57,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
-    System.setProperty("managed.schema.mutable", "false");
+    System.setProperty("tests.solr.schema.managed.mutable", "false");
     System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome);
   }
@@ -145,7 +145,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     String fieldName = "new_text_field";
@@ -263,7 +263,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     String fieldName = "new_text_field";

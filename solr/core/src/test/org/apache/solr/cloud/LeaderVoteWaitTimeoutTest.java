@@ -56,8 +56,8 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
-    System.setProperty("solr.ulog.numRecordsToKeep", "1000");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "2000");
     System.setProperty("distribUpdateSoTimeout", "5000");
     System.setProperty("distribUpdateConnTimeout", "5000");

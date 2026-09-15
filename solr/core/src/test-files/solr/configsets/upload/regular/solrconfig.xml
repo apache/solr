@@ -33,7 +33,7 @@
   <dataDir>${solr.data.dir:}</dataDir>
 
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${tests.solr.directory.factory:solr.NRTCachingDirectoryFactory}"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
@@ -58,4 +58,3 @@
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 </config>
-

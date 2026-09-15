@@ -112,7 +112,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
     leader = new SolrInstance(createTempDir("solr-instance"), "leader", null);

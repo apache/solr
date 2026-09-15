@@ -65,8 +65,8 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       simfac1 = simfac2;
       simfac2 = tmp;
     }
-    System.setProperty("solr.test.simfac1", simfac1.getName());
-    System.setProperty("solr.test.simfac2", simfac2.getName());
+    System.setProperty("tests.solr.simfac1", simfac1.getName());
+    System.setProperty("tests.solr.simfac2", simfac2.getName());
 
     initCore();
   }
@@ -175,7 +175,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
           + "    <fieldType name=\"int\" class=\""
           + RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)
           + "\" precisionStep=\"0\" positionIncrementGap=\"0\"/>"
-          + "  <similarity class=\"${solr.test.simfac1}\"/> "
+          + "  <similarity class=\"${tests.solr.simfac1}\"/> "
           + "</schema>";
 
   private String withoutWhich =
@@ -194,6 +194,6 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
           + "    <fieldType name=\"int\" class=\""
           + RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)
           + "\" precisionStep=\"0\" positionIncrementGap=\"0\"/>"
-          + "  <similarity class=\"${solr.test.simfac2}\"/> "
+          + "  <similarity class=\"${tests.solr.simfac2}\"/> "
           + "</schema>";
 }

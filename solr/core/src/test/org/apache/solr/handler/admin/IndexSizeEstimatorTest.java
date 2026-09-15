@@ -67,9 +67,9 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     // create predictable field names
-    System.setProperty("solr.tests.numeric.dv", "true");
-    System.setProperty("solr.tests.numeric.points", "true");
-    System.setProperty("solr.tests.numeric.points.dv", "true");
+    System.setProperty("tests.solr.numeric.dv.enabled", "true");
+    System.setProperty("tests.solr.numeric.points", "true");
+    System.setProperty("tests.solr.numeric.points.dv", "true");
     configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
     solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2).process(solrClient);

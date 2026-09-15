@@ -17,29 +17,29 @@
 -->
 
 <schema name="test-distributed-missing-sort" version="1.7">
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tint" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tlong" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="float" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tfloat" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="double" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tdouble" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
-  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" uninvertible="true"/>
-  <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="6" uninvertible="true"/>
+  <fieldType name="date" class="${tests.solr.DateFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" uninvertible="true"/>
+  <fieldType name="tdate" class="${tests.solr.DateFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="6" uninvertible="true"/>
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
 
-  <fieldType name="int_ml" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="true" uninvertible="true"/>
-  <fieldType name="int_mf" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingFirst="true" uninvertible="true"/>
+  <fieldType name="int_ml" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" sortMissingLast="true" uninvertible="true"/>
+  <fieldType name="int_mf" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" sortMissingFirst="true" uninvertible="true"/>
 
-  <fieldType name="long_ml" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"
+  <fieldType name="long_ml" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0"
              sortMissingLast="true" uninvertible="true"/>
-  <fieldType name="long_mf" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"
+  <fieldType name="long_mf" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0"
              sortMissingFirst="true" uninvertible="true"/>
 
   <fieldType name="string_ml" class="solr.StrField" sortMissingLast="true"/>

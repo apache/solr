@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 public class IpTables {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final boolean ENABLED = Boolean.getBoolean("solr.tests.use.iptables");
+  private static final boolean ENABLED = Boolean.getBoolean("tests.solr.use.iptables.enabled");
 
   private static final Set<Integer> BLOCK_PORTS =
       Collections.synchronizedSet(new HashSet<Integer>());

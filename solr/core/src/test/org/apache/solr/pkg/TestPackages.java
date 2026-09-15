@@ -743,7 +743,7 @@ public class TestPackages extends SolrCloudTestCase {
   @SuppressWarnings("ReferenceEquality")
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
 
     IndexSchema[] schemas = new IndexSchema[2]; // tracks schemas for a selected core
 

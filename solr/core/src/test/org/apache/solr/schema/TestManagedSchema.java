@@ -79,7 +79,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
-    System.setProperty("managed.schema.mutable", "false");
+    System.setProperty("tests.solr.schema.managed.mutable", "false");
     System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome);
   }
@@ -207,7 +207,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Files.delete(
         managedSchemaFile); // Delete managed-schema.xml, so it won't block parsing a new schema
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     assertTrue(Files.exists(managedSchemaFile));
@@ -239,7 +239,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     assertTrue(Files.exists(managedSchemaFile));
@@ -287,7 +287,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     assertNotNull(
@@ -323,7 +323,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     Map<String, Object> options = new HashMap<>();
@@ -359,7 +359,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     assertNull(
@@ -394,7 +394,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema_codec.xml", tmpSolrHome);
 
     String uniqueKey = "string_f";
@@ -425,7 +425,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-bm25.xml", tmpSolrHome);
 
     String uniqueKey = "id";
@@ -457,7 +457,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore(
         "solrconfig-managed-schema.xml",
         "schema-one-field-no-dynamic-field-unique-key.xml",
@@ -499,7 +499,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
     // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile);
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome);
 
     String fieldName = "new_text_field";

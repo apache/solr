@@ -256,7 +256,7 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
 
       // Test schema randomizes between Trie and Point.  "terms" is supported for "trie" but not
       // "Point"
-      final String numericFieldType = System.getProperty("solr.tests.IntegerFieldType");
+      final String numericFieldType = System.getProperty("tests.solr.IntegerFieldType");
       if (numericFieldType.contains("Point")) {
         assertQEx("Expected 'terms' query on PointField to fail", req(params, "indent", "on"), 400);
       } else {

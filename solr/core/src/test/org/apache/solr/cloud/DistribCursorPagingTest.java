@@ -65,7 +65,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
   public DistribCursorPagingTest() {
     System.setProperty(
-        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+        "tests.solr.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     configString = CursorPagingTest.TEST_SOLRCONFIG_NAME;
     schemaString = CursorPagingTest.TEST_SCHEMAXML_NAME;
   }

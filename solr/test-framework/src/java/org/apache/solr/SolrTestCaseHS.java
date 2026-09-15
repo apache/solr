@@ -450,7 +450,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
 
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml
-      System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(100000));
+      System.setProperty("tests.solr.maxBufferedDocs", String.valueOf(100000));
 
       // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check

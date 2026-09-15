@@ -41,7 +41,7 @@ public class DataDrivenBlockJoinTest extends SolrTestCaseJ4 {
     PathUtils.copyFileToDirectory(
         testHomeConfDir.resolve("solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
     initCore(
         "solrconfig-schemaless.xml", "schema-add-schema-fields-update-processor.xml", tmpSolrHome);

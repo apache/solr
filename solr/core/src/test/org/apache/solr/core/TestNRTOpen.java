@@ -31,7 +31,7 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // set these so that merges won't break the test
-    System.setProperty("solr.tests.maxBufferedDocs", "100000");
+    System.setProperty("tests.solr.maxBufferedDocs", "100000");
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     initCore("solrconfig-basic.xml", "schema-minimal.xml");
     // add a doc

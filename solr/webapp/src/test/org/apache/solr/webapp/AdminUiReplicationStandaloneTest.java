@@ -47,7 +47,7 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
 
   @BeforeClass
   public static void startLeaderAndFollower() throws Exception {
-    // sets the solr.tests.* index-config properties the test solrconfigs require
+    // sets the tests.solr.* index-config properties the test solrconfigs require
     newRandomConfig();
     // the follower's leaderUrl is not covered by the URL allow-list
     System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");

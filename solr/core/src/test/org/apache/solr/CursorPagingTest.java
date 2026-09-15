@@ -73,7 +73,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
       System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
     System.setProperty(
-        "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
+        "tests.solr.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
   }
 

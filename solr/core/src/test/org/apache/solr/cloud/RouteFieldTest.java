@@ -52,7 +52,7 @@ public class RouteFieldTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     configureCluster(1).addConfig("conf", configset("cloud-managed")).configure();
   }
 

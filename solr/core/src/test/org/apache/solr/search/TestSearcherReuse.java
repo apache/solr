@@ -62,7 +62,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-id-and-version-fields-only.xml", solrHome);
   }
 

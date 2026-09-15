@@ -22,7 +22,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
   
@@ -36,9 +36,9 @@
     <mergePolicyFactory class="org.apache.solr.util.RandomMergePolicyFactory" />
   
     <useCompoundFile>${useCompoundFile}</useCompoundFile>
-    <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
-    <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
-    <mergeScheduler class="${solr.tests.mergeScheduler}" />
+    <maxBufferedDocs>${tests.solr.maxBufferedDocs}</maxBufferedDocs>
+    <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
+    <mergeScheduler class="${tests.solr.mergeScheduler}" />
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
     <lockType>single</lockType>

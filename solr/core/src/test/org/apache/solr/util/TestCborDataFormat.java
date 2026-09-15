@@ -64,7 +64,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
                 "conf", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
             .configure();
     try {
-      System.setProperty("managed.schema.mutable", "true");
+      System.setProperty("tests.solr.schema.managed.mutable", "true");
       CloudSolrClient client = cluster.getSolrClient();
       CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1).process(client);
       modifySchema(testCollection, client);
