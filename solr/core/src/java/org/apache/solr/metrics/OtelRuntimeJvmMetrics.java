@@ -24,7 +24,9 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetryBuilder;
+import io.opentelemetry.instrumentation.runtimetelemetry.internal.Experimental;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import org.apache.lucene.util.SuppressForbidden;
@@ -37,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class OtelRuntimeJvmMetrics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private RuntimeMetrics runtimeMetrics;
+  private RuntimeTelemetry runtimeMetrics;
   private ObservableLongGauge systemMemoryGauge;
   private boolean isInitialized = false;
 
@@ -75,11 +77,14 @@ public class OtelRuntimeJvmMetrics {
             return OpenTelemetry.noop().getPropagators();
           }
         };
-    this.runtimeMetrics =
-        RuntimeMetrics.builder(otel)
-            // TODO: We should have this configurable to enable/disable specific JVM metrics
-            .enableAllFeatures()
-            .build();
+
+    RuntimeTelemetryBuilder builder = RuntimeTelemetry.builder(otel);
+    // TODO: Make this configurable — Experimental.setJfrMetrics(builder, IncludeExclude) lets
+    // callers select individual JVM metrics instead of all-or-nothing; expose that via a
+    // solr.metrics.jvm.* system property instead of hardcoding true/true here.
+    Experimental.setEmitExperimentalMetrics(builder, true);
+    Experimental.setEmitExperimentalJfrMetrics(builder, true);
+    this.runtimeMetrics = builder.build();
     java.lang.management.OperatingSystemMXBean osMxBean =
         ManagementFactory.getOperatingSystemMXBean();
     if (osMxBean instanceof com.sun.management.OperatingSystemMXBean extOsMxBean) {

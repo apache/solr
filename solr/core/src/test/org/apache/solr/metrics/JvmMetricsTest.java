@@ -17,19 +17,23 @@
 package org.apache.solr.metrics;
 
 import com.sun.management.OperatingSystemMXBean;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -75,7 +79,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetupJvmMetrics() throws InterruptedException {
-    PrometheusMetricReader reader =
+    FilterablePrometheusMetricReader reader =
         solrTestRule
             .getJetty()
             .getCoreContainer()
@@ -113,7 +117,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
   @Test
   @SuppressForbidden(reason = "Testing com.sun.management.OperatingSystemMXBean availability")
   public void testSystemMemoryMetrics() {
-    PrometheusMetricReader reader =
+    FilterablePrometheusMetricReader reader =
         solrTestRule
             .getJetty()
             .getCoreContainer()
@@ -136,6 +140,32 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
     assertTrue(
         "Should have jvm_system_memory_bytes metric (with state=total and state=free)",
         metricNames.contains("jvm_system_memory_bytes"));
+  }
+
+  @Test
+  public void testNoDuplicateJvmMemoryMetrics() {
+    // Guards against the java8/java17 RuntimeMetrics split emitting the same series twice (each
+    // scope reporting e.g. jvm.memory.committed with identical labels), which is what motivated
+    // migrating to the unified opentelemetry-runtime-telemetry module.
+    FilterablePrometheusMetricReader reader =
+        solrTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
+    MetricSnapshots snapshots = reader.collect();
+
+    for (MetricSnapshot snapshot : snapshots) {
+      Set<Labels> seen = new HashSet<>();
+      for (DataPointSnapshot dataPoint : snapshot.getDataPoints()) {
+        assertTrue(
+            "Duplicate series for metric "
+                + snapshot.getMetadata().getPrometheusName()
+                + " with labels "
+                + dataPoint.getLabels(),
+            seen.add(dataPoint.getLabels()));
+      }
+    }
   }
 
   @Test
