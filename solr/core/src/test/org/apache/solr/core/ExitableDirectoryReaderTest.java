@@ -123,6 +123,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
       public SimScorer scorer(
           float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
         return new Similarity.SimScorer() {
+          @Override
           public float score(float freq, long norm) {
             return 42f;
           }
