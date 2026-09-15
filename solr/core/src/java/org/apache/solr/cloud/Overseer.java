@@ -52,9 +52,7 @@ import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
@@ -734,14 +732,7 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(reader.getZkClient());
     // launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    String stateCompressionProviderClass = config.getStateCompressorClass();
-    Compressor compressor =
-        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
-            ? new ZLibCompressor()
-            : zkController
-                .getCoreContainer()
-                .getResourceLoader()
-                .newInstance(stateCompressionProviderClass, Compressor.class);
+    Compressor compressor = zkController.getCompressor();
     updaterThread =
         new OverseerThread(
             tg,
