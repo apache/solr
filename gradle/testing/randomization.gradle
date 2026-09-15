@@ -90,7 +90,7 @@ allprojects {
           // asserts, debug output.
           [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
           [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
-          [propName: 'tests.leaveTemporary', value: false, description: "Leave temporary directories after tests complete."],
+          [propName: 'tests.leavetmpdir.enabled', value: false, description: "Leave temporary directories after tests complete."],
           [propName: 'tests.useSecurityManager',
               value: {->
                 rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 ? 'true' : 'false'},
@@ -161,22 +161,8 @@ allprojects {
         Commandline.quoteArgument("-P" + opt.propName + "=" + testOptionsResolved[opt.propName])
       }.join(" ")
 
-      // leaving temporary folder option has multiple aliases...
-      if ([
-          "tests.leaveTemporary",
-          "tests.leavetemporary",
-          "tests.leavetmpdir",
-          "solr.test.leavetmpdir",
-      ].find {prop ->
-        def v = Boolean.parseBoolean(propertyOrDefault(prop, "false"))
-        if (v) {
-          logger
-              .lifecycle("Update your code to use the official 'tests.leaveTemporary' option (you used '${prop}').")
-        }
-        return v
-      }) {
-        testOptionsResolved['tests.leaveTemporary'] = "true"
-      }
+      
+      testOptionsResolved['tests.leavetmpdir.enabled'] = "true"      
 
       // Append resolved test properties to the test task.
       tasks.withType(Test) {
