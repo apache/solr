@@ -119,8 +119,16 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
             } catch (SolrException e) {
               log.error(
                   "Error happened during incremental backup for collection: {}", collectionName, e);
-              CollectionHandlingUtils.cleanBackup(
-                  repository, backupUri, backupMgr.getBackupId(), ccc);
+              try {
+                CollectionHandlingUtils.cleanBackup(
+                    repository, backupUri, backupMgr.getBackupId(), ccc);
+              } catch (Exception cleanupException) {
+                log.warn(
+                    "Unable to clean up incomplete backup for collection: {}",
+                    collectionName,
+                    cleanupException);
+                e.addSuppressed(cleanupException);
+              }
               throw e;
             }
             break;
