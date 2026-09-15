@@ -18,7 +18,9 @@ package org.apache.solr.handler;
 
 import static org.hamcrest.Matchers.containsString;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -150,6 +152,25 @@ public class NDJsonLoaderTest extends SolrTestCase {
     SolrException e = expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n", params));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(), containsString("srcField is not supported"));
+  }
+
+  /** echo is inherited from the JSON docs path: documents are returned, not indexed. */
+  @Test
+  public void testEcho() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("echo", "true");
+    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
+      new NDJsonLoader()
+          .load(
+              req,
+              rsp,
+              new ContentStreamBase.StringStream("{\"id\":\"1\"}\n{\"id\":\"2\"}\n"),
+              processor);
+    }
+    assertTrue(processor.addCommands.isEmpty());
+    assertEquals(List.of(Map.of("id", "1"), Map.of("id", "2")), rsp.getValues().get("docs"));
   }
 
   /** Field mappings still apply, so a caller can rename or select what gets indexed. */
@@ -326,6 +347,30 @@ public class NDJsonLoaderTest extends SolrTestCase {
       assertThat(e.getMessage(), containsString("must be UTF-8"));
       assertThat(e.getMessage(), containsString(charset.toLowerCase(Locale.ROOT)));
     }
+  }
+
+  /** Line numbers are tracked across buffer refills, not just within the first one. */
+  @Test
+  public void testLineNumberFarIntoTheInput() {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 1; i < 3000; i++) {
+      sb.append("{\"id\":\"").append(i).append("\",\"title_s\":\"padding padding\"}\n");
+    }
+    sb.append("not json\n");
+    assertTrue("input must span many buffer fills", sb.length() > 100_000);
+
+    SolrException e = expectThrows(SolrException.class, () -> load(sb.toString()));
+    assertThat(e.getMessage(), containsString("line 3000"));
+  }
+
+  /** A single document may span buffer refills without looking like it spans lines. */
+  @Test
+  public void testDocumentLargerThanTheParserBuffer() throws Exception {
+    String value = "x".repeat(50_000);
+    BufferingRequestProcessor p =
+        load("{\"id\":\"1\",\"title_s\":\"" + value + "\"}\n{\"id\":\"2\"}\n");
+    assertEquals(2, p.addCommands.size());
+    assertEquals(value, p.addCommands.get(0).solrDoc.getFieldValue("title_s"));
   }
 
   @Test

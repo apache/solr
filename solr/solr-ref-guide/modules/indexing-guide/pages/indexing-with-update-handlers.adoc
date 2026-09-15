@@ -494,21 +494,16 @@ curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr
 '
 ----
 
-`application/x-ndjson` is the media type recommended by the ND-JSON specification; `application/jsonl` and `application/x-jsonlines` are accepted as aliases.
-The xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files as `application/x-ndjson` automatically.
+`application/jsonl` and `application/x-jsonlines` are accepted as aliases, and the xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files automatically.
+The format is UTF-8 only: a request declaring any other `charset` is rejected with a `415 Unsupported Media Type`.
 
-The format is defined as UTF-8, and Solr accepts no other encoding: a request declaring a `charset` other than UTF-8 is rejected with a `415 Unsupported Media Type`, while a request that declares no `charset` is read as UTF-8.
-
-Because each document ends at a newline, Solr indexes the request as it streams in, without parsing the whole request body first, and a producer can append documents to a file or stream without rewriting any enclosing structure.
-Peak memory therefore depends on a single document rather than on the size of the request, which makes the format a good fit for large bulk loads.
-
+Solr parses and indexes the request as it streams in, so peak memory is bounded by the largest single document rather than by the size of the request, which makes the format a good fit for large bulk loads.
 Blank lines are ignored.
-A line that is not a single JSON Object -- an enclosing array, a document spread over several lines, two documents on one line, or anything that is not an Object at all -- fails the request reporting the offending line number.
-As with the other update formats, documents from earlier lines have already been submitted when a later line fails, so a failed bulk load may be partially applied; the reported line number tells you where to resume.
-A single line is also bounded in length, so that input which is not in fact newline delimited fails with a clear error rather than exhausting the heap.
-The default budget is a quarter of the max heap while parsing, which works out at roughly one character per 8 heap bytes: about 64 million characters on a 2 GB heap, or 256 million on an 8 GB heap.
-This is a backstop, not a limit on how large a document may be, so ordinary documents will not come close to it.
-Set it explicitly with the `solr.ndjson.maxLineLength` system property (in characters), or per handler with a `maxLineLength` init argument:
+A line that is not a single JSON Object -- an enclosing array, a document spread over several lines, two documents on one line, or anything that is not an Object -- fails the request, reporting the line number.
+Documents from earlier lines have already been submitted when a later line fails, so a failed load may be partially applied.
+
+A single line is also bounded in length, by default a quarter of the max heap while parsing, or about 64 million characters on a 2 GB heap.
+Set it with the `solr.ndjson.maxLineLength` system property (in characters) or a `maxLineLength` init argument:
 
 [source,xml]
 ----
@@ -517,12 +512,10 @@ Set it explicitly with the `solr.ndjson.maxLineLength` system property (in chara
 </requestHandler>
 ----
 
-Unlike Solr-style JSON, NDJSON carries documents only; the `add`, `delete`, `commit`, `optimize`, and `rollback` commands are not recognized.
-Use request parameters such as `commit` and `commitWithin`, or a separate request, for those.
+NDJSON carries documents only; the `add`, `delete`, `commit`, `optimize`, and `rollback` commands are not recognized, so use request parameters such as `commit` and `commitWithin` instead.
 
-Documents are mapped exactly as on the `/update/json/docs` path, described in xref:transforming-and-indexing-custom-json.adoc[].
-By default a nested JSON Object is *flattened* into dotted field names, so `{"id":"1","author":{"name":"Jan"}}` indexes `author.name`.
-Declare the paths that should instead become xref:indexing-nested-documents.adoc[child documents] with the `split` parameter, listing the document root first (`|` is URL encoded as `%7C`):
+Documents are mapped as on the `/update/json/docs` path, described in xref:transforming-and-indexing-custom-json.adoc[]: by default a nested JSON Object is *flattened* into dotted field names, so `{"id":"1","author":{"name":"Jan"}}` indexes `author.name`.
+Use the `split` parameter to declare the paths that should become xref:indexing-nested-documents.adoc[child documents] instead (`|` is URL encoded as `%7C`):
 
 [source,bash]
 ----
@@ -531,10 +524,8 @@ curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr
 '
 ----
 
-Because every line is already one document, `split` must begin with `/`; a `split` that skips the root, such as `split=/children`, is rejected.
-The `f` parameter for mapping or renaming fields works as it does on `/update/json/docs`; `srcField` is not supported, and `echo` and `mapUniqueKeyOnly` behave the same way.
-
-NDJSON does not support xref:partial-document-updates.adoc[atomic updates].
+The first `split` path must be the root `/`, since every line is already one document, and wildcards are not allowed in it.
+`f`, `echo` and `mapUniqueKeyOnly` work as on `/update/json/docs`; `srcField` is not supported, and neither are xref:partial-document-updates.adoc[atomic updates].
 
 === JSON Update Convenience Paths
 
