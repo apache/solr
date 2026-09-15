@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cli;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -26,22 +30,28 @@ import org.apache.solr.common.params.CollectionAdminParams;
 /** Supports snapshot-export command in the bin/solr script. */
 public class SnapshotExportTool extends ToolBase {
 
+  private static final DateTimeFormatter BACKUP_NAME_TIMESTAMP =
+      DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.ROOT).withZone(ZoneOffset.UTC);
+
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
           .hasArg()
           .argName("NAME")
           .required()
-          .desc("Name of collection to be snapshot.")
+          .desc("Name of the collection to be backed up.")
           .get();
 
+  /**
+   * Accepted only so that passing it can be rejected with an explanation. Selecting a named
+   * snapshot to export required the non-incremental backup format, which no longer exists.
+   */
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
           .hasArg()
           .argName("NAME")
-          .required()
-          .desc("Name of the snapshot to be exported.")
+          .desc("No longer supported; passing it fails with an error.")
           .get();
 
   private static final Option DEST_DIR_OPTION =
@@ -71,6 +81,15 @@ public class SnapshotExportTool extends ToolBase {
               "Specifies the async request identifier to be used during snapshot export preparation.")
           .get();
 
+  /** Parameters for the snapshot-export command, independent of the command line parser. */
+  record SnapshotExportParams(
+      String solrUrl,
+      String credentials,
+      String collectionName,
+      String destDir,
+      String backupRepo,
+      String asyncReqId) {}
+
   public SnapshotExportTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -94,28 +113,53 @@ public class SnapshotExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String destDir = cli.getOptionValue(DEST_DIR_OPTION);
-    String backupRepo = cli.getOptionValue(BACKUP_REPO_NAME_OPTION);
-    String asyncReqId = cli.getOptionValue(ASYNC_ID_OPTION);
-
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      exportSnapshot(solrClient, collectionName, snapshotName, destDir, backupRepo, asyncReqId);
+    if (cli.hasOption(SNAPSHOT_NAME_OPTION)) {
+      throw new IllegalArgumentException(
+          "--snapshot-name is no longer supported. Exporting a named snapshot required the "
+              + "non-incremental backup format, which was removed in Solr 11; this command now "
+              + "always backs up the collection's current state. Re-run without --snapshot-name.");
     }
+    SnapshotExportParams params =
+        new SnapshotExportParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(DEST_DIR_OPTION),
+            cli.getOptionValue(BACKUP_REPO_NAME_OPTION),
+            cli.getOptionValue(ASYNC_ID_OPTION));
+    exportSnapshot(params);
+  }
+
+  void exportSnapshot(SnapshotExportParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      exportSnapshot(
+          solrClient,
+          params.collectionName(),
+          params.destDir(),
+          params.backupRepo(),
+          params.asyncReqId());
+    }
+  }
+
+  /**
+   * The name of the backup this command creates. It is derived rather than supplied, because it
+   * names the backup being written, not a snapshot being read.
+   */
+  static String backupName(String collectionName, Instant when) {
+    return collectionName + "_" + BACKUP_NAME_TIMESTAMP.format(when);
   }
 
   public void exportSnapshot(
       SolrClient solrClient,
       String collectionName,
-      String snapshotName,
       String destPath,
       String backupRepo,
       String asyncReqId) {
+    String backupName = backupName(collectionName, Instant.now());
+    echo("Backing up collection " + collectionName + " as " + backupName + " in " + destPath);
     try {
       CollectionAdminRequest.Backup backup =
-          new CollectionAdminRequest.Backup(collectionName, snapshotName);
-      backup.setCommitName(snapshotName);
+          new CollectionAdminRequest.Backup(collectionName, backupName);
       backup.setIndexBackupStrategy(CollectionAdminParams.COPY_FILES_STRATEGY);
       backup.setLocation(destPath);
       if (backupRepo != null) {

@@ -388,11 +388,10 @@ public class ZkControllerTest extends SolrCloudTestCase {
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
         ClusterState clusterState = zkController.getClusterState();
 
-        Map<String, List<Replica>> replicasOnNode =
-            clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
-        assertNotNull("There should be replicas on the existing node", replicasOnNode);
-        List<Replica> replicas = replicasOnNode.get(collectionName);
-        assertNotNull("There should be replicas for the collection on the existing node", replicas);
+        List<Replica> replicas =
+            clusterState.getCollection(collectionName).getReplicasOnNode(nodeName);
+        assertFalse(
+            "There should be replicas for the collection on the existing node", replicas.isEmpty());
         assertEquals(
             "Wrong number of replicas for the collection on the existing node", 1, replicas.size());
         for (Replica replica : replicas) {

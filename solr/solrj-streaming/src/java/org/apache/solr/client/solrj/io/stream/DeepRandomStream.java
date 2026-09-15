@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to. Under the
@@ -295,8 +296,9 @@ public class DeepRandomStream extends TupleStream implements Expressible {
         } else {
           useParams = mParams;
         }
-
-        SolrStream solrStream = new SolrStream(shardUrl, useParams);
+        final var baseUrl = URLUtil.extractBaseUrl(shardUrl);
+        final var core = URLUtil.extractCoreFromCoreUrl(shardUrl);
+        SolrStream solrStream = new SolrStream(baseUrl, useParams, core);
         if (streamContext != null) {
           solrStream.setStreamContext(streamContext);
         }

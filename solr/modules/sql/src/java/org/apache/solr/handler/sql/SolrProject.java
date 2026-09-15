@@ -30,6 +30,7 @@ import org.apache.calcite.util.Pair;
 
 /** Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr. */
 class SolrProject extends Project implements SolrRel {
+  @SuppressWarnings("ReferenceEquality")
   SolrProject(
       RelOptCluster cluster,
       RelTraitSet traitSet,
@@ -37,6 +38,7 @@ class SolrProject extends Project implements SolrRel {
       List<? extends RexNode> projects,
       RelDataType rowType) {
     super(cluster, traitSet, input, projects, rowType);
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == input.getConvention();
   }

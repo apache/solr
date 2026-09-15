@@ -264,6 +264,8 @@ public class TimeRoutedAlias extends RoutedAlias {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // Aliases is replaced wholesale, so identity means "possibly changed"
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases = zkStateReader.getAliases();
     if (this.parsedCollectionsAliases != aliases) {

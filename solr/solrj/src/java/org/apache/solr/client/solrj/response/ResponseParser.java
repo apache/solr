@@ -34,6 +34,7 @@ public abstract class ResponseParser {
     assert validateContentTypes();
   }
 
+  @SuppressWarnings("ReferenceEquality") // Use of == is intentional here
   private boolean validateContentTypes() {
     Collection<String> contentTypes = getContentTypes();
     assert contentTypes == getContentTypes()

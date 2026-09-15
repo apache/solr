@@ -132,6 +132,9 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
    * @return Either a new FieldNameSelector or one of the input selectors if the combination lends
    *     itself to optimization.
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // SELECT_NO_FIELDS/SELECT_ALL_FIELDS are unique sentinels; identity
+  // check is intentional
   public static FieldNameSelector wrap(
       final FieldNameSelector includes, final FieldNameSelector excludes) {
 
