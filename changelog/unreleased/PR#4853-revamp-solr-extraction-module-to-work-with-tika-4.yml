@@ -1,0 +1,7 @@
+title: Revamp Solr Extraction Module to work with Tika 4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4853
+  url: https://github.com/apache/solr/pull/4853

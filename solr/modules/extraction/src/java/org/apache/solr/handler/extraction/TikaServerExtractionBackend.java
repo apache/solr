@@ -18,6 +18,8 @@ package org.apache.solr.handler.extraction;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
@@ -25,20 +27,28 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.filter.LegacyKeyMigrationFilter;
 import org.apache.tika.sax.BodyContentHandler;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -46,6 +56,8 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
@@ -53,10 +65,21 @@ import org.xml.sax.helpers.DefaultHandler;
  * import of org.apache.tika.sax.BodyContentHandler;
  */
 public class TikaServerExtractionBackend implements ExtractionBackend {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /**
    * Default maximum response size (100MB) to prevent excessive memory usage from large documents
    */
   public static final long DEFAULT_MAXCHARS_LIMIT = 100 * 1024 * 1024;
+
+  /** Minimum TikaServer major version this backend supports (relies on Tika 4.x-only APIs). */
+  private static final int MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION = 4;
+
+  private static final Pattern TIKASERVER_VERSION_PATTERN = Pattern.compile("Apache Tika (\\d+)");
+
+  // Short-lived: /version is a trivial static-text endpoint, so this shouldn't use the full
+  // extraction defaultTimeout (which can be minutes) and block concurrent requests behind it.
+  private static final Duration VERSION_CHECK_TIMEOUT = Duration.ofSeconds(10);
 
   private static final Object INIT_LOCK = new Object();
   private final String baseUrl;
@@ -64,6 +87,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
   private boolean tikaMetadataCompatibility;
+  private boolean tikaLegacyFieldNames;
+  private volatile boolean tikaServerVersionVerified = false;
+  private volatile String rejectedTikaServerVersionMessage;
   private HashMap<String, Object> initArgsMap = new HashMap<>();
   private final long maxCharsLimit;
 
@@ -105,6 +131,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     if (metaCompatObh != null) {
       this.tikaMetadataCompatibility = Boolean.parseBoolean(metaCompatObh.toString());
     }
+    Object legacyFieldNamesObj =
+        this.initArgsMap.get(ExtractingParams.TIKASERVER_LEGACY_FIELD_NAMES);
+    if (legacyFieldNamesObj != null) {
+      this.tikaLegacyFieldNames = Boolean.parseBoolean(legacyFieldNamesObj.toString());
+    }
     if (timeoutSeconds <= 0) {
       timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
     }
@@ -138,6 +169,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, bodyContentHandler, md);
       }
+      if (tikaLegacyFieldNames) {
+        migrateToLegacyTikaKeys(md);
+      }
       if (tikaMetadataCompatibility) {
         appendBackCompatTikaMetadata(md);
       }
@@ -158,6 +192,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, saxContentHandler, md);
       }
+      if (tikaLegacyFieldNames) {
+        migrateToLegacyTikaKeys(md);
+      }
       if (tikaMetadataCompatibility) {
         appendBackCompatTikaMetadata(md);
       }
@@ -173,7 +210,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
    *     request.tikaserverRecursive</code>
    */
   InputStream callTikaServer(InputStream inputStream, ExtractionRequest request) throws Exception {
-    String url = baseUrl + (request.tikaServerRecursive ? "/rmeta" : "/tika");
+    ensureSupportedTikaServerVersion();
+
+    // TikaServer's /tika and /rmeta endpoints return Markdown by default (TIKA-4663); Solr's
+    // SAX-based content handling requires XHTML/XML, hence the /xml path variants.
+    String url = baseUrl + (request.tikaServerRecursive ? "/rmeta/xml" : "/tika/xml");
 
     HttpClient client = acquiredResourcesRef.get().client;
 
@@ -202,20 +243,6 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
                   }));
     }
 
-    ExtractionMetadata md = buildMetadataFromRequest(request);
-    if (request.resourcePassword != null || request.passwordsMap != null) {
-      RegexRulesPasswordProvider passwordProvider = new RegexRulesPasswordProvider();
-      if (request.resourcePassword != null) {
-        passwordProvider.setExplicitPassword(request.resourcePassword);
-      }
-      if (request.passwordsMap != null) {
-        passwordProvider.setPasswordMap(request.passwordsMap);
-      }
-      String pwd = passwordProvider.getPassword(md);
-      if (pwd != null) {
-        req.headers(h -> h.add("Password", pwd)); // Tika Server expects this header if provided
-      }
-    }
     if (request.resourceName != null) {
       req.headers(
           h ->
@@ -273,7 +300,46 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
 
     int code = response.getStatus();
-    if (code < 200 || code >= 300) {
+    InputStream responseStream = listener.getInputStream();
+    // Tika 4.x's raw /tika* endpoints (non-recursive) return 422 whenever a container-level
+    // exception occurred during parsing -- including a non-aborting one like a writeLimit
+    // truncation -- but the body still carries whatever content was successfully extracted
+    // (there's no envelope to carry the exception itself on these endpoints; use /rmeta for
+    // that). A request that extracted nothing at all (e.g. an encrypted document TikaServer
+    // couldn't decrypt) also gets 422, but with an empty body -- that's always a hard failure,
+    // regardless of ignoreTikaException. Peek the first byte to tell the two apart.
+    if (code == 422 && !request.tikaServerRecursive) {
+      PushbackInputStream peekable = new PushbackInputStream(responseStream, 1);
+      int firstByte = peekable.read();
+      if (firstByte == -1) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "TikaServer "
+                + url
+                + " returned status 422 (Unprocessable Entity) with no content -- the document"
+                + " could not be parsed at all. If it's password-protected, note that Solr does"
+                + " not send a per-document password to TikaServer; the password must be"
+                + " configured directly on TikaServer itself.");
+      }
+      peekable.unread(firstByte);
+      if (!request.ignoreTikaException) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "TikaServer "
+                + url
+                + " returned status 422 (Unprocessable Entity): a container-level exception"
+                + " occurred during parsing (e.g. a writeLimit truncation). Partial content was"
+                + " extracted but is being discarded because ignoreTikaException=false; set"
+                + " ignoreTikaException=true to index the partial content instead, or use"
+                + " tikaserver.recursive=true against /rmeta for the exception detail.");
+      }
+      log.warn(
+          "TikaServer {} returned 422 (a container-level exception occurred during parsing); "
+              + "using the partial content it still returned because ignoreTikaException=true. "
+              + "Use tikaserver.recursive=true against /rmeta for the exception detail.",
+          url);
+      responseStream = peekable;
+    } else if (code < 200 || code >= 300) {
       SolrException.ErrorCode errorCode = SolrException.ErrorCode.getErrorCode(code);
       String reason = response.getReason();
       String msg =
@@ -285,9 +351,82 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       throw new SolrException(errorCode, msg);
     }
 
-    InputStream responseStream = listener.getInputStream();
     // Bound the amount of data we read from Tika Server to avoid excessive memory/CPU usage
     return new LimitingInputStream(responseStream, maxCharsLimit);
+  }
+
+  /**
+   * Verifies, once per backend instance, that the configured TikaServer reports a major version of
+   * at least {@link #MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION}. This backend relies on endpoints
+   * (e.g. {@code /tika/xml}, {@code /tika/config/xml}) and metadata keys (e.g. {@code tk:content})
+   * that only exist on TikaServer 4.x and newer; an older server would otherwise fail with
+   * confusing 404s or missing-metadata errors instead of a clear diagnostic.
+   *
+   * <p>Connectivity/parsing failures are retried on the next call rather than cached, since
+   * TikaServer may simply not be up yet. A definitively too-old version, however, is a permanent
+   * fact, so that verdict is cached to avoid re-probing the network on every extraction request.
+   *
+   * <p>Deliberately not synchronized: while unverified, concurrent extraction requests may each
+   * probe {@code /version} independently rather than queue behind one shared lock. That's cheap and
+   * self-resolving once verified, and avoids turning a TikaServer outage into concurrent requests
+   * serialized behind a single blocking network call instead of each failing in parallel.
+   */
+  private void ensureSupportedTikaServerVersion() throws Exception {
+    if (tikaServerVersionVerified) {
+      return;
+    }
+    if (rejectedTikaServerVersionMessage != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, rejectedTikaServerVersionMessage);
+    }
+    HttpClient client = acquiredResourcesRef.get().client;
+    String versionUrl = baseUrl + "/version";
+    ContentResponse response;
+    try {
+      response =
+          client
+              .newRequest(versionUrl)
+              .timeout(VERSION_CHECK_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+              .send();
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not determine the TikaServer version at " + versionUrl + ": " + e.getMessage(),
+          e);
+    }
+    if (response.getStatus() != 200) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "TikaServer " + versionUrl + " returned status " + response.getStatus());
+    }
+    String versionText = response.getContentAsString().trim();
+    Matcher m = TIKASERVER_VERSION_PATTERN.matcher(versionText);
+    if (!m.find()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not parse a TikaServer version from "
+              + versionUrl
+              + "'s response: '"
+              + versionText
+              + "'");
+    }
+    int majorVersion = Integer.parseInt(m.group(1));
+    if (majorVersion < MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION) {
+      rejectedTikaServerVersionMessage =
+          "TikaServer at "
+              + baseUrl
+              + " reports version '"
+              + versionText
+              + "', but Solr's 'tikaserver' extraction backend requires TikaServer "
+              + MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION
+              + ".x or newer (it relies on endpoints and metadata keys introduced in that"
+              + " version). Upgrade the TikaServer, or point tikaserver.url at a TikaServer "
+              + MIN_SUPPORTED_TIKASERVER_MAJOR_VERSION
+              + ".x+ instance.";
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, rejectedTikaServerVersionMessage);
+    }
+    tikaServerVersionVerified = true;
   }
 
   private static class LimitingInputStream extends InputStream {
@@ -442,6 +581,37 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       if (md.getFirst(sourceField) != null && md.getFirst(targetField) == null) {
         md.add(targetField, md.get(sourceField));
       }
+    }
+  }
+
+  /*
+   * Renames metadata keys from their Tika 4.x form back to their Tika 3.x form (e.g.
+   * "tk:parsed-by" becomes "X-TIKA:Parsed-By"), using Tika's own bundled LegacyKeyMigrationFilter
+   * migration table. A key with no Tika 3.x equivalent is dropped, and a migrated key replaces
+   * its Tika 4.x original rather than being added alongside it.
+   */
+  private void migrateToLegacyTikaKeys(ExtractionMetadata md) {
+    // addTrusted() bypasses Metadata's reserved-key checks (e.g.
+    // "tk:content-type-parser-override"),
+    // which are meant to guard against callers hand-building keys that only Tika's own parsers
+    // should set; here we're reconstructing a Metadata Tika itself already produced.
+    Metadata tikaMd = new Metadata();
+    md.forEach((name, values) -> values.forEach(value -> tikaMd.addTrusted(name, value)));
+
+    LegacyKeyMigrationFilter.Config config = new LegacyKeyMigrationFilter.Config();
+    config.direction = LegacyKeyMigrationFilter.Direction.V4_TO_V3;
+    try {
+      new LegacyKeyMigrationFilter(config).filter(List.of(tikaMd));
+    } catch (TikaException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to migrate Tika metadata key names to their Tika 3.x equivalents",
+          e);
+    }
+
+    md.clear();
+    for (String name : tikaMd.names()) {
+      md.add(name, Arrays.asList(tikaMd.getValues(name)));
     }
   }
 
