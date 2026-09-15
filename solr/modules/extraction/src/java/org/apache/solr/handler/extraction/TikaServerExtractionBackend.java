@@ -27,8 +27,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -42,6 +44,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.filter.LegacyKeyMigrationFilter;
 import org.apache.tika.sax.BodyContentHandler;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -82,6 +87,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private final Duration defaultTimeout;
   private final TikaServerParser tikaServerResponseParser = new TikaServerParser();
   private boolean tikaMetadataCompatibility;
+  private boolean tikaLegacyFieldNames;
   private volatile boolean tikaServerVersionVerified = false;
   private volatile String rejectedTikaServerVersionMessage;
   private HashMap<String, Object> initArgsMap = new HashMap<>();
@@ -125,6 +131,11 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     if (metaCompatObh != null) {
       this.tikaMetadataCompatibility = Boolean.parseBoolean(metaCompatObh.toString());
     }
+    Object legacyFieldNamesObj =
+        this.initArgsMap.get(ExtractingParams.TIKASERVER_LEGACY_FIELD_NAMES);
+    if (legacyFieldNamesObj != null) {
+      this.tikaLegacyFieldNames = Boolean.parseBoolean(legacyFieldNamesObj.toString());
+    }
     if (timeoutSeconds <= 0) {
       timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
     }
@@ -158,6 +169,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, bodyContentHandler, md);
       }
+      if (tikaLegacyFieldNames) {
+        migrateToLegacyTikaKeys(md);
+      }
       if (tikaMetadataCompatibility) {
         appendBackCompatTikaMetadata(md);
       }
@@ -177,6 +191,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
         tikaServerResponseParser.parseRmetaJson(tikaResponse, saxContentHandler, md);
       } else {
         tikaServerResponseParser.parseXml(tikaResponse, saxContentHandler, md);
+      }
+      if (tikaLegacyFieldNames) {
+        migrateToLegacyTikaKeys(md);
       }
       if (tikaMetadataCompatibility) {
         appendBackCompatTikaMetadata(md);
@@ -564,6 +581,37 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       if (md.getFirst(sourceField) != null && md.getFirst(targetField) == null) {
         md.add(targetField, md.get(sourceField));
       }
+    }
+  }
+
+  /*
+   * Renames metadata keys from their Tika 4.x form back to their Tika 3.x form (e.g.
+   * "tk:parsed-by" becomes "X-TIKA:Parsed-By"), using Tika's own bundled LegacyKeyMigrationFilter
+   * migration table. A key with no Tika 3.x equivalent is dropped, and a migrated key replaces
+   * its Tika 4.x original rather than being added alongside it.
+   */
+  private void migrateToLegacyTikaKeys(ExtractionMetadata md) {
+    // addTrusted() bypasses Metadata's reserved-key checks (e.g.
+    // "tk:content-type-parser-override"),
+    // which are meant to guard against callers hand-building keys that only Tika's own parsers
+    // should set; here we're reconstructing a Metadata Tika itself already produced.
+    Metadata tikaMd = new Metadata();
+    md.forEach((name, values) -> values.forEach(value -> tikaMd.addTrusted(name, value)));
+
+    LegacyKeyMigrationFilter.Config config = new LegacyKeyMigrationFilter.Config();
+    config.direction = LegacyKeyMigrationFilter.Direction.V4_TO_V3;
+    try {
+      new LegacyKeyMigrationFilter(config).filter(List.of(tikaMd));
+    } catch (TikaException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to migrate Tika metadata key names to their Tika 3.x equivalents",
+          e);
+    }
+
+    md.clear();
+    for (String name : tikaMd.names()) {
+      md.add(name, Arrays.asList(tikaMd.getValues(name)));
     }
   }
 

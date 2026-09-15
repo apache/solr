@@ -33,6 +33,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
 import org.junit.ClassRule;
@@ -99,6 +100,39 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         assertFalse(cts.isEmpty());
         // Tika may append charset; be flexible
         assertTrue(cts.getFirst().startsWith("text/plain"));
+      }
+    }
+  }
+
+  @Test
+  public void testLegacyFieldNamesMigratesTika4KeysToTika3Names() throws Exception {
+    byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
+
+    // First, extract without the flag to capture the Tika 4.x key names/values as a baseline.
+    ExtractionMetadata tika4Metadata;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        tika4Metadata =
+            backend.extract(in, newRequest("test.txt", "text/plain", "text")).getMetadata();
+      }
+    }
+    assertNotNull(tika4Metadata.getFirst("tk:parsed-by"));
+
+    NamedList<Object> initArgs = new NamedList<>();
+    initArgs.add(ExtractingParams.TIKASERVER_LEGACY_FIELD_NAMES, "true");
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(
+            tikaContainer.getBaseUrl(),
+            180,
+            initArgs,
+            TikaServerExtractionBackend.DEFAULT_MAXCHARS_LIMIT)) {
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ExtractionMetadata md =
+            backend.extract(in, newRequest("test.txt", "text/plain", "text")).getMetadata();
+        // The Tika 4.x key is gone, replaced by its Tika 3.x equivalent with the same value.
+        assertNull(md.getFirst("tk:parsed-by"));
+        assertEquals(tika4Metadata.getFirst("tk:parsed-by"), md.getFirst("X-TIKA:Parsed-By"));
       }
     }
   }

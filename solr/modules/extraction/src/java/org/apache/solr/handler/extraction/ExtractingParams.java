@@ -161,4 +161,12 @@ public interface ExtractingParams {
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
   String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
+
+  /**
+   * If true, migrate metadata key names emitted by Tika 4.x back to their Tika 3.x equivalents
+   * (e.g. {@code tk:parsed-by} becomes {@code X-TIKA:Parsed-By}), using Tika's own bundled {@code
+   * LegacyKeyMigrationFilter} migration table. Keys with no Tika 3.x equivalent are dropped;
+   * migrated keys replace their Tika 4.x originals rather than being added alongside them.
+   */
+  String TIKASERVER_LEGACY_FIELD_NAMES = "tikaserver.legacyFieldNames";
 }

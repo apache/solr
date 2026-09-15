@@ -49,9 +49,13 @@ The extraction module's `tikaserver` backend now requires Apache Tika Server 4.x
 Tika 4 consolidated all of its own generated metadata keys under a single lowercase `tk:` prefix, replacing the previous `X-TIKA:*` and `X-Parsed-By` keys.
 For example, `X-TIKA:Parsed-By-Full-Set` is now `tk:parsed-by-full-set`, and `X-Parsed-By` is now `tk:parsed-by`.
 Tika 4 also changed the word-separator style of several of its own namespaced keys from camelCase to hyphenated, e.g., `pdf:hasXFA` is now `pdf:has-xfa` and `pdf:pdfVersion` is now `pdf:pdf-version`; after Solr's `lowernames` mapping this changes the resulting field name too (`pdf_hasxfa` becomes `pdf_has_xfa`, `pdf_pdfversion` becomes `pdf_pdf_version`).
-Tika 4 also stopped emitting several redundant top-level date aliases that duplicated `dcterms:created`/`dcterms:modified`: `created`, `creation_date`, `date`, `last_modified`, `last_save_date`, `meta_creation_date`, and `meta_save_date`.
+Several redundant top-level aliases that duplicated other fields -- `created`, `creation_date`, `date`, `last_modified`, `last_save_date`, `meta_creation_date`, `meta_save_date`, `title`, `producer`, and the bare `X-Parsed-By` key -- are also gone as of Tika 4.
+That change is not specific to this upgrade, though: it already happened earlier, in the Tika 3.x line, so anyone upgrading directly from Solr 9.x's bundled Tika 1.28.5 will notice their absence regardless of the `tikaserver.legacyFieldNames` setting described below.
 
-Any schema, `fmap` mapping, or downstream code that references the old key names must be updated to the Tika 4 equivalents; Solr does not translate between them.
+Any schema, `fmap` mapping, or downstream code that references the old key names must be updated to the Tika 4 equivalents.
+Alternatively, set `tikaserver.legacyFieldNames` to `true` in `solrconfig.xml` to have Solr rename Tika 4's key names back to their Tika 3.x equivalents, using Tika's own bundled key-migration table.
+This restores Tika 3.x-era names precisely -- verified against a real Tika 3.3.1 server, 39 of 41 metadata fields for a representative PDF matched exactly, with only one field (`X-TIKA:content_handler`) permanently absent from Tika 4.
+It does not reach back further to retired Tika 1.x-era names like `X-Parsed-By`, `title`, and `producer`, since those were already gone before Tika 4.
 
 Additionally, the `resource.password` and `passwordsFile` parameters are no longer supported by the `tikaserver` backend and are rejected with a `BAD_REQUEST` error if set: Tika Server 4.x has no simple per-request way to accept a password, and Solr does not send per-request parser configuration to Tika Server.
 To index encrypted documents, configure a password directly on your Tika Server instance instead.

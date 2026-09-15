@@ -398,6 +398,21 @@ This parameter can only be configured in the request handler configuration (`sol
 +
 Example: In `solrconfig.xml`: `<long name="tikaserver.maxChars">1000000</long>`
 
+`tikaserver.legacyFieldNames`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+When enabled, Solr renames the metadata keys Tika 4.x emits back to their Tika 3.x equivalents (for example, `tk:parsed-by` becomes `X-TIKA:Parsed-By`), using Tika's own bundled key-migration table. A key with no Tika 3.x equivalent is dropped, and a migrated key replaces its Tika 4.x original rather than being added alongside it.
+This can ease migration for a schema or downstream code written against a Solr/Tika 3.x deployment.
+See xref:upgrade-notes:major-changes-in-solr-11.adoc#apache-tika-4[Apache Tika 4] for background on the Tika 4.x key renaming.
++
+Only applicable for the `tikaserver` backend. Can only be set in `solrconfig.xml`, not per request.
++
+Example: In `solrconfig.xml`: `<bool name="tikaserver.legacyFieldNames">true</bool>`
+
 `tikaserver.recursive`::
 +
 [%autowidth,frame=none]
