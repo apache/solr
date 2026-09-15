@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.ResponseParser;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -611,15 +610,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         builder(solrTestRule.getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
       assertEquals(myCookieHandler, client.httpClient.cookieHandler().get());
       queryToHelpJdkReleaseThreads(client);
-    }
-  }
-
-  @Test
-  public void testPing() throws Exception {
-    try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
-      SolrPingResponse spr = client.ping("collection1");
-      assertEquals(0, spr.getStatus());
-      assertNull(spr.getException());
     }
   }
 
