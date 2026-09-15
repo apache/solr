@@ -44,7 +44,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * <code>TextField</code> is the basic type for configurable text analysis. Analyzers for field
  * types using this implementation should be defined in the schema.
  */
-public class TextField extends FieldType {
+public class TextField extends FieldType implements FieldType.ExternalizeStoredValuesAsObjects {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
   protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
