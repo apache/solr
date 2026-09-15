@@ -32,7 +32,7 @@ When using the Solr Cell framework, it is helpful to keep the following in mind:
 
 * Tika automatically determines the input document type (e.g., Word, PDF, HTML) and extracts the content appropriately.
 You can explicitly specify a MIME type for Tika with the `stream.type` parameter.
-See https://tika.apache.org/docs/4.0.x/using-tika/index.html for the file types supported.
+See https://tika.apache.org/docs/{dep-version-tika}/formats.html for the file types supported.
 * Tika Server synthesizes an XHTML document from the core content of the parsed document and returns it to Solr over HTTP (Solr specifically requests the XML output variant, since Tika Server's default output format is Markdown -- see <<Tika Server>> above).
 Solr Cell then parses that response with its own SAX parser, feeding the resulting events into a http://www.saxproject.org/quickstart.html[SAX] ContentHandler to create one or more text fields from the content.
 Tika Server exposes document metadata as well (apart from the XHTML).
@@ -482,7 +482,7 @@ In this case, you could additionally define a rule in the Schema to not index th
 |===
 +
 When extracting, only return Tika XHTML content that satisfies the given XPath expression.
-See https://tika.apache.org/docs/4.0.x/using-tika/server/index.html for details on Tika Server's output formats; the structure of the XHTML varies with the format being parsed.
+See https://tika.apache.org/docs/{dep-version-tika}/using-tika/server/index.html for details on Tika Server's output formats; the structure of the XHTML varies with the format being parsed.
 Also see the section <<Defining XPath Expressions>> for an example.
 
 === solrconfig.xml Configuration
