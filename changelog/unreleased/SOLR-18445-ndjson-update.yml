@@ -1,7 +1,7 @@
 title: >
   The /update handler now accepts newline delimited JSON (ND-JSON / JSON Lines),
   selected by `Content-Type: application/x-ndjson` or by posting to the new `/update/ndjson`
-  path. Documents are streamed and indexed one at a time, which suits large bulk loads.
+  path.
 type: added
 authors:
   - name: Jan Høydahl
