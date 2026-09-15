@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
+import java.util.function.BooleanSupplier;
 import org.apache.solr.search.QueryLimit;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -26,22 +27,22 @@ import org.slf4j.LoggerFactory;
 
 public class QueryLimitsTestInjectionRule implements TestRule {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final BooleanSupplier FALSE = () -> false;
+  private static BooleanSupplier enableSupplier;
 
-  private static boolean enabled;
-
-  public QueryLimitsTestInjectionRule(boolean enabled) {
-    QueryLimitsTestInjectionRule.enabled = enabled;
+  public QueryLimitsTestInjectionRule(BooleanSupplier enableSupplier) {
+    QueryLimitsTestInjectionRule.enableSupplier = enableSupplier;
   }
 
   @Override
   public Statement apply(final Statement base, final Description description) {
-    if (!enabled) {
+    if (!enableSupplier.getAsBoolean()) {
       return base;
     }
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
-        if (!enabled) {
+        if (!enableSupplier.getAsBoolean()) {
           base.evaluate();
           return;
         }
@@ -70,11 +71,8 @@ public class QueryLimitsTestInjectionRule implements TestRule {
     };
   }
 
+  /** Disables for the whole test suite (class), not just for this individual test. */
   public static void disable() {
-    QueryLimitsTestInjectionRule.enabled = false;
-  }
-
-  public static boolean isEnabled() {
-    return enabled;
+    QueryLimitsTestInjectionRule.enableSupplier = FALSE;
   }
 }

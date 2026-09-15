@@ -92,7 +92,7 @@ public class SolrTestCase extends LuceneTestCase {
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(new LogLevelTestRule())
-          .around(new QueryLimitsTestInjectionRule(rarely())) // sometimes use QueryLimits
+          .around(new QueryLimitsTestInjectionRule(LuceneTestCase::rarely))
           .around(
               new TestRuleAdapter() {
                 @Override
