@@ -30,8 +30,8 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   
   <!-- This element is specifically for testing property substitution -->
-  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
-            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
+  <propTest attr1="${tests.solr.sys.prop1}-$${literal}"
+            attr2="${non.existent.sys.prop:default-from-config}">prefix-${tests.solr.sys.prop2}-suffix</propTest>
 
   <requestHandler name="/select" class="solr.SearchHandler" />
 </config>
