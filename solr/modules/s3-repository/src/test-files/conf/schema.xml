@@ -17,7 +17,7 @@
 -->
 <schema name="minimal" version="1.7">
   <fieldType name="string" class="solr.StrField"/>
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
   <!-- for versioning -->

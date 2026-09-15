@@ -53,7 +53,7 @@ public class TestConfigSetImmutable extends RestTestBase {
         "{\"immutable\":\"true\"}",
         StandardCharsets.UTF_8);
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
 
     createJettyAndHarness(tmpSolrHome, "solrconfig-schemaless.xml", "schema-rest.xml");
   }

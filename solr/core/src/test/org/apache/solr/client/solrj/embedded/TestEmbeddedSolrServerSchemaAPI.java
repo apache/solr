@@ -48,8 +48,8 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    assertNull("no system props clash please", System.getProperty("managed.schema.mutable"));
-    System.setProperty("managed.schema.mutable", "" + random().nextBoolean());
+    assertNull("no system props clash please", System.getProperty("tests.solr.schema.managed.mutable"));
+    System.setProperty("tests.solr.schema.managed.mutable", "" + random().nextBoolean());
     Path tmpHome = createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
     copyMinConf(coreDir, null, "solrconfig-managed-schema.xml");
@@ -75,7 +75,7 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testSchemaAddFieldAndVerifyExistence() throws Exception {
-    assumeTrue("it needs to amend schema", Boolean.getBoolean("managed.schema.mutable"));
+    assumeTrue("it needs to amend schema", Boolean.getBoolean("tests.solr.schema.managed.mutable"));
     SchemaResponse.UpdateResponse addFieldResponse =
         new SchemaRequest.AddField(fieldAttributes).process(server);
 
@@ -95,7 +95,7 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testSchemaAddFieldAndFailOnImmutable() {
-    assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
+    assumeFalse("it needs a readonly schema", Boolean.getBoolean("tests.solr.schema.managed.mutable"));
 
     SchemaRequest.AddField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddField(fieldAttributes);

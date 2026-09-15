@@ -23,7 +23,7 @@
     <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
-    <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+    <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
     <mergeScheduler class="${solr.tests.mergeScheduler}" />
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
@@ -57,7 +57,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">

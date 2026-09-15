@@ -49,7 +49,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     // choose a directory factory
     expectVersionsAfterRestart = random().nextBoolean();
     System.setProperty(
-        "solr.directoryFactory",
+        "tests.solr.directory.factory",
         (expectVersionsAfterRestart
             ? StandardDirectoryFactory.class.getCanonicalName()
             : MockDirectoryFactory.class.getCanonicalName()));

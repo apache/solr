@@ -28,7 +28,7 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "false");
+    System.setProperty("tests.solr.schema.managed.mutable", "false");
     configureCluster(1).configure();
   }
 

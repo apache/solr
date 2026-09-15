@@ -118,7 +118,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     configureCluster(1).withSecurityJson(getSecurityJson()).configure();
   }
 

@@ -46,7 +46,7 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     configureCluster(2)
         .addConfig("managed", configset("cloud-managed"))
         .addConfig("dynamic", configset("cloud-dynamic"))

@@ -97,7 +97,7 @@ public class SchemaTest extends RestTestBase {
     Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(getFile("solrj/solr/collection1").getParent(), tmpSolrHome);
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml");

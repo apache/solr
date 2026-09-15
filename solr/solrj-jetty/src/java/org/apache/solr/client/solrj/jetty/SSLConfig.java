@@ -93,7 +93,7 @@ public class SSLConfig {
    *
    * <p>If the SSLConfig param is null, then this method will return null unless the <code>
    * tests.jettySsl</code> system property is true, in which case standard "javax.net.ssl.*" system
-   * properties will be used instead, along with "tests.jettySsl.clientAuth".
+   * properties will be used instead, along with "tests.jettySsl.clientAuth.enabled".
    *
    * @see #createContextFactory()
    */
@@ -178,7 +178,7 @@ public class SSLConfig {
     if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
       sslcontext.setTrustStorePassword(System.getProperty("javax.net.ssl.trustStorePassword"));
     }
-    sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
+    sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth.enabled"));
 
     return sslcontext;
   }

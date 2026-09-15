@@ -372,7 +372,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void useFactory(String factory) throws Exception {
     // allow calling more than once so a subclass can override a base class
     if (!changedFactory) {
-      savedFactory = System.getProperty("solr.DirectoryFactory");
+      savedFactory = System.getProperty("tests.solr.directory.factory");
     }
 
     if (factory == null) {
@@ -381,7 +381,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
               ? "solr.NRTCachingDirectoryFactory"
               : "solr.StandardDirectoryFactory"; // test the default most of the time
     }
-    System.setProperty("solr.directoryFactory", factory);
+    System.setProperty("tests.solr.directory.factory", factory);
     changedFactory = true;
   }
 
@@ -389,7 +389,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (!changedFactory) return;
     changedFactory = false;
     if (savedFactory != null) {
-      System.setProperty("solr.directoryFactory", savedFactory);
+      System.setProperty("tests.solr.directory.factory", savedFactory);
       savedFactory = null;
     }
   }
@@ -460,8 +460,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
     System.setProperty(
-        "solr.tests.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
-    System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
+        "tests.solr.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
+    System.setProperty("tests.solr.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
 
     String mergeSchedulerClass = iwc.getMergeScheduler().getClass().getName();
     if (mergeSchedulerClass.contains("$")) {
@@ -2703,7 +2703,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  public static final String NUMERIC_DOCVALUES_SYSPROP = "solr.tests.numeric.dv";
+  public static final String NUMERIC_DOCVALUES_SYSPROP = "tests.solr.numeric.dv.enabled";
 
   public static final String UPDATELOG_SYSPROP = "solr.tests.ulog";
 

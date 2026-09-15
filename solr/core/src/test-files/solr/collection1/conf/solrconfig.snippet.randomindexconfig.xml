@@ -31,9 +31,9 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
 
   <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
-  <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+  <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
   <maxCommitMergeWaitTime>${solr.tests.maxCommitMergeWaitTime:-1}</maxCommitMergeWaitTime>
-  <ramPerThreadHardLimitMB>${solr.tests.ramPerThreadHardLimitMB}</ramPerThreadHardLimitMB>
+  <ramPerThreadHardLimitMB>${tests.solr.ramPerThreadHardLimitMB}</ramPerThreadHardLimitMB>
 
   <mergeScheduler class="${solr.tests.mergeScheduler}" />
 

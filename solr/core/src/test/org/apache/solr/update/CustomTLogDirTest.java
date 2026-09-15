@@ -37,7 +37,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
       new EmbeddedSolrServerTestRule() {
         @Override
         protected void before() {
-          System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
+          System.setProperty("tests.solr.directory.factory", "solr.NRTCachingDirectoryFactory");
           solrTestRule.startSolr();
         }
       };

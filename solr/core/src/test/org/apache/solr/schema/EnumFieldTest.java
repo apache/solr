@@ -40,7 +40,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty(
-        "solr.tests.EnumFieldTest.indexed", Boolean.toString(random().nextBoolean()));
+        "tests.solr.EnumFieldTest.indexed.enabled", Boolean.toString(random().nextBoolean()));
     doInitCore();
   }
 
@@ -52,7 +52,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testEnumSchema() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     IndexSchema schema = h.getCore().getLatestSchema();
 
@@ -66,7 +66,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testEnumRangeSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -130,7 +130,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testMultivaluedEnumRangeSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -213,7 +213,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testBogusEnumSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -241,7 +241,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testMultivaluedBogusEnumSearch() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -270,7 +270,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testBogusEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     try (ErrorLogMuter blabla =
             ErrorLogMuter.regex("Unknown value for enum field: " + FIELD_NAME + ", value: blabla");
@@ -291,7 +291,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testMultivaluedBogusEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     try (ErrorLogMuter blabla =
             ErrorLogMuter.regex(
@@ -312,7 +312,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testKnownIntegerEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -331,7 +331,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testMultivaluedKnownIntegerEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -354,11 +354,11 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testEnumSort() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
     assumeFalse(
         "Skipping testing of unindexed EnumField without docValues, which is unsupported.",
-        System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
-            && System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.EnumFieldTest.indexed.enabled").equals("false")
+            && System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
     assertU(adoc("id", "0", FIELD_NAME, "Not Available"));
@@ -424,7 +424,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testMultivaluedEnumSort() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
     assertU(adoc("id", "0", MV_FIELD_NAME, "Not Available")); // Single value
@@ -507,11 +507,11 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testSetQuery() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
     assumeFalse(
         "Skipping testing of unindexed EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
-            && System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.EnumFieldTest.indexed.enabled").equals("false")
+            && System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -572,11 +572,11 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testMultivaluedSetQuery() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
     assumeFalse(
         "Skipping testing of unindexed EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.EnumFieldTest.indexed").equals("false")
-            && System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.EnumFieldTest.indexed.enabled").equals("false")
+            && System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 
@@ -640,7 +640,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   public void testEnumFieldTypeWithoutDocValues() throws Exception {
     assumeTrue(
         "Only testing EnumFieldType without docValues.",
-        System.getProperty("solr.tests.numeric.dv").equals("false"));
+        System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     try {
       deleteCore();
@@ -659,7 +659,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testFacetEnumSearch() throws Exception {
     assumeFalse(
-        "This requires docValues", System.getProperty("solr.tests.numeric.dv").equals("false"));
+        "This requires docValues", System.getProperty("tests.solr.numeric.dv.enabled").equals("false"));
 
     clearIndex();
 

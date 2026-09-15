@@ -25,7 +25,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based, not persistent, and doesn't work with replication. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.StandardDirectoryFactory}"/>
 
   <dataDir>${solr.core0.data.dir:}</dataDir>
 

@@ -19,7 +19,7 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <indexConfig>

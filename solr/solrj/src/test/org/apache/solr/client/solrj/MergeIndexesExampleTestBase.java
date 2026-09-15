@@ -58,7 +58,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   @Override
   public void setUp() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
     super.setUp();
     Path dataDir1 = createTempDir();
     // setup datadirs

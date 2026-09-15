@@ -74,12 +74,12 @@ public class ChaosMonkey {
   private Map<String, List<CloudJettyRunner>> shardToJetty;
 
   private static final Boolean MONKEY_ENABLED =
-      Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.enabled", "true"));
+      Boolean.valueOf(System.getProperty("tests.solr.cloud.cm.enabled", "true"));
   // NOTE: CONN_LOSS and EXP are currently being set to "false" intentionally here. Remove the
   // default value once we know tests pass reliably under those conditions
   private static final String CONN_LOSS =
-      System.getProperty("solr.tests.cloud.cm.connloss.enabled", "false");
-  private static final String EXP = System.getProperty("solr.tests.cloud.cm.exp", "false");
+      System.getProperty("tests.solr.cloud.cm.connloss.enabled", "false");
+  private static final String EXP = System.getProperty("tests.solr.cloud.cm.exp.enabled", "false");
 
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;

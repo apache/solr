@@ -18,7 +18,7 @@
 
 <schema name="schema-docValuesMulti" version="1.7">
 
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>

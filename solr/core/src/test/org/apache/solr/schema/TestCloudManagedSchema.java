@@ -43,7 +43,7 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void initSysProperties() {
-    System.setProperty("managed.schema.mutable", "false");
+    System.setProperty("tests.solr.schema.managed.mutable", "false");
     System.setProperty("solr.index.updatelog.enabled", "true");
   }
 

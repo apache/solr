@@ -26,7 +26,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
 
   <!-- for postingsFormat="..." -->
   <codecFactory name="CodecFactory" class="solr.SchemaCodecFactory" />

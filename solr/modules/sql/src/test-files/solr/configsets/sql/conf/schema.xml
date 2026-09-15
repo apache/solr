@@ -45,12 +45,12 @@
        1.6: useDocValuesAsStored defaults to true.
        1.7: docValues defaults to true, uninvertible defaults to false.
      -->
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" positionIncrementGap="0"/>
 
-  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tint" class="${tests.solr.IntegerFieldType}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" precisionStep="8" positionIncrementGap="0"/>
@@ -139,8 +139,8 @@
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
-  <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true" precisionStep="6"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true" precisionStep="6"/>
 
   <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
     <analyzer type="index">

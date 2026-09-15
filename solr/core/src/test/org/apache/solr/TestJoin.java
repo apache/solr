@@ -45,8 +45,8 @@ public class TestJoin extends SolrTestCaseJ4 {
     System.setProperty("solr.filterCache.async", "true");
 
     // all points change at the same time point fields need docvalues
-    if (System.getProperty("solr.tests.IntegerFieldType").contains("Point")) {
-      System.setProperty("solr.tests.numeric.dv", "true");
+    if (System.getProperty("tests.solr.IntegerFieldType").contains("Point")) {
+      System.setProperty("tests.solr.numeric.dv.enabled", "true");
     }
 
     initCore("solrconfig.xml", "schema12.xml");

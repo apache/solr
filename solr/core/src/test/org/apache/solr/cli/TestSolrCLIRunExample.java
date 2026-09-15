@@ -65,7 +65,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         "FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
         Path.of(".").toAbsolutePath().toString().contains(" "));
     // to be true
-    System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "solr.NRTCachingDirectoryFactory");
   }
 
   /**

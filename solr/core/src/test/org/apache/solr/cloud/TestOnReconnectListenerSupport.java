@@ -36,7 +36,7 @@ public class TestOnReconnectListenerSupport extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "false");
+    System.setProperty("tests.solr.schema.managed.mutable", "false");
     configureCluster(1).addConfig("conf1", configset("cloud-managed")).configure();
   }
 

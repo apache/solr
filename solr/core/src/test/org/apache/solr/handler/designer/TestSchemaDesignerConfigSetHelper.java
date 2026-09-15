@@ -55,7 +55,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, ExternalPaths.DEFAULT_CONFIGSET)
         .configure();

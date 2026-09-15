@@ -29,7 +29,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   // TODO: fix this test to not require FSDirectory
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig-spellchecker.xml", "schema-spellchecker.xml");
   }
 

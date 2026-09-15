@@ -103,7 +103,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   @BeforeClass
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
   }
 
   @Before

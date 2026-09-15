@@ -214,45 +214,45 @@ NOTE: Tests expect every field in this schema to be sortable.
   <fieldType name="bin_dv_first" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}"/>
-  <fieldType name="int_last" class="${solr.tests.IntegerFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
-  <fieldType name="int_first" class="${solr.tests.IntegerFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingFirst="true"/>
-  <fieldType name="int_dv" class="${solr.tests.IntegerFieldType}" stored="true" indexed="false" docValues="true"/>
-  <fieldType name="int_dv_last" class="${solr.tests.IntegerFieldType}" stored="true" indexed="false" docValues="true"
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}"/>
+  <fieldType name="int_last" class="${tests.solr.IntegerFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="int_first" class="${tests.solr.IntegerFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingFirst="true"/>
+  <fieldType name="int_dv" class="${tests.solr.IntegerFieldType}" stored="true" indexed="false" docValues="true"/>
+  <fieldType name="int_dv_last" class="${tests.solr.IntegerFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
-  <fieldType name="int_dv_first" class="${solr.tests.IntegerFieldType}" stored="true" indexed="false" docValues="true"
+  <fieldType name="int_dv_first" class="${tests.solr.IntegerFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
-  <fieldType name="long" class="${solr.tests.LongFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}"/>
-  <fieldType name="long_last" class="${solr.tests.LongFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
-  <fieldType name="long_first" class="${solr.tests.LongFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingFirst="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}"/>
+  <fieldType name="long_last" class="${solr.tests.LongFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="long_first" class="${solr.tests.LongFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingFirst="true"/>
   <fieldType name="long_dv" class="${solr.tests.LongFieldType}" stored="true" indexed="false" docValues="true"/>
   <fieldType name="long_dv_last" class="${solr.tests.LongFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
   <fieldType name="long_dv_first" class="${solr.tests.LongFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}"/>
-  <fieldType name="float_last" class="${solr.tests.FloatFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
-  <fieldType name="float_first" class="${solr.tests.FloatFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingFirst="true"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}"/>
+  <fieldType name="float_last" class="${solr.tests.FloatFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="float_first" class="${solr.tests.FloatFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingFirst="true"/>
   <fieldType name="float_dv" class="${solr.tests.FloatFieldType}" stored="true" indexed="false" docValues="true"/>
   <fieldType name="float_dv_last" class="${solr.tests.FloatFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
   <fieldType name="float_dv_first" class="${solr.tests.FloatFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}"/>
-  <fieldType name="double_last" class="${solr.tests.DoubleFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
-  <fieldType name="double_first" class="${solr.tests.DoubleFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingFirst="true"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}"/>
+  <fieldType name="double_last" class="${solr.tests.DoubleFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="double_first" class="${solr.tests.DoubleFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingFirst="true"/>
   <fieldType name="double_dv" class="${solr.tests.DoubleFieldType}" stored="true" indexed="false" docValues="true"/>
   <fieldType name="double_dv_last" class="${solr.tests.DoubleFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>
   <fieldType name="double_dv_first" class="${solr.tests.DoubleFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingFirst="true"/>
 
-  <fieldType name="date" class="${solr.tests.DateFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}"/>
-  <fieldType name="date_last" class="${solr.tests.DateFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
-  <fieldType name="date_first" class="${solr.tests.DateFieldType}" stored="true" indexed="true" docValues="${solr.tests.numeric.dv}" sortMissingFirst="true"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}"/>
+  <fieldType name="date_last" class="${solr.tests.DateFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="date_first" class="${solr.tests.DateFieldType}" stored="true" indexed="true" docValues="${tests.solr.numeric.dv.enabled}" sortMissingFirst="true"/>
   <fieldType name="date_dv" class="${solr.tests.DateFieldType}" stored="true" indexed="false" docValues="true"/>
   <fieldType name="date_dv_last" class="${solr.tests.DateFieldType}" stored="true" indexed="false" docValues="true"
              sortMissingLast="true"/>

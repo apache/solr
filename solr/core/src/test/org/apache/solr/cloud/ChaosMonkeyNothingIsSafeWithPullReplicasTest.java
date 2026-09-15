@@ -49,7 +49,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Integer RUN_LENGTH =
-      Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
+      Integer.parseInt(System.getProperty("tests.solr.cloud.cm.runlength", "-1"));
 
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;
@@ -116,7 +116,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     super();
     numPullReplicas = random().nextInt(TEST_NIGHTLY ? 2 : 1) + 1;
     numRealtimeOrTlogReplicas = random().nextInt(TEST_NIGHTLY ? 4 : 3) + 1;
-    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
+    sliceCount = Integer.parseInt(System.getProperty("tests.solr.cloud.cm.slicecount", "-1"));
     if (sliceCount == -1) {
       sliceCount = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;
     }
