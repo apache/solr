@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.mockito.Mockito.mock;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,10 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.admin.api.UpdateAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -82,14 +86,73 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
       final SolrQueryRequest req = runUpdateApi("/update/bin");
       assertEquals("/update/bin", req.getContext().get(PATH));
     }
+
+    // No rewriting for /update/ndjson
+    {
+      final SolrQueryRequest req = runUpdateApi("/update/ndjson");
+      assertEquals("/update/ndjson", req.getContext().get(PATH));
+    }
   }
 
-  private SolrQueryRequest runUpdateApi(String path) {
+  @Test
+  public void testUpdateApiRewritingByContentType() {
+
+    // NDJSON content on /update is rewritten to /update/ndjson instead of /update/json/docs
+    for (String contentType :
+        List.of(
+            "application/x-ndjson", "application/jsonl", "application/X-NDJSON; charset=utf-8")) {
+      final SolrQueryRequest req = runUpdateApi("/update", contentType);
+      assertEquals(contentType, "/update/ndjson", req.getContext().get(PATH));
+    }
+
+    // Anything else keeps the historic /update/json/docs behavior
+    for (String contentType : List.of("application/json", "text/json", "application/xml")) {
+      final SolrQueryRequest req = runUpdateApi("/update", contentType);
+      assertEquals(contentType, "/update/json/docs", req.getContext().get(PATH));
+    }
+
+    // The update.contentType param is honored when the client cannot set a Content-Type
+    {
+      final ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(UpdateParams.ASSUME_CONTENT_TYPE, "application/x-ndjson");
+      final SolrQueryRequest req = runUpdateApi("/update", params);
+      assertEquals("/update/ndjson", req.getContext().get(PATH));
+    }
+
+    // The rewritten path applies to every stream, so mixed content types must not be rewritten
+    {
+      final SolrQueryRequest req =
+          runUpdateApi("/update", "application/x-ndjson", "application/json");
+      assertEquals("/update/json/docs", req.getContext().get(PATH));
+    }
+  }
+
+  private SolrQueryRequest runUpdateApi(String path, String... streamContentTypes) {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    final SolrQueryRequestBase req = runUpdateApi(path, params, streamContentTypes);
+    return req;
+  }
+
+  private SolrQueryRequestBase runUpdateApi(String path, ModifiableSolrParams params) {
+    return runUpdateApi(path, params, new String[0]);
+  }
+
+  private SolrQueryRequestBase runUpdateApi(
+      String path, ModifiableSolrParams params, String... streamContentTypes) {
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(path, "POST", parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final SolrQueryRequestBase req = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    final SolrQueryRequestBase req = new SolrQueryRequestBase(null, params);
     req.getContext().put(PATH, path);
+    if (streamContentTypes.length > 0) {
+      final List<ContentStream> streams = new ArrayList<>(streamContentTypes.length);
+      for (String contentType : streamContentTypes) {
+        final ContentStreamBase stream = new ContentStreamBase.StringStream("{}");
+        stream.setContentType(contentType);
+        streams.add(stream);
+      }
+      req.setContentStreams(streams);
+    }
 
     api.call(req, rsp);
 

@@ -1,0 +1,10 @@
+title: >
+  The /update handler now accepts newline delimited JSON (ND-JSON / JSON Lines),
+  selected by `Content-Type: application/x-ndjson` or by posting to the new `/update/ndjson`
+  path. Documents are streamed and indexed one at a time, which suits large bulk loads.
+type: added
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18445
+    url: https://issues.apache.org/jira/browse/SOLR-18445

@@ -84,7 +84,13 @@ public class JsonLoader extends ContentStreamLoader {
       ContentStream stream,
       UpdateRequestProcessor processor)
       throws Exception {
-    new SingleThreadedJsonLoader(req, rsp, processor).load(req, rsp, stream, processor);
+    createLoader(req, rsp, processor).load(req, rsp, stream, processor);
+  }
+
+  /** Subclasses may supply a loader that parses a different flavour of JSON. */
+  protected ContentStreamLoader createLoader(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
+    return new SingleThreadedJsonLoader(req, rsp, processor);
   }
 
   @SuppressWarnings("unchecked")
@@ -243,21 +249,17 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private void handleSplitMode(String split, String[] fields, final Reader reader)
-        throws IOException {
+    void handleSplitMode(String split, String[] fields, final Reader reader) throws IOException {
       if (split == null) split = "/";
       if (fields == null || fields.length == 0) fields = new String[] {"$FQN:/**"};
       final boolean echo = "true".equals(req.getParams().get("echo"));
       final String srcField = req.getParams().get("srcField");
       final boolean mapUniqueKeyOnly = req.getParams().getBool("mapUniqueKeyOnly", false);
-      if (srcField != null) {
-        if (!"/".equals(split))
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Raw data can be stored only if split=/");
-        parser = new RecordingJSONParser(reader);
-      } else {
-        parser = new JSONParser(reader);
+      if (srcField != null && !"/".equals(split)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Raw data can be stored only if split=/");
       }
+      parser = createParser(reader, srcField);
 
       JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
       jsonRecordReader.streamRecords(
@@ -290,6 +292,14 @@ public class JsonLoader extends ContentStreamLoader {
               }
             }
           });
+    }
+
+    /**
+     * The parser to read this request with. {@code srcField} requires a {@link
+     * RecordingJSONParser}, since the raw source is captured out of the parser's own buffer.
+     */
+    JSONParser createParser(Reader reader, String srcField) {
+      return srcField != null ? new RecordingJSONParser(reader) : new JSONParser(reader);
     }
 
     private Map<String, Object> getDocMap(

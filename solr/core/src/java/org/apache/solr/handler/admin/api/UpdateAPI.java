@@ -22,7 +22,10 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import org.apache.solr.api.EndPoint;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.handler.loader.NDJsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -30,7 +33,8 @@ import org.apache.solr.response.SolrQueryResponse;
  * All v2 APIs that share a prefix of /update
  *
  * <p>Most of these v2 APIs are implemented as pure "pass-throughs" to the v1 code paths, but there
- * are a few exceptions: /update and /update/json are both rewritten to /update/json/docs.
+ * are a few exceptions: /update and /update/json are both rewritten to /update/json/docs, unless
+ * /update is given newline delimited JSON, in which case it is rewritten to /update/ndjson.
  */
 public class UpdateAPI {
   private final UpdateRequestHandler updateRequestHandler;
@@ -41,7 +45,14 @@ public class UpdateAPI {
 
   @EndPoint(method = POST, path = "/update", permission = UPDATE_PERM)
   public void update(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
+    req.getContext()
+        .put(
+            PATH, isNdJson(req) ? UpdateRequestHandler.NDJSON_PATH : UpdateRequestHandler.DOC_PATH);
+    updateRequestHandler.handleRequest(req, rsp);
+  }
+
+  @EndPoint(method = POST, path = "/update/ndjson", permission = UPDATE_PERM)
+  public void updateNdJson(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     updateRequestHandler.handleRequest(req, rsp);
   }
 
@@ -64,5 +75,35 @@ public class UpdateAPI {
   @EndPoint(method = POST, path = "/update/bin", permission = UPDATE_PERM)
   public void updateJavabin(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     updateRequestHandler.handleRequest(req, rsp);
+  }
+
+  /**
+   * Whether this request should be routed to the NDJSON loader. The rewritten path applies to every
+   * content stream of the request, so a request is only treated as NDJSON when all of its streams
+   * are; anything else keeps the historic {@code /update/json/docs} behavior.
+   */
+  private static boolean isNdJson(SolrQueryRequest req) {
+    String assumed = req.getParams().get(UpdateParams.ASSUME_CONTENT_TYPE);
+    if (assumed != null) {
+      return isNdJsonContentType(assumed);
+    }
+    // Peeking is safe: content streams are always backed by a re-iterable List
+    Iterable<ContentStream> streams = req.getContentStreams();
+    if (streams == null) {
+      return false;
+    }
+    boolean any = false;
+    for (ContentStream stream : streams) {
+      if (!isNdJsonContentType(stream.getContentType())) {
+        return false;
+      }
+      any = true;
+    }
+    return any;
+  }
+
+  private static boolean isNdJsonContentType(String contentType) {
+    String base = UpdateRequestHandler.baseContentType(contentType);
+    return base != null && NDJsonLoader.CONTENT_TYPES.contains(base);
   }
 }
