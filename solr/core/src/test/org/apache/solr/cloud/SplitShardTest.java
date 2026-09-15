@@ -192,7 +192,6 @@ public class SplitShardTest extends SolrCloudTestCase {
         CollectionAdminRequest.splitShard(COLLECTION_NAME)
             .setNumSubShards(2)
             .setShardName("shard1");
-    splitShard.setWaitForFinalState(true);
     splitShard.process(solrClient);
     waitForState(
         "Waiting for 2 active shards after split", COLLECTION_NAME, activeClusterShape(2, 2));
