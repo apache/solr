@@ -1,0 +1,181 @@
+= Healthchecks
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr provides two distinct tools for checking whether things are working, and they answer different questions.
+Confusing them is easy, since both are casually called a "healthcheck", so this page describes each and helps you pick the right one.
+
+[cols="1,2,2"]
+|===
+| |Node Health Endpoint |`bin/solr healthcheck` command
+
+|Answers
+|"Is this node alive and part of the cluster?"
+|"Does this collection actually have data, and is every replica in sync?"
+
+|Scope
+|A single node
+|A single collection, across all its shards and replicas
+
+|Checks the index/data?
+|No -- metadata only
+|Yes -- runs real queries
+
+|Interface
+|HTTP endpoint
+|Command-line tool
+
+|Typical use
+|Load balancer / orchestrator liveness or readiness probe
+|Manual or scripted diagnosis after deployment, restart, or an incident
+|===
+
+== Node Health Endpoint
+
+The `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
+It is designed to be cheap enough to poll frequently from a load balancer or an orchestrator like Kubernetes.
+
+[IMPORTANT]
+====
+None of these checks touch the index.
+A node with a collection that has zero documents, or a collection whose query results are wrong, will still report a healthy `200 OK` here.
+If you need to confirm a collection actually has data, see <<Collection Data Healthcheck>> below.
+====
+
+What the endpoint checks -- and how it fails -- depends on whether the node is running in SolrCloud mode or user-managed (leader-follower) mode.
+
+=== SolrCloud Mode
+
+In SolrCloud mode, the endpoint returns HTTP `200 OK` only if all of the following are true, and HTTP `503 Unavailable` otherwise:
+
+* The node's core container has finished starting up.
+* The node is connected to ZooKeeper.
+* The node is listed in ZooKeeper's `live_nodes`.
+
+[source,bash]
+----
+curl "http://localhost:8983/api/node/health"
+----
+
+Healthy node:
+
+[source,json]
+----
+{
+  "responseHeader":{"status":0,"QTime":1},
+  "status":"OK"
+}
+----
+
+Unhealthy node (HTTP 503):
+
+[source,json]
+----
+{
+  "responseHeader":{"status":503,"QTime":1},
+  "status":"FAILURE",
+  "error":{"msg":"Not connected to ZK"}
+}
+----
+
+==== Rolling Restarts: `requireHealthyCores`
+
+Add `requireHealthyCores=true` to additionally require that every local replica belonging to an active shard has finished initializing -- i.e., none are in the `RECOVERING` or `DOWN` state.
+This is useful as a readiness probe during a rolling restart, so an orchestrator doesn't move on to the next node while the one it just restarted still has replicas recovering.
+
+[source,bash]
+----
+curl "http://localhost:8983/api/node/health?requireHealthyCores=true"
+----
+
+=== User-Managed (Leader-Follower) Mode
+
+In user-managed replication, the endpoint instead checks how far behind each local follower core is from its leader, in Lucene commit generations.
+Set `maxGenerationLag=<n>` to fail the health check once a follower falls more than `<n>` generations behind; without it, the check simply reports `OK` once a follower has replicated at least once, even if it later falls arbitrarily far behind.
+
+[source,bash]
+----
+curl "http://localhost:8983/api/node/health?maxGenerationLag=100"
+----
+
+Healthy node (all followers within the allowed lag):
+
+[source,json]
+----
+{
+  "responseHeader":{"status":0,"QTime":1},
+  "status":"OK"
+}
+----
+
+Unhealthy node (a follower has fallen too far behind, HTTP 503):
+
+[source,json]
+----
+{
+  "responseHeader":{"status":503,"QTime":1},
+  "status":"FAILURE",
+  "error":{"msg":"Cores violating maxGenerationLag:100.\nCore collection1 is lagging by 137 generations"}
+}
+----
+
+See xref:user-managed-index-replication.adoc#monitoring-follower-replication-lag[Monitoring Follower Replication Lag] for details.
+
+== Collection Data Healthcheck
+
+Where the Node Health endpoint asks "is this process alive?", `bin/solr healthcheck` asks "does this collection actually work?"
+It queries the collection for a total document count, then queries each individual replica directly (non-distributed) for its own document count, and reports whether every shard has a leader and every replica is `ACTIVE`.
+
+Because it issues real queries against real replicas, it's a heavier operation than the Node Health endpoint, and it's a CLI tool rather than an HTTP endpoint -- it isn't meant to be polled continuously by a load balancer.
+Reach for it after a deploy, a restart, or an incident, when you want to confirm a specific collection is actually intact, not just that the nodes are up.
+
+[source,bash]
+----
+bin/solr healthcheck -c gettingstarted
+----
+
+[source,json]
+----
+{
+  "collection":"gettingstarted",
+  "status":"healthy",
+  "numDocs":42,
+  "numShards":2,
+  "shards":[
+    {
+      "shard":"shard1",
+      "status":"healthy",
+      "replicas":[
+        {"name":"core_node1", "url":"...", "numDocs":21, "status":"active", "leader":true}
+      ]
+    }
+  ]
+}
+----
+
+See xref:solr-control-script-reference.adoc#healthcheck[the `healthcheck` command reference] for the full list of options (ZooKeeper vs. Solr URL connection, credentials, etc.).
+
+== Coming From `/admin/ping`?
+
+Solr's older `/admin/ping` endpoint (`PingRequestHandler`) was deprecated in Solr 10.1 and removed in Solr 11.
+Unlike the Node Health endpoint, Ping executed a real, configurable query against a specific core -- so a passing ping meant the query path was actually functional, not just that the node was alive.
+
+If you configured a load balancer against `/admin/ping` specifically to catch a broken query path (not just a dead node), the Node Health endpoint is *not* a drop-in replacement -- it never touches the index.
+Depending on what you need:
+
+* For a cheap, frequent liveness/readiness probe: use the <<Node Health Endpoint>> above.
+* For confirmation that a collection's query path and data are actually intact: use <<Collection Data Healthcheck>>, or issue your own lightweight query (e.g., `q=*:*&rows=0`) against the collection as part of your monitoring.
