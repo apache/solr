@@ -455,6 +455,9 @@ public class PeerSync implements SolrMetricProducer {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // MissedUpdatesRequest constants are singletons; identity check is
+  // intentional
   private boolean handleVersions(ShardResponse srsp) {
     // we retrieved the last N updates from the replica
     @SuppressWarnings({"unchecked"})
@@ -861,6 +864,9 @@ public class PeerSync implements SolrMetricProducer {
       this.nUpdates = nUpdates;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // MissedUpdatesRequest constants are singletons; identity check is
+    // intentional
     public MissedUpdatesRequest find(List<Long> otherVersions, Object updateFrom) {
       otherVersions.sort(absComparator);
       if (debug) {

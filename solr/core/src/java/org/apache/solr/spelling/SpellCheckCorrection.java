@@ -17,12 +17,12 @@
 package org.apache.solr.spelling;
 
 public class SpellCheckCorrection {
-  private Token original;
+  private SpellCheckToken original;
   private String originalAsString = null;
   private String correction;
   private int numberOfOccurences;
 
-  public Token getOriginal() {
+  public SpellCheckToken getOriginal() {
     return original;
   }
 
@@ -33,7 +33,7 @@ public class SpellCheckCorrection {
     return originalAsString;
   }
 
-  public void setOriginal(Token original) {
+  public void setOriginal(SpellCheckToken original) {
     this.original = original;
     this.originalAsString = null;
   }

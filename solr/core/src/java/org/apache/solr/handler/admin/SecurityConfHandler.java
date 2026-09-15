@@ -315,6 +315,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
                 @Override
+                @SuppressWarnings(
+                    "ReferenceEquality") // detecting whether the plugin instance was reloaded
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authentication plugin is modified since the last call.
                   // invalidate the cached commandSchema
@@ -335,6 +337,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           apis.add(
               new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
                 @Override
+                @SuppressWarnings(
+                    "ReferenceEquality") // detecting whether the plugin instance was reloaded
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authorization plugin is modified since the last call.
                   // invalidate cached commandSchema

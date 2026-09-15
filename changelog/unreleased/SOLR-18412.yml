@@ -1,0 +1,8 @@
+title: CrossDC - ZooKeeper /crossdc.properties no longer overrides solr.crossdc.kafka.* sysprops or env vars
+type: fixed
+authors:
+  - name: Andrzej Bialecki
+    nick: ab
+links:
+  - name: SOLR-18412
+    url: https://issues.apache.org/jira/browse/SOLR-18412
