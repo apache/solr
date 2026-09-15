@@ -1758,7 +1758,8 @@ public class ZkController implements Closeable {
       CoreContainer cc,
       boolean afterExpiration) {
     if (SKIP_AUTO_RECOVERY) {
-      log.warn("Skipping recovery according to sys prop test.solr.cloud.replica.autorecovery.skip.enabled");
+      log.warn(
+          "Skipping recovery according to sys prop test.solr.cloud.replica.autorecovery.skip.enabled");
       return false;
     }
     boolean doRecovery = true;

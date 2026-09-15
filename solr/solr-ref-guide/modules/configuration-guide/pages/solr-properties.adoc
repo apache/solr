@@ -122,7 +122,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.tracing.host.name|solr.traceHostName|Value of `solr.host.advertise`|Overrides the host name added to the trace ID generated for a request, when no trace ID is present on an incoming request.
 
-|solr.tracing.id.header|solr.traceIdHeader|X-Trace-Id|Specifies the HTTP header name used to propagate the trace ID between Solr nodes.
+|solr.tracing.always.on.header|solr.traceIdHeader|X-Trace-Id|Specifies the HTTP header name used by Solr's built-in non-OTEL tracing to propagate the trace ID between Solr nodes.
 
 |solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
 
