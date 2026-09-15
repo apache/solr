@@ -51,7 +51,7 @@ public class SyncStrategy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final boolean SKIP_AUTO_RECOVERY =
-      EnvUtils.getPropertyAsBool("solr.cloud.skip.autorecovery.enabled", false);
+      EnvUtils.getPropertyAsBool("test.solr.cloud.replica.autorecovery.skip.enabled", false);
 
   private final ShardHandler shardHandler;
 

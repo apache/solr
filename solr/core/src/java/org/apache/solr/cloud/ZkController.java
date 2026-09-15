@@ -152,7 +152,7 @@ public class ZkController implements Closeable {
   static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
 
   private final boolean SKIP_AUTO_RECOVERY =
-      EnvUtils.getPropertyAsBool("solr.cloud.skip.autorecovery.enabled", false);
+      EnvUtils.getPropertyAsBool("test.solr.cloud.replica.autorecovery.skip.enabled", false);
 
   private final ZkDistributedQueue overseerJobQueue;
   private final OverseerTaskQueue overseerCollectionQueue;
@@ -1758,7 +1758,7 @@ public class ZkController implements Closeable {
       CoreContainer cc,
       boolean afterExpiration) {
     if (SKIP_AUTO_RECOVERY) {
-      log.warn("Skipping recovery according to sys prop solr.cloud.skip.autorecovery.enabled");
+      log.warn("Skipping recovery according to sys prop test.solr.cloud.replica.autorecovery.skip.enabled");
       return false;
     }
     boolean doRecovery = true;

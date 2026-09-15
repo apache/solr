@@ -57,7 +57,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("solr.cloud.skip.autorecovery.enabled", "true");
+    System.setProperty("test.solr.cloud.replica.autorecovery.skip.enabled", "true");
   }
 
   @Override

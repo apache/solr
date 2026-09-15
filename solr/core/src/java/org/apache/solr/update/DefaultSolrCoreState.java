@@ -49,7 +49,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final boolean SKIP_AUTO_RECOVERY =
-      EnvUtils.getPropertyAsBool("solr.cloud.skip.autorecovery.enabled", false);
+      EnvUtils.getPropertyAsBool("test.solr.cloud.replica.autorecovery.skip.enabled", false);
 
   private final ReentrantLock recoveryLock = new ReentrantLock();
 
@@ -302,7 +302,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
             try {
               if (SKIP_AUTO_RECOVERY) {
                 log.warn(
-                    "Skipping recovery according to sys prop solr.cloud.skip.autorecovery.enabled");
+                    "Skipping recovery according to sys prop test.solr.cloud.replica.autorecovery.skip.enabled");
                 return;
               }
 
