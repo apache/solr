@@ -78,7 +78,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     // tlog gets deleted after node restarts if we use CachingDirectoryFactory.
     // make sure that tlog stays intact after we restart a node
     System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
-    System.setProperty("solr.ulog.numRecordsToKeep", "1000");
+    System.setProperty("tests.solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("tests.zk.violationReportAction", LimitViolationAction.IGNORE.toString());
     super.distribSetUp();
   }

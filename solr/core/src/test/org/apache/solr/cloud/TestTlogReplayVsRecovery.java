@@ -70,7 +70,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     TestInjection.skipIndexWriterCommitOnClose = TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE;
 
     System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
-    System.setProperty("solr.ulog.numRecordsToKeep", "1000");
+    System.setProperty("tests.solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "60000");
 
     configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();

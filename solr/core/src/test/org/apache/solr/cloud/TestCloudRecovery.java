@@ -54,7 +54,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   public static void setupCluster() {
     System.setProperty("metricsEnabled", "true");
     System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
-    System.setProperty("solr.ulog.numRecordsToKeep", "1000");
+    System.setProperty("tests.solr.ulog.numRecordsToKeep", "1000");
   }
 
   @Before
