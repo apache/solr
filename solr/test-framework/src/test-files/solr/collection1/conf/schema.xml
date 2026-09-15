@@ -34,15 +34,15 @@
     -->
 
   <fieldType name="int" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="float" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="double" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
 
   <fieldType name="tint" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tfloat" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tlong" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tdouble" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
   
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField"/>
@@ -112,9 +112,9 @@
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" docValues="${tests.solr.numeric.dv.enabled}" uninvertible="true"/>
-  <fieldType name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6" docValues="${tests.solr.numeric.dv.enabled}" uninvertible="true"/>
-  <fieldType name="tdatedv" class="${solr.tests.DateFieldType}" precisionStep="6"/>
+  <fieldType name="date" class="${tests.solr.DateFieldType}" precisionStep="0" docValues="${tests.solr.numeric.dv.enabled}" uninvertible="true"/>
+  <fieldType name="tdate" class="${tests.solr.DateFieldType}" precisionStep="6" docValues="${tests.solr.numeric.dv.enabled}" uninvertible="true"/>
+  <fieldType name="tdatedv" class="${tests.solr.DateFieldType}" precisionStep="6"/>
 
   <fieldType name="dateRange" class="solr.DateRangeField"/>
   <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
@@ -535,7 +535,7 @@
   </fieldType>
 
 
-  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${tests.solr.id.docValues:false}" uninvertible="true"/>
+  <field name="id" type="string" indexed="true" stored="${tests.solr.id.stored:true}" multiValued="false" required="false" docValues="${tests.solr.id.docValues:false}" uninvertible="true"/>
   <field name="_root_" type="string" indexed="true" stored="false"/>
   <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField"/>
 

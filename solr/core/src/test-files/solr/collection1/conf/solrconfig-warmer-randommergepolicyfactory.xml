@@ -38,7 +38,7 @@
     <useCompoundFile>${useCompoundFile}</useCompoundFile>
     <maxBufferedDocs>${tests.solr.maxBufferedDocs}</maxBufferedDocs>
     <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
-    <mergeScheduler class="${solr.tests.mergeScheduler}" />
+    <mergeScheduler class="${tests.solr.mergeScheduler}" />
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
     <lockType>single</lockType>

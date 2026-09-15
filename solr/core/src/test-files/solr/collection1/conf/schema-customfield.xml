@@ -30,7 +30,7 @@
   <fieldType name="string" class="solr.StrField"/>
 
   <fieldType name="int" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
 
   <fieldType name="customfield" class="org.apache.solr.schema.MyCrazyCustomField" multiValued="true"
              positionIncrementGap="100">
@@ -39,7 +39,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="customintfield" class="${solr.tests.CustomIntFieldType}" docValues="${tests.solr.numeric.dv.enabled}" />
+  <fieldType name="customintfield" class="${tests.solr.CustomIntFieldType}" docValues="${tests.solr.numeric.dv.enabled}" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="intfield" type="int" indexed="true" stored="true"/>

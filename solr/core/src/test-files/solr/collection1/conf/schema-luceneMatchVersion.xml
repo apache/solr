@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 <schema name="luceneMatchVersionTest" version="1.7">
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}"/>
   <fieldType name="string" class="solr.StrField"/>
   <fieldType name="text40" class="solr.TextField">
     <analyzer>

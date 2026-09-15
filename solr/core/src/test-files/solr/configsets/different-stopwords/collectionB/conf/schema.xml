@@ -73,12 +73,12 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="date" class="${solr.tests.DateFieldType}" sortMissingLast="true"/>
+  <fieldType name="date" class="${tests.solr.DateFieldType}" sortMissingLast="true"/>
   
   <fieldType name="int" class="${tests.solr.IntegerFieldType}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="${tests.solr.FloatFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="double" class="${tests.solr.DoubleFieldType}" precisionStep="0" positionIncrementGap="0"/>
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
 

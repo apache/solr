@@ -38,7 +38,7 @@
 
   <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
   <fieldType name="int" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
   <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
              geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />

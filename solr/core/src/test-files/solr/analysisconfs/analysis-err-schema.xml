@@ -21,7 +21,7 @@
   -->
 
 <schema name="test" version="1.7">
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" stored="true" indexed="true"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" stored="true" indexed="true"/>
   <fieldType name="string" class="solr.StrField" />
   <fieldType name="text" class="solr.TextField">
     <analyzer>

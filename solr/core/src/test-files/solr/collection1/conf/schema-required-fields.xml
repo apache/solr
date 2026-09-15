@@ -28,9 +28,9 @@
 <schema name="test" version="1.0">
 
   <fieldType name="int" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="double" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" positionIncrementGap="0"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -53,7 +53,7 @@
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
+  <fieldType name="date" class="${tests.solr.DateFieldType}" docValues="${tests.solr.numeric.dv.enabled}" sortMissingLast="true"/>
 
   <!-- solr.TextField allows the specification of custom
        text analyzers specified as a tokenizer and a list

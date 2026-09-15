@@ -44,6 +44,6 @@
        but you can always add new values to the end. -->
   <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
   <fieldType name="string" class="solr.StrField"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
 </schema>

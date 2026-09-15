@@ -26,7 +26,7 @@
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
   <str name="collectionsHandler">${collectionsHandler:solr.CollectionsHandler}</str>
-  <str name="allowUrls">${solr.tests.security.allow.urls:}</str>
+  <str name="allowUrls">${tests.solr.security.allow.urls:}</str>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <int name="socketTimeout">${socketTimeout:90000}</int>

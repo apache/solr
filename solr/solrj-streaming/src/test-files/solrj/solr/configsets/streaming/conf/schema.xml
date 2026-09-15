@@ -41,14 +41,14 @@
 
 
     <fieldType name="int" class="${tests.solr.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+    <fieldType name="float" class="${tests.solr.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="long" class="${tests.solr.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
     <fieldType name="tint" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-    <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-    <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
-    <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+    <fieldType name="tfloat" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+    <fieldType name="tlong" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+    <fieldType name="tdouble" class="${tests.solr.DoubleFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
 
     <fieldType name="random" class="solr.RandomSortField" indexed="true" />
 
@@ -115,8 +115,8 @@
     <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
          seconds part (.999) is optional.
       -->
-    <fieldtype name="date" class="${solr.tests.DateFieldType}" precisionStep="0"/>
-    <fieldtype name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6"/>
+    <fieldtype name="date" class="${tests.solr.DateFieldType}" precisionStep="0"/>
+    <fieldtype name="tdate" class="${tests.solr.DateFieldType}" precisionStep="6"/>
 
 
     <!-- solr.TextField allows the specification of custom

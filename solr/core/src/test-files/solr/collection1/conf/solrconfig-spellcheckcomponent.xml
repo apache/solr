@@ -20,11 +20,11 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
-    <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
+    <mergePolicyFactory class="${tests.solr.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxBufferedDocs>${tests.solr.maxBufferedDocs}</maxBufferedDocs>
     <ramBufferSizeMB>${tests.solr.ramBufferSizeMB}</ramBufferSizeMB>
-    <mergeScheduler class="${solr.tests.mergeScheduler}" />
+    <mergeScheduler class="${tests.solr.mergeScheduler}" />
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
     <lockType>${tests.solr.lockType:single}</lockType>

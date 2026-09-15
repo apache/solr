@@ -19,13 +19,13 @@
 <schema name="test" version="1.7">
 
   <fieldType name="tint" class="${tests.solr.IntegerFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" uninvertible="true"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" uninvertible="true"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" uninvertible="true"/>
+  <fieldType name="tfloat" class="${tests.solr.FloatFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" uninvertible="true"/>
+  <fieldType name="tlong" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" uninvertible="true"/>
   
   <!-- tdouble class can't be randomized, because BBoxField requires TrieDoubleField.  See SOLR-11111. -->
   <fieldType name="tdouble" class="solr.TrieDoubleField" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="8" uninvertible="true"/>
   
-  <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}" precisionStep="8"/>
+  <fieldType name="tdoubleDV" class="${tests.solr.DoubleFieldType}" precisionStep="8"/>
 
   <fieldType name="pdouble" class="solr.DoublePointField"/>
   
