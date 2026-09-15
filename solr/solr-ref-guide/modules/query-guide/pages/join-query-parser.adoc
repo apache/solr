@@ -121,11 +121,12 @@ The first access to the field cache slows down the initial requests following a 
 Performance scales linearly with the number of values matched in the "from" field.
 This method must be used if score information is required, and should also be considered when the "from" query matches few documents, regardless of the number of "to" side documents returned.
 +
-.dvWithScore and single value numerics
-[WARNING]
+.dvWithScore and numerics
+[NOTE]
 ====
-The `dvWithScore` method doesn't support single value numeric fields.
-Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
+The `dvWithScore` method supports numeric fields on the "from" side that have `docValues="true"` (single- or multi-valued), regardless of whether the field type is a `Point` field (`IntPointField`, `LongPointField`, `FloatPointField`, `DoublePointField`, `DatePointField`) or a legacy `Trie` numeric field, as long as the "to" side field uses the matching numeric `Point` field type.
+The "from" field only needs `docValues="true"`; it does not need to be `indexed="true"`.
+The "to" field, however, must be indexed as a `Point` field, since it is queried by point value.
 ====
 
 `topLevelDV`::: Can only be used when `to` and `from` fields have docValues data, and does not currently support numeric fields.
