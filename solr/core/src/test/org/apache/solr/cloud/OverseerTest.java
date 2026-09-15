@@ -1776,7 +1776,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getZkClient()).thenReturn(zkClient);
     when(zkController.getZkStateReader()).thenReturn(reader);
     when(zkController.getDistributedClusterStateUpdater())
-        .thenReturn(new DistributedClusterStateUpdater(false));
+        .thenReturn(new DistributedClusterStateUpdater(false, -1, null));
     // primitive support for CC.runAsync
     doAnswer(
             invocable -> {

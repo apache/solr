@@ -45,6 +45,9 @@ public class ApiTool extends ToolBase {
           .desc("Send a GET request to a Solr API endpoint.")
           .get();
 
+  /** Parameters for the api command, independent of the command line parser. */
+  record ApiParams(String getUrl, String credentials) {}
+
   public ApiTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -63,8 +66,15 @@ public class ApiTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String getUrl = cli.getOptionValue(SOLR_URL_OPTION);
-    String response = callGet(getUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    ApiParams params =
+        new ApiParams(
+            cli.getOptionValue(SOLR_URL_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    callApi(params);
+  }
+
+  void callApi(ApiParams params) throws Exception {
+    String response = callGet(params.getUrl(), params.credentials());
 
     // pretty-print the response to stdout
     echo(response);
