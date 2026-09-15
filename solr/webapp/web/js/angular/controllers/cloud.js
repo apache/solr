@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, Zookeeper, Constants, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
+    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
 
         $scope.showDebug = false;
 
@@ -31,7 +31,7 @@ solrAdminApp.controller('CloudController',
         var view = $location.search().view ? $location.search().view : "nodes";
         if (view === "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
-            treeSubController($scope, Zookeeper);
+            treeSubController($scope, $q, ZookeeperReadV2);
         } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
             graphSubController($scope, Zookeeper, ClusterV2, ApiErrorHandler);
@@ -681,7 +681,25 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
     $scope.initZookeeper();
 };
 
-var treeSubController = function($scope, Zookeeper) {
+function zkStatToProp(stat) {
+    stat = stat || {};
+    var time = function(ms) { return new Date(ms) + " (" + ms + ")"; };
+    return {
+        version: stat.version,
+        aversion: stat.aversion,
+        children_count: stat.children,
+        ctime: time(stat.ctime),
+        cversion: stat.cversion,
+        czxid: stat.czxid,
+        ephemeralOwner: stat.ephemeralOwner,
+        mtime: time(stat.mtime),
+        mzxid: stat.mzxid,
+        pzxid: stat.pzxid,
+        dataLength: stat.dataLength
+    };
+}
+
+var treeSubController = function($scope, $q, ZookeeperReadV2) {
     $scope.showZkStatus = false;
     $scope.showTree = true;
     $scope.showGraph = false;
@@ -694,29 +712,72 @@ var treeSubController = function($scope, Zookeeper) {
           // TODO: Set proper data here to display a warning in right panel "You lack the required role to see this file"
           $scope.znode = {};
           $scope.showData = false;
-        } else {
-          Zookeeper.detail({path: path}, function(data) {
-              $scope.znode = data.znode;
-              if (data.znode.path.endsWith("/managed-schema") || data.znode.path.endsWith(".xml.bak")) {
-                $scope.lang = "xml";
-              } else {
-                var lastPathElement = data.znode.path.split( '/' ).pop();
-                var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
-                $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
-              }
-              $scope.showData = true;
-          });
+          return;
         }
+        $q.all([
+            ZookeeperReadV2.listNodes(path, {children: false}),
+            ZookeeperReadV2.readNode(path)
+        ]).then(function(results) {
+            $scope.znode = {
+                path: path,
+                prop: zkStatToProp(results[0].data.stat),
+                data: results[1].data
+            };
+            if (path.endsWith("/managed-schema") || path.endsWith(".xml.bak")) {
+              $scope.lang = "xml";
+            } else {
+              var lastPathElement = path.split( '/' ).pop();
+              var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
+              $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
+            }
+            $scope.showData = true;
+        });
+        // A failure here surfaces through the global httpInterceptor (unlike the superagent-based
+        // generated clients, plain $http calls are already covered by it), so no local handling
+        // is needed beyond leaving showData/znode unchanged.
     };
 
     $scope.hideData = function() {
         $scope.showData = false;
     };
 
+    // Recursively walks the whole ZK namespace client-side and builds the same nested array
+    // jstree's static "data" expects, mirroring v1's admin/zookeeper (which did this same walk
+    // server-side in one call) -- v2's listNodes only returns one level of children at a time.
+    function buildZkSubtree(path) {
+        return ZookeeperReadV2.listNodes(path, {}).then(function(response) {
+            // The per-child stat map is flattened onto the JSON body under the requested path
+            // (server-side @JsonAnyGetter), not nested under a well-known property.
+            var childStats = (response.data && response.data[path]) || {};
+            var names = Object.keys(childStats).sort();
+            return $q.all(names.map(function(name) {
+                var childPath = (path === '/' ? '' : path) + '/' + name;
+                var node = {
+                    text: name,
+                    a_attr: {href: "admin/zookeeper?detail=true&path=" + encodeURIComponent(childPath)}
+                };
+                var stat = childStats[name];
+                if (stat && stat.children > 0) {
+                    return buildZkSubtree(childPath).then(function(children) {
+                        node.children = children;
+                        return node;
+                    });
+                }
+                return node;
+            }));
+        });
+    }
+
     $scope.initTree = function() {
-      Zookeeper.simple(function(data) {
-        $scope.tree = data.tree;
-      });
+        buildZkSubtree('/').then(function(children) {
+            $scope.tree = [{
+                text: '/',
+                a_attr: {href: "admin/zookeeper?detail=true&path=%2F"},
+                children: children
+            }];
+        });
+        // A failure here surfaces through the global httpInterceptor, same as any other plain
+        // $http call.
     };
 
     $scope.initTree();
