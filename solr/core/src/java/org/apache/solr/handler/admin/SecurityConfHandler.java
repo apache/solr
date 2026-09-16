@@ -209,7 +209,18 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     return Category.ADMIN;
   }
 
-  /** Gets security.json from source */
+  /**
+   * Gets security.json from source.
+   *
+   * <p>{@code getFresh=true} reads the source directly - ZooKeeper for {@link
+   * SecurityConfHandlerZk}, the local file for {@link SecurityConfHandlerLocal} (a no-op there; it
+   * always reads the file fresh). {@code getFresh=false} may return a locally cached snapshot: for
+   * {@link SecurityConfHandlerZk} this is refreshed by a ZK watcher that fires asynchronously after
+   * any write, so a {@code getFresh=false} read issued immediately after this handler's own {@link
+   * #editSecurityConfig} call can still observe the pre-write state. Callers that need to read back
+   * a value they (or another request) may have just written - e.g. the v2 Jersey APIs in {@code
+   * org.apache.solr.handler.admin.api} - should pass {@code true}.
+   */
   public abstract SecurityConfig getSecurityConfig(boolean getFresh);
 
   /** Persist security.json to the source, optionally with a version */

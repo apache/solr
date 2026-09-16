@@ -122,9 +122,11 @@ public class Users extends AdminAPIBase implements AuthenticationUsersApi {
 
   @SuppressWarnings("unchecked")
   private Map<String, Object> fetchCredentials(String scheme) {
+    // Read fresh - see SecurityConfHandler#getSecurityConfig's javadoc - so a GET immediately
+    // following one of this class's own writes is guaranteed to observe it.
     Map<String, Object> authenticationConf =
         (Map<String, Object>)
-            securityConfHandler.getSecurityConfig(false).getData().get(AUTHENTICATION_KEY);
+            securityConfHandler.getSecurityConfig(true).getData().get(AUTHENTICATION_KEY);
     if (authenticationConf == null) {
       return Map.of();
     }

@@ -80,9 +80,10 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
-    // Computed before the edit below, rather than by re-reading afterwards: in SolrCloud, a
-    // getSecurityConfig(false) read immediately following our own write can still observe the
-    // pre-write cached snapshot, since the ZK watcher that refreshes it fires asynchronously.
+    // Computed before the edit below, rather than by re-reading and matching content afterwards:
+    // a fresh permissions list can contain more than one entry with identical fields, so a
+    // straight positional count avoids the ambiguity that would come from trying to find "the one
+    // we just added" by content.
     int existingCount = fetchPermissions().size();
 
     Map<String, Object> dataMap = toDataMap(requestBody, /* includeBefore= */ true);
@@ -144,16 +145,21 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
 
   @SuppressWarnings("unchecked")
   private List<Map<String, Object>> fetchPermissions() {
+    // Read fresh (bypassing SecurityConfHandler's cached ZK snapshot) so a GET immediately
+    // following one of this class's own writes is guaranteed to observe it - see
+    // SecurityConfHandler#getSecurityConfig's javadoc for why the cache can otherwise lag a write
+    // briefly.
     Map<String, Object> authorizationConf =
         (Map<String, Object>)
-            securityConfHandler.getSecurityConfig(false).getData().get(AUTHORIZATION_KEY);
+            securityConfHandler.getSecurityConfig(true).getData().get(AUTHORIZATION_KEY);
     if (authorizationConf == null) {
       return List.of();
     }
     // The "permissions" value is always list-shaped in security.json, but it isn't guaranteed to
     // arrive as a java.util.List: Utils.getDeepCopy(..., mutable=false) - used when building
     // read-only snapshots of a cached security config - wraps it in
-    // Collections.unmodifiableCollection(), which only implements Collection, not List.
+    // Collections.unmodifiableCollection(), which only implements Collection, not List. Kept as a
+    // defensive fallback even though this method now always reads fresh.
     Object rawPermissions = authorizationConf.get("permissions");
     if (!(rawPermissions instanceof Collection)) {
       return List.of();

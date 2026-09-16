@@ -29,18 +29,22 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * SolrCloud-mode coverage for {@link Permissions}/{@link Roles}, exercising {@code
- * SecurityConfHandlerZk#getSecurityConfig(false)} - the cached read path backed by {@code
- * ZkStateReader}'s security-node watcher.
+ * SolrCloud-mode coverage for {@link Permissions}/{@link Roles}. Both read via {@code
+ * SecurityConfHandler#getSecurityConfig(true)} (fresh, bypassing {@code SecurityConfHandlerZk}'s
+ * cached ZK snapshot) specifically so a GET immediately following one of their own writes is
+ * guaranteed to observe it, without any client-side polling for propagation - see {@code
+ * SecurityConfHandler#getSecurityConfig}'s javadoc for why a cached ({@code getFresh=false}) read
+ * can otherwise lag a write briefly. Standalone mode ({@code SecurityConfHandlerLocal}) always
+ * reads security.json fresh from disk regardless of this flag, so this behavior needs cloud
+ * coverage specifically to mean anything.
  *
- * <p>Unlike the initial (fresh) load, once that watcher's callback has fired at least once, it
- * rebuilds its cached snapshot via {@code Utils.getDeepCopy(..., mutable=false)}, which wraps
+ * <p>This also incidentally guards against a real bug this suite caught during development: the
+ * cached path's snapshot is rebuilt via {@code Utils.getDeepCopy(..., mutable=false)}, which wraps
  * nested lists (e.g. "permissions") in {@code Collections.unmodifiableCollection(...)} rather than
  * {@code Collections.unmodifiableList(...)} - an object that implements {@code Collection} but not
- * {@code List}. Standalone mode ({@code SecurityConfHandlerLocal}) always re-reads security.json
- * fresh from disk and never exhibits this, so this gap needs cloud coverage specifically. Creating
- * a permission below forces a real ZK write, which trips the watcher and populates the cached,
- * wrapped snapshot before the following read.
+ * {@code List}, which a naive {@code (List<...>) ...} cast would throw a {@code ClassCastException}
+ * on. {@link Permissions}/{@link Roles} guard against that defensively regardless of which read
+ * path is in use (see their {@code instanceof Collection} checks).
  *
  * <p>This plugin is a plain (non-multi) {@code RuleBasedAuthorizationPlugin}, so the {@code scheme}
  * path segment is ignored server-side; "basic" is used here purely by convention. See {@link
@@ -70,7 +74,7 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testPermissionsSurviveCachedZkRead() throws Exception {
+  public void testPermissionsReadFreshAfterWrite() throws Exception {
     var client = cluster.getSolrClient();
 
     var create = authed(new AuthorizationApi.CreatePermission());
@@ -79,8 +83,8 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
     CreatePermissionResponse createResponse = create.process(client);
     int index = createResponse.index;
 
-    // This first list forces SecurityConfHandlerZk's cached (getFresh=false) read path, now that
-    // the create above has tripped the ZK security-node watcher at least once.
+    // Reads fresh - see the class javadoc - so this is expected to see the create above
+    // immediately, with no propagation delay.
     ListPermissionsResponse afterCreate =
         authed(new AuthorizationApi.ListPermissions()).process(client);
     assertTrue(
@@ -92,35 +96,30 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
 
     authed(new AuthorizationApi.DeletePermission(index)).process(client);
 
-    // security.json updates propagate to this node's ZK watcher asynchronously, so poll briefly
-    // rather than asserting on the very next read.
-    boolean deleted = false;
-    for (int i = 0; i < 20 && !deleted; i++) {
-      ListPermissionsResponse afterDelete =
-          authed(new AuthorizationApi.ListPermissions()).process(client);
-      deleted =
-          afterDelete.permissions.stream().noneMatch(p -> Integer.valueOf(index).equals(p.index));
-      if (!deleted) {
-        Thread.sleep(100);
-      }
-    }
-    assertTrue("permission " + index + " was not removed", deleted);
+    // Reads fresh - see the class javadoc - so this is expected to see the delete immediately,
+    // with no propagation delay or polling required.
+    ListPermissionsResponse afterDelete =
+        authed(new AuthorizationApi.ListPermissions()).process(client);
+    assertTrue(
+        "permission " + index + " was not removed",
+        afterDelete.permissions.stream().noneMatch(p -> Integer.valueOf(index).equals(p.index)));
   }
 
   @Test
-  public void testUserRolesSurviveCachedZkRead() throws Exception {
+  public void testUserRolesReadFreshAfterWrite() throws Exception {
     var client = cluster.getSolrClient();
 
-    // Force at least one ZK write/watch-fire cycle before reading roles back.
     var setRoles = authed(new AuthorizationApi.SetUserRoles(SCHEME, "harry"));
     setRoles.setRoles(List.of("dev"));
     setRoles.process(client);
 
+    // Reads fresh - see the class javadoc - so this is expected to see the write above
+    // immediately, with no propagation delay.
     GetUserRolesResponse roles =
         authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry")).process(client);
     assertEquals(List.of("dev"), roles.roles);
 
-    // The bulk listing reads the same cached-ZK path as the single-user GET above.
+    // The bulk listing reads the same fresh path as the single-user GET above.
     ListUserRolesResponse allRoles =
         authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(client);
     assertEquals(List.of("dev"), allRoles.userRoles.get("harry"));

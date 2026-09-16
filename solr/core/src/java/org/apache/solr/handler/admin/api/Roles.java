@@ -128,9 +128,11 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
 
   @SuppressWarnings("unchecked")
   private Map<String, Object> fetchUserRoleMap(String scheme) {
+    // Read fresh - see SecurityConfHandler#getSecurityConfig's javadoc - so a GET immediately
+    // following one of this class's own writes is guaranteed to observe it.
     Map<String, Object> authorizationConf =
         (Map<String, Object>)
-            securityConfHandler.getSecurityConfig(false).getData().get(AUTHORIZATION_KEY);
+            securityConfHandler.getSecurityConfig(true).getData().get(AUTHORIZATION_KEY);
     if (authorizationConf == null) {
       return Map.of();
     }
