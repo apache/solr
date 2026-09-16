@@ -87,7 +87,6 @@ public class UpdateAPI {
     if (assumed != null) {
       return isNdJsonContentType(assumed);
     }
-    // Peeking is safe: content streams are always backed by a re-iterable List
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams == null) {
       return false;
@@ -103,7 +102,7 @@ public class UpdateAPI {
   }
 
   private static boolean isNdJsonContentType(String contentType) {
-    String base = UpdateRequestHandler.baseContentType(contentType);
-    return base != null && NDJsonLoader.CONTENT_TYPES.contains(base);
+    return contentType != null
+        && NDJsonLoader.CONTENT_TYPES.contains(UpdateRequestHandler.baseContentType(contentType));
   }
 }
