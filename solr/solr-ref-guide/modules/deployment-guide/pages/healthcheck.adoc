@@ -44,7 +44,7 @@ Confusing them is easy, since both are casually called a "healthcheck", so this 
 |Manual or scripted diagnosis after deployment, restart, or an incident
 |===
 
-== Node Health Endpoint
+== Node Healthcheck
 
 The `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
 It is designed to be cheap enough to poll frequently from a load balancer or an orchestrator like Kubernetes.
@@ -105,7 +105,7 @@ curl "http://localhost:8983/api/node/health?requireHealthyCores=true"
 === User-Managed (Leader-Follower) Mode
 
 In user-managed replication, the endpoint instead checks how far behind each local follower core is from its leader, in Lucene commit generations.
-Set `maxGenerationLag=<n>` to fail the health check once a follower falls more than `<n>` generations behind; without it, the check simply reports `OK` once a follower has replicated at least once, even if it later falls arbitrarily far behind.
+Set `maxGenerationLag=<n>` to fail the healthcheck once a follower falls more than `<n>` generations behind; without it, the check simply reports `OK` once a follower has replicated at least once, even if it later falls arbitrarily far behind.
 
 [source,bash]
 ----
@@ -135,14 +135,11 @@ Unhealthy node (a follower has fallen too far behind, HTTP 503):
 
 See xref:user-managed-index-replication.adoc#monitoring-follower-replication-lag[Monitoring Follower Replication Lag] for details.
 
-== Collection Data Healthcheck
+== Collection Healthcheck
 
-Where the Node Health endpoint asks "is this process alive?", `bin/solr healthcheck` asks "does this collection actually work?"
-It queries the collection for a total document count, then queries each individual replica directly (non-distributed) for its own document count, and reports whether every shard has a leader and every replica is `ACTIVE`.
+While the Node Health endpoint checks process liveness, the `bin/solr healthcheck` tool verifies whether a specific collection is functioning properly. It queries every replica directly (non-distributed) to compare document counts, confirm each shard has a leader, and verify all replicas are in the ACTIVE state.
 
-Because it issues real queries against real replicas, it's a heavier operation than the Node Health endpoint, and it's a CLI tool rather than an HTTP endpoint -- it isn't meant to be polled continuously by a load balancer.
-Reach for it after a deploy, a restart, or an incident, when you want to confirm a specific collection is actually intact, not just that the nodes are up.
-
+Because it executes real queries against individual replicas, it is a heavier operation than the Node Health endpoint and is meant as an on-demand CLI tool rather than a continuously polled HTTP healthcheck for load balancers. Use it after deployments, restarts, or incidents to confirm collection integrity.
 [source,bash]
 ----
 bin/solr healthcheck -c gettingstarted
@@ -167,15 +164,6 @@ bin/solr healthcheck -c gettingstarted
 }
 ----
 
-See xref:solr-control-script-reference.adoc#healthcheck[the `healthcheck` command reference] for the full list of options (ZooKeeper vs. Solr URL connection, credentials, etc.).
+TIP: Healthy, well-functioning replicas often disagree on exact document counts due to slightly staggered autoCommit periods or in-flight updates. Small, momentary count discrepancies between replicas are normal and should not automatically be treated as an issue unless the mismatch persists.
 
-== Coming From `/admin/ping`?
-
-Solr's older `/admin/ping` endpoint (`PingRequestHandler`) was deprecated in Solr 10.1 and removed in Solr 11.
-Unlike the Node Health endpoint, Ping executed a real, configurable query against a specific core -- so a passing ping meant the query path was actually functional, not just that the node was alive.
-
-If you configured a load balancer against `/admin/ping` specifically to catch a broken query path (not just a dead node), the Node Health endpoint is *not* a drop-in replacement -- it never touches the index.
-Depending on what you need:
-
-* For a cheap, frequent liveness/readiness probe: use the <<Node Health Endpoint>> above.
-* For confirmation that a collection's query path and data are actually intact: use <<Collection Data Healthcheck>>, or issue your own lightweight query (e.g., `q=*:*&rows=0`) against the collection as part of your monitoring.
+See xref:solr-control-script-reference.adoc#healthcheck[the `healthcheck` command reference] for the full list of options.
