@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.NDJsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -37,34 +36,32 @@ import org.junit.Test;
 
 public class NDJsonLoaderTest extends SolrTestCase {
 
-  private static BufferingRequestProcessor load(String content, SolrParams params)
-      throws Exception {
-    return load(new NDJsonLoader(), content, params);
+  private static BufferingRequestProcessor load(String content) throws Exception {
+    return load(content, new ModifiableSolrParams());
   }
 
-  private static BufferingRequestProcessor load(
-      ContentStreamLoader loader, String content, SolrParams params) throws Exception {
-    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
-    try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
-      loader.load(
-          req, new SolrQueryResponse(), new ContentStreamBase.StringStream(content), processor);
-    }
-    return processor;
+  private static BufferingRequestProcessor load(String content, SolrParams params)
+      throws Exception {
+    return load(content, params, new SolrQueryResponse(), null);
   }
 
   private static BufferingRequestProcessor loadWithContentType(String content, String contentType)
       throws Exception {
-    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
-    ContentStreamBase.StringStream stream = new ContentStreamBase.StringStream(content);
-    stream.setContentType(contentType);
-    try (SolrQueryRequest req = new SolrQueryRequestBase(null, new ModifiableSolrParams())) {
-      new NDJsonLoader().load(req, new SolrQueryResponse(), stream, processor);
-    }
-    return processor;
+    return load(content, new ModifiableSolrParams(), new SolrQueryResponse(), contentType);
   }
 
-  private static BufferingRequestProcessor load(String content) throws Exception {
-    return load(content, new ModifiableSolrParams());
+  private static BufferingRequestProcessor load(
+      String content, SolrParams params, SolrQueryResponse rsp, String contentType)
+      throws Exception {
+    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
+    ContentStreamBase.StringStream stream = new ContentStreamBase.StringStream(content);
+    if (contentType != null) {
+      stream.setContentType(contentType);
+    }
+    try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
+      new NDJsonLoader().load(req, rsp, stream, processor);
+    }
+    return processor;
   }
 
   @Test
@@ -153,16 +150,9 @@ public class NDJsonLoaderTest extends SolrTestCase {
   public void testEcho() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("echo", "true");
-    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
-      new NDJsonLoader()
-          .load(
-              req,
-              rsp,
-              new ContentStreamBase.StringStream("{\"id\":\"1\"}\n{\"id\":\"2\"}\n"),
-              processor);
-    }
+    BufferingRequestProcessor processor =
+        load("{\"id\":\"1\"}\n{\"id\":\"2\"}\n", params, rsp, null);
     assertTrue(processor.addCommands.isEmpty());
     assertEquals(List.of(Map.of("id", "1"), Map.of("id", "2")), rsp.getValues().get("docs"));
   }

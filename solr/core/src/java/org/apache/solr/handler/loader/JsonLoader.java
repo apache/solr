@@ -88,7 +88,7 @@ public class JsonLoader extends ContentStreamLoader {
   }
 
   /** Subclasses may supply a loader that parses a different flavour of JSON. */
-  protected ContentStreamLoader createLoader(
+  protected SingleThreadedJsonLoader createLoader(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
     return new SingleThreadedJsonLoader(req, rsp, processor);
   }

@@ -128,16 +128,10 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
   }
 
   private SolrQueryRequest runUpdateApi(String path, String... streamContentTypes) {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    final SolrQueryRequestBase req = runUpdateApi(path, params, streamContentTypes);
-    return req;
+    return runUpdateApi(path, new ModifiableSolrParams(), streamContentTypes);
   }
 
-  private SolrQueryRequestBase runUpdateApi(String path, ModifiableSolrParams params) {
-    return runUpdateApi(path, params, new String[0]);
-  }
-
-  private SolrQueryRequestBase runUpdateApi(
+  private SolrQueryRequest runUpdateApi(
       String path, ModifiableSolrParams params, String... streamContentTypes) {
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(path, "POST", parts);

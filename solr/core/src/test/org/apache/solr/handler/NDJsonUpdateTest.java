@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.Matchers.containsString;
@@ -187,7 +186,7 @@ public class NDJsonUpdateTest extends SolrTestCase {
         "[{\"id\":\"1\"},{\"id\":\"2\"},{\"id\":\"3\"}]".getBytes(StandardCharsets.UTF_8),
         "application/json");
     req.process(solrTestRule.getAdminClient());
-    assertEquals(List.of("1", "2", "3"), query().stream().map(d -> d.get("id")).collect(toList()));
+    assertEquals(List.of("1", "2", "3"), query().stream().map(d -> d.get("id")).toList());
   }
 
   @Test
@@ -228,10 +227,10 @@ public class NDJsonUpdateTest extends SolrTestCase {
   private static void assertIndexed() throws Exception {
     SolrDocumentList docs = query();
     assertEquals(3, docs.getNumFound());
-    assertEquals(List.of("1", "2", "3"), docs.stream().map(d -> d.get("id")).collect(toList()));
+    assertEquals(List.of("1", "2", "3"), docs.stream().map(d -> d.get("id")).toList());
     assertEquals(
         List.of("one", "Bl\u00e5b\u00e6rsyltet\u00f8y", "\u65e5\u672c\u8a9e"),
-        docs.stream().map(d -> d.get("title_s")).collect(toList()));
+        docs.stream().map(d -> d.get("title_s")).toList());
   }
 
   private static SolrDocumentList query() throws Exception {

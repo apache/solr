@@ -84,7 +84,6 @@ import org.xml.sax.SAXException;
 /** Supports post command in the bin/solr script. */
 public class PostTool extends ToolBase {
 
-  /** The media type the ND-JSON spec recommends; Solr also accepts other spellings. */
   static final String NDJSON_MIME = "application/x-ndjson";
 
   public static final String DEFAULT_FILE_TYPES =

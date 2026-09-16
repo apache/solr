@@ -768,7 +768,6 @@ The indexed documents would be added to the index with fields that look like thi
 
 Multiple documents can be sent in a single request as a JSON array, as in this example:
 
-
 [tabs#array]
 ======
 V1 API::

@@ -31,7 +31,7 @@ import org.noggit.JSONParser;
  * <p>Tracking happens in {@link #fill()}, which sees every character exactly once as it enters the
  * buffer, and in {@link #nextEvent()}, which observes where each top level object starts and ends.
  */
-public class NDJsonParser extends JSONParser {
+class NDJsonParser extends JSONParser {
 
   private static final int BUFFER_SIZE = 8192;
 
@@ -51,12 +51,12 @@ public class NDJsonParser extends JSONParser {
   private long documentStartLine = -1;
   private long previousDocumentEndLine = -1;
 
-  public NDJsonParser(Reader in) {
+  NDJsonParser(Reader in) {
     super(in, new char[BUFFER_SIZE]);
   }
 
   /** The line the parser has reached, 1-based, for error reporting. */
-  public long getLineNumber() {
+  long getLineNumber() {
     return lineNumberAtCurrentPosition();
   }
 
