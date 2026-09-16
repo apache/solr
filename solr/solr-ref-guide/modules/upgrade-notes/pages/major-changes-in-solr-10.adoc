@@ -48,11 +48,7 @@ To retain compatibility with existing sorted indexes, deferring a reindex, keep 
 
 === JSON Lines on /update/json/docs is deprecated
 
-The `/update/json/docs` path, and the v2 `/update` and `/update/json` paths that map to it, currently accept a payload of several JSON objects following one another with no enclosing array, a shape this guide used to describe as https://jsonlines.org/[JSON Lines].
-That is deprecated: a future version will accept only a single well-formed JSON value, meaning one object or one array of objects.
-
-Send newline delimited documents to the xref:indexing-guide:indexing-with-update-handlers.adoc#newline-delimited-json[ND-JSON endpoints] instead -- `/update` with `Content-Type: application/x-ndjson`, or the `/update/ndjson` path.
-Those validate the format as it streams and report the offending line number when a line does not comply, which the `/update/json/docs` path does not.
+The `/update/json/docs` path, and the v2 `/update` and `/update/json` paths that map to it, currently accept a payload of several whitespace spearated JSON objects. In a future version, only valid JSON will be allowed for this endpoint (either a single JSON object or an array of objects). Use the `/update/json/ndjson` endpoint for JSON Lines (newline-delimited JSON) payloads.
 
 === Universal connection string support
 
