@@ -25,7 +25,6 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -43,52 +42,14 @@ import org.noggit.JSONParser.ParseException;
  * request parameters or a separate request for those.
  *
  * <p>The only differences from that path are the restrictions the format itself implies, all
- * enforced while streaming: the content must be UTF-8, every document sits on a line of its own, no
- * line may exceed {@link #MAX_LINE_LENGTH_PROP} characters, and {@code split} must start at the
- * document root, since a line is already one document.
+ * enforced while streaming: the content must be UTF-8, every document sits on a line of its own,
+ * and {@code split} must start at the document root, since a line is already one document.
  */
 public class NDJsonLoader extends JsonLoader {
 
   /** The content types that select this loader. */
   public static final Set<String> CONTENT_TYPES =
       Set.of("application/x-ndjson", "application/jsonl", "application/x-jsonlines");
-
-  /** System property setting the characters a single line may span, for all update handlers. */
-  public static final String MAX_LINE_LENGTH_PROP = "solr.ndjson.maxLineLength";
-
-  /** Smallest default line budget, so that a tiny heap still accepts ordinary documents. */
-  public static final int MIN_DEFAULT_MAX_LINE_LENGTH = 1024 * 1024;
-
-  /**
-   * Parsing a line costs roughly this many heap bytes per character. Only the parsed record and the
-   * document built from it are held, never the line itself, which comes to less than this for a few
-   * large values and more for many small fields, so the estimate stays deliberately middling.
-   */
-  private static final int HEAP_BYTES_PER_CHAR = 8;
-
-  /** Share of the heap a single line may occupy while being parsed. */
-  private static final int HEAP_FRACTION = 4;
-
-  private int maxLineLength =
-      EnvUtils.getPropertyAsInteger(MAX_LINE_LENGTH_PROP, defaultMaxLineLength());
-
-  /**
-   * The line budget to use when nothing is configured: enough characters to occupy {@code 1 /
-   * HEAP_FRACTION} of the heap while parsing. This is a backstop against input that is not really
-   * newline delimited, not a limit on how large a document may be, so it is deliberately generous.
-   */
-  public static int defaultMaxLineLength() {
-    long fromHeap = Runtime.getRuntime().maxMemory() / HEAP_FRACTION / HEAP_BYTES_PER_CHAR;
-    return Math.clamp(fromHeap, MIN_DEFAULT_MAX_LINE_LENGTH, Integer.MAX_VALUE);
-  }
-
-  @Override
-  public ContentStreamLoader init(SolrParams args) {
-    if (args != null) {
-      maxLineLength = args.getInt("maxLineLength", maxLineLength);
-    }
-    return this;
-  }
 
   @Override
   public void load(
@@ -104,7 +65,7 @@ public class NDJsonLoader extends JsonLoader {
   @Override
   protected SingleThreadedJsonLoader createLoader(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
-    return new SingleThreadedNDJsonLoader(req, rsp, processor, maxLineLength);
+    return new SingleThreadedNDJsonLoader(req, rsp, processor);
   }
 
   /**
@@ -122,16 +83,11 @@ public class NDJsonLoader extends JsonLoader {
 
   private static class SingleThreadedNDJsonLoader extends SingleThreadedJsonLoader {
 
-    private final int maxLineLength;
     private NDJsonParser ndJsonParser;
 
     SingleThreadedNDJsonLoader(
-        SolrQueryRequest req,
-        SolrQueryResponse rsp,
-        UpdateRequestProcessor processor,
-        int maxLineLength) {
+        SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
       super(req, rsp, processor);
-      this.maxLineLength = maxLineLength;
     }
 
     /** As the base loader, but reporting a malformed document by line rather than by offset. */
@@ -166,7 +122,7 @@ public class NDJsonLoader extends JsonLoader {
 
     @Override
     JSONParser createParser(Reader reader, String srcField) {
-      ndJsonParser = new NDJsonParser(reader, maxLineLength);
+      ndJsonParser = new NDJsonParser(reader);
       return ndJsonParser;
     }
 

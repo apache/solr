@@ -24,9 +24,9 @@ import org.noggit.JSONParser;
 
 /**
  * A {@link JSONParser} that enforces the newline delimited JSON contract while parsing: every
- * document sits on a line of its own, and no line may grow past {@code maxLineLength}. Newlines are
- * only whitespace to JSON itself, so the contract is checked here rather than by framing the input
- * into lines, which lets documents stream without ever being materialized as a line.
+ * document is a JSON object sitting on a line of its own. Newlines are only whitespace to JSON
+ * itself, so the contract is checked here rather than by framing the input into lines, which lets
+ * documents stream without ever being materialized as a line.
  *
  * <p>Tracking happens in {@link #fill()}, which sees every character exactly once as it enters the
  * buffer, and in {@link #nextEvent()}, which observes where each top level object starts and ends.
@@ -35,16 +35,11 @@ public class NDJsonParser extends JSONParser {
 
   private static final int BUFFER_SIZE = 8192;
 
-  private final int maxLineLength;
-
   /** Absolute offsets of newlines already seen by {@link #fill()}, not yet reached by parsing. */
   private long[] newlines = new long[16];
 
   private int head;
   private int tail;
-
-  /** Absolute offset just past the most recent line terminator. */
-  private long lineStart;
 
   private boolean lastWasCarriageReturn;
 
@@ -56,9 +51,8 @@ public class NDJsonParser extends JSONParser {
   private long documentStartLine = -1;
   private long previousDocumentEndLine = -1;
 
-  public NDJsonParser(Reader in, int maxLineLength) {
+  public NDJsonParser(Reader in) {
     super(in, new char[BUFFER_SIZE]);
-    this.maxLineLength = maxLineLength;
   }
 
   /** The line the parser has reached, 1-based, for error reporting. */
@@ -131,17 +125,14 @@ public class NDJsonParser extends JSONParser {
         if (!(c == '\n' && lastWasCarriageReturn)) {
           record(position);
         }
-        lineStart = position + 1;
         lastWasCarriageReturn = c == '\r';
       } else {
         lastWasCarriageReturn = false;
       }
     }
-    assertLineLength(gpos + end);
   }
 
   private void record(long position) {
-    assertLineLength(position);
     if (tail == newlines.length) {
       if (head > 0) {
         System.arraycopy(newlines, head, newlines, 0, tail - head);
@@ -152,16 +143,6 @@ public class NDJsonParser extends JSONParser {
       }
     }
     newlines[tail++] = position;
-  }
-
-  private void assertLineLength(long position) {
-    if (position - lineStart > maxLineLength) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "NDJSON line exceeds maxLineLength of "
-              + maxLineLength
-              + " characters; is the input really newline delimited?");
-    }
   }
 
   /**

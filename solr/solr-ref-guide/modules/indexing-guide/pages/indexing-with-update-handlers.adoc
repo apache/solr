@@ -502,16 +502,6 @@ Blank lines are ignored.
 A line that is not a single JSON Object -- an enclosing array, a document spread over several lines, two documents on one line, or anything that is not an Object -- fails the request, reporting the line number.
 Documents from earlier lines have already been submitted when a later line fails, so a failed load may be partially applied.
 
-A single line is also bounded in length, by default a quarter of the max heap while parsing, or about 64 million characters on a 2 GB heap.
-Set it with the `solr.ndjson.maxLineLength` system property (in characters) or a `maxLineLength` init argument:
-
-[source,xml]
-----
-<requestHandler name="/update" class="solr.UpdateRequestHandler">
-  <int name="maxLineLength">134217728</int>
-</requestHandler>
-----
-
 NDJSON carries documents only; the `add`, `delete`, `commit`, `optimize`, and `rollback` commands are not recognized, so use request parameters such as `commit` and `commitWithin` instead.
 
 Documents are mapped as on the `/update/json/docs` path, described in xref:transforming-and-indexing-custom-json.adoc[]: by default a nested JSON Object is *flattened* into dotted field names, so `{"id":"1","author":{"name":"Jan"}}` indexes `author.name`.
