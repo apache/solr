@@ -108,6 +108,19 @@ public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testCheckHttpStatusIncludesReasonWhenPresent() throws Exception {
+    try (InputStream is = getResponse()) {
+      NamedList<Object> response =
+          InputStreamResponseParser.createInputStreamNamedList(400, "Bad Request", is);
+      IOException e =
+          assertThrows(
+              IOException.class, () -> InputStreamResponseParser.checkHttpStatus(response));
+      assertTrue(e.getMessage().contains("400"));
+      assertTrue(e.getMessage().contains("Bad Request"));
+    }
+  }
+
+  @Test
   public void testCheckHttpStatusAllows2xx() throws Exception {
     try (InputStream is = getResponse()) {
       NamedList<Object> response = InputStreamResponseParser.createInputStreamNamedList(200, is);

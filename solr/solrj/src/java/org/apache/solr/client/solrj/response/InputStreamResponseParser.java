@@ -34,6 +34,7 @@ public class InputStreamResponseParser extends ResponseParser {
 
   public static String STREAM_KEY = "stream";
   public static String HTTP_STATUS_KEY = "responseStatus";
+  public static String HTTP_REASON_KEY = "responseReason";
 
   private final String writerType;
 
@@ -78,7 +79,11 @@ public class InputStreamResponseParser extends ResponseParser {
       throws IOException {
     Object status = response.get(HTTP_STATUS_KEY);
     if (status instanceof Integer httpStatus && (httpStatus < 200 || httpStatus >= 300)) {
-      String msg = String.format(Locale.ROOT, "Unexpected HTTP status [%d] in response", httpStatus);
+      Object reason = response.get(HTTP_REASON_KEY);
+      String msg =
+          reason instanceof String r && !r.isEmpty()
+              ? String.format(Locale.ROOT, "Unexpected HTTP status [%d %s] in response", httpStatus, r)
+              : String.format(Locale.ROOT, "Unexpected HTTP status [%d] in response", httpStatus);
       throw new IOException(detail == null ? msg : msg + ": " + detail);
     }
   }
@@ -100,9 +105,22 @@ public class InputStreamResponseParser extends ResponseParser {
 
   public static NamedList<Object> createInputStreamNamedList(
       int httpStatus, InputStream inputStream) {
+    return createInputStreamNamedList(httpStatus, null, inputStream);
+  }
+
+  /**
+   * As {@link #createInputStreamNamedList(int, InputStream)}, also recording the HTTP reason
+   * phrase (e.g. "Bad Request") under {@link #HTTP_REASON_KEY}, when known, so callers building
+   * an error message have more to go on than the bare status code.
+   */
+  public static NamedList<Object> createInputStreamNamedList(
+      int httpStatus, String reason, InputStream inputStream) {
     final var nl = new SimpleOrderedMap<>();
     nl.add(STREAM_KEY, inputStream);
     nl.add(HTTP_STATUS_KEY, httpStatus);
+    if (reason != null) {
+      nl.add(HTTP_REASON_KEY, reason);
+    }
     return nl;
   }
 }
