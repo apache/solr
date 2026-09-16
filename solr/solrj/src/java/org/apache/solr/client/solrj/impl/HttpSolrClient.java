@@ -46,8 +46,13 @@ import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +69,23 @@ import org.slf4j.LoggerFactory;
 public abstract class HttpSolrClient extends SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
+
+  /**
+   * See {@link #getUrlParamNames()}. Default set are interesting for routing or fundamental request
+   * purpose
+   */
+  public static final Set<String> DEFAULT_URL_PARAM_NAMES =
+      Set.of(
+          CoreAdminParams.ACTION,
+          CommonAdminParams.ASYNC,
+          CollectionAdminParams.COLLECTION,
+          "name", // core/collection name
+          "command", // e.g. for replication
+          ShardParams.IS_SHARD,
+          CommonParams.DISTRIB,
+          ShardParams._ROUTE_,
+          ShardParams.SHARDS_PREFERENCE,
+          ShardParams.SHARDS_PURPOSE);
 
   protected final String baseUrl;
   protected final long requestTimeoutMillis;
@@ -87,11 +109,7 @@ public abstract class HttpSolrClient extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.urlParamNames != null) {
-      this.urlParamNames = builder.urlParamNames;
-    } else {
-      this.urlParamNames = Set.of();
-    }
+    this.urlParamNames = Objects.requireNonNullElse(builder.urlParamNames, DEFAULT_URL_PARAM_NAMES);
   }
 
   private static String extractBaseUrl(String serverBaseUrl) {
@@ -134,10 +152,15 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' param is used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    return wparams;
+
+    // The parser's own params take precedence over the request's, as wt does.
+    var params =
+        new ModifiableSolrParams(
+            SolrParams.wrapDefaults(
+                parserToUse.getAdditionalRequestParams(), solrRequest.getParams()));
+    // set() removes the param when the writer type is null, which is how a parser asks for no wt.
+    params.set(CommonParams.WT, parserToUse.getWriterType());
+    return params;
   }
 
   protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {

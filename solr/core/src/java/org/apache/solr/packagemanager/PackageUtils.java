@@ -41,12 +41,11 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
@@ -168,9 +167,8 @@ public class PackageUtils {
       GenericSolrRequest request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
               .setRequiresCollection(isCollectionApi);
-      request.setResponseParser(new JsonMapResponseParser());
-      NamedList<Object> response = client.request(request);
-      return response.jsonStr();
+      request.setResponseParser(new InputStreamResponseParser("json"));
+      return InputStreamResponseParser.consumeResponseToString(client.request(request));
     } catch (IOException | SolrServerException e) {
       throw new RuntimeException(e);
     }

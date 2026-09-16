@@ -49,7 +49,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/api/cores` |Create a core.
 |`/api/cores/_core-name_` |Reload, rename, delete, and unload a core.
 |`/api/node` |Perform overseer operation, rejoin leader election.
-|`/api/cluster` |Add role, remove role, set cluster property.
+|`/api/cluster` |List live nodes, add role, remove role, set cluster property.
 |===
 
 == Introspect

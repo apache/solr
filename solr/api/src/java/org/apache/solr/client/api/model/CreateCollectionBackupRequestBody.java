@@ -24,8 +24,6 @@ public class CreateCollectionBackupRequestBody {
   @JsonProperty public String repository;
   @JsonProperty public Boolean followAliases;
   @JsonProperty public String backupStrategy;
-  @JsonProperty public String snapshotName;
-  @JsonProperty public Boolean incremental;
   @JsonProperty public Boolean backupConfigset;
   @JsonProperty public Integer maxNumBackupPoints;
   @JsonProperty public String async;

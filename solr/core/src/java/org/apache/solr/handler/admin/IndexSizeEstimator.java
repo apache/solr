@@ -585,6 +585,8 @@ public class IndexSizeEstimator {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether getMergeInstance() returned a new closeable clone
   private void estimateStoredFields(Map<String, Object> result) throws IOException {
     log.info("- estimating stored fields...");
     Map<String, Map<String, Object>> stats = new HashMap<>();

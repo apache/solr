@@ -419,12 +419,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.getSolrClient().commit("corex");
 
     Path dataDir = null;
-    try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
-      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.dataDir;
-      dataDir = Path.of(dataDirectory);
-      assertTrue(Files.exists(dataDir));
-    }
+    SolrClient client = runner.getSolrClient();
+    final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+    String dataDirectory = status.dataDir;
+    dataDir = Path.of(dataDirectory);
+    assertTrue(Files.exists(dataDir));
 
     Path subHome = solrHomeDirectory.resolve("corex").resolve("conf");
     Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
