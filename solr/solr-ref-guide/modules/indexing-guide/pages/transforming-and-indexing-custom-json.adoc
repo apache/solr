@@ -39,6 +39,8 @@ If the entire JSON makes a single Solr document, the path must be “`/`”.
 +
 It is possible to pass multiple `split` paths by separating them with a pipe `(|)`, for example: `split=/|/foo|/foo/bar`.
 If one path is a child of another, they automatically become a child document.
++
+With ND-JSON every line is already one document, so `split` serves only to declare nesting there, and its first path must be the root “`/`”.
 
 `f`::
 +
@@ -85,7 +87,7 @@ This is the same field that other handlers use as a default search field.
 |===
 +
 This is the name of the field to which the JSON source will be stored into.
-This can only be used if `split=/` (i.e., you want your JSON input file to be indexed as a single Solr document).
+This can only be used if `split=/` (i.e., you want your JSON input file to be indexed as a single Solr document), and it is not supported with ND-JSON.
 Note that atomic updates will cause the field to be out-of-sync with the document.
 
 `echo`::
@@ -807,7 +809,7 @@ curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Conten
 
 To send one document per line instead, use the xref:indexing-with-update-handlers.adoc#newline-delimited-json[ND-JSON] endpoints: `/update` with `Content-Type: application/x-ndjson`, or the `/update/ndjson` path.
 Solr then requires exactly one JSON Object per line in UTF-8, and reports the offending line number when a line does not comply.
-The mapping parameters on this page apply there as well, with two exceptions: `split` must list the document root `/` first, since each line is already one document, and `srcField` is not supported.
+All of the mapping parameters above apply there, `f`, `df`, `mapUniqueKeyOnly` and `echo` unchanged, with the two differences noted under `split` and `srcField`.
 
 == Tips for Custom JSON Indexing
 

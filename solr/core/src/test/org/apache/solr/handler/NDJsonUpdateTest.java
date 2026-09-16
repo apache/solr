@@ -133,6 +133,30 @@ public class NDJsonUpdateTest extends SolrTestCase {
     assertEquals("nested", query().get(0).getFieldValue("child.title_s"));
   }
 
+  /** mapUniqueKeyOnly and df are inherited from the JSON docs path. */
+  @Test
+  public void testMapUniqueKeyOnly() throws Exception {
+    ModifiableSolrParams params = commitParams();
+    params.set("mapUniqueKeyOnly", "true");
+    params.set("df", "_text_");
+    GenericSolrRequest req = new GenericSolrRequest(POST, "/update", params);
+    req.setRequiresCollection(true);
+    req.withContent(NDJSON.getBytes(StandardCharsets.UTF_8), "application/x-ndjson");
+    req.process(solrTestRule.getSolrClient(COLLECTION));
+
+    SolrDocumentList docs = query();
+    assertEquals(3, docs.getNumFound());
+    assertNull("only the uniqueKey is mapped", docs.get(0).get("title_s"));
+    assertEquals(
+        "other fields go to df",
+        1,
+        solrTestRule
+            .getSolrClient(COLLECTION)
+            .query(new SolrQuery("_text_:one"))
+            .getResults()
+            .getNumFound());
+  }
+
   /** NDJSON is defined as UTF-8, so any other declared charset is rejected rather than decoded. */
   @Test
   public void testNonUtf8CharsetIsRejected() {
