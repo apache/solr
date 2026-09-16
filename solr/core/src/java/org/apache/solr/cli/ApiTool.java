@@ -22,7 +22,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -98,11 +97,7 @@ public class ApiTool extends ToolBase {
       req.setResponseParser(new InputStreamResponseParser("json"));
       var response = solrClient.request(req);
       String body = InputStreamResponseParser.consumeResponseToString(response);
-      Object status = response.get(InputStreamResponseParser.HTTP_STATUS_KEY);
-      if (status instanceof Integer httpStatus && (httpStatus < 200 || httpStatus >= 300)) {
-        throw new SolrServerException(
-            "Solr responded with HTTP " + httpStatus + " for " + url + ": " + body);
-      }
+      InputStreamResponseParser.checkHttpStatus(response, url + ": " + body);
       return body;
     }
   }

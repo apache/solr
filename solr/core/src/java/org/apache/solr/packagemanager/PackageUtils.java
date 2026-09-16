@@ -170,11 +170,7 @@ public class PackageUtils {
       request.setResponseParser(new InputStreamResponseParser("json"));
       var response = client.request(request);
       String body = InputStreamResponseParser.consumeResponseToString(response);
-      Object status = response.get(InputStreamResponseParser.HTTP_STATUS_KEY);
-      if (status instanceof Integer httpStatus && (httpStatus < 200 || httpStatus >= 300)) {
-        throw new SolrServerException(
-            "Solr responded with HTTP " + httpStatus + " for " + path + ": " + body);
-      }
+      InputStreamResponseParser.checkHttpStatus(response, path + ": " + body);
       return body;
     } catch (IOException | SolrServerException e) {
       throw new RuntimeException(e);

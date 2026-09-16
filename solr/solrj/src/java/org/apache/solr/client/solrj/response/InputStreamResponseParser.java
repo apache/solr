@@ -66,10 +66,20 @@ public class InputStreamResponseParser extends ResponseParser {
    * {@link #consumeResponseToString}, which does not check either -- should call this first.
    */
   public static void checkHttpStatus(NamedList<Object> response) throws IOException {
+    checkHttpStatus(response, null);
+  }
+
+  /**
+   * As {@link #checkHttpStatus(NamedList)}, appending {@code detail} to the exception message
+   * when the status is not 2xx -- e.g. the request URL, or a body already consumed for another
+   * purpose.
+   */
+  public static void checkHttpStatus(NamedList<Object> response, String detail)
+      throws IOException {
     Object status = response.get(HTTP_STATUS_KEY);
     if (status instanceof Integer httpStatus && (httpStatus < 200 || httpStatus >= 300)) {
-      throw new IOException(
-          String.format(Locale.ROOT, "Unexpected HTTP status [%d] in response", httpStatus));
+      String msg = String.format(Locale.ROOT, "Unexpected HTTP status [%d] in response", httpStatus);
+      throw new IOException(detail == null ? msg : msg + ": " + detail);
     }
   }
 
