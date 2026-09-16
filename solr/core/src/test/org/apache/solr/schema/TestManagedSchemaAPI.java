@@ -40,7 +40,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     configureCluster(2)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))

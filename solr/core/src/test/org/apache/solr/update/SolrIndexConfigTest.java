@@ -319,7 +319,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals(
         IndexWriterConfig.DEFAULT_MAX_FULL_FLUSH_MERGE_WAIT_MILLIS,
         sc.indexConfig.toIndexWriterConfig(h.getCore()).getMaxFullFlushMergeWaitMillis());
-    System.setProperty("solr.tests.maxCommitMergeWaitTime", "10");
+    System.setProperty("tests.solr.maxCommitMergeWaitTime", "10");
     sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-test-misc.xml");
     assertEquals(10, sc.indexConfig.maxCommitMergeWaitMillis);
     assertEquals(

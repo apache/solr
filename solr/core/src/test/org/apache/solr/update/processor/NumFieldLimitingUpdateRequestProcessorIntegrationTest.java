@@ -39,8 +39,8 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
         TEST_PATH().resolve("configsets").resolve("cloud-minimal-field-limiting").resolve("conf");
     configureCluster(1).addConfig(FIELD_LIMITING_CS_NAME, configPath).configure();
 
-    System.setProperty("solr.test.fieldLimit.warnOnly", "false");
-    System.setProperty("solr.test.maxFields", String.valueOf(100));
+    System.setProperty("tests.solr.fieldLimit.warnOnly", "false");
+    System.setProperty("tests.solr.maxFields", String.valueOf(100));
   }
 
   @Before
@@ -48,8 +48,8 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
   public void setUp() throws Exception {
     super.setUp();
 
-    System.setProperty("solr.test.fieldLimit.warnOnly", "false");
-    System.setProperty("solr.test.maxFields", String.valueOf(100));
+    System.setProperty("tests.solr.fieldLimit.warnOnly", "false");
+    System.setProperty("tests.solr.maxFields", String.valueOf(100));
 
     // Collection might already exist if test is being run multiple times
     final var collections = CollectionAdminRequest.listCollections(cluster.getSolrClient());
@@ -107,7 +107,7 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
   }
 
   private void setWarnOnly(boolean warnOnly) throws Exception {
-    System.setProperty("solr.test.fieldLimit.warnOnly", String.valueOf(warnOnly));
+    System.setProperty("tests.solr.fieldLimit.warnOnly", String.valueOf(warnOnly));
 
     final var reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION_NAME);
     final var reloadResponse = reloadRequest.process(cluster.getSolrClient());
@@ -115,7 +115,7 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
   }
 
   private void setFieldLimitTo(int value) throws Exception {
-    System.setProperty("solr.test.maxFields", String.valueOf(value));
+    System.setProperty("tests.solr.maxFields", String.valueOf(value));
 
     final var reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION_NAME);
     final var reloadResponse = reloadRequest.process(cluster.getSolrClient());

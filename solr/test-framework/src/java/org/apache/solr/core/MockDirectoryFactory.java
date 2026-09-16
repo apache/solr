@@ -30,9 +30,9 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 public class MockDirectoryFactory extends EphemeralDirectoryFactory {
 
   public static final String SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE =
-      "solr.tests.allow_reading_files_still_open_for_write";
+      "tests.solr.allow_reading_files_still_open_for_write";
   public static final String SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER =
-      "solr.tests.using_mock_directory_wrapper";
+      "tests.solr.using_mock_directory_wrapper";
   private boolean allowReadingFilesStillOpenForWrite =
       Boolean.getBoolean(SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
   private boolean useMockDirectoryWrapper =

@@ -92,7 +92,7 @@ public class TestLanguageModelBase extends RestTestBase {
       Files.delete(largeLanguageModelStore);
     }
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
   }
 
   protected static void afterTest() throws Exception {

@@ -41,7 +41,8 @@ public class TestIndexingPerformance extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty(
+        "tests.solr.directory.factory", "org.apache.solr.core.MockFSDirectoryFactory");
 
     initCore("solrconfig_perf.xml", "schema12.xml");
   }

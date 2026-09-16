@@ -40,7 +40,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     System.setProperty(
         "managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
     System.setProperty("solr.index.updatelog.enabled", "false");

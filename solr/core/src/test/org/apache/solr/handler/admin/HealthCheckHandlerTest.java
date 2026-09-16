@@ -83,7 +83,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       SolrClient solrClient = cluster.getJettySolrRunner(0).getSolrClient();
       CollectionAdminResponse collectionAdminResponse =
           CollectionAdminRequest.createCollection("test", "_default", 1, 1)
-              .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
+              .withProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory")
               .process(solrClient);
       assertEquals(0, collectionAdminResponse.getStatus());
       assertEquals(CommonParams.OK, runHealthcheckWithClient(solrClient).getNodeStatus());

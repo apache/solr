@@ -82,7 +82,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.tests.numeric.dv", "true");
+    System.setProperty("tests.solr.numeric.dv.enabled", "true");
 
     configureCluster(NUM_COLLECTIONS)
         .addConfig(

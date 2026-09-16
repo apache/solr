@@ -54,7 +54,7 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     String collection = COLLECTIONORALIAS;
     configureCluster(2)
         .addConfig(

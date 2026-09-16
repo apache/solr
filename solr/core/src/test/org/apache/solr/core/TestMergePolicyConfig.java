@@ -164,7 +164,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     final Class<? extends MergePolicyFactory> mpfClass =
         byteSizeMP ? LogByteSizeMergePolicyFactory.class : LogDocMergePolicyFactory.class;
 
-    System.setProperty("solr.test.log.merge.policy.factory", mpfClass.getName());
+    System.setProperty("tests.solr.log.merge.policy.factory", mpfClass.getName());
 
     implTestLogMergePolicyConfig("solrconfig-logmergepolicyfactory.xml", mpClass);
   }

@@ -36,8 +36,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   public static void beforeTest() throws Exception {
     // System properties are required by collection1 solrconfig.xml propTest configuration
     // These cannot be removed as they are used for property substitution in the config
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
+    System.setProperty("tests.solr.sys.prop1", "propone");
+    System.setProperty("tests.solr.sys.prop2", "proptwo");
 
     Path solrHomeDirectory = createTempDir();
     copySolrHomeToTemp(solrHomeDirectory, "collection1");

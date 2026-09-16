@@ -21,7 +21,7 @@
 
   <!-- Test EnumFieldType -->
   <!-- Begin bad stuff: EnumFieldType requires docValues -->
-  <field name="severity" type="severityType" indexed="${solr.tests.EnumFieldTest.indexed}" stored="true" multiValued="false" docValues="false"/>
+  <field name="severity" type="severityType" indexed="${tests.solr.EnumFieldTest.indexed.enabled}" stored="true" multiValued="false" docValues="false"/>
   <!-- End bad stuff -->
 
   <uniqueKey>id</uniqueKey>
@@ -30,5 +30,5 @@
        but you can always add new values to the end. -->
   <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
   <fieldType name="string" class="solr.StrField"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" docValues="${tests.solr.numeric.dv.enabled}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 </schema>

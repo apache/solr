@@ -24,10 +24,10 @@
   <dataDir>${solr.data.dir:}</dataDir>
 
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${tests.solr.directory.factory:solr.NRTCachingDirectoryFactory}"/>
 
   <schemaFactory class="ManagedIndexSchemaFactory">
-    <bool name="mutable">${managed.schema.mutable}</bool>
+    <bool name="mutable">${tests.solr.schema.managed.mutable}</bool>
     <str name="managedSchemaResourceName">managed-schema.xml</str>
   </schemaFactory>
 

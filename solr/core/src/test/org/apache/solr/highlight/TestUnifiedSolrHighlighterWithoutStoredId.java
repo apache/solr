@@ -23,7 +23,7 @@ public class TestUnifiedSolrHighlighterWithoutStoredId extends TestUnifiedSolrHi
 
   @BeforeClass
   public static void beforeClassProps() {
-    System.setProperty("solr.tests.id.stored", "false");
-    System.setProperty("solr.tests.id.docValues", "true");
+    System.setProperty("tests.solr.id.stored", "false");
+    System.setProperty("tests.solr.id.docValues", "true");
   }
 }

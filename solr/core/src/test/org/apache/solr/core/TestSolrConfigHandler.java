@@ -82,7 +82,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     Path tmpSolrHome = createTempDir();
     PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml");

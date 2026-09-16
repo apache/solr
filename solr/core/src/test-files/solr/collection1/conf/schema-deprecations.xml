@@ -19,7 +19,7 @@
 
   <types>
     <fieldType name="string" class="solr.StrField"/>
-    <fieldType name="long" class="${solr.tests.LongFieldType}"/>
+    <fieldType name="long" class="${tests.solr.LongFieldType}"/>
   </types>
 
   <fields>

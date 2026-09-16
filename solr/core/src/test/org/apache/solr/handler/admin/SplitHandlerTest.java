@@ -38,7 +38,8 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("managed.schema.mutable", "true"); // needed by cloud-managed config set
+    System.setProperty(
+        "tests.solr.schema.managed.mutable", "true"); // needed by cloud-managed config set
     initCore("solrconfig.xml", "schema_latest.xml");
   }
 

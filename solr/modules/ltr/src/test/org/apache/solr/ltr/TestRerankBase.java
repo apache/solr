@@ -171,7 +171,7 @@ public class TestRerankBase extends RestTestBase {
           tmpSolrHome.resolve(CONF_DIR).resolve("schema.xml"));
     }
 
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
   }
 
   public static void setuptest(String solrconfig, String schema) throws Exception {

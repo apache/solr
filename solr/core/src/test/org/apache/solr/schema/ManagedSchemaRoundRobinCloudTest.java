@@ -39,7 +39,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     configureCluster(NUM_SHARDS).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, NUM_SHARDS, 1)
         .process(cluster.getSolrClient());

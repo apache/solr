@@ -56,7 +56,7 @@
   <dataDir>${solr.data.dir:}</dataDir>
 
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${tests.solr.directory.factory:solr.NRTCachingDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
@@ -78,4 +78,3 @@
   </initParams>
 
 </config>
-

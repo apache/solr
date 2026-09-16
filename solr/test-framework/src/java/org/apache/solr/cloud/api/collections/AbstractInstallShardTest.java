@@ -80,7 +80,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   @BeforeClass
   public static void seedDocGenerator() {
     docsSeed = random().nextLong();
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
   }
 
   @Before

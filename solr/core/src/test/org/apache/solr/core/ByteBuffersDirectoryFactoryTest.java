@@ -68,7 +68,7 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
 
   public void testIndexRetrieve() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.ByteBuffersDirectoryFactory");
+    System.setProperty("tests.solr.directory.factory", "solr.ByteBuffersDirectoryFactory");
     initCore("solrconfig-minimal.xml", "schema-minimal.xml");
     DirectoryFactory factory = h.getCore().getDirectoryFactory();
     assertTrue(

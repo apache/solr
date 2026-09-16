@@ -43,8 +43,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
-    System.setProperty("solr.ulog.numRecordsToKeep", "1000");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.ulog.numRecordsToKeep", "1000");
 
     configureCluster(3)
         .addConfig(

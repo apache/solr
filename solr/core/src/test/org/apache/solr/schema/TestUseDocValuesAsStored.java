@@ -127,7 +127,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("solr.index.updatelog.enabled", "false");
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("tests.solr.schema.managed.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome);
 
     assertQ("sanity check", req("q", "*:*"), "//*[@numFound='0']");

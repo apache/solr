@@ -218,12 +218,12 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertEquals(
         "ramBufferSizeMB sysprop",
-        Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")),
+        Double.parseDouble(System.getProperty("tests.solr.ramBufferSizeMB")),
         sic.ramBufferSizeMB,
         0.0D);
     assertEquals(
         "ramPerThreadHardLimitMB sysprop",
-        Integer.parseInt(System.getProperty("solr.tests.ramPerThreadHardLimitMB")),
+        Integer.parseInt(System.getProperty("tests.solr.ramPerThreadHardLimitMB")),
         sic.ramPerThreadHardLimitMB);
     assertEquals(
         "useCompoundFile sysprop",

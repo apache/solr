@@ -42,7 +42,8 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
 
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.NIOFSDirectoryFactory");
+    System.setProperty(
+        "tests.solr.directory.factory", "org.apache.solr.core.NIOFSDirectoryFactory");
     // test tests native and simple in the same jvm in the same exact directory:
     // the file will remain after the native test (it cannot safely be deleted without the risk of
     // deleting another guys lock) it's ok, these aren't "compatible" anyway: really this test
@@ -60,13 +61,13 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
     try (ErrorLogMuter ignored = ErrorLogMuter.regex("locked")) {
-      System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
+      System.setProperty("tests.solr.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
       // opening a new core on the same index
       initCore("solrconfig-basic.xml", "schema.xml");
       if (checkForCoreInitException(LockObtainFailedException.class)) return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
-      System.clearProperty("solr.tests.lockType");
+      System.clearProperty("tests.solr.lockType");
       indexWriter.close();
       directory.close();
       deleteCore();
@@ -86,13 +87,13 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
     try (ErrorLogMuter ignored = ErrorLogMuter.regex("locked")) {
-      System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_NATIVE);
+      System.setProperty("tests.solr.lockType", DirectoryFactory.LOCK_TYPE_NATIVE);
       // opening a new core on the same index
       initCore("solrconfig-basic.xml", "schema.xml");
       if (checkForCoreInitException(LockObtainFailedException.class)) return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
-      System.clearProperty("solr.tests.lockType");
+      System.clearProperty("tests.solr.lockType");
       indexWriter.close();
       directory.close();
       deleteCore();

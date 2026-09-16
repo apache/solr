@@ -30,7 +30,7 @@
 
 <config>
 
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
@@ -48,4 +48,3 @@
   <query><useColdSearcher>${tests.solr.useColdSearcher:false}</useColdSearcher></query>
 
 </config>
-

@@ -48,7 +48,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     compoundMergePolicySort = random().nextBoolean();
     if (compoundMergePolicySort) {
       System.setProperty("mergePolicySort", "timestamp_i_dvo desc, id desc");
-      System.setProperty("solr.tests.id.docValues", "true");
+      System.setProperty("tests.solr.id.docValues", "true");
     }
     configureCluster(NUM_SERVERS)
         .addConfig(configName, TEST_HOME().resolve("collection1").resolve("conf"))

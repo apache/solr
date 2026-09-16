@@ -25,8 +25,8 @@
   <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true" />
 
   <fieldType name="string" class="solr.StrField" multiValued="false" indexed="false" stored="false" docValues="false" />
-  <fieldType name="long" class="${solr.tests.LongFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="long" class="${tests.solr.LongFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="int" class="${tests.solr.IntegerFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>
 
   <!-- cruft needed by the solrconfig used in our tests for startup, but not used in the tests -->
   <field name="signatureField" type="string" indexed="true" stored="false"/>

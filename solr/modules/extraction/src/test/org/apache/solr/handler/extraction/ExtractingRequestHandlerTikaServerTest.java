@@ -36,9 +36,9 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
   @BeforeClass
   public static void beforeClassTika() throws Exception {
     String baseUrl = tikaContainer.getBaseUrl();
-    System.setProperty("solr.test.tikaserver.url", baseUrl);
-    System.setProperty("solr.test.extraction.backend", "tikaserver");
-    System.setProperty("solr.test.tikaserver.metadata.compatibility", "true");
+    System.setProperty("tests.solr.tikaserver.url", baseUrl);
+    System.setProperty("tests.solr.extraction.backend", "tikaserver");
+    System.setProperty("tests.solr.tikaserver.metadata.compatibility", "true");
     log.info("Using extraction backend 'tikaserver'. Tika server running on {}", baseUrl);
     initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr"));
   }

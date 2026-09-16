@@ -31,8 +31,8 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
-    System.setProperty("solr.ulog.numRecordsToKeep", "1000");
+    System.setProperty("tests.solr.directory.factory", "solr.StandardDirectoryFactory");
+    System.setProperty("tests.solr.ulog.numRecordsToKeep", "1000");
     // the default is 180s and our waitForState times out in 90s,
     // so we lower this so that we can still test timeouts
     System.setProperty("leaderConflictResolveWait", "5000");

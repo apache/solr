@@ -37,7 +37,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Integer RUN_LENGTH =
-      Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
+      Integer.parseInt(System.getProperty("tests.solr.cloud.cm.runlength", "-1"));
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -79,12 +79,12 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
   public ChaosMonkeySafeLeaderTest() {
     super();
-    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
+    sliceCount = Integer.parseInt(System.getProperty("tests.solr.cloud.cm.slicecount", "-1"));
     if (sliceCount == -1) {
       sliceCount = random().nextInt(TEST_NIGHTLY ? 5 : 3) + 1;
     }
 
-    int numShards = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
+    int numShards = Integer.parseInt(System.getProperty("tests.solr.cloud.cm.shardcount", "-1"));
     if (numShards == -1) {
       // we make sure that there's at least one shard with more than one replica
       // so that the ChaosMonkey has something to kill

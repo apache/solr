@@ -35,11 +35,11 @@
          
          Instead use Solr defaults for almost everything
     -->
-    <lockType>${solr.tests.lockType:single}</lockType>
+    <lockType>${tests.solr.lockType:single}</lockType>
   </indexConfig>
   
   <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+                    class="${tests.solr.directory.factory:solr.NRTCachingDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>

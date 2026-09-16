@@ -1169,7 +1169,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
 <config>
     <luceneMatchVersion>10.0.0</luceneMatchVersion>
     <dataDir>${solr.data.dir:}</dataDir>
-    <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+    <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.NRTCachingDirectoryFactory}"/>
 
     <updateHandler class="solr.DirectUpdateHandler2">
         <updateLog>

@@ -750,7 +750,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 0, 1, 0)
         .setCreateNodeSet(tlogLeaderyJetty.getNodeName())
         // NOTE: we restart the leader, so we need a non-ephemeral index
-        .setProperties(Map.of("solr.directoryFactory", "solr.StandardDirectoryFactory"))
+        .setProperties(Map.of("tests.solr.directory.factory", "solr.StandardDirectoryFactory"))
         .process(cluster.getSolrClient());
 
     // Add 2 PULL replicas on the follower jetty

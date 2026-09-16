@@ -19,7 +19,7 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${tests.solr.directory.factory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <indexConfig>
@@ -28,7 +28,7 @@
       <str name="in.class">org.apache.solr.util.RandomForceMergePolicyFactory</str>
       <str name="sort">${mergePolicySort:timestamp_i_dvo desc}</str>
     </mergePolicyFactory>
-    <lockType>${solr.tests.lockType:single}</lockType>
+    <lockType>${tests.solr.lockType:single}</lockType>
   </indexConfig>
 
   <requestHandler name="/select" class="solr.SearchHandler" />

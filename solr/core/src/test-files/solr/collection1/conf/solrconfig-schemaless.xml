@@ -23,7 +23,7 @@
 
   <!-- This is intentionally commented out, see SOLR-8131 -->
   <!--<schemaFactory class="ManagedIndexSchemaFactory">-->
-    <!--<bool name="mutable">${managed.schema.mutable}</bool>-->
+    <!--<bool name="mutable">${tests.solr.schema.managed.mutable}</bool>-->
     <!--<str name="managedSchemaResourceName">managed-schema.xml</str>-->
   <!--</schemaFactory>-->
 
