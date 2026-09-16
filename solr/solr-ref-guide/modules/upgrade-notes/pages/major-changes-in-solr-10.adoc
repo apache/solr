@@ -46,6 +46,14 @@ If you use xref:configuration-guide:index-segments-merging.adoc#customizing-merg
 This requires a fresh Solr 10.1 index.
 To retain compatibility with existing sorted indexes, deferring a reindex, keep `luceneMatchVersion` at 10.3.1 or earlier in solrconfig.xml.
 
+=== JSON Lines on /update/json/docs is deprecated
+
+The `/update/json/docs` path, and the v2 `/update` and `/update/json` paths that map to it, currently accept a payload of several JSON objects following one another with no enclosing array, a shape this guide used to describe as https://jsonlines.org/[JSON Lines].
+That is deprecated: a future version will accept only a single well-formed JSON value, meaning one object or one array of objects.
+
+Send newline delimited documents to the xref:indexing-guide:indexing-with-update-handlers.adoc#newline-delimited-json[ND-JSON endpoints] instead -- `/update` with `Content-Type: application/x-ndjson`, or the `/update/ndjson` path.
+Those validate the format as it streams and report the offending line number when a line does not comply, which the `/update/json/docs` path does not.
+
 === Universal connection string support
 
 Introduced a universal Solr connection string for SolrCloud connections.

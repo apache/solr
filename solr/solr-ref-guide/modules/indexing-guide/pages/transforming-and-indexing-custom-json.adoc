@@ -764,47 +764,8 @@ The indexed documents would be added to the index with fields that look like thi
 
 == Multiple Documents in a Single Payload
 
-This functionality supports documents in the http://jsonlines.org/[JSON Lines] format (`.jsonl`), which specifies one document per line.
+Multiple documents can be sent in a single request as a JSON array, as in this example:
 
-For example:
-
-[tabs#multidocs]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-
-V2 API User-Managed / Standalone Solr::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-======
-
-Or even an array of documents, as in this example:
 
 [tabs#array]
 ======
@@ -844,9 +805,7 @@ curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Conten
 
 === Newline Delimited JSON
 
-The one-document-per-line payload shown first above is also valid ND-JSON, but `/update/json/docs` merely tolerates that shape: as the second example shows, it equally accepts an enclosing array, and it accepts a document spread over several lines or several documents on one line.
-
-To have the format enforced instead, send the same content with `Content-Type: application/x-ndjson` or to the `/update/ndjson` path, described in xref:indexing-with-update-handlers.adoc#newline-delimited-json[].
+To send one document per line instead, use the xref:indexing-with-update-handlers.adoc#newline-delimited-json[ND-JSON] endpoints: `/update` with `Content-Type: application/x-ndjson`, or the `/update/ndjson` path.
 Solr then requires exactly one JSON Object per line in UTF-8, and reports the offending line number when a line does not comply.
 The mapping parameters on this page apply there as well, with two exceptions: `split` must list the document root `/` first, since each line is already one document, and `srcField` is not supported.
 
