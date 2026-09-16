@@ -1229,55 +1229,26 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       perms = $scope.upsertRole.grantedPerms;
     }
 
-    // Polls checkFn(cb) - which calls back with true/false - until it reports true or we give up.
-    function pollUntil(checkFn, done) {
-      var attemptsLeft = 40;
-      function poll() {
-        checkFn(function (ok) {
-          if (--attemptsLeft <= 0 || ok) {
-            done();
-          } else {
-            $timeout(poll, 250);
-          }
-        });
-      }
-      poll();
-    }
-
-    function userHasRole(user, cb) {
-      AuthorizationV2.getUserRoles(BASIC_SCHEME, user, function (error, data) {
-        cb(!error && data.roles.includes(name));
-      });
-    }
-
-    function permissionHasRole(permName, cb) {
-      AuthorizationV2.listPermissions(function (error, data) {
-        if (error) { cb(false); return; }
-        var perm = data.permissions.find(p => p.name === permName);
-        cb(perm != null && asList(perm.role).includes(name));
-      });
-    }
-
-    // Assigns `name` to one user, replacing their role list, then waits for it to be reflected.
+    // Assigns `name` to one user, replacing their role list.
     function assignRoleToUser(user, done) {
       AuthorizationV2.getUserRoles(BASIC_SCHEME, user, function (error, data, response) {
         if (error) { ApiErrorHandler.handle(response); done(); return; }
         var roles = data.roles.includes(name) ? data.roles : data.roles.concat([name]);
         AuthorizationV2.setUserRoles(BASIC_SCHEME, user, {roles: roles}, function (error2, data2, response2) {
-          if (error2) { ApiErrorHandler.handle(response2); done(); return; }
-          pollUntil(cb => userHasRole(user, cb), done);
+          if (error2) { ApiErrorHandler.handle(response2); }
+          done();
         });
       });
     }
 
     // Grants `name` to one permission - updating it if it already exists, creating it (only if
-    // predefined) otherwise - then waits for it to be reflected.
+    // predefined) otherwise.
     function grantPermissionToRole(permName, existingPerms, done) {
       var existingPerm = existingPerms.find(p => p.name === permName);
 
       function afterGrant(error, response) {
-        if (error) { ApiErrorHandler.handle(response); done(); return; }
-        pollUntil(cb => permissionHasRole(permName, cb), done);
+        if (error) { ApiErrorHandler.handle(response); }
+        done();
       }
 
       if (existingPerm) {
@@ -1297,29 +1268,49 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       }
     }
 
-    function runTasksThenRefresh(tasks) {
+    function runTasks(tasks, done) {
       var remaining = tasks.length;
       if (remaining === 0) {
-        $scope.toggleRoleDialog();
-        $scope.refreshSecurityPanel();
+        done();
         return;
       }
       tasks.forEach(task => task(function () {
         if (--remaining === 0) {
-          $scope.toggleRoleDialog();
-          $scope.refreshSecurityPanel();
+          done();
         }
       }));
     }
 
+    // Once every write above has returned, this is the same single whenReflected("authorization",
+    // ...) poll the legacy command-batch code used - just checking the users/perms this dialog
+    // actually touched, rather than re-inventing per-resource polling against the new v2 GETs.
+    function finishUp(attemptedPerms) {
+      $scope.toggleRoleDialog();
+      whenReflected("authorization", function (data) {
+        var authz = $scope.findEditableAuthz(data);
+        if (!authz) return true;
+        var rolesOk = usersForRole.every(u => asList(authz["user-role"][u]).includes(name));
+        var permsOk = attemptedPerms.every(p => {
+          var have = permissionRoles(data, p);
+          return have != null && have.includes(name);
+        });
+        return rolesOk && permsOk;
+      }, $scope.refreshSecurityPanel);
+    }
+
     var userTasks = usersForRole.map(u => cb => assignRoleToUser(u, cb));
     if (perms.length === 0) {
-      runTasksThenRefresh(userTasks);
+      runTasks(userTasks, () => finishUp([]));
     } else {
       AuthorizationV2.listPermissions(function (error, permsData, response) {
-        if (error) { ApiErrorHandler.handle(response); return; }
+        if (error) { ApiErrorHandler.handle(response); runTasks(userTasks, () => finishUp([])); return; }
         var existingPerms = permsData.permissions;
-        runTasksThenRefresh(userTasks.concat(perms.map(p => cb => grantPermissionToRole(p, existingPerms, cb))));
+        // Only wait on permissions we actually attempted to touch - a custom (non-predefined)
+        // permission that doesn't exist yet is silently skipped by grantPermissionToRole, and
+        // would otherwise look permanently "unreflected" to the check above.
+        var attemptedPerms = perms.filter(p => existingPerms.some(ep => ep.name === p) || $scope.predefinedPermissions.includes(p));
+        var permTasks = attemptedPerms.map(p => cb => grantPermissionToRole(p, existingPerms, cb));
+        runTasks(userTasks.concat(permTasks), () => finishUp(attemptedPerms));
       });
     }
   };
