@@ -138,11 +138,13 @@ public class ServletFixtures {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       String countStr = req.getParameter("count");
+      String packetMsStr = req.getParameter("packetMs");
+      long packetMs = packetMsStr == null ? PACKET_MS : Long.parseLong(packetMsStr);
       IntStream.range(0, countStr == null ? 10 : Integer.parseInt(countStr))
           .forEach(
               i -> {
                 try {
-                  Thread.sleep(PACKET_MS);
+                  Thread.sleep(packetMs);
                   resp.getOutputStream().write(String.valueOf(i).getBytes(StandardCharsets.UTF_8));
                   resp.getOutputStream().flush();
                 } catch (IOException | InterruptedException e) {
