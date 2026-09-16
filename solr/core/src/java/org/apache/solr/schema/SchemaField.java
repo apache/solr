@@ -244,6 +244,10 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return (String) args.getOrDefault(DOC_VALUES_FORMAT, type.getDocValuesFormat());
   }
 
+  public boolean hasDocValuesSkipList() {
+    return (properties & DOC_VALUES_SKIP_LIST) != 0;
+  }
+
   /**
    * Sanity checks that the properties of this field type are plausible for a field that may be used
    * in sorting, throwing an appropriate exception (including the field name) if it is not.
@@ -466,6 +470,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       properties.add(getPropertyName(REQUIRED), isRequired());
       properties.add(getPropertyName(TOKENIZED), isTokenized());
       properties.add(getPropertyName(USE_DOCVALUES_AS_STORED), useDocValuesAsStored());
+      properties.add(getPropertyName(DOC_VALUES_SKIP_LIST), hasDocValuesSkipList());
       // The BINARY property is always false
       // properties.add(getPropertyName(BINARY), isBinary());
     } else {
@@ -534,7 +539,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
 
   @Override
   public DocValuesSkipIndexType docValuesSkipIndexType() {
-    return DocValuesSkipIndexType.NONE;
+    return hasDocValuesSkipList() ? DocValuesSkipIndexType.RANGE : DocValuesSkipIndexType.NONE;
   }
 
   @Override
