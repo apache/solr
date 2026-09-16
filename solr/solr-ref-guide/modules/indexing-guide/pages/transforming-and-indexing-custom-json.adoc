@@ -21,6 +21,7 @@ If you have JSON documents that you would like to index without transforming the
 
 These parameters provide information on how to split a single JSON file into multiple Solr documents and how to map fields to Solr's schema.
 One or more valid JSON documents can be sent to the `/update/json/docs` path with the configuration params.
+The same parameters apply to xref:indexing-with-update-handlers.adoc#newline-delimited-json[newline delimited JSON], sent to `/update/ndjson` or to `/update` with `Content-Type: application/x-ndjson`.
 
 == Mapping Parameters
 
@@ -840,6 +841,14 @@ curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Conten
 ----
 ====
 ======
+
+=== Newline Delimited JSON
+
+The one-document-per-line payload shown first above is also valid ND-JSON, but `/update/json/docs` merely tolerates that shape: as the second example shows, it equally accepts an enclosing array, and it accepts a document spread over several lines or several documents on one line.
+
+To have the format enforced instead, send the same content with `Content-Type: application/x-ndjson` or to the `/update/ndjson` path, described in xref:indexing-with-update-handlers.adoc#newline-delimited-json[].
+Solr then requires exactly one JSON Object per line in UTF-8, and reports the offending line number when a line does not comply.
+The mapping parameters on this page apply there as well, with two exceptions: `split` must list the document root `/` first, since each line is already one document, and `srcField` is not supported.
 
 == Tips for Custom JSON Indexing
 
