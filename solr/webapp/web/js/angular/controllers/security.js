@@ -15,13 +15,19 @@
  limitations under the License.
 */
 
-solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security, ApiErrorHandler) {
+solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security, AuthenticationV2, AuthorizationV2, ApiErrorHandler) {
   $scope.resetMenu("security", Constants.IS_ROOT_PAGE);
 
   $scope.params = [];
   $scope.filteredPredefinedPermissions = [];
 
   var strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*\-_()[\]])[a-zA-Z0-9!@#$%^&*\-_()[\]]{8,30}$/;
+
+  // The Users/Roles v2 APIs address the authentication/authorization scheme they operate on via
+  // this path segment - this panel only ever manages the "basic" scheme (see multiAuthWithBasic
+  // below), so it's a constant here rather than something the user picks. The server ignores it
+  // entirely when MultiAuthPlugin/MultiAuthRuleBasedAuthorizationPlugin isn't configured.
+  var BASIC_SCHEME = "basic";
 
   function toList(str) {
     if (Array.isArray(str)) {
@@ -479,7 +485,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.updateUserRoles = function() {
-    var setUserRoles = {};
     var roles = [];
     if ($scope.upsertUser.selectedRoles) {
       roles = roles.concat($scope.upsertUser.selectedRoles);
@@ -492,9 +497,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     }
     var userRoles = Array.from(new Set(roles));
     var username = $scope.upsertUser.username;
-    setUserRoles[username] = userRoles.length > 0 ? userRoles : null;
-    var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
-    Security.post({path: "authorization"}, cmdJson, function (data) {
+
+    function onRolesUpdated() {
       $scope.toggleUserDialog();
       whenReflected("authorization", function (data2) {
         var authz = $scope.findEditableAuthz(data2);
@@ -502,7 +506,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         var current = asList(authz["user-role"][username]);
         return current.length === userRoles.length && userRoles.every(r => current.includes(r));
       }, $scope.refreshSecurityPanel);
-    });
+    }
+
+    if (userRoles.length > 0) {
+      AuthorizationV2.setUserRoles(BASIC_SCHEME, username, {roles: userRoles}, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        onRolesUpdated();
+      });
+    } else {
+      AuthorizationV2.deleteUserRoles(BASIC_SCHEME, username, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        onRolesUpdated();
+      });
+    }
   };
 
   $scope.doUpsertUser = function() {
@@ -564,21 +580,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     delete $scope.validationError;
 
     if (doSetUser) {
-      var setUserJson = {};
-      setUserJson[username] = $scope.upsertUser.password.trim();
-      var cmdJson = $scope.wrapSchemeCmd("set-user", setUserJson);
-      Security.post({path: "authentication"}, cmdJson, function (data) {
-        var errorCause = checkError(data);
-        if (errorCause != null) {
-          $scope.securityAPIError = "create user "+username+" failed due to: "+errorCause;
-          $scope.securityAPIErrorDetails = JSON.stringify(data);
-          return;
-        }
+      var password = $scope.upsertUser.password.trim();
+
+      function onUserSet() {
         whenReflected("authentication", function (data2) {
           return hasCredential(data2, username);
         }, function () {
           $scope.updateUserRoles();
         });
+      }
+
+      AuthenticationV2.createOrUpdateUser(BASIC_SCHEME, username, {password: password}, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        onUserSet();
       });
     } else {
       $scope.updateUserRoles();
@@ -588,18 +602,24 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   $scope.confirmDeleteUser = function() {
     var username = $scope.upsertUser.username;
     if (window.confirm("Confirm delete the '"+username+"' user?")) {
-      // remove all roles for the user and the delete the user
-      var removeRoles = {};
-      removeRoles[username] = null;
-      var cmdJson = $scope.wrapSchemeCmd("set-user-role", removeRoles);
-      Security.post({path: "authorization"}, cmdJson, function (data) {
-        var deleteUserCmd = $scope.wrapSchemeCmd("delete-user", [username]);
-        Security.post({path: "authentication"}, deleteUserCmd, function (data2) {
-          $scope.toggleUserDialog();
-          whenReflected("authentication", function (data3) {
-            return !hasCredential(data3, username);
-          }, $scope.refreshSecurityPanel);
+      function afterUserDeleted() {
+        $scope.toggleUserDialog();
+        whenReflected("authentication", function (data3) {
+          return !hasCredential(data3, username);
+        }, $scope.refreshSecurityPanel);
+      }
+
+      function afterRolesRemoved() {
+        AuthenticationV2.deleteUser(BASIC_SCHEME, username, function (error, data, response) {
+          if (error) { ApiErrorHandler.handle(response); return; }
+          afterUserDeleted();
         });
+      }
+
+      // remove all roles for the user, then delete the user
+      AuthorizationV2.deleteUserRoles(BASIC_SCHEME, username, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        afterRolesRemoved();
       });
     }
   };
@@ -703,11 +723,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     var permName = $scope.selectedPredefinedPermission ? $scope.selectedPredefinedPermission : $scope.upsertPerm.name.trim();
     if (window.confirm("Confirm delete the '"+permName+"' permission?")) {
       var index = parseInt($scope.upsertPerm.index);
-      Security.post({path: "authorization"}, { "delete-permission": index }, function (data) {
+
+      function afterDeleted() {
         $scope.togglePermDialog();
         whenReflected("authorization", function (data2) {
           return permissionRoles(data2, permName) == null;
         }, $scope.refreshSecurityPanel);
+      }
+
+      // Permissions are shared across every scheme (unlike users/roles), so no scheme parameter
+      // is needed here even under MultiAuthPlugin.
+      AuthorizationV2.deletePermission(index, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        afterDeleted();
       });
     }
   };
