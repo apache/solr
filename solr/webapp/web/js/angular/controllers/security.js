@@ -1229,90 +1229,99 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       perms = $scope.upsertRole.grantedPerms;
     }
 
-    // go get the latest role mappings ...
-    Security.get({path: "authorization"}, function (data) {
-      var authz = $scope.findEditableAuthz(data);
-      if (!authz) {
-        $scope.validationError = "User roles not editable via the UI!";
+    // Polls checkFn(cb) - which calls back with true/false - until it reports true or we give up.
+    function pollUntil(checkFn, done) {
+      var attemptsLeft = 40;
+      function poll() {
+        checkFn(function (ok) {
+          if (--attemptsLeft <= 0 || ok) {
+            done();
+          } else {
+            $timeout(poll, 250);
+          }
+        });
+      }
+      poll();
+    }
+
+    function userHasRole(user, cb) {
+      AuthorizationV2.getUserRoles(BASIC_SCHEME, user, function (error, data) {
+        cb(!error && data.roles.includes(name));
+      });
+    }
+
+    function permissionHasRole(permName, cb) {
+      AuthorizationV2.listPermissions(function (error, data) {
+        if (error) { cb(false); return; }
+        var perm = data.permissions.find(p => p.name === permName);
+        cb(perm != null && asList(perm.role).includes(name));
+      });
+    }
+
+    // Assigns `name` to one user, replacing their role list, then waits for it to be reflected.
+    function assignRoleToUser(user, done) {
+      AuthorizationV2.getUserRoles(BASIC_SCHEME, user, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); done(); return; }
+        var roles = data.roles.includes(name) ? data.roles : data.roles.concat([name]);
+        AuthorizationV2.setUserRoles(BASIC_SCHEME, user, {roles: roles}, function (error2, data2, response2) {
+          if (error2) { ApiErrorHandler.handle(response2); done(); return; }
+          pollUntil(cb => userHasRole(user, cb), done);
+        });
+      });
+    }
+
+    // Grants `name` to one permission - updating it if it already exists, creating it (only if
+    // predefined) otherwise - then waits for it to be reflected.
+    function grantPermissionToRole(permName, existingPerms, done) {
+      var existingPerm = existingPerms.find(p => p.name === permName);
+
+      function afterGrant(error, response) {
+        if (error) { ApiErrorHandler.handle(response); done(); return; }
+        pollUntil(cb => permissionHasRole(permName, cb), done);
+      }
+
+      if (existingPerm) {
+        var roles = asList(existingPerm.role);
+        if (!roles.includes(name)) {
+          roles = roles.concat([name]);
+        }
+        AuthorizationV2.updatePermission(existingPerm.index, {role: roles}, function (error, data, response) {
+          afterGrant(error, response);
+        });
+      } else if ($scope.predefinedPermissions.includes(permName)) {
+        AuthorizationV2.createPermission({name: permName, role: [name]}, function (error, data, response) {
+          afterGrant(error, response);
+        });
+      } else {
+        done(); // custom permission that doesn't exist yet - nothing to grant
+      }
+    }
+
+    function runTasksThenRefresh(tasks) {
+      var remaining = tasks.length;
+      if (remaining === 0) {
+        $scope.toggleRoleDialog();
+        $scope.refreshSecurityPanel();
         return;
       }
-
-      var userRoles = authz["user-role"];
-      var setUserRoles = {};
-      for (u in usersForRole) {
-        var user = usersForRole[u];
-        var currentRoles = user in userRoles ? asList(userRoles[user]) : [];
-        // add the new role for this user if needed
-        if (!currentRoles.includes(name)) {
-          currentRoles.push(name);
-        }
-        setUserRoles[user] = currentRoles;
-      }
-
-      var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
-      Security.post({path: "authorization"}, cmdJson, function (data2) {
-
-        var errorCause = checkError(data2);
-        if (errorCause != null) {
-          $scope.securityAPIError = "set-user-role for role "+name+" failed due to: "+errorCause;
-          $scope.securityAPIErrorDetails = JSON.stringify(data2);
-          return;
-        }
-
-        function roleReflected(data3) {
-          var authz3 = $scope.findEditableAuthz(data3);
-          if (!authz3) return true;
-          return usersForRole.every(u => asList(authz3["user-role"][u]).includes(name));
-        }
-
-        if (perms.length === 0) {
-          // close dialog and refresh the tables ...
+      tasks.forEach(task => task(function () {
+        if (--remaining === 0) {
           $scope.toggleRoleDialog();
-          whenReflected("authorization", roleReflected, $scope.refreshSecurityPanel);
-          return;
+          $scope.refreshSecurityPanel();
         }
+      }));
+    }
 
-        var currentPerms = data.authorization["permissions"];
-        for (i in perms) {
-          let permName = perms[i];
-          var existingPerm = currentPerms.find(p => p.name === permName);
-
-          if (existingPerm) {
-            var roleList = [];
-            if (existingPerm.role) {
-              if (Array.isArray(existingPerm.role)) {
-                roleList = existingPerm.role;
-              } else {
-                roleList.push(existingPerm.role);
-              }
-            }
-            if (!roleList.includes(name)) {
-              roleList.push(name);
-            }
-            existingPerm.role = roleList;
-            Security.post({path: "authorization"}, { "update-permission": existingPerm }, function (data3) {
-              whenReflected("authorization", function (data4) {
-                var have = permissionRoles(data4, permName);
-                return roleReflected(data4) && have != null && have.includes(name);
-              }, $scope.refreshSecurityPanel);
-            });
-          } else {
-            // new perm ... must be a predefined ...
-            if ($scope.predefinedPermissions.includes(permName)) {
-              var setPermission = {name: permName, role:[name]};
-              Security.post({path: "authorization"}, { "set-permission": setPermission }, function (data3) {
-                whenReflected("authorization", function (data4) {
-                  var have = permissionRoles(data4, permName);
-                  return roleReflected(data4) && have != null && have.includes(name);
-                }, $scope.refreshSecurityPanel);
-              });
-            } // else ignore it
-          }
-        }
-        $scope.toggleRoleDialog();
+    var userTasks = usersForRole.map(u => cb => assignRoleToUser(u, cb));
+    if (perms.length === 0) {
+      runTasksThenRefresh(userTasks);
+    } else {
+      AuthorizationV2.listPermissions(function (error, permsData, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        var existingPerms = permsData.permissions;
+        runTasksThenRefresh(userTasks.concat(perms.map(p => cb => grantPermissionToRole(p, existingPerms, cb))));
       });
-    });
-
+    }
   };
 
   $scope.editRole = function(row) {
