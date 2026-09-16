@@ -1,4 +1,4 @@
-title: Fix v2 replication file-list and backup APIs reporting failures via HTTP 200 instead of a proper error status
+title: Fix v2 replication file-list, backup, and schema modification APIs reporting failures via HTTP 200 instead of a proper error status
 type: fixed
 authors:
   - name: Eric Pugh
