@@ -21,6 +21,7 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
+import org.apache.solr.client.api.model.ListUserRolesResponse;
 import org.apache.solr.client.api.model.ListUsersResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.AuthenticationApi;
@@ -160,6 +161,15 @@ public class MultiAuthUsersAndRolesApiCloudTest extends SolrCloudTestCase {
     GetUserRolesResponse basicRoles =
         asAdmin(new AuthorizationApi.GetUserRoles("basic", SEED_USER)).process(client);
     assertTrue(basicRoles.roles.isEmpty());
+
+    // The bulk listing is scheme-isolated the same way: "seed"/"dev" only shows up under "other".
+    ListUserRolesResponse otherList =
+        asAdmin(new AuthorizationApi.ListUserRoles("other")).process(client);
+    assertEquals(List.of("dev"), otherList.userRoles.get(SEED_USER));
+
+    ListUserRolesResponse basicList =
+        asAdmin(new AuthorizationApi.ListUserRoles("basic")).process(client);
+    assertFalse(basicList.userRoles.containsKey(SEED_USER));
 
     asAdmin(new AuthorizationApi.DeleteUserRoles("other", SEED_USER)).process(client);
     otherRoles = asAdmin(new AuthorizationApi.GetUserRoles("other", SEED_USER)).process(client);

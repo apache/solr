@@ -25,6 +25,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
+import org.apache.solr.client.api.model.ListUserRolesResponse;
 import org.apache.solr.client.api.model.SetUserRolesRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
@@ -44,6 +45,17 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
  */
 @Path("/cluster/security/authorization/{scheme}/roles")
 public interface AuthorizationRolesApi {
+  @GET
+  @Operation(
+      summary = "List every user's role assignments.",
+      tags = {"authorization"})
+  ListUserRolesResponse listUserRoles(
+      @Parameter(
+              description = "The authentication scheme to list role mappings for.",
+              required = true)
+          @PathParam("scheme")
+          String scheme);
+
   @GET
   @Path("/{username}")
   @Operation(

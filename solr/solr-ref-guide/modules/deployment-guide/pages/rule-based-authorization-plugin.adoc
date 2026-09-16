@@ -689,6 +689,38 @@ In addition to the `set-user-role`/`set-permission`/`update-permission`/`delete-
 
 The `scheme` path segment names the authentication scheme these role mappings belong to, as configured under `MultiAuthRuleBasedAuthorizationPlugin`'s `schemes` list (e.g. `basic`). It is ignored when that plugin isn't in use - a plain `RuleBasedAuthorizationPlugin` setup has only one set of role mappings, and any value may be supplied; the examples below use `basic` by convention. Unlike roles, permissions are shared across every scheme, so the Permissions API below has no such segment.
 
+==== List Every User's Roles
+
+Lists every user's role assignments at once - useful for building a UI table without one request per user.
+
+[tabs#list-user-roles]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/roles
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {"status": 0, "QTime": 1},
+  "userRoles": {"solr": ["admin"], "harry": ["dev"]}
+}
+----
+
 ==== Get a User's Roles
 
 [tabs#get-user-roles]

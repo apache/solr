@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.solr.client.api.model.CreatePermissionResponse;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
 import org.apache.solr.client.api.model.ListPermissionsResponse;
+import org.apache.solr.client.api.model.ListUserRolesResponse;
 import org.apache.solr.client.solrj.request.AuthorizationApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
@@ -118,6 +119,11 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
     GetUserRolesResponse roles =
         authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry")).process(client);
     assertEquals(List.of("dev"), roles.roles);
+
+    // The bulk listing reads the same cached-ZK path as the single-user GET above.
+    ListUserRolesResponse allRoles =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(client);
+    assertEquals(List.of("dev"), allRoles.userRoles.get("harry"));
 
     authed(new AuthorizationApi.DeleteUserRoles(SCHEME, "harry")).process(client);
 

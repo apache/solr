@@ -23,11 +23,13 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.AuthorizationRolesApi;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
+import org.apache.solr.client.api.model.ListUserRolesResponse;
 import org.apache.solr.client.api.model.SetUserRolesRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
@@ -66,6 +68,16 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
     this.securityConfHandler = coreContainer.getSecurityConfHandler();
+  }
+
+  @Override
+  @PermissionName(SECURITY_READ_PERM)
+  public ListUserRolesResponse listUserRoles(String scheme) {
+    final var response = instantiateJerseyResponse(ListUserRolesResponse.class);
+    Map<String, List<String>> userRoles = new LinkedHashMap<>();
+    fetchUserRoleMap(scheme).forEach((user, roles) -> userRoles.put(user, normalizeToList(roles)));
+    response.userRoles = userRoles;
+    return response;
   }
 
   @Override

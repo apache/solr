@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.CreatePermissionResponse;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
 import org.apache.solr.client.api.model.ListPermissionsResponse;
+import org.apache.solr.client.api.model.ListUserRolesResponse;
 import org.apache.solr.client.api.model.ListUsersResponse;
 import org.apache.solr.client.api.model.PermissionDetails;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -123,6 +124,10 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
             .process(solrTestRule.getAdminClient());
     assertTrue(roles.roles.isEmpty());
 
+    ListUserRolesResponse initialList =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(solrTestRule.getAdminClient());
+    assertFalse(initialList.userRoles.containsKey("harry"));
+
     var setRoles = authed(new AuthorizationApi.SetUserRoles(SCHEME, "harry"));
     setRoles.setRoles(List.of("dev"));
     setRoles.process(solrTestRule.getAdminClient());
@@ -132,6 +137,11 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
             .process(solrTestRule.getAdminClient());
     assertThat(roles.roles, containsInAnyOrder("dev"));
 
+    ListUserRolesResponse afterSetList =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(solrTestRule.getAdminClient());
+    assertThat(afterSetList.userRoles.get("harry"), containsInAnyOrder("dev"));
+    assertThat(afterSetList.userRoles.get(SecurityJson.USER), containsInAnyOrder("admin"));
+
     authed(new AuthorizationApi.DeleteUserRoles(SCHEME, "harry"))
         .process(solrTestRule.getAdminClient());
 
@@ -139,6 +149,10 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
         authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry"))
             .process(solrTestRule.getAdminClient());
     assertTrue(roles.roles.isEmpty());
+
+    ListUserRolesResponse afterDeleteList =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(solrTestRule.getAdminClient());
+    assertFalse(afterDeleteList.userRoles.containsKey("harry"));
   }
 
   @Test
