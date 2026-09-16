@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Set;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -54,6 +55,22 @@ public class InputStreamResponseParser extends ResponseParser {
       output = baos.toString(StandardCharsets.UTF_8);
     }
     return output;
+  }
+
+  /**
+   * Throws if the response's HTTP status was not 2xx.
+   *
+   * <p>{@code SolrClient}s skip their usual non-2xx check when an {@link
+   * InputStreamResponseParser} is in use, since the raw stream is handed back regardless of
+   * status. Callers that read the stream under {@link #STREAM_KEY} directly -- rather than via
+   * {@link #consumeResponseToString}, which does not check either -- should call this first.
+   */
+  public static void checkHttpStatus(NamedList<Object> response) throws IOException {
+    Object status = response.get(HTTP_STATUS_KEY);
+    if (status instanceof Integer httpStatus && (httpStatus < 200 || httpStatus >= 300)) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Unexpected HTTP status [%d] in response", httpStatus));
+    }
   }
 
   @Override

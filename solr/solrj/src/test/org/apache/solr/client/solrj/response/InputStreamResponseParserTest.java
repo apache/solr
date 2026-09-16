@@ -96,6 +96,25 @@ public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
     assertEquals("1234", String.valueOf(solrDocument.getFieldValue("id")));
   }
 
+  @Test
+  public void testCheckHttpStatusThrowsOnNon2xx() throws Exception {
+    try (InputStream is = getResponse()) {
+      NamedList<Object> response = InputStreamResponseParser.createInputStreamNamedList(500, is);
+      IOException e =
+          assertThrows(
+              IOException.class, () -> InputStreamResponseParser.checkHttpStatus(response));
+      assertTrue(e.getMessage().contains("500"));
+    }
+  }
+
+  @Test
+  public void testCheckHttpStatusAllows2xx() throws Exception {
+    try (InputStream is = getResponse()) {
+      NamedList<Object> response = InputStreamResponseParser.createInputStreamNamedList(200, is);
+      InputStreamResponseParser.checkHttpStatus(response); // should not throw
+    }
+  }
+
   /** Parse response from java.io.InputStream. */
   @Test
   public void testInputStreamResponse() throws Exception {
