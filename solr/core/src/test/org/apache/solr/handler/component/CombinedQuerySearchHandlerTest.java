@@ -48,7 +48,7 @@ public class CombinedQuerySearchHandlerTest extends SolrTestCaseJ4 {
     try (CombinedQuerySearchHandler handler = new CombinedQuerySearchHandler()) {
       handler.init(new NamedList<>());
       handler.inform(core);
-      assertEquals(9, handler.getComponents().size());
+      assertEquals(10, handler.getComponents().size());
       assertEquals(
           core.getSearchComponent(CombinedQueryComponent.COMPONENT_NAME),
           handler.getComponents().getFirst());
