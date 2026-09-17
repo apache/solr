@@ -246,7 +246,7 @@ public abstract class HttpSolrClient extends SolrClient {
         // Only case where stream should not be closed
         shouldClose = false;
         // no processor specified, return raw stream
-        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
+        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, responseReason, is);
       }
 
       NamedList<Object> rsp;
