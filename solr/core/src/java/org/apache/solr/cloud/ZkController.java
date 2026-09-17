@@ -24,7 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPRIORITIZE_OVERSEER;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 import io.opentelemetry.api.internal.StringUtils;
@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -214,6 +215,7 @@ public class ZkController implements Closeable {
           new SolrNamedThreadFactory("zkConnectionListenerCallback"));
   private final OnReconnect onReconnect = this::onReconnect;
   private final OnDisconnect onDisconnect = this::onDisconnect;
+  private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -224,6 +226,8 @@ public class ZkController implements Closeable {
 
   private final CloudConfig cloudConfig;
   private final NodesSysPropsCacher sysPropsCacher;
+
+  private final Compressor compressor;
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
@@ -324,7 +328,7 @@ public class ZkController implements Closeable {
 
     addOnReconnectListener(getConfigDirListener());
 
-    final var compressor =
+    compressor =
         loadPluginOrDefault(
             Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
 
@@ -382,7 +386,9 @@ public class ZkController implements Closeable {
           "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
     }
     // These "distributed" things replace the Overseer when that's disabled
-    this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
+    this.distributedClusterStateUpdater =
+        new DistributedClusterStateUpdater(
+            !overseerEnabled, cloudConfig.getMinStateByteLenForCompression(), compressor);
     this.distributedCommandRunner =
         !overseerEnabled
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
@@ -401,7 +407,15 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
+  public Compressor getCompressor() {
+    return compressor;
+  }
+
   private void onDisconnect(boolean sessionExpired) {
+    if (!sessionExpired) {
+      return;
+    }
+    zkSessionExpired.set(true);
     try {
       overseer.close();
     } catch (Exception e) {
@@ -431,6 +445,9 @@ public class ZkController implements Closeable {
   }
 
   private void onReconnect() {
+    if (!zkSessionExpired.compareAndSet(true, false)) {
+      return;
+    }
     // on reconnect, reload cloud info
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
@@ -2542,34 +2559,17 @@ public class ZkController implements Closeable {
     }
   }
 
-  public void checkOverseerDesignate() {
-    try {
-      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat());
-      if (data == null) return;
-      Map<?, ?> roles = (Map<?, ?>) Utils.fromJSON(data);
-      if (roles == null) return;
-      List<?> nodeList = (List<?>) roles.get("overseer");
-      if (nodeList == null) return;
-      if (nodeList.contains(getNodeName())) {
-        setPreferredOverseer();
-      }
-    } catch (NoNodeException nne) {
-      return;
-    } catch (Exception e) {
-      log.warn("could not read the overseer designate ", e);
-    }
-  }
-
   public void setPreferredOverseer() throws KeeperException, InterruptedException {
     MapWriter props =
         ew ->
-            ew.put(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT))
-                .put(getNodeName(), getNodeName())
-                .put("role", "overseer")
-                .put("persist", "false");
-    log.warn(
-        "Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.",
-        props.jsonStr());
+            ew.put(
+                Overseer.QUEUE_OPERATION,
+                REPRIORITIZE_OVERSEER.toString().toLowerCase(Locale.ROOT));
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Asking the Overseer to re-run node prioritization for this preferred overseer: {}",
+          props.jsonStr());
+    }
     getOverseerCollectionQueue().offer(props);
   }
 

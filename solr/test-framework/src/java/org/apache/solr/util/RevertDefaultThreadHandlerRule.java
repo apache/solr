@@ -28,6 +28,8 @@ public final class RevertDefaultThreadHandlerRule implements TestRule {
   private static final AtomicBoolean applied = new AtomicBoolean();
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // UncaughtExceptionHandler identity, not equality, is what matters here
   public Statement apply(Statement s, Description d) {
     return new StatementAdapter(s) {
       @Override

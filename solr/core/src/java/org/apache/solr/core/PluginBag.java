@@ -229,7 +229,10 @@ public class PluginBag<T> implements AutoCloseable {
     return old == null ? null : old.get();
   }
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({
+    "unchecked",
+    "ReferenceEquality" // detecting the same plugin instance re-registered vs. a real swap
+  })
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null; // i.e. register for V2
     Boolean disableV1 = null; // i.e. do *not* register for v1

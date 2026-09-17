@@ -15,8 +15,8 @@
 [versions]
 adobe-testing-s3mock = "5.2.0"
 amazon-awssdk = "2.54.6"
-androidx-adaptive = "1.3.0-beta02"
-androidx-lifecycle = "2.10.0"
+androidx-adaptive = "1.3.0-rc01"
+androidx-lifecycle = "2.11.0"
 androidx-navigation3 = "1.1.1"
 # @keep Antora version used in ref-guide
 antora = "3.1.12"
@@ -77,7 +77,7 @@ codehaus-woodstox = "4.3.0"
 commons-cli = "1.11.0"
 commons-codec = "1.22.1"
 commons-io = "2.22.0"
-compose = "1.11.1"
+compose = "1.12.0"
 cuvs-java = "26.08.1"
 cuvs-lucene = "25.12.0"
 decompose = "3.5.0"
@@ -89,7 +89,7 @@ eclipse-ecj = "3.46.0"
 eclipse-jetty = "12.1.12"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.1.202607240634-r"
-essenty = "2.5.0"
+essenty = "2.6.0"
 fasterxml = "2.22.2"
 fasterxml-woodstox = "7.2.2"
 # @keep Flexmark used in classpath
@@ -99,7 +99,7 @@ google-api-grpc-proto = "2.75.0"
 # @keep for version alignment
 google-autovalue = "1.11.1"
 google-cloud-bom = "0.268.0"
-google-errorprone = "2.41.0"
+google-errorprone = "2.50.0"
 # @keep for version alignment
 google-gson = "2.14.0"
 google-guava = "33.7.1-jre"
@@ -142,7 +142,7 @@ jna = "5.19.1"
 # @keep for version alignment
 joda-time = "2.14.3"
 junit = "4.13.2"
-kotlin = "2.4.0"
+kotlin = "2.4.20"
 # @keep for version alignment
 kotlinx-atomicfu = "0.33.0"
 # @keep for version alignment
@@ -152,7 +152,7 @@ kotlinx-datetime = "0.8.0-0.6.x-compat"
 kotlinx-serialization = "1.11.0"
 # @keep used by spotless
 ktlint = "1.8.0"
-ktor = "3.5.1"
+ktor = "3.5.2"
 langchain4j-bom = "1.19.0"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -164,7 +164,7 @@ material3 = "1.10.0-alpha05"
 mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.4.0"
-navsecurity = "5.0.2"
+navsecurity = "6.0.2"
 netty = "4.2.17.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.82.Final"
@@ -192,19 +192,21 @@ semver4j = "6.0.0"
 slf4j = "2.0.18"
 spatial4j = "0.8"
 spotbugs = "4.10.4"
-squareup-okhttp3-okhttp = "5.4.0"
-squareup-okio = "3.17.0"
+squareup-okhttp3-okhttp = "5.5.0"
+squareup-okio = "3.18.1"
 stephenc-jcip = "1.0-1"
 swagger3 = "2.2.54"
 tdunning-tdigest = "3.3"
 testcontainers = "2.0.5"
 thetaphi-forbiddenapis = "3.10"
 threeten-bp = "1.7.4"
+# @keep required at test-compile time by no.nav.security:mock-oauth2-server
+toolsjackson = "3.2.1"
 xerial-snappy = "1.1.10.8"
 
 [plugins]
 barfuin-jacocolog = { id = "org.barfuin.gradle.jacocolog", version.ref = "barfuin-jacocolog" }
-benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
+benmanes-versions = { id = "io.github.ben-manes.versions", version.ref = "benmanes-versions" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
@@ -517,7 +519,7 @@ slf4j-jcloverslf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j
 slf4j-jultoslf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs" }
-squareup-okhttp3-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver" }
+squareup-okhttp3-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "squareup-okhttp3-okhttp" }
 squareup-okhttp3-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "squareup-okhttp3-okhttp" }
 squareup-okhttp3-okhttp-jvm = { module = "com.squareup.okhttp3:okhttp-jvm", version.ref = "squareup-okhttp3-okhttp" }
 squareup-okio = { module = "com.squareup.okio:okio", version.ref = "squareup-okio" }
@@ -528,4 +530,6 @@ tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-t
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka", version.ref = "testcontainers" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
+toolsjackson-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "toolsjackson" }
+toolsjackson-jackson-core-databind = { module = "tools.jackson.core:jackson-databind" }
 xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }

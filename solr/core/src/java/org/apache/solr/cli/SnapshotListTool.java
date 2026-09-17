@@ -37,6 +37,9 @@ public class SnapshotListTool extends ToolBase {
           .desc("Name of collection to list snapshots for.")
           .get();
 
+  /** Parameters for the snapshot-list command, independent of the command line parser. */
+  record SnapshotListParams(String solrUrl, String credentials, String collectionName) {}
+
   public SnapshotListTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -56,9 +59,17 @@ public class SnapshotListTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      listSnapshots(solrClient, collectionName);
+    SnapshotListParams params =
+        new SnapshotListParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION));
+    listSnapshots(params);
+  }
+
+  void listSnapshots(SnapshotListParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      listSnapshots(solrClient, params.collectionName());
     }
   }
 

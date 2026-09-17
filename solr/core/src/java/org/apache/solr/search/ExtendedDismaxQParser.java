@@ -1488,6 +1488,7 @@ public class ExtendedDismaxQParser extends QParser {
       }
     }
 
+    @SuppressWarnings("ReferenceEquality") // Analyzer identity, not equality, is what matters here
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();

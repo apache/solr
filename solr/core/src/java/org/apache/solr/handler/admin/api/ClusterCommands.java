@@ -228,7 +228,7 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
   private static void setStatus(
       GetClusterCommandStatusResponse response, RequestStatusState state, String requestId) {
     final CommandStatus status = new CommandStatus();
-    status.state = CommandStatus.State.valueOf(state.name());
+    status.state = CommandStatus.RequestState.valueOf(state.name());
     status.msg = statusMessage(state, requestId);
     response.status = status;
   }

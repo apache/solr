@@ -65,7 +65,7 @@ public class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
       try {
         String textToVectorise = inputFieldContent.getValue().toString();
         float[] vector = textToVector.vectorise(textToVectorise);
-        List<Float> vectorAsList = new ArrayList<Float>(vector.length);
+        List<Float> vectorAsList = new ArrayList<>(vector.length);
         for (float f : vector) {
           vectorAsList.add(f);
         }

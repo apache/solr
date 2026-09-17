@@ -382,44 +382,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   //
   // ---------------------------------------------------------------------------------------
 
-  protected abstract static class CollectionAdminRoleRequest extends AsyncCollectionAdminRequest {
-
-    protected String node;
-    protected String role;
-
-    public CollectionAdminRoleRequest(
-        METHOD method, CollectionAction action, String node, String role) {
-      super(method, action);
-      this.role = checkNotNull(CollectionAdminParams.ROLE, role);
-      this.node = checkNotNull(CoreAdminParams.NODE, node);
-    }
-
-    /**
-     * @deprecated Use {@link #CollectionAdminRoleRequest(METHOD, CollectionAction, String,
-     *     String)}.
-     */
-    @Deprecated(since = "10.1")
-    public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
-      this(METHOD.POST, action, node, role);
-    }
-
-    public String getNode() {
-      return this.node;
-    }
-
-    public String getRole() {
-      return this.role;
-    }
-
-    @Override
-    public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CollectionAdminParams.ROLE, this.role);
-      params.set(CoreAdminParams.NODE, this.node);
-      return params;
-    }
-  }
-
   /** Specific Collection API call implementations * */
 
   /**
@@ -1162,9 +1124,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected final String name;
     protected Optional<String> repositoryName = Optional.empty();
     protected String location;
-    protected Optional<String> commitName = Optional.empty();
     protected Optional<String> indexBackupStrategy = Optional.empty();
-    protected boolean incremental = true;
     protected Optional<Integer> maxNumBackupPoints = Optional.empty();
     protected boolean backupConfigset = true;
     protected Properties extraProperties;
@@ -1193,15 +1153,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
-    public Optional<String> getCommitName() {
-      return commitName;
-    }
-
-    public Backup setCommitName(String commitName) {
-      this.commitName = Optional.ofNullable(commitName);
-      return this;
-    }
-
     public Optional<String> getIndexBackupStrategy() {
       return indexBackupStrategy;
     }
@@ -1212,34 +1163,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     /**
-     * Specifies the backup method to use: the deprecated 'full-snapshot' format, or the current
-     * 'incremental' format.
-     *
-     * <p>Defaults to 'true' if unspecified.
-     *
-     * <p>Incremental backups are almost always preferable to the deprecated 'full-snapshot' format,
-     * as incremental backups can take advantage of previously backed-up files and will only upload
-     * those that aren't already stored in the repository - saving lots of time and network
-     * bandwidth. The older 'full-snapshot' format should only be used by experts with a particular
-     * reason to do so.
-     *
-     * @param incremental true to use incremental backups, false otherwise.
-     * @deprecated The 'full-snapshot' format is being removed; incremental backups are already the
-     *     default, so this method no longer needs to be called.
-     */
-    @Deprecated(since = "9.0")
-    public Backup setIncremental(boolean incremental) {
-      this.incremental = incremental;
-      return this;
-    }
-
-    /**
      * Specifies the maximum number of backup points to keep at the backup location.
      *
      * <p>If the current backup causes the number of stored backup points to exceed this value, the
      * oldest backup points are cleaned up so that only {@code #maxNumBackupPoints} are retained.
-     *
-     * <p>This parameter is ignored if the request uses a non-incremental backup.
      *
      * @param maxNumBackupPoints the number of backup points to retain after the current backup
      */
@@ -1281,16 +1208,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (repositoryName.isPresent()) {
         params.set(BACKUP_REPOSITORY, repositoryName.get());
       }
-      if (commitName.isPresent()) {
-        params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
-      }
       if (indexBackupStrategy.isPresent()) {
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
       if (maxNumBackupPoints.isPresent()) {
         params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
       }
-      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       params.set(CoreAdminParams.BACKUP_CONFIGSET, backupConfigset);
       return params;
     }
@@ -2929,40 +2852,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       }
 
       return params;
-    }
-  }
-
-  /**
-   * Returns a SolrRequest to add a role to a node
-   *
-   * @deprecated Use Node Roles ({@code -Dsolr.node.roles}) at startup instead.
-   */
-  @Deprecated(since = "10.1")
-  public static AddRole addRole(String node, String role) {
-    return new AddRole(node, role);
-  }
-
-  // ADDROLE request
-  public static class AddRole extends CollectionAdminRoleRequest {
-    private AddRole(String node, String role) {
-      super(METHOD.POST, CollectionAction.ADDROLE, node, role);
-    }
-  }
-
-  /**
-   * Returns a SolrRequest to remove a role from a node
-   *
-   * @deprecated Use Node Roles ({@code -Dsolr.node.roles}) at startup instead.
-   */
-  @Deprecated(since = "10.1")
-  public static RemoveRole removeRole(String node, String role) {
-    return new RemoveRole(node, role);
-  }
-
-  // REMOVEROLE request
-  public static class RemoveRole extends CollectionAdminRoleRequest {
-    private RemoveRole(String node, String role) {
-      super(METHOD.POST, CollectionAction.REMOVEROLE, node, role);
     }
   }
 

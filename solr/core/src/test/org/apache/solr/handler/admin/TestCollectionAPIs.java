@@ -103,20 +103,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
     compareOutput(
         apiBag,
-        "/cluster",
-        POST,
-        "{add-role : {role : overseer, node : 'localhost_8978'} }",
-        "{operation : addrole ,role : overseer, node : 'localhost_8978'}");
-
-    compareOutput(
-        apiBag,
-        "/cluster",
-        POST,
-        "{remove-role : {role : overseer, node : 'localhost_8978'} }",
-        "{operation : removerole ,role : overseer, node : 'localhost_8978'}");
-
-    compareOutput(
-        apiBag,
         "/collections/coll1",
         POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
