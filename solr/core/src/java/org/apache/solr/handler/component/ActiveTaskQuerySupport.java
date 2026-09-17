@@ -29,7 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.api.ActiveTask;
+import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -55,9 +55,9 @@ public class ActiveTaskQuerySupport {
 
   private static TaskQueryResult localResult(SolrQueryRequest req, String taskId) {
     if (taskId != null) {
-      return new TaskQueryResult(List.of(), ActiveTask.isTaskActiveOnThisShard(req, taskId));
+      return new TaskQueryResult(List.of(), ListActiveTasks.isTaskActiveOnThisShard(req, taskId));
     }
-    return new TaskQueryResult(ActiveTask.getActiveTasksOnThisShard(req), false);
+    return new TaskQueryResult(ListActiveTasks.getActiveTasksOnThisShard(req), false);
   }
 
   private static TaskQueryResult distributedResult(SolrQueryRequest req, String taskId)

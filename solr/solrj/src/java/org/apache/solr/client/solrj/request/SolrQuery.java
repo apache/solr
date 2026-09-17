@@ -1145,13 +1145,17 @@ public class SolrQuery extends ModifiableSolrParams {
    * @deprecated use QueryRequest#QueryRequest(String, SolrParams)
    * @see SolrRequest#setPath(String)
    */
-  @Deprecated
+  @Deprecated(since = "10.0")
   public SolrQuery setRequestHandler(String qt) {
     this.set(CommonParams.QT, qt);
     return this;
   }
 
-  @Deprecated
+  /**
+   * @deprecated use QueryRequest#QueryRequest(String, SolrParams)
+   * @see SolrRequest#getPath()
+   */
+  @Deprecated(since = "10.0")
   public String getRequestHandler() {
     return this.get(CommonParams.QT);
   }

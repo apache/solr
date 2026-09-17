@@ -278,12 +278,14 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     return rsp;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private SolrQueryResponse invoke(
       PluginBag<SolrRequestHandler> reqHandlers,
       String path,
       String fullPath,
       CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
+    // Identity check: is reqHandlers the container's own handler bag, or a substitute?
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;
     path = path == null ? fullPath : path;
     Api api = null;

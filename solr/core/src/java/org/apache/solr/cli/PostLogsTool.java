@@ -65,6 +65,9 @@ public class PostLogsTool extends ToolBase {
           .desc("All files found at or below the root directory will be indexed.")
           .get();
 
+  /** Parameters for the postlogs command, independent of the command line parser. */
+  record PostLogsParams(String url, String rootDir, String credentials) {}
+
   public PostLogsTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -93,9 +96,16 @@ public class PostLogsTool extends ToolBase {
       throw new IllegalArgumentException(
           "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
-    String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    runCommand(url, rootDir, credentials);
+    PostLogsParams params =
+        new PostLogsParams(
+            url,
+            cli.getOptionValue(ROOT_DIR_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    runCommand(params);
+  }
+
+  void runCommand(PostLogsParams params) throws IOException {
+    runCommand(params.url(), params.rootDir(), params.credentials());
   }
 
   public void runCommand(String baseUrl, String root, String credentials) throws IOException {

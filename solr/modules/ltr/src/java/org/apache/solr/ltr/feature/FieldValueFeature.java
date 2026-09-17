@@ -64,9 +64,6 @@ import org.apache.solr.search.SolrIndexSearcher;
  *
  * <p>DefaultValueFVFS: used for docValues=true, a fallback scorer that is used on segments where no
  * document has a value set in the field of this feature
- *
- * <p>Use {@link LegacyFieldValueFeature} for the pre 9.4 behaviour of not using DocValues when
- * docValues=true is combined with stored=true.
  */
 public class FieldValueFeature extends Feature {
 

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -40,9 +41,11 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore("Flaky from Jetty 12.1.10 upgrade https://issues.apache.org/jira/browse/SOLR-18297")
 public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -84,7 +87,8 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
 
       final List<Future<QueryResponse>> results = new ArrayList<>(13);
 
-      try (SolrClient jettyClient = nodeToStop.newClient()) {
+      try (SolrClient jettyClient =
+          new HttpJettySolrClient.Builder(nodeToStop.getBaseUrl().toString()).build()) {
         final QueryRequest req = new QueryRequest(handler, params("q", "foo_s:aaa"));
 
         // check inflight requests using both clients...

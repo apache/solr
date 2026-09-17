@@ -110,6 +110,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -404,6 +405,18 @@ public class IndexFetcher {
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload)
       throws IOException, InterruptedException {
+    try {
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload);
+    } catch (InvalidIndexGenerationException e) {
+      log.info(
+          "Leader no longer has index generation {}; restarting replication from its latest generation",
+          e.generation);
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload);
+    }
+  }
+
+  private IndexFetchResult fetchLatestIndexOnce(boolean forceReplication, boolean forceCoreReload)
+      throws IOException, InterruptedException {
 
     boolean cleanupDone = false;
     boolean successfulInstall = false;
@@ -555,6 +568,7 @@ public class IndexFetcher {
       log.info("Starting replication process");
       // get the list of files first
       fetchFileList(latestGeneration);
+      assert testWait.getAsBoolean();
       // this can happen if the commit point is deleted before we fetch the file list.
       if (filesToDownload.isEmpty()) {
         return IndexFetchResult.PEER_INDEX_COMMIT_DELETED;
@@ -760,6 +774,8 @@ public class IndexFetcher {
       } catch (ReplicationHandlerException e) {
         log.error("User aborted Replication", e);
         return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
+      } catch (InvalidIndexGenerationException e) {
+        throw e;
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
@@ -1000,7 +1016,14 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a
     // reload
     // todo stop keeping solrCore around
-    try (SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName())) {
+    final CoreContainer coreContainer = solrCore.getCoreContainer();
+    if (coreContainer.isShutDown()) {
+      log.info("CoreContainer is shut down, skipping opening a new searcher");
+      // Opening a searcher now would fail anyway, and taking a reference would make this thread
+      // the one that runs the core's close -- from which a partial failure leaks directories.
+      return;
+    }
+    try (SolrCore core = coreContainer.getCore(solrCore.getName())) {
       if (core == null) {
         return; // core closed, presumably
       }
@@ -1585,6 +1608,8 @@ public class IndexFetcher {
       bytesDownloaded = 0;
       try {
         fetch();
+      } catch (InvalidIndexGenerationException e) {
+        throw e;
       } catch (Exception e) {
         if (!aborted) {
           IndexFetcher.log.error("Error fetching file, doing one retry...", e);
@@ -1597,6 +1622,7 @@ public class IndexFetcher {
     }
 
     private void fetch() throws Exception {
+      boolean invalidIndexGeneration = false;
       try {
         while (true) {
           try (FastInputStream fis = getStream()) {
@@ -1609,17 +1635,22 @@ public class IndexFetcher {
             // if there is an error continue. But continue from the point where it got broken
           }
         }
+      } catch (InvalidIndexGenerationException e) {
+        invalidIndexGeneration = true;
+        throw e;
       } finally {
-        cleanup();
-        // if cleanup succeeds, and the file is downloaded fully, then do a fsync.
-        fsyncService.execute(
-            () -> {
-              try {
-                file.sync();
-              } catch (IOException | AlreadyClosedException e) {
-                fsyncException = e;
-              }
-            });
+        cleanup(invalidIndexGeneration);
+        if (!invalidIndexGeneration) {
+          // if cleanup succeeds, and the file is downloaded fully, then do a fsync.
+          fsyncService.execute(
+              () -> {
+                try {
+                  file.sync();
+                } catch (IOException | AlreadyClosedException e) {
+                  fsyncException = e;
+                }
+              });
+        }
       }
     }
 
@@ -1736,7 +1767,7 @@ public class IndexFetcher {
     }
 
     /** cleanup everything */
-    private void cleanup() {
+    private void cleanup(boolean invalidIndexGeneration) {
       try {
         file.close();
       } catch (Exception e) {
@@ -1752,7 +1783,7 @@ public class IndexFetcher {
           log.error("Error deleting file: {}", this.saveAs, e);
         }
         // if the failure is due to a user abort it is returned normally else an exception is thrown
-        if (!aborted)
+        if (!aborted && !invalidIndexGeneration)
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "Unable to download "
@@ -1798,6 +1829,10 @@ public class IndexFetcher {
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
+        if (responseStatus == ErrorCode.CONFLICT.code) {
+          throw new InvalidIndexGenerationException(indexGen);
+        }
+
         if (responseStatus != 200) {
           final var errorMsg =
               String.format(
@@ -1805,13 +1840,16 @@ public class IndexFetcher {
                   "Unexpected status code [%d] when downloading file [%s].",
                   responseStatus,
                   fileName);
-          closeStreamAndBuildIOE(is, errorMsg, null);
+          throw closeStreamAndBuildIOE(is, errorMsg, null);
         }
 
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
+      } catch (InvalidIndexGenerationException e) {
+        IOUtils.closeQuietly(is);
+        throw e;
       } catch (Exception e) {
         final var ioe = closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
         throw ioe;
@@ -1825,6 +1863,15 @@ public class IndexFetcher {
         return new IOException(exceptionMessage, e);
       }
       return new IOException(exceptionMessage);
+    }
+  }
+
+  private static class InvalidIndexGenerationException extends IOException {
+    private final long generation;
+
+    InvalidIndexGenerationException(long generation) {
+      super("Leader no longer has index generation " + generation);
+      this.generation = generation;
     }
   }
 

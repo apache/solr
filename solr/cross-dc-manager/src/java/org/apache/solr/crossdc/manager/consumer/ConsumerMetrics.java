@@ -131,7 +131,7 @@ public interface ConsumerMetrics {
 
   /**
    * Records the batch size of the output request. Batch size is defined as the number of operations
-   * in an output {@link SolrRequest} (which may be different than the input size due to
+   * in an output {@link SolrRequest} (which may be different from the input size due to
    * collapsing).
    *
    * @param type the type of the request, corresponding to one of the {@link

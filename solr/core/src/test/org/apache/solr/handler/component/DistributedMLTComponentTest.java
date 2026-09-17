@@ -46,7 +46,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
 
   @Override
   public void distribSetUp() throws Exception {
-    requestHandlerName = "mltrh";
+    requestHandlerName = "/mltrh";
     super.distribSetUp();
   }
 
@@ -189,28 +189,20 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     handle.put("17", UNORDERED);
 
     query(
-        "q",
-        "match_none",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt",
-        "qt",
         requestHandlerName,
-        "shards.qt",
-        requestHandlerName);
+        params(
+            "q", "match_none",
+            "mlt", "true",
+            "mlt.fl", "lowerfilt",
+            "shards.qt", requestHandlerName));
 
     query(
-        "q",
-        "lowerfilt:sonata",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt",
-        "qt",
         requestHandlerName,
-        "shards.qt",
-        requestHandlerName);
+        params(
+            "q", "lowerfilt:sonata",
+            "mlt", "true",
+            "mlt.fl", "lowerfilt",
+            "shards.qt", requestHandlerName));
 
     handle.put("24", UNORDERED);
     handle.put("23", UNORDERED);
@@ -234,116 +226,116 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     // we ask for a mlt.count of 20 to ensure both include all results
 
     query(
-        "q",
-        "lowerfilt:moon",
-        "fl",
-        id,
-        MoreLikeThisParams.MIN_TERM_FREQ,
-        2,
-        MoreLikeThisParams.MIN_DOC_FREQ,
-        1,
-        "sort",
-        "id_i1 desc",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt",
-        "qt",
         requestHandlerName,
-        "shards.qt",
-        requestHandlerName,
-        "mlt.count",
-        "20");
-
-    query(
-        "q",
-        "lowerfilt:fox",
-        "fl",
-        id,
-        MoreLikeThisParams.MIN_TERM_FREQ,
-        1,
-        MoreLikeThisParams.MIN_DOC_FREQ,
-        1,
-        "sort",
-        "id_i1 desc",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt",
-        "qt",
-        requestHandlerName,
-        "shards.qt",
-        requestHandlerName,
-        "mlt.count",
-        "20");
-
-    query(
-        "q",
-        "lowerfilt:the red fox",
-        "fl",
-        id,
-        MoreLikeThisParams.MIN_TERM_FREQ,
-        1,
-        MoreLikeThisParams.MIN_DOC_FREQ,
-        1,
-        "sort",
-        "id_i1 desc",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt",
-        "qt",
-        requestHandlerName,
-        "shards.qt",
-        requestHandlerName,
-        "mlt.count",
-        "20");
-
-    query(
-        "q",
-        "lowerfilt:blue moon",
-        "fl",
-        id,
-        MoreLikeThisParams.MIN_TERM_FREQ,
-        1,
-        MoreLikeThisParams.MIN_DOC_FREQ,
-        1,
-        "sort",
-        "id_i1 desc",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt",
-        "qt",
-        requestHandlerName,
-        "shards.qt",
-        requestHandlerName,
-        "mlt.count",
-        "20");
-
-    // let's query by specifying multiple mlt.fl as comma-separated values
-    QueryResponse response =
-        query(
+        params(
             "q",
             "lowerfilt:moon",
             "fl",
             id,
             MoreLikeThisParams.MIN_TERM_FREQ,
-            2,
+            "2",
             MoreLikeThisParams.MIN_DOC_FREQ,
-            1,
+            "1",
             "sort",
             "id_i1 desc",
             "mlt",
             "true",
             "mlt.fl",
-            "lowerfilt1,lowerfilt",
-            "qt",
-            requestHandlerName,
+            "lowerfilt",
             "shards.qt",
             requestHandlerName,
             "mlt.count",
-            "20");
+            "20"));
+
+    query(
+        requestHandlerName,
+        params(
+            "q",
+            "lowerfilt:fox",
+            "fl",
+            id,
+            MoreLikeThisParams.MIN_TERM_FREQ,
+            "1",
+            MoreLikeThisParams.MIN_DOC_FREQ,
+            "1",
+            "sort",
+            "id_i1 desc",
+            "mlt",
+            "true",
+            "mlt.fl",
+            "lowerfilt",
+            "shards.qt",
+            requestHandlerName,
+            "mlt.count",
+            "20"));
+
+    query(
+        requestHandlerName,
+        params(
+            "q",
+            "lowerfilt:the red fox",
+            "fl",
+            id,
+            MoreLikeThisParams.MIN_TERM_FREQ,
+            "1",
+            MoreLikeThisParams.MIN_DOC_FREQ,
+            "1",
+            "sort",
+            "id_i1 desc",
+            "mlt",
+            "true",
+            "mlt.fl",
+            "lowerfilt",
+            "shards.qt",
+            requestHandlerName,
+            "mlt.count",
+            "20"));
+
+    query(
+        requestHandlerName,
+        params(
+            "q",
+            "lowerfilt:blue moon",
+            "fl",
+            id,
+            MoreLikeThisParams.MIN_TERM_FREQ,
+            "1",
+            MoreLikeThisParams.MIN_DOC_FREQ,
+            "1",
+            "sort",
+            "id_i1 desc",
+            "mlt",
+            "true",
+            "mlt.fl",
+            "lowerfilt",
+            "shards.qt",
+            requestHandlerName,
+            "mlt.count",
+            "20"));
+
+    // let's query by specifying multiple mlt.fl as comma-separated values
+    QueryResponse response =
+        query(
+            requestHandlerName,
+            params(
+                "q",
+                "lowerfilt:moon",
+                "fl",
+                id,
+                MoreLikeThisParams.MIN_TERM_FREQ,
+                "2",
+                MoreLikeThisParams.MIN_DOC_FREQ,
+                "1",
+                "sort",
+                "id_i1 desc",
+                "mlt",
+                "true",
+                "mlt.fl",
+                "lowerfilt1,lowerfilt",
+                "shards.qt",
+                requestHandlerName,
+                "mlt.count",
+                "20"));
     NamedList<Object> moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
     Map<String, Long> idVsMLTCount = new HashMap<>();
     for (Map.Entry<String, Object> entry : moreLikeThis) {
@@ -354,28 +346,28 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     // let's query by specifying multiple mlt.fl as multiple request parameters
     response =
         query(
-            "q",
-            "lowerfilt:moon",
-            "fl",
-            id,
-            MoreLikeThisParams.MIN_TERM_FREQ,
-            2,
-            MoreLikeThisParams.MIN_DOC_FREQ,
-            1,
-            "sort",
-            "id_i1 desc",
-            "mlt",
-            "true",
-            "mlt.fl",
-            "lowerfilt1",
-            "mlt.fl",
-            "lowerfilt",
-            "qt",
             requestHandlerName,
-            "shards.qt",
-            requestHandlerName,
-            "mlt.count",
-            "20");
+            params(
+                "q",
+                "lowerfilt:moon",
+                "fl",
+                id,
+                MoreLikeThisParams.MIN_TERM_FREQ,
+                "2",
+                MoreLikeThisParams.MIN_DOC_FREQ,
+                "1",
+                "sort",
+                "id_i1 desc",
+                "mlt",
+                "true",
+                "mlt.fl",
+                "lowerfilt1",
+                "mlt.fl",
+                "lowerfilt",
+                "shards.qt",
+                requestHandlerName,
+                "mlt.count",
+                "20"));
     moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
     for (Map.Entry<String, Object> entry : moreLikeThis) {
       String key = entry.getKey();
@@ -385,27 +377,27 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     }
     // test boost mlt.qf
     query(
-        "q",
-        "lowerfilt:moon",
-        "fl",
-        id,
-        MoreLikeThisParams.MIN_TERM_FREQ,
-        2,
-        MoreLikeThisParams.MIN_DOC_FREQ,
-        1,
-        "sort",
-        "id_i1 desc",
-        "mlt",
-        "true",
-        "mlt.fl",
-        "lowerfilt1,lowerfilt",
-        "mlt.qf",
-        "lowerfilt1^1.2 lowerfilt^3.4",
-        "qt",
         requestHandlerName,
-        "shards.qt",
-        requestHandlerName,
-        "mlt.count",
-        "20");
+        params(
+            "q",
+            "lowerfilt:moon",
+            "fl",
+            id,
+            MoreLikeThisParams.MIN_TERM_FREQ,
+            "2",
+            MoreLikeThisParams.MIN_DOC_FREQ,
+            "1",
+            "sort",
+            "id_i1 desc",
+            "mlt",
+            "true",
+            "mlt.fl",
+            "lowerfilt1,lowerfilt",
+            "mlt.qf",
+            "lowerfilt1^1.2 lowerfilt^3.4",
+            "shards.qt",
+            requestHandlerName,
+            "mlt.count",
+            "20"));
   }
 }

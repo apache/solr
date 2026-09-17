@@ -90,6 +90,8 @@ public class RequestRateLimiter {
    * Handles an incoming request. returns a metadata object representing the metadata for the
    * acquired slot, if acquired. If a slot is not acquired, returns a null metadata object.
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether the pools are the same shared Semaphore instance
   public SlotReservation handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
@@ -135,6 +137,8 @@ public class RequestRateLimiter {
    * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself
    *     long lived.
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether the pools are the same shared Semaphore instance
   public SlotReservation allowSlotBorrowing() throws InterruptedException {
     if (borrowableSlotsPool == null) {
       return null;

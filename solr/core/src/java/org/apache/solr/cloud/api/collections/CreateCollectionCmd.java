@@ -204,6 +204,17 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
+
+        // ensure the local ZkStateReader sees the collection before returning, so callers get the
+        // same "collection exists" guarantee as the non-PRS path
+        try {
+          zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, Objects::nonNull);
+        } catch (TimeoutException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Could not fully create collection: " + collectionName,
+              e);
+        }
       } else {
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and

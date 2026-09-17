@@ -25,13 +25,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 
 /**
@@ -411,47 +410,22 @@ public abstract class SolrParams
   }
 
   /**
-   * Convert this to a NamedList of unique keys with either String or String[] values depending on
-   * how many values there are for the parameter.
-   *
-   * @deprecated see {@link SimpleOrderedMap#SimpleOrderedMap(MapWriter)}
-   */
-  @Deprecated
-  public NamedList<Object> toNamedList() {
-    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-
-    for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next();
-      final String[] values = getParams(name);
-      if (values.length == 1) {
-        result.add(name, values[0]);
-      } else {
-        // currently, no reason not to use the same array
-        result.add(name, values);
-      }
-    }
-    return result;
-  }
-
-  /**
    * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
   public String toQueryString() {
     final Charset charset = StandardCharsets.UTF_8;
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
+
+    var output = new StringJoiner("&", "?", "");
+    output.setEmptyValue("");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
+      final String name = it.next();
+      final String nameEnc = URLEncoder.encode(name, charset);
       for (String val : getParams(name)) {
-        sb.append(first ? '?' : '&')
-            .append(nameEnc)
-            .append('=')
-            .append(URLEncoder.encode(val, charset));
-        first = false;
+        output.add(nameEnc + "=" + URLEncoder.encode(val, charset));
       }
     }
-    return sb.toString();
+    return output.toString();
   }
 
   /**
@@ -490,19 +464,14 @@ public abstract class SolrParams
    */
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
+    StringJoiner query = new StringJoiner("&");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
       for (String val : getParams(name)) {
-        if (!first) sb.append('&');
-        first = false;
-        StrUtils.partialURLEncodeVal(sb, name);
-        sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val);
+        query.add(StrUtils.partialURLEncodeVal(name) + "=" + StrUtils.partialURLEncodeVal(val));
       }
     }
-    return sb.toString();
+    return query.toString();
   }
 
   /**

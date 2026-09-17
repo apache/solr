@@ -27,6 +27,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
  * expected.
  */
+@Nightly
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -153,29 +155,22 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     final String unloadCmdCoreName1 = (unloadInOrder ? coreName1 : coreName2);
     final String unloadCmdCoreName2 = (unloadInOrder ? coreName2 : coreName1);
 
-    try (SolrClient adminClient = getHttpSolrClient(buildUrl(jettys.get(0).getLocalPort()))) {
-      // now unload one of the two
-      Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(unloadCmdCoreName1);
-      adminClient.request(unloadCmd);
+    SolrClient adminClient = jettys.get(0).getSolrClient();
+    // now unload one of the two
+    Unload unloadCmd = new Unload(false);
+    unloadCmd.setCoreName(unloadCmdCoreName1);
+    adminClient.request(unloadCmd);
 
-      // there should still be two shards (as of SOLR-5209)
-      checkCoreNamePresenceAndSliceCount(
-          collection,
-          unloadCmdCoreName1,
-          false /* shouldBePresent */,
-          numShards /* expectedSliceCount */);
+    // there should still be two shards (as of SOLR-5209)
+    checkCoreNamePresenceAndSliceCount(
+        collection, unloadCmdCoreName1, false /* shouldBePresent */, numShards);
 
-      // now unload one of the other
-      unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(unloadCmdCoreName2);
-      adminClient.request(unloadCmd);
-      checkCoreNamePresenceAndSliceCount(
-          collection,
-          unloadCmdCoreName2,
-          false /* shouldBePresent */,
-          numShards /* expectedSliceCount */);
-    }
+    // now unload one of the other
+    unloadCmd = new Unload(false);
+    unloadCmd.setCoreName(unloadCmdCoreName2);
+    adminClient.request(unloadCmd);
+    checkCoreNamePresenceAndSliceCount(
+        collection, unloadCmdCoreName2, false /* shouldBePresent */, numShards);
 
     // printLayout();
     // the collection should still be present (as of SOLR-5209 replica removal does not cascade to
@@ -186,14 +181,17 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
         cloudClient.getClusterState().hasCollection(collection));
   }
 
+  /**
+   * A reserved core of the given collection, or null if the node hosts none; caller must close it.
+   */
   protected SolrCore getFirstCore(String collection, JettySolrRunner jetty) {
-    SolrCore solrCore = null;
-    for (SolrCore core : jetty.getCoreContainer().getCores()) {
-      if (core.getName().startsWith(collection)) {
-        solrCore = core;
+    String coreName = null;
+    for (String name : jetty.getCoreContainer().getLoadedCoreNames()) {
+      if (name.startsWith(collection)) {
+        coreName = name;
       }
     }
-    return solrCore;
+    return coreName == null ? null : jetty.getCoreContainer().getCore(coreName);
   }
 
   /**
@@ -216,8 +214,10 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     int slices =
         zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
-    SolrCore solrCore = getFirstCore("unloadcollection", jetty1);
-    String core1DataDir = solrCore.getDataDir();
+    String core1DataDir;
+    try (SolrCore solrCore = getFirstCore("unloadcollection", jetty1)) {
+      core1DataDir = solrCore.getDataDir();
+    }
 
     assertTrue(
         CollectionAdminRequest.addReplicaToShard("unloadcollection", "shard1")
@@ -384,56 +384,55 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
     int shards = TEST_NIGHTLY ? 2 : 1;
-    try (final SolrClient adminClient = jetty.newClient(15000, 60000)) {
-      int numReplicas = atLeast(3);
-      ThreadPoolExecutor executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              0,
-              Integer.MAX_VALUE,
-              5,
-              TimeUnit.SECONDS,
-              new SynchronousQueue<>(),
-              new SolrNamedThreadFactory("testExecutor"));
-      try {
-        // create the cores
-        BasicDistributedZkTest.createCollectionInOneInstance(
-            adminClient, jetty.getNodeName(), executor, "multiunload", shards, numReplicas);
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
-      }
+    final SolrClient adminClient = jetty.getSolrClient();
+    int numReplicas = atLeast(3);
+    ThreadPoolExecutor executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
+    try {
+      // create the cores
+      BasicDistributedZkTest.createCollectionInOneInstance(
+          adminClient, jetty.getNodeName(), executor, "multiunload", shards, numReplicas);
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
 
-      if (TEST_NIGHTLY == false) {
-        // with nightly tests, we can try doing the unloads before the creates are done
-        // it still works, but takes much longer since we end up waiting for a timeout
-        waitForRecoveriesToFinish("multiunload", false);
-      }
+    if (TEST_NIGHTLY == false) {
+      // with nightly tests, we can try doing the unloads before the creates are done
+      // it still works, but takes much longer since we end up waiting for a timeout
+      waitForRecoveriesToFinish("multiunload", false);
+    }
 
-      executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              0,
-              Integer.MAX_VALUE,
-              5,
-              TimeUnit.SECONDS,
-              new SynchronousQueue<>(),
-              new SolrNamedThreadFactory("testExecutor"));
-      try {
-        for (int j = 0; j < numReplicas; j++) {
-          final int freezeJ = j;
-          executor.execute(
-              () -> {
-                Unload unloadCmd = new Unload(true);
-                unloadCmd.setCoreName("multiunload" + freezeJ);
-                try {
-                  adminClient.request(unloadCmd);
-                } catch (SolrServerException | IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-          Thread.sleep(random().nextInt(50));
-        }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(executor);
+    executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
+    try {
+      for (int j = 0; j < numReplicas; j++) {
+        final int freezeJ = j;
+        executor.execute(
+            () -> {
+              Unload unloadCmd = new Unload(true);
+              unloadCmd.setCoreName("multiunload" + freezeJ);
+              try {
+                adminClient.request(unloadCmd);
+              } catch (SolrServerException | IOException e) {
+                throw new RuntimeException(e);
+              }
+            });
+        Thread.sleep(random().nextInt(50));
       }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
   }
 }

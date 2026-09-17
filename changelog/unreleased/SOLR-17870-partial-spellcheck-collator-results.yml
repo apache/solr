@@ -1,0 +1,10 @@
+title: >
+  SpellCheckCollator now returns the partial (mutable) list of collations it had gathered so far,
+  instead of throwing an UnsupportedOperationException, when the query time limit is exceeded
+  while collating results.
+type: fixed
+authors:
+  - name: Puneet Sharma
+links:
+  - name: SOLR-17870
+    url: https://issues.apache.org/jira/browse/SOLR-17870

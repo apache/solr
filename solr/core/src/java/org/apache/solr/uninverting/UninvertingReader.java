@@ -85,7 +85,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #INTEGER_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_INTEGER,
     /**
      * Single-valued Long, (e.g. indexed with {@link org.apache.solr.legacy.LegacyLongField})
@@ -94,7 +94,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #LONG_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_LONG,
     /**
      * Single-valued Float, (e.g. indexed with {@link org.apache.solr.legacy.LegacyFloatField})
@@ -103,7 +103,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #FLOAT_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_FLOAT,
     /**
      * Single-valued Double, (e.g. indexed with {@link org.apache.solr.legacy.LegacyDoubleField})
@@ -112,7 +112,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #DOUBLE_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_DOUBLE,
     /**
      * Single-valued Binary, (e.g. indexed with {@link StringField})

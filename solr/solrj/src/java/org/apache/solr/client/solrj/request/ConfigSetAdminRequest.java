@@ -20,8 +20,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -30,8 +30,6 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase.FileStream;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -50,12 +48,28 @@ public abstract class ConfigSetAdminRequest<
     return this;
   }
 
-  public ConfigSetAdminRequest() {
-    super(METHOD.GET, "/admin/configs", SolrRequestType.ADMIN);
+  public ConfigSetAdminRequest(METHOD method) {
+    this(method, "/admin/configs");
   }
 
+  public ConfigSetAdminRequest(METHOD method, String path) {
+    super(method, path, SolrRequestType.ADMIN);
+  }
+
+  /**
+   * @deprecated Use {@link #ConfigSetAdminRequest(METHOD)}.
+   */
+  @Deprecated(since = "10.1")
+  public ConfigSetAdminRequest() {
+    this(METHOD.POST);
+  }
+
+  /**
+   * @deprecated Use {@link #ConfigSetAdminRequest(METHOD, String)}.
+   */
+  @Deprecated(since = "10.1")
   public ConfigSetAdminRequest(String path) {
-    super(METHOD.GET, path, SolrRequestType.ADMIN);
+    this(METHOD.POST, path);
   }
 
   protected abstract Q getThis();
@@ -77,6 +91,18 @@ public abstract class ConfigSetAdminRequest<
           T extends ConfigSetAdminRequest<T, ConfigSetAdminResponse>>
       extends ConfigSetAdminRequest<T, ConfigSetAdminResponse> {
     protected String configSetName = null;
+
+    protected ConfigSetSpecificAdminRequest(METHOD method) {
+      super(method);
+    }
+
+    /**
+     * @deprecated Use {@link #ConfigSetSpecificAdminRequest(METHOD)}.
+     */
+    @Deprecated(since = "10.1")
+    protected ConfigSetSpecificAdminRequest() {
+      this(METHOD.POST);
+    }
 
     public final T setConfigSetName(String configSetName) {
       this.configSetName = configSetName;
@@ -112,17 +138,17 @@ public abstract class ConfigSetAdminRequest<
    * file to upload if {@link #setFilePath} is being used.
    */
   public static class Upload extends ConfigSetSpecificAdminRequest<Upload> {
-    private static final String NO_STREAM_ERROR = "There must be a ContentStream or File to Upload";
+    private static final String NO_STREAM_ERROR = "There must be content or a File to Upload";
 
-    protected ContentStream stream;
+    protected RequestWriter.ContentWriter contentWriter;
     protected String filePath;
 
     protected Boolean overwrite;
     protected Boolean cleanup;
 
     public Upload() {
+      super(METHOD.POST);
       action = ConfigSetAction.UPLOAD;
-      setMethod(SolrRequest.METHOD.POST);
     }
 
     @Override
@@ -152,13 +178,21 @@ public abstract class ConfigSetAdminRequest<
      * <p>This should either be a ZIP file containing the entire configset being uploaded, or an
      * individual file to upload into an existing configset if {@link #setFilePath} is being used.
      *
-     * @see #setUploadStream
+     * @see #setUploadContent
      */
-    public final Upload setUploadFile(final Path file, final String contentType)
-        throws IOException {
-      final FileStream fileStream = new FileStream(file);
-      fileStream.setContentType(contentType);
-      return setUploadStream(fileStream);
+    public final Upload setUploadFile(final Path file, final String contentType) {
+      return setUploadContent(
+          new RequestWriter.ContentWriter() {
+            @Override
+            public void write(OutputStream os) throws IOException {
+              Files.copy(file, os);
+            }
+
+            @Override
+            public String getContentType() {
+              return contentType;
+            }
+          });
     }
 
     /**
@@ -192,48 +226,31 @@ public abstract class ConfigSetAdminRequest<
     }
 
     /**
-     * Specify the ContentStream to upload.
+     * Specify the content to upload.
      *
      * <p>This should either be a ZIP file containing the entire configset being uploaded, or an
      * individual file to upload into an existing configset if {@link #setFilePath} is being used.
      *
-     * @see #setUploadStream
+     * @see #setUploadFile
      */
-    public final Upload setUploadStream(final ContentStream stream) {
-      this.stream = stream;
+    public final Upload setUploadContent(final RequestWriter.ContentWriter contentWriter) {
+      this.contentWriter = contentWriter;
       return getThis();
     }
 
     @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return java.util.List.of(stream);
-    }
-
-    @Override
     public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-      if (null == stream) {
+      if (null == contentWriter) {
         throw new NullPointerException(NO_STREAM_ERROR);
       }
-      return new RequestWriter.ContentWriter() {
-        @Override
-        public void write(OutputStream os) throws IOException {
-          try (var inStream = stream.getStream()) {
-            inStream.transferTo(os);
-          }
-        }
-
-        @Override
-        public String getContentType() {
-          return stream.getContentType();
-        }
-      };
+      return contentWriter;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
 
-      if (null == stream) {
+      if (null == contentWriter) {
         throw new NullPointerException(NO_STREAM_ERROR);
       }
 
@@ -255,6 +272,7 @@ public abstract class ConfigSetAdminRequest<
     protected Properties properties;
 
     public Create() {
+      super(METHOD.POST);
       action = ConfigSetAction.CREATE;
     }
 
@@ -300,6 +318,7 @@ public abstract class ConfigSetAdminRequest<
   // DELETE request
   public static class Delete extends ConfigSetSpecificAdminRequest<Delete> {
     public Delete() {
+      super(METHOD.POST);
       action = ConfigSetAction.DELETE;
     }
 
@@ -312,6 +331,7 @@ public abstract class ConfigSetAdminRequest<
   // LIST request
   public static class List extends ConfigSetAdminRequest<List, ConfigSetAdminResponse.List> {
     public List() {
+      super(METHOD.GET);
       action = ConfigSetAction.LIST;
     }
 

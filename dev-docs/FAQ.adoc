@@ -74,7 +74,12 @@ Learn more about using Forbidden APIs via `./gradlew :helpForbiddenApis`.
 To run a check for dependencies of Solr that have security vulnerabilities using the https://plugins.gradle.org/plugin/org.owasp.dependencycheck[OWASP] Gradle plugin.
 Run via:
 
-`./gradlew owasp`
+`./gradlew owasp --no-parallel`
+
+This task downloads the NVD CVE database, which is heavily rate-limited for unauthenticated requests and will fail with an error from `NvdApiDataSource` without an API key.
+Request a free key at https://nvd.nist.gov/developers/request-an-api-key and pass it via `-PnvdApiKey=<your-key>` or the `NVD_API_KEY` environment variable.
+
+The `--no-parallel` flag is required because of an unresolved upstream bug where `dependencyCheckAggregate` resolves other projects' configurations unsafely under Gradle's parallel project execution: https://github.com/dependency-check/dependency-check-gradle/issues/462
 
 There are a number of other tasks that get run to validate the source code, and you can find them in the ./gradle/validation source tree.
 

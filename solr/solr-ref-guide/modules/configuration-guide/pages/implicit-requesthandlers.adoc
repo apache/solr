@@ -83,6 +83,8 @@ This handler must have a collection name in the path to the endpoint.
 Ping:: Health check.
 This handler must have a collection name in the path to the endpoint.
 +
+CAUTION: `PingRequestHandler` is deprecated and will be removed in a future release. Use the `Health` endpoint below instead.
++
 *Documentation*: xref:deployment-guide:ping.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
@@ -92,14 +94,21 @@ This handler must have a collection name in the path to the endpoint.
 |===
 
 System Properties:: Return JRE system properties.
+Secret values are redacted.
++
+*Documentation*: xref:deployment-guide:jvm-settings.adoc#java-properties-screen[Java Properties Screen]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/properties`
 
-v2: `api/node/properties` |{solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler] |`_ADMIN_PROPERTIES`
+v2: `api/node/properties` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
+
+v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties] |`_ADMIN_PROPERTIES`
 |===
++
+To fetch a single property, v1 uses a `name` query parameter (`solr/admin/info/properties?name=java.version`) and v2 uses a path segment (`api/node/properties/java.version`).
 
 Segments:: Return info on last commit generation Lucene index segments.
 +
