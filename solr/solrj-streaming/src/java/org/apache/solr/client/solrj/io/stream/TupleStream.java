@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
@@ -119,18 +120,24 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static List<String> getShards(
-      String zkHost, String collection, StreamContext streamContext) throws IOException {
-    return getShards(zkHost, collection, streamContext, new ModifiableSolrParams());
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      StreamContext streamContext)
+      throws IOException {
+    return getShards(solrConnection, collection, streamContext, new ModifiableSolrParams());
   }
 
   static List<Replica> getReplicas(
-      String zkHost, String collection, StreamContext streamContext, SolrParams requestParams)
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      StreamContext streamContext,
+      SolrParams requestParams)
       throws IOException {
-    if (zkHost == null) {
+    if (solrConnection == null) {
       throw new IOException(
           String.format(
               Locale.ROOT,
-              "invalid expression - zkHost not found for collection '%s'",
+              "invalid expression - solrConnection or zkHost not found for collection '%s'",
               collection));
     }
 
@@ -149,7 +156,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     }
 
     try {
-      CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zkHost);
+      CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrConnection);
       ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
       List<Slice> slices = CloudSolrStream.getSlices(collection, cloudSolrClient, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -197,7 +204,10 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static List<String> getShards(
-      String zkHost, String collection, StreamContext streamContext, SolrParams requestParams)
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      StreamContext streamContext,
+      SolrParams requestParams)
       throws IOException {
 
     List<String> shards;
@@ -213,12 +223,25 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       }
     } else {
       shards =
-          getReplicas(zkHost, collection, streamContext, requestParams).stream()
+          getReplicas(solrConnection, collection, streamContext, requestParams).stream()
               .map(Replica::getCoreUrl)
               .collect(Collectors.toList());
     }
 
     return shards;
+  }
+
+  public static ModifiableSolrParams buildSolrParamsExcept(
+      List<StreamExpressionNamedParameter> namedParams, Set<String> excluded) {
+    ModifiableSolrParams mParams = new ModifiableSolrParams();
+
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!excluded.contains(namedParam.getName())) {
+        mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
+      }
+    }
+
+    return mParams;
   }
 
   public static class IgnoreException extends IOException {

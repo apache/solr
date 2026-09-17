@@ -373,6 +373,63 @@ public class PackageToolTest extends SolrCloudTestCase {
         success);
   }
 
+  /** Validates that collection existence is checked before package resolution. */
+  @Test
+  public void testDeployValidationMessages() throws Exception {
+    String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+
+    withBasicAuth(CollectionAdminRequest.createCollection("validation-test", "conf1", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+
+    CLITestHelper.TestingRuntime captureRuntime = new CLITestHelper.TestingRuntime(true);
+    PackageTool tool = new PackageTool(captureRuntime);
+
+    // Collection exists but package does not — collection validation should pass,
+    // package lookup should fail.
+    tool.runTool(
+        SolrCLI.processCommandLineArgs(
+            tool,
+            new String[] {
+              "--solr-url",
+              solrUrl,
+              "deploy",
+              "NONEXISTENT_PKG",
+              "--collections",
+              "validation-test",
+              "--credentials",
+              SecurityJson.USER_PASS
+            }));
+    String deployOut = captureRuntime.getOutput();
+    assertFalse(
+        "Should not complain about invalid collection", deployOut.contains("Invalid collection"));
+    assertTrue(
+        "Should report missing package",
+        deployOut.contains("Package instance doesn't exist: NONEXISTENT_PKG:null"));
+
+    captureRuntime.clearOutput();
+
+    // Undeploy of a package that was never deployed should give a clear message.
+    tool.runTool(
+        SolrCLI.processCommandLineArgs(
+            tool,
+            new String[] {
+              "--solr-url",
+              solrUrl,
+              "undeploy",
+              "NONEXISTENT_PKG",
+              "--collections",
+              "validation-test",
+              "--credentials",
+              SecurityJson.USER_PASS
+            }));
+    String undeployOut = captureRuntime.getOutput();
+    assertFalse(
+        "Should not complain about invalid collection", undeployOut.contains("Invalid collection"));
+    assertTrue(
+        "Should report package not deployed",
+        undeployOut.contains("Package NONEXISTENT_PKG not deployed on collection validation-test"));
+  }
+
   private void run(PackageTool tool, String[] args) throws Exception {
     int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);

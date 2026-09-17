@@ -43,7 +43,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
     final ResourceLoader loader =
         new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
-    final String fileUri = Path.of(testHome + "/crazy-path-to-config.xml").toUri().toASCIIString();
+    final String fileUri = testHome.resolve("crazy-path-to-config.xml").toUri().toASCIIString();
 
     assertEquals("solrres:/test.xml", SystemIdResolver.createSystemIdFromResourceName("test.xml"));
     assertEquals(
@@ -84,9 +84,10 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
         "TestSystemIdResolver.class");
     assertEntityResolving(
         resolver,
-        SystemIdResolver.createSystemIdFromResourceName(testHome + "/collection1/conf/schema.xml"),
         SystemIdResolver.createSystemIdFromResourceName(
-            testHome + "/collection1/conf/solrconfig.xml"),
+            testHome.resolve("collection1").resolve("conf").resolve("schema.xml").toString()),
+        SystemIdResolver.createSystemIdFromResourceName(
+            testHome.resolve("collection1").resolve("conf").resolve("solrconfig.xml").toString()),
         "schema.xml");
 
     // if somebody uses an absolute uri (e.g., file://) we should fail resolving:
@@ -132,8 +133,10 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
 
     assertEntityResolving(
         resolver,
-        SystemIdResolver.createSystemIdFromResourceName(testHome + "/crazy-path-to-schema.xml"),
-        SystemIdResolver.createSystemIdFromResourceName(testHome + "/crazy-path-to-config.xml"),
+        SystemIdResolver.createSystemIdFromResourceName(
+            testHome.resolve("crazy-path-to-schema.xml").toString()),
+        SystemIdResolver.createSystemIdFromResourceName(
+            testHome.resolve("crazy-path-to-config.xml").toString()),
         "crazy-path-to-schema.xml");
   }
 }

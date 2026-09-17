@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -84,10 +83,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
   @Test
   public void testHttpSolrClient() throws Exception {
-    SolrClient solrClient =
-        new HttpSolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
-    doTest(solrClient);
-    solrClient.close();
+    doTest(cluster.getJettySolrRunner(0).getSolrClient());
   }
 
   @Test
@@ -149,22 +145,21 @@ public class TestV2Request extends SolrCloudTestCase {
     cs.getCollection("v2forward").forEachReplica((s, replica) -> node[0] = replica.getNodeName());
 
     // find a node that does not have a replica for this collection
-    final String[] testNode = new String[1];
-    cs.getLiveNodes()
-        .forEach(
-            s -> {
-              if (!s.equals(node[0])) testNode[0] = s;
-            });
+    String testNode =
+        cs.getLiveNodes().stream().filter(s -> !s.equals(node[0])).findAny().orElseThrow();
 
-    String testServer = cluster.getZkStateReader().getBaseUrlForNodeName(testNode[0]);
     V2Request v2r =
         new V2Request.Builder("/c/v2forward/_introspect")
             .withMethod(SolrRequest.METHOD.GET)
             .build();
 
-    try (SolrClient client1 = new HttpSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
-      V2Response rsp = v2r.process(client1);
-      assertEquals("0", rsp._getStr("responseHeader/status"));
-    }
+    V2Response rsp =
+        v2r.process(
+            cluster.getJettySolrRunners().stream()
+                .filter(j -> testNode.equals(j.getNodeName()))
+                .findAny()
+                .orElseThrow()
+                .getSolrClient());
+    assertEquals("0", rsp._getStr("responseHeader/status"));
   }
 }

@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -81,7 +80,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
 
     // verify the http derived cluster state (on the client side) agrees with what the server stored
     try (CloudSolrClient httpBasedCloudSolrClient =
-        new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
+        new CloudSolrClient.Builder(List.of(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
       assertTrue(csp instanceof HttpClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
@@ -89,7 +88,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
 
     // http2
     try (CloudSolrClient http2BasedClient =
-        new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
+        new CloudSolrClient.Builder(List.of(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();
       assertTrue(csp instanceof HttpClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
@@ -104,7 +103,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
   private void verifyUrlSchemeInClusterState(
       final DocCollection collection, final int expectedReplicas) {
     assertNotNull(collection);
-    List<Replica> replicas = collection.getReplicas();
+    List<Replica> replicas = collection.replicaStream().toList();
     assertNotNull(replicas);
     assertEquals(expectedReplicas, replicas.size());
     for (Replica r : replicas) {

@@ -82,8 +82,8 @@ public class MockTrustManager extends X509ExtendedTrustManager {
   }
 
   @Override
-  public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-    return new java.security.cert.X509Certificate[0];
+  public X509Certificate[] getAcceptedIssuers() {
+    return new X509Certificate[0];
   }
 
   @Override
@@ -93,7 +93,7 @@ public class MockTrustManager extends X509ExtendedTrustManager {
   }
 
   @Override
-  public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
+  public void checkServerTrusted(X509Certificate[] chain, String authType)
       throws CertificateException {
     // no-op
   }

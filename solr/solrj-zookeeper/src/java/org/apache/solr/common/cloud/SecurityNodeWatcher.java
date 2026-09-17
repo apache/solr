@@ -16,12 +16,10 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.emptyMap;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.apache.solr.common.Callable;
+import java.util.function.Consumer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -37,7 +35,7 @@ class SecurityNodeWatcher implements Watcher {
   private final ZkStateReader zkStateReader;
   private ZkStateReader.ConfigData securityData;
 
-  private final Callable<SolrZkClient.NodeData> callback;
+  private final Consumer<SolrZkClient.NodeData> callback;
 
   @SuppressWarnings("unchecked")
   public SecurityNodeWatcher(ZkStateReader zkStateReader, Runnable securityNodeListener) {
@@ -47,7 +45,7 @@ class SecurityNodeWatcher implements Watcher {
           ZkStateReader.ConfigData cd = new ZkStateReader.ConfigData();
           cd.data =
               data.data == null || data.data.length == 0
-                  ? emptyMap()
+                  ? Map.of()
                   : Utils.getDeepCopy((Map) Utils.fromJSON(data.data), 4, false);
           cd.version = data.stat == null ? -1 : data.stat.getVersion();
           securityData = cd;
@@ -76,7 +74,7 @@ class SecurityNodeWatcher implements Watcher {
           data = zkStateReader.getZkClient().getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, this);
         }
         try {
-          callback.call(data);
+          callback.accept(data);
         } catch (Exception e) {
           log.error("Error running collections node listener", e);
         }
@@ -101,7 +99,7 @@ class SecurityNodeWatcher implements Watcher {
   @SuppressWarnings("unchecked")
   ZkStateReader.ConfigData getSecurityProps(boolean getFresh) {
     if (!getFresh) {
-      if (securityData == null) return new ZkStateReader.ConfigData(emptyMap(), -1);
+      if (securityData == null) return new ZkStateReader.ConfigData(Map.of(), -1);
       return new ZkStateReader.ConfigData(securityData.data, securityData.version);
     }
     try {

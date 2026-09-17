@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.QueryRescorer;
+import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 
 public class ReRankScaler {
@@ -35,7 +35,7 @@ public class ReRankScaler {
   protected boolean explainResults;
   protected ReRankOperator reRankOperator;
   protected ReRankScalerExplain reRankScalerExplain;
-  private QueryRescorer replaceRescorer;
+  private Rescorer replaceRescorer;
   private Set<Integer> reRankSet;
   private double reRankScaleWeight;
 
@@ -44,7 +44,7 @@ public class ReRankScaler {
       String reRankScale,
       double reRankScaleWeight,
       ReRankOperator reRankOperator,
-      QueryRescorer replaceRescorer,
+      Rescorer replaceRescorer,
       boolean explainResults)
       throws SyntaxError {
 
@@ -99,7 +99,7 @@ public class ReRankScaler {
     }
   }
 
-  public QueryRescorer getReplaceRescorer() {
+  public Rescorer getReplaceRescorer() {
     return replaceRescorer;
   }
 
@@ -237,16 +237,7 @@ public class ReRankScaler {
       float reRankScore,
       double reRankScaleWeight,
       ReRankOperator reRankOperator) {
-    switch (reRankOperator) {
-      case ADD:
-        return (float) (orginalScore + reRankScaleWeight * reRankScore);
-      case REPLACE:
-        return (float) (reRankScaleWeight * reRankScore);
-      case MULTIPLY:
-        return (float) (orginalScore * reRankScaleWeight * reRankScore);
-      default:
-        return -1;
-    }
+    return (float) reRankOperator.applyAsDouble(orginalScore, reRankScaleWeight * reRankScore);
   }
 
   public static final class ReRankScalerExplain {

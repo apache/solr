@@ -18,7 +18,6 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.solr.common.util.Utils;
@@ -69,7 +68,7 @@ public class CollectionProperties {
           Utils.fromJSON(
               client.getData(ZkStateReader.getCollectionPropsPath(collection), null, new Stat()));
     } catch (KeeperException.NoNodeException e) {
-      return Collections.emptyMap();
+      return Map.of();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error reading properties for collection " + collection,

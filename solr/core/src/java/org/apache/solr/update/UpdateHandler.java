@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -164,8 +165,8 @@ public abstract class UpdateHandler implements SolrInfoBean {
               ? dirFactory.newDefaultUpdateLog()
               : core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
 
-      if (log.isInfoEnabled()) {
-        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
+      if (log.isDebugEnabled()) {
+        log.debug("Using UpdateLog implementation: {}", ulog.getClass().getName());
       }
       ulog.init(ulogPluginInfo);
 
@@ -200,6 +201,12 @@ public abstract class UpdateHandler implements SolrInfoBean {
       }
       throw t;
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    IOUtils.closeQuietly(ulog);
+    SolrInfoBean.super.close();
   }
 
   /**

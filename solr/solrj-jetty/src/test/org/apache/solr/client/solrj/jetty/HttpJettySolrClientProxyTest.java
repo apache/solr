@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.EnvUtils;
@@ -51,7 +51,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
         ALLOW_PATHS_SYSPROP,
         ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
     solrTestRule.enableProxy();
-    solrTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr();
     // Actually only need extremely minimal configSet but just use the default
     solrTestRule
         .newCollection()
@@ -109,7 +109,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
   }
 
   /** Set up a simple http proxy and verify a request works */
-  public void testProxy(HttpSolrClientBase client) throws Exception {
+  public void testProxy(HttpSolrClient client) throws Exception {
     String id = "1234";
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", id);

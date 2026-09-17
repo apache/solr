@@ -1,0 +1,7 @@
+title: Add validation for configset names at API layer in line with what Admin UI enforces.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18170
+    url: https://issues.apache.org/jira/browse/SOLR-18170

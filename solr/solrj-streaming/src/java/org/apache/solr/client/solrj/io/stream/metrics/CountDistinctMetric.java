@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Locale;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -29,6 +30,7 @@ public class CountDistinctMetric extends Metric {
   public static final String APPROX_COUNT_DISTINCT = "hll";
 
   private String columnName;
+  private HashSet<Object> distinctValues = new HashSet<>();
 
   public CountDistinctMetric(String columnName) {
     this(columnName, false);
@@ -53,6 +55,10 @@ public class CountDistinctMetric extends Metric {
               expression,
               functionName));
     }
+    if (1 != expression.getParameters().size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
+    }
 
     init(functionName, columnName);
   }
@@ -66,7 +72,10 @@ public class CountDistinctMetric extends Metric {
 
   @Override
   public void update(Tuple tuple) {
-    // Nop for now
+    Object value = tuple.get(columnName);
+    if (value != null) {
+      distinctValues.add(value);
+    }
   }
 
   @Override
@@ -81,14 +90,11 @@ public class CountDistinctMetric extends Metric {
 
   @Override
   public Number getValue() {
-    // No op for now
-    return null;
+    return distinctValues.size();
   }
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    return new StreamExpression(getFunctionName())
-        .withParameter(columnName)
-        .withParameter(Boolean.toString(outputLong));
+    return new StreamExpression(getFunctionName()).withParameter(columnName);
   }
 }

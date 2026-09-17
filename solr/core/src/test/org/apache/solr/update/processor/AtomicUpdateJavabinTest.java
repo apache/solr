@@ -419,8 +419,7 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
       String identifyingDocId, String fieldName, Object... expectedValues) throws Exception {
     final ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set("id", identifyingDocId);
-    QueryRequest request = new QueryRequest(solrParams);
-    request.setPath("/get");
+    QueryRequest request = new QueryRequest("/get", solrParams);
     final QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION);
 
     final NamedList<Object> rawResponse = response.getResponse();

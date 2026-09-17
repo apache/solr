@@ -583,7 +583,7 @@ public class TestInjection {
     double wasteMe = nanos;
     double loadPerKey = cpuLoadPerKey.get();
     if (loadPerKey > nanos) {
-      java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+      DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
 
       DecimalFormat formatter = new DecimalFormat("#,###.00", symbols);
       // yes this is still wasting formatting when not warn, but not important here.

@@ -18,7 +18,7 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Set;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.ResultContext;
@@ -68,12 +68,11 @@ public abstract class DocTransformer {
    *     is acceptable.
    */
   public Collection<String> getRawFields() {
-    return Collections.emptySet();
+    return Set.of();
   }
 
   /**
-   * Indicates if this transformer requires access to the underlying index to perform it's
-   * functions.
+   * Indicates if this transformer requires access to the underlying index to perform its functions.
    *
    * <p>In some situations (notably RealTimeGet) this method <i>may</i> be called before {@link
    * #setContext} to determine if the transformer must be given a "full" ResultContext and accurate

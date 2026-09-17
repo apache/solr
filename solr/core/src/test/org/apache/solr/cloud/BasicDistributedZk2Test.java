@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -158,11 +159,25 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
           .getZkController()
           .getZkClient()
           .getCuratorFramework()
-          .blockUntilConnected(50, TimeUnit.MILLISECONDS);
+          .blockUntilConnected(30, TimeUnit.SECONDS);
 
       indexr("id", docId + 1, t1, "slip this doc in");
 
-      waitForRecoveriesToFinish(false);
+      // Wait for the session-expired node to fully re-register its replica as ACTIVE.
+      // waitForRecoveriesToFinish alone is insufficient because it ignores replicas on nodes
+      // not yet back in live_nodes, which can race with teardown.
+      String expiredNodeName = cloudJetty.jetty.getNodeName();
+      ZkStateReader.from(cloudClient)
+          .waitForState(
+              DEFAULT_COLLECTION,
+              60,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) ->
+                  liveNodes.contains(expiredNodeName)
+                      && collectionState.getSlices().stream()
+                          .flatMap(s -> s.getReplicas().stream())
+                          .filter(r -> liveNodes.contains(r.getNodeName()))
+                          .allMatch(r -> r.getState() == Replica.State.ACTIVE));
 
       checkShardConsistency(SHARD1);
       checkShardConsistency(SHARD2);
@@ -195,18 +210,17 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     int docs = 2;
     for (JettySolrRunner jetty : jettys) {
-      final String clientUrl = getBaseUrl(jetty);
-      addAndQueryDocs(clientUrl, docs);
+      addAndQueryDocs(jetty, docs);
       docs += 2;
     }
   }
 
   // 2 docs added every call
-  private void addAndQueryDocs(final String baseUrl, int docs) throws Exception {
+  private void addAndQueryDocs(final JettySolrRunner jetty, int docs) throws Exception {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollection")) {
+    try (SolrClient client = jetty.newSolrClient("onenodecollection")) {
       // add a doc
       client.add(sdoc("id", docs));
       client.commit();
@@ -285,7 +299,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     // ensure shard is dead
     expectThrows(
-        SolrServerException.class,
+        Exception.class,
         "This server should be down and this update should have failed",
         () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!"));
 
@@ -426,28 +440,25 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     checkShardConsistency(true, false);
 
     // try a backup command
-    try (final SolrClient client =
-        getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
-      final String backupName = "the_backup";
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", ReplicationHandler.PATH);
-      params.set("command", "backup");
-      params.set("name", backupName);
-      final Path location = FilterPath.unwrap(createTempDir()).toRealPath();
-      // Allow non-standard location outside SOLR_HOME
-      jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(location));
-      params.set("location", location.toString());
+    final SolrClient client = shardToJetty.get(SHARD2).get(0).jetty.getSolrClient();
+    final String backupName = "the_backup";
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("command", "backup");
+    params.set("name", backupName);
+    final Path location = FilterPath.unwrap(createTempDir()).toRealPath();
+    // Allow non-standard location outside SOLR_HOME
+    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(location));
+    params.set("location", location.toString());
 
-      QueryRequest request = new QueryRequest(params);
-      client.request(request, DEFAULT_TEST_COLLECTION_NAME);
+    QueryRequest request = new QueryRequest(ReplicationHandler.PATH, params);
+    client.request(request, DEFAULT_TEST_COLLECTION_NAME);
 
-      final BackupStatusChecker backupStatus =
-          new BackupStatusChecker(client, "/" + DEFAULT_TEST_COLLECTION_NAME + "/replication");
-      final String backupDirName = backupStatus.waitForBackupSuccess(backupName, 30);
-      assertTrue(
-          "Backup dir does not exist: " + backupDirName,
-          Files.exists(location.resolve(backupDirName)));
-    }
+    final BackupStatusChecker backupStatus =
+        new BackupStatusChecker(client, "/" + DEFAULT_TEST_COLLECTION_NAME + "/replication");
+    final String backupDirName = backupStatus.waitForBackupSuccess(backupName, 30);
+    assertTrue(
+        "Backup dir does not exist: " + backupDirName,
+        Files.exists(location.resolve(backupDirName)));
   }
 
   private void addNewReplica() throws Exception {

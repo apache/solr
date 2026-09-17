@@ -17,8 +17,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +32,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -86,12 +85,15 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         boolean allContainersEmpty = true;
         for (JettySolrRunner jetty : jettys) {
 
-          Collection<SolrCore> cores = jetty.getCoreContainer().getCores();
-          for (SolrCore core : cores) {
-            CoreDescriptor cd = core.getCoreDescriptor();
-            if (cd != null) {
-              if (cd.getCloudDescriptor().getCollectionName().equals(collectionName)) {
-                allContainersEmpty = false;
+          CoreContainer coreContainer = jetty.getCoreContainer();
+          for (String coreName : coreContainer.getLoadedCoreNames()) {
+            try (SolrCore core = coreContainer.getCore(coreName)) {
+              if (core == null) continue; // unloaded since getLoadedCoreNames
+              CoreDescriptor cd = core.getCoreDescriptor();
+              if (cd != null) {
+                if (cd.getCloudDescriptor().getCollectionName().equals(collectionName)) {
+                  allContainersEmpty = false;
+                }
               }
             }
           }
@@ -125,7 +127,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         ClusterState.createFromCollectionMap(
                 0,
                 (Map<String, Object>) Utils.fromJSON(node.data),
-                Collections.emptySet(),
+                Set.of(),
                 Instant.EPOCH,
                 () ->
                     PerReplicaStatesOps.fetch(

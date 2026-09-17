@@ -65,8 +65,9 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
       return super.collect();
     }
 
-    // Prometheus appends a suffix to the metrics depending on the metric type. We need to sanitize
-    // the suffix off if they filter by Prometheus name instead of OTEL name.
+    // Users may filter by Prometheus-format names (e.g. "solr_core_requests") or with a
+    // Prometheus type suffix (e.g. "solr_core_requests_total"). Strip any such suffix so we can
+    // compare against the Prometheus base name returned by getMetadata().getPrometheusName().
     Set<String> sanitizedNames =
         includedNames.stream()
             .map(
@@ -84,7 +85,18 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
     if (sanitizedNames.isEmpty()) {
       snapshotsToFilter = super.collect();
     } else {
-      snapshotsToFilter = super.collect(sanitizedNames::contains);
+      // We collect all metrics and filter by Prometheus name rather than using
+      // super.collect(Predicate) which matches on OTel internal names. This avoids a mismatch
+      // when OTel names use dot-separators (e.g. "solr.core.requests") but users filter by the
+      // Prometheus underscore-format name they see in the output (e.g. "solr_core_requests").
+      MetricSnapshots all = super.collect();
+      MetricSnapshots.Builder nameFiltered = MetricSnapshots.builder();
+      for (MetricSnapshot snapshot : all) {
+        if (sanitizedNames.contains(snapshot.getMetadata().getPrometheusName())) {
+          nameFiltered.metricSnapshot(snapshot);
+        }
+      }
+      snapshotsToFilter = nameFiltered.build();
     }
 
     // Return named filtered snapshots if not label filters provided

@@ -17,15 +17,15 @@
 package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
 
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
-import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.logging.DeprecationLog;
 
 public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public static final String BITS_PARAM = "bits"; //
@@ -35,25 +35,12 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
       "compress"; // can only be enabled when bits = 4 per Lucene codec spec
 
   static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
-  static final Float DEFAULT_CONFIDENCE_INTERVAL = null; // use dimension scaled confidence interval
 
   /**
    * Number of bits to use for storage Must be 4 (half-byte) or 7 (signed-byte) per Lucene codec
    * spec
    */
   private int bits;
-
-  /**
-   * Confidence interval to use for scalar quantization Default is calculated as
-   * `1-1/(vector_dimensions + 1)`
-   */
-  private Float confidenceInterval;
-
-  /**
-   * When enabled, in conjunction with 4 bit size, will pair values into single bytes for 50%
-   * reduction in memory usage (comes at the cost of some decode speed penalty)
-   */
-  private boolean compress;
 
   public ScalarQuantizedDenseVectorField() {
     super();
@@ -63,46 +50,64 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
       int dimension,
       VectorSimilarityFunction similarityFunction,
       VectorEncoding vectorEncoding,
-      int bits,
-      Float confidenceInterval,
-      boolean compress) {
+      int bits) {
     super(dimension, similarityFunction, vectorEncoding);
     this.bits = bits;
-    this.confidenceInterval = confidenceInterval;
-    this.compress = compress;
   }
 
   @Override
   public void init(IndexSchema schema, Map<String, String> args) {
     this.bits = ofNullable(args.remove(BITS_PARAM)).map(Integer::parseInt).orElse(DEFAULT_BITS);
 
-    this.compress =
-        ofNullable(args.remove(COMPRESS_PARAM)).map(Boolean::parseBoolean).orElse(false);
+    // These params ("compress", "confidenceInterval", "dynamicConfidenceInterval") are deprecated
+    // since Solr 10.1: Lucene's scalar-quantized vector format no longer consumes them, and as of
+    // 11.0 nothing here retains their values either. They are still consumed from the args - and
+    // only warned about - so that an existing schema setting them keeps loading instead of failing
+    // FieldType.setArgs' "invalid arguments" check.
+    String compressStr = args.remove(COMPRESS_PARAM);
+    if (compressStr != null) {
+      DeprecationLog.log(
+          COMPRESS_PARAM,
+          "The '"
+              + COMPRESS_PARAM
+              + "' parameter for ScalarQuantizedDenseVectorField is deprecated since Solr 10.1"
+              + " and will be ignored. Please remove it from your schema.");
+    }
 
-    this.confidenceInterval =
-        ofNullable(args.remove(CONFIDENCE_INTERVAL_PARAM))
-            .map(Float::parseFloat)
-            .orElse(DEFAULT_CONFIDENCE_INTERVAL);
+    String confidenceIntervalStr = args.remove(CONFIDENCE_INTERVAL_PARAM);
+    if (confidenceIntervalStr != null) {
+      DeprecationLog.log(
+          CONFIDENCE_INTERVAL_PARAM,
+          "The '"
+              + CONFIDENCE_INTERVAL_PARAM
+              + "' parameter for ScalarQuantizedDenseVectorField is deprecated since Solr 10.1"
+              + " and will be ignored. Please remove it from your schema.");
+    }
 
-    if (ofNullable(args.remove(DYNAMIC_CONFIDENCE_INTERVAL_PARAM))
-        .map(Boolean::parseBoolean)
-        .orElse(false)) {
-      this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
+    String dynamicConfidenceIntervalStr = args.remove(DYNAMIC_CONFIDENCE_INTERVAL_PARAM);
+    if (Boolean.parseBoolean(dynamicConfidenceIntervalStr)) {
+      DeprecationLog.log(
+          DYNAMIC_CONFIDENCE_INTERVAL_PARAM,
+          "The '"
+              + DYNAMIC_CONFIDENCE_INTERVAL_PARAM
+              + "' parameter for ScalarQuantizedDenseVectorField is deprecated since Solr 10.1"
+              + " and will be ignored. Please remove it from your schema.");
     }
 
     super.init(schema, args);
+
+    if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
+    }
   }
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene99HnswScalarQuantizedVectorsFormat(
-        getHnswM(),
-        getHnswEfConstruction(),
-        DEFAULT_NUM_MERGE_WORKER,
-        getBits(),
-        useCompression(),
-        getConfidenceInterval(),
-        null);
+    ScalarEncoding encoding = ScalarEncoding.fromNumBits(getBits());
+    return new Lucene104HnswScalarQuantizedVectorsFormat(
+        encoding, getHnswM(), getHnswEfConstruction());
   }
 
   @Override
@@ -123,13 +128,5 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
 
   public int getBits() {
     return bits;
-  }
-
-  public boolean useCompression() {
-    return compress;
-  }
-
-  public Float getConfidenceInterval() {
-    return confidenceInterval;
   }
 }

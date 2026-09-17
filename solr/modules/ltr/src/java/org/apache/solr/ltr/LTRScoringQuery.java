@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -80,7 +79,7 @@ public class LTRScoringQuery extends Query implements Accountable {
   private Feature.FeatureWeight[] extractedFeatureWeights;
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), null);
+    this(ltrScoringModel, Map.of(), null);
   }
 
   public LTRScoringQuery(

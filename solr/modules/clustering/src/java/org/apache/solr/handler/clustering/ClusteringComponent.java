@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -156,7 +155,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         NamedList<Object> cluster = new SimpleOrderedMap<>();
         result.add(cluster);
         cluster.add(ClusteringResponse.IS_OTHER_TOPICS, true);
-        cluster.add(ClusteringResponse.LABELS_NODE, Collections.singletonList("Other topics"));
+        cluster.add(ClusteringResponse.LABELS_NODE, List.of("Other topics"));
         cluster.add(ClusteringResponse.SCORE_NODE, 0d);
         cluster.add(
             ClusteringResponse.DOCS_NODE,

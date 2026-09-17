@@ -30,7 +30,6 @@ dependencies {
   }
 
   implementation project(':solr:solrj')
-  implementation project(':solr:solrj-jetty')
   implementation project(':solr:api')
 
   implementation libs.slf4j.api
@@ -53,7 +52,4 @@ dependencies {
 
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
-
-  // cutterslade requires we state the obvious
-  testImplementation project(':solr:solrj-zookeeper')
 }

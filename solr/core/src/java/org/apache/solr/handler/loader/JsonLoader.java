@@ -215,7 +215,7 @@ public class JsonLoader extends ContentStreamLoader {
               }
               break;
             }
-            // fall through
+          // fall through
 
           case JSONParser.LONG:
           case JSONParser.NUMBER:

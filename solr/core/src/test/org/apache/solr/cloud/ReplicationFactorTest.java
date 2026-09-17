@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  * after an add or update.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18295") // 28-Jun-2026 flaky
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -266,22 +267,20 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   protected void sendNonDirectUpdateRequestReplica(
       Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    try (SolrClient solrServer = getHttpSolrClient(replica.getBaseUrl(), collection)) {
-      NamedList<?> resp = solrServer.request(up);
-      NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
-      Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);
-      // Note that this also tests if we're wonky and return an achieved rf greater than the number
-      // of live replicas.
-      assertEquals(
-          "Expected rf="
-              + expectedRf
-              + " for batch but got "
-              + batchRf
-              + "; clusterState: "
-              + printClusterStateInfo(),
-          (int) batchRf,
-          expectedRf);
-    }
+    NamedList<?> resp = getSolrClient(replica).request(up);
+    NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
+    Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);
+    // Note that this also tests if we're wonky and return an achieved rf greater than the number
+    // of live replicas.
+    assertEquals(
+        "Expected rf="
+            + expectedRf
+            + " for batch but got "
+            + batchRf
+            + "; clusterState: "
+            + printClusterStateInfo(),
+        (int) batchRf,
+        expectedRf);
   }
 
   protected void testRf3() throws Exception {

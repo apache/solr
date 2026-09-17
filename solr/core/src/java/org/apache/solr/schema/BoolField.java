@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -205,7 +204,7 @@ public class BoolField extends PrimitiveFieldType {
 
       fval = docval;
     }
-    return Collections.singletonList(fval);
+    return List.of(fval);
   }
 
   @Override

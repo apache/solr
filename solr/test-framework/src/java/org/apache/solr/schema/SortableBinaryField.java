@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -60,7 +59,7 @@ public class SortableBinaryField extends BinaryField {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value));
+      return List.of(createField(field, value));
     }
   }
 

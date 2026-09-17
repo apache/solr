@@ -22,7 +22,6 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -321,6 +320,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   /**
    * Processes the collected data to finds the top slots, and composes it in the response NamedList.
    */
+  @SuppressWarnings("ReferenceEquality") // SlotAcc identity, not equality, is what matters here
   SimpleOrderedMap<Object> findTopSlots(
       final int numSlots,
       final int slotCardinality,
@@ -579,6 +579,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   /** Helper method used solely when looping over buckets to be returned in findTopSlots */
+  @SuppressWarnings("ReferenceEquality") // SlotAcc identity, not equality, is what matters here
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot, SlotAcc resortAcc)
       throws IOException {
     final int slotOrd = slot.slot;
@@ -847,6 +848,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     @Override
+    @SuppressWarnings("ReferenceEquality") // SlotAcc identity, not equality, is what matters here
     public SlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
       final FacetFieldProcessor p = (FacetFieldProcessor) fcontext.processor;
       int j = 0;
@@ -1042,7 +1044,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   @SuppressWarnings({"unchecked"})
   static <T> List<T> asList(Object list) {
-    return list != null ? (List<T>) list : Collections.emptyList();
+    return list != null ? (List<T>) list : List.of();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

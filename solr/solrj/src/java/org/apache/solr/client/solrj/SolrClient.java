@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -896,7 +895,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    *     response from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
+   * @deprecated This method is deprecated and will be removed in a future release.
    */
+  @Deprecated(since = "10.1")
   public SolrPingResponse ping(String collection) throws SolrServerException, IOException {
     return new SolrPing().process(this, collection);
   }
@@ -908,7 +909,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    *     response from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
+   * @deprecated This method is deprecated and will be removed in a future release.
    */
+  @Deprecated(since = "10.1")
   public SolrPingResponse ping() throws SolrServerException, IOException {
     return new SolrPing().process(this, null);
   }
@@ -1072,7 +1075,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public SolrDocument getById(String collection, String id, SolrParams params)
       throws SolrServerException, IOException {
-    SolrDocumentList docs = getById(collection, Collections.singletonList(id), params);
+    SolrDocumentList docs = getById(collection, List.of(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
     }
@@ -1199,7 +1202,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    * This method defines the context in which this Solr client is being used (e.g. for internal
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
+   *
+   * @deprecated No replacement has been designed yet; see SOLR-14720.
    */
+  @Deprecated(since = "10.1") // TODO replace or refactor; see SOLR-14720 related
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
   }

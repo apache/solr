@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -99,9 +98,9 @@ public class PivotFacetProcessor extends SimpleFacets {
       // start by assuming no local params...
 
       String refineKey = null; // no local => no refinement
-      List<StatsField> statsFields = Collections.emptyList(); // no local => no stats
-      List<FacetComponent.FacetBase> facetQueries = Collections.emptyList();
-      List<RangeFacetRequest> facetRanges = Collections.emptyList();
+      List<StatsField> statsFields = List.of(); // no local => no stats
+      List<FacetComponent.FacetBase> facetQueries = List.of();
+      List<RangeFacetRequest> facetRanges = List.of();
       if (null != parsed.localParams) {
         // we might be refining..
         refineKey = parsed.localParams.get(PivotFacet.REFINE_PARAM);
@@ -122,7 +121,7 @@ public class PivotFacetProcessor extends SimpleFacets {
 
           String taggedQueries = parsed.localParams.get(QUERY);
           if (StrUtils.isNullOrEmpty(taggedQueries)) {
-            facetQueries = Collections.emptyList();
+            facetQueries = List.of();
           } else {
             List<String> localParamValue = StrUtils.splitSmart(taggedQueries, ',');
             if (localParamValue.size() > 1) {
@@ -141,7 +140,7 @@ public class PivotFacetProcessor extends SimpleFacets {
 
           String taggedRanges = parsed.localParams.get(RANGE);
           if (StrUtils.isNullOrEmpty(taggedRanges)) {
-            facetRanges = Collections.emptyList();
+            facetRanges = List.of();
           } else {
             List<String> localParamValue = StrUtils.splitSmart(taggedRanges, ',');
             if (localParamValue.size() > 1) {
@@ -273,7 +272,7 @@ public class PivotFacetProcessor extends SimpleFacets {
   private static List<StatsField> getTaggedStatsFields(
       StatsInfo statsInfo, String statsLocalParam) {
     if (null == statsLocalParam || null == statsInfo) {
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<StatsField> fields = new ArrayList<>(7);

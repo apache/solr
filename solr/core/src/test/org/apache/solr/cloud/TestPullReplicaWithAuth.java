@@ -93,11 +93,11 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-        assertEquals(
-            numDocs,
-            queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
-      }
+      Replica leader = s.getLeader();
+      SolrClient leaderClient = cluster.getSolrClient(leader);
+      assertEquals(
+          numDocs,
+          queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
 
       List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(
@@ -108,10 +108,10 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
         for (String coreName : cc.getAllCoreNames()) {
           try (SolrCore core = cc.getCore(coreName)) {
             var addOpsDatapoint =
-                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                SolrMetricTestUtils.getCounterDatapoint(
                     core,
                     "solr_core_update_committed_ops",
-                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
                         .label("category", "UPDATE")
                         .label("ops", "adds")
                         .build());

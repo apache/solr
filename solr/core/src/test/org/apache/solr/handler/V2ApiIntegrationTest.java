@@ -17,21 +17,21 @@
 
 package org.apache.solr.handler;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -142,48 +143,45 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testObeysWtParameterWhenProvided() throws Exception {
-    final var httpClient = getRawClient();
-    final var listCollRequest = getListCollectionsRequest();
-    listCollRequest.setURI(
-        new URIBuilder(listCollRequest.getURI()).addParameter("wt", "xml").build());
+    final HttpClient httpClient = getRawClient();
+    final String url = getListCollectionsUrl();
 
-    final var response = httpClient.execute(listCollRequest);
+    final var response = httpClient.GET(url + "?wt=xml");
 
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    assertEquals("application/xml", response.getFirstHeader("Content-type").getValue());
+    assertEquals(200, response.getStatus());
+    assertEquals("application/xml", response.getHeaders().get("Content-type"));
   }
 
   @Test
   public void testObeysAcceptHeaderWhenWtParamNotProvided() throws Exception {
-    final var httpClient = getRawClient();
-    final var listCollRequest = getListCollectionsRequest();
-    listCollRequest.addHeader("Accept", "application/xml");
+    final HttpClient httpClient = getRawClient();
+    final String url = getListCollectionsUrl();
 
-    final var response = httpClient.execute(listCollRequest);
+    final var response =
+        httpClient.newRequest(url).headers(h -> h.add("Accept", "application/xml")).send();
 
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    assertEquals("application/xml", response.getFirstHeader("Content-type").getValue());
+    assertEquals(200, response.getStatus());
+    assertEquals("application/xml", response.getHeaders().get("Content-type"));
   }
 
   @Test
   public void testRespondsWithJsonWhenWtAndAcceptAreMissing() throws Exception {
-    final var httpClient = getRawClient();
-    final var listCollRequest = getListCollectionsRequest();
+    final HttpClient httpClient = getRawClient();
+    final String url = getListCollectionsUrl();
 
-    final var response = httpClient.execute(listCollRequest);
+    final var response = httpClient.GET(url);
 
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    assertEquals("application/json", response.getFirstHeader("Content-type").getValue());
+    assertEquals(200, response.getStatus());
+    assertEquals("application/json", response.getHeaders().get("Content-type"));
   }
 
   private HttpClient getRawClient() {
-    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
+    return cluster.getRandomJetty(random()).getSolrClient().getHttpClient();
   }
 
-  private HttpRequestBase getListCollectionsRequest() {
+  private String getListCollectionsUrl() {
     final var v2BaseUrl = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
-    final var listCollUrl = v2BaseUrl + "/collections";
-    return new HttpGet(listCollUrl);
+    return v2BaseUrl + "/collections";
   }
 
   @Test
@@ -255,6 +253,43 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .build()
             .process(cloudClient);
     assertEquals(0, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
+  }
+
+  @Test
+  public void testV2ApiErrorHandling() throws Exception {
+    final var deleteRequest = new CollectionsApi.DeleteCollection("collection-does-not-exist");
+
+    // Test with "Http" client
+    final String baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    try (var httpClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+      final var ex =
+          expectThrows(RemoteSolrException.class, () -> deleteRequest.process(httpClient));
+      assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+    }
+
+    // Test with "Cloud" client
+    final var ex =
+        expectThrows(
+            RemoteSolrException.class, () -> deleteRequest.process(cluster.getSolrClient()));
+    assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+
+    // Test with the less desirable Generic option to make sure exception is equivalent.
+    final var genericDeleteRequest =
+        new GenericV2SolrRequest(SolrRequest.METHOD.DELETE, "/collections/coll-does-not-exist");
+    final var ex2 =
+        expectThrows(
+            RemoteSolrException.class, () -> genericDeleteRequest.process(cluster.getSolrClient()));
+    assertRSECodeAndMessage(ex2, 400, "Could not find collection", "coll-does-not-exist");
+  }
+
+  private void assertRSECodeAndMessage(
+      RemoteSolrException rse, int expectedCode, String... expectedMessagePieces) {
+    assertEquals(expectedCode, rse.code());
+    if (expectedMessagePieces != null) {
+      for (String expectedMessageSubStr : expectedMessagePieces) {
+        assertThat(rse.getMessage(), containsString(expectedMessageSubStr));
+      }
+    }
   }
 
   private Map<?, ?> resAsMap(CloudSolrClient client, V2Request request)

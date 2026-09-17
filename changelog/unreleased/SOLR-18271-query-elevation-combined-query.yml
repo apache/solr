@@ -1,0 +1,8 @@
+title: Support for using Query Elevation with CombinedQueryComponent (RRF)
+type: added
+authors:
+  - name: Sonu Sharma
+    nick: ercsonusharma
+links:
+  - name: SOLR-18271
+    url: https://issues.apache.org/jira/browse/SOLR-18271

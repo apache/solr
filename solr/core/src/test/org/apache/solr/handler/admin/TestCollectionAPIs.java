@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,20 +103,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
     compareOutput(
         apiBag,
-        "/cluster",
-        POST,
-        "{add-role : {role : overseer, node : 'localhost_8978'} }",
-        "{operation : addrole ,role : overseer, node : 'localhost_8978'}");
-
-    compareOutput(
-        apiBag,
-        "/cluster",
-        POST,
-        "{remove-role : {role : overseer, node : 'localhost_8978'} }",
-        "{operation : removerole ,role : overseer, node : 'localhost_8978'}");
-
-    compareOutput(
-        apiBag,
         "/collections/coll1",
         POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
@@ -140,7 +125,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
   public Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
       final ApiBag apiBag, String path, final SolrRequest.METHOD method, final String payload) {
-    SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
+    SolrParams queryParams = new MultiMapSolrParams(Map.of());
     if (path.indexOf('?') > 0) {
       String queryStr = path.substring(path.indexOf('?') + 1);
       path = path.substring(0, path.indexOf('?'));
@@ -154,7 +139,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(null, queryParams) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            if (payload == null) return Collections.emptyList();
+            if (payload == null) return List.of();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(payload), api.getCommandSchema(), true);
           }

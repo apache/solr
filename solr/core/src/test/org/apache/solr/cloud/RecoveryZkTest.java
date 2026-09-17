@@ -20,11 +20,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -36,6 +34,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Nightly
 public class RecoveryZkTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -81,8 +80,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     }
     log.info("Indexing {} documents", maxDoc);
 
-    try (SolrClient solrClient =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build(); ) {
+    try (SolrClient solrClient = cluster.newSolrClient(collection); ) {
       final StoppableIndexingThread indexThread =
           new StoppableIndexingThread(null, solrClient, "1", true, maxDoc, 1, true);
       threads.add(indexThread);
@@ -138,15 +136,13 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     long[] numCounts = new long[replicas.size()];
     int i = 0;
     for (Replica replica : replicas) {
-      try (var client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
-              .build()) {
-        numCounts[i] =
-            client.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
-        i++;
-      }
+      numCounts[i++] =
+          cluster
+              .getReplicaJetty(replica)
+              .getSolrClient()
+              .query(replica.getCoreName(), params("q", "*:*", "distrib", "false"))
+              .getResults()
+              .getNumFound();
     }
     for (int j = 1; j < replicas.size(); j++) {
       if (numCounts[j] != numCounts[j - 1])

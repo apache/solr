@@ -23,6 +23,7 @@ import org.apache.solr.ui.components.start.store.StartStore.Intent
 import org.apache.solr.ui.components.start.store.StartStore.Label
 import org.apache.solr.ui.components.start.store.StartStore.State
 import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.utils.defaultSolrUrl
 
 /**
  * State store interface of the start screen.

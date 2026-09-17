@@ -16,10 +16,10 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -37,11 +37,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -93,7 +95,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   private final Stats stats;
   private final SolrMetricsContext overseerTaskProcessorMetricsContext;
-  private AutoCloseable toClose;
 
   /**
    * This map may contain tasks which are read from work queue but could not be executed because
@@ -152,7 +153,9 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     thisNode = MDCLoggingContext.getNodeName();
 
     this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+    initializeMetrics(
+        overseerTaskProcessorMetricsContext,
+        Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -326,8 +329,32 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
               workQueue.remove(head, asyncId == null);
               continue;
             }
+            if (operation == null) {
+              log.error("Msg does not have required {} : {}", Overseer.QUEUE_OPERATION, message);
+              workQueue.remove(head, asyncId == null);
+              continue;
+            }
+            String callingLockId = message.getStr(CALLING_LOCK_ID_HEADER);
             OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-            OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, batchSessionId);
+            OverseerMessageHandler.Lock lock;
+            try {
+              lock = messageHandler.lockTask(message, batchSessionId, callingLockId);
+            } catch (SolrException e) {
+              // Lock acquisition can throw if e.g. callingLockId references an unrelated
+              // action. In that case, fail the task immediately rather than retrying.
+              log.error(
+                  "Error occurred while trying to acquire lock for task [{}]", head.getId(), e);
+              NamedList<Object> errResp = new NamedList<>();
+              errResp.add("exception", e.getMessage());
+              OverseerSolrResponse response = new OverseerSolrResponse(errResp);
+              if (asyncId != null) {
+                failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+              } else {
+                head.setBytes(OverseerSolrResponseSerializer.serialize(response));
+              }
+              workQueue.remove(head, asyncId == null);
+              continue;
+            }
             if (lock == null) {
               if (log.isDebugEnabled()) {
                 log.debug("Exclusivity check failed for [{}]", message);
@@ -407,13 +434,12 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    this.toClose =
-        parentContext.observableLongGauge(
-            "solr_overseer_collection_work_queue_size",
-            "Size of overseer's collection work queue",
-            (observableLongMeasurement) -> {
-              observableLongMeasurement.record(workQueue.getZkStats().getQueueLength(), attributes);
-            });
+    parentContext.observableLongGauge(
+        "solr_overseer_collection_work_queue_size",
+        "Size of overseer's collection work queue",
+        (observableLongMeasurement) -> {
+          observableLongMeasurement.record(workQueue.getZkStats().getQueueLength(), attributes);
+        });
   }
 
   @Override
@@ -424,14 +450,13 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   @Override
   public void close() {
     isClosed = true;
-    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
     IOUtils.closeQuietly(selector);
-    IOUtils.closeQuietly(toClose);
+    IOUtils.closeQuietly(overseerTaskProcessorMetricsContext);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk)
@@ -471,7 +496,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
 
   protected LeaderStatus amILeader() {
     String statsName = "collection_am_i_leader";
-    Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
     String propsId = null;
     try {
@@ -498,7 +522,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
       success = false;
       Thread.currentThread().interrupt();
     } finally {
-      timerContext.stop();
       if (success) {
         stats.success(statsName);
       } else {
@@ -551,7 +574,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
     @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
-      final Timer.Context timerContext = stats.time(statsName);
 
       boolean success = false;
       final String asyncId = message.getStr(ASYNC);
@@ -562,9 +584,8 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+          response = messageHandler.processMessage(message, operation, lock);
         } finally {
-          timerContext.stop();
           updateStats(statsName);
         }
 
@@ -682,7 +703,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
       log.debug("RunningTasks: {}", runningTasks.keySet());
-      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // nowarn
+      log.debug("BlockedTasks: {}", blockedTasks.keySet());
     }
   }
 

@@ -68,7 +68,7 @@ public class SolrReturnFields extends ReturnFields {
   protected DocTransformer transformer;
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
-  protected Map<String, String> renameFields = Collections.emptyMap();
+  protected Map<String, String> renameFields = Map.of();
 
   private final Map<String, String> scoreDependentFields = new HashMap<>();
 

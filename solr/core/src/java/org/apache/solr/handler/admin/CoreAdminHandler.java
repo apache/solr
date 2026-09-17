@@ -132,14 +132,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     coreAdminAsyncTracker.standardExecutor =
         solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            "solr_node_executor",
+            "solr.node.executor",
             "asyncCoreAdminExecutor",
             getCategory());
 
     coreAdminAsyncTracker.expensiveExecutor =
         solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            "solr_node_executor",
+            "solr.node.expensive.executor",
             "asyncCoreExpensiveAdminExecutor",
             getCategory());
   }
@@ -464,6 +464,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // detecting a cache-computed instance vs. our own taskObject
     private void addTask(TaskObject taskObject) {
       // Ensure task ID is not already in use
       TaskObject taskInCache =

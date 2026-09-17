@@ -493,6 +493,13 @@ public class SolrZkClient implements Closeable {
     makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, 0);
   }
 
+  /**
+   * Creates the path in ZooKeeper, creating each node as necessary.
+   *
+   * @param data to set on the last zkNode
+   * @param failOnExists if {@code true}, fail if the last zkNode already exists; if {@code false},
+   *     an existing zkNode's data is overwritten instead, making this a safe create-or-update
+   */
   public void makePath(String path, byte[] data, boolean failOnExists)
       throws KeeperException, InterruptedException {
     makePath(path, data, CreateMode.PERSISTENT, null, failOnExists, 0);
@@ -711,7 +718,11 @@ public class SolrZkClient implements Closeable {
     }
   }
 
-  /** Write data to ZooKeeper. */
+  /**
+   * Write data to ZooKeeper. The node at {@code path} must already exist; throws {@link
+   * NoNodeException} otherwise. Use {@link #makePath(String, byte[], boolean) makePath(path, data,
+   * false)} instead if the node may not exist yet.
+   */
   public Stat setData(String path, byte[] data) throws KeeperException, InterruptedException {
     return setData(path, data, -1);
   }

@@ -99,6 +99,7 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
 
         return when (response.status) {
             HttpStatusCode.OK -> Result.success(BearerTokens(accessToken, refreshToken))
+
             HttpStatusCode.Unauthorized -> {
                 Result.failure(UnauthorizedException(message = "Invalid Credentials"))
             }

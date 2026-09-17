@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -51,7 +50,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr();
     solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
 
@@ -69,47 +68,46 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     params.set("wt", "prometheus");
     var req = new MetricsRequest(params); // response parser set in MetricsRequest constructor
 
-    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
-      String output = InputStreamResponseParser.consumeResponseToString(res);
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
+    String output = InputStreamResponseParser.consumeResponseToString(res);
 
-      Set<String> seenTypeInfo = new HashSet<>();
+    Set<String> seenTypeInfo = new HashSet<>();
 
-      List<String> filteredResponse =
-          output
-              .lines()
-              .filter(
-                  line -> {
-                    if (!line.startsWith("#")) {
-                      return true;
-                    }
-                    assertTrue(
-                        "Prometheus exposition format cannot have duplicate TYPE information",
-                        seenTypeInfo.add(line));
-                    return false;
-                  })
-              .toList();
-      filteredResponse.forEach(
-          (actualMetric) -> {
-            String actualValue;
-            if (actualMetric.contains("}")) {
-              actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
-            } else {
-              actualValue = actualMetric.split(" ")[1];
-            }
-            if (actualMetric.startsWith("target_info")) {
-              // Skip standard OTEL metric
-              return;
-            }
-            assertTrue("All metrics should start with 'solr_'", actualMetric.startsWith("solr_"));
-            try {
-              Float.parseFloat(actualValue);
-            } catch (NumberFormatException e) {
-              log.warn("Prometheus value not a parsable float");
-              assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
-            }
-          });
-    }
+    List<String> filteredResponse =
+        output
+            .lines()
+            .filter(
+                line -> {
+                  if (!line.startsWith("#")) {
+                    return true;
+                  }
+                  assertTrue(
+                      "Prometheus exposition format cannot have duplicate TYPE information",
+                      seenTypeInfo.add(line));
+                  return false;
+                })
+            .toList();
+    filteredResponse.forEach(
+        (actualMetric) -> {
+          String actualValue;
+          if (actualMetric.contains("}")) {
+            actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
+          } else {
+            actualValue = actualMetric.split(" ")[1];
+          }
+          if (actualMetric.startsWith("target_info")) {
+            // Skip standard OTEL metric
+            return;
+          }
+          assertTrue("All metrics should start with 'solr_'", actualMetric.startsWith("solr_"));
+          try {
+            Float.parseFloat(actualValue);
+          } catch (NumberFormatException e) {
+            log.warn("Prometheus value not a parsable float");
+            assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
+          }
+        });
   }
 
   @Test
@@ -120,15 +118,14 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.addHeader("Accept", "application/openmetrics-text;version=1.0.0");
 
-    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
 
-      try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
-        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        assertTrue(
-            "Should use OpenMetrics format when Accept header is set",
-            output.trim().endsWith("# EOF"));
-      }
+    try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertTrue(
+          "Should use OpenMetrics format when Accept header is set",
+          output.trim().endsWith("# EOF"));
     }
   }
 
@@ -138,15 +135,14 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser("openmetrics"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
 
-      try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
-        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        assertTrue(
-            "Should use OpenMetrics format when wt=openmetrics is set",
-            output.trim().endsWith("# EOF"));
-      }
+    try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertTrue(
+          "Should use OpenMetrics format when wt=openmetrics is set",
+          output.trim().endsWith("# EOF"));
     }
   }
 
@@ -156,15 +152,14 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
 
-      try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
-        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        assertFalse(
-            "Should use Prometheus format when wt=prometheus is set",
-            output.trim().endsWith("# EOF"));
-      }
+    try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertFalse(
+          "Should use Prometheus format when wt=prometheus is set",
+          output.trim().endsWith("# EOF"));
     }
   }
 
@@ -174,15 +169,14 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser(null));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
 
-      try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
-        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        assertFalse(
-            "Should default to Prometheus format when no wt parameter is set",
-            output.trim().endsWith("# EOF"));
-      }
+    try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertFalse(
+          "Should default to Prometheus format when no wt parameter is set",
+          output.trim().endsWith("# EOF"));
     }
   }
 
@@ -192,10 +186,11 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser("unknownFormat"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      NamedList<Object> res = adminClient.request(req);
-      // Unknown wt parameter should return a 400 error
-      assertEquals(400, res.get("responseStatus"));
-    }
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
+    InputStream stream = (InputStream) res.get("stream");
+    if (stream != null) stream.close();
+    // Unknown wt parameter should return a 400 error
+    assertEquals(400, res.get("responseStatus"));
   }
 }

@@ -16,12 +16,13 @@
  */
 package org.apache.solr.logging.jul;
 
+import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.LogWatcher;
 
 @SuppressForbidden(reason = "class is specific to java.util.logging")
-public final class RecordHandler extends java.util.logging.Handler {
+public final class RecordHandler extends Handler {
   final LogWatcher<LogRecord> framework;
 
   public RecordHandler(LogWatcher<LogRecord> framework) {

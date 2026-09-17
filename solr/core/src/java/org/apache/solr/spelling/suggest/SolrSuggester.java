@@ -25,7 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
@@ -108,7 +108,7 @@ public class SolrSuggester implements Accountable {
     }
 
     contextFilterQueryAnalyzer =
-        new TokenizerChain(new StandardTokenizerFactory(Collections.emptyMap()), null);
+        new TokenizerChain(new StandardTokenizerFactory(new HashMap<>()), null);
 
     // initialize appropriate lookup instance
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -24,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -52,6 +54,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -71,6 +74,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private static final String PARAM_DETAIL = "detail";
+  private static final String PARAM_DUMP = "dump";
   private final CoreContainer cores;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -97,8 +101,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public Name getPermissionName(AuthorizationContext request) {
     var params = request.getParams();
     String path = normalizePath(params.get(PATH, ""));
-    String detail = params.get(PARAM_DETAIL, "false");
-    if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
+    if (path.equals(SOLR_SECURITY_CONF_PATH)
+        || (params.getBool(PARAM_DUMP, false) && "/".equals(path))) {
       return Name.SECURITY_READ_PERM;
     } else {
       return Name.ZK_READ_PERM;
@@ -411,7 +415,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     // Extract display options (applicable to graph view)
     boolean detail = params.getBool(PARAM_DETAIL, false);
-    boolean dump = params.getBool("dump", false);
+    boolean dump = params.getBool(PARAM_DUMP, false);
 
     // Create response builder for paginated collections
     return new ZkGraphResponseBuilder(
@@ -430,11 +434,11 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    */
   private ZkBaseResponseBuilder handlePathViewRequest(SolrParams params) {
     // Extract path parameter
-    String path = params.get(PATH);
+    String path = normalizePath(params.get(PATH));
 
     // Extract display options
     boolean detail = params.getBool(PARAM_DETAIL, false);
-    boolean dump = params.getBool("dump", false);
+    boolean dump = params.getBool(PARAM_DUMP, false);
 
     // Create response builder for specific path
     return new ZkPathResponseBuilder(cores.getZkController(), path, detail, dump);
@@ -457,9 +461,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         case "none" -> FilterType.none;
         case "name" -> FilterType.name;
         case "status" -> FilterType.status;
-        default -> throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
+        default ->
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
       };
     }
     return FilterType.none;
@@ -502,8 +507,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
-  private String normalizePath(String path) {
-    return StringUtils.stripEnd(path, "/");
+  String normalizePath(String path) {
+    if (path == null) {
+      return "/";
+    }
+    String normalized = StringUtils.stripEnd(path.trim(), "/");
+    return normalized.isEmpty() ? "/" : normalized;
   }
 
   // --------------------------------------------------------------------------------------
@@ -565,20 +574,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     public void build() throws IOException {
       if (zkClient == null) {
         return;
-      }
-
-      // normalize path
-      if (path == null) {
-        path = "/";
-      } else {
-        path = path.trim();
-        if (path.isEmpty()) {
-          path = "/";
-        }
-      }
-
-      if (path.endsWith("/") && path.length() > 1) {
-        path = path.substring(0, path.length() - 1);
       }
 
       int idx = path.lastIndexOf('/');
@@ -648,7 +643,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
         try {
           List<String> children = zkClient.getChildren(path, null);
-          java.util.Collections.sort(children);
+          Collections.sort(children);
 
           for (String child : children) {
             String childPath = path + (path.endsWith("/") ? "" : "/") + child;
@@ -757,7 +752,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         for (String collection : page.selected) {
           DocCollection dc = cs.getCollectionOrNull(collection);
           if (dc != null) {
-            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
+            Map<String, Object> collectionState = Utils.convertToMap(dc, new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
               if (page.matchesStatusFilter(collectionState, liveNodes)) {

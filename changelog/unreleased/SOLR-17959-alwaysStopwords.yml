@@ -1,9 +1,7 @@
 title: Add alwaysStopwords option to edismax so its "all stopwords" behaviour can be controlled
-type: changed
+type: added
 authors:
   - name: Andy Webb
 links:
   - name: SOLR-17959
     url: https://issues.apache.org/jira/browse/SOLR-17959
-issues:
-  - 17959

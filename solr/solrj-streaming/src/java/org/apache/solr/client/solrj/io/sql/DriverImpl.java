@@ -25,14 +25,18 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.logging.Logger;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * Get a Connection with an url and properties.
  *
  * <p>jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
+ *
+ * <p>jdbc:solr:http://solrHost:port?collection=collection&amp;aggregationMode=map_reduce
  */
 public class DriverImpl implements Driver {
 
@@ -49,27 +53,12 @@ public class DriverImpl implements Driver {
     if (!acceptsURL(url)) {
       return null;
     }
-
-    URI uri = processUrl(url);
-
-    loadParams(uri, props);
-
-    if (!props.containsKey("collection")) {
-      throw new SQLException(
-          "The connection url has no connection properties. At a minimum the collection must be specified.");
-    }
-    String collection = (String) props.remove("collection");
-
-    if (!props.containsKey("aggregationMode")) {
-      props.setProperty("aggregationMode", "facet");
-    }
-
-    // JDBC requires metadata like field names from the SQLHandler. Force this property to be true.
-    props.setProperty("includeMetadata", "true");
-
-    String zkHost = uri.getAuthority() + uri.getPath();
-
-    return new ConnectionImpl(url, zkHost, collection, props);
+    var jdbcConnMetadata = JdbcConnectionMetadata.parse(url, props);
+    return new ConnectionImpl(
+        jdbcConnMetadata.originalUrl(),
+        jdbcConnMetadata.solrConnection(),
+        jdbcConnMetadata.collection(),
+        jdbcConnMetadata.properties());
   }
 
   public Connection connect(String url) throws SQLException {
@@ -107,31 +96,86 @@ public class DriverImpl implements Driver {
     return null;
   }
 
-  protected URI processUrl(String url) throws SQLException {
-    URI uri;
-    try {
-      uri = new URI(url.replaceFirst("jdbc:", ""));
-    } catch (URISyntaxException e) {
-      throw new SQLException(e);
-    }
+  record JdbcConnectionMetadata(
+      String originalUrl,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      Properties properties) {
 
-    if (uri.getAuthority() == null) {
-      throw new SQLException("The zkHost must not be null");
-    }
+    static JdbcConnectionMetadata parse(String jdbcUrl, Properties properties) throws SQLException {
+      URI uri = toURI(jdbcUrl);
 
-    return uri;
-  }
+      Properties effectiveProps = new Properties();
+      effectiveProps.putAll(properties);
+      loadParams(uri, effectiveProps);
 
-  /** Decode the uri query parameters and put them onto {@code props}. */
-  private void loadParams(URI uri, Properties props) {
-    String query = uri.getRawQuery();
-    if (query != null) {
-      for (String param : query.split("&")) {
-        String[] pair = param.split("=", 2);
-        String key = URLDecoder.decode(pair[0], StandardCharsets.UTF_8);
-        String value = pair.length > 1 ? URLDecoder.decode(pair[1], StandardCharsets.UTF_8) : "";
-        props.put(key, value);
+      String collection = effectiveProps.getProperty("collection");
+      if (collection == null) {
+        throw new SQLException("Missing required property 'collection' in JDBC URL or properties.");
       }
+      effectiveProps.remove("collection");
+      effectiveProps.putIfAbsent("aggregationMode", "facet");
+      effectiveProps.setProperty("includeMetadata", "true");
+
+      String connectionString =
+          isHttpScheme(uri.getScheme())
+              ? uri.getScheme() + "://" + uri.getAuthority() + uri.getPath()
+              : uri.getAuthority() + uri.getPath();
+
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(connectionString);
+
+      return new JdbcConnectionMetadata(jdbcUrl, solrConnection, collection, effectiveProps);
+    }
+
+    private static URI toURI(String url) throws SQLException {
+      String uriString = removePrefix(url);
+      URI uri;
+      try {
+        uri = new URI(uriString);
+      } catch (URISyntaxException e) {
+        throw new SQLException(String.format(Locale.ROOT, "Invalid JDBC URL '%s'.", url), e);
+      }
+      if (uri.getAuthority() == null) {
+        throw new SQLException(
+            String.format(Locale.ROOT, "Invalid JDBC URL '%s': missing host.", url));
+      }
+
+      return uri;
+    }
+
+    /** Removes the {@code jdbc:solr:} prefix from a Solr JDBC URL */
+    private static String removePrefix(String url) throws SQLException {
+      String uriString;
+      if (url.startsWith("jdbc:solr://")) {
+        uriString = url.substring("jdbc:".length());
+      } else if (url.startsWith("jdbc:solr:http://") || url.startsWith("jdbc:solr:https://")) {
+        uriString = url.substring("jdbc:solr:".length());
+      } else {
+        throw new SQLException(
+            String.format(
+                Locale.ROOT,
+                "Invalid JDBC URL '%s'. Expected prefixes: "
+                    + "'jdbc:solr://', 'jdbc:solr:http://', or 'jdbc:solr:https://'.",
+                url));
+      }
+      return uriString;
+    }
+
+    /** Decode the uri query parameters and put them onto {@code props}. */
+    private static void loadParams(URI uri, Properties props) {
+      String query = uri.getRawQuery();
+      if (query != null) {
+        for (String param : query.split("&")) {
+          String[] pair = param.split("=", 2);
+          String key = URLDecoder.decode(pair[0], StandardCharsets.UTF_8);
+          String value = pair.length > 1 ? URLDecoder.decode(pair[1], StandardCharsets.UTF_8) : "";
+          props.put(key, value);
+        }
+      }
+    }
+
+    private static boolean isHttpScheme(String scheme) {
+      return "http".equals(scheme) || "https".equals(scheme);
     }
   }
 }

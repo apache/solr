@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.is;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,8 +49,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoInput() throws Exception {
-    assertThat(
-        new AllowListUrlChecker(Collections.emptyList()).getHostAllowList().isEmpty(), is(true));
+    assertThat(new AllowListUrlChecker(List.of()).getHostAllowList().isEmpty(), is(true));
   }
 
   @Test
@@ -111,7 +109,16 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         new AllowListUrlChecker(
             urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://abc-3.com:8983"));
     checker.checkAllowList(urls("https://abc-1.com:8983/solr", "https://abc-2.com:8983/solr"));
-    checker.checkAllowList(urls("s3://abc-1.com:8983/solr"));
+
+    // Prefixes not recognized by URLUtil#hasScheme are not schemes, so these URLs are rejected.
+    for (String url :
+        urls(
+            "12345://abc-1.com:8983/solr",
+            "HTTP://abc-1.com:8983/solr",
+            "s3://abc-1.com:8983/solr")) {
+      expectThrows(
+          MalformedURLException.class, () -> AllowListUrlChecker.parseHostPorts(List.of(url)));
+    }
   }
 
   @Test
@@ -146,7 +153,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingUnsetEmpty() throws Exception {
-    assertThat(AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
+    assertThat(AllowListUrlChecker.parseHostPorts(List.of()).isEmpty(), is(true));
   }
 
   @Test

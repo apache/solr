@@ -33,7 +33,8 @@ public class SolrIdentifierValidator {
     SHARD,
     COLLECTION,
     CORE,
-    ALIAS
+    ALIAS,
+    CONFIGSET
   }
 
   public static String validateName(IdentifierType type, String name) {
@@ -57,6 +58,10 @@ public class SolrIdentifierValidator {
 
   public static String validateCoreName(String coreName) {
     return validateName(IdentifierType.CORE, coreName);
+  }
+
+  public static String validateConfigSetName(String configSetName) {
+    return validateName(IdentifierType.CONFIGSET, configSetName);
   }
 
   private static boolean validateIdentifier(String identifier) {

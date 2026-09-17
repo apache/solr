@@ -18,7 +18,6 @@ package org.apache.solr.cluster.events;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,9 +84,7 @@ public abstract class ClusterEventProducerBase implements ClusterEventProducer {
   @Override
   public void close() throws IOException {
     synchronized (listeners) {
-      listeners
-          .values()
-          .forEach(listenerSet -> listenerSet.forEach(listener -> IOUtils.closeQuietly(listener)));
+      listeners.values().forEach(listenerSet -> listenerSet.forEach(IOUtils::closeQuietly));
     }
   }
 
@@ -96,7 +93,7 @@ public abstract class ClusterEventProducerBase implements ClusterEventProducer {
   protected void fireEvent(ClusterEvent event) {
     synchronized (listeners) {
       listeners
-          .getOrDefault(event.getType(), Collections.emptySet())
+          .getOrDefault(event.getType(), Set.of())
           .forEach(
               listener -> {
                 if (log.isDebugEnabled()) {

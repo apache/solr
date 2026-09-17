@@ -57,7 +57,7 @@ class TransformerProvider {
 
   /** singleton */
   private TransformerProvider() {
-    // tell'em: currently, we only cache the last used XSLT transform, and blindly recompile it
+    // currently, we only cache the last used XSLT transform, and blindly recompile it
     // once cacheLifetimeSeconds expires
     log.warn(
         "The TransformerProvider's simplistic XSLT caching mechanism is not appropriate "
@@ -74,7 +74,7 @@ class TransformerProvider {
       SolrQueryRequest request, String xslt, int xsltCacheLifetimeSeconds) throws IOException {
     // not the cleanest way to achieve this
     // no need to synchronize access to context, right?
-    // Nothing else happens with it at the same time
+    // Nothing else happens to it at the same time
     final Map<Object, Object> ctx = request.getContext();
     Transformer result = (Transformer) ctx.get(CONTEXT_TRANSFORMER_KEY);
     if (result == null) {

@@ -1,0 +1,8 @@
+title: Fix semaphore permit leaks in HttpJettySolrClient's AsyncTracker. Avoid IO-thread deadlock on connection failure retries. Add a new metric gauge solr.http.client.async_permits
+type: fixed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18174
+    url: https://issues.apache.org/jira/browse/SOLR-18174

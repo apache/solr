@@ -35,7 +35,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.AdminHandlersProxy;
+import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
@@ -69,6 +69,8 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
     this.enabled = coreContainer.getConfig().getMetricsConfig().isEnabled();
   }
 
+  // TODO Rewrite implementing logic to use method parameters, rather than wrapping everything in a
+  // SolrParams.
   @Override
   @PermissionName(PermissionNameProvider.Name.METRICS_READ_PERM)
   public StreamingOutput getMetrics(
@@ -136,9 +138,10 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
 
   private boolean proxyToNodes() {
     try {
-      if (coreContainer != null
-          && AdminHandlersProxy.maybeProxyToNodes(
-              "V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
+      final var reqProxy =
+          MetricsHandler.createMetricProxy(coreContainer, solrQueryRequest, solrQueryResponse);
+      if (coreContainer != null && reqProxy.shouldProxy()) {
+        reqProxy.proxyRequest();
         return true; // Request was proxied to other node
       }
     } catch (Exception e) {

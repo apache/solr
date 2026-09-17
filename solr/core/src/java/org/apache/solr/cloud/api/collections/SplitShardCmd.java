@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -879,11 +878,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     var req = new MetricsRequest(params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    var cloudClient = (CloudHttp2SolrClient) cloudManager.getSolrClient();
+    var cloudClient = cloudManager.getSolrClient();
     var httpClient = cloudClient.getHttpClient();
 
     NamedList<Object> resp =
         httpClient.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req, null);
+    InputStreamResponseParser.checkHttpStatus(resp);
 
     var indexSizeRef = new AtomicReference<Double>(-1.0);
     var freeSizeRef = new AtomicReference<Double>(-1.0);

@@ -73,7 +73,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
         .withProperty("schema", "schema.xml")
         .process(cluster.getSolrClient());
 
-    client = cluster.basicSolrClientBuilder().withDefaultCollection("collection1").build();
+    client = cluster.newSolrClient("collection1");
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
     AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
@@ -125,7 +125,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
             matchingChild = chVals.iterator().next();
           }
         }
-        maxDocs += parent.getChildDocumentCount() + 1;
+        maxDocs += (parent.hasChildDocuments() ? parent.getChildDocuments().size() : 0) + 1;
         docs.add(parent);
       }
       // don't add parents in increasing uniqueKey order

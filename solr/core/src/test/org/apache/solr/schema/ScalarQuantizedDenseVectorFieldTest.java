@@ -18,47 +18,17 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
-import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.junit.Before;
 import org.junit.Test;
 
 public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBase {
-  @Before
-  public void init() {}
-
   @Test
   public void fieldTypeDefinition_invalidBitSize_shouldThrowException() throws Exception {
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-bits.xml",
-        "ScalarQuantizedDenseVectorField bits must be one of: 4, 7; bits=6: v_scalar_bits");
-  }
-
-  @Test
-  public void fieldTypeDefinition_improperCompressionUse_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-compress.xml",
-        "ScalarQuantizedDenseVectorField compress=true only applies when bits=4: v_scalar_compressed");
-  }
-
-  @Test
-  public void fieldTypeDefinition_confidenceIntervalTooLow_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-confidence-interval-low.xml",
-        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=0.8: v_scalar_ci");
-  }
-
-  @Test
-  public void fieldTypeDefinition_confidenceIntervalTooHigh_shouldThrowException()
-      throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-confidence-interval-high.xml",
-        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=1.5: v_scalar_ci");
+        "ScalarQuantizedDenseVectorField No encoding for 6 bits: v_scalar_bits");
   }
 
   @Test
@@ -77,10 +47,6 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
       assertThat(defaultVectorType.getDimension(), is(4));
       assertThat(defaultVectorType.getKnnAlgorithm(), is("hnsw"));
       assertThat(defaultVectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
-      assertThat(
-          defaultVectorType.getConfidenceInterval(),
-          is(ScalarQuantizedDenseVectorField.DEFAULT_CONFIDENCE_INTERVAL));
-      assertThat(defaultVectorType.useCompression(), is(false));
     } finally {
       deleteCore();
     }
@@ -105,7 +71,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void fieldDefinition_compressed_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_deprecatedCompress_shouldStillLoadSchemaField() throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
@@ -117,14 +83,14 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
       assertThat(vectorType.getBits(), is(4));
-      assertThat(vectorType.useCompression(), is(true));
     } finally {
       deleteCore();
     }
   }
 
   @Test
-  public void fieldDefinition_customConfidenceInterval_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_deprecatedConfidenceInterval_shouldStillLoadSchemaField()
+      throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
@@ -135,14 +101,16 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
 
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
-      assertThat(vectorType.getConfidenceInterval(), is(0.91F));
+      assertThat(vectorType.getDimension(), is(4));
+      assertThat(vectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
     } finally {
       deleteCore();
     }
   }
 
   @Test
-  public void fieldDefinition_dynamicConfidenceInterval_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_deprecatedDynamicConfidenceInterval_shouldStillLoadSchemaField()
+      throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
@@ -153,11 +121,18 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
 
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
-      assertThat(
-          vectorType.getConfidenceInterval(),
-          is(Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL));
+      assertThat(vectorType.getDimension(), is(4));
+      assertThat(vectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
     } finally {
       deleteCore();
     }
+  }
+
+  @Test
+  public void fieldDefinition_flatAlgorithm_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-flat-scalarQuantized.xml",
+        "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
   }
 }

@@ -72,6 +72,10 @@ Test this by running `java -help` and look for `-server` as an available option 
 A great way to see what JVM settings your server is using, along with other useful information, is to use the `admin` request handler, `/solr/admin/info/system`.
 This request handler will display a wealth of server statistics and settings.
 
+The JVM's system properties are available from `GET /solr/admin/info/properties` (v1) or `GET /api/node/properties` (v2).
+A single property can be requested with v1 `?name=java.version` or v2 `GET /api/node/properties/java.version`.
+Secret values are redacted.
+
 === Java Properties Screen
 
 Many of the system environment variables include Java settings, and these can be seen on the main Dashboard of the Admin UI.

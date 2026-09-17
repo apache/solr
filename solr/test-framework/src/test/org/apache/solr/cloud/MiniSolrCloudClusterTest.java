@@ -28,10 +28,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
+import org.apache.solr.util.ServletFixtures;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -103,7 +105,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
   public void testExtraFilters() throws Exception {
     JettyConfig.Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
-    jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
+    jettyConfig.withFilter(ServletFixtures.DelayServlet.class, "*");
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(random().nextInt(3) + 1, createTempDir(), jettyConfig.build());
     cluster.shutdown();
@@ -138,10 +140,12 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           CollectionAdminRequest.createCollection("test", 1, 1)
               .process(cluster.getSolrClient())
               .isSuccess());
-      final SolrCore core = jetty.getCoreContainer().getCores().get(0);
-      assertTrue(
-          core.getInstancePath() + " vs " + workDir, core.getInstancePath().startsWith(workDir));
-      assertEquals(core.getInstancePath(), core.getResourceLoader().getInstancePath());
+      final CoreContainer cc = jetty.getCoreContainer();
+      try (SolrCore core = cc.getCore(cc.getLoadedCoreNames().get(0))) {
+        assertTrue(
+            core.getInstancePath() + " vs " + workDir, core.getInstancePath().startsWith(workDir));
+        assertEquals(core.getInstancePath(), core.getResourceLoader().getInstancePath());
+      }
     } finally {
       cluster.shutdown();
     }

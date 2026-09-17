@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -320,7 +319,7 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
 
     private NamedList<Object> generateResponse(SolrRequest<?> solrRequest) {
       String id = solrRequest.getParams().get("q");
-      return new NamedList<>(Collections.singletonMap("response", id));
+      return new NamedList<>(Map.of("response", id));
     }
   }
 }

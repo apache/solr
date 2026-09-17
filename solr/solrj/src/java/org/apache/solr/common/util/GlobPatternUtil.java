@@ -136,7 +136,7 @@ public class GlobPatternUtil {
     char prevChar = 0;
     for (final char ch : array) {
       if (ch == '?' || ch == '*') {
-        if (buffer.length() != 0) {
+        if (!buffer.isEmpty()) {
           list.add(buffer.toString());
           buffer.setLength(0);
         }
@@ -150,7 +150,7 @@ public class GlobPatternUtil {
       }
       prevChar = ch;
     }
-    if (buffer.length() != 0) {
+    if (!buffer.isEmpty()) {
       list.add(buffer.toString());
     }
 

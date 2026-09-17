@@ -18,20 +18,17 @@
 package org.apache.solr.gcs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
 @ThreadLeakLingering(linger = 10)
 @LuceneTestCase.SuppressCodecs({
   "SimpleText"
 }) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String SOLR_XML =
       "<solr>\n"
           + "\n"
@@ -55,6 +52,12 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  </solrcloud>\n"
           + "  \n"
           + "  <backup>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">localfs</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "    </repository>\n"
@@ -66,10 +69,11 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  \n"
           + "</solr>\n";
 
-  private static String backupLocation;
-
   @BeforeClass
   public static void setupClass() throws Exception {
+    // Enable parallel backup/restore for cloud storage tests
+    System.setProperty("solr.backup.maxparalleluploads", "2");
+    System.setProperty("solr.backup.maxparalleldownloads", "2");
 
     configureCluster(NUM_NODES) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
@@ -78,7 +82,7 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
   }
 
   @AfterClass
-  public static void tearDownClass() throws Exception {
+  public static void tearDownClass() {
     LocalStorageGCSBackupRepository.clearStashedStorage();
   }
 

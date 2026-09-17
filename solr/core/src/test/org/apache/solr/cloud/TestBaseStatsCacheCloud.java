@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -129,46 +131,45 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
-        var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
+      SolrClient client = jettySolrRunner.getSolrClient();
+      var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
 
-        NamedList<Object> resp = client.request(req);
-        try (InputStream in = (InputStream) resp.get("stream")) {
-          String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      NamedList<Object> resp = client.request(req);
+      try (InputStream in = (InputStream) resp.get("stream")) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 
-          for (String line : output.lines().toList()) {
-            if (line.startsWith("solr_core_indexsearcher_termstats_cache")) {
-              String type = extractTypeAttribute(line);
-              long value = extractMetricValue(line);
-              switch (type) {
-                case "lookups":
-                  statsCacheMetrics.lookups.add(value);
-                  break;
-                case "return_local":
-                  statsCacheMetrics.returnLocalStats.add(value);
-                  break;
-                case "merge_to_global":
-                  statsCacheMetrics.mergeToGlobalStats.add(value);
-                  break;
-                case "missing_global_field":
-                  statsCacheMetrics.missingGlobalFieldStats.add(value);
-                  break;
-                case "missing_global_term":
-                  statsCacheMetrics.missingGlobalTermStats.add(value);
-                  break;
-                case "receive_global":
-                  statsCacheMetrics.receiveGlobalStats.add(value);
-                  break;
-                case "retrieve":
-                  statsCacheMetrics.retrieveStats.add(value);
-                  break;
-                case "send_global":
-                  statsCacheMetrics.sendGlobalStats.add(value);
-                  break;
-                case "use_cached_global":
-                  statsCacheMetrics.useCachedGlobalStats.add(value);
-                  break;
-              }
+        for (String line : output.lines().toList()) {
+          if (line.startsWith("solr_core_indexsearcher_termstats_cache")) {
+            String type = extractTypeAttribute(line);
+            long value = extractMetricValue(line);
+            switch (type) {
+              case "lookups":
+                statsCacheMetrics.lookups.add(value);
+                break;
+              case "return_local":
+                statsCacheMetrics.returnLocalStats.add(value);
+                break;
+              case "merge_to_global":
+                statsCacheMetrics.mergeToGlobalStats.add(value);
+                break;
+              case "missing_global_field":
+                statsCacheMetrics.missingGlobalFieldStats.add(value);
+                break;
+              case "missing_global_term":
+                statsCacheMetrics.missingGlobalTermStats.add(value);
+                break;
+              case "receive_global":
+                statsCacheMetrics.receiveGlobalStats.add(value);
+                break;
+              case "retrieve":
+                statsCacheMetrics.retrieveStats.add(value);
+                break;
+              case "send_global":
+                statsCacheMetrics.sendGlobalStats.add(value);
+                break;
+              case "use_cached_global":
+                statsCacheMetrics.useCachedGlobalStats.add(value);
+                break;
             }
           }
         }
@@ -229,8 +230,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
    * "solr_core_indexsearcher_termstats_cache{...type="lookups",...}" -> "lookups"
    */
   private String extractTypeAttribute(String line) {
-    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\btype=\"([^\"]+)\"");
-    java.util.regex.Matcher matcher = pattern.matcher(line);
+    Pattern pattern = Pattern.compile("\\btype=\"([^\"]+)\"");
+    Matcher matcher = pattern.matcher(line);
     if (matcher.find()) {
       return matcher.group(1);
     }

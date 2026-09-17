@@ -17,8 +17,8 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -47,6 +47,6 @@ public class MovingAverageEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", new ArrayList<Double>());
     result = evaluator.evaluate(new Tuple(values));
-    assertEquals(Collections.emptyList(), result);
+    assertEquals(List.of(), result);
   }
 }

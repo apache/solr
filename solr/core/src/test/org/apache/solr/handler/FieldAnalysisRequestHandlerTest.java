@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -779,14 +780,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     FieldType fieldType = new TextField();
     Analyzer analyzer =
         new TokenizerChain(
-            new TokenizerFactory(Collections.emptyMap()) {
+            new TokenizerFactory(new HashMap<String, String>()) {
               @Override
               public Tokenizer create(AttributeFactory factory) {
                 return new CustomTokenizer(factory);
               }
             },
             new TokenFilterFactory[] {
-              new TokenFilterFactory(Collections.emptyMap()) {
+              new TokenFilterFactory(new HashMap<String, String>()) {
                 @Override
                 public TokenStream create(TokenStream input) {
                   return new CustomTokenFilter(input);

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove gosu from the Docker image. The Solr Docker image no longer installs the gosu binary.
+type: removed
+authors:
+  - name: Jan Høydahl
+links:
+- name: SOLR-17353
+  url: https://issues.apache.org/jira/browse/SOLR-17353

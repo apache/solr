@@ -18,9 +18,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Core Admin API is primarily used under the covers by the xref:collections-api.adoc[] when running a xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud] cluster.
+The Core Admin API is primarily used under the covers by the xref:collections-api.adoc[] when running a xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] cluster.
 
-SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of user-managed clusters or single-node installations for core maintenance operations.
+SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of user-managed clusters or standalone installations for core maintenance operations.
 
 The CoreAdmin API is implemented by the CoreAdminHandler, which is a special purpose xref:requesthandlers-searchcomponents.adoc[request handler] that is used to manage Solr cores.
 Unlike other request handlers, the CoreAdminHandler is not attached to a single core.
@@ -780,10 +780,10 @@ This command is used as part of SolrCloud's xref:deployment-guide:shard-manageme
 When used against a core in a user-managed cluster without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents.
 If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
 
-[[coreadmin-upgradecoreindex]]
-== UPGRADECOREINDEX
+[[coreadmin-upgradeindex]]
+== UPGRADEINDEX
 
-The `UPGRADECOREINDEX` action upgrades an existing core's index in-place after a Solr major-version upgrade by reindexing documents from older-format segments.
+The `UPGRADEINDEX` action upgrades an existing core's index in-place after a Solr major-version upgrade by reindexing documents from older-format segments.
 If a core is upgraded by this action, it ensures index compatibility with the next Solr major version (upon a future Solr upgrade) without having to re-create the index from source.
 
 This action is expensive and can take a while to complete on large indexes. Consider running with `async` option in such cases. 
@@ -792,12 +792,12 @@ Note:
 
 * Only stored fields and fields with docValues enabled can be preserved during upgrade.
 Fields that are neither stored nor docValues-backed will lose their data, unless they are `copyField` targets. 
-* Not supported in SolrCloud mode. In order to achieve the same purpose in SolrCloud mode (aka upgrade index for compatibility with next Solr version), configure the `LatestVersionMergePolicyFactory` for the collection and reindex all documents through a client utility.
+* Not supported in SolrCloud mode; see <<Upgrading an Index in SolrCloud Mode>> below for the equivalent procedure.
 * Indexes containing child/nested documents are not supported.
 
 It is recommended to test on a copy and have a backup before running on production data.
 
-=== UPGRADECOREINDEX Parameters
+=== UPGRADEINDEX Parameters
 
 `core`::
 +
@@ -828,7 +828,7 @@ Use <<coreadmin-requeststatus,REQUESTSTATUS>> with the provided `requestid` to p
 The update processor chain to use for reindexing.
 If omitted, Solr uses the chain configured for the `/update` handler, or the default update chain for the core (in that order).
 
-=== UPGRADECOREINDEX Response
+=== UPGRADEINDEX Response
 
 On success, the response includes:
 
@@ -845,20 +845,20 @@ The number of segments successfully processed.
 One of `UPGRADE_SUCCESSFUL` or `NO_UPGRADE_NEEDED`.
 On failure, an exception is thrown with error details.
 
-=== UPGRADECOREINDEX Examples
+=== UPGRADEINDEX Examples
 
 *Synchronous:*
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=UPGRADECOREINDEX&core=techproducts
+http://localhost:8983/solr/admin/cores?action=UPGRADEINDEX&core=techproducts
 ----
 
 *Asynchronous (recommended for large cores):*
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=UPGRADECOREINDEX&core=techproducts&async=upgrade_1
+http://localhost:8983/solr/admin/cores?action=UPGRADEINDEX&core=techproducts&async=upgrade_1
 ----
 
 Then poll status:
@@ -866,6 +866,36 @@ Then poll status:
 [source,bash]
 ----
 http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=upgrade_1
+----
+
+=== Upgrading an Index in SolrCloud Mode
+
+Currently, a corresponding Collections API `UPGRADEINDEX` action for SolrCloud is not available.
+However, the equivalent goal -- making the index compatible with the next Solr major version -- can be achieved by reindexing all documents while `LatestVersionMergePolicyFactory` is the active merge policy on the collection.
+
+The procedure below avoids reprocessing documents that have already been reindexed, including across restarts:
+
+. *Prepare a configset that uses `LatestVersionMergePolicyFactory`.*
+Copy the collection's current xref:config-sets.adoc[configset] so the original is not modified, and edit `solrconfig.xml` in the copy to set the xref:index-segments-merging.adoc#mergepolicyfactory[`<mergePolicyFactory>`] to `org.apache.solr.index.LatestVersionMergePolicyFactory`.
+. *Point the collection at the new configset.*
+Use the xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION] Collections API action to set the `collection.configName` property to the name of the new configset.
+. *Reload the collection* with the xref:deployment-guide:collection-management.adoc#reload[RELOAD] Collections API action so the new merge policy takes effect.
+. *Record the current highest `\_version_` value in the index.*
+Query the collection sorting by `\_version_` descending and note the top value, for example:
++
+[source,bash]
+----
+http://localhost:8983/solr/_collection_/select?q=*:*&sort=_version_+desc&rows=1&fl=_version_
+----
+. *Reindex only the documents at or below that version.*
+Have your client reindex all docs where `\_version_ \<= <highest_version>` (substituting the recorded value).
++
+Reusing the same `<highest_version>` value across restarts ensures continuity: Documents that have already been reindexed -- as well as any newly indexed documents -- will have a `\_version_` greater than the recorded value and will fall outside the range, so no work is duplicated.
+. *Issue a commit once reindexing is complete* to clear any older version segments:
++
+[source,bash]
+----
+http://localhost:8983/solr/_collection_/update?commit=true
 ----
 
 [[coreadmin-requeststatus]]

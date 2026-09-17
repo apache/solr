@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search.mlt;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -41,8 +43,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     indexDocs();
   }
 
-  static void indexDocs()
-      throws org.apache.solr.client.solrj.SolrServerException, java.io.IOException {
+  static void indexDocs() throws SolrServerException, IOException {
     final CloudSolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(client);

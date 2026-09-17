@@ -18,11 +18,11 @@ package org.apache.solr.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -377,9 +377,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
     /* Simulate stopwords through uneven disjuncts */
     q = new BooleanQuery.Builder();
-    q.add(
-        new DisjunctionMaxQuery(Collections.singleton(new TermQuery(new Term("a", "foo"))), 0.0f),
-        Occur.SHOULD);
+    q.add(new DisjunctionMaxQuery(Set.of(new TermQuery(new Term("a", "foo"))), 0.0f), Occur.SHOULD);
     DisjunctionMaxQuery dmq =
         new DisjunctionMaxQuery(
             Arrays.asList(new TermQuery(new Term("a", "foo")), new TermQuery(new Term("b", "foo"))),

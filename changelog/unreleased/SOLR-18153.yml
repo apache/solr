@@ -1,0 +1,7 @@
+title: Fixed file upload in the Documents tab of Admin UI.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18153
+    url: https://issues.apache.org/jira/browse/SOLR-18153

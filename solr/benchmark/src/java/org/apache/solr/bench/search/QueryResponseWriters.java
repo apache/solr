@@ -22,14 +22,16 @@ import static org.apache.solr.bench.generators.SourceDSL.integers;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
-import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -57,17 +59,17 @@ public class QueryResponseWriters {
   @State(Scope.Benchmark)
   public static class BenchState {
 
-    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml", "raw"})
+    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml"})
     String wt;
 
     private int docs = 100;
     private QueryRequest q;
 
     @Setup(Level.Trial)
-    public void setup(MiniClusterBenchState miniClusterState) throws Exception {
+    public void setup(SolrBenchState solrBenchState) throws Exception {
 
-      miniClusterState.startMiniCluster(1);
-      miniClusterState.createCollection(collection, 1, 1);
+      solrBenchState.startSolr(1);
+      solrBenchState.createCollection(collection, 1, 1);
 
       // only stored fields are needed to cover the response writers perf
       Docs docGen =
@@ -76,8 +78,8 @@ public class QueryResponseWriters {
               .field("text2_ts", strings().basicLatinAlphabet().multi(25).ofLengthBetween(30, 64))
               .field("bools_b", booleans().all())
               .field("int1_is", integers().all());
-      miniClusterState.index(collection, docGen, docs);
-      miniClusterState.forceMerge(collection, 5);
+      solrBenchState.index(collection, docGen, docs);
+      solrBenchState.forceMerge(collection, 5);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CommonParams.Q, "*:*");
@@ -85,14 +87,19 @@ public class QueryResponseWriters {
       params.set(CommonParams.ROWS, docs);
       q = new QueryRequest(params);
       q.setResponseParser(new InputStreamResponseParser(wt));
-      String base = miniClusterState.nodes.get(0);
+      String base = solrBenchState.nodes.get(0);
     }
   }
 
   @Benchmark
-  public Object query(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+  public Object query(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
-    return miniClusterState.client.request(benchState.q, collection);
+    NamedList<Object> response = solrBenchState.client.request(benchState.q, collection);
+    // consume the stream completely
+    try (InputStream responseStream =
+        (InputStream) response.get(InputStreamResponseParser.STREAM_KEY)) {
+      responseStream.transferTo(OutputStream.nullOutputStream());
+    }
+    return response;
   }
 }

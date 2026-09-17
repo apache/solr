@@ -552,7 +552,8 @@ Defaults to the `distribUpdateConnTimeout` specified in the `<solrcloud>` sectio
 |Optional |Default: none
 |===
 +
-The URL scheme to be used in distributed search.
+The URL scheme to be used in distributed search and other inter-node communication.
+Note: this is obsoleted by the `solr.ssl.enabled` boolean system property.
 
 `maxConnectionsPerHost`::
 +

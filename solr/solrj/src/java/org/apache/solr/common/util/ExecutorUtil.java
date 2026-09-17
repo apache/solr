@@ -119,24 +119,6 @@ public class ExecutorUtil {
     awaitTermination(pool);
   }
 
-  /**
-   * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
-   * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
-   *
-   * <p>This should likely not be used in {@code close()} methods, as we want to time bound when
-   * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
-   * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
-   * case, this method should be used as there is no inherent time bound to waiting on those tasks
-   * to complete.
-   *
-   * @param pool The ExecutorService to shut down and wait on
-   */
-  public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
-    if (pool == null) return;
-    pool.shutdown(); // Disable new tasks from being submitted
-    awaitTerminationForever(pool);
-  }
-
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdownNow(); // Disable new tasks from being submitted; interrupt existing tasks
@@ -162,8 +144,9 @@ public class ExecutorUtil {
         pool.shutdownNow();
         // Wait again for forced threads to stop.
         if (!pool.awaitTermination(timeout, unit)) {
-          log.error("Threads from pool {} did not forcefully stop.", pool);
-          throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.");
+          String executorDetails = describeExecutorForLogging(pool);
+          log.error("Threads from pool did not forcefully stop. {}", executorDetails);
+          throw new RuntimeException("Timeout waiting for pool to shutdown. " + executorDetails);
         }
       }
     } catch (InterruptedException ie) {
@@ -172,6 +155,20 @@ public class ExecutorUtil {
       // Preserve interrupt status
       Thread.currentThread().interrupt();
     }
+  }
+
+  /** Executor logging details which include pool name when executor fails to terminate. */
+  public static String describeExecutorForLogging(ExecutorService pool) {
+    if (pool == null) return "";
+    if (pool instanceof ThreadPoolExecutor poolExecutor) {
+      ThreadFactory threadFactory = poolExecutor.getThreadFactory();
+      String poolName =
+          threadFactory instanceof SolrNamedThreadFactory solrNamedThreadFactory
+              ? solrNamedThreadFactory.getPoolName()
+              : "";
+      return "[" + "poolName=" + poolName + "]" + poolExecutor;
+    }
+    return "";
   }
 
   /**
@@ -320,6 +317,18 @@ public class ExecutorUtil {
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
       this.enableSubmitterStackTrace = true;
+    }
+
+    /** When the thread factory is a {@link SolrNamedThreadFactory}, prefixes the pool name. */
+    @Override
+    public String toString() {
+      ThreadFactory threadFactory = getThreadFactory();
+      String base = super.toString();
+      if (threadFactory instanceof SolrNamedThreadFactory solrNamedThreadFactory) {
+        String poolName = solrNamedThreadFactory.getPoolName();
+        return "[" + "poolName=" + poolName + "] " + base;
+      }
+      return base;
     }
 
     @Override

@@ -80,8 +80,8 @@ public abstract class BaseSolrResource {
   }
 
   /**
-   * Pulls the SolrQueryRequest constructed in SolrDispatchFilter from the SolrRequestInfo thread
-   * local, then gets the SolrCore and IndexSchema and sets up the response. writer.
+   * Pulls the SolrQueryRequest constructed in SolrServlet from the SolrRequestInfo thread local,
+   * then gets the SolrCore and IndexSchema and sets up the response. writer.
    */
   public void doInit(SolrQueryRequest solrRequest, SolrQueryResponse solrResponse) {
     try {

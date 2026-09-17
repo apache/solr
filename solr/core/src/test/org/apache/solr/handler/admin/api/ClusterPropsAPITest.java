@@ -21,17 +21,12 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.StringEntity;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import java.util.Map;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,7 +34,6 @@ import org.junit.Test;
 
 public class ClusterPropsAPITest extends SolrCloudTestCase {
 
-  private URL baseUrl;
   private String baseUrlV2ClusterProps;
 
   private static final String testClusterProperty = "ext.test";
@@ -75,7 +69,6 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     baseUrlV2ClusterProps =
         cluster.getJettySolrRunner(0).getBaseURLV2().toString() + "/cluster/properties";
   }
@@ -88,109 +81,121 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
   @Test
   public void testClusterPropertyOpsAllGood() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      // List Properties, confirm the test property does not exist
-      // This ignores eventually existing other properties
-      Object o =
-          HttpClientUtil.executeGET(
-              client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
-      assertNotNull(o);
-      @SuppressWarnings("unchecked")
-      List<String> initProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
-      assertThat(initProperties, not(hasItem(testClusterProperty)));
+    var httpClient = cluster.getJettySolrRunner(0).getSolrClient().getHttpClient();
+    // List Properties, confirm the test property does not exist
+    // This ignores eventually existing other properties
+    var response = httpClient.GET(baseUrlV2ClusterProps);
+    assertEquals(200, response.getStatus());
+    var o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
+    @SuppressWarnings("unchecked")
+    List<String> initProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
+    assertThat(initProperties, not(hasItem(testClusterProperty)));
 
-      // Create a single cluster property
-      String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
-      HttpPut httpPut = new HttpPut(path);
-      httpPut.setHeader("Content-Type", "application/json");
-      httpPut.setEntity(new StringEntity("{\"value\":\"" + testClusterPropertyValue + "\"}"));
-      o =
-          HttpClientUtil.executeHttpMethod(
-              client.getHttpClient(), path, Utils.JSONCONSUMER, httpPut);
-      assertNotNull(o);
+    // Create a single cluster property
+    String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
+    response =
+        httpClient
+            .newRequest(path)
+            .method("PUT")
+            .body(
+                new StringRequestContent(
+                    "application/json",
+                    "{\"value\":\"" + testClusterPropertyValue + "\"}",
+                    StandardCharsets.UTF_8))
+            .send();
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSON(response.getContent());
+    assertNotNull(o);
 
-      // List Properties, this time there should be the just added property
-      o =
-          HttpClientUtil.executeGET(
-              client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
-      assertNotNull(o);
-      @SuppressWarnings("unchecked")
-      List<String> updatedProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
-      assertThat(updatedProperties, hasItem(testClusterProperty));
+    // List Properties, this time there should be the just added property
+    response = httpClient.GET(baseUrlV2ClusterProps);
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
+    @SuppressWarnings("unchecked")
+    List<String> updatedProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
+    assertThat(updatedProperties, hasItem(testClusterProperty));
 
-      // Fetch Cluster Property
-      // Same path as used in the Create step above
-      o = HttpClientUtil.executeGET(client.getHttpClient(), path, Utils.JSONCONSUMER);
-      assertNotNull(o);
-      assertEquals(testClusterProperty, (String) getObjectByPath(o, true, "clusterProperty/name"));
-      assertEquals(
-          testClusterPropertyValue, (String) getObjectByPath(o, true, "clusterProperty/value"));
+    // Fetch Cluster Property
+    // Same path as used in the Create step above
+    response = httpClient.GET(path);
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
+    assertEquals(testClusterProperty, (String) getObjectByPath(o, true, "clusterProperty/name"));
+    assertEquals(
+        testClusterPropertyValue, (String) getObjectByPath(o, true, "clusterProperty/value"));
 
-      // Delete Cluster Property
-      // Same path as used in the Create step above
-      HttpDelete httpDelete = new HttpDelete(path);
-      o =
-          HttpClientUtil.executeHttpMethod(
-              client.getHttpClient(), path, Utils.JSONCONSUMER, httpDelete);
-      assertNotNull(o);
+    // Delete Cluster Property
+    // Same path as used in the Create step above
+    response = httpClient.newRequest(path).method("DELETE").send();
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
 
-      // List Properties, the test property should be gone
-      o =
-          HttpClientUtil.executeGET(
-              client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
-      assertNotNull(o);
-      @SuppressWarnings("unchecked")
-      List<String> clearedProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
-      assertThat(clearedProperties, not(hasItem(testClusterProperty)));
-    }
+    // List Properties, the test property should be gone
+    response = httpClient.GET(baseUrlV2ClusterProps);
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
+    @SuppressWarnings("unchecked")
+    List<String> clearedProperties = (List<String>) getObjectByPath(o, true, "clusterProperties");
+    assertThat(clearedProperties, not(hasItem(testClusterProperty)));
   }
 
   @Test
   public void testClusterPropertyNestedBulkSet() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      // Create a single cluster property using the Bulk/Nested set ClusterProp API
-      HttpPut httpPut = new HttpPut(baseUrlV2ClusterProps);
-      httpPut.setHeader("Content-Type", "application/json");
-      httpPut.setEntity(new StringEntity(testClusterPropertyBulkAndNestedValues));
-      Object o =
-          HttpClientUtil.executeHttpMethod(
-              client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER, httpPut);
-      assertNotNull(o);
+    var httpClient = cluster.getJettySolrRunner(0).getSolrClient().getHttpClient();
+    // Create a single cluster property using the Bulk/Nested set ClusterProp API
+    var response =
+        httpClient
+            .newRequest(baseUrlV2ClusterProps)
+            .method("PUT")
+            .body(
+                new StringRequestContent(
+                    "application/json",
+                    testClusterPropertyBulkAndNestedValues,
+                    StandardCharsets.UTF_8))
+            .send();
+    assertEquals(200, response.getStatus());
+    var o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
 
-      // Fetch Cluster Property checking the not-nested property set above
-      String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
-      o = HttpClientUtil.executeGET(client.getHttpClient(), path, Utils.JSONCONSUMER);
-      assertNotNull(o);
-      assertEquals(testClusterProperty, (String) getObjectByPath(o, true, "clusterProperty/name"));
-      assertEquals(
-          testClusterPropertyValue, (String) getObjectByPath(o, true, "clusterProperty/value"));
+    // Fetch Cluster Property checking the not-nested property set above
+    String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
+    response = httpClient.GET(path);
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
+    assertEquals(testClusterProperty, (String) getObjectByPath(o, true, "clusterProperty/name"));
+    assertEquals(
+        testClusterPropertyValue, (String) getObjectByPath(o, true, "clusterProperty/value"));
 
-      // Fetch Cluster Property checking the nested property set above
-      path = baseUrlV2ClusterProps + "/" + "defaults";
-      o = HttpClientUtil.executeGET(client.getHttpClient(), path, Utils.JSONCONSUMER);
-      assertNotNull(o);
-      assertEquals("defaults", (String) getObjectByPath(o, true, "clusterProperty/name"));
-      assertEquals(4L, getObjectByPath(o, true, "clusterProperty/value/collection/numShards"));
+    // Fetch Cluster Property checking the nested property set above
+    path = baseUrlV2ClusterProps + "/" + "defaults";
+    response = httpClient.GET(path);
+    assertEquals(200, response.getStatus());
+    o = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+    assertNotNull(o);
+    assertEquals("defaults", (String) getObjectByPath(o, true, "clusterProperty/name"));
+    assertEquals(4L, getObjectByPath(o, true, "clusterProperty/value/collection/numShards"));
 
-      // Clean up to leave the state unchanged
-      HttpDelete httpDelete = new HttpDelete(path);
-      HttpClientUtil.executeHttpMethod(
-          client.getHttpClient(), path, Utils.JSONCONSUMER, httpDelete);
-      path = baseUrlV2ClusterProps + "/" + testClusterProperty;
-      httpDelete = new HttpDelete(path);
-      HttpClientUtil.executeHttpMethod(
-          client.getHttpClient(), path, Utils.JSONCONSUMER, httpDelete);
-    }
+    // Clean up to leave the state unchanged
+    response = httpClient.newRequest(path).method("DELETE").send();
+    assertEquals(200, response.getStatus());
+
+    path = baseUrlV2ClusterProps + "/" + testClusterProperty;
+    response = httpClient.newRequest(path).method("DELETE").send();
+    assertEquals(200, response.getStatus());
   }
 
   @Test
   public void testClusterPropertyFetchNonExistentProperty() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      // Fetch Cluster Property that doesn't exist
-      String path = baseUrlV2ClusterProps + "/ext.clusterPropThatDoesNotExist";
-      HttpGet fetchClusterPropertyGet = new HttpGet(path);
-      HttpResponse httpResponse = client.getHttpClient().execute(fetchClusterPropertyGet);
-      assertEquals(404, httpResponse.getStatusLine().getStatusCode());
-    }
+    var httpClient = cluster.getJettySolrRunner(0).getSolrClient().getHttpClient();
+    // Fetch Cluster Property that doesn't exist
+    String path = baseUrlV2ClusterProps + "/ext.clusterPropThatDoesNotExist";
+    var response = httpClient.GET(path);
+    assertEquals(404, response.getStatus());
   }
 }

@@ -192,11 +192,11 @@ limitations under the License.
                 </div>
               </td>
               <td ng-class="{'dead-node': n.dead}">
-                <div class="node-heap" title="total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}%" ng-show="!n.dead">
+                <div class="node-heap" title="max: {{n.heapMax}} total: {{n.heapTotal}} free: {{n.heapFree}} used%: {{n.heapUsedPct}}%" ng-show="!n.dead">
                   <span class="{{n.heapUsedPctStyle}}">{{n.heapUsedPct}}%</span>
                 </div>
                 <div class="node-spec" ng-show="showDetails[key] && !n.dead">
-                  Max: {{n.heapTotal}}<br/>
+                  Max: {{n.heapMax}}<br/>
                   Used: {{n.heapUsed}}
                 </div>
               </td>

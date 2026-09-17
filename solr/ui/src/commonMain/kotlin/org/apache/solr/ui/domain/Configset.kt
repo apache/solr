@@ -17,6 +17,8 @@
 
 package org.apache.solr.ui.domain
 
+import kotlinx.serialization.Serializable
+
 /**
  * Configset entity that represents a basic configset. This data class does only hold the basic
  * information of a configset.
@@ -26,6 +28,7 @@ package org.apache.solr.ui.domain
  *
  * @property name The name and unique identifier of the configset.
  */
+@Serializable
 data class Configset(
     val name: String = "",
 )

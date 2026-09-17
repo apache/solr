@@ -149,6 +149,7 @@ class DefaultAuthenticationComponent(
         )
 
         is BasicAuthComponent.Output.Authenticating -> store.accept(Intent.StartAuthenticating)
+
         is BasicAuthComponent.Output.AuthenticationFailed -> store.accept(
             intent = Intent.FailAuthentication(output.error),
         )
@@ -158,6 +159,7 @@ class DefaultAuthenticationComponent(
 
     private fun oAuthOutput(output: OAuthComponent.Output): Unit = when (output) {
         is OAuthComponent.Output.Authenticating -> store.accept(Intent.StartAuthenticating)
+
         is OAuthComponent.Output.Authenticated -> output(
             OnAuthenticated(
                 option = AuthOption.OAuthOption(

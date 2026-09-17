@@ -504,7 +504,7 @@
         </analyzer>
     </fieldType>
     <copyField source="*_commongrams" dest="*_commongrams_stop" />
-    
+
     <fieldType name="binary" class="solr.BinaryField" />
     <fieldType name="collation" class="solr.CollationField" language="en" />
     <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
@@ -691,6 +691,7 @@
 
 
     <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
+    <dynamicField name="*_sdv" type="string" indexed="true" stored="true" docValues="true" multiValued="false"/>
     <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="*_s1_ns" type="string" indexed="true" stored="false" multiValued="false"/>
     <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
@@ -857,14 +858,9 @@
     <copyField source="lowerfilt1" dest="lowerfilt1and2"/>
     <copyField source="lowerfilt" dest="lowerfilt1and2"/>
 
-    <copyField source="*" dest="text"/>
-    <copyField source="id" dest="range_facet_l"/>
-    <copyField source="id" dest="id_i1"/>
     <copyField source="range_facet_f" dest="range_facet_d"/>
     <copyField source="range_facet_f1" dest="range_facet_f1_dv"/>
 
-    <copyField source="id" dest="range_facet_l_dv"/>
-    <copyField source="id" dest="range_facet_i_dv"/>
     <copyField source="range_facet_f" dest="range_facet_f_dv"/>
     <copyField source="range_facet_f" dest="range_facet_d_dv"/>
     <copyField source="bday" dest="range_facet_dt_dv"/>

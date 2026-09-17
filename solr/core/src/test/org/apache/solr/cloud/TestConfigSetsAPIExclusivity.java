@@ -91,8 +91,6 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
     solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
-    // Make configset untrusted
-    solrCluster.getZkClient();
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {
@@ -120,8 +118,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
     @Override
     public void run() {
-      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-      final SolrClient solrClient = getHttpSolrClient(baseUrl);
+      final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).getSolrClient();
       ConfigSetAdminRequest<?, ?> request = createRequest();
 
       for (int i = 0; i < trials; ++i) {
@@ -130,11 +127,6 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
         } catch (Exception e) {
           verifyException(e);
         }
-      }
-      try {
-        solrClient.close();
-      } catch (Exception e) {
-        log.error("Error closing client", e);
       }
     }
 

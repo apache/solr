@@ -18,8 +18,8 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.CurrencyFieldTypeTest;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -68,8 +69,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     assertEquals(
         0,
         (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
-                .setProperties(
-                    Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
+                .setProperties(Map.of(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                 .process(cluster.getSolrClient()))
             .getStatus());
 
@@ -358,59 +358,61 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings("try")
   public void testFacetRangeCleanErrorOnMissmatchCurrency() {
     final String expected = "Cannot compare CurrencyValues when their currencies are not equal";
-    ignoreException(expected);
-
-    // test to check clean error when start/end have diff currency (facet.range)
-    final SolrQuery solrQuery =
-        new SolrQuery(
-            "q",
-            "*:*",
-            "rows",
-            "0",
-            "facet",
-            "true",
-            "facet.range",
-            FIELD,
-            "f." + FIELD + ".facet.range.start",
-            "0,EUR",
-            "f." + FIELD + ".facet.range.gap",
-            "10,EUR",
-            "f." + FIELD + ".facet.range.end",
-            "100,USD");
-    final SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
-            });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expected)) {
+      // test to check clean error when start/end have diff currency (facet.range)
+      final SolrQuery solrQuery =
+          new SolrQuery(
+              "q",
+              "*:*",
+              "rows",
+              "0",
+              "facet",
+              "true",
+              "facet.range",
+              FIELD,
+              "f." + FIELD + ".facet.range.start",
+              "0,EUR",
+              "f." + FIELD + ".facet.range.gap",
+              "10,EUR",
+              "f." + FIELD + ".facet.range.end",
+              "100,USD");
+      final SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
+              });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
+    }
   }
 
+  @SuppressWarnings("try")
   public void testJsonFacetCleanErrorOnMissmatchCurrency() {
     final String expected = "Cannot compare CurrencyValues when their currencies are not equal";
-    ignoreException(expected);
-
-    // test to check clean error when start/end have diff currency (json.facet)
-    final SolrQuery solrQuery =
-        new SolrQuery(
-            "q",
-            "*:*",
-            "json.facet",
-            "{ x:{ type:range, field:"
-                + FIELD
-                + ", "
-                + "      start:'0,EUR', gap:'10,EUR', end:'100,USD' } }");
-    final SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
-            });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expected)) {
+      // test to check clean error when start/end have diff currency (json.facet)
+      final SolrQuery solrQuery =
+          new SolrQuery(
+              "q",
+              "*:*",
+              "json.facet",
+              "{ x:{ type:range, field:"
+                  + FIELD
+                  + ", "
+                  + "      start:'0,EUR', gap:'10,EUR', end:'100,USD' } }");
+      final SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
+              });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
+    }
   }
 
   @Test

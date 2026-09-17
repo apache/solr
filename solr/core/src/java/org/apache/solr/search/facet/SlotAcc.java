@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -227,6 +226,8 @@ public abstract class SlotAcc implements Closeable {
       return values;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // fast-path: values array is prefilled with defaultValue already
     public <T> T[] resize(T[] old, T defaultValue) {
       @SuppressWarnings({"unchecked"})
       T[] values = (T[]) Array.newInstance(old.getClass().getComponentType(), getNewSize());
@@ -758,6 +759,7 @@ public abstract class SlotAcc implements Closeable {
      * @param toAcc - the replacement {@link SlotAcc}
      * @see SweepableSlotAcc#registerSweepingAccs(SweepingCountSlotAcc)
      */
+    @SuppressWarnings("ReferenceEquality") // SlotAcc identity, not equality, is what matters here
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
       assert fromAcc.key.equals(toAcc.key);
       output.add(toAcc);
@@ -827,7 +829,7 @@ public abstract class SlotAcc implements Closeable {
       if (processor.countAcc instanceof SweepingCountSlotAcc) {
         return ((SweepingCountSlotAcc) processor.countAcc).others;
       }
-      return Collections.emptyList();
+      return List.of();
     }
   }
 

@@ -37,6 +37,13 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Long-polling request sent by a recovering replica to the shard leader. The leader holds the
+ * request open, waiting until it observes the replica reach the expected state (typically
+ * RECOVERING) in ZooKeeper before responding. This synchronization ensures the leader is ready to
+ * accept updates from the replica before recovery proceeds. The wait is bounded by {@code
+ * leaderConflictResolveWait} (default 180s).
+ */
 class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

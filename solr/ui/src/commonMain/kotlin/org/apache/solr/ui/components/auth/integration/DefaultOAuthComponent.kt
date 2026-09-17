@@ -82,6 +82,7 @@ class DefaultOAuthComponent(
                 is OAuthStore.Label.AuthenticationStarted -> {
                     output(Output.Authenticating)
                 }
+
                 is OAuthStore.Label.ErrorReset -> output(Output.ErrorReset)
             }
         }.launchIn(mainScope)

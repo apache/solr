@@ -18,7 +18,6 @@ package org.apache.solr.handler.extraction;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -42,7 +41,7 @@ public class ExtractionMetadata extends LinkedHashMap<String, List<String>> {
   /** Gets all metadata values for the given name. */
   public List<String> get(String name) {
     List<String> vals = super.get(name);
-    return (vals == null) ? Collections.emptyList() : vals;
+    return (vals == null) ? List.of() : vals;
   }
 
   /** Gets the first metadata value for the given name or null if not set. */

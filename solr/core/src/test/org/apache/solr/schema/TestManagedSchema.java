@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -39,6 +38,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -174,15 +174,15 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         statusByCore.get(collection).schema);
   }
 
+  @SuppressWarnings("try")
   public void testAddFieldWhenNotMutable() throws Exception {
     assertSchemaResource(collection, "managed-schema.xml");
     String errString = "This ManagedIndexSchema is not mutable.";
-    ignoreException(Pattern.quote(errString));
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       IndexSchema oldSchema = h.getCore().getLatestSchema();
       String fieldName = "new_field";
       String fieldType = "string";
-      Map<String, ?> options = Collections.emptyMap();
+      Map<String, ?> options = Map.of();
       SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
       IndexSchema newSchema = oldSchema.addField(newField);
       h.getCore().setLatestSchema(newSchema);
@@ -197,8 +197,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
           SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected error, expected error matching: " + errString,
           e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 
@@ -234,6 +232,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
             "<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
   }
 
+  @SuppressWarnings("try")
   public void testAddedFieldIndexableAndQueryable() throws Exception {
     assertSchemaResource(collection, "managed-schema.xml");
     deleteCore();
@@ -250,8 +249,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     clearIndex();
 
     String errString = "unknown field 'new_field'";
-    ignoreException(Pattern.quote(errString));
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       assertU(adoc("new_field", "thing1 thing2", "str", "X"));
       fail();
     } catch (Exception e) {
@@ -264,8 +262,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
           SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected error, expected error matching: " + errString,
           e);
-    } finally {
-      resetExceptionIgnores();
     }
     assertU(commit());
     assertQ(req("new_field:thing1"), "//*[@numFound='0']");
@@ -285,6 +281,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertQ(req("new_field:thing1"), "//*[@numFound='1']");
   }
 
+  @SuppressWarnings("try")
   public void testAddFieldWhenItAlreadyExists() throws Exception {
     deleteCore();
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
@@ -298,8 +295,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         h.getCore().getLatestSchema().getFieldOrNull("str"));
 
     String errString = "Field 'str' already exists.";
-    ignoreException(Pattern.quote(errString));
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       Map<String, Object> options = new HashMap<>();
       IndexSchema oldSchema = h.getCore().getLatestSchema();
       String fieldName = "str";
@@ -318,11 +314,10 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
           SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected error, expected error matching: " + errString,
           e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 
+  @SuppressWarnings("try")
   public void testAddSameFieldTwice() throws Exception {
     deleteCore();
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
@@ -341,8 +336,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     h.getCore().setLatestSchema(newSchema);
 
     String errString = "Field 'new_field' already exists.";
-    ignoreException(Pattern.quote(errString));
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       newSchema = newSchema.addField(newField);
       h.getCore().setLatestSchema(newSchema);
       fail("Should fail when adding the same field twice");
@@ -356,11 +350,10 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
           SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected error, expected error matching: " + errString,
           e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 
+  @SuppressWarnings("try")
   public void testAddDynamicField() throws Exception {
     deleteCore();
     Path managedSchemaFile = tmpConfDir.resolve("managed-schema.xml");
@@ -374,8 +367,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         h.getCore().getLatestSchema().getFieldOrNull("*_s"));
 
     String errString = "Can't add dynamic field '*_s'.";
-    ignoreException(Pattern.quote(errString));
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       Map<String, Object> options = new HashMap<>();
       IndexSchema oldSchema = h.getCore().getLatestSchema();
       String fieldName = "*_s";
@@ -394,8 +386,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
           SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected error, expected error matching: " + errString,
           e);
-    } finally {
-      resetExceptionIgnores();
     }
   }
 

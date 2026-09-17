@@ -19,6 +19,7 @@ package org.apache.solr.util.stats;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot.CounterDataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
@@ -36,6 +37,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrMetricTestUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,7 +52,13 @@ public class OtelInstrumentedExecutorServiceTest extends SolrTestCase {
 
   @Before
   public void setUpMetrics() {
-    metricsContext = new SolrMetricsContext(new SolrMetricManager(null), REGISTRY_NAME);
+    MetricExporter me = null;
+    metricsContext = new SolrMetricsContext(new SolrMetricManager(me), REGISTRY_NAME);
+  }
+
+  @After
+  public void tearDownMetrics() {
+    metricsContext.close();
   }
 
   @Test

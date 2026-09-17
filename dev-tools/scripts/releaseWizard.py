@@ -100,6 +100,7 @@ def expand_jinja(text, vars=None):
         'release_version': state.release_version,
         'release_version_underscore': state.release_version.replace('.', '_'),
         'release_date': state.get_release_date(),
+        'release_date_iso': state.get_release_date_iso(),
         'ivy2_folder': os.path.expanduser("~/.ivy2/"),
         'config_path': state.config_path,
         'rc_number': state.rc_number,
@@ -148,6 +149,8 @@ def expand_jinja(text, vars=None):
         'latest_lts_version_major': state.latest_lts_version_major,
         'latest_lts_version_minor': state.latest_lts_version_minor,
         'latest_lts_version_bugfix': state.latest_lts_version_bugfix,
+        'latest_lts_stable_branch': state.get_lts_stable_branch_name(),
+        'is_lts_release': state.is_lts_release(),
         'main_version': state.get_main_version(),
         'mirrored_versions': state.get_mirrored_versions(),
         'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete(),
@@ -641,6 +644,12 @@ class ReleaseState:
         else:
             v = Version.parse(self.latest_version)
         return "branch_%sx" % v.major
+
+    def get_lts_stable_branch_name(self):
+        return "branch_%sx" % self.latest_lts_version_major
+
+    def is_lts_release(self):
+        return self.release_version_major == self.latest_lts_version_major
 
     def get_next_version(self):
         if self.release_type == 'major':
@@ -1256,7 +1265,7 @@ def configure_pgp(gpg_todo):
         print("Your key has %s signatures, of which %s are by committers (@apache.org address)" % (sigs, apache_sigs))
         if apache_sigs < 1:
             print(textwrap.dedent("""\
-                Your key is not signed by any other committer. 
+                Your key is not signed by any other committer.
                 Please review https://infra.apache.org/openpgp.html#apache-wot
                 and make sure to get your key signed until next time.
                 You may want to run 'gpg --refresh-keys' to refresh your keychain."""))
@@ -1374,7 +1383,7 @@ def main():
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
-                            epilogue_text="® 2022 The Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
+                            epilogue_text="(C) The Apache Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
                             clear_screen=False)
 
     todo_menu = ConsoleMenu(title=get_releasing_text,

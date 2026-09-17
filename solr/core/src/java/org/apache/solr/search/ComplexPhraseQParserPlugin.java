@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.MultiTermQuery;
@@ -75,8 +76,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       }
 
       @Override
-      protected org.apache.lucene.search.Query getWildcardQuery(String field, String termStr)
-          throws SyntaxError {
+      protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
         Query q = super.getWildcardQuery(field, termStr);
 
         // For complex phrase queries, we need to ensure wildcard queries and automaton queries
@@ -148,11 +148,10 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       lparser =
           new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer()) {
             @Override
-            protected Query newWildcardQuery(org.apache.lucene.index.Term t) {
+            protected Query newWildcardQuery(Term t) {
               try {
                 // Get the wildcard query from the reverse-aware parser
-                org.apache.lucene.search.Query wildcardQuery =
-                    reverseAwareParser.getWildcardQuery(t.field(), t.text());
+                Query wildcardQuery = reverseAwareParser.getWildcardQuery(t.field(), t.text());
 
                 // In Lucene 10, we need to ensure wildcard queries use SCORING_BOOLEAN_REWRITE
                 // for complex phrase queries to work properly
@@ -215,9 +214,8 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       QueryParser.Operator defaultOperator = QueryParsing.parseOP(getParam(QueryParsing.OP));
 
       if (QueryParser.Operator.AND.equals(defaultOperator))
-        lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.AND);
-      else
-        lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.OR);
+        lparser.setDefaultOperator(Operator.AND);
+      else lparser.setDefaultOperator(Operator.OR);
 
       try {
         return lparser.parse(qstr);

@@ -35,7 +35,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -214,14 +213,13 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // the above call is not enough because we want to assert that the downed replica is not active
     // but clusterShape will also return true if replica is not live -- which we don't want
     Predicate<DocCollection> collectionStatePredicate =
-        collectionState -> {
-          for (Replica r : collectionState.getReplicas()) {
-            if (r.getNodeName().equals(oldNodeName.get())) {
-              return r.getState() == Replica.State.DOWN;
-            }
-          }
-          return false;
-        };
+        collectionState ->
+            collectionState
+                .replicaStream()
+                .filter(r -> r.getNodeName().equals(oldNodeName.get()))
+                .findFirst()
+                .map(r -> r.getState() == Replica.State.DOWN)
+                .orElse(false);
     waitForState("", collectionName, collectionStatePredicate);
     assertNotNull(ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1"));
 
@@ -294,8 +292,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
                 log.info("Checking node: {}", jettySolrRunner.getNodeName());
               }
               if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
-                SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
-                try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
+                try (SolrCore core = jettySolrRunner.getCoreContainer().getCore(coreName)) {
                   assertFalse(
                       "useColdSearcher is enabled! It should not be enabled for this test!",
                       core.getSolrConfig().useColdSearcher);

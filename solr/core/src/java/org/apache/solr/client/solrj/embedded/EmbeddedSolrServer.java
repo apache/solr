@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
@@ -32,7 +31,6 @@ import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
@@ -69,7 +67,6 @@ import org.apache.solr.servlet.SolrRequestParsers;
 public class EmbeddedSolrServer extends SolrClient {
 
   protected final CoreContainer coreContainer;
-  protected final String coreName;
   private final SolrRequestParsers _parser;
   private final RequestWriterSupplier supplier;
   private boolean containerIsLocal = false;
@@ -145,7 +142,7 @@ public class EmbeddedSolrServer extends SolrClient {
       throw new NullPointerException("CoreContainer instance required");
     }
     this.coreContainer = coreContainer;
-    this.coreName = coreName;
+    this.defaultCollection = coreName;
     _parser = new SolrRequestParsers(null);
     this.supplier = supplier;
   }
@@ -182,7 +179,7 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     if (coreName == null) {
-      coreName = this.coreName;
+      coreName = this.defaultCollection;
       if (coreName == null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -247,6 +244,7 @@ public class EmbeddedSolrServer extends SolrClient {
       responseParser = new JavaBinResponseParser();
     }
     var addParams = SolrParams.of(CommonParams.WT, responseParser.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, responseParser.getAdditionalRequestParams());
     return SolrParams.wrapDefaults(addParams, params);
   }
 
@@ -309,12 +307,16 @@ public class EmbeddedSolrServer extends SolrClient {
   /** A list of streams, non-null. */
   private List<ContentStream> getContentStreams(SolrRequest<?> request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return List.of();
-    if (request instanceof ContentStreamUpdateRequest csur) {
-      final Collection<ContentStream> cs = csur.getContentStreams();
-      if (cs != null) return new ArrayList<>(cs);
-    }
 
     final RequestWriter.ContentWriter contentWriter = request.getContentWriter(null);
+
+    if (contentWriter instanceof RequestWriter.MultipartContentWriter multipartWriter) {
+      List<ContentStream> parts = new ArrayList<>();
+      for (RequestWriter.NamedPart part : multipartWriter.getParts()) {
+        parts.add(bufferedContentStream(part.name, part.writer));
+      }
+      return parts;
+    }
 
     String cType;
     final Utils.BAOS baos = new Utils.BAOS();
@@ -345,6 +347,28 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     return List.of();
+  }
+
+  private static ContentStream bufferedContentStream(
+      String name, RequestWriter.ContentWriter writer) throws IOException {
+    final Utils.BAOS baos = new Utils.BAOS();
+    writer.write(baos);
+    final byte[] buf = baos.toByteArray();
+    return new ContentStreamBase() {
+      {
+        setName(name);
+      }
+
+      @Override
+      public InputStream getStream() throws IOException {
+        return new ByteArrayInputStream(buf);
+      }
+
+      @Override
+      public String getContentType() {
+        return writer.getContentType();
+      }
+    };
   }
 
   private JavaBinCodec createJavaBinCodec(

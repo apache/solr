@@ -30,7 +30,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
@@ -60,9 +59,9 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.OV
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REINDEXCOLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RENAME;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPRIORITIZE_OVERSEER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -70,10 +69,10 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -164,8 +163,8 @@ public class CollApiCmds {
               Map.entry(CREATESNAPSHOT, new CreateSnapshotCmd(ccc)),
               Map.entry(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc)),
               Map.entry(SPLITSHARD, new SplitShardCmd(ccc)),
-              Map.entry(ADDROLE, new OverseerRoleCmd(ccc, ADDROLE, overseerPrioritizer)),
-              Map.entry(REMOVEROLE, new OverseerRoleCmd(ccc, REMOVEROLE, overseerPrioritizer)),
+              Map.entry(
+                  REPRIORITIZE_OVERSEER, new OverseerPrioritizationCmd(ccc, overseerPrioritizer)),
               Map.entry(MOCK_COLL_TASK, new CollApiCmds.MockOperationCmd()),
               Map.entry(MOCK_SHARD_TASK, new CollApiCmds.MockOperationCmd()),
               Map.entry(MOCK_REPLICA_TASK, new CollApiCmds.MockOperationCmd()),
@@ -275,13 +274,7 @@ public class CollApiCmds {
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
       CollectionHandlingUtils.collectionCmd(
-          adminCmdContext,
-          message,
-          params,
-          results,
-          Replica.State.ACTIVE,
-          Collections.emptySet(),
-          ccc);
+          adminCmdContext, message, params, results, Replica.State.ACTIVE, Set.of(), ccc);
     }
   }
 

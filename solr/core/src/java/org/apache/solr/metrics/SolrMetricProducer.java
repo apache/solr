@@ -19,17 +19,19 @@ package org.apache.solr.metrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
+import org.apache.solr.common.util.IOUtils;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
 public interface SolrMetricProducer extends AutoCloseable {
 
-  public static final AttributeKey<String> TYPE_ATTR = AttributeKey.stringKey("type");
-  public static final AttributeKey<String> CATEGORY_ATTR = AttributeKey.stringKey("category");
-  public static final AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
-  public static final AttributeKey<String> OPERATION_ATTR = AttributeKey.stringKey("ops");
-  public static final AttributeKey<String> RESULT_ATTR = AttributeKey.stringKey("result");
-  public static final AttributeKey<String> NAME_ATTR = AttributeKey.stringKey("name");
-  public static final AttributeKey<String> PLUGIN_NAME_ATTR = AttributeKey.stringKey("plugin_name");
+  AttributeKey<String> TYPE_ATTR = AttributeKey.stringKey("type");
+  AttributeKey<String> CATEGORY_ATTR = AttributeKey.stringKey("category");
+  AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
+  AttributeKey<String> OPERATION_ATTR = AttributeKey.stringKey("ops");
+  AttributeKey<String> RESULT_ATTR = AttributeKey.stringKey("result");
+  AttributeKey<String> NAME_ATTR = AttributeKey.stringKey("name");
+  AttributeKey<String> PLUGIN_NAME_ATTR = AttributeKey.stringKey("plugin_name");
+  AttributeKey<String> STATE_KEY_ATTR = AttributeKey.stringKey("state");
 
   /**
    * Unique metric tag identifies components with the same life-cycle, which should be registered /
@@ -79,9 +81,6 @@ public interface SolrMetricProducer extends AutoCloseable {
    */
   @Override
   default void close() throws IOException {
-    SolrMetricsContext context = getSolrMetricsContext();
-    if (context != null) {
-      context.unregister();
-    }
+    IOUtils.closeQuietly(getSolrMetricsContext());
   }
 }

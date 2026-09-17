@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
@@ -49,7 +50,7 @@ import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
  * <p>Additionally it's used for registering and reporting metrics specific to the components that
  * use the same instance of context.
  */
-public class SolrMetricsContext {
+public class SolrMetricsContext implements AutoCloseable {
   private final String registryName;
   private final SolrMetricManager metricManager;
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -57,6 +58,13 @@ public class SolrMetricsContext {
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName) {
     this.registryName = registryName;
     this.metricManager = metricManager;
+    assert ObjectReleaseTracker.track(this);
+  }
+
+  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, Object child) {
+    this.registryName = registryName;
+    this.metricManager = metricManager;
+    assert ObjectReleaseTracker.track(this, child.toString() + "@" + child.hashCode());
   }
 
   /** Return metric registry name used in this context. */
@@ -77,8 +85,12 @@ public class SolrMetricsContext {
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
   public SolrMetricsContext getChildContext(Object child) {
-    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName);
-    return childContext;
+    return new SolrMetricsContext(metricManager, registryName, child);
+  }
+
+  /** Register a closeable to be closed when this context is closed. */
+  public void registerCloseable(AutoCloseable closeable) {
+    closeables.add(closeable);
   }
 
   public LongCounter longCounter(String metricName, String description) {
@@ -266,7 +278,9 @@ public class SolrMetricsContext {
         delegate, this, metricNamePrefix, executorName, category);
   }
 
-  public void unregister() {
+  @Override
+  public void close() {
+    assert ObjectReleaseTracker.release(this);
     IOUtils.closeQuietly(closeables);
     closeables.clear();
   }

@@ -24,10 +24,11 @@ To control user permissions, you may need to configure an authorization plugin a
 
 == Enable Basic Authentication
 
-To use Basic authentication, you must first create a `security.json` file.
-This file and where to put it is described in detail in the section xref:authentication-and-authorization-plugins.adoc#configuring-security-json[Configuring security.json].
+When running in cloud mode, Basic authentication can be enabled from the command line using the `bin/solr auth enable` command, which applies a best-practice security template with pre-configured roles and permissions.
+See xref:solr-control-script-reference.adoc#enabling-basic-authentication[Enabling Basic Authentication] in the Solr Control Script Reference for details.
 
-If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
+Alternatively, you can create the `security.json` file manually.
+This file and where to put it is described in detail in the section xref:authentication-and-authorization-plugins.adoc#configuring-security-json[Configuring security.json].
 
 For Basic authentication, `security.json` must have an `authentication` block which defines the class being used for authentication.
 Usernames and passwords could be added when the file is created, or can be added later with the Authentication API, described below.
@@ -61,7 +62,7 @@ There are several options defined in this example:
 <5> The parameter `"forwardCredentials":false` means we let Solr's PKI authentication handle distributed request instead of forwarding the Basic Auth header.
 
 Save your settings to a file called `security.json` locally.
-If you are using Solr in single-node installation, you should put this file in `$SOLR_HOME`.
+If you are using Solr in standalone installation, you should put this file in `$SOLR_HOME`.
 
 If `blockUnknown` is not defined in the `security.json` file, it will default to `true`.
 This has the effect of requiring authentication for HTTP access to Solr.
@@ -185,6 +186,7 @@ If users need to be restricted to a specific collection, that can be done with t
 === Add a User or Edit a Password
 
 The `set-user` command allows you to add users and change their passwords.
+Passwords must not be identical to the username.
 For example, the following defines two users and their passwords:
 
 [tabs#set-user]

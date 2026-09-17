@@ -1,0 +1,224 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.search;
+
+import java.util.Locale;
+import java.util.Map;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.json.DirectJsonQueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+/**
+ * Distributed search tests for the standard query parsers: {@code lucene}, {@code dismax}, {@code
+ * edismax}, and {@code intervals}.
+ */
+public class DistributedQParserTest extends SolrCloudTestCase {
+
+  private static final String COLLECTION = "distributed-qparser";
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+
+    new UpdateRequest()
+        .add(sdoc("id", "1", "subject", "quick brown fox"))
+        .add(sdoc("id", "2", "subject", "lazy brown dog"))
+        .add(sdoc("id", "3", "subject", "quick red dog"))
+        .add(sdoc("id", "4", "subject", "slow green cat"))
+        .commit(cluster.getSolrClient(), COLLECTION);
+  }
+
+  @Test
+  public void testLuceneQParser() throws Exception {
+    QueryResponse response =
+        new QueryRequest(params("q", "subject:quick", "defType", "lucene", "fl", "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+
+    response =
+        new QueryRequest(params("q", "subject:brown", "defType", "lucene", "fl", "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+  }
+
+  @Test
+  public void testDismaxQParser() throws Exception {
+    QueryResponse response =
+        new QueryRequest(params("q", "quick", "defType", "dismax", "qf", "subject", "fl", "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+
+    response =
+        new QueryRequest(params("q", "brown dog", "defType", "dismax", "qf", "subject", "fl", "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(3, response.getResults().getNumFound());
+  }
+
+  @Test
+  public void testEdismaxQParser() throws Exception {
+    QueryResponse response =
+        new QueryRequest(params("q", "quick", "defType", "edismax", "qf", "subject", "fl", "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+
+    response =
+        new QueryRequest(
+                params("q", "brown dog", "defType", "edismax", "qf", "subject", "fl", "id"))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(3, response.getResults().getNumFound());
+  }
+
+  @Test
+  public void testIntervalsQParser() throws Exception {
+    // match rule: "quick" appears in docs 1 ("quick brown fox") and 3 ("quick red dog")
+    QueryResponse response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject, 'match': {'query': 'quick'}}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+
+    // a distinct match rule: "lazy" appears only in doc 2 ("lazy brown dog") — confirm the
+    // result differs from the "quick" query above
+    QueryResponse lazyResponse =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject, 'match': {'query': 'lazy'}}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(1, lazyResponse.getResults().getNumFound());
+    assertNotEquals(response.getResults().getNumFound(), lazyResponse.getResults().getNumFound());
+
+    // all_of ordered: "quick" then "fox" — only doc 1 ("quick brown fox") matches
+    response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject,  "
+                    + "'all_of': {'ordered': true,"
+                    + "'intervals': [{'match': {'query': 'quick'}},{'match': {'query': 'fox'}}]}}},,"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(1, response.getResults().getNumFound());
+
+    // union of two top-level interval queries: "quick" (docs 1, 3) or "lazy" (doc 2) — three
+    // docs match
+    response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {'bool': {'should': ["
+                    + "{intervals: {use_field: subject, 'match': {'query': 'quick'}}},"
+                    + "{intervals: {use_field: subject, 'match': {'query': 'lazy'}}}]}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(3, response.getResults().getNumFound());
+
+    // intersection of two top-level interval queries: "quick" (docs 1, 3) and "brown"
+    // (docs 1, 2) — only doc 1 has both terms
+    String op = random().nextBoolean() ? "must" : "should";
+    response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {'bool': {'"
+                    + op
+                    + "': ["
+                    + "  {intervals: {use_field: subject, 'match': {'query': 'quick'}}},"
+                    + "  {intervals: { 'match': {'query': 'brown'}}}"
+                    + "]}},"
+                    + "'fields': 'id',"
+                    + "params:{df: subject}"
+                    + "}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(op.equals("must") ? 1 : 3, response.getResults().getNumFound());
+  }
+
+  @Test
+  public void testIntervalsJsonQParser() throws Exception {
+    // Pure-JSON style: the interval rule is embedded directly under 'intervals'
+    // match rule: "quick" appears in docs 1 ("quick brown fox") and 3 ("quick red dog")
+    QueryResponse response =
+        new DirectJsonQueryRequest(
+                "{query:{intervals:{use_field:subject,match:{query:quick}}},fields:id}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+
+    // all_of ordered: "quick" then "fox" — only doc 1 ("quick brown fox") matches
+    response =
+        new DirectJsonQueryRequest(
+                "{query:{intervals:{use_field:subject,all_of:{ordered:true,"
+                    + "intervals:[{match:{query:quick}},{match:{query:fox}}]}}},fields:id}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(1, response.getResults().getNumFound());
+
+    // json.params
+    response =
+        new DirectJsonQueryRequest(
+                "{query:{intervals:{match:{query:quick}}},params:{df:subject},fields:id}")
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+    // classic df
+    response =
+        new DirectJsonQueryRequest(
+                "{query:{intervals:{match:{query:quick}}},fields:id}",
+                new MapSolrParams(Map.of("df", "subject")))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+    // precedence
+    response =
+        new DirectJsonQueryRequest(
+                "{query:{intervals:{match:{query:quick},use_field:subject}},fields:id}",
+                new MapSolrParams(Map.of("df", "OBject")))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+    // sad, passing `null` causes fall back to df, cope with it
+    response =
+        new DirectJsonQueryRequest(
+                "{query:{intervals:{match:{query:quick},use_field:null}},fields:id}",
+                new MapSolrParams(Map.of("df", "subject")))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(2, response.getResults().getNumFound());
+  }
+
+  public void testIntervalsJsonQParserException() throws Exception {
+    SolrException exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                new DirectJsonQueryRequest(
+                        String.format(
+                            Locale.ROOT,
+                            "{query:{intervals:{use_field:%s,match:{query:quick}}},fields:id}",
+                            random().nextBoolean() ? "{}" : "\"\""))
+                    .process(cluster.getSolrClient(), COLLECTION));
+    System.out.println(exception);
+  }
+}

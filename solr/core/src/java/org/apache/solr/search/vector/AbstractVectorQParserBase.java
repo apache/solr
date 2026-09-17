@@ -18,7 +18,6 @@ package org.apache.solr.search.vector;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -172,7 +171,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
         // means we should replace globalFQs (even with a possibly empty list)
         globalFQs = new ArrayList<>(QueryUtils.getTaggedQueries(req, includedGlobalFQTags));
       }
-      if (null != excludedGlobalFQTags) {
+      if (!excludedGlobalFQTags.isEmpty()) {
         globalFQs.removeAll(QueryUtils.getTaggedQueries(req, excludedGlobalFQTags));
       }
 
@@ -192,7 +191,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
   private List<String> getLocalParamTags(final String param) {
     final String[] strVals = localParams.getParams(param);
     if (null == strVals) {
-      return Collections.emptyList();
+      return List.of();
     }
     final List<String> tags = new ArrayList<>(strVals.length * 2);
     for (String val : strVals) {

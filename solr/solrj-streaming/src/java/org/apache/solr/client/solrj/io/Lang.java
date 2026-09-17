@@ -325,6 +325,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MissingMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
@@ -370,8 +371,6 @@ public class Lang {
         .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("select", SelectStream.class)
         .withFunctionName("shortestPath", ShortestPathStream.class)
-        .withFunctionName("gatherNodes", GatherNodesStream.class)
-        .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("scoreNodes", ScoreNodesStream.class)
         .withFunctionName("model", ModelStream.class)
         .withFunctionName("fetch", FetchStream.class)
@@ -406,6 +405,7 @@ public class Lang {
         .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
         .withFunctionName("countDist", CountDistinctMetric.class)
+        .withFunctionName("missing", MissingMetric.class)
 
         // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)

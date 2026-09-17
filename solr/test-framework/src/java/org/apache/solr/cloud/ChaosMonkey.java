@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -705,7 +706,7 @@ public class ChaosMonkey {
       builder.append(slice.getName()).append(": {");
       for (Replica replica : slice.getReplicas()) {
         log.info("{}", replica);
-        java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
+        Matcher m = portPattern.matcher(replica.getBaseUrl());
         m.find();
         String jettyPort = m.group(1);
         builder.append(

@@ -120,6 +120,11 @@ public class TestRestManager extends SolrRestletTestBase {
     //    assertJQ("/config/managed", "/managedResources==[]");
   }
 
+  /** Helper method to verify HEAD request returns expected status code */
+  private void assertHead(String request, int expectedStatusCode) throws Exception {
+    assertEquals(expectedStatusCode, restTestHarness.head(request));
+  }
+
   @Test
   public void testReloadFromPersistentStorage() throws IOException {
     SolrResourceLoader loader = new SolrResourceLoader(Path.of("./"));

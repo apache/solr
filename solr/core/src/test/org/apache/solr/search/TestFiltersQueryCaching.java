@@ -20,7 +20,6 @@ import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 import org.apache.solr.SolrTestCaseJ4;
@@ -203,7 +202,7 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
   @Test
   public void testAbsentParams() throws Exception {
     // no `fqs` at all
-    doTestAbsentParams(Collections.emptyList(), NUM_DOCS);
+    doTestAbsentParams(List.of(), NUM_DOCS);
     // simple term query `fqs`
     doTestAbsentParams(List.of("fqs", "{!term f=field_s v='d0'}"), 1);
     // empty `fqs`

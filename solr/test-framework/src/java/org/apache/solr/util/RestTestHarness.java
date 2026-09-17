@@ -16,48 +16,72 @@
  */
 package org.apache.solr.util;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.URLUtil;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Facilitates testing Solr's REST API via a provided embedded Jetty */
-public class RestTestHarness extends BaseTestHarness implements Closeable {
-  private RESTfulServerProvider serverProvider;
-  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+/** Facilitates testing Solr's REST API via Jetty HttpClient. Immutable and cheap to construct. */
+public class RestTestHarness extends BaseTestHarness {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public RestTestHarness(RESTfulServerProvider serverProvider) {
-    this.serverProvider = serverProvider;
+  private final HttpClient httpClient;
+  private final URI baseUri;
+
+  /**
+   * Creates a RestTestHarness for the given base URL using the provided HttpClient.
+   *
+   * @param httpClient The HttpClient to use for requests (not closed by this harness)
+   * @param baseUri The base URI (e.g., "http://localhost:8983/solr/collection1")
+   */
+  public RestTestHarness(HttpClient httpClient, URI baseUri) {
+    if (httpClient == null) {
+      throw new IllegalArgumentException("httpClient cannot be null");
+    }
+    if (baseUri == null || !baseUri.isAbsolute()) {
+      throw new IllegalArgumentException("baseUrl cannot be null or non-absolute");
+    }
+    this.httpClient = httpClient;
+    this.baseUri = baseUri;
+  }
+
+  /** Creates a new instance for the specified URL, sharing the underlying HTTP client. */
+  public RestTestHarness newWithUrl(String baseUrl) {
+    return new RestTestHarness(httpClient, URI.create(baseUrl));
+  }
+
+  @Override
+  public String toString() {
+    return getBaseURL();
   }
 
   public String getBaseURL() {
-    return serverProvider.getBaseURL();
+    return getBaseURI().toASCIIString();
   }
 
-  public void setServerProvider(RESTfulServerProvider serverProvider) {
-    this.serverProvider = serverProvider;
-  }
-
-  public RESTfulServerProvider getServerProvider() {
-    return this.serverProvider;
+  public URI getBaseURI() {
+    return baseUri;
   }
 
   public String getAdminURL() {
     return getBaseURL().replace("/collection1", "");
+  }
+
+  private URI getAdminURI() {
+    return URI.create(getAdminURL());
   }
 
   /**
@@ -69,25 +93,29 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @exception IOException any exception in the response.
    */
   public String query(String request) throws IOException {
-    return getResponse(new HttpGet(getBaseURL() + request));
+    return sendAndReturnString(
+        getHttpClient().newRequest(buildUri(request)).method(HttpMethod.GET));
   }
 
   public String adminQuery(String request) throws IOException {
-    return getResponse(new HttpGet(getAdminURL() + request));
+    return sendAndReturnString(
+        getHttpClient()
+            .newRequest(URLUtil.buildURI(getAdminURI(), request))
+            .method(HttpMethod.GET));
   }
 
   /**
    * Processes a HEAD request using a URL path (with no context path) + optional query params and
-   * returns the response content.
+   * returns the status code.
    *
    * @param request The URL path and optional query params
-   * @return The response to the HEAD request
+   * @return The HTTP status code
    */
-  public String head(String request) throws IOException {
-    HttpHead httpHead = new HttpHead(getBaseURL() + request);
-    return httpClient
-        .execute(httpHead, HttpClientUtil.createNewHttpClientRequestContext())
-        .toString();
+  public int head(String request) throws IOException {
+    ContentResponse rsp =
+        send(getHttpClient().newRequest(buildUri(request)).method(HttpMethod.HEAD));
+    assert rsp.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH) <= 0 : "Expected no content";
+    return rsp.getStatus();
   }
 
   /**
@@ -95,15 +123,15 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
    * @param request The URL path and optional query params
-   * @param content The content to include with the PUT request
+   * @param json The content to include with the PUT request
    * @return The response to the PUT request
    */
-  public String put(String request, String content) throws IOException {
-    HttpPut httpPut = new HttpPut(getBaseURL() + request);
-    httpPut.setEntity(
-        new StringEntity(content, ContentType.create("application/json", StandardCharsets.UTF_8)));
-
-    return getResponse(httpPut);
+  public String put(String request, String json) throws IOException {
+    return sendAndReturnString(
+        getHttpClient()
+            .newRequest(buildUri(request))
+            .method(HttpMethod.PUT)
+            .body(new StringRequestContent("application/json", json, StandardCharsets.UTF_8)));
   }
 
   /**
@@ -114,8 +142,8 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * @return The response to the DELETE request
    */
   public String delete(String request) throws IOException {
-    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
-    return getResponse(httpDelete);
+    return sendAndReturnString(
+        getHttpClient().newRequest(buildUri(request)).method(HttpMethod.DELETE));
   }
 
   /**
@@ -123,30 +151,20 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    * "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
    * @param request The URL path and optional query params
-   * @param content The content to include with the POST request
+   * @param json The content to include with the POST request
    * @return The response to the POST request
    */
-  public String post(String request, String content) throws IOException {
-    HttpPost httpPost = new HttpPost(getBaseURL() + request);
-    httpPost.setEntity(
-        new StringEntity(content, ContentType.create("application/json", StandardCharsets.UTF_8)));
-
-    return getResponse(httpPost);
+  public String post(String request, String json) throws IOException {
+    return sendAndReturnString(
+        getHttpClient()
+            .newRequest(buildUri(request))
+            .method(HttpMethod.POST)
+            .body(new StringRequestContent("application/json", json, StandardCharsets.UTF_8)));
   }
 
-  public String checkResponseStatus(String xml, String code) throws Exception {
+  public String checkAdminResponseStatus(String request, int code) throws Exception {
     try {
-      String response = query(xml);
-      String valid = validateXPath(response, "//int[@name='status']=" + code);
-      return (null == valid) ? null : response;
-    } catch (XPathExpressionException e) {
-      throw new RuntimeException("?!? static xpath has bug?", e);
-    }
-  }
-
-  public String checkAdminResponseStatus(String xml, String code) throws Exception {
-    try {
-      String response = adminQuery(xml);
+      String response = adminQuery(request);
       String valid = validateXPath(response, "//int[@name='status']=" + code);
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
@@ -163,8 +181,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
                 adminQuery("/admin/cores?wt=xml&action=STATUS"),
                 "//lst[@name='status']/lst[1]/str[@name='name']",
                 XPathConstants.STRING);
-    String xml =
-        checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
+    String xml = checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, 0);
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
@@ -179,31 +196,52 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public String update(String xml) {
     try {
-      HttpPost httpPost = new HttpPost(getBaseURL() + "/update");
-      httpPost.setEntity(
-          new StringEntity(xml, ContentType.create("application/xml", StandardCharsets.UTF_8)));
-      return getResponse(httpPost);
+      return sendAndReturnString(
+          getHttpClient()
+              .POST(buildUri("/update"))
+              .body(new StringRequestContent("application/xml", xml, StandardCharsets.UTF_8)));
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  /** Executes the given request and returns the response. */
-  private String getResponse(HttpUriRequest request) throws IOException {
-    HttpEntity entity = null;
-    try {
-      entity =
-          httpClient
-              .execute(request, HttpClientUtil.createNewHttpClientRequestContext())
-              .getEntity();
-      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+  private URI buildUri(String request) {
+    return request == null ? getBaseURI() : URLUtil.buildURI(getBaseURI(), request);
   }
 
-  @Override
-  public void close() throws IOException {
-    HttpClientUtil.close(httpClient);
+  /** Executes the given request and returns the response as a String. */
+  private String sendAndReturnString(Request request) throws IOException {
+    ContentResponse rsp = send(request);
+    return rsp.getContentAsString();
+  }
+
+  private static ContentResponse send(Request request) throws IOException {
+    ContentResponse rsp;
+    try {
+      rsp = request.send();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt(); // reset
+      throw new RuntimeException(e);
+    } catch (TimeoutException e) {
+      throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+      log.warn("Propagating cause of executionException");
+      try {
+        throw e.getCause();
+      } catch (RuntimeException | IOException | Error cause) {
+        throw cause;
+      } catch (Exception cause) {
+        throw new IOException(cause);
+      } catch (Throwable ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+    return rsp;
+  }
+
+  public HttpClient getHttpClient() {
+    return httpClient;
   }
 }

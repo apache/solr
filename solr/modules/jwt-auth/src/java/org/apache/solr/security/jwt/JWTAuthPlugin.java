@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +73,7 @@ import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Authentication plugin that finds logged in user by validating the signature of a JWT token */
+/** Authentication plugin that finds logged-in user by validating the signature of a JWT token */
 public class JWTAuthPlugin extends AuthenticationPlugin
     implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -172,7 +171,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     }
 
     blockUnknown =
-        Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
+        Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, true)));
     requireIssuer =
         Boolean.parseBoolean(
             String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_ISSUER, "true")));
@@ -257,10 +256,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
 
       Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-      redirectUris = Collections.emptyList();
+      redirectUris = List.of();
       if (redirectUrisObj != null) {
         if (redirectUrisObj instanceof String) {
-          redirectUris = Collections.singletonList((String) redirectUrisObj);
+          redirectUris = List.of((String) redirectUrisObj);
         } else if (redirectUrisObj instanceof List) {
           redirectUris = (List<String>) redirectUrisObj;
         }
@@ -603,7 +602,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             }
 
             // Find scopes for user
-            Set<String> scopes = Collections.emptySet();
+            Set<String> scopes = Set.of();
             Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
             if (scopesObj != null) {
               if (scopesObj instanceof String) {
@@ -690,7 +689,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
           } catch (InvalidJwtSignatureException ise) {
             return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
           } catch (InvalidJwtException e) {
-            // Whether or not the JWT has expired being one common reason for invalidity
+            // Whether the JWT has expired being one common reason for invalidity
             if (e.hasExpired()) {
               return new JWTAuthenticationResponse(
                   AuthCode.JWT_EXPIRED,
@@ -772,8 +771,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
     jwtConsumer = null;
+    super.close();
   }
 
   @Override

@@ -18,13 +18,11 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +52,7 @@ import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
@@ -68,6 +64,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,8 +181,6 @@ public class Overseer implements SolrCloseable {
 
     private boolean isClosed = false;
 
-    private AutoCloseable toClose;
-
     public ClusterStateUpdater(
         final ZkStateReader reader,
         final String myId,
@@ -200,19 +195,19 @@ public class Overseer implements SolrCloseable {
       this.compressor = compressor;
 
       this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
-      initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+      initializeMetrics(
+          clusterStateUpdaterMetricContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
     }
 
     @Override
     public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-      this.toClose =
-          parentContext.observableLongGauge(
-              "solr_overseer_state_update_queue_size",
-              "Size of overseer's update queue",
-              (observableLongMeasurement) -> {
-                observableLongMeasurement.record(
-                    stateUpdateQueue.getZkStats().getQueueLength(), attributes);
-              });
+      parentContext.observableLongGauge(
+          "solr_overseer_state_update_queue_size",
+          "Size of overseer's update queue",
+          (observableLongMeasurement) -> {
+            observableLongMeasurement.record(
+                stateUpdateQueue.getZkStats().getQueueLength(), attributes);
+          });
     }
 
     @Override
@@ -429,7 +424,6 @@ public class Overseer implements SolrCloseable {
             "Message missing " + QUEUE_OPERATION + ":" + message);
       }
       List<ZkWriteCommand> zkWriteCommands = null;
-      final Timer.Context timerContext = stats.time(operation);
       try {
         zkWriteCommands = processMessage(clusterState, message, operation);
         stats.success(operation);
@@ -444,8 +438,6 @@ public class Overseer implements SolrCloseable {
             message,
             e);
         stats.error(operation);
-      } finally {
-        timerContext.stop();
       }
       if (zkWriteCommands != null) {
         clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommands, callback);
@@ -461,7 +453,7 @@ public class Overseer implements SolrCloseable {
           && (zkController.getCoreContainer().isShutDown() || zkController.isClosed())) {
         return; // shutting down no need to go further
       }
-      org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
+      Stat stat = new Stat();
       final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
@@ -509,40 +501,39 @@ public class Overseer implements SolrCloseable {
       if (collectionAction != null) {
         switch (collectionAction) {
           case CREATE:
-            return Collections.singletonList(
+            return List.of(
                 new ClusterStateMutator(getSolrCloudManager())
                     .createCollection(clusterState, message));
           case DELETE:
-            return Collections.singletonList(
+            return List.of(
                 new ClusterStateMutator(getSolrCloudManager())
                     .deleteCollection(clusterState, message));
           case CREATESHARD:
-            return Collections.singletonList(
+            return List.of(
                 new CollectionMutator(getSolrCloudManager()).createShard(clusterState, message));
           case DELETESHARD:
-            return Collections.singletonList(
+            return List.of(
                 new CollectionMutator(getSolrCloudManager()).deleteShard(clusterState, message));
           case ADDREPLICA:
-            return Collections.singletonList(
+            return List.of(
                 new SliceMutator(getSolrCloudManager()).addReplica(clusterState, message));
           case ADDREPLICAPROP:
-            return Collections.singletonList(
+            return List.of(
                 new ReplicaMutator(getSolrCloudManager())
                     .addReplicaProperty(clusterState, message));
           case DELETEREPLICAPROP:
-            return Collections.singletonList(
+            return List.of(
                 new ReplicaMutator(getSolrCloudManager())
                     .deleteReplicaProperty(clusterState, message));
           case BALANCESHARDUNIQUE:
             ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(clusterState, message);
             if (dProp.balanceProperty()) {
               String collName = message.getStr(ZkStateReader.COLLECTION_PROP);
-              return Collections.singletonList(
-                  new ZkWriteCommand(collName, dProp.getDocCollection()));
+              return List.of(new ZkWriteCommand(collName, dProp.getDocCollection()));
             }
             break;
           case MODIFYCOLLECTION:
-            return Collections.singletonList(
+            return List.of(
                 new CollectionMutator(getSolrCloudManager())
                     .modifyCollection(clusterState, message));
           default:
@@ -557,22 +548,22 @@ public class Overseer implements SolrCloseable {
         }
         switch (overseerAction) {
           case STATE:
-            return Collections.singletonList(
+            return List.of(
                 new ReplicaMutator(getSolrCloudManager()).setState(clusterState, message));
           case LEADER:
-            return Collections.singletonList(
+            return List.of(
                 new SliceMutator(getSolrCloudManager()).setShardLeader(clusterState, message));
           case DELETECORE:
-            return Collections.singletonList(
+            return List.of(
                 new SliceMutator(getSolrCloudManager()).removeReplica(clusterState, message));
           case ADDROUTINGRULE:
-            return Collections.singletonList(
+            return List.of(
                 new SliceMutator(getSolrCloudManager()).addRoutingRule(clusterState, message));
           case REMOVEROUTINGRULE:
-            return Collections.singletonList(
+            return List.of(
                 new SliceMutator(getSolrCloudManager()).removeRoutingRule(clusterState, message));
           case UPDATESHARDSTATE:
-            return Collections.singletonList(
+            return List.of(
                 new SliceMutator(getSolrCloudManager()).updateShardState(clusterState, message));
           case QUIT:
             if (myId.equals(message.get(ID))) {
@@ -593,11 +584,10 @@ public class Overseer implements SolrCloseable {
         }
       }
 
-      return Collections.singletonList(ZkStateWriter.NO_OP);
+      return List.of(ZkStateWriter.NO_OP);
     }
 
     private LeaderStatus amILeader() {
-      Timer.Context timerContext = stats.time("am_i_leader");
       boolean success = true;
       String propsId = null;
       try {
@@ -626,7 +616,6 @@ public class Overseer implements SolrCloseable {
         success = false;
         log.warn("Unexpected exception", e);
       } finally {
-        timerContext.stop();
         if (success) {
           stats.success("am_i_leader");
         } else {
@@ -640,7 +629,7 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() {
       this.isClosed = true;
-      IOUtils.closeQuietly(toClose);
+      IOUtils.closeQuietly(clusterStateUpdaterMetricContext);
     }
 
     @Override
@@ -743,14 +732,7 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(reader.getZkClient());
     // launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    String stateCompressionProviderClass = config.getStateCompressorClass();
-    Compressor compressor =
-        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
-            ? new ZLibCompressor()
-            : zkController
-                .getCoreContainer()
-                .getResourceLoader()
-                .newInstance(stateCompressionProviderClass, Compressor.class);
+    Compressor compressor = zkController.getCompressor();
     updaterThread =
         new OverseerThread(
             tg,
@@ -791,9 +773,6 @@ public class Overseer implements SolrCloseable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  /** Start {@link ClusterSingleton} plugins when we become the leader. */
-
-  /** Stop {@link ClusterSingleton} plugins when we lose leadership. */
   public Stats getStats() {
     return stats;
   }
@@ -835,6 +814,7 @@ public class Overseer implements SolrCloseable {
     }
     this.closed = true;
     doClose();
+    IOUtils.closeQuietly(solrMetricsContext);
 
     assert ObjectReleaseTracker.release(this);
   }
@@ -1055,9 +1035,8 @@ public class Overseer implements SolrCloseable {
       final ZkNodeProps message = ZkNodeProps.load(data);
       final String operation = message.getStr(QUEUE_OPERATION);
       log.error(
-          "Received unexpected message on Overseer cluster state updater for "
-              + operation
-              + " when distributed updates are configured"); // nowarn
+          "Received unexpected message on Overseer cluster state updater for {} when distributed updates are configured",
+          operation);
       throw new RuntimeException(
           "Message "
               + operation

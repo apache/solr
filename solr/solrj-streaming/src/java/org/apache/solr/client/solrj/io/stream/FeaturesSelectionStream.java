@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
@@ -37,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -46,13 +46,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -62,9 +63,9 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected Map<String, String> params;
+  protected SolrParams params;
   protected Iterator<Tuple> tupleIterator;
   protected String field;
   protected String outcome;
@@ -76,9 +77,9 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   private transient boolean doCloseCache;
 
   public FeaturesSelectionStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      Map<String, String> params,
+      ModifiableSolrParams params,
       String field,
       String outcome,
       String featureSet,
@@ -86,19 +87,28 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       int numTerms)
       throws IOException {
 
-    init(collectionName, zkHost, params, field, outcome, featureSet, positiveLabel, numTerms);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        outcome,
+        featureSet,
+        positiveLabel,
+        numTerms);
   }
 
-  /** logit(collection, zkHost="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  /**
+   * logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20")
+   */
   public FeaturesSelectionStream(StreamExpression expression, StreamFactory factory)
       throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection and alias are namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -122,12 +132,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               expression));
     }
 
-    Map<String, String> params = new HashMap<>();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection"));
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {
@@ -166,26 +172,11 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       throw new IOException("numTerms param cannot be null for FeaturesSelectionStream");
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
     init(
+        solrConnection,
         collectionName,
-        zkHost,
         params,
         fieldParam,
         outcomeParam,
@@ -198,43 +189,31 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp",
     // [aliases="field=alias,..."])
-
-    // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    expression.addParameter(collection);
-
-    // parameters
-    for (Map.Entry<String, String> param : params.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
-    }
-
-    expression.addParameter(new StreamExpressionNamedParameter("field", field));
-    expression.addParameter(new StreamExpressionNamedParameter("outcome", outcome));
-    expression.addParameter(new StreamExpressionNamedParameter("featureSet", featureSet));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("positiveLabel", String.valueOf(positiveLabel)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
-
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("outcome", outcome))
+        .withParameter(new StreamExpressionNamedParameter("featureSet", featureSet))
+        .withParameter(
+            new StreamExpressionNamedParameter("positiveLabel", String.valueOf(positiveLabel)))
+        .withParameter(new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      String zkHost,
-      Map<String, String> params,
+      ModifiableSolrParams params,
       String field,
       String outcome,
       String featureSet,
       int positiveLabel,
       int numTopTerms)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.field = field;
@@ -267,7 +246,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private List<String> getShardUrls() throws IOException {
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
@@ -400,14 +379,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     private final String baseUrl;
     private final String outcome;
     private final String field;
-    private final Map<String, String> paramsMap;
+    private final SolrParams params;
     private final int positiveLabel;
     private final int numTerms;
     private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
         String baseUrl,
-        Map<String, String> paramsMap,
+        SolrParams params,
         String field,
         String outcome,
         int positiveLabel,
@@ -416,7 +395,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
       this.baseUrl = baseUrl;
       this.outcome = outcome;
       this.field = field;
-      this.paramsMap = paramsMap;
+      this.params = params;
       this.positiveLabel = positiveLabel;
       this.numTerms = numTerms;
       this.clientCache = clientCache;
@@ -424,22 +403,20 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
     @Override
     public NamedList<?> call() throws Exception {
-      ModifiableSolrParams params = new ModifiableSolrParams();
+      SolrQuery queryParams = new SolrQuery();
       SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
-      params.add(DISTRIB, "false");
-      params.add("fq", "{!igain}");
+      queryParams.setDistrib(false);
+      queryParams.setFilterQueries("{!igain}");
 
-      for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
-        params.add(entry.getKey(), entry.getValue());
-      }
+      queryParams.add(params);
 
-      params.add("outcome", outcome);
-      params.add("positiveLabel", Integer.toString(positiveLabel));
-      params.add("field", field);
-      params.add("numTerms", String.valueOf(numTerms));
+      queryParams.add("outcome", outcome);
+      queryParams.add("positiveLabel", Integer.toString(positiveLabel));
+      queryParams.add("field", field);
+      queryParams.add("numTerms", String.valueOf(numTerms));
 
-      QueryRequest request = new QueryRequest(params);
+      QueryRequest request = new QueryRequest(queryParams);
       QueryResponse response = request.process(solrClient);
       NamedList<?> res = response.getResponse();
       return res;

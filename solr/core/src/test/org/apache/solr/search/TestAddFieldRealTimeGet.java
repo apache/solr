@@ -18,11 +18,12 @@ package org.apache.solr.search;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Before;
 
 public class TestAddFieldRealTimeGet extends TestRTGBase {
@@ -50,6 +51,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     initCore(configFileName, schemaFileName, tmpSolrHome);
   }
 
+  @SuppressWarnings("try")
   public void test() throws Exception {
     clearIndex();
     assertU(commit());
@@ -58,14 +60,14 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     String newFieldType = "string";
     String newFieldValue = "xyz";
 
-    ignoreException("unknown field");
-    assertFailedU(
-        "Should fail due to unknown field '" + newFieldName + "'",
-        adoc("id", "1", newFieldName, newFieldValue));
-    unIgnoreException("unknown field");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("unknown field")) {
+      assertFailedU(
+          "Should fail due to unknown field '" + newFieldName + "'",
+          adoc("id", "1", newFieldName, newFieldValue));
+    }
 
     IndexSchema schema = h.getCore().getLatestSchema();
-    SchemaField newField = schema.newField(newFieldName, newFieldType, Collections.emptyMap());
+    SchemaField newField = schema.newField(newFieldName, newFieldType, Map.of());
     IndexSchema newSchema = schema.addField(newField);
     h.getCore().setLatestSchema(newSchema);
 
@@ -73,10 +75,10 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     assertU(adoc("id", "1", newFieldName, newFieldValue));
     assertJQ(req("q", "id:1"), "/response/numFound==0");
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "id", "1", "fl", "id," + newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(
-        req("qt", "/get", "ids", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "ids", "1", "fl", "id," + newFieldName),
         "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1',"
             + newFieldKeyValue
             + "}]}}");
@@ -85,10 +87,10 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
 
     assertJQ(req("q", "id:1"), "/response/numFound==1");
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "id", "1", "fl", "id," + newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
     assertJQ(
-        req("qt", "/get", "ids", "1", "fl", "id," + newFieldName),
+        reqWithPath("/get", "ids", "1", "fl", "id," + newFieldName),
         "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1',"
             + newFieldKeyValue
             + "}]}}");

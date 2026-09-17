@@ -22,17 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
+import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +60,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(10, TimeUnit.SECONDS);
     String baseUrl = jettys.get(0).getBaseUrl().toString();
     verifySecurityStatus(
-        ((CloudLegacySolrClient) cloudClient).getHttpClient(),
+        jettys.get(0).getSolrClient().getHttpClient(),
         baseUrl + "/admin/authorization",
         "authorization/class",
         s -> MockAuthorizationPlugin.class.getName().equals(s),
@@ -89,15 +85,13 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   }
 
   public static void verifySecurityStatus(
-      HttpClient cl, String url, String objPath, Predicate<Object> expected, int count)
+      HttpClient httpClient, String url, String objPath, Predicate<Object> expected, int count)
       throws Exception {
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
-      HttpGet get = new HttpGet(url);
-      s =
-          EntityUtils.toString(
-              cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
+      var response = httpClient.GET(url);
+      s = response.getContentAsString();
       Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(s);
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);

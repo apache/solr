@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.solr.languagemodels.model.DummyChatModel",
+  "name": "dummy-1",
+  "params": {
+    "response": "{\"value\": \"enriched content\"}"
+  }
+}

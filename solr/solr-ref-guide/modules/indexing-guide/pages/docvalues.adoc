@@ -49,7 +49,7 @@ DocValues are enabled by default for most field types that support them *when us
 ** `ICUCollationField`
 ** `SortableTextField`
 ** `SortableBinaryField`
-* `LatLonPointSpacialField` (not `PointType`, which is different than `PointField`)
+* `LatLonPointSpatialField` (not `PointType`, which is different than `PointField`)
 
 When using an earlier schemaVersion (\<= 1.6), you only need to enable docValues for a field that you will use it with.
 As with all schema design, you need to define a field type and then define fields of that type with docValues enabled.
