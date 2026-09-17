@@ -311,6 +311,96 @@ Set a property on the `Basic` plugin when using the `MultiAuthPlugin`:
 }
 ----
 
+== Managing Users with the Users API
+
+In addition to the `set-user`/`delete-user` commands above, Solr provides a resource-oriented v2 API for managing users, addressing each user directly by name in the URL path instead of batching commands into the shared `/cluster/security/authentication` endpoint.
+
+=== Users API Entry Point
+
+* v2: `\http://localhost:8983/api/cluster/security/authentication/\{scheme}/users`
+
+This endpoint is not collection-specific, so users are created for the entire Solr cluster.
+
+The `scheme` path segment names the authentication scheme these users belong to, as configured under `MultiAuthPlugin`'s `schemes` list (e.g. `basic`) - see <<Edit Plugin Configuration Using the MultiAuthPlugin>> above. It is ignored when `MultiAuthPlugin` isn't in use - a plain `BasicAuthPlugin` setup has only one set of users, and any value may be supplied; the examples below use `basic` by convention.
+
+=== List Users
+
+Lists the configured usernames. The response never includes password hashes.
+
+[tabs#list-users-request]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication/basic/users
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {"status": 0, "QTime": 1},
+  "users": ["solr", "tom"]
+}
+----
+
+=== Create a User or Change a Password
+
+Creates a new user, or changes an existing user's password if it already exists. Passwords must not be identical to the username.
+
+[tabs#create-or-update-user]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X PUT http://localhost:8983/api/cluster/security/authentication/basic/users/tom \
+    -H 'Content-type:application/json' \
+    -d '{"password": "TomIsCool"}'
+----
+====
+======
+
+=== Delete a User
+
+Removes a user. Returns a 404 if the username does not exist, or a 409 if it is the last remaining user - at least one user must be configured at all times.
+
+[tabs#delete-a-user-request]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X DELETE http://localhost:8983/api/cluster/security/authentication/basic/users/tom
+----
+====
+======
+
 == Using Basic Auth with SolrJ
 
 There are two main ways to use SolrJ with Solr servers protected by basic authentication: either the permissions can be set on each individual request, or the underlying http client can be configured to add credentials to all requests that it sends.

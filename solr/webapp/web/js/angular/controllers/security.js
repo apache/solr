@@ -15,13 +15,19 @@
  limitations under the License.
 */
 
-solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security, ApiErrorHandler) {
+solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cookies, $window, Constants, SystemV2, Security, AuthenticationV2, AuthorizationV2, ApiErrorHandler) {
   $scope.resetMenu("security", Constants.IS_ROOT_PAGE);
 
   $scope.params = [];
   $scope.filteredPredefinedPermissions = [];
 
   var strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*\-_()[\]])[a-zA-Z0-9!@#$%^&*\-_()[\]]{8,30}$/;
+
+  // The Users/Roles v2 APIs address the authentication/authorization scheme they operate on via
+  // this path segment - this panel only ever manages the "basic" scheme (see multiAuthWithBasic
+  // below), so it's a constant here rather than something the user picks. The server ignores it
+  // entirely when MultiAuthPlugin/MultiAuthRuleBasedAuthorizationPlugin isn't configured.
+  var BASIC_SCHEME = "basic";
 
   function toList(str) {
     if (Array.isArray(str)) {
@@ -479,7 +485,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.updateUserRoles = function() {
-    var setUserRoles = {};
     var roles = [];
     if ($scope.upsertUser.selectedRoles) {
       roles = roles.concat($scope.upsertUser.selectedRoles);
@@ -492,9 +497,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     }
     var userRoles = Array.from(new Set(roles));
     var username = $scope.upsertUser.username;
-    setUserRoles[username] = userRoles.length > 0 ? userRoles : null;
-    var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
-    Security.post({path: "authorization"}, cmdJson, function (data) {
+
+    function onRolesUpdated() {
       $scope.toggleUserDialog();
       whenReflected("authorization", function (data2) {
         var authz = $scope.findEditableAuthz(data2);
@@ -502,7 +506,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         var current = asList(authz["user-role"][username]);
         return current.length === userRoles.length && userRoles.every(r => current.includes(r));
       }, $scope.refreshSecurityPanel);
-    });
+    }
+
+    if (userRoles.length > 0) {
+      AuthorizationV2.setUserRoles(BASIC_SCHEME, username, {roles: userRoles}, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        onRolesUpdated();
+      });
+    } else {
+      AuthorizationV2.deleteUserRoles(BASIC_SCHEME, username, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        onRolesUpdated();
+      });
+    }
   };
 
   $scope.doUpsertUser = function() {
@@ -564,21 +580,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     delete $scope.validationError;
 
     if (doSetUser) {
-      var setUserJson = {};
-      setUserJson[username] = $scope.upsertUser.password.trim();
-      var cmdJson = $scope.wrapSchemeCmd("set-user", setUserJson);
-      Security.post({path: "authentication"}, cmdJson, function (data) {
-        var errorCause = checkError(data);
-        if (errorCause != null) {
-          $scope.securityAPIError = "create user "+username+" failed due to: "+errorCause;
-          $scope.securityAPIErrorDetails = JSON.stringify(data);
-          return;
-        }
+      var password = $scope.upsertUser.password.trim();
+
+      function onUserSet() {
         whenReflected("authentication", function (data2) {
           return hasCredential(data2, username);
         }, function () {
           $scope.updateUserRoles();
         });
+      }
+
+      AuthenticationV2.createOrUpdateUser(BASIC_SCHEME, username, {password: password}, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        onUserSet();
       });
     } else {
       $scope.updateUserRoles();
@@ -588,18 +602,24 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   $scope.confirmDeleteUser = function() {
     var username = $scope.upsertUser.username;
     if (window.confirm("Confirm delete the '"+username+"' user?")) {
-      // remove all roles for the user and the delete the user
-      var removeRoles = {};
-      removeRoles[username] = null;
-      var cmdJson = $scope.wrapSchemeCmd("set-user-role", removeRoles);
-      Security.post({path: "authorization"}, cmdJson, function (data) {
-        var deleteUserCmd = $scope.wrapSchemeCmd("delete-user", [username]);
-        Security.post({path: "authentication"}, deleteUserCmd, function (data2) {
-          $scope.toggleUserDialog();
-          whenReflected("authentication", function (data3) {
-            return !hasCredential(data3, username);
-          }, $scope.refreshSecurityPanel);
+      function afterUserDeleted() {
+        $scope.toggleUserDialog();
+        whenReflected("authentication", function (data3) {
+          return !hasCredential(data3, username);
+        }, $scope.refreshSecurityPanel);
+      }
+
+      function afterRolesRemoved() {
+        AuthenticationV2.deleteUser(BASIC_SCHEME, username, function (error, data, response) {
+          if (error) { ApiErrorHandler.handle(response); return; }
+          afterUserDeleted();
         });
+      }
+
+      // remove all roles for the user, then delete the user
+      AuthorizationV2.deleteUserRoles(BASIC_SCHEME, username, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        afterRolesRemoved();
       });
     }
   };
@@ -703,11 +723,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     var permName = $scope.selectedPredefinedPermission ? $scope.selectedPredefinedPermission : $scope.upsertPerm.name.trim();
     if (window.confirm("Confirm delete the '"+permName+"' permission?")) {
       var index = parseInt($scope.upsertPerm.index);
-      Security.post({path: "authorization"}, { "delete-permission": index }, function (data) {
+
+      function afterDeleted() {
         $scope.togglePermDialog();
         whenReflected("authorization", function (data2) {
           return permissionRoles(data2, permName) == null;
         }, $scope.refreshSecurityPanel);
+      }
+
+      // Permissions are shared across every scheme (unlike users/roles), so no scheme parameter
+      // is needed here even under MultiAuthPlugin.
+      AuthorizationV2.deletePermission(index, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        afterDeleted();
       });
     }
   };
@@ -1201,90 +1229,90 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       perms = $scope.upsertRole.grantedPerms;
     }
 
-    // go get the latest role mappings ...
-    Security.get({path: "authorization"}, function (data) {
-      var authz = $scope.findEditableAuthz(data);
-      if (!authz) {
-        $scope.validationError = "User roles not editable via the UI!";
+    // Assigns `name` to one user, replacing their role list.
+    function assignRoleToUser(user, done) {
+      AuthorizationV2.getUserRoles(BASIC_SCHEME, user, function (error, data, response) {
+        if (error) { ApiErrorHandler.handle(response); done(); return; }
+        var roles = data.roles.includes(name) ? data.roles : data.roles.concat([name]);
+        AuthorizationV2.setUserRoles(BASIC_SCHEME, user, {roles: roles}, function (error2, data2, response2) {
+          if (error2) { ApiErrorHandler.handle(response2); }
+          done();
+        });
+      });
+    }
+
+    // Grants `name` to one permission - updating it if it already exists, creating it (only if
+    // predefined) otherwise.
+    function grantPermissionToRole(permName, existingPerms, done) {
+      var existingPerm = existingPerms.find(p => p.name === permName);
+
+      function afterGrant(error, response) {
+        if (error) { ApiErrorHandler.handle(response); }
+        done();
+      }
+
+      if (existingPerm) {
+        var roles = asList(existingPerm.role);
+        if (!roles.includes(name)) {
+          roles = roles.concat([name]);
+        }
+        AuthorizationV2.updatePermission(existingPerm.index, {role: roles}, function (error, data, response) {
+          afterGrant(error, response);
+        });
+      } else if ($scope.predefinedPermissions.includes(permName)) {
+        AuthorizationV2.createPermission({name: permName, role: [name]}, function (error, data, response) {
+          afterGrant(error, response);
+        });
+      } else {
+        done(); // custom permission that doesn't exist yet - nothing to grant
+      }
+    }
+
+    function runTasks(tasks, done) {
+      var remaining = tasks.length;
+      if (remaining === 0) {
+        done();
         return;
       }
-
-      var userRoles = authz["user-role"];
-      var setUserRoles = {};
-      for (u in usersForRole) {
-        var user = usersForRole[u];
-        var currentRoles = user in userRoles ? asList(userRoles[user]) : [];
-        // add the new role for this user if needed
-        if (!currentRoles.includes(name)) {
-          currentRoles.push(name);
+      tasks.forEach(task => task(function () {
+        if (--remaining === 0) {
+          done();
         }
-        setUserRoles[user] = currentRoles;
-      }
+      }));
+    }
 
-      var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
-      Security.post({path: "authorization"}, cmdJson, function (data2) {
+    // Once every write above has returned, this is the same single whenReflected("authorization",
+    // ...) poll the legacy command-batch code used - just checking the users/perms this dialog
+    // actually touched, rather than re-inventing per-resource polling against the new v2 GETs.
+    function finishUp(attemptedPerms) {
+      $scope.toggleRoleDialog();
+      whenReflected("authorization", function (data) {
+        var authz = $scope.findEditableAuthz(data);
+        if (!authz) return true;
+        var rolesOk = usersForRole.every(u => asList(authz["user-role"][u]).includes(name));
+        var permsOk = attemptedPerms.every(p => {
+          var have = permissionRoles(data, p);
+          return have != null && have.includes(name);
+        });
+        return rolesOk && permsOk;
+      }, $scope.refreshSecurityPanel);
+    }
 
-        var errorCause = checkError(data2);
-        if (errorCause != null) {
-          $scope.securityAPIError = "set-user-role for role "+name+" failed due to: "+errorCause;
-          $scope.securityAPIErrorDetails = JSON.stringify(data2);
-          return;
-        }
-
-        function roleReflected(data3) {
-          var authz3 = $scope.findEditableAuthz(data3);
-          if (!authz3) return true;
-          return usersForRole.every(u => asList(authz3["user-role"][u]).includes(name));
-        }
-
-        if (perms.length === 0) {
-          // close dialog and refresh the tables ...
-          $scope.toggleRoleDialog();
-          whenReflected("authorization", roleReflected, $scope.refreshSecurityPanel);
-          return;
-        }
-
-        var currentPerms = data.authorization["permissions"];
-        for (i in perms) {
-          let permName = perms[i];
-          var existingPerm = currentPerms.find(p => p.name === permName);
-
-          if (existingPerm) {
-            var roleList = [];
-            if (existingPerm.role) {
-              if (Array.isArray(existingPerm.role)) {
-                roleList = existingPerm.role;
-              } else {
-                roleList.push(existingPerm.role);
-              }
-            }
-            if (!roleList.includes(name)) {
-              roleList.push(name);
-            }
-            existingPerm.role = roleList;
-            Security.post({path: "authorization"}, { "update-permission": existingPerm }, function (data3) {
-              whenReflected("authorization", function (data4) {
-                var have = permissionRoles(data4, permName);
-                return roleReflected(data4) && have != null && have.includes(name);
-              }, $scope.refreshSecurityPanel);
-            });
-          } else {
-            // new perm ... must be a predefined ...
-            if ($scope.predefinedPermissions.includes(permName)) {
-              var setPermission = {name: permName, role:[name]};
-              Security.post({path: "authorization"}, { "set-permission": setPermission }, function (data3) {
-                whenReflected("authorization", function (data4) {
-                  var have = permissionRoles(data4, permName);
-                  return roleReflected(data4) && have != null && have.includes(name);
-                }, $scope.refreshSecurityPanel);
-              });
-            } // else ignore it
-          }
-        }
-        $scope.toggleRoleDialog();
+    var userTasks = usersForRole.map(u => cb => assignRoleToUser(u, cb));
+    if (perms.length === 0) {
+      runTasks(userTasks, () => finishUp([]));
+    } else {
+      AuthorizationV2.listPermissions(function (error, permsData, response) {
+        if (error) { ApiErrorHandler.handle(response); runTasks(userTasks, () => finishUp([])); return; }
+        var existingPerms = permsData.permissions;
+        // Only wait on permissions we actually attempted to touch - a custom (non-predefined)
+        // permission that doesn't exist yet is silently skipped by grantPermissionToRole, and
+        // would otherwise look permanently "unreflected" to the check above.
+        var attemptedPerms = perms.filter(p => existingPerms.some(ep => ep.name === p) || $scope.predefinedPermissions.includes(p));
+        var permTasks = attemptedPerms.map(p => cb => grantPermissionToRole(p, existingPerms, cb));
+        runTasks(userTasks.concat(permTasks), () => finishUp(attemptedPerms));
       });
-    });
-
+    }
   };
 
   $scope.editRole = function(row) {
