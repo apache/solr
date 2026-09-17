@@ -380,25 +380,18 @@ public class PackageTool extends ToolBase {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "Package name and version are both required. Actual: " + packageNameAndVersion);
-    } catch (Exception exception) {
-      // We need to print this since SolrCLI drops the stack trace in favour
-      // of brevity. Package tool should surely print the full stacktrace!
-      exception.printStackTrace();
-      throw exception;
-    } finally {
-      // Restore the old logging level
-      Configurator.setRootLevel(oldLevel);
     }
+    packageManager.uninstall(parsedVersion.first(), parsedVersion.second());
   }
 
   private void handleCommand(String command, String[] cmdArgs, PackageFlags packageFlags)
       throws Exception {
     switch (command) {
       case "add-repo":
-        addRepo(cli.getArgs()[1], cli.getArgs()[2]);
+        addRepo(cmdArgs[0], cmdArgs[1]);
         break;
       case "add-key":
-        addKey(Path.of(cli.getArgs()[1]));
+        addKey(Path.of(cmdArgs[0]));
         break;
       case "list-installed":
         listInstalled();
@@ -407,47 +400,46 @@ public class PackageTool extends ToolBase {
         listAvailable();
         break;
       case "list-deployed":
-        if (cli.hasOption(COLLECTION_OPTION)) {
-          listPackagesDeployedOnCollection(cli.getOptionValue(COLLECTION_OPTION));
+        if (packageFlags.collection() != null) {
+          listPackagesDeployedOnCollection(packageFlags.collection());
         } else {
-          // nuance that we use an arg here instead of requiring a --package parameter with a
-          // value in this code path
-          listCollectionsWithPackageDeployed(cli.getArgs()[1]);
+          listCollectionsWithPackageDeployed(cmdArgs[0]);
         }
         break;
       case "install":
-        install(cli.getArgList().get(1));
+        install(cmdArgs[0]);
         break;
       case "deploy":
-        if (cli.hasOption(CLUSTER_OPTION) || cli.hasOption(COLLECTIONS_OPTION)) {
+        if (packageFlags.cluster() || packageFlags.collections() != null) {
           deploy(
-              cli.getArgList().get(1),
-              cli.hasOption(CLUSTER_OPTION),
-              cli.getOptionValue(COLLECTIONS_OPTION),
-              cli.getOptionValues(PARAM_OPTION),
-              cli.hasOption(UPDATE_OPTION),
-              cli.hasOption(NO_PROMPT_OPTION));
+              cmdArgs[0],
+              packageFlags.cluster(),
+              collections,
+              packageFlags.parameters(),
+              packageFlags.update(),
+              packageFlags.noPrompt());
         } else {
           printRed(
               "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
         }
         break;
       case "undeploy":
-        if (cli.hasOption(CLUSTER_OPTION) || cli.hasOption(COLLECTIONS_OPTION)) {
+        if (packageFlags.cluster() || packageFlags.collections() != null) {
           undeploy(
-              cli.getArgList().get(1),
-              cli.hasOption(CLUSTER_OPTION),
-              cli.getOptionValue(COLLECTIONS_OPTION));
+              cmdArgs[0],
+              packageFlags.cluster(),
+              collections);
         } else {
           printRed(
               "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
         }
         break;
       case "uninstall":
-        uninstall(cli.getArgList().get(1));
+        uninstall(cmdArgs[0]);
         break;
       default:
         throw new RuntimeException("Unrecognized command: " + cmd);
+    }
   }
 
   @Override
