@@ -188,6 +188,7 @@ import org.apache.solr.handler.admin.api.ListClusterNodes;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
+import org.apache.solr.handler.admin.api.ListReplicas;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicas;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
@@ -1193,6 +1194,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListClusterNodes.class,
         ListCollections.class,
         ListCollectionBackups.class,
+        ListReplicas.class,
         ReloadCollectionAPI.class,
         RenameCollection.class,
         ReplaceNode.class,
