@@ -502,7 +502,8 @@ Blank lines are ignored. Comments are not supported.
 A line that is not a single JSON Object -- an enclosing array, a document spread over several lines, two documents on one line, or anything that is not an Object -- fails the request, reporting the line number.
 Documents from earlier lines have already been submitted when a later line fails, so a failed load may be partially applied.
 
-NDJSON carries documents only; the `add`, `delete`, `commit`, `optimize`, and `rollback` commands are not recognized, so use request parameters such as `commit` and `commitWithin` instead.
+Every line is an implicit `add`; NDJSON has no way to express the other update commands, so `delete`, `commit`, `optimize`, and `rollback` are not available in the payload.
+Use the `commit` or `commitWithin` request parameters to control when the added documents are committed.
 
 Documents are mapped as on the `/update/json/docs` path, described in xref:transforming-and-indexing-custom-json.adoc[]: by default a nested JSON Object is *flattened* into dotted field names, so `{"id":"1","author":{"name":"Jan"}}` indexes `author.name`.
 Use the `split` parameter to declare the paths that should become xref:indexing-nested-documents.adoc[child documents] instead (`|` is URL encoded as `%7C`):

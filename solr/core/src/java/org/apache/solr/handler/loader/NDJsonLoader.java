@@ -39,8 +39,8 @@ import org.noggit.JSONParser.ParseException;
  *
  * <p>Documents are mapped exactly as on the {@code /update/json/docs} path: a nested JSON object is
  * flattened into dotted field names unless the {@code split} parameter declares its path to be a
- * nested document. Update commands such as {@code delete} or {@code commit} are not recognized; use
- * request parameters or a separate request for those.
+ * nested document. Every line is an implicit add; the other update commands are not recognized, so
+ * use request parameters such as {@code commit} or a separate request for those.
  *
  * <p>The only differences from that path are the restrictions the format itself implies, all
  * enforced while streaming: the content must be UTF-8, every document sits on a line of its own,
