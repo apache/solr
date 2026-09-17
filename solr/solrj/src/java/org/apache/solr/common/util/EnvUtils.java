@@ -47,8 +47,14 @@ public class EnvUtils {
   /** Maps ENV keys to sys prop keys for special/custom mappings */
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
 
+  /**
+   * Maps a legacy/deprecated sys prop key (dot-separated form) to the current property it was
+   * replaced by, and whether the replacement is boolean-inverted relative to the legacy property.
+   */
+  private record DeprecatedMapping(String currentName, boolean inverted) {}
+
   /** Maps deprecated sys prop keys to current sys prop keys with special/custom mappings */
-  private static final Map<String, String> DEPRECATED_MAPPINGS = new HashMap<>();
+  private static final Map<String, DeprecatedMapping> DEPRECATED_MAPPINGS = new HashMap<>();
 
   private static final Map<String, String> camelCaseToDotsMap = new ConcurrentHashMap<>();
 
@@ -74,8 +80,14 @@ public class EnvUtils {
         for (String key : props.stringPropertyNames()) {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
-        for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(deprecatedProps.getProperty(key)), key);
+        for (String currentName : deprecatedProps.stringPropertyNames()) {
+          String legacyName = deprecatedProps.getProperty(currentName);
+          boolean inverted = legacyName.startsWith("!");
+          if (inverted) {
+            legacyName = legacyName.substring(1);
+          }
+          DEPRECATED_MAPPINGS.put(
+              camelCaseToDotSeparated(legacyName), new DeprecatedMapping(currentName, inverted));
         }
         init(false, System.getenv(), System.getProperties());
       }
@@ -108,24 +120,68 @@ public class EnvUtils {
    * @param defaultValue fallback value if property is not found
    */
   public static String getProperty(String key, String defaultValue) {
-    String value = getPropertyWithCamelCaseFallback(key);
+    String value = resolvePropertyValue(key);
     return value != null ? value : defaultValue;
   }
 
   /**
-   * Get a property from given key or an alias key converted from CamelCase to dot separated.
+   * Resolves {@code key} by trying, in order: the key as given; the key converted from CamelCase to
+   * dot-separated; and -- if {@code key} is itself a legacy/deprecated property name -- the current
+   * property it was replaced by. See {@link #resolveViaDeprecatedMapping} for why that last
+   * fallback is needed.
    *
-   * @return property value or value of dot-separated alias key or null if not found
+   * @return the resolved value, or null if none of the above are found
    */
-  private static String getPropertyWithCamelCaseFallback(String key) {
+  private static String resolvePropertyValue(String key) {
     String value = System.getProperty(key);
     if (value != null) {
       return value;
-    } else {
-      // Figure out if string is CamelCase and convert to dot separated
-      String altKey = camelCaseToDotSeparated(key);
-      return System.getProperty(altKey);
     }
+    // Figure out if string is CamelCase and convert to dot separated
+    String altKey = camelCaseToDotSeparated(key);
+    value = System.getProperty(altKey);
+    if (value != null) {
+      return value;
+    }
+    return resolveViaDeprecatedMapping(key, altKey);
+  }
+
+  /**
+   * If {@code dotKey} is a known legacy/deprecated property name, returns the value of the current
+   * property it was replaced by (inverted, if the mapping is boolean-inverted), or null if that
+   * current property hasn't been set either.
+   *
+   * <p>This matters for config files (e.g. {@code solr.xml}) that still contain a {@code
+   * ${legacyName:default}} substitution token from before a property was renamed: without this,
+   * setting only the new property name would silently have no effect on that token, since nothing
+   * else ever rewrites the token's text. See SOLR-17864.
+   *
+   * @param key the property key as originally looked up (used only for the deprecation message)
+   * @param dotKey {@code key} converted to dot-separated form; this is what {@code
+   *     DEPRECATED_MAPPINGS} is keyed by
+   */
+  private static String resolveViaDeprecatedMapping(String key, String dotKey) {
+    DeprecatedMapping mapping = DEPRECATED_MAPPINGS.get(dotKey);
+    if (mapping == null) {
+      return null;
+    }
+    String newValue = System.getProperty(mapping.currentName());
+    if (newValue == null) {
+      return null;
+    }
+    DeprecationLog.log(
+        dotKey,
+        () ->
+            "A config file still references the deprecated system property "
+                + key
+                + "; it was replaced by "
+                + mapping.currentName()
+                + ". Support for the old property will be removed in a future version of Solr.");
+    return mapping.inverted() ? invertBooleanString(newValue) : newValue;
+  }
+
+  private static String invertBooleanString(String value) {
+    return String.valueOf(!Boolean.parseBoolean(value));
   }
 
   private static String camelCaseToDotSeparated(String key) {
@@ -218,26 +274,24 @@ public class EnvUtils {
 
     for (String deprecatedKey : sysProperties.stringPropertyNames()) {
       var dotKey = camelCaseToDotSeparated(deprecatedKey);
-      if (DEPRECATED_MAPPINGS.containsKey(dotKey)
-          || DEPRECATED_MAPPINGS.containsKey("!" + dotKey)) {
-        applyDeprecatedPropertyMapping(deprecatedKey, dotKey, sysProperties);
+      DeprecatedMapping mapping = DEPRECATED_MAPPINGS.get(dotKey);
+      if (mapping != null) {
+        applyDeprecatedPropertyMapping(deprecatedKey, mapping, sysProperties);
       }
     }
   }
 
   private static void applyDeprecatedPropertyMapping(
-      String deprecatedKey, String lookupKey, Properties sysProperties) {
-    var newPropName =
-        DEPRECATED_MAPPINGS.getOrDefault(lookupKey, DEPRECATED_MAPPINGS.get("!" + lookupKey));
+      String deprecatedKey, DeprecatedMapping mapping, Properties sysProperties) {
     var newValue =
-        DEPRECATED_MAPPINGS.containsKey(lookupKey)
-            ? sysProperties.getProperty(deprecatedKey)
-            : String.valueOf(!Boolean.parseBoolean(sysProperties.getProperty(deprecatedKey)));
+        mapping.inverted()
+            ? invertBooleanString(sysProperties.getProperty(deprecatedKey))
+            : sysProperties.getProperty(deprecatedKey);
     log.warn(
         "Deprecated system property {} has been replaced by {}. Support for the old property will be removed in a future version of Solr.",
         deprecatedKey,
-        newPropName);
-    setProperty(newPropName, newValue);
+        mapping.currentName());
+    setProperty(mapping.currentName(), newValue);
   }
 
   protected static String envNameToSyspropName(String envName) {
