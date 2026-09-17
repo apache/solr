@@ -61,28 +61,27 @@ public class InputStreamResponseParser extends ResponseParser {
   /**
    * Throws if the response's HTTP status was not 2xx.
    *
-   * <p>{@code SolrClient}s skip their usual non-2xx check when an {@link
-   * InputStreamResponseParser} is in use, since the raw stream is handed back regardless of
-   * status. Callers that read the stream under {@link #STREAM_KEY} directly -- rather than via
-   * {@link #consumeResponseToString}, which does not check either -- should call this first.
+   * <p>{@code SolrClient}s skip their usual non-2xx check when an {@link InputStreamResponseParser}
+   * is in use, since the raw stream is handed back regardless of status. Callers that read the
+   * stream under {@link #STREAM_KEY} directly -- rather than via {@link #consumeResponseToString},
+   * which does not check either -- should call this first.
    */
   public static void checkHttpStatus(NamedList<Object> response) throws IOException {
     checkHttpStatus(response, null);
   }
 
   /**
-   * As {@link #checkHttpStatus(NamedList)}, appending {@code detail} to the exception message
-   * when the status is not 2xx -- e.g. the request URL, or a body already consumed for another
-   * purpose.
+   * As {@link #checkHttpStatus(NamedList)}, appending {@code detail} to the exception message when
+   * the status is not 2xx -- e.g. the request URL, or a body already consumed for another purpose.
    */
-  public static void checkHttpStatus(NamedList<Object> response, String detail)
-      throws IOException {
+  public static void checkHttpStatus(NamedList<Object> response, String detail) throws IOException {
     Object status = response.get(HTTP_STATUS_KEY);
     if (status instanceof Integer httpStatus && (httpStatus < 200 || httpStatus >= 300)) {
       Object reason = response.get(HTTP_REASON_KEY);
       String msg =
           reason instanceof String r && !r.isEmpty()
-              ? String.format(Locale.ROOT, "Unexpected HTTP status [%d %s] in response", httpStatus, r)
+              ? String.format(
+                  Locale.ROOT, "Unexpected HTTP status [%d %s] in response", httpStatus, r)
               : String.format(Locale.ROOT, "Unexpected HTTP status [%d] in response", httpStatus);
       throw new IOException(detail == null ? msg : msg + ": " + detail);
     }
@@ -109,9 +108,9 @@ public class InputStreamResponseParser extends ResponseParser {
   }
 
   /**
-   * As {@link #createInputStreamNamedList(int, InputStream)}, also recording the HTTP reason
-   * phrase (e.g. "Bad Request") under {@link #HTTP_REASON_KEY}, when known, so callers building
-   * an error message have more to go on than the bare status code.
+   * As {@link #createInputStreamNamedList(int, InputStream)}, also recording the HTTP reason phrase
+   * (e.g. "Bad Request") under {@link #HTTP_REASON_KEY}, when known, so callers building an error
+   * message have more to go on than the bare status code.
    */
   public static NamedList<Object> createInputStreamNamedList(
       int httpStatus, String reason, InputStream inputStream) {
