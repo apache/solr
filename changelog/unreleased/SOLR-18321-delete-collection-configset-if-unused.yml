@@ -1,0 +1,7 @@
+title: bin/solr delete no longer requires a direct ZooKeeper connection to safely delete a collection's configset; it now uses the Configsets V2 API, which gained an "ifUnused" flag to skip deletion (and report which collections use it) when the configset is still in use.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18321
+    url: https://issues.apache.org/jira/browse/SOLR-18321
