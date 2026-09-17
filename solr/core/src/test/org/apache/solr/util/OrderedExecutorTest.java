@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +41,10 @@ public class OrderedExecutorTest extends SolrTestCase {
     // initialize exactly as done in CoreContainer so we test realistically
     return new OrderedExecutor<>(
         numThreads,
-        ExecutorUtil.newMDCAwareCachedThreadPool(
+        ExecutorUtil.newMDCAwareFixedThreadPool(
             numThreads, // thread count
             numThreads, // queue size
-            new SolrNamedThreadFactory("testOrderedExecutor")));
+            "testOrderedExecutor"));
   }
 
   @Test
