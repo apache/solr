@@ -321,9 +321,12 @@ public abstract class RequestHandlerBase
    * <p>If a tragic exception occurred in the index writer, this method also gives up leadership of
    * the shard, and replaces the index writer with a new one to attempt to get out of a transient
    * failure (e.g. disk failure).
+   *
+   * <p>{@code req} may be null, e.g. when called from Jersey's {@code CatchAllExceptionMapper} for
+   * a request that failed before a {@link SolrQueryRequest} was attached to the request context.
    */
   public static Exception processReceivedException(SolrQueryRequest req, Exception e) {
-    SolrCore core = req.getCore();
+    SolrCore core = req == null ? null : req.getCore();
     if (core != null) {
       CoreContainer coreContainer = req.getCoreContainer();
       assert coreContainer != null;
