@@ -100,7 +100,10 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
     // NDJSON content on /update is rewritten to /update/ndjson instead of /update/json/docs
     for (String contentType :
         List.of(
-            "application/x-ndjson", "application/jsonl", "application/X-NDJSON; charset=utf-8")) {
+            "application/x-ndjson",
+            "application/jsonl",
+            "application/jsonlines",
+            "application/X-NDJSON; charset=utf-8")) {
       final SolrQueryRequest req = runUpdateApi("/update", contentType);
       assertEquals(contentType, "/update/ndjson", req.getContext().get(PATH));
     }

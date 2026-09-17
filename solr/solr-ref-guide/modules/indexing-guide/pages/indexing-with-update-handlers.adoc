@@ -481,7 +481,7 @@ You can specify the version of deletes in the body of the update request as well
 
 === Newline Delimited JSON
 
-Solr also accepts https://ndjson.org/[Newline Delimited JSON] (ND-JSON), also known as JSON Lines or JSONL: one document per line, as a JSON Object, with no enclosing array and no commas between lines.
+Solr also accepts https://jsonlines.org/[Newline Delimited JSON] (ND-JSON), also known as JSON Lines or JSONL: one document per line, as a JSON Object, with no enclosing array and no commas between lines.
 
 Send it to the `/update` handler with `Content-Type: application/x-ndjson`, or to the dedicated `/update/ndjson` path:
 
@@ -494,7 +494,7 @@ curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr
 '
 ----
 
-`application/jsonl` and `application/x-jsonlines` are accepted as aliases, and the xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files automatically.
+`application/jsonl`, `application/jsonlines` and `application/x-jsonlines` are accepted as aliases, and the xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files automatically.
 The format is UTF-8 only: a request declaring any other `charset` is rejected with a `415 Unsupported Media Type`.
 
 Solr parses and indexes the request as it streams in, so peak memory is bounded by the largest single document rather than by the size of the request, which makes the format a good fit for large bulk loads.

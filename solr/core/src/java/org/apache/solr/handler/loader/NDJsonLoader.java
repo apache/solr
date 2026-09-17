@@ -33,8 +33,9 @@ import org.noggit.JSONParser;
 import org.noggit.JSONParser.ParseException;
 
 /**
- * Loads documents in <a href="https://ndjson.org/">Newline Delimited JSON</a> (ND-JSON, also known
- * as JSON Lines or JSONL) format; one JSON object per line, each representing a document to add.
+ * Loads documents in <a href="https://jsonlines.org/">Newline Delimited JSON</a> (ND-JSON, also
+ * known as JSON Lines or JSONL) format; one JSON object per line, each representing a document to
+ * add.
  *
  * <p>Documents are mapped exactly as on the {@code /update/json/docs} path: a nested JSON object is
  * flattened into dotted field names unless the {@code split} parameter declares its path to be a
@@ -49,7 +50,11 @@ public class NDJsonLoader extends JsonLoader {
 
   /** The content types that select this loader. */
   public static final Set<String> CONTENT_TYPES =
-      Set.of("application/x-ndjson", "application/jsonl", "application/x-jsonlines");
+      Set.of(
+          "application/x-ndjson",
+          "application/jsonl",
+          "application/jsonlines",
+          "application/x-jsonlines");
 
   @Override
   public void load(
