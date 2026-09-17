@@ -57,7 +57,6 @@
 
 * Monitoring Solr
 ** xref:configuring-logging.adoc[]
-** xref:ping.adoc[]
 ** xref:metrics-reporting.adoc[]
 ** xref:performance-statistics-reference.adoc[]
 ** xref:plugins-stats-screen.adoc[]
