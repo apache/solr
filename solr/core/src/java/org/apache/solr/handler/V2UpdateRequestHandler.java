@@ -18,7 +18,6 @@
 package org.apache.solr.handler;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -41,7 +40,7 @@ public class V2UpdateRequestHandler extends UpdateRequestHandler
 
   @Override
   public Collection<Api> getApis() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override

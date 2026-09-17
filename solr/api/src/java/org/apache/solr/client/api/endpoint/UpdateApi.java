@@ -60,10 +60,10 @@ public interface UpdateApi {
   SolrJerseyResponse updateCsv() throws Exception;
 
   @POST
-  @Path("/bin")
+  @Path("/javabin")
   @StoreApiParameters
   @Operation(
-      summary = "Index documents documents in Javabin format",
+      summary = "Index documents in Javabin format",
       tags = {"update"})
-  SolrJerseyResponse updateBin() throws Exception;
+  SolrJerseyResponse updateJavabin() throws Exception;
 }

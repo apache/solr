@@ -81,8 +81,8 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateBin() {
-    return handleUpdate(null);
+  public SolrJerseyResponse updateJavabin() {
+    return handleUpdate(UpdateRequestHandler.BIN_PATH);
   }
 
   private SolrJerseyResponse handleUpdate(String pathOverride) {

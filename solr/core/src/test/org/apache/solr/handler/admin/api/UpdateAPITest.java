@@ -19,13 +19,17 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.io.ByteArrayOutputStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
@@ -119,6 +123,29 @@ public class UpdateAPITest extends SolrTestCaseJ4 {
     // Verify
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "id:v2updatexml1");
+    final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
+    assertEquals(1, queryRsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testUpdateJavabinViaV2Api() throws Exception {
+    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
+    final SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "v2updatejavabin1");
+    final UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(doc);
+    final ByteArrayOutputStream payload = new ByteArrayOutputStream();
+    new JavaBinUpdateRequestCodec().marshal(updateRequest, payload);
+
+    final GenericV2SolrRequest addReq =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update/javabin");
+    addReq.withContent(payload.toByteArray(), "application/javabin");
+    client.request(addReq);
+    client.commit(CORE_NAME);
+
+    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "id:v2updatejavabin1");
     final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
     assertEquals(1, queryRsp.getResults().getNumFound());
   }
