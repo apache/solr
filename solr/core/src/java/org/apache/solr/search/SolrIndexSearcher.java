@@ -22,7 +22,6 @@ import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -2337,10 +2336,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void initializeMetrics(SolrMetricsContext solrMetricsContext, Attributes attributes) {
     var baseAttributes =
         attributes.toBuilder().put(CATEGORY_ATTR, Category.SEARCHER.toString()).build();
-    final LongAdder liveDocsInsertsCount = this.liveDocsInsertsCount;
-    final LongAdder liveDocsHitCount = this.liveDocsHitCount;
-    final LongAdder liveDocsNaiveCacheHitCount = this.liveDocsNaiveCacheHitCount;
-    final WeakReference<DirectoryReader> readerRef = new WeakReference<>(reader);
 
     // warmupTime (ms) - timer for histogram tracking
     warmupTimer =
@@ -2370,10 +2365,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         "Number of live docs in the index",
         obs -> {
           try {
-            DirectoryReader currentReader = readerRef.get();
-            if (currentReader != null) {
-              obs.record(currentReader.numDocs(), baseAttributes);
-            }
+            obs.record(reader.numDocs(), baseAttributes);
           } catch (Exception ignore) {
             // replacement for nullNumber
           }
@@ -2384,10 +2376,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         "Total number of docs in the index (including deletions)",
         obs -> {
           try {
-            DirectoryReader currentReader = readerRef.get();
-            if (currentReader != null) {
-              obs.record(currentReader.maxDoc(), baseAttributes);
-            }
+            obs.record(reader.maxDoc(), baseAttributes);
           } catch (Exception ignore) {
           }
         });
@@ -2397,10 +2386,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         "Lucene index version",
         obs -> {
           try {
-            DirectoryReader currentReader = readerRef.get();
-            if (currentReader != null) {
-              obs.record(currentReader.getVersion(), baseAttributes);
-            }
+            obs.record(reader.getVersion(), baseAttributes);
           } catch (Exception ignore) {
           }
         });
@@ -2410,13 +2396,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         "Size of the current index commit (megabytes)",
         obs -> {
           try {
-            DirectoryReader currentReader = readerRef.get();
-            if (currentReader == null) {
-              return;
-            }
             long total = 0L;
-            for (String file : currentReader.getIndexCommit().getFileNames()) {
-              total += DirectoryFactory.sizeOf(currentReader.directory(), file);
+            for (String file : reader.getIndexCommit().getFileNames()) {
+              total += DirectoryFactory.sizeOf(reader.directory(), file);
             }
             obs.record(MetricUtils.bytesToMegabytes(total), baseAttributes);
           } catch (Exception e) {
