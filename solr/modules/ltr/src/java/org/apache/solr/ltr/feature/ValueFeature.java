@@ -43,7 +43,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * differently if the search came from a mobile device, or maybe you want to use your external query
  * intent system as a feature. In the rerank request you can pass in rq={... efi.userFromMobile=1},
  * and the above feature will return 1 for all the docs for that request. If required is set to
- * true, the request will return an error since you failed to pass in the efi, otherwise if will
+ * true, the request will return an error since you failed to pass in the efi, otherwise it will
  * just skip the feature and use a default value of 0 instead.
  */
 public class ValueFeature extends Feature {
@@ -64,7 +64,7 @@ public class ValueFeature extends Feature {
     } else if (value instanceof Double) {
       configValue = ((Double) value).floatValue();
     } else if (value instanceof Float) {
-      configValue = ((Float) value).floatValue();
+      configValue = (Float) value;
     } else if (value instanceof Integer) {
       configValue = ((Integer) value).floatValue();
     } else if (value instanceof Long) {
