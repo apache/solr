@@ -35,6 +35,7 @@ solrAdminApp.controller('PluginsController',
             var type = $location.search().type;
 
             Metrics.raw(params, function (response) {
+                $scope.metricsDisabled = (response.data || '').indexOf('metrics collection is disabled') !== -1;
                 $scope.types = getPluginTypesFromMetrics(response.data, type);
                 $scope.type = getSelectedType($scope.types, type);
 
