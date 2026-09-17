@@ -88,17 +88,16 @@ public class UpdateAPI {
       return isNdJsonContentType(assumed);
     }
     Iterable<ContentStream> streams = req.getContentStreams();
-    if (streams == null) {
+    if (streams == null || !streams.iterator().hasNext()) {
+      // no content: keep the /update/json/docs default
       return false;
     }
-    boolean any = false;
     for (ContentStream stream : streams) {
       if (!isNdJsonContentType(stream.getContentType())) {
         return false;
       }
-      any = true;
     }
-    return any;
+    return true;
   }
 
   private static boolean isNdJsonContentType(String contentType) {
