@@ -95,7 +95,10 @@ public class ApiTool extends ToolBase {
       // Pass the server's JSON to the user as it came; parsing and re-serialising it here only
       // risks changing it.
       req.setResponseParser(new InputStreamResponseParser("json"));
-      return InputStreamResponseParser.consumeResponseToString(solrClient.request(req));
+      var response = solrClient.request(req);
+      String body = InputStreamResponseParser.consumeResponseToString(response);
+      InputStreamResponseParser.checkHttpStatus(response, url + ": " + body);
+      return body;
     }
   }
 
