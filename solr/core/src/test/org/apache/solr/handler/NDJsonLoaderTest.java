@@ -286,6 +286,31 @@ public class NDJsonLoaderTest extends SolrTestCase {
     assertEquals(value, p.addCommands.get(0).solrDoc.getFieldValue("title_s"));
   }
 
+  /** Each line must be strict JSON, so noggit's lenient dialects are rejected here. */
+  @Test
+  public void testRejectsLenientJson() {
+    for (String line :
+        List.of(
+            "# a comment",
+            "// a comment",
+            "/* a comment */",
+            "{\"id\":\"1\"} # trailing comment",
+            "{\"id\":\"1\"} // trailing comment",
+            "{'id':'1'}",
+            "{id:\"1\"}",
+            "{\"id\":\"1\",}")) {
+      SolrException e = expectThrows(SolrException.class, () -> load(line + "\n"));
+      assertEquals(line, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    }
+  }
+
+  /** The comment characters are only comments between tokens, never inside a value. */
+  @Test
+  public void testCommentCharactersInValuesAreKept() throws Exception {
+    BufferingRequestProcessor p = load("{\"id\":\"1\",\"title_s\":\"a#b //c /*d*/\"}\n");
+    assertEquals("a#b //c /*d*/", p.addCommands.get(0).solrDoc.getFieldValue("title_s"));
+  }
+
   @Test
   public void testRejectsMultipleObjectsOnOneLine() {
     SolrException e =

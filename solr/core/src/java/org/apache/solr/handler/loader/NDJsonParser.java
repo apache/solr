@@ -24,9 +24,9 @@ import org.noggit.JSONParser;
 
 /**
  * A {@link JSONParser} that enforces the newline delimited JSON contract while parsing: every
- * document is a JSON object sitting on a line of its own. Newlines are only whitespace to JSON
- * itself, so the contract is checked here rather than by framing the input into lines, which lets
- * documents stream without ever being materialized as a line.
+ * document is a strict JSON object sitting on a line of its own. Newlines are only whitespace to
+ * JSON itself, so the contract is checked here rather than by framing the input into lines, which
+ * lets documents stream without ever being materialized as a line.
  *
  * <p>Tracking happens in {@link #fill()}, which sees every character exactly once as it enters the
  * buffer, and in {@link #nextEvent()}, which observes where each top level object starts and ends.
@@ -53,6 +53,28 @@ class NDJsonParser extends JSONParser {
 
   NDJsonParser(Reader in) {
     super(in, new char[BUFFER_SIZE]);
+    // Every line has to be a JSON value, so none of noggit's lenient dialects are accepted
+    setFlags(FLAGS_STRICT);
+  }
+
+  /** Noggit eats {@code #} comments as whitespace whatever the flags say; NDJSON has none. */
+  @Override
+  protected void getNewlineComment() {
+    throw rejectComment();
+  }
+
+  /** As {@link #getNewlineComment()}, for the slash spellings of a comment. */
+  @Override
+  protected void getSlashComment() {
+    throw rejectComment();
+  }
+
+  private SolrException rejectComment() {
+    return new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        "Cannot parse NDJSON at line "
+            + lineNumberAtCurrentPosition()
+            + ": comments are not allowed");
   }
 
   /** The line the parser has reached, 1-based, for error reporting. */

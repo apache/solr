@@ -498,7 +498,7 @@ curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr
 The format is UTF-8 only: a request declaring any other `charset` is rejected with a `415 Unsupported Media Type`.
 
 Solr parses and indexes the request as it streams in, so peak memory is bounded by the largest single document rather than by the size of the request, which makes the format a good fit for large bulk loads.
-Blank lines are ignored.
+Blank lines are ignored. Comments are not supported.
 A line that is not a single JSON Object -- an enclosing array, a document spread over several lines, two documents on one line, or anything that is not an Object -- fails the request, reporting the line number.
 Documents from earlier lines have already been submitted when a later line fails, so a failed load may be partially applied.
 
