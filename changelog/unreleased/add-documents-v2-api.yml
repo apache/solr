@@ -1,0 +1,4 @@
+title: Added a new v2 'documents' API (GET /api/{collection}/documents/{id} and GET /api/{collection}/documents?ids=...) for fetching real-time documents as path-identified resources, returning 404 for a missing single document. This is additive and doesn't change the existing /get API, which remains the byte-for-byte v1 mirror relied on internally by SolrCloud peer-sync.
+type: added
+authors:
+  - name: Eric Pugh
