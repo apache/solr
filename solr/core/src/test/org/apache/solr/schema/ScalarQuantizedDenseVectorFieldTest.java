@@ -18,7 +18,13 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.Test;
 
@@ -129,10 +135,238 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void fieldDefinition_flatAlgorithm_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-flat-scalarQuantized.xml",
-        "knnAlgorithm 'flat' is not supported for ScalarQuantizedDenseVectorField");
+  public void fieldDefinition_flatAlgorithm_shouldLoadSchemaField() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+
+      SchemaField vector = schema.getField("vector_sq_flat");
+      assertNotNull(vector);
+
+      ScalarQuantizedDenseVectorField type = (ScalarQuantizedDenseVectorField) vector.getType();
+      assertThat(type.getKnnAlgorithm(), is("flat"));
+      assertThat(type.getDimension(), is(4));
+      assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(type.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
+
+      assertTrue(vector.indexed());
+      assertTrue(vector.stored());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_buildKnnVectorsFormat_shouldReturnScalarQuantizedFormat()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+
+      SchemaField vector = schema.getField("vector_sq_flat");
+      ScalarQuantizedDenseVectorField type = (ScalarQuantizedDenseVectorField) vector.getType();
+
+      assertThat(
+          type.buildKnnVectorsFormat() instanceof Lucene104ScalarQuantizedVectorsFormat, is(true));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityFunction_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
+      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
+      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_sq_flat,[1.0, 2.0, 3.0, 4.0])",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='0'");
+
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_sq_flat,[1.0, 2.0, 3.0, 4.0])",
+              "fq", "id:(0 2)",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='0'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_knnQuery_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
+      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
+      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!knn f=vector_sq_flat topK=2}[1.0, 2.0, 3.0, 4.0]",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[1]/id=='1'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_knnQuery_preFilter_shouldReturnFilteredResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
+      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
+      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!knn f=vector_sq_flat topK=2 preFilter='id:(1 2)'}[1.0, 2.0, 3.0, 4.0]",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='1'",
+          "/response/docs/[1]/id=='2'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_knnQuery_hnswParamsIgnored_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
+      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q",
+              "{!knn f=vector_sq_flat topK=1 efSearchScaleFactor=2.0"
+                  + " earlyTermination=true saturationThreshold=0.95 patience=3"
+                  + " filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]",
+              "fl",
+              "id,score"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id=='0'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityQParser_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
+      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
+      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!vectorSimilarity f=vector_sq_flat minReturn=0.0}[1.0, 2.0, 3.0, 4.0]",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='0'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_knnQuery_shouldThrowException() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      assertQEx(
+          "Running {!knn} on a flat scalar quantized BYTE vector field should raise an Exception",
+          "vectorEncoding=\"BYTE\"",
+          req("q", "{!knn f=vector_sq_flat_byte topK=2}[1, 2, 3, 4]", "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_vectorSimilarityQParser_shouldThrowException()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      assertQEx(
+          "Running {!vectorSimilarity} on a flat scalar quantized BYTE vector field should raise an Exception",
+          "vectorEncoding=\"BYTE\"",
+          req(
+              "q", "{!vectorSimilarity f=vector_sq_flat_byte minReturn=0.99}[1, 2, 3, 4]",
+              "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_vectorSimilarityFunction_shouldReturnResults()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "0");
+      doc1.addField("vector_sq_flat_byte", Arrays.asList(1, 2, 3, 4));
+      assertU(adoc(doc1));
+
+      SolrInputDocument doc2 = new SolrInputDocument();
+      doc2.addField("id", "1");
+      doc2.addField("vector_sq_flat_byte", Arrays.asList(5, 6, 7, 8));
+      assertU(adoc(doc2));
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_sq_flat_byte,[1, 2, 3, 4])",
+              "fl", "id,score"),
+          "/response/numFound==2",
+          "/response/docs/[0]/id=='0'",
+          "/response/docs/[0]/score==1.0");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  private void addDoc(String id, float... v) {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    List<Float> vector = new ArrayList<>(v.length);
+    for (float value : v) {
+      vector.add(value);
+    }
+    doc.addField("vector_sq_flat", vector);
+    assertU(adoc(doc));
   }
 }
