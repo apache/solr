@@ -1088,11 +1088,8 @@ public abstract class FieldType extends FieldProperties {
     try {
       parser.getReq().getCore().withSearcher(searcher -> searcher.rewrite(query));
     } catch (IllegalStateException e) {
-      String message = e.getMessage();
-      if (message != null && message.startsWith("FieldExistsQuery requires")) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, message, e);
-      }
-      throw e;
+      // FieldExistsQuery.rewrite throws this if the field lacks doc values, norms, and vectors.
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }

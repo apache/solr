@@ -50,6 +50,6 @@ public class FieldExistsQueryBadRequestTest extends SolrTestCaseJ4 {
   private void assertBadRequest(SolrQueryRequest req) {
     SolrException exception = expectThrows(SolrException.class, () -> h.query(req));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertTrue(exception.getMessage().startsWith("FieldExistsQuery requires"));
+    assertTrue(exception.getCause() instanceof IllegalStateException);
   }
 }
