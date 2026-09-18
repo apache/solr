@@ -338,6 +338,8 @@ https://arxiv.org/abs/1908.10396[Accelerating Large-Scale Inference with Anisotr
 
 This vector type is best utilized for data sets consisting of large amounts of high dimensionality vectors.
 
+`NOTE:` Because binary quantization is particularly lossy, it is recommended to use this in conjunction with `rerankOversample` param to improve recall
+
 Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
 
 [source,xml]
@@ -480,6 +482,20 @@ Here's an example of a `knn` search using the early termination with input param
 
 [source,text]
 ?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10 efSearchScaleFactor=3.0}[1.0, 2.0, 3.0, 4.0]
+
+`rerankOversample`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 1
+|===
++
+If provided, the query will retrieve a candidate pool of documents equal to topK multiplied by the rerankOversample value provided. The candidate set of documents will then be rescored with their raw vector values, and reranked down to a topK result set.
+
+Recommended for use only with quantized dense vector types, particularly binary quantized.
++
+Accepted values:
+Any int >= 1
 
 `seedQuery`::
 +
