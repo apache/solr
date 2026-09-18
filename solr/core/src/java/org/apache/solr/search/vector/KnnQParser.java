@@ -20,7 +20,9 @@ import java.util.Optional;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RescoreTopNQuery;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
 import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
@@ -186,19 +188,36 @@ public class KnnQParser extends AbstractVectorQParserBase {
               req, subQuery(allParentsQuery, null).getQuery());
       final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQueries);
 
+      denseVectorType.checkRerankOversampleSupported(vectorField, rerankOversample);
+
       Query acceptedChildren =
           getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
       switch (vectorEncoding) {
         case FLOAT32:
-          return new DiversifyingChildrenFloatKnnVectorQuery(
-              vectorField,
-              vectorBuilder.getFloatVector(),
-              acceptedChildren,
-              topK,
-              allParentsBitSet);
+          // The diversifying query returns the best matching child per parent, so collecting
+          // candidateTopK of them and re-ranking down to topK only ever narrows an already
+          // diversified set: at most one child per parent is preserved. Note that which child
+          // represents a parent is still picked using the (possibly quantized) approximate score,
+          // re-ranking only reorders the representatives that were chosen.
+          final float[] target = vectorBuilder.getFloatVector();
+          final Query diversified =
+              new DiversifyingChildrenFloatKnnVectorQuery(
+                  vectorField, target, acceptedChildren, candidateTopK, allParentsBitSet);
+          if (rerankOversample <= 1) {
+            return diversified;
+          }
+          return new RescoreTopNQuery(
+              diversified,
+              new FullPrecisionFloatVectorSimilarityValuesSource(
+                  target, vectorField, denseVectorType.getSimilarityFunction()),
+              topK);
         case BYTE:
           return new DiversifyingChildrenByteKnnVectorQuery(
-              vectorField, vectorBuilder.getByteVector(), acceptedChildren, topK, allParentsBitSet);
+              vectorField,
+              vectorBuilder.getByteVector(),
+              acceptedChildren,
+              candidateTopK,
+              allParentsBitSet);
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
