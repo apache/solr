@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -28,10 +29,14 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -134,19 +139,73 @@ public class UpdateAPITest extends SolrTestCaseJ4 {
     doc.setField("id", "v2updatejavabin1");
     final UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(doc);
+    updateRequest.deleteById("v2deleteversion1");
+    updateRequest.deleteByQuery("id:v2deletequery1");
     final ByteArrayOutputStream payload = new ByteArrayOutputStream();
     new JavaBinUpdateRequestCodec().marshal(updateRequest, payload);
 
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("versions", "true");
     final GenericV2SolrRequest addReq =
         new GenericV2SolrRequest(
-            SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update/javabin");
+            SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update/javabin", params);
+    addReq.setResponseParser(new JavaBinResponseParser());
     addReq.withContent(payload.toByteArray(), "application/javabin");
-    client.request(addReq);
+    final NamedList<Object> updateResponse = client.request(addReq);
+    assertEquals(1, updateResponse.getAll("responseHeader").size());
+    final List<?> adds = (List<?>) updateResponse.get("adds");
+    assertEquals("v2updatejavabin1", adds.get(0));
+    assertTrue(((Number) adds.get(1)).longValue() > 0);
+    final List<?> deletes = (List<?>) updateResponse.get("deletes");
+    assertEquals("v2deleteversion1", deletes.get(0));
+    assertTrue(((Number) deletes.get(1)).longValue() < 0);
+    final List<?> deleteByQuery = (List<?>) updateResponse.get("deleteByQuery");
+    assertEquals("id:v2deletequery1", deleteByQuery.get(0));
+    assertTrue(((Number) deleteByQuery.get(1)).longValue() < 0);
     client.commit(CORE_NAME);
 
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "id:v2updatejavabin1");
     final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
     assertEquals(1, queryRsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testUpdateReturnsAssignedVersion() throws Exception {
+    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("versions", "true");
+    final GenericV2SolrRequest addReq =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update", params);
+    addReq.setResponseParser(new JsonMapResponseParser());
+    addReq.setContentWriter(
+        new RequestWriter.StringPayloadContentWriter(
+            "[{\"id\":\"v2version1\"}]", "application/json"));
+
+    final var response = client.request(addReq);
+    final List<?> adds = (List<?>) response.get("adds");
+    assertEquals("v2version1", adds.get(0));
+    assertTrue(((Number) adds.get(1)).longValue() > 0);
+  }
+
+  @Test
+  public void testXmlUpdateResponseHasOneHeaderAndVersion() throws Exception {
+    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("versions", "true");
+    final GenericV2SolrRequest addReq =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update/xml", params);
+    addReq.setResponseParser(new XMLResponseParser());
+    addReq.setContentWriter(
+        new RequestWriter.StringPayloadContentWriter(
+            "<add><doc><field name=\"id\">v2xmlversion1</field></doc></add>", "application/xml"));
+
+    final NamedList<Object> response = client.request(addReq);
+    assertEquals(1, response.getAll("responseHeader").size());
+    final List<?> adds = (List<?>) response.get("adds");
+    assertEquals("v2xmlversion1", adds.get(0));
+    assertTrue(((Number) adds.get(1)).longValue() > 0);
   }
 }

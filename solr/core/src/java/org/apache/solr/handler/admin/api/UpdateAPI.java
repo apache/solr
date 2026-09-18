@@ -21,10 +21,13 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateApi;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpdateResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.jersey.APIConfigProvider;
 import org.apache.solr.jersey.PermissionName;
@@ -56,42 +59,56 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse update() throws Exception {
+  public UpdateResponse update() throws Exception {
     return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateJson() {
+  public UpdateResponse updateJson() {
     return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateXml() {
+  public UpdateResponse updateXml() {
     return handleUpdate(null);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateCsv() {
+  public UpdateResponse updateCsv() {
     return handleUpdate(null);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateJavabin() {
+  public UpdateResponse updateJavabin() {
     return handleUpdate(UpdateRequestHandler.BIN_PATH);
   }
 
-  private SolrJerseyResponse handleUpdate(String pathOverride) {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+  private UpdateResponse handleUpdate(String pathOverride) {
+    final UpdateResponse response = instantiateJerseyResponse(UpdateResponse.class);
     if (pathOverride != null) {
       solrQueryRequest.getContext().put(PATH, pathOverride);
     }
     updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
     rethrowAnyException(solrQueryResponse);
+    response.adds = takeVersionResults("adds");
+    response.deletes = takeVersionResults("deletes");
+    response.deleteByQuery = takeVersionResults("deleteByQuery");
     return response;
+  }
+
+  private List<Object> takeVersionResults(String name) {
+    final NamedList<?> values = (NamedList<?>) solrQueryResponse.getValues().remove(name);
+    if (values == null) return null;
+    final List<Object> pairs = new ArrayList<>(values.size() * 2);
+    for (int i = 0; i < values.size(); i++) {
+      pairs.add(values.getName(i));
+      pairs.add(values.getVal(i));
+    }
+    return pairs;
   }
 
   private void rethrowAnyException(SolrQueryResponse rsp) {

@@ -21,7 +21,7 @@ import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpdateResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /** V2 API definitions for indexing documents via the update handler. */
@@ -33,7 +33,7 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents using any supported content type",
       tags = {"update"})
-  SolrJerseyResponse update() throws Exception;
+  UpdateResponse update() throws Exception;
 
   @POST
   @Path("/json")
@@ -41,7 +41,7 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in JSON format",
       tags = {"update"})
-  SolrJerseyResponse updateJson() throws Exception;
+  UpdateResponse updateJson() throws Exception;
 
   @POST
   @Path("/xml")
@@ -49,7 +49,7 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in XML format",
       tags = {"update"})
-  SolrJerseyResponse updateXml() throws Exception;
+  UpdateResponse updateXml() throws Exception;
 
   @POST
   @Path("/csv")
@@ -57,7 +57,7 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in CSV format",
       tags = {"update"})
-  SolrJerseyResponse updateCsv() throws Exception;
+  UpdateResponse updateCsv() throws Exception;
 
   @POST
   @Path("/javabin")
@@ -65,5 +65,5 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in Javabin format",
       tags = {"update"})
-  SolrJerseyResponse updateJavabin() throws Exception;
+  UpdateResponse updateJavabin() throws Exception;
 }
