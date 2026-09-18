@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated DocsStreamer.KNOWN_TYPES set in favour of the inherited FieldType.ExternalizeStoredValuesAsObjects marker; javabin responses now return stored values of quantized dense vector fields as numbers rather than strings, and stored values of custom BinaryField subclasses as binary rather than as their toExternal string.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18379
+    url: https://issues.apache.org/jira/browse/SOLR-18379

@@ -1506,12 +1506,16 @@ public abstract class FieldType extends FieldProperties {
    * representation that will be returned to clients.
    *
    * <p>The default behavior if this interface is not implemented, is to delegate to {@link
-   * FieldType#toExternal(IndexableField)}, unless the field type is (exactly equal to) one of a
-   * specific list of {@link org.apache.solr.response.DocsStreamer#KNOWN_TYPES}
+   * FieldType#toExternal(IndexableField)}.
+   *
+   * <p>This interface is checked with {@code instanceof}, so subclasses of a field type that
+   * implements it are trusted as well. {@link UUIDField}, for example, inherits it from {@link
+   * StrField} and must keep returning a String from {@link FieldType#toObject(IndexableField)}: a
+   * {@code UUID} object is not a type {@code JavaBinCodec} can write, and clients would not know
+   * how to handle it.
    *
    * @see #toExternal
    * @see #toObject(IndexableField)
-   * @see org.apache.solr.response.DocsStreamer#KNOWN_TYPES
    */
   public static interface ExternalizeStoredValuesAsObjects {}
 
