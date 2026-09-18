@@ -177,7 +177,7 @@ You should see output similar to the following:
 [,console]
 ----
 Posting files to [base] url http://localhost:8983/solr/techproducts/update...
-Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
+Entering auto mode. File endings considered are xml,json,jsonl,ndjson,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 POSTing file books.csv (text/csv) to [base]
 POSTing file books.json (application/json) to [base]/json/docs
 POSTing file gb18030-example.xml (application/xml) to [base]
@@ -189,7 +189,7 @@ POSTing file mem.xml (application/xml) to [base]
 POSTing file money.xml (application/xml) to [base]
 POSTing file monitor.xml (application/xml) to [base]
 POSTing file monitor2.xml (application/xml) to [base]
-POSTing file more_books.jsonl (application/json) to [base]/json/docs
+POSTing file more_books.jsonl (application/x-ndjson) to [base]
 POSTing file mp500.xml (application/xml) to [base]
 POSTing file sample.html (text/html) to [base]/extract
 POSTing file sd500.xml (application/xml) to [base]
