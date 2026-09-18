@@ -1,0 +1,7 @@
+title: Migrate v2 update endpoints to JAX-RS and rename the Javabin endpoint to /update/javabin
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18457
+    url: https://issues.apache.org/jira/browse/SOLR-18457
