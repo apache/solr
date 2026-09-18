@@ -38,8 +38,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
 import org.apache.lucene.search.FieldExistsQuery;
+import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RescoreTopNQuery;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
@@ -499,6 +501,28 @@ public class DenseVectorField extends FloatPointField {
       Query seedQuery,
       EarlyTerminationParams earlyTermination,
       Integer filteredSearchThreshold) {
+    return getKnnVectorQuery(
+        fieldName,
+        vectorToSearch,
+        topK,
+        efSearch,
+        filterQuery,
+        seedQuery,
+        earlyTermination,
+        filteredSearchThreshold,
+        1);
+  }
+
+  public Query getKnnVectorQuery(
+      String fieldName,
+      String vectorToSearch,
+      int topK,
+      int efSearch,
+      Query filterQuery,
+      Query seedQuery,
+      EarlyTerminationParams earlyTermination,
+      Integer filteredSearchThreshold,
+      int rerankOversample) {
 
     if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
       throw new SolrException(
@@ -507,8 +531,19 @@ public class DenseVectorField extends FloatPointField {
               + "Use vectorSimilarity() function queries instead.");
     }
 
+    if (rerankOversample > 1 && vectorEncoding != VectorEncoding.FLOAT32) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "rerankOversample is only supported for FLOAT32 vector encoding; field '"
+              + fieldName
+              + "' uses "
+              + vectorEncoding);
+    }
+
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
+
+    final int candidateTopK = topK * rerankOversample;
 
     // Create KnnSearchStrategy if filteredSearchThreshold is provided
     KnnSearchStrategy searchStrategy = null;
@@ -524,12 +559,16 @@ public class DenseVectorField extends FloatPointField {
                 ? new SolrKnnFloatVectorQuery(
                     fieldName,
                     vectorBuilder.getFloatVector(),
-                    topK,
+                    candidateTopK,
                     efSearch,
                     filterQuery,
                     searchStrategy)
                 : new SolrKnnFloatVectorQuery(
-                    fieldName, vectorBuilder.getFloatVector(), topK, efSearch, filterQuery);
+                    fieldName,
+                    vectorBuilder.getFloatVector(),
+                    candidateTopK,
+                    efSearch,
+                    filterQuery);
         break;
       case BYTE:
         baseQuery =
@@ -537,12 +576,12 @@ public class DenseVectorField extends FloatPointField {
                 ? new SolrKnnByteVectorQuery(
                     fieldName,
                     vectorBuilder.getByteVector(),
-                    topK,
+                    candidateTopK,
                     efSearch,
                     filterQuery,
                     searchStrategy)
                 : new SolrKnnByteVectorQuery(
-                    fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
+                    fieldName, vectorBuilder.getByteVector(), candidateTopK, efSearch, filterQuery);
         break;
       default:
         throw new SolrException(
@@ -558,6 +597,20 @@ public class DenseVectorField extends FloatPointField {
     // Apply early termination if enabled
     if (earlyTermination != null && earlyTermination.isEnabled()) {
       baseQuery = getEarlyTerminationQuery(baseQuery, earlyTermination);
+    }
+
+    // Re-rank the oversampled candidates against the raw full precision vectors and keep topK.
+    if (rerankOversample > 1) {
+      // The similarity function is passed explicitly instead of using
+      // RescoreTopNQuery#createFullPrecisionRescorerQuery, which leaves it null until the search
+      // resolves it lazily. That would make the query un-printable in the meantime, and
+      // debugQuery relies on Query#toString.
+      baseQuery =
+          new RescoreTopNQuery(
+              baseQuery,
+              new FullPrecisionFloatVectorSimilarityValuesSource(
+                  vectorBuilder.getFloatVector(), fieldName, similarityFunction),
+              topK);
     }
 
     return baseQuery;

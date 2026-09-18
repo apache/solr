@@ -43,6 +43,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected static final String SEED_QUERY = "seedQuery";
   protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
 
+  // multiplier applied to topK to decide how many candidates to collect before re-ranking them
+  // down to topK results
+  protected static final String RERANK_OVERSAMPLE = "rerankOversample";
+  protected static final int DEFAULT_RERANK_OVERSAMPLE = 1;
+
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
   // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
   protected static final String EARLY_TERMINATION = "earlyTermination";
@@ -102,6 +107,16 @@ public class KnnQParser extends AbstractVectorQParserBase {
     return new EarlyTerminationParams(enabled, saturationThreshold, patience);
   }
 
+  public int getRerankOversample() {
+    final int rerankOversample = localParams.getInt(RERANK_OVERSAMPLE, DEFAULT_RERANK_OVERSAMPLE);
+    if (rerankOversample < 1) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "rerankOversample (" + rerankOversample + ") must be >= 1");
+    }
+    return rerankOversample;
+  }
+
   protected Query getSeedQuery() throws SolrException, SyntaxError {
     String seed = localParams.get(SEED_QUERY);
     if (seed == null) return null;
@@ -129,6 +144,16 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+    final int rerankOversample = getRerankOversample();
+
+    final int candidateTopK;
+    try {
+      candidateTopK = Math.multiplyExact(topK, rerankOversample);
+    } catch (ArithmeticException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "topK (" + topK + ") * rerankOversample (" + rerankOversample + ") overflows an integer");
+    }
 
     final double efSearchScaleFactor = localParams.getDouble("efSearchScaleFactor", 1.0);
     if (Double.isNaN(efSearchScaleFactor) || efSearchScaleFactor < 1.0) {
@@ -136,7 +161,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
           SolrException.ErrorCode.BAD_REQUEST,
           "efSearchScaleFactor (" + efSearchScaleFactor + ") must be >= 1.0");
     }
-    final int efSearch = (int) Math.round(efSearchScaleFactor * topK);
+    final int efSearch = (int) Math.round(efSearchScaleFactor * candidateTopK);
 
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
@@ -189,7 +214,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
         getFilterQuery(),
         getSeedQuery(),
         getEarlyTerminationParams(),
-        filteredSearchThreshold);
+        filteredSearchThreshold,
+        rerankOversample);
   }
 
   private BooleanQuery getParentsFilter(String[] parentsFilterQueries) throws SyntaxError {
