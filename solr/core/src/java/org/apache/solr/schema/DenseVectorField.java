@@ -41,7 +41,6 @@ import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RescoreTopNQuery;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
@@ -53,6 +52,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.vector.KnnQParser.EarlyTerminationParams;
 import org.apache.solr.search.vector.SolrKnnByteVectorQuery;
 import org.apache.solr.search.vector.SolrKnnFloatVectorQuery;
+import org.apache.solr.search.vector.SolrRescoreTopNQuery;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -617,7 +617,7 @@ public class DenseVectorField extends FloatPointField {
       // resolves it lazily. That would make the query un-printable in the meantime, and
       // debugQuery relies on Query#toString.
       baseQuery =
-          new RescoreTopNQuery(
+          new SolrRescoreTopNQuery(
               baseQuery,
               new FullPrecisionFloatVectorSimilarityValuesSource(
                   vectorBuilder.getFloatVector(), fieldName, similarityFunction),

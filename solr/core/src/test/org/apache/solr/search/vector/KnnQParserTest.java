@@ -391,6 +391,24 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void rerankOversampleWithFilterMatchingNoDocs_shouldReturnNoResults() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // A plain fq is folded into the knn query's pre-filter, and a filter matching nothing makes
+    // the knn query rewrite to MatchNoDocsQuery. The re-ranking wrapper has to cope with an empty
+    // candidate set rather than failing.
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 rerankOversample=3}" + vectorToSearch,
+            "fq",
+            "id:nonexistent",
+            "fl",
+            "id"),
+        "//result[@numFound='0']");
+  }
+
+  @Test
   public void rerankOversampleWithDebugQuery_matchingNoDocs_shouldNotThrow() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 

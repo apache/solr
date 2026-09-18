@@ -22,7 +22,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RescoreTopNQuery;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
 import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
@@ -206,7 +205,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
           if (rerankOversample <= 1) {
             return diversified;
           }
-          return new RescoreTopNQuery(
+          return new SolrRescoreTopNQuery(
               diversified,
               new FullPrecisionFloatVectorSimilarityValuesSource(
                   target, vectorField, denseVectorType.getSimilarityFunction()),

@@ -33,7 +33,7 @@ import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RescoreTopNQuery;
+import org.apache.solr.search.vector.SolrRescoreTopNQuery;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
@@ -1367,13 +1367,13 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       // against the raw full precision vectors and trimmed back down to topK
       float[] target = new float[] {2, 1, 3, 4};
       Query expected =
-          new RescoreTopNQuery(
+          new SolrRescoreTopNQuery(
               new SolrKnnFloatVectorQuery("vector", target, 6, 6, null),
               new FullPrecisionFloatVectorSimilarityValuesSource(
                   target, "vector", VectorSimilarityFunction.COSINE),
               3);
 
-      assertTrue(query instanceof RescoreTopNQuery);
+      assertTrue(query instanceof SolrRescoreTopNQuery);
       assertEquals(expected, query);
     } finally {
       deleteCore();
@@ -1434,14 +1434,14 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       // the re-ranking wraps the seeded query, so that it re-ranks whatever the knn phase returned
       float[] target = new float[] {2, 1, 3, 4};
       Query expected =
-          new RescoreTopNQuery(
+          new SolrRescoreTopNQuery(
               SeededKnnVectorQuery.fromFloatQuery(
                   new SolrKnnFloatVectorQuery("vector", target, 6, 6, null), seedQuery),
               new FullPrecisionFloatVectorSimilarityValuesSource(
                   target, "vector", VectorSimilarityFunction.COSINE),
               3);
 
-      assertTrue(query instanceof RescoreTopNQuery);
+      assertTrue(query instanceof SolrRescoreTopNQuery);
       assertEquals(expected, query);
     } finally {
       deleteCore();
