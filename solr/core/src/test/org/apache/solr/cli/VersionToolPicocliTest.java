@@ -16,21 +16,23 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.solr.common.util.EnvUtils;
+import java.util.Arrays;
 import picocli.CommandLine;
 
-/** Provides default values for CLI arguments. */
-public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvider {
+/**
+ * Runs all {@link VersionToolTest} tests through the picocli invocation path.
+ *
+ * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
+ */
+public class VersionToolPicocliTest extends VersionToolTest {
+
   @Override
-  public String defaultValue(CommandLine.Model.ArgSpec argSpec) throws Exception {
-    return switch (argSpec.paramLabel()) {
-      case "<zkHost>" -> EnvUtils.getProperty("zkHost");
-      case "<solrConnection>" -> EnvUtils.getProperty("solr-connection");
-      case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
-      // Must match CLIUtils.getDefaultSolrUrl(), which reads solr.port.listen
-      case "<port>" -> EnvUtils.getProperty("solr.port.listen", "8983");
-      case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
-      default -> null;
-    };
+  protected String runVersionTool(String[] toolArgs) throws Exception {
+    // toolArgs[0] is the tool name used by commons-cli dispatch; strip it for picocli.
+    String[] args = Arrays.copyOfRange(toolArgs, 1, toolArgs.length);
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    VersionTool tool = new VersionTool(runtime);
+    new CommandLine(tool).setDefaultValueProvider(new CliDefaultValueProvider()).execute(args);
+    return runtime.getOutput();
   }
 }

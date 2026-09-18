@@ -221,6 +221,9 @@ public final class CLIUtils {
   /**
    * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * SolrCloud.
+   *
+   * @deprecated Only used by the commons-cli parser. Picocli tools resolve the URL from their own
+   *     annotated connection options and call {@link #normalizeSolrUrl(String)}.
    */
   @Deprecated
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {

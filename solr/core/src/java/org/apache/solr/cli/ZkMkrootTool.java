@@ -61,12 +61,24 @@ public class ZkMkrootTool extends ToolBase {
       description = "The ZooKeeper znode path to create.")
   private String path;
 
+  /**
+   * Declared as a String rather than a boolean so that supplying a value keeps the commons-cli
+   * meaning: that parser uses hasOption(), so the option counts as set whatever value follows it.
+   * Binding a boolean here would make '--fail-on-exists false' mean false under picocli and true
+   * under commons-cli. Making both parsers honour the value is a behaviour change for existing
+   * users and belongs in its own change.
+   */
   @picocli.CommandLine.Option(
       names = {"--fail-on-exists"},
       arity = "0..1",
       fallbackValue = "true",
+      paramLabel = "<arg>",
       description = "Raise an error if the znode already exists. Defaults to false.")
-  private boolean failOnExists;
+  private String failOnExistsValue;
+
+  private boolean failOnExists() {
+    return failOnExistsValue != null;
+  }
 
   public ZkMkrootTool() {
     this(new DefaultToolRuntime());
@@ -134,7 +146,7 @@ public class ZkMkrootTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      doMkroot(zkClient, zkHost, path, failOnExists);
+      doMkroot(zkClient, zkHost, path, failOnExists());
       return 0;
     } catch (Exception e) {
       log.error("Could not complete mkroot operation for reason: ", e);

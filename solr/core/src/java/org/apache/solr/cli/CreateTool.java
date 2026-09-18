@@ -46,7 +46,6 @@ import org.apache.solr.core.ConfigSetService;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "create",
-    mixinStandardHelpOptions = true,
     description =
         "Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).",
     exitCodeListHeading = "%nExit Codes:%n",

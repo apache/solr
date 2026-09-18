@@ -21,7 +21,12 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 
 public interface Tool {
-  /** Defines the interface to a Solr tool that can be run from this command-line app. */
+  /**
+   * Defines the interface to a Solr tool that can be run from this command-line app.
+   *
+   * @deprecated Only used by the commons-cli parser. Tools built on picocli take their name from
+   *     the {@code @Command} annotation instead.
+   */
   @Deprecated
   String getName();
 
@@ -30,6 +35,8 @@ public interface Tool {
    * Override for custom string
    *
    * @return The custom usage string or 'null' to auto generate (default)
+   * @deprecated Only used by the commons-cli parser. Picocli generates the synopsis from the
+   *     command's annotations.
    */
   @Deprecated
   default String getUsage() {
@@ -38,6 +45,8 @@ public interface Tool {
 
   /**
    * Optional header to display before the options in help output. Defaults to 'List of options:'
+   *
+   * @deprecated Only used by the commons-cli parser. Picocli uses {@code @Command(header = ...)}.
    */
   @Deprecated
   default String getHeader() {
@@ -47,6 +56,8 @@ public interface Tool {
   /**
    * Optional footer to display after the options in help output. Defaults to a link to reference
    * guide
+   *
+   * @deprecated Only used by the commons-cli parser. Picocli uses {@code @Command(footer = ...)}.
    */
   @Deprecated
   default String getFooter() {
@@ -60,10 +71,17 @@ public interface Tool {
    * Retrieve the {@link Options} supported by this tool.
    *
    * @return The {@link Options} this tool supports.
+   * @deprecated Only used by the commons-cli parser. Picocli tools declare their options as
+   *     annotated fields instead.
    */
   @Deprecated
   Options getOptions();
 
+  /**
+   * Runs the tool against an already-parsed commons-cli command line.
+   *
+   * @deprecated Implement {@link ToolBase#callTool()} instead, which picocli invokes.
+   */
   @Deprecated
   int runTool(CommandLine cli) throws Exception;
 }

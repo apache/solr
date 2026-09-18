@@ -22,18 +22,18 @@
 = bin/solr zk upconfig
 :page-toclevels: 2
 
-// tag::picocli-generated-man-section-name[]
-== Name
-
-bin/solr zk upconfig - Upload a configset from the local filesystem to ZooKeeper.
-
-// end::picocli-generated-man-section-name[]
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
 
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
 ....
-bin/solr zk upconfig [-v] -d=DIR -n=<confName> [-s=<solrConnection>]
+bin/solr zk upconfig [-hv] -d=DIR -n=<confName> [-s=<solrConnection>]
                      [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
 ....
 
@@ -67,6 +67,9 @@ If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked f
 * `-d /path/to/configset/source`
 +
 
+
+*-h*, *--help*::
+  Print this help message and exit.
 
 *-n*, *--conf-name*=_<confName>_::
   *(required)* Configset name in ZooKeeper.
@@ -104,18 +107,8 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 
 // end::picocli-generated-man-section-options[]
 
-// tag::picocli-generated-man-section-arguments[]
-// end::picocli-generated-man-section-arguments[]
-
-// tag::picocli-generated-man-section-commands[]
-// end::picocli-generated-man-section-commands[]
-
-// tag::picocli-generated-man-section-exit-status[]
-// end::picocli-generated-man-section-exit-status[]
-
 // tag::picocli-generated-man-section-footer[]
-==  Examples:
-
+== Examples
 [%hardbreaks]
   # Upload a configset to ZooKeeper
   bin/solr zk upconfig -n myconfig -d /local/conf -z localhost:9983
