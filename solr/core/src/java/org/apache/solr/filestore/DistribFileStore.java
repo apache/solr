@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -47,6 +46,7 @@ import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -71,7 +71,6 @@ public class DistribFileStore implements FileStore {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
-  private Map<String, FileInfo> tmpFiles = new ConcurrentHashMap<>();
 
   private final Path solrHome;
 
@@ -110,13 +109,6 @@ public class DistribFileStore implements FileStore {
 
     FileInfo(String path) {
       this.path = path;
-    }
-
-    ByteBuffer getFileData(boolean validate) throws IOException {
-      if (fileData == null) {
-        fileData = ByteBuffer.wrap(Files.readAllBytes(getRealPath(path)));
-      }
-      return fileData;
     }
 
     public String getMetaPath() {
@@ -184,7 +176,6 @@ public class DistribFileStore implements FileStore {
       ByteBuffer metadata;
       Map<?, ?> m;
 
-      InputStream is = null;
       var solrClient = coreContainer.getDefaultHttpSolrClient();
 
       try {
@@ -198,11 +189,9 @@ public class DistribFileStore implements FileStore {
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
-      } finally {
-        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
 
-      ByteBuffer filedata = null;
+      ByteBuffer filedata;
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
         final var fileResponse = fileRequest.processWithBaseUrl(solrClient, baseUrl, null);
@@ -226,8 +215,6 @@ public class DistribFileStore implements FileStore {
         return true;
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
-      } finally {
-        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
     }
 
@@ -350,7 +337,6 @@ public class DistribFileStore implements FileStore {
 
   private void distribute(FileInfo info) {
     try {
-      String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
 
       coreContainer
           .getZkController()
@@ -366,65 +352,49 @@ public class DistribFileStore implements FileStore {
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
-    tmpFiles.put(info.path, info);
 
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
-    String getFrom = "";
-    try {
-      for (String node : nodes) {
-        String baseUrl =
-            coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
+    for (String node : nodes) {
+      String baseUrl =
+          coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
 
-        String nodeToFetchFrom;
-        if (i < FETCHFROM_SRC) {
-          // this is to protect very large clusters from overwhelming a single node
-          // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
-          // it's there in  the memory now. So , it must be served fast
-          nodeToFetchFrom = myNodeName;
-        } else {
-          if (i == FETCHFROM_SRC) {
-            // This is just an optimization
-            // at this point a bunch of nodes are already downloading from me
-            // I'll wait for them to finish before asking other nodes to download from each other
-            try {
-              Thread.sleep(2 * 1000);
-            } catch (Exception e) {
-            }
+      String nodeToFetchFrom;
+      if (i < FETCHFROM_SRC) {
+        // this is to protect very large clusters from overwhelming a single node
+        // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
+        // it's there in the memory now. So, it must be served fast
+        nodeToFetchFrom = myNodeName;
+      } else {
+        if (i == FETCHFROM_SRC) {
+          // This is just an optimization
+          // at this point a bunch of nodes are already downloading from me.
+          // I'll wait for them to finish before asking other nodes to download from each other
+          try {
+            Thread.sleep(2 * 1000);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
           }
-          // trying to avoid the thundering herd problem when there are a very large number of
-          // nodes others should try to fetch it from any node where it is available. By now,
-          // almost FETCHFROM_SRC other nodes may have it
-          nodeToFetchFrom = "*";
         }
-        try {
-          final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
-          pullFileRequest.setGetFrom(nodeToFetchFrom);
-          final var client = coreContainer.getDefaultHttpSolrClient();
-          // fire and forget
-          pullFileRequest.processWithBaseUrl(client, baseUrl, null);
-        } catch (Exception e) {
-          log.info("Node: {} failed to respond for file fetch notification", node, e);
-          // ignore the exception
-          // some nodes may be down or not responding
-        }
-        i++;
+        // trying to avoid the thundering herd problem when there are a very large number of
+        // nodes others should try to fetch it from any node where it is available. By now,
+        // almost FETCHFROM_SRC other nodes may have it
+        nodeToFetchFrom = "*";
       }
-    } finally {
-      coreContainer
-          .getUpdateShardHandler()
-          .getUpdateExecutor()
-          .submit(
-              () -> {
-                try {
-                  Thread.sleep(10 * 1000);
-                } finally {
-                  tmpFiles.remove(info.path);
-                }
-                return null;
-              });
+      try {
+        final var pullFileRequest = new FileStoreApi.FetchFile(info.path);
+        pullFileRequest.setGetFrom(nodeToFetchFrom);
+        final var client = coreContainer.getDefaultHttpSolrClient();
+        // fire and forget
+        pullFileRequest.processWithBaseUrl(client, baseUrl, null);
+      } catch (Exception e) {
+        log.info("Node: {} failed to respond for file fetch notification", node, e);
+        // ignore the exception
+        // some nodes may be down or not responding
+      }
+      i++;
     }
   }
 
@@ -486,7 +456,6 @@ public class DistribFileStore implements FileStore {
     if (!fi.exists(true, false)) {
       throw new SolrException(BAD_REQUEST, "No such file : " + path);
     }
-    fi.getFileData(true);
     distribute(fi);
   }
 
@@ -527,7 +496,7 @@ public class DistribFileStore implements FileStore {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
       try {
-        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        var solrClient = (HttpJettySolrClient) coreContainer.getDefaultHttpSolrClient();
         // invoke delete command on all nodes asynchronously
         solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
       } catch (SolrServerException | IOException e) {

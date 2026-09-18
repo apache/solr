@@ -89,6 +89,8 @@ public class StatusTool extends ToolBase {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(PORT_OPTION);
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION);
+    optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
     return super.getOptions()
         .addOption(MAX_WAIT_SECS_OPTION)
         .addOption(SHORT_OPTION)
@@ -98,7 +100,7 @@ public class StatusTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
+    String solrUrl = CLIUtils.hasConnectionOption(cli) ? CLIUtils.normalizeSolrUrl(cli) : null;
     Integer port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
     boolean shortFormat = cli.hasOption(SHORT_OPTION);
     int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);

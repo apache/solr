@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove deprecated http.status_code and http.method telemetry tags from TraceUtils; use http.response.status_code and http.request.method instead.
+type: removed
+authors:
+  - name: Utsav Parmar
+links:
+  - name: SOLR-18110
+    url: https://issues.apache.org/jira/browse/SOLR-18110

@@ -412,11 +412,52 @@ public class ApiBag {
     }
   }
 
+  public static List<CommandOperation> readCommands(
+      Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
+      throws IOException {
+    return readCommands(streams, resp, Set.of());
+  }
+
+  /**
+   * Read commands from request streams
+   *
+   * @param streams the streams
+   * @param resp solr query response
+   * @param singletonCommands , commands that cannot be repeated
+   * @return parsed list of commands
+   * @throws IOException if there is an error while parsing the stream
+   */
+  @SuppressWarnings({"unchecked"})
+  public static List<CommandOperation> readCommands(
+      Iterable<ContentStream> streams,
+      @SuppressWarnings({"rawtypes"}) NamedList resp,
+      Set<String> singletonCommands)
+      throws IOException {
+    if (streams == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
+    }
+    ArrayList<CommandOperation> ops = new ArrayList<>();
+    for (ContentStream stream : streams) {
+
+      if ("application/javabin".equals(stream.getContentType())) {
+        ops.addAll(CommandOperation.parse(stream.getStream(), singletonCommands));
+      } else {
+        ops.addAll(CommandOperation.parse(stream.getReader(), singletonCommands));
+      }
+    }
+    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
+    if (!errList.isEmpty()) {
+      resp.add(CommandOperation.ERR_MSGS, errList);
+      return null;
+    }
+    return ops;
+  }
+
   public static List<CommandOperation> getCommandOperations(
       ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands = CommandOperation.readCommands(Set.of(stream), new NamedList<>());
+      parsedCommands = readCommands(Set.of(stream), new NamedList<>());
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands", e);
     }

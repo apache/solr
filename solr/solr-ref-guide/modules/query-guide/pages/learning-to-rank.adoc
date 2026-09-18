@@ -518,6 +518,58 @@ The output will include feature values as a comma-separated list, resembling the
   }}
 ----
 
+==== Rerank Cutoff Score
+The rerank cutoff score is the first-pass ranking value of the lowest ranked document eligible for reranking. It tells you the score or sort value that a document would have needed to beat to be included in the reranking stage. To obtain the rerank cutoff score, add the `echoReRankCutoff` parameter to the ltr query.
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100 echoReRankCutoff=true}&fl=id,score
+----
+
+When set to `true`, Solr adds a `reRankCutoff` to the responseHeader. For the default first-pass relevance ranking, the value is the relevance score of the last document eligible for reranking. When an explicit sort is used, `reRankCutoff` reflects the sort value of that last eligible document.
+[source,json]
+----
+"responseHeader": {
+  "status": 0,
+  "QTime": 1,
+  "reRankCutoff": 12.345
+}
+----
+
+When multiple sorts are used (e.g. `sort=price desc,discount asc`), the response header contains the cutoff value for each sort in order:
+
+[source,json]
+----
+"responseHeader": {
+  "status": 0,
+  "QTime": 1,
+  "reRankCutoff": [
+    11.99,
+    2.20
+  ]
+}
+----
+
+For distributed queries, when `echoReRankCutoff` is `true`, Solr returns shard-local cutoff values in `reRankCutoffByShard`:
+
+[source,json]
+----
+"responseHeader": {
+  "status": 0,
+  "QTime": 3,
+  "reRankCutoffByShard": {
+    "shard1": [
+      3.0,
+      2.0
+    ],
+    "shard2": [
+      5.0,
+      2.3
+    ]
+  }
+}
+----
+
 === Running a Rerank Query and Query Limits
 
 Apache Solr allows to define Query Limits to interrupt particularly expensive queries (xref:query-guide:common-query-parameters.adoc#timeallowed-parameter[Time Allowed], xref:query-guide:common-query-parameters.adoc#cpuallowed-parameter[Cpu Allowed]).

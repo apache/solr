@@ -74,6 +74,9 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor
   protected abstract Object mutateValue(final Object srcVal);
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // *_SINGLETON constants are unique sentinels; identity check is
+  // intentional
   protected final SolrInputField mutate(final SolrInputField srcField) {
     Collection<Object> vals = srcField.getValues();
     if (vals == null || vals.isEmpty()) return srcField;

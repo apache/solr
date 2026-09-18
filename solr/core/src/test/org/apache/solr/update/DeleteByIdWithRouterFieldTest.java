@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -77,22 +76,24 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .isSuccess());
 
-    solrClient = cluster.newSolrClient(COLL);
+    solrClient = cluster.getSolrClient(COLL);
 
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
-    for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
-      clients.add(
-          new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .build());
-    }
+    clusterState
+        .getCollection(COLL)
+        .replicaStream()
+        .forEach(
+            replica ->
+                clients.add(
+                    new CollectionScopedSolrClient(
+                        cluster.getReplicaJetty(replica).getSolrClient(), replica.getCoreName())));
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    IOUtils.close(clients);
+    // lifecycle internally managed; we simply GC here
     clients.clear();
-    IOUtils.close(solrClient);
+    solrClient = null;
 
     RVAL_PRE = null;
   }
@@ -116,21 +117,19 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
-        final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
-        for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
-            final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
-            assertEquals(
-                "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
-                Set.of(),
-                CloudInspectUtil.showDiff(
-                    leaderResults,
-                    replicaResults,
-                    shardName + " leader: " + leader.getCoreUrl(),
-                    shardName + ": " + replica.getCoreUrl()));
-          }
-        }
+      SolrClient leaderClient = cluster.getSolrClient(leader);
+      final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
+      for (Replica replica : slice) {
+        SolrClient replicaClient = cluster.getSolrClient(replica);
+        final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
+        assertEquals(
+            "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
+            Set.of(),
+            CloudInspectUtil.showDiff(
+                leaderResults,
+                replicaResults,
+                shardName + " leader: " + leader.getCoreUrl(),
+                shardName + ": " + replica.getCoreUrl()));
       }
     }
   }

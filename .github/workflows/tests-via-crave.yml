@@ -26,23 +26,23 @@ jobs:
       CRAVE_WORKSPACE: /crave-devspaces/pipeline/prs/${{ github.event.pull_request.number }}
 
     steps:
-    - name: Destroy previous clone
-      run: crave clone destroy -y ${CRAVE_WORKSPACE} || echo "Clone did not exist"
-      continue-on-error: true
-    - name: Crave clone sources
-      run: crave clone create --projectID 39 ${CRAVE_WORKSPACE}
-    - name: Checkout the correct branch
-      run: |
-        git -C ${CRAVE_WORKSPACE} fetch origin ${GITHUB_REF}:${GITHUB_REF}
-        git -C ${CRAVE_WORKSPACE} checkout ${GITHUB_REF}
-    - name: Initialize, build, test
-      run: |
-        cd ${CRAVE_WORKSPACE}
-        crave run --clean --message "PR: ${GITHUB_REF_NAME}" -- ./gradlew --console=plain test
-    - name: Cleanup
-      if: ${{ always() }}
-      run: |
-        pushd ${CRAVE_WORKSPACE}
-        crave stop --all
-        popd
-        crave clone destroy -y ${CRAVE_WORKSPACE}
+      - name: Destroy previous clone
+        run: crave clone destroy -y ${CRAVE_WORKSPACE} || echo "Clone did not exist"
+        continue-on-error: true
+      - name: Crave clone sources
+        run: crave clone create --projectID 39 ${CRAVE_WORKSPACE}
+      - name: Checkout the correct branch
+        run: |
+          git -C ${CRAVE_WORKSPACE} fetch origin ${GITHUB_REF}:${GITHUB_REF}
+          git -C ${CRAVE_WORKSPACE} checkout ${GITHUB_REF}
+      - name: Initialize, build, test
+        run: |
+          cd ${CRAVE_WORKSPACE}
+          crave run --clean --message "PR: ${GITHUB_REF_NAME}" -- env CI=true ./gradlew --console=plain test
+      - name: Cleanup
+        if: ${{ always() }}
+        run: |
+          pushd ${CRAVE_WORKSPACE}
+          crave stop --all
+          popd
+          crave clone destroy -y ${CRAVE_WORKSPACE}

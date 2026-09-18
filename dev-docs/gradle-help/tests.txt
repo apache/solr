@@ -68,7 +68,11 @@ Test groups
 -----------
 
 Tests can be filtered by an annotation they're marked with.
-Some test group annotations include: @AwaitsFix, @Nightly, @Monster
+Some test group annotations include: @AwaitsFix, @Nightly, @Monster, @SeleniumTest
+
+Disabled-by-default groups are enabled with their system property, for example
+-Ptests.nightly=true, or -Ptests.selenium=true for the browser-based Admin UI
+tests in solr/webapp (these need a local Chrome, see dev-docs/admin-ui-tests.md).
 
 This uses filtering infrastructure on the *runner* (randomizedtesting), 
 not gradle's built-in mechanisms (but it can be combined with "--tests").
@@ -155,3 +159,27 @@ Using these additional options will make the results more sparse, so it may be u
 to increase the top-N count:
 
 gradlew -p solr/core test -Ptests.profile=true -Ptests.profile.count=100
+
+
+Test coverage
+-------------
+
+Coverage is opt-in. Running the "coverage" task (or passing -Ptests.coverage=true)
+will run the tests with jacoco instrumentation to record code coverage.
+
+Example (single module):
+
+gradlew -p solr/core coverage
+open solr/core/build/reports/jacoco/test/html/index.html
+
+If you want to use test filtering to just check a particular test, specify
+the "test" task explicitly before "coverage":
+
+gradlew -p solr/core test --tests TestDemo coverage
+open solr/core/build/reports/jacoco/test/html/index.html
+
+Running the "coverage" task on the root project runs all tests and produces
+an aggregated report across all modules:
+
+gradlew coverage
+open build/reports/jacoco/testCodeCoverageReport/html/index.html

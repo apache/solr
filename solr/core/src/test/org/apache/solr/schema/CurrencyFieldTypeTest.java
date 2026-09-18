@@ -28,6 +28,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RTimer;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -240,14 +241,15 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testBogusCurrency() {
-    ignoreException("HOSS");
-
-    // bogus currency
-    assertQEx(
-        "Expected exception for invalid currency",
-        req("fl", "*,score", "q", fieldName + ":[3,HOSS TO *]"),
-        400);
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("HOSS")) {
+      // bogus currency
+      assertQEx(
+          "Expected exception for invalid currency",
+          req("fl", "*,score", "q", fieldName + ":[3,HOSS TO *]"),
+          400);
+    }
   }
 
   @Test

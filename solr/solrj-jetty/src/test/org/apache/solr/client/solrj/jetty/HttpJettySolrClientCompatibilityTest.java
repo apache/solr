@@ -34,22 +34,24 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
-import org.junit.ClassRule;
+import org.junit.Rule;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
 public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+  @Rule public SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
     try (var client = new HttpJettySolrClient.Builder().build()) {
-      assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
+      assertTrue(
+          client.getHttpClient().getHttpClientTransport() instanceof HttpClientTransportOverHTTP);
     }
     System.clearProperty("solr.http1");
     try (var client = new HttpJettySolrClient.Builder().build()) {
-      assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
+      assertTrue(
+          client.getHttpClient().getHttpClientTransport() instanceof HttpClientTransportOverHTTP2);
     }
   }
 
@@ -62,6 +64,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .build();
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty("solr.http1", "true");
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
@@ -69,13 +72,12 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
             .useHttp1_1(true)
             .build()) {
-      assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
+      assertTrue(
+          client.getHttpClient().getHttpClientTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (RemoteSolrException ignored) {
       }
-    } finally {
-      solrTestRule.reset();
     }
   }
 
@@ -95,13 +97,12 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
             .useHttp1_1(true)
             .build()) {
-      assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
+      assertTrue(
+          client.getHttpClient().getHttpClientTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (RemoteSolrException ignored) {
       }
-    } finally {
-      solrTestRule.reset();
     }
   }
 
@@ -118,13 +119,15 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty("solr.http1", "true");
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     System.clearProperty("solr.http1");
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo").build()) {
-      assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
+      assertTrue(
+          client.getHttpClient().getHttpClientTransport() instanceof HttpClientTransportOverHTTP2);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
         fail("Jetty client with HTTP2 transport should not be able to connect to HTTP1 only nodes");
@@ -133,8 +136,6 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
       } catch (SolrServerException e) {
         // expected
       }
-    } finally {
-      solrTestRule.reset();
     }
   }
 }

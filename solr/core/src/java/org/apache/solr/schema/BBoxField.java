@@ -75,6 +75,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // FieldType identity, not equality, is what matters here
   public void inform(IndexSchema schema) {
     this.schema = schema;
     FieldType numberType = schema.getFieldTypeByName(numberTypeName);
@@ -170,7 +171,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     }
 
     switch (scoreParam) {
-        // TODO move these to superclass after LUCENE-5804 ?
+      // TODO move these to superclass after LUCENE-5804 ?
       case OVERLAP_RATIO:
         double queryTargetProportion = 0.25; // Suggested default; weights towards target area
 

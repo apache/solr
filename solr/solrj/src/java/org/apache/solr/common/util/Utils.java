@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -63,7 +62,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -82,12 +80,8 @@ import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Utils {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Random RANDOM;
 
@@ -178,7 +172,7 @@ public class Utils {
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
-      v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+      v = convertToMap((MapWriter) v, new LinkedHashMap<>());
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
       List<Object> l = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {
@@ -297,16 +291,10 @@ public class Utils {
     if (utf8 == null || utf8.length == 0 || length == 0) {
       return Map.of();
     }
-    // convert directly from bytes to chars
-    // and parse directly from that instead of going through
-    // intermediate strings or readers
-    CharArr chars = new CharArr();
-    ByteUtils.UTF8toUTF16(utf8, offset, length, chars);
-    JSONParser parser = new JSONParser(chars.getArray(), chars.getStart(), chars.length());
-    parser.setFlags(
-        parser.getFlags()
-            | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
-            | JSONParser.OPTIONAL_OUTER_BRACES);
+    // convert from bytes to chars on-the-fly and parse directly
+    // from that instead of going through intermediate buffers
+    Reader reader = new InputStreamReader(new ByteArrayInputStream(utf8, offset, length), UTF_8);
+    JSONParser parser = getJSONParser(reader);
     try {
       return fun.apply(parser).getValStrict();
     } catch (IOException e) {
@@ -368,20 +356,6 @@ public class Utils {
             @Override
             public Object newObject() {
               return new LinkedHashMapWriter<>();
-            }
-          };
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      };
-
-  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER =
-      jsonParser -> {
-        try {
-          return new ObjectBuilder(jsonParser) {
-            @Override
-            public Object newObject() {
-              return new HashMap<>();
             }
           };
         } catch (IOException e) {
@@ -723,67 +697,8 @@ public class Utils {
     return isModified;
   }
 
-  /**
-   * Given a URL string with or without a scheme, return a new URL with the correct scheme applied.
-   *
-   * @param url A URL to change the scheme (http|https)
-   * @return A new URL with the correct scheme
-   */
-  public static String applyUrlScheme(final String url, final String urlScheme) {
-    Objects.requireNonNull(url, "URL must not be null!");
-    // heal an incorrect scheme if needed, otherwise return null indicating no change
-    final int at = url.indexOf("://");
-    return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
-  }
-
-  /**
-   * Construct a V1 base url for the Solr node, given its name (e.g., 'app-node-1:8983_solr') and a
-   * URL scheme.
-   *
-   * @param nodeName name of the Solr node
-   * @param urlScheme scheme for the base url ('http' or 'https')
-   * @return url that looks like {@code https://app-node-1:8983/solr}
-   * @throws IllegalArgumentException if the provided node name is malformed
-   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String)}
-   */
-  @Deprecated
-  public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
-    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, false);
-  }
-
-  /**
-   * Construct a V1 or a V2 base url for the Solr node, given its name (e.g.,
-   * 'app-node-1:8983_solr') and a URL scheme.
-   *
-   * @param nodeName name of the Solr node
-   * @param urlScheme scheme for the base url ('http' or 'https')
-   * @param isV2 whether a V2 url should be constructed
-   * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
-   *     https://app-node-1:8983/solr} (V1)
-   * @throws IllegalArgumentException if the provided node name is malformed
-   * @deprecated Use {@link URLUtil#getBaseUrlForNodeName(String, String, boolean)}
-   */
-  @Deprecated
-  public static String getBaseUrlForNodeName(
-      final String nodeName, final String urlScheme, boolean isV2) {
-    return URLUtil.getBaseUrlForNodeName(nodeName, urlScheme, isV2);
-  }
-
   public static long time(TimeSource timeSource, TimeUnit unit) {
     return unit.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS);
-  }
-
-  public static long timeElapsed(TimeSource timeSource, long start, TimeUnit unit) {
-    return unit.convert(timeSource.getTimeNs() - NANOSECONDS.convert(start, unit), NANOSECONDS);
-  }
-
-  public static <T> T handleExp(Logger logger, T def, Callable<T> c) {
-    try {
-      return c.call();
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-    }
-    return def;
   }
 
   public interface InputStreamConsumer<T> {
@@ -914,6 +829,8 @@ public class Utils {
       Class<? extends Annotation> catchAllAnnotation,
       Function<Field, String> fieldNamer)
       throws IllegalAccessException {
+    // ClassLoader identity (not equals) determines whether it is safe to cache reflective metadata.
+    @SuppressWarnings("ReferenceEquality")
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
@@ -1035,7 +952,7 @@ public class Utils {
    * <p>The provided object is not required to be a {@link MapWriter}.
    */
   public static Map<String, Object> reflectToMap(Object toReflect) {
-    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
+    return convertToMap((MapWriter) Utils.getReflectWriter(toReflect), new HashMap<>());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1049,12 +966,13 @@ public class Utils {
             }
 
             private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
-              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof MapWriter) v = convertToMap((MapWriter) v, new LinkedHashMap<>());
               if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
               if (v instanceof Iterable) {
                 List lst = new ArrayList();
                 for (Object vv : (Iterable) v) {
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof MapWriter)
+                    vv = convertToMap((MapWriter) vv, new LinkedHashMap<>());
                   if (vv instanceof IteratorWriter)
                     vv = ((IteratorWriter) vv).toList(new ArrayList<>());
                   lst.add(vv);
@@ -1065,7 +983,8 @@ public class Utils {
                 Map map = new LinkedHashMap();
                 for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
                   Object vv = entry.getValue();
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof MapWriter)
+                    vv = convertToMap((MapWriter) vv, new LinkedHashMap<>());
                   if (vv instanceof IteratorWriter)
                     vv = ((IteratorWriter) vv).toList(new ArrayList<>());
                   map.put(entry.getKey(), vv);

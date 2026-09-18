@@ -102,6 +102,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     return stateProvider;
   }
 
+  @Override
   public HttpSolrClient getHttpClient() {
     return myClient;
   }

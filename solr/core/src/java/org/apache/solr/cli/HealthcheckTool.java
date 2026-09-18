@@ -31,6 +31,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -39,7 +40,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -73,6 +73,9 @@ public class HealthcheckTool extends ToolBase {
     no_leader
   }
 
+  /** Parameters for the healthcheck command, independent of the command line parser. */
+  record HealthcheckParams(String collection, String credentials) {}
+
   /** Requests health information about a specific collection in SolrCloud. */
   public HealthcheckTool(ToolRuntime runtime) {
     super(runtime);
@@ -80,14 +83,20 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String zkHost = CLIUtils.getZkHost(cli);
-    if (zkHost == null) {
+    var solrConnection = CLIUtils.getSolrConnection(cli);
+    if (solrConnection == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       runtime.exit(1);
     }
-    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-      runCloudTool(cloudSolrClient, cli);
+    HealthcheckParams params =
+        new HealthcheckParams(
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    var builder =
+        new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(params.credentials());
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
+      echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
+      runCloudTool(cloudSolrClient, params);
     }
   }
 
@@ -96,14 +105,13 @@ public class HealthcheckTool extends ToolBase {
     return "healthcheck";
   }
 
-  protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+  protected void runCloudTool(CloudSolrClient cloudSolrClient, HealthcheckParams params)
+      throws Exception {
+    String collection = params.collection();
 
     log.debug("Running healthcheck for {}", collection);
 
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-
-    ClusterState clusterState = zkStateReader.getClusterState();
+    ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection == null || docCollection.getSlices() == null) {
@@ -129,14 +137,6 @@ public class HealthcheckTool extends ToolBase {
 
     for (Slice slice : slices) {
       String shardName = slice.getName();
-      // since we're reporting health of this shard, there's no guarantee of a leader
-      String leaderUrl = null;
-      try {
-        leaderUrl = zkStateReader.getLeaderUrl(collection, shardName, 1000);
-      } catch (Exception exc) {
-        log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
-      }
-
       List<ReplicaHealth> replicaList = new ArrayList<>();
       for (Replica r : slice.getReplicas()) {
 
@@ -146,7 +146,7 @@ public class HealthcheckTool extends ToolBase {
         long numDocs = -1L;
 
         String coreUrl = r.getCoreUrl();
-        boolean isLeader = coreUrl.equals(leaderUrl);
+        boolean isLeader = r.isLeader();
 
         // if replica's node is not live, its status is DOWN
         String nodeName = r.getNodeName();
@@ -158,13 +158,10 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-              CLIUtils.getSolrClient(
-                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+              CLIUtils.getSolrClient(coreUrl, params.credentials())) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
-            try (var solrClient =
-                CLIUtils.getSolrClient(
-                    r.getBaseUrl(), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+            try (var solrClient = CLIUtils.getSolrClient(r.getBaseUrl(), params.credentials())) {
               SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
               uptime = SolrCLI.uptime(sysResponse.getJVMUpTimeMillis());
               memory =

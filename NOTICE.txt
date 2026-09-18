@@ -19,8 +19,13 @@ Copyright (c) 2013 Aggregate Knowledge, Inc., https://github.com/aggregateknowle
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2010 John Resig, http://jquery.com/
 
-This product includes the D3.js JavaScript library created by Michael Bostock.
-Copyright (c) 2012, Michael Bostock, https://github.com/mbostock/d3
+This product includes the jQuery UI JavaScript library.
+Copyright OpenJS Foundation and other contributors, https://jqueryui.com
+License: MIT https://jquery.org/license
+
+This product includes the D3.js JavaScript library created by Mike Bostock.
+Copyright 2010-2023 Mike Bostock, https://d3js.org
+License: ISC https://github.com/d3/d3/blob/main/LICENSE
 
 This product includes the highlight.js Javascript library created by Ivan Sagalaev
 Copyright (c) 2006, Ivan Sagalaev, https://github.com/isagalaev/highlight.js

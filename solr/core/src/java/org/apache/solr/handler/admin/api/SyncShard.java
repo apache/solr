@@ -81,7 +81,7 @@ public class SyncShard extends AdminAPIBase implements SyncShardApi {
 
     try (SolrClient client =
         new HttpJettySolrClient.Builder(leader.getBaseUrl())
-            .withHttpClient(coreContainer.getDefaultHttpSolrClient())
+            .withHttpClient((HttpJettySolrClient) coreContainer.getDefaultHttpSolrClient())
             .withIdleTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       CoreAdminRequest.RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();

@@ -39,6 +39,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -376,7 +377,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("techproducts".equals(exampleName)) {
         try (SolrClient solrClient =
-            getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName)) {
+            new HttpJettySolrClient.Builder("http://localhost:" + bindPort + "/solr")
+                .withDefaultCollection(exampleName)
+                .build()) {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
           long numFound = qr.getResults().getNumFound();
@@ -475,7 +478,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // index some docs - to verify all is good for both shards
     try (CloudSolrClient cloudClient =
-        new RandomizingCloudHttp2SolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {

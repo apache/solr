@@ -33,8 +33,10 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -54,6 +56,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
@@ -67,6 +70,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Nightly
 @LogLevel(
     "org.apache.solr.handler.ReplicationHandler=DEBUG;org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplica extends SolrCloudTestCase {
@@ -130,9 +134,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     try {
       switch (random().nextInt(3)) {
         case 0 ->
-        // Sometimes use SolrJ
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-            .process(cluster.getSolrClient());
+            // Sometimes use SolrJ
+            CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
+                .process(cluster.getSolrClient());
         case 1 -> {
           // Sometimes use v1 API
           var jetty = cluster.getRandomJetty(random());
@@ -182,7 +186,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.replicaStream().count());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -294,9 +298,10 @@ public class TestPullReplica extends SolrCloudTestCase {
       log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-        assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-      }
+      Replica sliceLeader = s.getLeader();
+      SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+      assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
       log.info(
           "Found {} docs in leader, verifying updates make it to {} pull replicas",
           numDocs,
@@ -529,33 +534,32 @@ public class TestPullReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
-        client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
-      }
+      SolrClient client = cluster.getSolrClient(rAdd);
+      client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
+
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (SolrClient client = getHttpSolrClient(rGet.getBaseUrl(), rGet.getCoreName())) {
-          SolrDocument doc = client.getById(String.valueOf(id));
-          assertEquals("bar", doc.getFieldValue("foo_s"));
-        }
+        SolrClient getClient = cluster.getSolrClient(rGet);
+        SolrDocument doc = getClient.getById(String.valueOf(id));
+        assertEquals("bar", doc.getFieldValue("foo_s"));
       }
       ids.add(String.valueOf(id));
       id++;
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client = getHttpSolrClient(rAdd.getBaseUrl(), rAdd.getCoreName())) {
-        SolrDocumentList allIdsResult = client.getById(ids);
-        if (previousAllIdsResult != null) {
-          assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
-        } else {
-          // set the first response here
-          previousAllIdsResult = allIdsResult;
-          assertEquals("Unexpected number of documents", ids.size(), allIdsResult.getNumFound());
-        }
+      SolrClient client = cluster.getSolrClient(rAdd);
+      SolrDocumentList allIdsResult = client.getById(ids);
+      if (previousAllIdsResult != null) {
+        assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
+      } else {
+        // set the first response here
+        previousAllIdsResult = allIdsResult;
+        assertEquals("Unexpected number of documents", ids.size(), allIdsResult.getNumFound());
       }
+
       id++;
     }
   }
@@ -563,7 +567,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   /*
    * validate that replication still happens on a new leader
    */
-  @SuppressWarnings({"try"})
+  @SuppressWarnings("try")
   private void doTestNoLeader(boolean removeReplica) throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
         .process(cluster.getSolrClient());
@@ -577,88 +581,95 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    Replica sliceLeader = s.getLeader();
+    SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
     waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
 
     // Delete leader replica from shard1
-    ignoreException("No registered leader was found"); // These are expected
-    JettySolrRunner leaderJetty = null;
-    if (removeReplica) {
-      CollectionAdminRequest.deleteReplica(collectionName, "shard1", s.getLeader().getName())
-          .process(cluster.getSolrClient());
-    } else {
-      leaderJetty = cluster.getReplicaJetty(s.getLeader());
-      leaderJetty.stop();
-      waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
-      // Wait for cluster state to be updated
-      waitForState(
-          "Replica state not updated in cluster state",
-          collectionName,
-          clusterStateReflectsActiveAndDownReplicas());
-    }
-    docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
-
-    // Check that there is no leader for the shard
-    Replica leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(
-        leader == null
-            || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
-
-    // Pull replica on the other hand should be active
-    Replica pullReplica =
-        docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
-    assertTrue(pullReplica.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
-
-    long highestTerm = 0L;
-    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
-      highestTerm = zkShardTerms.getHighestTerm();
-    }
-    // add document, this should fail since there is no leader. Pull replica should not accept the
-    // update
-    expectThrows(
-        SolrException.class,
-        () ->
-            cluster
-                .getSolrClient()
-                .add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
-    if (removeReplica) {
-      try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
-        assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+    Replica leader;
+    try (ErrorLogMuter ignored =
+        ErrorLogMuter.regex("No registered leader was found")) { // These are expected
+      JettySolrRunner leaderJetty = null;
+      if (removeReplica) {
+        CollectionAdminRequest.deleteReplica(collectionName, "shard1", s.getLeader().getName())
+            .process(cluster.getSolrClient());
+      } else {
+        leaderJetty = cluster.getReplicaJetty(s.getLeader());
+        leaderJetty.stop();
+        waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
+        // Wait for cluster state to be updated
+        waitForState(
+            "Replica state not updated in cluster state",
+            collectionName,
+            clusterStateReflectsActiveAndDownReplicas());
       }
-    }
+      docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
 
-    // Also fails if I send the update to the pull replica explicitly
-    try (SolrClient pullReplicaClient =
-        getHttpSolrClient(getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0))) {
+      // Check that there is no leader for the shard
+      leader = docCollection.getSlice("shard1").getLeader();
+      assertTrue(
+          leader == null
+              || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
+
+      // Pull replica on the other hand should be active
+      Replica pullReplica =
+          docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
+      assertTrue(pullReplica.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
+
+      long highestTerm = 0L;
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+        highestTerm = zkShardTerms.getHighestTerm();
+      }
+      // add document, this should fail since there is no leader. Pull replica should not accept the
+      // update
       expectThrows(
           SolrException.class,
           () ->
-              pullReplicaClient.add(
-                  collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
-    }
-    if (removeReplica) {
-      try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
-        assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+              cluster
+                  .getSolrClient()
+                  .add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
+      if (removeReplica) {
+        try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+          assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+        }
       }
-    }
 
-    // Queries should still work
-    waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
-    // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
-    // data loss, since it will become the leader and pull replicas will replicate from it.
-    // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
-    // by definition out of date.
-    if (removeReplica) {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT)
-          .process(cluster.getSolrClient());
-    } else {
-      leaderJetty.start();
-    }
-    waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
-    unIgnoreException("No registered leader was found"); // Should have a leader from now on
+      // Also fails if I send the update to the pull replica explicitly
+      try (SolrClient pullReplicaClient =
+          new HttpJettySolrClient.Builder(
+                  getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getBaseUrl())
+              .withDefaultCollection(
+                  getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0).getCoreName())
+              .build()) {
+        expectThrows(
+            SolrException.class,
+            () ->
+                pullReplicaClient.add(
+                    collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
+      }
+      if (removeReplica) {
+        try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
+          assertEquals(highestTerm, zkShardTerms.getHighestTerm());
+        }
+      }
+
+      // Queries should still work
+      waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
+      // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
+      // data loss, since it will become the leader and pull replicas will replicate from it.
+      // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they
+      // are
+      // by definition out of date.
+      if (removeReplica) {
+        CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT)
+            .process(cluster.getSolrClient());
+      } else {
+        leaderJetty.start();
+      }
+      waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
+    } // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
     cluster.getZkStateReader().forceUpdateCollection(collectionName);
@@ -679,10 +690,11 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      leaderClient.commit();
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    sliceLeader = s.getLeader();
+    leaderClient = cluster.getSolrClient(sliceLeader);
+    leaderClient.commit();
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
     waitForNumDocsInAllReplicas(
         1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)), "id:2", null, null);
     waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
@@ -767,7 +779,9 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     // index a few docs and wait to ensure everything is in sync with our expectations
     addDocs(numDocsAdded);
-    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+    waitForNumDocsInAllReplicas(
+        numDocsAdded,
+        getCollectionState(collectionName).replicaStream().collect(Collectors.toList()));
     waitForState(
         "Replica prop never added?",
         collectionName,
@@ -835,14 +849,16 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState(
         "Special PULL should be ACTIVE, all others should be DOWN",
         collectionName,
-        (liveNodes, colState) -> {
-          for (Replica r : colState.getReplicas()) {
-            if (r.getName().equals(pullThatSkipsRecovery)) {
-              if (!r.getState().equals(Replica.State.ACTIVE)) {
+        (liveNodes, collectionState) -> {
+          for (Slice slice : collectionState) {
+            for (Replica r : slice.getReplicas()) {
+              if (r.getName().equals(pullThatSkipsRecovery)) {
+                if (!r.getState().equals(Replica.State.ACTIVE)) {
+                  return false;
+                }
+              } else if (!r.getState().equals(Replica.State.DOWN)) {
                 return false;
               }
-            } else if (!r.getState().equals(Replica.State.DOWN)) {
-              return false;
             }
           }
           return true;
@@ -852,7 +868,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     tlogLeaderyJetty.start();
     waitForState(
         "Leader should be back, all replicas active", collectionName, activeReplicaCount(0, 1, 3));
-    waitForNumDocsInAllReplicas(numDocsAdded, getCollectionState(collectionName).getReplicas());
+    waitForNumDocsInAllReplicas(
+        numDocsAdded,
+        getCollectionState(collectionName).replicaStream().collect(Collectors.toList()));
   }
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs)
@@ -860,7 +878,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     waitForNumDocsInAllReplicas(
         numDocs,
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(r -> r.getState() == Replica.State.ACTIVE)
             .collect(Collectors.toList()));
   }
@@ -876,32 +895,31 @@ public class TestPullReplica extends SolrCloudTestCase {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : replicas) {
       String replicaUrl = r.getCoreUrl();
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
-        while (true) {
-          QueryRequest req = new QueryRequest(new SolrQuery(query));
-          if (user != null && pass != null) {
-            req.setBasicAuthCredentials(user, pass);
-          }
-          try {
-            long numFound = req.process(replicaClient).getResults().getNumFound();
-            assertEquals(
-                "Replica "
-                    + r.getName()
-                    + " ("
-                    + replicaUrl
-                    + ") not up to date after "
-                    + REPLICATION_TIMEOUT_SECS
-                    + " seconds",
-                numDocs,
-                numFound);
-            log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(200);
-            }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      while (true) {
+        QueryRequest req = new QueryRequest(new SolrQuery(query));
+        if (user != null && pass != null) {
+          req.setBasicAuthCredentials(user, pass);
+        }
+        try {
+          long numFound = req.process(replicaClient).getResults().getNumFound();
+          assertEquals(
+              "Replica "
+                  + r.getName()
+                  + " ("
+                  + replicaUrl
+                  + ") not up to date after "
+                  + REPLICATION_TIMEOUT_SECS
+                  + " seconds",
+              numDocs,
+              numFound);
+          log.info("Replica {} ({}) has all {} docs", r.name, replicaUrl, numDocs);
+          break;
+        } catch (AssertionError e) {
+          if (t.hasTimedOut()) {
+            throw e;
+          } else {
+            Thread.sleep(200);
           }
         }
       }
@@ -972,15 +990,17 @@ public class TestPullReplica extends SolrCloudTestCase {
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
     return (liveNodes, collectionState) -> {
-      for (Replica r : collectionState.getReplicas()) {
-        if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
-          return false;
-        }
-        if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
-          return false;
-        }
-        if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
-          return false;
+      for (Slice slice : collectionState) {
+        for (Replica r : slice.getReplicas()) {
+          if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
+            return false;
+          }
+          if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
+          if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+            return false;
+          }
         }
       }
       return true;

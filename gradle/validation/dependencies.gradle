@@ -56,6 +56,15 @@ allprojects {
     conf.shouldResolveConsistentlyWith(project.configurations.runtimeClasspath)
   }
 
+  // Helper for the throwaway configurations produced by Configuration.copyRecursive(). Gradle names
+  // them "<source>Copy" and lockAllConfigurations() above would otherwise give them lock state of
+  // their own, which nothing ever refreshes because they exist only while a task is executing.
+  // They still have to resolve to the versions the source configuration was locked to.
+  ext.pinCopyToSource = { Configuration copy, Configuration source ->
+    copy.resolutionStrategy.deactivateDependencyLocking()
+    copy.shouldResolveConsistentlyWith(source)
+  }
+
   dependencies {
     modules {
       module("org.hamcrest:hamcrest-core") {
@@ -112,8 +121,14 @@ allprojects {
         // Resolve and update locks only if --write-locks explicitly included
         // This may not be the case where this task is added as a dependency, like for "dependencies" task
         project.configurations.findAll {
-          // Add any custom filtering on the configurations to be resolved
-          it.canBeResolved
+          // Add any custom filtering on the configurations to be resolved.
+          // Skip the dependency-analysis plugin's synthetic configurations (marked with "dagp.*"
+          // attributes); they are not meant to be resolved and would fail lock-file generation.
+          // Skip spotless's own tool-resolution configurations; their formatter dependencies
+          // don't belong in the project's dependency lock files.
+          it.canBeResolved &&
+              !it.attributes.keySet().any {attr -> attr.name.startsWith("dagp.")} &&
+              !it.name.startsWith("spotless")
         }.each {it.resolve()}
       }
     }

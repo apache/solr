@@ -23,12 +23,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.common.params.CollectionParams;
@@ -228,16 +227,9 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
   protected NamedList<Object> sendRequest(ModifiableSolrParams params)
       throws SolrServerException, IOException {
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
-    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
-
-    try (SolrClient baseServer =
-        new HttpSolrClient.Builder(baseUrl)
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .build()) {
-      return baseServer.request(request);
-    }
+    return shardToJetty.get(SHARD1).getFirst().jetty.getSolrClient().request(request);
   }
 }

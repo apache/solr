@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -132,9 +133,7 @@ public abstract class RemoteRequestProxy {
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
 
     try {
-      return zkController
-          .getCoreContainer()
-          .getDefaultHttpSolrClient()
+      return ((HttpJettySolrClient) zkController.getCoreContainer().getDefaultHttpSolrClient())
           .requestWithBaseUrl(baseUri.toString(), c -> c.requestAsync(solrRequest));
     } catch (SolrServerException | IOException e) {
       // requestWithBaseUrl declares it throws these but it actually depends on the lambda

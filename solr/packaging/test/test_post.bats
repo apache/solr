@@ -85,6 +85,17 @@ teardown() {
   refute_output --partial 'ERROR'
 }
 
+@test "basic post with -s (solr-connection short form) and collection" {
+
+  run solr create -c monitors_s_param -d _default
+  assert_output --partial "Created collection 'monitors_s_param'"
+
+  run solr post --type application/xml -c monitors_s_param -s http://localhost:${SOLR_PORT} ${SOLR_TIP}/example/exampledocs/monitor.xml
+
+  assert_output --partial '1 files indexed.'
+  refute_output --partial 'ERROR'
+}
+
 @test "basic post WITHOUT a type specified" {
 
   solr create -c monitors_no_type -d _default

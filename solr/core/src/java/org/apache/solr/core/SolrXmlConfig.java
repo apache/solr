@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -87,7 +88,7 @@ public class SolrXmlConfig {
     }
     // we always wrap if we might set a property -- never mutate the original props
     final Properties results = (null == props ? new Properties() : new Properties(props));
-    final String sysprop = System.getProperty(ZK_HOST);
+    final String sysprop = EnvUtils.getProperty(ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(sysprop)) {
       results.setProperty(ZK_HOST, sysprop);
     }
@@ -126,12 +127,11 @@ public class SolrXmlConfig {
 
     // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
-    Map<String, String> coreAdminHandlerActions =
-        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asShallowMap()
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
+    Map<String, String> coreAdminHandlerActions = new LinkedHashMap<>();
+    for (Entry<String, Object> entry :
+        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")) {
+      coreAdminHandlerActions.put(entry.getKey(), entry.getValue().toString());
+    }
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
@@ -179,7 +179,7 @@ public class SolrXmlConfig {
             "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
       }
       log.info("solr.xml not found in SOLR_HOME, using built-in default");
-      String solrInstallDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+      String solrInstallDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
       if (solrInstallDir == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

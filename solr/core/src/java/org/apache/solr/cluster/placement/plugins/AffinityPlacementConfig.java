@@ -135,9 +135,8 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
   @JsonProperty public Boolean spreadAcrossDomains = Boolean.FALSE;
 
   /**
-   * Determines the maximum number of replicas of a particular type of a particular shard that can
-   * be placed within a single domain (as defined by the {@link #SPREAD_DOMAIN_SYSPROP} System
-   * property).
+   * Determines the maximum number of replicas of the same type from any given shard that may share
+   * a single domain (as defined by the {@link #SPREAD_DOMAIN_SYSPROP} System property).
    */
   @JsonProperty public Integer maxReplicasPerShardInDomain = -1;
 

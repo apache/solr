@@ -27,26 +27,25 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
-    assertQ(req("qt", URI_DEFAULT, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
-    assertQ(req("qt", URI_SUGGEST_DEFAULT, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
+    assertQ(reqWithPath(URI_DEFAULT, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
+    assertQ(reqWithPath(URI_SUGGEST_DEFAULT, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
 
   public void testSingle() {
 
     assertQ(
-        req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "1"),
+        reqWithPath(URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "1"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/int[@name='numFound'][.='1']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[1][.='<b>Japan</b>ese Autocomplete and <b>Japan</b>ese Highlighter broken']");
 
     assertQ(
-        req("qt", URI_DEFAULT, "q", "high", SpellingParams.SPELLCHECK_COUNT, "1"),
+        reqWithPath(URI_DEFAULT, "q", "high", SpellingParams.SPELLCHECK_COUNT, "1"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='high']/int[@name='numFound'][.='1']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='high']/arr[@name='suggestion']/str[1][.='Japanese Autocomplete and Japanese <b>High</b>lighter broken']");
 
     /* equivalent SolrSuggester, SuggestComponent tests */
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "japan",
@@ -58,8 +57,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='analyzing_infix_suggest_default']/lst[@name='japan']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='<b>Japan</b>ese Autocomplete and <b>Japan</b>ese Highlighter broken']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "high",
@@ -74,18 +72,18 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
   public void testMultiple() {
 
     assertQ(
-        req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "2"),
+        reqWithPath(URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "2"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/int[@name='numFound'][.='2']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[1][.='<b>Japan</b>ese Autocomplete and <b>Japan</b>ese Highlighter broken']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[2][.='Add <b>Japan</b>ese Kanji number normalization to Kuromoji']");
     assertQ(
-        req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "3"),
+        reqWithPath(URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "3"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/int[@name='numFound'][.='3']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[1][.='<b>Japan</b>ese Autocomplete and <b>Japan</b>ese Highlighter broken']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[2][.='Add <b>Japan</b>ese Kanji number normalization to Kuromoji']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[3][.='Add decompose compound <b>Japan</b>ese Katakana token capability to Kuromoji']");
     assertQ(
-        req("qt", URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "4"),
+        reqWithPath(URI_DEFAULT, "q", "japan", SpellingParams.SPELLCHECK_COUNT, "4"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/int[@name='numFound'][.='3']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[1][.='<b>Japan</b>ese Autocomplete and <b>Japan</b>ese Highlighter broken']",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='japan']/arr[@name='suggestion']/str[2][.='Add <b>Japan</b>ese Kanji number normalization to Kuromoji']",
@@ -93,8 +91,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
 
     /* SolrSuggester, SuggestComponent tests: allTermsRequire (true), highlight (true) */
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "japan",
@@ -107,8 +104,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='analyzing_infix_suggest_default']/lst[@name='japan']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Add <b>Japan</b>ese Kanji number normalization to Kuromoji']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "japanese ka",
@@ -123,8 +119,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
 
   public void testWithoutHighlight() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "japan",
@@ -139,8 +134,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
 
   public void testNotAllTermsRequired() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "japanese javanese",
@@ -154,8 +148,7 @@ public class TestAnalyzeInfixSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='analyzing_infix_suggest_not_all_terms_required']/lst[@name='japanese javanese']/arr[@name='suggestions']/lst[3]/str[@name='term'][.='Add decompose compound <b>Japanese</b> Katakana token capability to Kuromoji']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             URI_SUGGEST_DEFAULT,
             "q",
             "just number",

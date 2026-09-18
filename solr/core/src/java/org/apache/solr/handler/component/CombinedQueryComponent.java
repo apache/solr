@@ -151,6 +151,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         final var unparsedQuery = params.get(queryKey);
         ResponseBuilder rbNew = new ResponseBuilder(rb.req, new SolrQueryResponse(), rb.components);
         rbNew.setQueryString(unparsedQuery);
+        rbNew.setDebug(rb.isDebug());
         super.prepare(rbNew);
         crb.setFilters(rbNew.getFilters());
         crb.responseBuilders.add(rbNew);
@@ -322,13 +323,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     // Used to filter per-query docs so that RRF doesn't reintroduce docs
     // excluded by collapse at the shard level.
     Map<String, Set<Object>> combinedDocIdsPerShard = HashMap.newHashMap(sreq.responses.size());
+    int perQueryQueueSize = Math.max(ss.getOffset() + ss.getCount(), rb.shards_rows);
     // TODO: to be parallelized outer loop
     for (int queryIndex = 0; queryIndex < queriesToCombineKeys.length; queryIndex++) {
       int failedShardCount = 0;
       long queryNumFound = 0;
       long queryApproximateTotalHits = 0;
       final ShardDocQueue queuePerQuery =
-          newShardDocQueue(rb.req.getSearcher(), sortFields, ss.getOffset() + ss.getCount());
+          newShardDocQueue(rb.req.getSearcher(), sortFields, perQueryQueueSize);
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
         NamedList<?> responseHeader;
@@ -455,7 +457,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     if (thereArePartialResults) {
       rb.rsp
           .getResponseHeader()
-          .asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
@@ -472,10 +473,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly) && segmentTerminatedEarly) {
         rb.rsp
             .getResponseHeader()
-            .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        rb.rsp
-            .getResponseHeader()
-            .add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, true);
+            .put(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, true);
       }
     }
     if (maxHitsTerminatedEarly) {

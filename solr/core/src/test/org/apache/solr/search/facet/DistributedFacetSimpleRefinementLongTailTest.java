@@ -87,7 +87,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     checkSubFacetStats();
   }
 
-  public static void buildIndexes(final List<SolrClient> clients, final String statField)
+  public static void buildIndexes(final List<? extends SolrClient> clients, final String statField)
       throws Exception {
 
     assertEquals("This indexing code assumes exactly 3 shards/clients", 3, clients.size());

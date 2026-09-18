@@ -17,25 +17,36 @@
 
 load bats_helper
 
-setup() {
+setup_file() {
   common_clean_setup
+  solr start -e cloud --no-prompt --jvm-opts "-Dcustom.prop=helloworld"
+  solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 60000
+  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 60000
+}
+
+teardown_file() {
+  common_setup
+  solr stop --all >/dev/null 2>&1
+}
+
+setup() {
+  common_setup
 }
 
 teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
+}
 
-  solr stop --all >/dev/null 2>&1
+@test "start -e cloud works with --no-prompt" {
+  solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 10000
+  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 10000
 }
 
 @test "start -e cloud works with --jvm-opts" {
-  solr start -e cloud --no-prompt --jvm-opts "-Dcustom.prop=helloworld"
-  solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 60000
-  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 60000
-
   run curl "http://localhost:${SOLR_PORT}/solr/admin/info/properties"
   assert_output --partial 'helloworld'
-  
+
   run curl "http://localhost:${SOLR2_PORT}/solr/admin/info/properties"
   assert_output --partial 'helloworld'
 }

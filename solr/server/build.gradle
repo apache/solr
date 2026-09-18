@@ -86,6 +86,7 @@ dependencies {
 afterEvaluate {
   configurations {
     jarValidation.extendsFrom startJar
+    distJarValidation.extendsFrom startJar // start.jar ships in the distribution
   }
 }
 

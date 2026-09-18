@@ -51,9 +51,7 @@ import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
@@ -395,9 +393,8 @@ public class Overseer implements SolrCloseable {
         }
       } catch (Throwable t) {
         // The main loop terminated abnormally -- not a clean close, not a session-expiry return,
-        // not
-        // a QUIT. Rejoin below so we recover instead of leaving a dead overseer still holding the
-        // /overseer_elect/leader znode with nothing behind it.
+        // not a QUIT. Rejoin below so we recover instead of leaving a dead overseer still holding
+        // the /overseer_elect/leader znode with nothing behind it.
         crashed = true;
         log.error("Overseer main loop terminated unexpectedly", t);
       } finally {
@@ -406,10 +403,8 @@ public class Overseer implements SolrCloseable {
         }
         // Only spawn the exit thread to rejoin the election when nobody else will: an explicit QUIT
         // (roles handoff) or an unexpected crash. On a clean close or a ZK session-expiry
-        // reconnect,
-        // the ZkController reconnect handler owns re-election, so spawning here would just race it
-        // and
-        // risk two competing overseer lineages.
+        // reconnect, the ZkController reconnect handler owns re-election, so spawning here would
+        // just race it and risk two competing overseer lineages.
         if (quitReceived || crashed) {
           // do this in a separate thread because any wait is interrupted in this main thread
           Thread checkLeaderThread = new Thread(this::checkIfIamStillLeader, "OverseerExitThread");
@@ -723,14 +718,7 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(reader.getZkClient());
     // launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    String stateCompressionProviderClass = config.getStateCompressorClass();
-    Compressor compressor =
-        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
-            ? new ZLibCompressor()
-            : zkController
-                .getCoreContainer()
-                .getResourceLoader()
-                .newInstance(stateCompressionProviderClass, Compressor.class);
+    Compressor compressor = zkController.getCompressor();
     updaterThread =
         new OverseerThread(
             tg,
@@ -771,9 +759,6 @@ public class Overseer implements SolrCloseable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  /** Start {@link ClusterSingleton} plugins when we become the leader. */
-
-  /** Stop {@link ClusterSingleton} plugins when we lose leadership. */
   public Stats getStats() {
     return stats;
   }
@@ -1036,9 +1021,8 @@ public class Overseer implements SolrCloseable {
       final ZkNodeProps message = ZkNodeProps.load(data);
       final String operation = message.getStr(QUEUE_OPERATION);
       log.error(
-          "Received unexpected message on Overseer cluster state updater for "
-              + operation
-              + " when distributed updates are configured"); // nowarn
+          "Received unexpected message on Overseer cluster state updater for {} when distributed updates are configured",
+          operation);
       throw new RuntimeException(
           "Message "
               + operation

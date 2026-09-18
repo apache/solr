@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -101,7 +102,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static CloudHttp2SolrClient httpJettyBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient httpJdkBasedCloudSolrClient = null;
-  private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient connectionStringZkBasedCloudSolrClient = null;
   private static CloudHttp2SolrClient connectionStringHttpBasedCloudSolrClient = null;
 
@@ -153,13 +153,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                 .getHttpClient()
             instanceof HttpJdkSolrClient);
 
-    zkBasedCloudSolrClient =
-        new CloudSolrClient.Builder(List.of(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build();
-    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
-    assertTrue(
-        zkBasedCloudSolrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider);
-
     String zkConnString = cluster.getZkServer().getZkAddress();
     connectionStringZkBasedCloudSolrClient = new CloudSolrClient.Builder(zkConnString).build();
     assertTrue(
@@ -181,14 +174,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public static void tearDownAfterClass() throws Exception {
     IOUtils.closeQuietly(httpJettyBasedCloudSolrClient);
     IOUtils.closeQuietly(httpJdkBasedCloudSolrClient);
-    IOUtils.closeQuietly(zkBasedCloudSolrClient);
     IOUtils.closeQuietly(connectionStringZkBasedCloudSolrClient);
     IOUtils.closeQuietly(connectionStringHttpBasedCloudSolrClient);
 
     shutdownCluster();
     httpJettyBasedCloudSolrClient = null;
     httpJdkBasedCloudSolrClient = null;
-    zkBasedCloudSolrClient = null;
     connectionStringZkBasedCloudSolrClient = null;
     connectionStringHttpBasedCloudSolrClient = null;
   }
@@ -196,7 +187,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
   private CloudSolrClient getRandomClient() {
     CloudSolrClient[] clients = {
-      zkBasedCloudSolrClient,
       httpJettyBasedCloudSolrClient,
       httpJdkBasedCloudSolrClient,
       connectionStringZkBasedCloudSolrClient,
@@ -405,11 +395,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
 
-      try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
-        QueryResponse queryResponse = queryRequest.process(solrClient);
-        SolrDocumentList docList = queryResponse.getResults();
-        assertEquals(1, docList.getNumFound());
-      }
+      SolrClient solrClient =
+          new CollectionScopedSolrClient(cluster.getJetty(baseUrl).getSolrClient(), coreName);
+      QueryResponse queryResponse = queryRequest.process(solrClient);
+      SolrDocumentList docList = queryResponse.getResults();
+      assertEquals(1, docList.getNumFound());
     }
 
     // Test the deleteById routing for UpdateRequest
@@ -454,11 +444,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
-          QueryResponse queryResponse = queryRequest.process(solrClient);
-          SolrDocumentList docList = queryResponse.getResults();
-          assertEquals(1, docList.getNumFound());
-        }
+        SolrClient solrClient =
+            new CollectionScopedSolrClient(cluster.getJetty(baseUrl).getSolrClient(), coreName);
+        QueryResponse queryResponse = queryRequest.process(solrClient);
+        SolrDocumentList docList = queryResponse.getResults();
+        assertEquals(1, docList.getNumFound());
       }
     }
 
@@ -738,9 +728,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
             Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
-                    runner.getBaseUrl().toString(),
-                    SolrRequest.SolrRequestType.ADMIN.name(),
-                    adminPath);
+                    runner, SolrRequest.SolrRequestType.ADMIN.name(), adminPath);
             errorsBefore += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
@@ -764,9 +752,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
             Double numRequests =
                 SolrJMetricTestUtils.getNumNodeRequestErrors(
-                    runner.getBaseUrl().toString(),
-                    SolrRequest.SolrRequestType.ADMIN.name(),
-                    adminPath);
+                    runner, SolrRequest.SolrRequestType.ADMIN.name(), adminPath);
             errorsAfter += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
@@ -846,31 +832,33 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     RemoteSolrException sse = null;
 
-    try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
+    // addressed by collection (not core) on purpose: that is what exercises _stateVer_
+    SolrClient solrClient =
+        new CollectionScopedSolrClient(cluster.getReplicaJetty(r).getSolrClient(), COLLECTION);
 
-      if (log.isInfoEnabled()) {
-        log.info("should work query, result {}", solrClient.query(q));
-      }
-      // no problem
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + coll.getZNodeVersion());
-      if (log.isInfoEnabled()) {
-        log.info("2nd query , result {}", solrClient.query(q));
-      }
-      // no error yet good
-
-      q.setParam(
-          CloudSolrClient.STATE_VERSION,
-          COLLECTION + ":" + (coll.getZNodeVersion() - 1)); // an older version expect error
-
-      QueryResponse rsp = solrClient.query(q);
-      @SuppressWarnings({"rawtypes"})
-      Map m =
-          (Map) rsp.getResponse().get(CloudSolrClient.STATE_VERSION, rsp.getResponse().size() - 1);
-      assertNotNull(
-          "Expected an extra information from server with the list of invalid collection states",
-          m);
-      assertNotNull(m.get(COLLECTION));
+    if (log.isInfoEnabled()) {
+      log.info("should work query, result {}", solrClient.query(q));
     }
+    // no problem
+    q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + coll.getZNodeVersion());
+    if (log.isInfoEnabled()) {
+      log.info("2nd query , result {}", solrClient.query(q));
+    }
+    // no error yet good
+
+    q.setParam(
+        CloudSolrClient.STATE_VERSION,
+        COLLECTION + ":" + (coll.getZNodeVersion() - 1)); // an older version expect error
+
+    QueryResponse rsp = solrClient.query(q);
+    final NamedList<Object> response = rsp.getResponse();
+    final int stateVersionIdx =
+        response.indexOf(CloudSolrClient.STATE_VERSION, response.size() - 1);
+    @SuppressWarnings({"rawtypes"})
+    Map m = stateVersionIdx == -1 ? null : (Map) response.getVal(stateVersionIdx);
+    assertNotNull(
+        "Expected an extra information from server with the list of invalid collection states", m);
+    assertNotNull(m.get(COLLECTION));
 
     // now send the request to another node that does not serve the collection
 
@@ -892,19 +880,20 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     log.info("the node which does not serve this collection{} ", theNode);
     assertNotNull(theNode);
 
-    try (SolrClient solrClient = getHttpSolrClient(theNode, COLLECTION)) {
+    // this node has no replica of the collection, so it is addressed by node rather than replica
+    SolrClient otherNodeClient =
+        new CollectionScopedSolrClient(cluster.getJetty(theNode).getSolrClient(), COLLECTION);
 
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
-      try {
-        QueryResponse rsp = solrClient.query(q);
-        log.info("error was expected");
-      } catch (RemoteSolrException e) {
-        sse = e;
-      }
-      assertNotNull(sse);
-      assertEquals(
-          " Error code should be 510", SolrException.ErrorCode.INVALID_STATE.code, sse.code());
+    q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
+    try {
+      otherNodeClient.query(q);
+      log.info("error was expected");
+    } catch (RemoteSolrException e) {
+      sse = e;
     }
+    assertNotNull(sse);
+    assertEquals(
+        " Error code should be 510", SolrException.ErrorCode.INVALID_STATE.code, sse.code());
   }
 
   @Test
@@ -914,7 +903,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(100);
-        SolrException e = assertThrows(SolrException.class, client::connect);
+        SolrException e =
+            assertThrows(
+                SolrException.class, () -> client.getClusterStateProvider().getLiveNodes());
         assertTrue(e.getCause() instanceof TimeoutException);
       }
     }
@@ -929,7 +920,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkClientTimeout(1000 * 60);
-        SolrException e = assertThrows(SolrException.class, client::connect);
+        SolrException e =
+            assertThrows(
+                SolrException.class, () -> client.getClusterStateProvider().getLiveNodes());
         assertTrue(e.getMessage().contains("cluster not found/not ready"));
         assertTrue(
             e.getMessage()
@@ -941,7 +934,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   public void customHttpClientTest() throws Exception {
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (HttpJettySolrClient httpClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+    try (HttpJettySolrClient httpClient =
+        cluster.getJettySolrRunners().get(0).newSolrClient(null)) {
       try (CloudSolrClient cloudClient =
           new CloudJettySolrClient.Builder(List.of(baseUrl)).withHttpClient(httpClient).build()) {
         // Verify the CloudJettySolrClient uses the provided HttpJettySolrClient
@@ -1062,7 +1056,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .sendDirectUpdatesToAnyShardReplica()
             .withDefaultCollection(COL)
             // don't let collection cache entries get expired, even on a slow machine...
-            .withCollectionCacheTtl(Integer.MAX_VALUE)
+            .withCollectionCacheTtl(1, TimeUnit.DAYS)
             .build()) {
 
       // do a query to populate stale_client's cache...

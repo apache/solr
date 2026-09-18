@@ -31,6 +31,7 @@ import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -38,6 +39,7 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
@@ -48,6 +50,8 @@ import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MissingMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -60,6 +64,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Assume;
 import org.junit.Before;
@@ -90,6 +95,7 @@ public class StreamingTest extends SolrCloudTestCase {
           .withFunctionName("parallel", ParallelStream.class);
 
   private static String zkHost;
+  private static CloudSolrClient.CloudSolrClientConnection solrConnection;
 
   private static int numWorkers;
   private static boolean useAlias;
@@ -124,7 +130,8 @@ public class StreamingTest extends SolrCloudTestCase {
     }
 
     zkHost = cluster.getZkServer().getZkAddress();
-    streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+    solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    streamFactory.withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection);
 
     // Set up multi-replica collection
     if (useAlias) {
@@ -139,7 +146,7 @@ public class StreamingTest extends SolrCloudTestCase {
       CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());
     }
-    streamFactory.withCollectionZkHost(MULTI_REPLICA_COLLECTIONORALIAS, zkHost);
+    streamFactory.withCollectionUseThisConnection(MULTI_REPLICA_COLLECTIONORALIAS, solrConnection);
   }
 
   private static final String id = "id";
@@ -180,7 +187,7 @@ public class StreamingTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
     try {
       SolrParams sParams = params("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
       ustream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(ustream);
@@ -201,7 +208,7 @@ public class StreamingTest extends SolrCloudTestCase {
     // The constructor will throw an exception if the sort fields do not the
     // a value in the field list.
 
-    CloudSolrStream stream = new CloudSolrStream("", "collection1", sParams);
+    CloudSolrStream stream = new CloudSolrStream(solrConnection, "collection1", sParams);
     stream.close();
   }
 
@@ -226,7 +233,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "none",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       ParallelStream pstream =
           parallelStream(stream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
       attachStreamFactory(pstream);
@@ -272,7 +279,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_f",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
       ParallelStream pstream =
           parallelStream(ustream, new FieldComparator("a_f", ComparatorOrder.ASCENDING));
@@ -306,7 +313,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "8", "a_ss", "hello1", "a_i", "13", "a_f", "4")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+    streamFactory.withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -326,7 +333,7 @@ public class StreamingTest extends SolrCloudTestCase {
                   "a_ss:hello0",
                   "fq",
                   "a_ss:hello1"));
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, params);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, params);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
       assertEquals("Multiple fq clauses should have been honored", 1, tuples.size());
@@ -352,7 +359,7 @@ public class StreamingTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(solrClientCache);
     try {
       SolrParams sParams = params("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       RankStream rstream =
           new RankStream(stream, 3, new FieldComparator("a_i", ComparatorOrder.DESCENDING));
       rstream.setStreamContext(streamContext);
@@ -396,7 +403,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       RankStream rstream =
           new RankStream(stream, 11, new FieldComparator("a_i", ComparatorOrder.DESCENDING));
       ParallelStream pstream =
@@ -425,7 +432,7 @@ public class StreamingTest extends SolrCloudTestCase {
       // Test with spaces in the parameter lists.
       SolrParams sParamsA =
           params("q", "*:*", "fl", "id,a_s, a_i,a_f", "sort", "a_s asc,a_f   asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       stream.setTrace(true);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
@@ -451,7 +458,7 @@ public class StreamingTest extends SolrCloudTestCase {
       // Test with spaces in the parameter lists.
       SolrParams sParamsA =
           params("q", "*:*", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       ReducerStream rstream =
           new ReducerStream(
               stream,
@@ -477,7 +484,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Test with spaces in the parameter lists using a comparator
       sParamsA = params("q", "*:*", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       rstream =
           new ReducerStream(
               stream,
@@ -518,7 +525,7 @@ public class StreamingTest extends SolrCloudTestCase {
       // Test with spaces in the parameter lists.
       SolrParams sParamsA =
           params("q", "blah", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       ReducerStream rstream =
           new ReducerStream(
               stream,
@@ -555,7 +562,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_s",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       ReducerStream rstream =
           new ReducerStream(
@@ -596,7 +603,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_s",
               "qt",
               "/export");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       rstream =
           new ReducerStream(
@@ -637,7 +644,7 @@ public class StreamingTest extends SolrCloudTestCase {
     try {
       // Test an error that originates from the /select handler
       SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       ExceptionStream estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       Tuple t = getTuple(estream);
@@ -646,7 +653,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertTrue(t.getException().contains("sort param field can't be found: blah"));
 
       sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "wt", "javabin");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       t = getTuple(estream);
@@ -656,7 +663,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Test an error that originates from the /export handler
       sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "qt", "/export");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       t = getTuple(estream);
@@ -677,7 +684,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "/export",
               "wt",
               "javabin");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       t = getTuple(estream);
@@ -696,10 +703,10 @@ public class StreamingTest extends SolrCloudTestCase {
     helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
     ParallelStream pstream =
         new ParallelStream(
-            zkHost,
+            solrConnection,
             COLLECTIONORALIAS,
             stream,
             2,
@@ -724,10 +731,10 @@ public class StreamingTest extends SolrCloudTestCase {
             "a_s",
             "qt",
             "/export");
-    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+    stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
     pstream =
         new ParallelStream(
-            zkHost,
+            solrConnection,
             COLLECTIONORALIAS,
             stream,
             2,
@@ -751,10 +758,10 @@ public class StreamingTest extends SolrCloudTestCase {
             "/export",
             "partitionKeys",
             "a_s");
-    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+    stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
     pstream =
         new ParallelStream(
-            zkHost,
+            solrConnection,
             COLLECTIONORALIAS,
             stream,
             2,
@@ -791,7 +798,8 @@ public class StreamingTest extends SolrCloudTestCase {
         new CountMetric()
       };
 
-      StatsStream statsStream = new StatsStream(zkHost, COLLECTIONORALIAS, sParamsA, metrics);
+      StatsStream statsStream =
+          new StatsStream(solrConnection, COLLECTIONORALIAS, sParamsA, metrics);
       statsStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(statsStream);
 
@@ -854,7 +862,8 @@ public class StreamingTest extends SolrCloudTestCase {
       FieldComparator[] sorts = {new FieldComparator("sum(a_i)", ComparatorOrder.ASCENDING)};
 
       FacetStream facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
+          new FacetStream(
+              solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
 
       List<Tuple> tuples = getTuples(facetStream);
 
@@ -936,7 +945,8 @@ public class StreamingTest extends SolrCloudTestCase {
       sorts[0] = new FieldComparator("sum(a_i)", ComparatorOrder.DESCENDING);
 
       facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
+          new FacetStream(
+              solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
 
       tuples = getTuples(facetStream);
 
@@ -1018,7 +1028,8 @@ public class StreamingTest extends SolrCloudTestCase {
       sorts[0] = new FieldComparator("a_s", ComparatorOrder.DESCENDING);
 
       facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
+          new FacetStream(
+              solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
       facetStream.setStreamContext(streamContext);
 
       tuples = getTuples(facetStream);
@@ -1099,7 +1110,8 @@ public class StreamingTest extends SolrCloudTestCase {
       sorts[0] = new FieldComparator("a_s", ComparatorOrder.ASCENDING);
 
       facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
+          new FacetStream(
+              solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
       facetStream.setStreamContext(streamContext);
       tuples = getTuples(facetStream);
 
@@ -1177,7 +1189,7 @@ public class StreamingTest extends SolrCloudTestCase {
       sorts[0] = new FieldComparator("a_s", ComparatorOrder.ASCENDING);
 
       facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, -1);
+          new FacetStream(solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, -1);
       facetStream.setStreamContext(streamContext);
       tuples = getTuples(facetStream);
 
@@ -1240,7 +1252,8 @@ public class StreamingTest extends SolrCloudTestCase {
     //    }
     //    SolrParams exportParams = params("q", "*:*", "qt", "/export", "fl", "id," + field, "sort",
     // field + " " + sortDir + ",id asc");
-    //    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS,
+    //    try (CloudSolrStream solrStream = new CloudSolrStream(solrClientConnection,
+    // COLLECTIONORALIAS,
     // exportParams)) {
     //      List<Tuple> tuples = getTuples(solrStream);
     //      assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
@@ -1276,7 +1289,7 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
     try (CloudSolrStream solrStream =
-        new CloudSolrStream(zkHost, COLLECTIONORALIAS, exportParams)) {
+        new CloudSolrStream(solrConnection, COLLECTIONORALIAS, exportParams)) {
       solrStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(solrStream);
       assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
@@ -1326,7 +1339,8 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
+    try (CloudSolrStream solrStream =
+        new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams)) {
       solrStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(solrStream);
       assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
@@ -1490,7 +1504,8 @@ public class StreamingTest extends SolrCloudTestCase {
       };
 
       FacetStream facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
+          new FacetStream(
+              solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
       facetStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(facetStream);
       assertEquals(6, tuples.size());
@@ -1564,7 +1579,8 @@ public class StreamingTest extends SolrCloudTestCase {
       sorts[0] = new FieldComparator("level1_s", ComparatorOrder.DESCENDING);
       sorts[1] = new FieldComparator("level2_s", ComparatorOrder.DESCENDING);
       facetStream =
-          new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
+          new FacetStream(
+              solrConnection, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
       facetStream.setStreamContext(streamContext);
       tuples = getTuples(facetStream);
       assertEquals(6, tuples.size());
@@ -1649,7 +1665,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     try {
       SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,b_f", "sort", "a_s asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       Bucket[] buckets = {new Bucket("a_s")};
 
@@ -1662,6 +1678,8 @@ public class StreamingTest extends SolrCloudTestCase {
         new MaxMetric("a_f"),
         new MeanMetric("a_i"),
         new MeanMetric("a_f"),
+        new StdMetric("a_i"),
+        new StdMetric("a_f"),
         new CountMetric(),
         new MissingMetric("b_f"),
         new CountDistinctMetric("a_i"),
@@ -1686,6 +1704,8 @@ public class StreamingTest extends SolrCloudTestCase {
       Double maxf = tuple.getDouble("max(a_f)");
       Double avgi = tuple.getDouble("avg(a_i)");
       Double avgf = tuple.getDouble("avg(a_f)");
+      Double stdi = tuple.getDouble("std(a_i)");
+      Double stdf = tuple.getDouble("std(a_f)");
       Double count = tuple.getDouble("count(*)");
       Double missingBf = tuple.getDouble("missing(b_f)");
       Double countDistI = tuple.getDouble("countDist(a_i)");
@@ -1700,6 +1720,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(10, maxf, 0.001);
       assertEquals(4.25, avgi, 0.001);
       assertEquals(4.5, avgf, 0.001);
+      assertEquals(6.5511, stdi, 0.001);
+      assertEquals(4.0415, stdf, 0.001);
       assertEquals(4, count, 0.001);
       assertEquals(2, missingBf, 0.001);
       assertEquals(4, countDistI, 0.001);
@@ -1715,6 +1737,8 @@ public class StreamingTest extends SolrCloudTestCase {
       maxf = tuple.getDouble("max(a_f)");
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
+      stdi = tuple.getDouble("std(a_i)");
+      stdf = tuple.getDouble("std(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
       countDistI = tuple.getDouble("countDist(a_i)");
@@ -1729,6 +1753,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(9, maxf, 0.001);
       assertEquals(9.5, avgi, 0.001);
       assertEquals(6.5, avgf, 0.001);
+      assertEquals(4.5092, stdi, 0.001);
+      assertEquals(2.6458, stdf, 0.001);
       assertEquals(4, count, 0.001);
       assertEquals(3, missingBf, 0.001);
       assertEquals(4, countDistI, 0.001);
@@ -1744,6 +1770,8 @@ public class StreamingTest extends SolrCloudTestCase {
       maxf = tuple.getDouble("max(a_f)");
       avgi = tuple.getDouble("avg(a_i)");
       avgf = tuple.getDouble("avg(a_f)");
+      stdi = tuple.getDouble("std(a_i)");
+      stdf = tuple.getDouble("std(a_f)");
       count = tuple.getDouble("count(*)");
       missingBf = tuple.getDouble("missing(b_f)");
       countDistI = tuple.getDouble("countDist(a_i)");
@@ -1758,6 +1786,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(7, maxf, 0.01);
       assertEquals(7.5, avgi, 0.01);
       assertEquals(5.5, avgf, 0.01);
+      assertEquals(4.9497, stdi, 0.01);
+      assertEquals(2.1213, stdf, 0.01);
       assertEquals(2, count, 0.01);
       assertEquals(0, missingBf, 0.01);
       assertEquals(2, countDistI, 0.01);
@@ -1787,7 +1817,7 @@ public class StreamingTest extends SolrCloudTestCase {
           .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
       sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,b_f", "sort", "a_s asc", "qt", "/export");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       Bucket[] buckets1 = {new Bucket("a_s")};
 
       Metric[] metrics1 = {
@@ -1844,6 +1874,114 @@ public class StreamingTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testPercentileRollupStream() throws Exception {
+
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    try {
+      // Test percentile metrics in RollupStream
+      SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc");
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
+
+      Bucket[] buckets = {new Bucket("a_s")};
+
+      Metric[] metrics = {
+        new PercentileMetric("a_i", 50),
+        new PercentileMetric("a_f", 50),
+        new PercentileMetric("a_i", 0),
+        new PercentileMetric("a_i", 100),
+        new PercentileMetric("a_i", 99.9),
+        new MinMetric("a_i"),
+        new MaxMetric("a_i"),
+      };
+
+      RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
+      rollupStream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(rollupStream);
+
+      assertEquals(3, tuples.size());
+
+      // hello0: a_i = [0, 1, 2, 14], a_f = [1, 2, 5, 10]
+      Tuple tuple = tuples.get(0);
+      assertEquals("hello0", tuple.getString("a_s"));
+      Double peri50 = tuple.getDouble("per(a_i,50)");
+      Double perf50 = tuple.getDouble("per(a_f,50)");
+      Double peri0 = tuple.getDouble("per(a_i,0)");
+      Double peri100 = tuple.getDouble("per(a_i,100)");
+      Double peri999 = tuple.getDouble("per(a_i,99.9)");
+      Double mini = tuple.getDouble("min(a_i)");
+      Double maxi = tuple.getDouble("max(a_i)");
+
+      assertNotNull(peri50);
+      assertNotNull(perf50);
+      // 0th percentile should approximate min
+      assertEquals(mini, peri0, 0.5);
+      // 100th percentile should approximate max
+      assertEquals(maxi, peri100, 0.5);
+      // 99.9th percentile should be close to max
+      assertNotNull(peri999);
+
+      // hello3: a_i = [3, 10, 12, 13], a_f = [3, 6, 8, 9]
+      tuple = tuples.get(1);
+      assertEquals("hello3", tuple.getString("a_s"));
+      peri50 = tuple.getDouble("per(a_i,50)");
+      perf50 = tuple.getDouble("per(a_f,50)");
+      peri0 = tuple.getDouble("per(a_i,0)");
+      peri100 = tuple.getDouble("per(a_i,100)");
+      mini = tuple.getDouble("min(a_i)");
+      maxi = tuple.getDouble("max(a_i)");
+
+      assertNotNull(peri50);
+      assertNotNull(perf50);
+      assertEquals(mini, peri0, 0.5);
+      assertEquals(maxi, peri100, 0.5);
+
+      // hello4: a_i = [4, 11], a_f = [4, 7]
+      tuple = tuples.get(2);
+      assertEquals("hello4", tuple.getString("a_s"));
+      peri50 = tuple.getDouble("per(a_i,50)");
+      perf50 = tuple.getDouble("per(a_f,50)");
+      peri0 = tuple.getDouble("per(a_i,0)");
+      peri100 = tuple.getDouble("per(a_i,100)");
+      mini = tuple.getDouble("min(a_i)");
+      maxi = tuple.getDouble("max(a_i)");
+
+      assertNotNull(peri50);
+      assertNotNull(perf50);
+      assertEquals(mini, peri0, 0.5);
+      assertEquals(maxi, peri100, 0.5);
+
+      // Test toExpression round-trip
+      PercentileMetric pm = new PercentileMetric("a_i", 50);
+      StreamExpressionParameter expr = pm.toExpression(streamFactory);
+      assertEquals("per(a_i,50)", expr.toString());
+
+      pm = new PercentileMetric("a_i", 99.9);
+      expr = pm.toExpression(streamFactory);
+      assertEquals("per(a_i,99.9)", expr.toString());
+
+      // Test HashRollupStream with percentile
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
+      Metric[] hashMetrics = {new PercentileMetric("a_i", 50), new PercentileMetric("a_f", 50)};
+
+      HashRollupStream hashRollupStream = new HashRollupStream(stream, buckets, hashMetrics);
+      hashRollupStream.setStreamContext(streamContext);
+      tuples = getTuples(hashRollupStream);
+
+      assertEquals(3, tuples.size());
+      for (Tuple t : tuples) {
+        assertNotNull(t.getDouble("per(a_i,50)"));
+        assertNotNull(t.getDouble("per(a_f,50)"));
+      }
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
   public void testDaemonTopicStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -1856,7 +1994,13 @@ public class StreamingTest extends SolrCloudTestCase {
 
       TopicStream topicStream =
           new TopicStream(
-              zkHost, COLLECTIONORALIAS, COLLECTIONORALIAS, "50000000", -1, 1000000, sParams);
+              solrConnection,
+              COLLECTIONORALIAS,
+              COLLECTIONORALIAS,
+              "50000000",
+              -1,
+              1000000,
+              sParams);
 
       DaemonStream daemonStream = new DaemonStream(topicStream, "daemon1", 1000, 500);
       daemonStream.setStreamContext(context);
@@ -1891,11 +2035,11 @@ public class StreamingTest extends SolrCloudTestCase {
     // Wait for the checkpoint
     JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
 
-    SolrParams sParams1 = params("qt", "/get", "ids", "50000000", "fl", "id");
+    SolrParams sParams1 = params("ids", "50000000", "fl", "id");
     int count = 0;
     while (count == 0) {
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
+          new SolrStream(jetty.getBaseUrl().toString(), COLLECTIONORALIAS, "/get", sParams1);
       solrStream.setStreamContext(context);
       List<Tuple> tuples = getTuples(solrStream);
       count = tuples.size();
@@ -1958,7 +2102,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_s",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       Bucket[] buckets = {new Bucket("a_s")};
 
@@ -1980,16 +2124,19 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(3, tuples.size());
 
       List<String> shardUrls =
-          TupleStream.getShards(
-              cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
+          TupleStream.getShards(solrConnection, COLLECTIONORALIAS, streamContext);
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
           "rollup(search("
               + COLLECTIONORALIAS
-              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", qt=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", path=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
@@ -2060,7 +2207,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_s",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       Bucket[] buckets = {new Bucket("a_s")};
 
@@ -2188,7 +2335,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_s",
               "qt",
               "/export");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
       ReducerStream rstream =
           new ReducerStream(
               stream,
@@ -2221,7 +2368,7 @@ public class StreamingTest extends SolrCloudTestCase {
     try {
       SolrParams sParams =
           params("q", "*:*", "fl", "id,a_s,a_i,a_f,s_multi,i_multi,f_multi", "sort", "a_s asc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
       Tuple tuple = tuples.get(0);
@@ -2269,10 +2416,10 @@ public class StreamingTest extends SolrCloudTestCase {
     try {
       // Test ascending
       SolrParams sParamsA = params("q", "id:(4 1)", "fl", "id,a_s,a_i", "sort", "a_i asc");
-      CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       SolrParams sParamsB = params("q", "id:(0 2 3)", "fl", "id,a_s,a_i", "sort", "a_i asc");
-      CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      CloudSolrStream streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       MergeStream mstream =
           new MergeStream(streamA, streamB, new FieldComparator("a_i", ComparatorOrder.ASCENDING));
@@ -2284,10 +2431,10 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Test descending
       sParamsA = params("q", "id:(4 1)", "fl", "id,a_s,a_i", "sort", "a_i desc");
-      streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       sParamsB = params("q", "id:(0 2 3)", "fl", "id,a_s,a_i", "sort", "a_i desc");
-      streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       mstream =
           new MergeStream(streamA, streamB, new FieldComparator("a_i", ComparatorOrder.DESCENDING));
@@ -2300,10 +2447,10 @@ public class StreamingTest extends SolrCloudTestCase {
       // Test compound sort
 
       sParamsA = params("q", "id:(2 4 1)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-      streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       sParamsB = params("q", "id:(0 3)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-      streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       mstream =
           new MergeStream(
@@ -2319,10 +2466,10 @@ public class StreamingTest extends SolrCloudTestCase {
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
       sParamsA = params("q", "id:(2 4 1)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-      streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       sParamsB = params("q", "id:(0 3)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-      streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       mstream =
           new MergeStream(
@@ -2375,7 +2522,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       SolrParams sParamsB =
           params(
@@ -2389,7 +2536,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      CloudSolrStream streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       MergeStream mstream =
           new MergeStream(streamA, streamB, new FieldComparator("a_i", ComparatorOrder.ASCENDING));
@@ -2415,7 +2562,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       sParamsB =
           params(
@@ -2429,7 +2576,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       mstream =
           new MergeStream(streamA, streamB, new FieldComparator("a_i", ComparatorOrder.DESCENDING));
@@ -2479,7 +2626,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      CloudSolrStream streamA = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsA);
 
       SolrParams sParamsB =
           params(
@@ -2493,7 +2640,7 @@ public class StreamingTest extends SolrCloudTestCase {
               "a_i",
               "qt",
               "/export");
-      CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
+      CloudSolrStream streamB = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParamsB);
 
       MergeStream mstream =
           new MergeStream(streamA, streamB, new FieldComparator("a_i", ComparatorOrder.ASCENDING));
@@ -2529,7 +2676,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     try {
       SolrParams sParams = params("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i desc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
 
@@ -2538,7 +2685,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // With Ascending Sort
       sParams = params("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2547,7 +2694,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Test compound sort
       sParams = params("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2555,7 +2702,7 @@ public class StreamingTest extends SolrCloudTestCase {
       assertOrder(tuples, 2, 0, 1, 3, 4);
 
       sParams = params("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2589,7 +2736,7 @@ public class StreamingTest extends SolrCloudTestCase {
     String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
     zkStateReader.forceUpdateCollection(collName);
     DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collName);
-    List<Replica> replicas = collection.getReplicas();
+    List<Replica> replicas = collection.replicaStream().toList();
     streamContext
         .getEntries()
         .put("core", replicas.get(random().nextInt(replicas.size())).getCoreName());
@@ -2599,7 +2746,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     try {
       SolrParams sParams = params("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i desc");
-      CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
 
@@ -2620,7 +2767,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // With Ascending Sort
       sParams = params("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2641,7 +2788,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Test compound sort
       sParams = params("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2661,7 +2808,7 @@ public class StreamingTest extends SolrCloudTestCase {
       }
 
       sParams = params("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2708,7 +2855,7 @@ public class StreamingTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+    CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
 
     try {
       stream.setStreamContext(streamContext);
@@ -2719,7 +2866,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Basic CloudSolrStream Test bools desc
       sParams = params("q", "*:*", "qt", which, "fl", "id,b_sing", "sort", "b_sing desc,id desc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2728,7 +2875,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Basic CloudSolrStream Test dates desc
       sParams = params("q", "*:*", "qt", which, "fl", "id,dt_sing", "sort", "dt_sing desc,id asc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2737,7 +2884,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       // Basic CloudSolrStream Test ates desc
       sParams = params("q", "*:*", "qt", which, "fl", "id,dt_sing", "sort", "dt_sing asc,id desc");
-      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+      stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2822,7 +2969,7 @@ public class StreamingTest extends SolrCloudTestCase {
             "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi",
             "sort",
             "i_sing asc");
-    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
+    try (CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams)) {
 
       stream.setStreamContext(streamContext);
       Tuple tuple = getTuple(stream);
@@ -2940,10 +3087,7 @@ public class StreamingTest extends SolrCloudTestCase {
       throws Exception {
     List<String> shards =
         TupleStream.getShards(
-            cluster.getZkClient().getZkServerAddress(),
-            MULTI_REPLICA_COLLECTIONORALIAS,
-            streamContext,
-            solrParams);
+            solrConnection, MULTI_REPLICA_COLLECTIONORALIAS, streamContext, solrParams);
     for (String shard : shards) {
       assertEquals(
           shard,
@@ -3017,12 +3161,12 @@ public class StreamingTest extends SolrCloudTestCase {
 
   private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator)
       throws IOException {
-    return new ParallelStream(zkHost, COLLECTIONORALIAS, stream, numWorkers, comparator);
+    return new ParallelStream(solrConnection, COLLECTIONORALIAS, stream, numWorkers, comparator);
   }
 
   public void testCloudSolrStreamWithoutStreamContext() throws Exception {
     SolrParams sParams = params("q", "*:*", "fl", "id", "sort", "id asc");
-    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
+    try (CloudSolrStream stream = new CloudSolrStream(solrConnection, COLLECTIONORALIAS, sParams)) {
       stream.open();
     }
   }
@@ -3032,13 +3176,13 @@ public class StreamingTest extends SolrCloudTestCase {
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
-    solrClientCache.getCloudSolrClient(zkHost);
+    solrClientCache.getCloudSolrClient(solrConnection);
     streamContext.setSolrClientCache(solrClientCache);
 
     String expr =
         "search("
             + MULTI_REPLICA_COLLECTIONORALIAS
-            + ",q=*:*,fl=\"a_i\", qt=\"/export\", sort=\"a_i asc\")";
+            + ",q=*:*,fl=\"a_i\", path=\"/export\", sort=\"a_i asc\")";
     try (CloudSolrStream stream =
         new CloudSolrStream(StreamExpressionParser.parse(expr), streamFactory)) {
       stream.setStreamContext(streamContext);
@@ -3078,10 +3222,11 @@ public class StreamingTest extends SolrCloudTestCase {
       streamContext.setLocal(true);
 
       for (String coll : resolved) {
-        Replica rr = zkStateReader.getCollection(coll).getReplicas().get(0);
+        Replica rr = zkStateReader.getCollection(coll).replicaStream().findFirst().orElseThrow();
         streamContext.put("core", rr.core);
         List<Replica> replicas =
-            TupleStream.getReplicas(zkHost, coll, streamContext, new ModifiableSolrParams());
+            TupleStream.getReplicas(
+                solrConnection, coll, streamContext, new ModifiableSolrParams());
         assertEquals(
             "core filter for " + rr.core + " not applied for " + coll + "; replicas: " + replicas,
             1,

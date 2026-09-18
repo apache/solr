@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.SolrCore;
 
 /**
@@ -40,8 +41,7 @@ import org.apache.solr.core.SolrCore;
 public final class LoadAdminUiServlet extends HttpServlet {
 
   // check system properties for whether the admin UI is disabled, default is false
-  private static final boolean uiEnabled =
-      Boolean.parseBoolean(System.getProperty("solr.ui.enabled", "true"));
+  private static final boolean uiEnabled = EnvUtils.getPropertyAsBool("solr.ui.enabled", true);
   // list of comma separated URLs to inject into the CSP connect-src directive
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
 
@@ -107,7 +107,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
    * concatenate them into a space-separated string that can be used in CSP connect-src directive
    */
   private String generateCspConnectSrc() {
-    String cspURLs = System.getProperty(SYSPROP_CSP_CONNECT_SRC_URLS, "");
+    String cspURLs = EnvUtils.getProperty(SYSPROP_CSP_CONNECT_SRC_URLS, "");
     List<String> props = new ArrayList<>(Arrays.asList(cspURLs.split(",")));
     props.add("'self'");
     return String.join(" ", props);

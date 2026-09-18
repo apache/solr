@@ -236,6 +236,18 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testNormalizePath() {
+    ZookeeperInfoHandler handler =
+        new ZookeeperInfoHandler(cluster.getJettySolrRunner(0).getCoreContainer());
+
+    assertEquals("/foo", handler.normalizePath(" /foo"));
+    assertEquals("/foo", handler.normalizePath("/foo "));
+    assertEquals("/foo", handler.normalizePath("/foo/"));
+    assertEquals("/", handler.normalizePath(null));
+    assertEquals("/", handler.normalizePath("  "));
+  }
+
+  @Test
   public void testZkInfoHandlerForcesJsonResponse() throws Exception {
     // Create a test collection
     String collectionName = "zkinfo_wt_test";

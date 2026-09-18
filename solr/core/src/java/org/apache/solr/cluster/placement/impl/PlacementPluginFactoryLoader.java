@@ -29,6 +29,7 @@ import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,28 +103,24 @@ public class PlacementPluginFactoryLoader {
   /** Returns the default {@link PlacementPluginFactory} */
   public static PlacementPluginFactory<?> getDefaultPlacementPluginFactory() {
     // Use the default provided by system properties.
-    String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
+    String defaultPluginId = EnvUtils.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
     if (defaultPluginId != null) {
       log.info(
           "Default replica placement plugin set in {} to {}",
           PLACEMENTPLUGIN_DEFAULT_SYSPROP,
           defaultPluginId);
-      switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
-        case "simple":
-          return new SimplePlacementFactory();
-        case "affinity":
-          return new AffinityPlacementFactory();
-        case "minimizecores":
-          return new MinimizeCoresPlacementFactory();
-        case "random":
-          return new RandomPlacementFactory();
-        default:
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Invalid value for system property '"
-                  + PLACEMENTPLUGIN_DEFAULT_SYSPROP
-                  + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
-      }
+      return switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
+        case "simple" -> new SimplePlacementFactory();
+        case "affinity" -> new AffinityPlacementFactory();
+        case "minimizecores" -> new MinimizeCoresPlacementFactory();
+        case "random" -> new RandomPlacementFactory();
+        default ->
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid value for system property '"
+                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
+                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
+      };
     } else {
       // TODO: Consider making the ootb default AffinityPlacementFactory, see
       // https://issues.apache.org/jira/browse/SOLR-16492

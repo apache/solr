@@ -43,7 +43,7 @@ public class DumpRequestHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     // Show params
-    rsp.add("params", req.getParams().toNamedList());
+    rsp.add("params", new SimpleOrderedMap<>(req.getParams()));
     String[] parts = req.getParams().getParams("urlTemplateValues");
     if (parts != null && parts.length > 0) {
       Map<String, String> map = new LinkedHashMap<>();

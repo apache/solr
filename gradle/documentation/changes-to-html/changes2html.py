@@ -213,7 +213,7 @@ class HTMLGenerator:
         # Extract markdown link: [text](url)
         markdown_link_match = re.search(r'\[([^\]]+)\]\(([^)]+)\)', author_text)
         # Extract GitHub handle: @username
-        github_match = re.search(r'@(\w+)', author_text)
+        github_match = re.search(r'@([\w-]+)', author_text)
 
         if markdown_link_match:
             # Has markdown link

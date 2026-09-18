@@ -27,7 +27,7 @@ import java.util.TreeSet;
 import org.apache.solr.client.api.model.GetSegmentDataResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 public class ColStatus {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final HttpJettySolrClient solrClient;
+  private final HttpSolrClient solrClient;
   private final ClusterState clusterState;
   private final ZkNodeProps props;
 
@@ -64,7 +64,7 @@ public class ColStatus {
       SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
-  public ColStatus(HttpJettySolrClient solrClient, ClusterState clusterState, ZkNodeProps props) {
+  public ColStatus(HttpSolrClient solrClient, ClusterState clusterState, ZkNodeProps props) {
     this.solrClient = solrClient;
     this.clusterState = clusterState;
     this.props = props;

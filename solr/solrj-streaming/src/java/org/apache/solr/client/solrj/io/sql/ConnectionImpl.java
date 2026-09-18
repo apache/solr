@@ -56,10 +56,14 @@ class ConnectionImpl implements Connection {
   private boolean closed;
   private SQLWarning currentWarning;
 
-  ConnectionImpl(String url, String zkHost, String collection, Properties properties)
+  ConnectionImpl(
+      String url,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      Properties properties)
       throws SQLException {
     this.url = url;
-    this.client = this.solrClientCache.getCloudSolrClient(zkHost);
+    this.client = this.solrClientCache.getCloudSolrClient(solrConnection);
     this.collection = collection;
     this.properties = properties;
     this.connectionStatement = createStatement();

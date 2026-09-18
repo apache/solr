@@ -21,15 +21,16 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -40,15 +41,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * The RandomStream emits a stream of pseudo random Tuples that match the query parameters. Sample
@@ -58,8 +58,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  */
 public class RandomStream extends TupleStream implements Expressible {
 
-  private String zkHost;
-  private Map<String, String> props;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
+  private SolrParams props;
   private String collection;
   private Iterator<SolrDocument> documentIterator;
   private int x;
@@ -72,16 +72,16 @@ public class RandomStream extends TupleStream implements Expressible {
     // Used by the RandomFacade
   }
 
-  public RandomStream(String zkHost, String collection, Map<String, String> props)
+  public RandomStream(
+      CloudSolrClient.CloudSolrClientConnection solrConnection, String collection, SolrParams props)
       throws IOException {
-    init(zkHost, collection, props);
+    init(solrConnection, collection, props);
   }
 
   public RandomStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     // Collection Name
     if (null == collectionName) {
@@ -93,44 +93,22 @@ public class RandomStream extends TupleStream implements Expressible {
     }
 
     // pull out known named params
-    Map<String, String> params = new HashMap<>();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")
-          && !namedParam.getName().equals("buckets")
-          && !namedParam.getName().equals("bucketSorts")
-          && !namedParam.getName().equals("limit")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    SolrParams params =
+        buildSolrParamsExcept(
+            namedParams, Set.of("zkHost", "solrConnection", "buckets", "bucketSorts", "limit"));
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
-    init(zkHost, collectionName, params);
+    init(solrConnection, collectionName, params);
   }
 
-  void init(String zkHost, String collection, Map<String, String> props) throws IOException {
-    this.zkHost = zkHost;
+  void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection, String collection, SolrParams props)
+      throws IOException {
+    this.solrConnection = solrConnection;
     this.props = props;
     this.collection = collection;
-    if (props.containsKey(CommonParams.FL)) {
+    if (props.get(CommonParams.FL) != null) {
       String fl = props.get(CommonParams.FL);
       if (fl != null) {
         if (fl.equals("*")) {
@@ -160,12 +138,14 @@ public class RandomStream extends TupleStream implements Expressible {
     expression.addParameter(collection);
 
     // parameters
-    for (Entry<String, String> param : props.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    for (Entry<String, String[]> param : props) {
+      for (String paramValue : param.getValue()) {
+        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), paramValue));
+      }
     }
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
@@ -186,10 +166,14 @@ public class RandomStream extends TupleStream implements Expressible {
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
     if (null != props) {
-      child.setExpression(
-          props.entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
-              .collect(Collectors.joining(",")));
+      String expression =
+          props.stream()
+              .flatMap(
+                  e ->
+                      Arrays.stream(e.getValue())
+                          .map(v -> String.format(Locale.ROOT, "%s=%s", e.getKey(), v)))
+              .collect(Collectors.joining(","));
+      child.setExpression(expression);
     }
     explanation.addChild(child);
 
@@ -216,7 +200,7 @@ public class RandomStream extends TupleStream implements Expressible {
       doCloseCache = false;
     }
 
-    var params = new ModifiableSolrParams(new MapSolrParams(this.props)); // copy
+    var params = new ModifiableSolrParams(props); // copy
 
     params.remove(SORT); // Override any sort.
 
@@ -228,7 +212,7 @@ public class RandomStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       QueryResponse response = request.process(cloudSolrClient, collection);
       SolrDocumentList docs = response.getResults();
       documentIterator = docs.iterator();
