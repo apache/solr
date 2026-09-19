@@ -1,0 +1,211 @@
+= Indexing with the V2 Update API
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr's xref:configuration-guide:v2-api.adoc[v2 API] provides update endpoints under the `/api` path prefix.
+These endpoints accept the same document formats as the xref:indexing-with-update-handlers.adoc[v1 update handlers], with some important differences described below.
+
+NOTE: The v2 API is classified as "experimental" and may change in backwards-incompatible ways.
+
+== V2 Update Endpoint Paths
+
+For a SolrCloud collection the v2 update base path is:
+
+----
+/api/collections/{collection}/update
+----
+
+For a standalone core the v2 update base path is:
+
+----
+/api/cores/{core}/update
+----
+
+The following sub-paths are available:
+
+[width="100%",options="header",]
+|===
+|Path |Accepted Format |Notes
+|`/update` |JSON, XML, CSV, Javabin, or CBOR |Selects the update loader from the request `Content-Type`, like v1 `/update`
+|`/update/json` |JSON document or array of documents |Equivalent to v1 `/update/json/docs`; documents only (no JSON command syntax)
+|`/update/xml` |XML |Supports full XML update syntax (add, delete, commit, optimize)
+|`/update/csv` |CSV |Equivalent to v1 `/update/csv`
+|`/update/javabin` |Javabin |Equivalent to v1 `/update` with `Content-Type: application/javabin`
+|===
+
+The v2 `/update` endpoint is the general-purpose update endpoint and selects a loader based on the request `Content-Type`.
+When it receives JSON, it supports the full xref:indexing-with-update-handlers.adoc#sending-json-update-commands[JSON update command syntax], like v1 `/update`.
+
+IMPORTANT: The v2 `/update/json` endpoint is document-only: it processes one or more JSON documents (either a single JSON object or an array of objects, like the v1 `/update/json/docs` path) and does *not* support JSON update commands such as commit, delete, or optimize in the request body.
+
+== JSON Document Indexing
+
+The v2 `/update/json` endpoint accepts JSON document(s). The example below shows an array of documents:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update/json?commit=true' \
+  --data-binary '
+[
+  {
+    "id": "1",
+    "title": "Doc 1"
+  },
+  {
+    "id": "2",
+    "title": "Doc 2"
+  }
+]'
+----
+
+A single document can also be posted as a JSON object:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update/json?commit=true' \
+  --data-binary '
+{
+  "id": "1",
+  "title": "Doc 1"
+}'
+----
+
+Query parameters such as `commit`, `commitWithin`, and `overwrite` can be appended to the URL, as shown above.
+Add `versions=true` to an update request to include the assigned document versions in the response.
+See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more details.
+
+When `versions=true` is set, the response can include these fields for the operations in the request:
+
+* `adds`: Documents added and the versions assigned to them.
+* `deletes`: Documents deleted and the versions assigned to their delete operations.
+* `deleteByQuery`: Delete-by-query operations and the versions assigned to them.
+
+For example, adding a document with ID `1` can return:
+
+[source,json]
+----
+{
+  "adds": [
+    {
+      "id": "1",
+      "version": 123456789
+    }
+  ]
+}
+----
+
+The `version` value is the version assigned by Solr. Delete versions are commonly negative.
+The delete fields apply to formats that accept delete commands, such as XML and Javabin.
+These v2 response fields use typed objects rather than the alternating name/version arrays returned by v1.
+
+== XML Document Indexing
+
+The v2 `/update/xml` endpoint accepts the same XML format as the v1 `/update` handler and supports the full XML update syntax, including add, delete, commit, and optimize commands.
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/xml' \
+  'http://localhost:8983/api/collections/my_collection/update/xml' \
+  --data-binary '
+<add>
+  <doc>
+    <field name="id">1</field>
+    <field name="title">Doc 1</field>
+  </doc>
+</add>'
+----
+
+Delete by ID and delete by query are also supported:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/xml' \
+  'http://localhost:8983/api/collections/my_collection/update/xml?commit=true' \
+  --data-binary '
+<delete>
+  <id>1</id>
+  <query>title:unwanted</query>
+</delete>'
+----
+
+== CSV Document Indexing
+
+The v2 `/update/csv` endpoint accepts CSV-formatted documents and supports the same xref:indexing-with-update-handlers.adoc#csv-update-parameters[CSV update parameters] as the v1 handler:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: text/csv' \
+  'http://localhost:8983/api/collections/my_collection/update/csv?commit=true' \
+  --data-binary '
+id,title
+1,Doc 1
+2,Doc 2'
+----
+
+== Javabin Document Indexing
+
+The v2 `/update/javabin` endpoint accepts documents in Javabin format, which is the native binary format used by SolrJ.
+This endpoint is primarily intended for use by SolrJ clients.
+
+== Commit and Rollback
+
+Because the v2 `/update/json` endpoint does not support update commands in the request body, commits and rollbacks must be issued separately.
+Use the `commit=true` or `commitWithin=N` URL parameters to commit after indexing:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update/json?commit=true' \
+  --data-binary '[{"id":"1","title":"Doc 1"}]'
+----
+
+For a soft commit:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update/json?softCommit=true' \
+  --data-binary '[{"id":"1","title":"Doc 1"}]'
+----
+
+Alternatively, use `/update/xml` to issue an explicit commit command:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/xml' \
+  'http://localhost:8983/api/collections/my_collection/update/xml' \
+  --data-binary '<commit/>'
+----
+
+== Comparison with V1 Update Handlers
+
+The table below summarizes the key differences between the v1 and v2 update endpoints.
+
+[width="100%",options="header",]
+|===
+|Feature |V1 |V2
+|Base path |`/solr/{collection}/update` |`/api/collections/{collection}/update`
+|JSON documents |`/update` or `/update/json/docs` |`/update` with JSON update syntax, or `/update/json` for bare documents
+|JSON update commands (commit/delete/optimize) |`/update` |`/update`
+|XML updates |`/update` (via Content-Type) |`/update` (via Content-Type) or `/update/xml`
+|CSV updates |`/update/csv` |`/update` (via Content-Type) or `/update/csv`
+|Javabin updates |`/update` (via Content-Type) |`/update` (via Content-Type) or `/update/javabin`
+|===
+
+For full details on the v1 update handlers, see xref:indexing-with-update-handlers.adoc[].

@@ -112,6 +112,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SystemApi();
     })
+.factory('UpdateV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.UpdateApi();
+    })
 .factory('AliasesV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';

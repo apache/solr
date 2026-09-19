@@ -17,52 +17,168 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.UpdateApi;
+import org.apache.solr.client.api.model.UpdateResponse;
+import org.apache.solr.client.api.model.VersionedDocument;
+import org.apache.solr.client.api.model.VersionedQuery;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * All v2 APIs that share a prefix of /update
+ * V2 API implementation for indexing documents.
  *
- * <p>Most of these v2 APIs are implemented as pure "pass-throughs" to the v1 code paths, but there
- * are a few exceptions: /update and /update/json are both rewritten to /update/json/docs.
+ * <p>These APIs delegate to the v1 {@link UpdateRequestHandler}. The {@code /update} and {@code
+ * /update/json} paths are rewritten to {@code /update/json/docs} so that JSON arrays of documents
+ * are processed by the JSON loader rather than the update-command loader.
  */
-public class UpdateAPI {
+public class UpdateAPI extends JerseyResource implements UpdateApi {
+
   private final UpdateRequestHandler updateRequestHandler;
+  private final SolrQueryRequest solrQueryRequest;
+  private final SolrQueryResponse solrQueryResponse;
 
-  public UpdateAPI(UpdateRequestHandler updateRequestHandler) {
-    this.updateRequestHandler = updateRequestHandler;
+  @Inject
+  public UpdateAPI(
+      UpdateRequestHandlerConfig handlerConfig,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    this.updateRequestHandler = handlerConfig.updateRequestHandler;
+    this.solrQueryRequest = solrQueryRequest;
+    this.solrQueryResponse = solrQueryResponse;
   }
 
-  @EndPoint(method = POST, path = "/update", permission = UPDATE_PERM)
-  public void update(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
-    updateRequestHandler.handleRequest(req, rsp);
+  // Query parameters like commit, overwrite, etc are declared as method arguments for the
+  // JAX-RS/OpenAPI contract and via magic are read in by the handler.
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public UpdateResponse update(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions,
+      InputStream requestBody)
+      throws Exception {
+    return handleUpdate(null);
   }
 
-  @EndPoint(method = POST, path = "/update/xml", permission = UPDATE_PERM)
-  public void updateXml(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public UpdateResponse updateJson(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions,
+      InputStream requestBody) {
+    return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
-  @EndPoint(method = POST, path = "/update/csv", permission = UPDATE_PERM)
-  public void updateCsv(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public UpdateResponse updateXml(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions,
+      InputStream requestBody) {
+    return handleUpdate(null);
   }
 
-  @EndPoint(method = POST, path = "/update/json", permission = UPDATE_PERM)
-  public void updateJson(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public UpdateResponse updateCsv(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions,
+      InputStream requestBody) {
+    return handleUpdate(null);
   }
 
-  @EndPoint(method = POST, path = "/update/bin", permission = UPDATE_PERM)
-  public void updateJavabin(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public UpdateResponse updateJavabin(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions,
+      InputStream requestBody) {
+    return handleUpdate(UpdateRequestHandler.BIN_PATH);
   }
+
+  private UpdateResponse handleUpdate(String pathOverride) {
+    final UpdateResponse response = instantiateJerseyResponse(UpdateResponse.class);
+    if (pathOverride != null) {
+      solrQueryRequest.getContext().put(PATH, pathOverride);
+    }
+    // The distributed update processor writes replication metadata into the legacy response
+    // header while handling the request. Initialize it for the handler, then leave serialization
+    // to the typed Jersey response so only one responseHeader is returned to the client.
+    SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
+    try {
+      updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
+    } finally {
+      solrQueryResponse.getValues().remove("responseHeader");
+    }
+    rethrowAnyException(solrQueryResponse);
+    response.adds = takeDocumentVersionResults("adds");
+    response.deletes = takeDocumentVersionResults("deletes");
+    response.deleteByQuery = takeQueryVersionResults();
+    return response;
+  }
+
+  private List<VersionedDocument> takeDocumentVersionResults(String name) {
+    final NamedList<?> values = (NamedList<?>) solrQueryResponse.getValues().remove(name);
+    if (values == null) return null;
+    final List<VersionedDocument> results = new ArrayList<>(values.size());
+    for (int i = 0; i < values.size(); i++) {
+      final VersionedDocument result = new VersionedDocument();
+      result.id = values.getName(i);
+      result.version = ((Number) values.getVal(i)).longValue();
+      results.add(result);
+    }
+    return results;
+  }
+
+  private List<VersionedQuery> takeQueryVersionResults() {
+    final NamedList<?> values =
+        (NamedList<?>) solrQueryResponse.getValues().remove("deleteByQuery");
+    if (values == null) return null;
+    final List<VersionedQuery> results = new ArrayList<>(values.size());
+    for (int i = 0; i < values.size(); i++) {
+      final VersionedQuery result = new VersionedQuery();
+      result.query = values.getName(i);
+      result.version = ((Number) values.getVal(i)).longValue();
+      results.add(result);
+    }
+    return results;
+  }
+
+  private void rethrowAnyException(SolrQueryResponse rsp) {
+    final Exception ex = rsp.getException();
+    if (ex instanceof SolrException solrEx) throw solrEx;
+    if (ex != null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+  }
+
+  /** Configuration object providing access to the {@link UpdateRequestHandler} instance. */
+  public record UpdateRequestHandlerConfig(UpdateRequestHandler updateRequestHandler)
+      implements APIConfigProvider.APIConfig {}
 }
