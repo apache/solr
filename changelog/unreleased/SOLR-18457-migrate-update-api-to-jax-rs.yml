@@ -1,4 +1,4 @@
-title: Migrate v2 update endpoints to JAX-RS and rename the Javabin endpoint to /update/javabin
+title: Migrate v2 update endpoints to JAX-RS and rename the Javabin endpoint to /update/javabin.  Migrate Admin UI to using v2 endpoints, fixing UI issues in the document upload screen.  Document screen only works with /upload endpoint, no longer can specify a custom endpoint.
 type: changed
 authors:
   - name: Eric Pugh
