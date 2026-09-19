@@ -27,7 +27,10 @@ var JSON_DOC_PLACEHOLDER = '{\n' +
                 '}';
 var JSON_COMMAND_PLACEHOLDER = '{\n' +
                 '  "add": {\n' +
-                '    "doc": ' + JSON_DOC_PLACEHOLDER + '\n' +
+                '    "doc" {\n' +
+                '      "id": "change.me",\n' +
+                '      "title": "change.me"\n' +
+                '    }\n' +
                 '  }\n' +
                 '}';
 
