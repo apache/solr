@@ -57,33 +57,57 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     this.solrQueryResponse = solrQueryResponse;
   }
 
+  // Query parameters like commit, overwrite, etc are declared as method arguments for the JAX-RS/OpenAPI contract
+  // and via magic are read in by the handler.
   @Override
   @PermissionName(UPDATE_PERM)
-  public UpdateResponse update() throws Exception {
+  public UpdateResponse update(
+      Boolean commit, Integer commitWithin, Boolean overwrite, Boolean softCommit, Boolean versions)
+      throws Exception {
     return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public UpdateResponse updateJson() {
+  public UpdateResponse updateJson(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions) {
     return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public UpdateResponse updateXml() {
+  public UpdateResponse updateXml(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions) {
     return handleUpdate(null);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public UpdateResponse updateCsv() {
+  public UpdateResponse updateCsv(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions) {
     return handleUpdate(null);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public UpdateResponse updateJavabin() {
+  public UpdateResponse updateJavabin(
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions) {
     return handleUpdate(UpdateRequestHandler.BIN_PATH);
   }
 

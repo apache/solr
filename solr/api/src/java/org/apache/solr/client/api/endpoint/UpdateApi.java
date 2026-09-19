@@ -19,8 +19,10 @@ package org.apache.solr.client.api.endpoint;
 import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.UpdateResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
@@ -33,7 +35,21 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents using any supported content type",
       tags = {"update"})
-  UpdateResponse update() throws Exception;
+  UpdateResponse update(
+      @Parameter(description = "Commit the update immediately") @QueryParam("commit")
+          Boolean commit,
+      @Parameter(description = "Commit the update within this many milliseconds")
+          @QueryParam("commitWithin")
+          Integer commitWithin,
+      @Parameter(description = "Overwrite documents with the same unique key")
+          @QueryParam("overwrite")
+          Boolean overwrite,
+      @Parameter(description = "Perform a soft commit") @QueryParam("softCommit")
+          Boolean softCommit,
+      @Parameter(description = "Include assigned document versions in the response")
+          @QueryParam("versions")
+          Boolean versions)
+      throws Exception;
 
   @POST
   @Path("/json")
@@ -41,7 +57,21 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in JSON format",
       tags = {"update"})
-  UpdateResponse updateJson() throws Exception;
+  UpdateResponse updateJson(
+      @Parameter(description = "Commit the update immediately") @QueryParam("commit")
+          Boolean commit,
+      @Parameter(description = "Commit the update within this many milliseconds")
+          @QueryParam("commitWithin")
+          Integer commitWithin,
+      @Parameter(description = "Overwrite documents with the same unique key")
+          @QueryParam("overwrite")
+          Boolean overwrite,
+      @Parameter(description = "Perform a soft commit") @QueryParam("softCommit")
+          Boolean softCommit,
+      @Parameter(description = "Include assigned document versions in the response")
+          @QueryParam("versions")
+          Boolean versions)
+      throws Exception;
 
   @POST
   @Path("/xml")
@@ -49,7 +79,21 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in XML format",
       tags = {"update"})
-  UpdateResponse updateXml() throws Exception;
+  UpdateResponse updateXml(
+      @Parameter(description = "Commit the update immediately") @QueryParam("commit")
+          Boolean commit,
+      @Parameter(description = "Commit the update within this many milliseconds")
+          @QueryParam("commitWithin")
+          Integer commitWithin,
+      @Parameter(description = "Overwrite documents with the same unique key")
+          @QueryParam("overwrite")
+          Boolean overwrite,
+      @Parameter(description = "Perform a soft commit") @QueryParam("softCommit")
+          Boolean softCommit,
+      @Parameter(description = "Include assigned document versions in the response")
+          @QueryParam("versions")
+          Boolean versions)
+      throws Exception;
 
   @POST
   @Path("/csv")
@@ -57,7 +101,21 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in CSV format",
       tags = {"update"})
-  UpdateResponse updateCsv() throws Exception;
+  UpdateResponse updateCsv(
+      @Parameter(description = "Commit the update immediately") @QueryParam("commit")
+          Boolean commit,
+      @Parameter(description = "Commit the update within this many milliseconds")
+          @QueryParam("commitWithin")
+          Integer commitWithin,
+      @Parameter(description = "Overwrite documents with the same unique key")
+          @QueryParam("overwrite")
+          Boolean overwrite,
+      @Parameter(description = "Perform a soft commit") @QueryParam("softCommit")
+          Boolean softCommit,
+      @Parameter(description = "Include assigned document versions in the response")
+          @QueryParam("versions")
+          Boolean versions)
+      throws Exception;
 
   @POST
   @Path("/javabin")
@@ -65,5 +123,19 @@ public interface UpdateApi {
   @Operation(
       summary = "Index documents in Javabin format",
       tags = {"update"})
-  UpdateResponse updateJavabin() throws Exception;
+  UpdateResponse updateJavabin(
+      @Parameter(description = "Commit the update immediately") @QueryParam("commit")
+          Boolean commit,
+      @Parameter(description = "Commit the update within this many milliseconds")
+          @QueryParam("commitWithin")
+          Integer commitWithin,
+      @Parameter(description = "Overwrite documents with the same unique key")
+          @QueryParam("overwrite")
+          Boolean overwrite,
+      @Parameter(description = "Perform a soft commit") @QueryParam("softCommit")
+          Boolean softCommit,
+      @Parameter(description = "Include assigned document versions in the response")
+          @QueryParam("versions")
+          Boolean versions)
+      throws Exception;
 }
