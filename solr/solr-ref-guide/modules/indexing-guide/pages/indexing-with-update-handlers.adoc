@@ -20,563 +20,11 @@
 Update handlers are request handlers designed to add, delete and update documents to the index.
 In addition to having plugins for importing rich documents (see xref:indexing-with-tika.adoc[]), Solr natively supports indexing structured documents in XML, CSV, and JSON.
 
-NOTE: Solr also exposes update functionality via the xref:configuration-guide:v2-api.adoc[v2 API].
-The v2 update endpoints are documented in the <<V2 Update API>> section below.
-
-The recommended way to configure and use request handlers is with path based names that map to paths in the request URL.
-However, request handlers can also be specified with the `qt` (query type) parameter if the xref:configuration-guide:requestdispatcher.adoc[`requestDispatcher`] is appropriately configured.
-It is possible to access the same handler using more than one name, which can be useful if you wish to specify different sets of default options.
-
 A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the xref:content-streams.adoc[ContentStream].
 
 If you need to pre-process documents after they are loaded but before they are indexed (or even checked against the schema),
 Solr has document preprocessing plugins for Update Request Handlers, called xref:configuration-guide:update-request-processors.adoc[], which allow for default and custom configuration chains.
 
-== UpdateRequestHandler Configuration
-
-The default configuration file has the update request handler configured by default.
-
-[source,xml]
-----
-<requestHandler name="/update" class="solr.UpdateRequestHandler" />
-----
-
-== Versioned Update Responses
-
-Add the `versions=true` query parameter to an update request when the response must include the versions assigned to add or delete operations.
-This parameter is supported by both the V1 update handlers and the V2 update endpoints.
-It can be used with JSON, XML, CSV, Javabin, and CBOR update requests where the format is supported by the endpoint.
-The `adds` field applies to document-ingest formats; `deletes` and `deleteByQuery` apply to formats that accept delete commands, such as JSON command updates, XML, and Javabin.
-
-See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more information about update versions.
-
-[tabs#versioned-update-response]
-======
-V1 API::
-+
-====
-V1 returns alternating name/version values.
-[source,json]
-----
-{
-  "responseHeader": {
-    "status": 0,
-    "QTime": 127
-  },
-  "adds": [
-    "0002166313",
-    123456789
-  ],
-  "deletes": [
-    "0002166314",
-    -123456790
-  ],
-  "deleteByQuery": [
-    "status:deleted",
-    -123456791
-  ]
-}
-----
-====
-
-V2 API::
-+
-====
-The v2 API returns typed entries:
-
-[source,json]
-----
-{
-  "responseHeader": {
-    "status": 0,
-    "QTime": 127
-  },
-  "adds": [
-    {
-      "id": "0002166313",
-      "version": 123456789
-    }
-  ],
-  "deletes": [
-    {
-      "id": "0002166314",
-      "version": -123456790
-    }
-  ],
-  "deleteByQuery": [
-    {
-      "query": "status:deleted",
-      "version": -123456791
-    }
-  ]
-}
-----
-====
-======
-
-The status field will be non-zero in case of failure.
-
-The response fields represent:
-
-* `adds`: Documents added and the versions assigned to them.
-* `deletes`: Documents deleted and the versions assigned to their delete operations.
-* `deleteByQuery`: Delete-by-query operations and the versions assigned to them.
-
-The version value is assigned by Solr. Delete versions are commonly negative.
-
-== XML Formatted Index Updates
-
-Index update commands can be sent as XML message to the update handler using `Content-type: application/xml` or `Content-type: text/xml`.
-
-=== Adding Documents
-
-The XML schema recognized by the update handler for adding documents is very straightforward:
-
-* The `<add>` element introduces one more documents to be added.
-* The `<doc>` element introduces the fields making up a document.
-* The `<field>` element presents the content for a specific field.
-
-For example:
-
-[source,xml]
-----
-<add>
-  <doc>
-    <field name="authors">Patrick Eagar</field>
-    <field name="subject">Sports</field>
-    <field name="dd">796.35</field>
-    <field name="numpages">128</field>
-    <field name="desc"></field>
-    <field name="price">12.40</field>
-    <field name="title">Summer of the all-rounder: Test and championship cricket in England 1982</field>
-    <field name="isbn">0002166313</field>
-    <field name="yearpub">1982</field>
-    <field name="publisher">Collins</field>
-  </doc>
-  <doc>
-  ...
-  </doc>
-</add>
-----
-
-The add command supports some optional attributes which may be specified.
-
-`commitWithin`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Add the document within the specified number of milliseconds.
-
-`overwrite`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `true`
-|===
-+
-Indicates if the unique key constraints should be checked to overwrite previous versions of the same document (see below).
-
-If the document schema defines a unique key, then by default an `/update` operation to add a document will overwrite (i.e., replace) any document in the index with the same unique key.
-If no unique key has been defined, indexing performance is somewhat faster, as no check has to be made for an existing documents to replace.
-
-If you have a unique key field, but you feel confident that you can safely bypass the uniqueness check (e.g., you build your indexes in batch, and your indexing code guarantees it never adds the same document more than once) you can specify the `overwrite="false"` option when adding your documents.
-
-=== XML Update Commands
-
-==== Commit and Optimize During Updates
-
-The `<commit>` operation writes all documents loaded since the last commit to one or more segment files on the disk.
-Before a commit has been issued, newly indexed content is not visible to searches.
-The commit operation opens a new searcher, and triggers any event listeners that have been configured.
-
-Commits may be issued explicitly with a `<commit/>` message, and can also be triggered from `<autocommit>` parameters in `solrconfig.xml`.
-
-The `<optimize>` operation requests Solr to merge internal data structures.
-For a large index, optimization will take some time to complete, but by merging many small segment files into larger segments, search performance may improve.
-If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
-
-WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates).
-Applications requiring NRT functionality should not use optimize.
-
-The `<commit>` and `<optimize>` elements accept these optional attributes:
-
-`waitSearcher`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `true`
-|===
-+
-Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
-
-`expungeDeletes`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process.
-Resulting segments will respect `maxMergedSegmentMB`.
-This option only applies in a `<commit>` operation.
-+
-WARNING: `expungeDeletes` is less expensive than optimize, but the same warnings apply.
-
-`maxSegments`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Makes a best effort attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved.
-Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
-This option only applies in a `<optimize>` operation.
-Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting.
-
-Here are examples of `<commit>` and `<optimize>` using optional attributes:
-
-[tabs#xml-commit-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
-<commit waitSearcher="false"/>
-<commit waitSearcher="false" expungeDeletes="true"/>
-<optimize waitSearcher="false"/>'
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
-<commit waitSearcher="false"/>
-<commit waitSearcher="false" expungeDeletes="true"/>
-<optimize waitSearcher="false"/>'
-----
-====
-======
-
-==== Delete Operations
-
-Documents can be deleted from the index in two ways.
-"Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema.
-It doesn't work for child/nested docs.
-"Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query.
-A single delete message can contain multiple delete operations.
-
-[tabs#xml-delete-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
-<delete>
-  <id>0002166313</id>
-  <id>0031745983</id>
-  <query>subject:sport</query>
-  <query>publisher:penguin</query>
-</delete>'
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
-<delete>
-  <id>0002166313</id>
-  <id>0031745983</id>
-  <query>subject:sport</query>
-  <query>publisher:penguin</query>
-</delete>'
-----
-====
-======
-
-[IMPORTANT]
-====
-
-Some queries, including many `{!join}` and `{!graph}` queries, are not supported in delete operations and will return a 400 error.
-
-Users interested in using the Join query parser in a Delete By Query may do so by specifying a `score` parameter with the value "none" (and ensuring no `method` parameter is provided).
-See the section on the xref:query-guide:join-query-parser.adoc[] for more details on the `score` parameter and its usage.
-
-====
-
-==== Rollback Operations
-
-The rollback command rolls back all add and deletes made to the index since the last commit.
-It neither calls any event listeners nor creates a new searcher.
-Its syntax is simple: `<rollback/>`.
-
-The same command can be sent through either API:
-
-[tabs#xml-rollback-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update \
-  -H "Content-Type: text/xml" -d '<rollback/>'
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml \
-  -H "Content-Type: text/xml" -d '<rollback/>'
-----
-====
-======
-
-==== Grouping Operations
-
-You can post several commands in a single XML file by grouping them with the surrounding `<update>` element.
-
-[tabs#xml-grouped-update-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
-<update>
-  <add>
-    <doc><!-- doc 1 content --></doc>
-  </add>
-  <add>
-    <doc><!-- doc 2 content --></doc>
-  </add>
-  <delete>
-    <id>0002166313</id>
-  </delete>
-</update>'
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
-<update>
-  <add>
-    <doc><!-- doc 1 content --></doc>
-  </add>
-  <add>
-    <doc><!-- doc 2 content --></doc>
-  </add>
-  <delete>
-    <id>0002166313</id>
-  </delete>
-</update>'
-----
-====
-======
-
-=== Using curl to Perform Updates
-
-You can use the `curl` utility to perform any of the above commands, using its `-d` option to append the XML message to the `curl` command, and generating a HTTP POST request.
-The same XML update can be sent through either API:
-
-[tabs#xml-update-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update?versions=true -H "Content-Type: text/xml" -d '
-<add>
-  <doc>
-    <field name="authors">Patrick Eagar</field>
-    <field name="subject">Sports</field>
-    <field name="dd">796.35</field>
-    <field name="isbn">0002166313</field>
-    <field name="yearpub">1982</field>
-    <field name="publisher">Collins</field>
-  </doc>
-</add>'
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml?versions=true -H "Content-Type: text/xml" -d '
-<add>
-  <doc>
-    <field name="authors">Patrick Eagar</field>
-    <field name="subject">Sports</field>
-    <field name="dd">796.35</field>
-    <field name="isbn">0002166313</field>
-    <field name="yearpub">1982</field>
-    <field name="publisher">Collins</field>
-  </doc>
-</add>'
-----
-====
-======
-
-For posting XML messages contained in a file, you can use the alternative form:
-
-[tabs#xml-file-update-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d @myfile.xml
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d @myfile.xml
-----
-====
-======
-
-The approach above works well, but using the `-d` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server.
-This may be problematic when dealing with multi-gigabyte files.
-This alternative `curl` command performs equivalent operations but with minimal `curl` memory usage:
-
-[tabs#xml-file-streaming-request]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
-----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -T "myfile.xml" -X POST
-----
-====
-======
-
-=== Using XSLT to Transform XML Index Updates
-
-NOTE: The XSLT update handler is V1-only. V2 does not provide a configurable equivalent for custom request handlers such as `/update/xslt`; use the V1 endpoint for these requests.
-
-The xref:configuration-guide:script-update-processor.adoc[Scripting module] provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
-You must have an XSLT stylesheet in the `conf/xslt` directory of your xref:configuration-guide:config-sets.adoc[configset] that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
-
-You will need to enable the xref:configuration-guide:script-update-processor.adoc#module[scripting Module] before using this feature.
-
-=== tr Parameter
-
-The XSLT Update Request Handler accepts the `tr` parameter, which identifies the XML transformation to use.
-The transformation must be found in the Solr `conf/xslt` directory.
-
-=== XSLT Configuration
-
-The example below, from the `sample_techproducts_configs` xref:configuration-guide:config-sets.adoc[configset] in the Solr distribution, shows how the XSLT Update Request Handler is configured.
-
-[source,xml]
-----
-<!--
-  Changes to XSLT transforms are taken into account
-  every xsltCacheLifetimeSeconds at most.
--->
-<requestHandler name="/update/xslt"
-                     class="solr.scripting.xslt.XSLTUpdateRequestHandler">
-  <int name="xsltCacheLifetimeSeconds">5</int>
-</requestHandler>
-----
-
-A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT changes quickly.
-For production you probably want a much higher value.
-
-=== XSLT Update Example
-
-Here is the `sample_techproducts_configs/conf/xslt/updateXml.xsl` XSL file for converting standard Solr XML output to the Solr expected `<add><doc/></add>` format:
-
-[source,xml]
-----
-<xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
-  <xsl:output media-type="text/xml" method="xml" indent="yes"/>
-  <xsl:template match='/'>
-    <add>
-      <xsl:apply-templates select="response/result/doc"/>
-    </add>
-  </xsl:template>
-  <!-- Ignore score (makes no sense to index) -->
-  <xsl:template match="doc/*[@name='score']" priority="100"></xsl:template>
-  <xsl:template match="doc">
-    <xsl:variable name="pos" select="position()"/>
-    <doc>
-      <xsl:apply-templates>
-        <xsl:with-param name="pos"><xsl:value-of select="$pos"/></xsl:with-param>
-      </xsl:apply-templates>
-    </doc>
-  </xsl:template>
-  <!-- Flatten arrays to duplicate field lines -->
-  <xsl:template match="doc/arr" priority="100">
-    <xsl:variable name="fn" select="@name"/>
-    <xsl:for-each select="*">
-      <xsl:element name="field">
-        <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
-        <xsl:value-of select="."/>
-      </xsl:element>
-    </xsl:for-each>
-  </xsl:template>
-  <xsl:template match="doc/*">
-    <xsl:variable name="fn" select="@name"/>
-      <xsl:element name="field">
-        <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
-      <xsl:value-of select="."/>
-    </xsl:element>
-  </xsl:template>
-  <xsl:template match="*"/>
-</xsl:stylesheet>
-----
-
-This stylesheet transforms Solr's XML search result format into Solr's Update XML syntax.
-One example usage would be to copy a Solr 1.3 index (which does not have CSV response writer) into a format which can be indexed into another Solr file (provided that all fields are stored):
-
-[source,bash]
-----
-$ curl "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml" -o standard_solr_xml_format.xml
-
-$ curl "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl" -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml
-----
-
-NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
 
 == JSON Formatted Index Updates
 
@@ -822,6 +270,294 @@ Use `/api/collections/\{collection\}/update/json` or `/api/cores/\{core\}/update
 Solr can support custom JSON.
 This is covered in the section xref:transforming-and-indexing-custom-json.adoc[].
 
+== XML Formatted Index Updates
+
+Index update commands can be sent as XML message to the update handler using `Content-type: application/xml` or `Content-type: text/xml`.
+
+=== Adding Documents
+
+The XML schema recognized by the update handler for adding documents is very straightforward:
+
+* The `<add>` element introduces one more documents to be added.
+* The `<doc>` element introduces the fields making up a document.
+* The `<field>` element presents the content for a specific field.
+
+For example:
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="authors">Patrick Eagar</field>
+    <field name="subject">Sports</field>
+    <field name="dd">796.35</field>
+    <field name="numpages">128</field>
+    <field name="desc"></field>
+    <field name="price">12.40</field>
+    <field name="title">Summer of the all-rounder: Test and championship cricket in England 1982</field>
+    <field name="isbn">0002166313</field>
+    <field name="yearpub">1982</field>
+    <field name="publisher">Collins</field>
+  </doc>
+  <doc>
+  ...
+  </doc>
+</add>
+----
+
+The add command supports the shared `commitWithin` and `overwrite` options described in the <<Common Update Options>> section.
+The XML syntax places these options on the `<add>` element.
+
+=== XML Update Commands
+
+The XML update syntax supports commit and optimize commands. Their behavior and options are described in the <<Commit and Optimize>> section above.
+
+Here are examples of `<commit>` and `<optimize>` using optional attributes:
+
+[tabs#xml-commit-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
+<commit waitSearcher="false"/>
+<commit waitSearcher="false" expungeDeletes="true"/>
+<optimize waitSearcher="false"/>'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+<commit waitSearcher="false"/>
+<commit waitSearcher="false" expungeDeletes="true"/>
+<optimize waitSearcher="false"/>'
+----
+====
+======
+
+==== Delete Operations
+
+Documents can be deleted from the index in two ways.
+"Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema.
+It doesn't work for child/nested docs.
+"Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query.
+A single delete message can contain multiple delete operations.
+
+[tabs#xml-delete-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
+<delete>
+  <id>0002166313</id>
+  <id>0031745983</id>
+  <query>subject:sport</query>
+  <query>publisher:penguin</query>
+</delete>'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+<delete>
+  <id>0002166313</id>
+  <id>0031745983</id>
+  <query>subject:sport</query>
+  <query>publisher:penguin</query>
+</delete>'
+----
+====
+======
+
+[IMPORTANT]
+====
+
+Some queries, including many `{!join}` and `{!graph}` queries, are not supported in delete operations and will return a 400 error.
+
+Users interested in using the Join query parser in a Delete By Query may do so by specifying a `score` parameter with the value "none" (and ensuring no `method` parameter is provided).
+See the section on the xref:query-guide:join-query-parser.adoc[] for more details on the `score` parameter and its usage.
+
+====
+
+==== Rollback Operations
+
+The rollback command rolls back all add and deletes made to the index since the last commit.
+It neither calls any event listeners nor creates a new searcher.
+Its syntax is simple: `<rollback/>`.
+
+The same command can be sent through either API:
+
+[tabs#xml-rollback-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update \
+  -H "Content-Type: text/xml" -d '<rollback/>'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml \
+  -H "Content-Type: text/xml" -d '<rollback/>'
+----
+====
+======
+
+==== Grouping Operations
+
+You can post several commands in a single XML file by grouping them with the surrounding `<update>` element.
+
+[tabs#xml-grouped-update-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
+<update>
+  <add>
+    <doc><!-- doc 1 content --></doc>
+  </add>
+  <add>
+    <doc><!-- doc 2 content --></doc>
+  </add>
+  <delete>
+    <id>0002166313</id>
+  </delete>
+</update>'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+<update>
+  <add>
+    <doc><!-- doc 1 content --></doc>
+  </add>
+  <add>
+    <doc><!-- doc 2 content --></doc>
+  </add>
+  <delete>
+    <id>0002166313</id>
+  </delete>
+</update>'
+----
+====
+======
+
+=== Using XSLT to Transform XML Index Updates
+
+NOTE: The XSLT update handler is V1-only. V2 does not provide a configurable equivalent for custom request handlers such as `/update/xslt`; use the V1 endpoint for these requests.
+
+The xref:configuration-guide:script-update-processor.adoc[Scripting module] provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
+You must have an XSLT stylesheet in the `conf/xslt` directory of your xref:configuration-guide:config-sets.adoc[configset] that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+
+You will need to enable the xref:configuration-guide:script-update-processor.adoc#module[scripting Module] before using this feature.
+
+=== tr Parameter
+
+The XSLT Update Request Handler accepts the `tr` parameter, which identifies the XML transformation to use.
+The transformation must be found in the Solr `conf/xslt` directory.
+
+=== XSLT Configuration
+
+The example below, from the `sample_techproducts_configs` xref:configuration-guide:config-sets.adoc[configset] in the Solr distribution, shows how the XSLT Update Request Handler is configured.
+
+[source,xml]
+----
+<!--
+  Changes to XSLT transforms are taken into account
+  every xsltCacheLifetimeSeconds at most.
+-->
+<requestHandler name="/update/xslt"
+                     class="solr.scripting.xslt.XSLTUpdateRequestHandler">
+  <int name="xsltCacheLifetimeSeconds">5</int>
+</requestHandler>
+----
+
+A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT changes quickly.
+For production you probably want a much higher value.
+
+=== XSLT Update Example
+
+Here is the `sample_techproducts_configs/conf/xslt/updateXml.xsl` XSL file for converting standard Solr XML output to the Solr expected `<add><doc/></add>` format:
+
+[source,xml]
+----
+<xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
+  <xsl:output media-type="text/xml" method="xml" indent="yes"/>
+  <xsl:template match='/'>
+    <add>
+      <xsl:apply-templates select="response/result/doc"/>
+    </add>
+  </xsl:template>
+  <!-- Ignore score (makes no sense to index) -->
+  <xsl:template match="doc/*[@name='score']" priority="100"></xsl:template>
+  <xsl:template match="doc">
+    <xsl:variable name="pos" select="position()"/>
+    <doc>
+      <xsl:apply-templates>
+        <xsl:with-param name="pos"><xsl:value-of select="$pos"/></xsl:with-param>
+      </xsl:apply-templates>
+    </doc>
+  </xsl:template>
+  <!-- Flatten arrays to duplicate field lines -->
+  <xsl:template match="doc/arr" priority="100">
+    <xsl:variable name="fn" select="@name"/>
+    <xsl:for-each select="*">
+      <xsl:element name="field">
+        <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
+        <xsl:value-of select="."/>
+      </xsl:element>
+    </xsl:for-each>
+  </xsl:template>
+  <xsl:template match="doc/*">
+    <xsl:variable name="fn" select="@name"/>
+      <xsl:element name="field">
+        <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>
+      <xsl:value-of select="."/>
+    </xsl:element>
+  </xsl:template>
+  <xsl:template match="*"/>
+</xsl:stylesheet>
+----
+
+This stylesheet transforms Solr's XML search result format into Solr's Update XML syntax.
+One example usage would be to copy a Solr 1.3 index (which does not have CSV response writer) into a format which can be indexed into another Solr file (provided that all fields are stored):
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml' -o standard_solr_xml_format.xml
+
+curl 'http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl' -H 'Content-Type: text/xml' -d @standard_solr_xml_format.xml
+----
+
+NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
 
 == CSV Formatted Index Updates
 
@@ -1000,17 +736,7 @@ Example: `map=left:right` or `f.subject.map=history:bunk`
 If `true`, split a field into multiple values by a separate parser.
 This parameter is used on a per-field basis, for example `f.FIELD_NAME_GOES_HERE.split=true`.
 
-`overwrite`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `true`
-|===
-+
-If `true`, check for and overwrite duplicate documents, based on the uniqueKey field declared in the Solr schema.
-If you know the documents you are indexing do not contain any duplicates then you may see a considerable speed up setting this to `false`.
-+
-This parameter is global.
+`overwrite` is a common update option; see <<Common Update Options>> for its behavior.
 
 `commit`::
 +
@@ -1022,17 +748,7 @@ This parameter is global.
 Issues a commit after the data has been ingested.
 This parameter is global.
 
-`commitWithin`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Add the document within the specified number of milliseconds.
-This parameter is global.
-+
-Example: `commitWithin=10000`
+`commitWithin` is a common update option; see <<Common Update Options>> for its behavior.
 
 `rowid`::
 +
@@ -1097,8 +813,219 @@ curl 'http://localhost:8983/api/collections/my_collection/update/csv?commit=true
 The `/update/csv` endpoint is a specialized Solr request path designed for importing CSV data.
 You use it primarily when your client application or script cannot easily set the required `Content-Type: text/csv` header, as this route automatically forces Solr to treat all incoming payloads as CSV data without needing extra parameter configuration.
 
+== Commit and Optimize
+
+The `<commit>` operation writes all documents loaded since the last commit to one or more segment files on the disk.
+Before a commit has been issued, newly indexed content is not visible to searches.
+The commit operation opens a new searcher, and triggers any event listeners that have been configured.
+
+Commits may be issued explicitly with a `<commit/>` message, and can also be triggered from `<autocommit>` parameters in `solrconfig.xml`.
+
+The `<optimize>` operation requests Solr to merge internal data structures.
+For a large index, optimization will take some time to complete, but by merging many small segment files into larger segments, search performance may improve.
+If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
+
+WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates).
+Applications requiring NRT functionality should not use optimize.
+
+The `<commit>` and `<optimize>` elements accept these optional attributes:
+
+`waitSearcher`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
+
+`expungeDeletes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process.
+Resulting segments will respect `maxMergedSegmentMB`.
+This option only applies in a `<commit>` operation.
++
+WARNING: `expungeDeletes` is less expensive than optimize, but the same warnings apply.
+
+`maxSegments`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Makes a best effort attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved.
+Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
+This option only applies in a `<optimize>` operation.
+Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting.
+
+== Common Update Options
+
+These options apply to document update requests in JSON, XML, and CSV formats.
+They can be supplied as URL parameters; formats that support command bodies may also provide them in the body using their format-specific syntax.
+
+`commitWithin`::
++
+Requests that Solr commit the update within the specified number of milliseconds.
+
+`overwrite`::
++
+Controls whether Solr checks the unique key and replaces an existing document with the same key.
+The default is `true`.
+Set it to `false` when the input is known not to contain duplicate unique keys and replacing existing documents is unnecessary.
+
+== Versioned Update Responses
+
+Add the `versions=true` query parameter to an update request when the response must include the versions assigned to add or delete operations.
+This parameter is supported by both the V1 update handlers and the V2 update endpoints.
+It can be used with JSON, XML, CSV, Javabin, and CBOR update requests where the format is supported by the endpoint.
+The `adds` field applies to document-ingest formats; `deletes` and `deleteByQuery` apply to formats that accept delete commands, such as JSON command updates, XML, and Javabin.
+
+See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more information about update versions.
+
+[tabs#versioned-update-response]
+======
+V1 API::
++
+====
+V1 returns alternating name/version values.
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 127
+  },
+  "adds": [
+    "0002166313",
+    123456789
+  ],
+  "deletes": [
+    "0002166314",
+    -123456790
+  ],
+  "deleteByQuery": [
+    "status:deleted",
+    -123456791
+  ]
+}
+----
+====
+
+V2 API::
++
+====
+The v2 API returns typed entries:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 127
+  },
+  "adds": [
+    {
+      "id": "0002166313",
+      "version": 123456789
+    }
+  ],
+  "deletes": [
+    {
+      "id": "0002166314",
+      "version": -123456790
+    }
+  ],
+  "deleteByQuery": [
+    {
+      "query": "status:deleted",
+      "version": -123456791
+    }
+  ]
+}
+----
+====
+======
+
+The status field will be non-zero in case of failure.
+
+The response fields represent:
+
+* `adds`: Documents added and the versions assigned to them.
+* `deletes`: Documents deleted and the versions assigned to their delete operations.
+* `deleteByQuery`: Delete-by-query operations and the versions assigned to them.
+
+The version value is assigned by Solr. Delete versions are commonly negative.
+
 == Javabin Document Indexing
 
 Javabin is Solr's native binary update format and is primarily intended for SolrJ clients.
 V1 clients send Javabin to `/update` with `Content-Type: application/javabin`.
 V2 clients can use `/update/javabin` or the general `/update` endpoint with the same content type.
+
+== UpdateRequestHandler Configuration
+
+The default configuration file has the update request handler configured by default.
+
+The recommended way to configure and use request handlers is with path-based names that map directly to paths in the request URL.
+You can register a handler at more than one path when you need different defaults for different uses.
+
+[source,xml]
+----
+<requestHandler name="/update" class="solr.UpdateRequestHandler" />
+----
+
+== Posting Large Update Files
+
+Large update files can be posted through either API. The examples below use XML; use the corresponding content type and endpoint for CSV, Javabin, or another supported format.
+Using `-d @myfile.xml` causes `curl` to load the whole file into memory before posting it to the server.
+This may be problematic for multi-gigabyte files.
+
+[tabs#large-file-update-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d @myfile.xml
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d @myfile.xml
+----
+====
+======
+
+For minimal `curl` memory usage, stream the file with `-T`:
+
+[tabs#large-file-streaming-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -T "myfile.xml" -X POST
+----
+====
+======
