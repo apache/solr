@@ -21,7 +21,7 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
@@ -47,11 +47,11 @@ import org.junit.Test;
  * Integration tests for the v2 update API endpoints implemented via JAX-RS in {@link
  * org.apache.solr.handler.admin.api.UpdateAPI}.
  */
-public class UpdateAPITest extends SolrTestCaseJ4 {
+public class UpdateAPITest extends SolrTestCase {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
-  private static final String CORE_NAME = DEFAULT_TEST_COLLECTION_NAME;
+  private static final String CORE_NAME = "update-api-test";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
