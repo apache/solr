@@ -24,7 +24,8 @@ var DOC_PLACEHOLDER = '<doc>\n' +
 var ADD_PLACEHOLDER = '<add>\n' + DOC_PLACEHOLDER + '</add>\n';
 
 solrAdminApp.controller('DocumentsController',
-    function($scope, $rootScope, $routeParams, $location, Luke, Update, FileUpload, Constants) {
+    function($scope, $rootScope, $routeParams, $location, Luke, Update, UpdateV2, FileUpload,
+             Constants, ApiErrorHandler) {
         $scope.resetMenu("documents", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
@@ -104,6 +105,40 @@ solrAdminApp.controller('DocumentsController',
                 }
             }
             if (!doingFileUpload) {
+                // Use the typed v2 update endpoints for the standard handler. Custom request
+                // handlers and the raw Solr command editor retain the v1 path because they may
+                // use handler-specific parameters or a format selected from the request body.
+                var useV2 = $scope.handler == "/update" && $scope.isCloudEnabled !== undefined &&
+                    ($scope.type == "json" || $scope.type == "wizard" ||
+                     $scope.type == "xml" || $scope.type == "csv");
+                if (useV2) {
+                    var indexType = $scope.isCloudEnabled ? "collections" : "cores";
+                    var updateOptions = {
+                        commitWithin: $scope.commitWithin,
+                        overwrite: $scope.overwrite
+                    };
+                    var v2Callback = function (error, data, response) {
+                        if (error) {
+                            $scope.responseStatus = "failure";
+                            $scope.response = JSON.stringify((response && response.body) || error, null, '  ');
+                            ApiErrorHandler.handle(response);
+                            return;
+                        }
+                        $scope.responseStatus = "success";
+                        $scope.response = JSON.stringify(data, null, '  ');
+                        $scope.$evalAsync();
+                    };
+                    if (contentType == "json") {
+                        // The generic endpoint preserves ordinary document fields. The explicit
+                        // /update/json endpoint inherits the sample config's split-mode settings.
+                        UpdateV2.update(indexType, $routeParams.core, postData, updateOptions, v2Callback);
+                    } else if (contentType == "xml") {
+                        UpdateV2.updateXml(indexType, $routeParams.core, postData, updateOptions, v2Callback);
+                    } else if (contentType == "csv") {
+                        UpdateV2.updateCsv(indexType, $routeParams.core, postData, updateOptions, v2Callback);
+                    }
+                    return;
+                }
                 var callback = function (success) {
                   $scope.responseStatus = "success";
                   delete success.$promise;
@@ -134,4 +169,3 @@ solrAdminApp.controller('DocumentsController',
             }
         }
     });
-

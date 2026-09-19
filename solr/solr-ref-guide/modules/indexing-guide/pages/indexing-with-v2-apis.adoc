@@ -92,12 +92,27 @@ See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurr
 
 When `versions=true` is set, the response can include these fields for the operations in the request:
 
-* `adds`: Alternating document IDs and their assigned versions.
-* `deletes`: Alternating document IDs and the versions assigned to their delete operations.
-* `deleteByQuery`: Alternating queries and the versions assigned to their delete operations.
+* `adds`: Documents added and the versions assigned to them.
+* `deletes`: Documents deleted and the versions assigned to their delete operations.
+* `deleteByQuery`: Delete-by-query operations and the versions assigned to them.
 
-For example, adding a document with ID `1` can return `"adds":["1",123456789]`.
+For example, adding a document with ID `1` can return:
+
+[source,json]
+----
+{
+  "adds": [
+    {
+      "id": "1",
+      "version": 123456789
+    }
+  ]
+}
+----
+
+The `version` value is the version assigned by Solr. Delete versions are commonly negative.
 The delete fields apply to formats that accept delete commands, such as XML and Javabin.
+These v2 response fields use typed objects rather than the alternating name/version arrays returned by v1.
 
 == XML Document Indexing
 

@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -78,8 +79,8 @@ public class UpdateAPITest extends SolrTestCase {
       final NamedList<Object> v1Response = sendV1Update(client, format, v1Id);
       final NamedList<Object> v2Response = sendV2Update(client, format, v2Id);
 
-      assertSuccessfulAdd(format, v1Id, v1Response);
-      assertSuccessfulAdd(format, v2Id, v2Response);
+      assertLegacySuccessfulAdd(format, v1Id, v1Response);
+      assertTypedSuccessfulAdd(format, v2Id, v2Response);
       assertIndexed(client, v1Id);
       assertIndexed(client, v2Id);
     }
@@ -152,15 +153,9 @@ public class UpdateAPITest extends SolrTestCase {
     addReq.withContent(payload.toByteArray(), "application/javabin");
     final NamedList<Object> updateResponse = client.request(addReq);
     assertEquals(1, updateResponse.getAll("responseHeader").size());
-    final List<?> adds = (List<?>) updateResponse.get("adds");
-    assertEquals("v2updatejavabin1", adds.get(0));
-    assertTrue(((Number) adds.get(1)).longValue() > 0);
-    final List<?> deletes = (List<?>) updateResponse.get("deletes");
-    assertEquals("v2deleteversion1", deletes.get(0));
-    assertTrue(((Number) deletes.get(1)).longValue() < 0);
-    final List<?> deleteByQuery = (List<?>) updateResponse.get("deleteByQuery");
-    assertEquals("id:v2deletequery1", deleteByQuery.get(0));
-    assertTrue(((Number) deleteByQuery.get(1)).longValue() < 0);
+    assertTypedVersion(updateResponse, "adds", "id", "v2updatejavabin1", true);
+    assertTypedVersion(updateResponse, "deletes", "id", "v2deleteversion1", false);
+    assertTypedVersion(updateResponse, "deleteByQuery", "query", "id:v2deletequery1", false);
     client.commit(CORE_NAME);
 
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
@@ -183,9 +178,7 @@ public class UpdateAPITest extends SolrTestCase {
             "[{\"id\":\"v2version1\"}]", "application/json"));
 
     final var response = client.request(addReq);
-    final List<?> adds = (List<?>) response.get("adds");
-    assertEquals("v2version1", adds.get(0));
-    assertTrue(((Number) adds.get(1)).longValue() > 0);
+    assertTypedVersion(response, "adds", "id", "v2version1", true);
   }
 
   @Test
@@ -203,9 +196,7 @@ public class UpdateAPITest extends SolrTestCase {
 
     final NamedList<Object> response = client.request(addReq);
     assertEquals(1, response.getAll("responseHeader").size());
-    final List<?> adds = (List<?>) response.get("adds");
-    assertEquals("v2xmlversion1", adds.get(0));
-    assertTrue(((Number) adds.get(1)).longValue() > 0);
+    assertTypedVersion(response, "adds", "id", "v2xmlversion1", true);
   }
 
   private static NamedList<Object> sendV1Update(SolrClient client, UpdateFormat format, String id)
@@ -235,13 +226,44 @@ public class UpdateAPITest extends SolrTestCase {
     return params;
   }
 
-  private static void assertSuccessfulAdd(
+  private static void assertLegacySuccessfulAdd(
       UpdateFormat format, String expectedId, NamedList<Object> response) {
     assertEquals(format.name(), 1, response.getAll("responseHeader").size());
     final List<?> adds = (List<?>) response.get("adds");
     assertNotNull(format.name(), adds);
     assertEquals(format.name(), expectedId, adds.get(0));
     assertTrue(format.name(), ((Number) adds.get(1)).longValue() > 0);
+  }
+
+  private static void assertTypedSuccessfulAdd(
+      UpdateFormat format, String expectedId, NamedList<Object> response) {
+    assertEquals(format.name(), 1, response.getAll("responseHeader").size());
+    assertTypedVersion(response, "adds", "id", expectedId, true);
+  }
+
+  private static void assertTypedVersion(
+      NamedList<Object> response,
+      String field,
+      String key,
+      String expectedValue,
+      boolean positiveVersion) {
+    final List<?> values = (List<?>) response.get(field);
+    assertNotNull(field, values);
+    assertEquals(1, values.size());
+    final Object value = values.get(0);
+    final Object actualValue;
+    final Object version;
+    if (value instanceof Map<?, ?> map) {
+      actualValue = map.get(key);
+      version = map.get("version");
+    } else {
+      final NamedList<?> namedValue = (NamedList<?>) value;
+      actualValue = namedValue.get(key);
+      version = namedValue.get("version");
+    }
+    assertEquals(expectedValue, actualValue);
+    final long numericVersion = ((Number) version).longValue();
+    assertTrue(positiveVersion ? numericVersion > 0 : numericVersion < 0);
   }
 
   private static void assertIndexed(SolrClient client, String id) throws Exception {

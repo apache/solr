@@ -16,14 +16,19 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
 import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import java.io.InputStream;
 import org.apache.solr.client.api.model.UpdateResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
@@ -59,11 +64,22 @@ public interface UpdateApi {
           Boolean softCommit,
       @Parameter(description = "Include assigned document versions in the response")
           @QueryParam("versions")
-          Boolean versions)
+          Boolean versions,
+      @Parameter(required = true)
+          @RequestBody(
+              required = true,
+              description = "Update content in the format selected by the Content-Type header.",
+              extensions =
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      }))
+          InputStream requestBody)
       throws Exception;
 
   @POST
   @Path("/json")
+  @Consumes({"application/json", "text/json"})
   @StoreApiParameters
   @Operation(
       summary = "Index documents in JSON format",
@@ -81,11 +97,22 @@ public interface UpdateApi {
           Boolean softCommit,
       @Parameter(description = "Include assigned document versions in the response")
           @QueryParam("versions")
-          Boolean versions)
+          Boolean versions,
+      @Parameter(required = true)
+          @RequestBody(
+              required = true,
+              description = "JSON update content.",
+              extensions =
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      }))
+          InputStream requestBody)
       throws Exception;
 
   @POST
   @Path("/xml")
+  @Consumes({"application/xml", "text/xml"})
   @StoreApiParameters
   @Operation(
       summary = "Index documents in XML format",
@@ -103,11 +130,22 @@ public interface UpdateApi {
           Boolean softCommit,
       @Parameter(description = "Include assigned document versions in the response")
           @QueryParam("versions")
-          Boolean versions)
+          Boolean versions,
+      @Parameter(required = true)
+          @RequestBody(
+              required = true,
+              description = "XML update content.",
+              extensions =
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      }))
+          InputStream requestBody)
       throws Exception;
 
   @POST
   @Path("/csv")
+  @Consumes({"application/csv", "text/csv"})
   @StoreApiParameters
   @Operation(
       summary = "Index documents in CSV format",
@@ -125,11 +163,22 @@ public interface UpdateApi {
           Boolean softCommit,
       @Parameter(description = "Include assigned document versions in the response")
           @QueryParam("versions")
-          Boolean versions)
+          Boolean versions,
+      @Parameter(required = true)
+          @RequestBody(
+              required = true,
+              description = "CSV update content.",
+              extensions =
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      }))
+          InputStream requestBody)
       throws Exception;
 
   @POST
   @Path("/javabin")
+  @Consumes("application/javabin")
   @StoreApiParameters
   @Operation(
       summary = "Index documents in Javabin format",
@@ -147,6 +196,16 @@ public interface UpdateApi {
           Boolean softCommit,
       @Parameter(description = "Include assigned document versions in the response")
           @QueryParam("versions")
-          Boolean versions)
+          Boolean versions,
+      @Parameter(required = true)
+          @RequestBody(
+              required = true,
+              description = "Javabin update content.",
+              extensions =
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      }))
+          InputStream requestBody)
       throws Exception;
 }

@@ -18,20 +18,15 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
 
-/** Version information returned by an update request with {@code versions=true}. */
-public class UpdateResponse extends SolrJerseyResponse {
+/** A document identifier and the version assigned to an update operation. */
+public class VersionedDocument {
 
-  @JsonProperty("adds")
-  @Schema(description = "Documents added and the versions assigned to them.")
-  public List<VersionedDocument> adds;
+  @JsonProperty("id")
+  @Schema(description = "The document's unique identifier.")
+  public String id;
 
-  @JsonProperty("deletes")
-  @Schema(description = "Documents deleted and the versions assigned to their delete operations.")
-  public List<VersionedDocument> deletes;
-
-  @JsonProperty("deleteByQuery")
-  @Schema(description = "Delete-by-query operations and the versions assigned to them.")
-  public List<VersionedQuery> deleteByQuery;
+  @JsonProperty("version")
+  @Schema(description = "The version assigned to the operation.")
+  public long version;
 }

@@ -21,13 +21,17 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import jakarta.inject.Inject;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateApi;
 import org.apache.solr.client.api.model.UpdateResponse;
+import org.apache.solr.client.api.model.VersionedDocument;
+import org.apache.solr.client.api.model.VersionedQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.jersey.APIConfigProvider;
 import org.apache.solr.jersey.PermissionName;
@@ -62,7 +66,12 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
   @Override
   @PermissionName(UPDATE_PERM)
   public UpdateResponse update(
-      Boolean commit, Integer commitWithin, Boolean overwrite, Boolean softCommit, Boolean versions)
+      Boolean commit,
+      Integer commitWithin,
+      Boolean overwrite,
+      Boolean softCommit,
+      Boolean versions,
+      InputStream requestBody)
       throws Exception {
     return handleUpdate(null);
   }
@@ -74,7 +83,8 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
       Integer commitWithin,
       Boolean overwrite,
       Boolean softCommit,
-      Boolean versions) {
+      Boolean versions,
+      InputStream requestBody) {
     return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
@@ -85,7 +95,8 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
       Integer commitWithin,
       Boolean overwrite,
       Boolean softCommit,
-      Boolean versions) {
+      Boolean versions,
+      InputStream requestBody) {
     return handleUpdate(null);
   }
 
@@ -96,7 +107,8 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
       Integer commitWithin,
       Boolean overwrite,
       Boolean softCommit,
-      Boolean versions) {
+      Boolean versions,
+      InputStream requestBody) {
     return handleUpdate(null);
   }
 
@@ -107,7 +119,8 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
       Integer commitWithin,
       Boolean overwrite,
       Boolean softCommit,
-      Boolean versions) {
+      Boolean versions,
+      InputStream requestBody) {
     return handleUpdate(UpdateRequestHandler.BIN_PATH);
   }
 
@@ -116,23 +129,47 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     if (pathOverride != null) {
       solrQueryRequest.getContext().put(PATH, pathOverride);
     }
-    updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
+    // The distributed update processor writes replication metadata into the legacy response
+    // header while handling the request. Initialize it for the handler, then leave serialization
+    // to the typed Jersey response so only one responseHeader is returned to the client.
+    SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
+    try {
+      updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
+    } finally {
+      solrQueryResponse.getValues().remove("responseHeader");
+    }
     rethrowAnyException(solrQueryResponse);
-    response.adds = takeVersionResults("adds");
-    response.deletes = takeVersionResults("deletes");
-    response.deleteByQuery = takeVersionResults("deleteByQuery");
+    response.adds = takeDocumentVersionResults("adds");
+    response.deletes = takeDocumentVersionResults("deletes");
+    response.deleteByQuery = takeQueryVersionResults();
     return response;
   }
 
-  private List<Object> takeVersionResults(String name) {
+  private List<VersionedDocument> takeDocumentVersionResults(String name) {
     final NamedList<?> values = (NamedList<?>) solrQueryResponse.getValues().remove(name);
     if (values == null) return null;
-    final List<Object> pairs = new ArrayList<>(values.size() * 2);
+    final List<VersionedDocument> results = new ArrayList<>(values.size());
     for (int i = 0; i < values.size(); i++) {
-      pairs.add(values.getName(i));
-      pairs.add(values.getVal(i));
+      final VersionedDocument result = new VersionedDocument();
+      result.id = values.getName(i);
+      result.version = ((Number) values.getVal(i)).longValue();
+      results.add(result);
     }
-    return pairs;
+    return results;
+  }
+
+  private List<VersionedQuery> takeQueryVersionResults() {
+    final NamedList<?> values =
+        (NamedList<?>) solrQueryResponse.getValues().remove("deleteByQuery");
+    if (values == null) return null;
+    final List<VersionedQuery> results = new ArrayList<>(values.size());
+    for (int i = 0; i < values.size(); i++) {
+      final VersionedQuery result = new VersionedQuery();
+      result.query = values.getName(i);
+      result.version = ((Number) values.getVal(i)).longValue();
+      results.add(result);
+    }
+    return results;
   }
 
   private void rethrowAnyException(SolrQueryResponse rsp) {
