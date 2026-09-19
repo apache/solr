@@ -20,10 +20,13 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -65,65 +68,21 @@ public class UpdateAPITest extends SolrTestCase {
   }
 
   @Test
-  public void testUpdateViaV2Api() throws Exception {
+  public void testV1AndV2GenericUpdateParityAcrossFormats() throws Exception {
     final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
 
-    // The generic /update endpoint selects the update-command loader from Content-Type.
-    final GenericV2SolrRequest addReq =
-        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
-    addReq.setContentWriter(
-        new RequestWriter.StringPayloadContentWriter(
-            "{\"add\":{\"doc\":{\"id\":\"v2update1\",\"title\":\"V2 update test\"}}}",
-            "application/json"));
-    client.request(addReq);
+    for (UpdateFormat format : UpdateFormat.values()) {
+      final String v1Id = "parity-v1-" + format.name().toLowerCase(Locale.ROOT);
+      final String v2Id = "parity-v2-" + format.name().toLowerCase(Locale.ROOT);
 
-    // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
-    client.commit(CORE_NAME);
+      final NamedList<Object> v1Response = sendV1Update(client, format, v1Id);
+      final NamedList<Object> v2Response = sendV2Update(client, format, v2Id);
 
-    // Verify the document was indexed
-    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
-    queryParams.set("q", "id:v2update1");
-    final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
-    assertEquals(1, queryRsp.getResults().getNumFound());
-  }
-
-  @Test
-  public void testGenericUpdateSelectsXmlFromContentType() throws Exception {
-    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
-    final GenericV2SolrRequest addReq =
-        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
-    addReq.setContentWriter(
-        new RequestWriter.StringPayloadContentWriter(
-            "<add><doc><field name=\"id\">v2genericxml1</field></doc></add>", "application/xml"));
-    client.request(addReq);
-    client.commit(CORE_NAME);
-
-    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
-    queryParams.set("q", "id:v2genericxml1");
-    final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
-    assertEquals(1, queryRsp.getResults().getNumFound());
-  }
-
-  @Test
-  public void testGenericUpdateSelectsJavabinFromContentType() throws Exception {
-    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
-    final SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id", "v2genericjavabin1");
-    final UpdateRequest updateRequest = new UpdateRequest();
-    updateRequest.add(doc);
-    final ByteArrayOutputStream payload = new ByteArrayOutputStream();
-    new JavaBinUpdateRequestCodec().marshal(updateRequest, payload);
-
-    final GenericV2SolrRequest addReq =
-        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
-    addReq.withContent(payload.toByteArray(), "application/javabin");
-    client.request(addReq);
-    client.commit(CORE_NAME);
-
-    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
-    queryParams.set("q", "id:v2genericjavabin1");
-    final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
-    assertEquals(1, queryRsp.getResults().getNumFound());
+      assertSuccessfulAdd(format, v1Id, v1Response);
+      assertSuccessfulAdd(format, v2Id, v2Response);
+      assertIndexed(client, v1Id);
+      assertIndexed(client, v2Id);
+    }
   }
 
   @Test
@@ -247,5 +206,93 @@ public class UpdateAPITest extends SolrTestCase {
     final List<?> adds = (List<?>) response.get("adds");
     assertEquals("v2xmlversion1", adds.get(0));
     assertTrue(((Number) adds.get(1)).longValue() > 0);
+  }
+
+  private static NamedList<Object> sendV1Update(SolrClient client, UpdateFormat format, String id)
+      throws Exception {
+    final GenericSolrRequest request =
+        new GenericSolrRequest(SolrRequest.METHOD.POST, "/update", updateParams());
+    request.setRequiresCollection(true);
+    request.setResponseParser(new JsonMapResponseParser());
+    request.withContent(format.payload(id), format.contentType);
+    return client.request(request, CORE_NAME);
+  }
+
+  private static NamedList<Object> sendV2Update(SolrClient client, UpdateFormat format, String id)
+      throws Exception {
+    final GenericV2SolrRequest request =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update", updateParams());
+    request.setResponseParser(new JsonMapResponseParser());
+    request.withContent(format.payload(id), format.contentType);
+    return client.request(request);
+  }
+
+  private static ModifiableSolrParams updateParams() {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("versions", true);
+    params.set("commit", true);
+    return params;
+  }
+
+  private static void assertSuccessfulAdd(
+      UpdateFormat format, String expectedId, NamedList<Object> response) {
+    assertEquals(format.name(), 1, response.getAll("responseHeader").size());
+    final List<?> adds = (List<?>) response.get("adds");
+    assertNotNull(format.name(), adds);
+    assertEquals(format.name(), expectedId, adds.get(0));
+    assertTrue(format.name(), ((Number) adds.get(1)).longValue() > 0);
+  }
+
+  private static void assertIndexed(SolrClient client, String id) throws Exception {
+    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "id:" + id);
+    final QueryResponse queryResponse = new QueryRequest(queryParams).process(client, CORE_NAME);
+    assertEquals(id, 1, queryResponse.getResults().getNumFound());
+  }
+
+  private enum UpdateFormat {
+    JSON("application/json") {
+      @Override
+      byte[] payload(String id) {
+        return bytes("{\"add\":{\"doc\":{\"id\":\"" + id + "\"}}}");
+      }
+    },
+    XML("application/xml") {
+      @Override
+      byte[] payload(String id) {
+        return bytes("<add><doc><field name=\"id\">" + id + "</field></doc></add>");
+      }
+    },
+    CSV("application/csv") {
+      @Override
+      byte[] payload(String id) {
+        return bytes("id\n" + id + "\n");
+      }
+    },
+    JAVABIN("application/javabin") {
+      @Override
+      byte[] payload(String id) throws Exception {
+        final SolrInputDocument doc = new SolrInputDocument();
+        doc.setField("id", id);
+        final UpdateRequest updateRequest = new UpdateRequest();
+        updateRequest.add(doc);
+        final ByteArrayOutputStream payload = new ByteArrayOutputStream();
+        new JavaBinUpdateRequestCodec().marshal(updateRequest, payload);
+        return payload.toByteArray();
+      }
+    };
+
+    private final String contentType;
+
+    UpdateFormat(String contentType) {
+      this.contentType = contentType;
+    }
+
+    abstract byte[] payload(String id) throws Exception;
+
+    static byte[] bytes(String value) {
+      return value.getBytes(StandardCharsets.UTF_8);
+    }
   }
 }
