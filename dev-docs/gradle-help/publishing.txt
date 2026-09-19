@@ -43,6 +43,11 @@ All distribution artifacts will be placed under:
 
 solr/distribution/build/release
 
+Each binary distribution carries its CycloneDX SBOM as "bom.json" in the archive root, and the
+same file is published next to the archive as solr-<version>.tgz.cdx.json (and the -slim
+equivalent) so that it can be fetched without downloading the distribution. Both get a checksum
+and, when signing is enabled, a signature, like every other release artifact.
+
 Artifact signing is optional (but required if you're really making a release).
 
 
