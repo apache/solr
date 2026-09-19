@@ -17,15 +17,22 @@
 //helper for formatting JSON and others
 
 var DOC_PLACEHOLDER = '<doc>\n' +
-                '<field name="id">change.me</field>' +
-                '<field name="title">change.me</field>' +
+                '  <field name="id">change.me</field>\n' +
+                '  <field name="title">change.me</field>\n' +
                 '</doc>';
 
-var ADD_PLACEHOLDER = '<add>\n' + DOC_PLACEHOLDER + '</add>\n';
+var JSON_DOC_PLACEHOLDER = '{\n' +
+                '  "id": "change.me",\n' +
+                '  "title": "change.me"\n' +
+                '}';
+var JSON_COMMAND_PLACEHOLDER = '{\n' +
+                '  "add": {\n' +
+                '    "doc": ' + JSON_DOC_PLACEHOLDER + '\n' +
+                '  }\n' +
+                '}';
 
 solrAdminApp.controller('DocumentsController',
-    function($scope, $rootScope, $routeParams, $location, Luke, Update, UpdateV2, FileUpload,
-             Constants, ApiErrorHandler) {
+    function($scope, $routeParams, Luke, UpdateV2, FileUpload, Constants, ApiErrorHandler) {
         $scope.resetMenu("documents", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
@@ -35,7 +42,6 @@ solrAdminApp.controller('DocumentsController',
                 $scope.fields = Object.keys(data.schema.fields);
             });
             $scope.document = "";
-            $scope.handler = "/update";
             $scope.type = "json";
             $scope.commitWithin = 1000;
             $scope.overwrite = true;
@@ -46,11 +52,11 @@ solrAdminApp.controller('DocumentsController',
         $scope.changeDocumentType = function () {
             $scope.placeholder = "";
             if ($scope.type == 'json') {
-                $scope.placeholder = '{"id":"change.me","title":"change.me"}';
+                $scope.placeholder = JSON_DOC_PLACEHOLDER;
             } else if ($scope.type == 'csv') {
                 $scope.placeholder = "id,title\nchange.me,change.me";
-            } else if ($scope.type == 'solr') {
-                $scope.placeholder = ADD_PLACEHOLDER;
+            } else if ($scope.type == 'solr-json') {
+                $scope.placeholder = JSON_COMMAND_PLACEHOLDER;
             } else if ($scope.type == 'xml') {
                 $scope.placeholder = DOC_PLACEHOLDER;
             }
@@ -65,107 +71,57 @@ solrAdminApp.controller('DocumentsController',
         };
 
         $scope.submit = function () {
-            var contentType = "";
-            var postData = "";
-            var params = {};
-            var doingFileUpload = false;
-
-            if ($scope.handler[0] == '/') {
-                params.handler = $scope.handler.substring(1);
-            } else {
-                params.handler = 'update';
-                params.qt = $scope.handler;
+            if ($scope.type == "upload") {
+                FileUpload.upload({
+                    core: $routeParams.core,
+                    handler: "update",
+                    commitWithin: $scope.commitWithin,
+                    overwrite: $scope.overwrite,
+                    wt: "json",
+                    raw: $scope.literalParams
+                }, $scope.fileUpload, function (data) {
+                    $scope.responseStatus = "success";
+                    $scope.response = JSON.stringify(data, null, '  ');
+                }, function (data) {
+                    $scope.responseStatus = "failure";
+                    $scope.response = JSON.stringify(data, null, '  ');
+                });
+                return;
             }
 
-            params.commitWithin = $scope.commitWithin;
-            params.overwrite = $scope.overwrite;
-            params.core = $routeParams.core;
-            params.wt = "json";
-
+            var postData;
+            var updateMethod;
             if ($scope.type == "json" || $scope.type == "wizard") {
                 postData = "[" + $scope.document + "]";
-                contentType = "json";
-            } else if ($scope.type == "csv") {
+                updateMethod = UpdateV2.update;
+            } else if ($scope.type == "solr-json") {
                 postData = $scope.document;
-                contentType = "csv";
+                updateMethod = UpdateV2.update;
             } else if ($scope.type == "xml") {
                 postData = "<add>" + $scope.document + "</add>";
-                contentType = "xml";
-            } else if ($scope.type == "upload") {
-                doingFileUpload = true;
-                params.raw = $scope.literalParams;
-            } else if ($scope.type == "solr") {
+                updateMethod = UpdateV2.updateXml;
+            } else if ($scope.type == "csv") {
                 postData = $scope.document;
-                if (postData[0] == "<") {
-                    contentType = "xml";
-                } else if (postData[0] == "{" || postData[0] == '[') {
-                    contentType = "json";
-                } else {
-                    alert("Cannot identify content type")
-                }
+                updateMethod = UpdateV2.updateCsv;
             }
-            if (!doingFileUpload) {
-                // Use the typed v2 update endpoints for the standard handler. Custom request
-                // handlers and the raw Solr command editor retain the v1 path because they may
-                // use handler-specific parameters or a format selected from the request body.
-                var useV2 = $scope.handler == "/update" && $scope.isCloudEnabled !== undefined &&
-                    ($scope.type == "json" || $scope.type == "wizard" ||
-                     $scope.type == "xml" || $scope.type == "csv");
-                if (useV2) {
-                    var indexType = $scope.isCloudEnabled ? "collections" : "cores";
-                    var updateOptions = {
-                        commitWithin: $scope.commitWithin,
-                        overwrite: $scope.overwrite
-                    };
-                    var v2Callback = function (error, data, response) {
-                        if (error) {
-                            $scope.responseStatus = "failure";
-                            $scope.response = JSON.stringify((response && response.body) || error, null, '  ');
-                            ApiErrorHandler.handle(response);
-                            return;
-                        }
-                        $scope.responseStatus = "success";
-                        $scope.response = JSON.stringify(data, null, '  ');
-                        $scope.$evalAsync();
-                    };
-                    if (contentType == "json") {
-                        // The generic endpoint preserves ordinary document fields. The explicit
-                        // /update/json endpoint inherits the sample config's split-mode settings.
-                        UpdateV2.update(indexType, $routeParams.core, postData, updateOptions, v2Callback);
-                    } else if (contentType == "xml") {
-                        UpdateV2.updateXml(indexType, $routeParams.core, postData, updateOptions, v2Callback);
-                    } else if (contentType == "csv") {
-                        UpdateV2.updateCsv(indexType, $routeParams.core, postData, updateOptions, v2Callback);
-                    }
+            if (!updateMethod || $scope.isCloudEnabled === undefined) return;
+
+            var indexType = $scope.isCloudEnabled ? "collections" : "cores";
+            var updateOptions = {
+                commitWithin: $scope.commitWithin,
+                overwrite: $scope.overwrite
+            };
+            var v2Callback = function (error, data, response) {
+                if (error) {
+                    $scope.responseStatus = "failure";
+                    $scope.response = JSON.stringify((response && response.body) || error, null, '  ');
+                    ApiErrorHandler.handle(response);
                     return;
                 }
-                var callback = function (success) {
-                  $scope.responseStatus = "success";
-                  delete success.$promise;
-                  delete success.$resolved;
-                  $scope.response = JSON.stringify(success, null, '  ');
-                };
-                var failure = function (failure) {
-                    $scope.responseStatus = failure;
-                };
-                if (contentType == "json") {
-                  Update.postJson(params, postData, callback, failure);
-                } else if (contentType == "xml") {
-                  Update.postXml(params, postData, callback, failure);
-                } else if (contentType == "csv") {
-                  Update.postCsv(params, postData, callback, failure);
-                }
-            } else {
-                var file = $scope.fileUpload;
-                console.log('file is ' + JSON.stringify(file));
-                var uploadUrl = "/fileUpload";
-                FileUpload.upload(params, $scope.fileUpload, function (success) {
-                    $scope.responseStatus = "success";
-                    $scope.response = JSON.stringify(success, null, '  ');
-                }, function (failure) {
-                    $scope.responseStatus = "failure";
-                    $scope.response = JSON.stringify(failure, null, '  ');
-                });
-            }
+                $scope.responseStatus = "success";
+                $scope.response = JSON.stringify(data, null, '  ');
+                $scope.$evalAsync();
+            };
+            updateMethod.call(UpdateV2, indexType, $routeParams.core, postData, updateOptions, v2Callback);
         }
     });
