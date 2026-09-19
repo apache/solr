@@ -56,6 +56,7 @@ public class UpdateAPITest extends SolrTestCase {
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static final String CORE_NAME = "update-api-test";
+  private static final String CUSTOM_JSON_CORE_NAME = "custom-json-update-api-test";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -65,6 +66,12 @@ public class UpdateAPITest extends SolrTestCase {
     solrTestRule
         .newCollection(CORE_NAME)
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
+    // can't use techproducts config because it enables srcField, which is incompatible with nested
+    // split=/exams requests
+    solrTestRule
+        .newCollection(CUSTOM_JSON_CORE_NAME)
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET)
         .create();
   }
 
@@ -84,6 +91,36 @@ public class UpdateAPITest extends SolrTestCase {
       assertIndexed(client, v1Id);
       assertIndexed(client, v2Id);
     }
+  }
+
+  @Test
+  public void testV1AndV2CustomJsonTransformParity() throws Exception {
+    final SolrClient client = solrTestRule.getSolrClient(CUSTOM_JSON_CORE_NAME);
+    final String payload = "{\"exams\":[{\"id\":\"custom-json-v1\",\"name\":\"V1 document\"}]}";
+
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("split", "/exams");
+    params.add("f", "id:/exams/id");
+    params.add("f", "name_s:/exams/name");
+    params.set("commit", true);
+
+    final GenericSolrRequest v1Request =
+        new GenericSolrRequest(SolrRequest.METHOD.POST, "/update/json/docs", params);
+    v1Request.setRequiresCollection(true);
+    v1Request.setContentWriter(
+        new RequestWriter.StringPayloadContentWriter(payload, "application/json"));
+    client.request(v1Request, CUSTOM_JSON_CORE_NAME);
+
+    final String v2Payload = payload.replace("custom-json-v1", "custom-json-v2");
+    final GenericV2SolrRequest v2Request =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.POST, "/cores/" + CUSTOM_JSON_CORE_NAME + "/update/json", params);
+    v2Request.setContentWriter(
+        new RequestWriter.StringPayloadContentWriter(v2Payload, "application/json"));
+    client.request(v2Request);
+
+    assertIndexedField(client, CUSTOM_JSON_CORE_NAME, "custom-json-v1", "name_s", "V1 document");
+    assertIndexedField(client, CUSTOM_JSON_CORE_NAME, "custom-json-v2", "name_s", "V1 document");
   }
 
   @Test
@@ -271,6 +308,17 @@ public class UpdateAPITest extends SolrTestCase {
     queryParams.set("q", "id:" + id);
     final QueryResponse queryResponse = new QueryRequest(queryParams).process(client, CORE_NAME);
     assertEquals(id, 1, queryResponse.getResults().getNumFound());
+  }
+
+  private static void assertIndexedField(
+      SolrClient client, String collection, String id, String field, String value)
+      throws Exception {
+    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "id:" + id);
+    queryParams.set("fl", field);
+    final QueryResponse queryResponse = new QueryRequest(queryParams).process(client, collection);
+    assertEquals(1, queryResponse.getResults().getNumFound());
+    assertEquals(value, queryResponse.getResults().get(0).getFieldValue(field));
   }
 
   private enum UpdateFormat {
