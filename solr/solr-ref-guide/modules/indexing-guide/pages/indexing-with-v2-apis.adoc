@@ -85,6 +85,17 @@ curl -X POST -H 'Content-Type: application/json' \
 ----
 
 Query parameters such as `commit`, `commitWithin`, and `overwrite` can be appended to the URL, as shown above.
+Add `versions=true` to an update request to include the assigned document versions in the response.
+See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more details.
+
+When `versions=true` is set, the response can include these fields for the operations in the request:
+
+* `adds`: Alternating document IDs and their assigned versions.
+* `deletes`: Alternating document IDs and the versions assigned to their delete operations.
+* `deleteByQuery`: Alternating queries and the versions assigned to their delete operations.
+
+For example, adding a document with ID `1` can return `"adds":["1",123456789]`.
+The delete fields apply to formats that accept delete commands, such as XML and Javabin.
 
 == XML Document Indexing
 
