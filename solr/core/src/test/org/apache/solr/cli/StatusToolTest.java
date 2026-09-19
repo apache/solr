@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import java.io.Reader;
 import java.util.Map;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
@@ -31,7 +32,7 @@ public class StatusToolTest extends SolrCloudTestCase {
   }
 
   /** Runs the tool and returns a reader over its output. Overridden by the picocli variant. */
-  protected java.io.Reader runStatusTool(String[] toolArgs) throws Exception {
+  protected Reader runStatusTool(String[] toolArgs) throws Exception {
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     StatusTool tool = new StatusTool(runtime);
     tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));

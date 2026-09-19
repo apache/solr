@@ -120,10 +120,9 @@ public class SolrCLIPicocliTest extends SolrTestCase {
   @Test
   public void testOnlyRootDeclaresVersionOption() {
     CommandLine root = rootCommand();
-    for (CommandLine cmd : allCommands(root)) {
-      if (cmd == root) {
-        continue;
-      }
+    List<CommandLine> subcommands = new ArrayList<>();
+    collectSubcommands(root, subcommands);
+    for (CommandLine cmd : subcommands) {
       for (CommandLine.Model.OptionSpec option : cmd.getCommandSpec().options()) {
         for (String name : option.names()) {
           assertFalse(
