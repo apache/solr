@@ -233,16 +233,6 @@ solrAdminServices.factory('Metrics',
   ['$resource', function($resource) {
     return $resource(':core/admin/info', {wt:'json', core: "@core", _:Date.now()});
   }])
-.factory('Update',
-  ['$resource', function($resource) {
-    return $resource(':core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'update'}, {
-      "commit": {params: {commit: "true"}},
-      "post": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
-      "postJson": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
-      "postXml": {headers: {'Content-type': 'text/xml'}, method: "POST", params: {handler: '@handler'}},
-      "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
-    });
-  }])
 .factory('ParamSet',
   ['$resource', function($resource) {
     // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still

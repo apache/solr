@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Ping, Constants) {
+function($scope, $rootScope, $routeParams, Luke, CoreInfo, Replication, Ping, Constants) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
