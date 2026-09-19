@@ -33,12 +33,12 @@ import org.junit.Test;
 public class SolrMetricsDisabledIntegrationTest extends SolrTestCaseJ4 {
   private CoreContainer cc;
   private SolrMetricManager metricManager;
-  private String previousMetricsEnabled;
 
   @Before
   public void beforeTest() throws Exception {
     Path home = TEST_PATH();
-    previousMetricsEnabled = System.getProperty("metricsEnabled");
+    // SolrTestCaseJ4 installs SystemPropertiesRestoreRule as a method @Rule, so this is
+    // reverted after each test method; no manual save/restore needed.
     System.setProperty("metricsEnabled", "false");
 
     String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
@@ -59,11 +59,6 @@ public class SolrMetricsDisabledIntegrationTest extends SolrTestCaseJ4 {
   public void afterTest() {
     if (metricManager != null) {
       deleteCore();
-    }
-    if (previousMetricsEnabled == null) {
-      System.clearProperty("metricsEnabled");
-    } else {
-      System.setProperty("metricsEnabled", previousMetricsEnabled);
     }
   }
 
