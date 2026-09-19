@@ -1,5 +1,5 @@
 = Indexing with Update Handlers
-:page-children: transforming-and-indexing-custom-json, indexing-with-v2-apis
+:page-children: transforming-and-indexing-custom-json
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,7 +21,7 @@ Update handlers are request handlers designed to add, delete and update document
 In addition to having plugins for importing rich documents (see xref:indexing-with-tika.adoc[]), Solr natively supports indexing structured documents in XML, CSV, and JSON.
 
 NOTE: Solr also exposes update functionality via the xref:configuration-guide:v2-api.adoc[v2 API].
-See xref:indexing-with-v2-apis.adoc[] for details on the v2 update endpoints and their differences from the v1 handlers described on this page.
+The v2 update endpoints are documented in the <<V2 Update API>> section below.
 
 The recommended way to configure and use request handlers is with path based names that map to paths in the request URL.
 However, request handlers can also be specified with the `qt` (query type) parameter if the xref:configuration-guide:requestdispatcher.adoc[`requestDispatcher`] is appropriately configured.
@@ -40,6 +40,89 @@ The default configuration file has the update request handler configured by defa
 ----
 <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 ----
+
+== Versioned Update Responses
+
+Add the `versions=true` query parameter to an update request when the response must include the versions assigned to add or delete operations.
+This parameter is supported by both the V1 update handlers and the V2 update endpoints.
+It can be used with JSON, XML, CSV, Javabin, and CBOR update requests where the format is supported by the endpoint.
+The `adds` field applies to document-ingest formats; `deletes` and `deleteByQuery` apply to formats that accept delete commands, such as JSON command updates, XML, and Javabin.
+
+See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more information about update versions.
+
+[tabs#versioned-update-response]
+======
+V1 API::
++
+====
+V1 returns alternating name/version values.
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 127
+  },
+  "adds": [
+    "0002166313",
+    123456789
+  ],
+  "deletes": [
+    "0002166314",
+    -123456790
+  ],
+  "deleteByQuery": [
+    "status:deleted",
+    -123456791
+  ]
+}
+----
+====
+
+V2 API::
++
+====
+The v2 API returns typed entries:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 127
+  },
+  "adds": [
+    {
+      "id": "0002166313",
+      "version": 123456789
+    }
+  ],
+  "deletes": [
+    {
+      "id": "0002166314",
+      "version": -123456790
+    }
+  ],
+  "deleteByQuery": [
+    {
+      "query": "status:deleted",
+      "version": -123456791
+    }
+  ]
+}
+----
+====
+======
+
+The status field will be non-zero in case of failure.
+
+The response fields represent:
+
+* `adds`: Documents added and the versions assigned to them.
+* `deletes`: Documents deleted and the versions assigned to their delete operations.
+* `deleteByQuery`: Delete-by-query operations and the versions assigned to them.
+
+The version value is assigned by Solr. Delete versions are commonly negative.
 
 == XML Formatted Index Updates
 
@@ -156,12 +239,32 @@ Default is unlimited, resulting segments respect the `maxMergedSegmentMB` settin
 
 Here are examples of `<commit>` and `<optimize>` using optional attributes:
 
-[source,xml]
+[tabs#xml-commit-request]
+======
+V1 API::
++
+====
+[source,bash]
 ----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
 <commit waitSearcher="false"/>
 <commit waitSearcher="false" expungeDeletes="true"/>
-<optimize waitSearcher="false"/>
+<optimize waitSearcher="false"/>'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+<commit waitSearcher="false"/>
+<commit waitSearcher="false" expungeDeletes="true"/>
+<optimize waitSearcher="false"/>'
+----
+====
+======
 
 ==== Delete Operations
 
@@ -171,15 +274,38 @@ It doesn't work for child/nested docs.
 "Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query.
 A single delete message can contain multiple delete operations.
 
-[source,xml]
+[tabs#xml-delete-request]
+======
+V1 API::
++
+====
+[source,bash]
 ----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
 <delete>
   <id>0002166313</id>
   <id>0031745983</id>
   <query>subject:sport</query>
   <query>publisher:penguin</query>
-</delete>
+</delete>'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+<delete>
+  <id>0002166313</id>
+  <id>0031745983</id>
+  <query>subject:sport</query>
+  <query>publisher:penguin</query>
+</delete>'
+----
+====
+======
 
 [IMPORTANT]
 ====
@@ -197,12 +323,43 @@ The rollback command rolls back all add and deletes made to the index since the 
 It neither calls any event listeners nor creates a new searcher.
 Its syntax is simple: `<rollback/>`.
 
+The same command can be sent through either API:
+
+[tabs#xml-rollback-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/my_collection/update \
+  -H "Content-Type: text/xml" -d '<rollback/>'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml \
+  -H "Content-Type: text/xml" -d '<rollback/>'
+----
+====
+======
+
 ==== Grouping Operations
 
 You can post several commands in a single XML file by grouping them with the surrounding `<update>` element.
 
-[source,xml]
+[tabs#xml-grouped-update-request]
+======
+V1 API::
++
+====
+[source,bash]
 ----
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
 <update>
   <add>
     <doc><!-- doc 1 content --></doc>
@@ -213,18 +370,44 @@ You can post several commands in a single XML file by grouping them with the sur
   <delete>
     <id>0002166313</id>
   </delete>
-</update>
+</update>'
 ----
+====
 
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+<update>
+  <add>
+    <doc><!-- doc 1 content --></doc>
+  </add>
+  <add>
+    <doc><!-- doc 2 content --></doc>
+  </add>
+  <delete>
+    <id>0002166313</id>
+  </delete>
+</update>'
+----
+====
+======
 
 === Using curl to Perform Updates
 
-You can use the `curl` utility to perform any of the above commands, using its `--data-binary` option to append the XML message to the `curl` command, and generating a HTTP POST request.
-For example:
+You can use the `curl` utility to perform any of the above commands, using its `-d` option to append the XML message to the `curl` command, and generating a HTTP POST request.
+The same XML update can be sent through either API:
 
+[tabs#xml-update-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary '
+curl http://localhost:8983/solr/my_collection/update?versions=true -H "Content-Type: text/xml" -d '
 <add>
   <doc>
     <field name="authors">Patrick Eagar</field>
@@ -236,38 +419,79 @@ curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml"
   </doc>
 </add>'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml?versions=true -H "Content-Type: text/xml" -d '
+<add>
+  <doc>
+    <field name="authors">Patrick Eagar</field>
+    <field name="subject">Sports</field>
+    <field name="dd">796.35</field>
+    <field name="isbn">0002166313</field>
+    <field name="yearpub">1982</field>
+    <field name="publisher">Collins</field>
+  </doc>
+</add>'
+----
+====
+======
 
 For posting XML messages contained in a file, you can use the alternative form:
 
+[tabs#xml-file-update-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary @myfile.xml
+curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d @myfile.xml
 ----
+====
 
-The approach above works well, but using the `--data-binary` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server.
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d @myfile.xml
+----
+====
+======
+
+The approach above works well, but using the `-d` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server.
 This may be problematic when dealing with multi-gigabyte files.
 This alternative `curl` command performs equivalent operations but with minimal `curl` memory usage:
 
+[tabs#xml-file-streaming-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
+====
 
-Responses from Solr take the form shown here:
-
-[source,xml]
+V2 API::
++
+====
+[source,bash]
 ----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">127</int>
-  </lst>
-</response>
+curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
-
-The status field will be non-zero in case of failure.
+====
+======
 
 === Using XSLT to Transform XML Index Updates
+
+NOTE: The XSLT update handler is V1-only. V2 does not provide a configurable equivalent for custom request handlers such as `/update/xslt`; use the V1 endpoint for these requests.
 
 The xref:configuration-guide:script-update-processor.adoc[Scripting module] provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
 You must have an XSLT stylesheet in the `conf/xslt` directory of your xref:configuration-guide:config-sets.adoc[configset] that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
@@ -347,9 +571,9 @@ One example usage would be to copy a Solr 1.3 index (which does not have CSV res
 
 [source,bash]
 ----
-$ curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
+$ curl "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml" -o standard_solr_xml_format.xml
 
-$ curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl"
+$ curl "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl" -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml
 ----
 
 NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
@@ -372,24 +596,53 @@ To differentiate this from a set of commands, the `json.command=false` request p
 
 ==== Adding a Single JSON Document
 
-The simplest way to add documents via JSON is to send each document individually as a JSON Object, using the `/update/json/docs` path:
+The simplest way to add documents via JSON is to send each document individually as a JSON Object.
+
+[tabs#json-single-document-request]
+======
+V1 API::
++
+====
+The V1 document-only endpoint is `/update/json/docs`:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update/json/docs' --data-binary '
+curl 'http://localhost:8983/solr/my_collection/update/json/docs' -H 'Content-Type: application/json' -d '
 {
   "id": "1",
   "title": "Doc 1"
 }'
 ----
+====
+
+V2 API::
++
+====
+The V2 document-only endpoint is `/update/json`:
+
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/my_collection/update/json' -H 'Content-Type: application/json' -d '
+{
+  "id": "1",
+  "title": "Doc 1"
+}'
+----
+====
+======
 
 ==== Adding Multiple JSON Documents
 
 Adding multiple documents at one time via JSON can be done via a JSON Array of JSON Objects, where each object represents a document:
 
+[tabs#json-multiple-document-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' -d '
 [
   {
     "id": "1",
@@ -401,22 +654,64 @@ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_
   }
 ]'
 ----
+====
 
-A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr "techproducts" example:
-
+V2 API::
++
+====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' --data-binary @example/exampledocs/books.json -H 'Content-type:application/json'
+curl 'http://localhost:8983/api/collections/my_collection/update' -H 'Content-Type: application/json' -d '
+[
+  {
+    "id": "1",
+    "title": "Doc 1"
+  },
+  {
+    "id": "2",
+    "title": "Doc 2"
+  }
+]'
 ----
+====
+======
+
+A JSON file can be submitted in the same way:
+
+[tabs#json-file-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-type:application/json' -d @example/exampledocs/books.json
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-type:application/json' -d @example/exampledocs/books.json
+----
+====
+======
 
 ==== Sending JSON Update Commands
 
 In general, the JSON update syntax supports all of the update commands that the XML update handler supports, through a straightforward mapping.
 Multiple commands, adding and deleting documents, may be contained in one message:
 
+[tabs#json-command-request]
+======
+V1 API::
++
+====
 [source,bash,subs="verbatim,callouts"]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' -d '
 {
   "add": {
     "doc": {
@@ -441,7 +736,40 @@ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_
   "delete": { "query":"QUERY" } --<6>
 }'
 ----
+====
 
+V2 API::
++
+====
+[source,bash,subs="verbatim,callouts"]
+----
+curl 'http://localhost:8983/api/collections/my_collection/update' -H 'Content-Type: application/json' -d '
+{
+  "add": {
+    "doc": {
+      "id": "DOC1",
+      "my_field": 2.3,
+      "my_multivalued_field": [ "aaa", "bbb" ]   --<1>
+    }
+  },
+  "add": {
+    "commitWithin": 5000, --<2>
+    "overwrite": false,  --<3>
+    "doc": {
+      "f1": "v1", --<4>
+      "f1": "v2"
+    }
+  },
+
+  "commit": {},
+  "optimize": { "waitSearcher":false },
+
+  "delete": { "id":"ID" },  --<5>
+  "delete": { "query":"QUERY" } --<6>
+}'
+----
+====
+======
 <1> Can use an array for a multi-valued field
 <2> Commit this document within 5 seconds
 <3> Don't check for existing documents with the same uniqueKey
@@ -483,20 +811,11 @@ You can specify the version of deletes in the body of the update request as well
 
 === JSON Update Convenience Paths
 
-In addition to the `/update` handler, there are a few additional JSON specific request handler paths available by default in Solr, that implicitly override the behavior of some request parameters:
+The V1 `/update/json` endpoint is a specialized Solr request path designed for clients that cannot easily set the required `Content-Type: application/json` header, as this route automatically forces Solr to treat the incoming payload as JSON.
+The V1 `/update/json/docs` path additionally forces document-only processing through `stream.contentType=application/json` and `json.command=false`.
 
-[width="100%",options="header",]
-|===
-|Path |Default Parameters
-|`/update/json` |`update.contentType=application/json`
-|`/update/json/docs` a|
-`stream.contentType=application/json`
-
-`json.command=false`
-
-|===
-
-The `/update/json` path may be useful for clients sending in JSON formatted update commands from applications where setting the Content-Type proves difficult, while the `/update/json/docs` path can be particularly convenient for clients that always want to send in documents – either individually or as a list – without needing to worry about the full JSON command syntax.
+In V2, use the general `/api/collections/\{collection\}/update` or `/api/cores/\{core\}/update` endpoint with `Content-Type: application/json` for JSON update commands.
+Use `/api/collections/\{collection\}/update/json` or `/api/cores/\{core\}/update/json` for document-only JSON requests.
 
 === Custom JSON Documents
 
@@ -510,10 +829,26 @@ CSV formatted update requests may be sent to Solr's `/update` handler using `Con
 
 A sample CSV file is provided at `example/exampledocs/books.csv` that you can use to add some documents to the Solr "techproducts" example:
 
+[tabs#csv-file-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update?commit=true' --data-binary @example/exampledocs/books.csv -H 'Content-type:application/csv'
+curl 'http://localhost:8983/solr/my_collection/update?commit=true' -H 'Content-type:application/csv' -d @example/exampledocs/books.csv
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/my_collection/update?commit=true' -H 'Content-type:application/csv' -d @example/exampledocs/books.csv
+----
+====
+======
 
 === CSV Update Parameters
 
@@ -736,19 +1071,34 @@ SELECT * INTO OUTFILE '/tmp/result.txt' FROM mytable;
 
 This file could then be imported into Solr by setting the `separator` to tab (%09) and the `escape` to backslash (%5c).
 
+[tabs#csv-tab-delimited-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
+curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' -d @/tmp/result.txt
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/my_collection/update/csv?commit=true&separator=%09&escape=%5c' -d @/tmp/result.txt
+----
+====
+======
 
 === CSV Update Convenience Paths
 
-In addition to the `/update` handler, there is an additional CSV specific request handler path available by default in Solr, that implicitly override the behavior of some request parameters:
+The `/update/csv` endpoint is a specialized Solr request path designed for importing CSV data.
+You use it primarily when your client application or script cannot easily set the required `Content-Type: text/csv` header, as this route automatically forces Solr to treat all incoming payloads as CSV data without needing extra parameter configuration.
 
-[cols=",",options="header",]
-|===
-|Path |Default Parameters
-|`/update/csv` |`update.contentType=application/csv`
-|===
+== Javabin Document Indexing
 
-The `/update/csv` path may be useful for clients sending in CSV formatted update commands from applications where setting the Content-Type proves difficult.
+Javabin is Solr's native binary update format and is primarily intended for SolrJ clients.
+V1 clients send Javabin to `/update` with `Content-Type: application/javabin`.
+V2 clients can use `/update/javabin` or the general `/update` endpoint with the same content type.
