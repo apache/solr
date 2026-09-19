@@ -27,7 +27,7 @@ limitations under the License.
 #content #documents #form
 {
   float: left;
-  /*width: 21%;*/
+  width: 43%;
 }
 
 #content #documents #form label
@@ -49,7 +49,8 @@ limitations under the License.
 #content #documents #form textarea
 {
   margin-bottom: 2px;
-  /*width: 98%;*/
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 #content #documents #form #start
@@ -123,6 +124,7 @@ limitations under the License.
 {
   float: right;
   width: 54%;
+  box-sizing: border-box;
 }
 
 #content #documents #result #url
