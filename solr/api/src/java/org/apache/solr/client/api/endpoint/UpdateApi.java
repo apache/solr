@@ -20,6 +20,7 @@ import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -31,9 +32,19 @@ import org.apache.solr.client.api.util.StoreApiParameters;
 public interface UpdateApi {
 
   @POST
+  @Consumes({
+    "application/json",
+    "text/json",
+    "application/xml",
+    "text/xml",
+    "application/csv",
+    "text/csv",
+    "application/javabin",
+    "application/cbor"
+  })
   @StoreApiParameters
   @Operation(
-      summary = "Index documents using any supported content type",
+      summary = "Send updates using any supported content type",
       tags = {"update"})
   UpdateResponse update(
       @Parameter(description = "Commit the update immediately") @QueryParam("commit")

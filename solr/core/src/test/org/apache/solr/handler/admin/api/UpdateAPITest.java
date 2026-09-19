@@ -68,12 +68,13 @@ public class UpdateAPITest extends SolrTestCase {
   public void testUpdateViaV2Api() throws Exception {
     final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
 
-    // POST a JSON array of documents via the V2 /update endpoint (rewrites to /update/json/docs)
+    // The generic /update endpoint selects the update-command loader from Content-Type.
     final GenericV2SolrRequest addReq =
         new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
     addReq.setContentWriter(
         new RequestWriter.StringPayloadContentWriter(
-            "[{\"id\":\"v2update1\",\"title\":\"V2 update test\"}]", "application/json"));
+            "{\"add\":{\"doc\":{\"id\":\"v2update1\",\"title\":\"V2 update test\"}}}",
+            "application/json"));
     client.request(addReq);
 
     // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
@@ -82,6 +83,45 @@ public class UpdateAPITest extends SolrTestCase {
     // Verify the document was indexed
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "id:v2update1");
+    final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
+    assertEquals(1, queryRsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testGenericUpdateSelectsXmlFromContentType() throws Exception {
+    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
+    final GenericV2SolrRequest addReq =
+        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
+    addReq.setContentWriter(
+        new RequestWriter.StringPayloadContentWriter(
+            "<add><doc><field name=\"id\">v2genericxml1</field></doc></add>", "application/xml"));
+    client.request(addReq);
+    client.commit(CORE_NAME);
+
+    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "id:v2genericxml1");
+    final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
+    assertEquals(1, queryRsp.getResults().getNumFound());
+  }
+
+  @Test
+  public void testGenericUpdateSelectsJavabinFromContentType() throws Exception {
+    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
+    final SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "v2genericjavabin1");
+    final UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(doc);
+    final ByteArrayOutputStream payload = new ByteArrayOutputStream();
+    new JavaBinUpdateRequestCodec().marshal(updateRequest, payload);
+
+    final GenericV2SolrRequest addReq =
+        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
+    addReq.withContent(payload.toByteArray(), "application/javabin");
+    client.request(addReq);
+    client.commit(CORE_NAME);
+
+    final ModifiableSolrParams queryParams = new ModifiableSolrParams();
+    queryParams.set("q", "id:v2genericjavabin1");
     final QueryResponse queryRsp = new QueryRequest(queryParams).process(client, CORE_NAME);
     assertEquals(1, queryRsp.getResults().getNumFound());
   }
