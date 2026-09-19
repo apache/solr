@@ -46,6 +46,11 @@
   <!-- explicit (non-templated) legacy Trie numeric field type with docValues, used to test that
        non-Point numeric fields can serve as the "from" side of a numeric score join -->
   <fieldType name="trieint_dv" class="solr.TrieIntField" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+
+  <!-- explicit (non-templated) legacy Trie numeric field type without docValues; multi-valued
+       instances of it are uninverted into SortedSetDocValues, which is what the term-based join
+       has always used for non-Point numerics -->
+  <fieldType name="trieint_nodv" class="solr.TrieIntField" docValues="false" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
@@ -767,6 +772,7 @@
   <dynamicField name="*_iis" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
   <dynamicField name="*_ff" type="pfloat" indexed="false" stored="false" useDocValuesAsStored="false"/>
   <dynamicField name="*_trie_i" type="trieint_dv" indexed="false" stored="false" useDocValuesAsStored="true"/>
+  <dynamicField name="*_trie_is" type="trieint_nodv" indexed="true" stored="true" multiValued="true"/>
 
   <!-- testing fields with & without norms
        TODO: Remove numeric norms for SOLR-14199 -->

@@ -260,7 +260,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * Creates a join query, delegating to {@link JoinUtil#createJoinQuery(String, boolean, String,
    * Class, Query, IndexSearcher, ScoreMode)} for a numeric {@code fromField}/Point {@code toField}
    * pair, or to {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher,
-   * ScoreMode)} otherwise.
+   * ScoreMode)} otherwise. A legacy (non-Point) numeric {@code fromField} paired with a non-Point
+   * {@code toField} keeps using the term-based join, as it did before numeric joins were supported.
    *
    * @param fromField "foreign key" field name; any field type with a numeric {@link NumberType}
    *     (not necessarily a Point field type) qualifies, as long as {@code docValues="true"} is set.
@@ -287,18 +288,34 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     final NumberType fromNumberType =
         fromSchemaField == null ? null : fromSchemaField.getType().getNumberType();
     if (fromNumberType != null) {
-      if (!fromSchemaField.hasDocValues()) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Numeric join 'from' field '"
-                + fromField
-                + "' must have docValues enabled; it doesn't need to be indexed.");
-      }
       final SchemaField toSchemaField = toSchema.getFieldOrNull(toField);
-      final boolean toIsPoint = toSchemaField != null && toSchemaField.getType().isPointField();
       final NumberType toNumberType =
           toSchemaField == null ? null : toSchemaField.getType().getNumberType();
-      if (!toIsPoint || fromNumberType != toNumberType) {
+      final boolean toIsMatchingPoint =
+          toSchemaField != null
+              && toSchemaField.getType().isPointField()
+              && fromNumberType == toNumberType;
+      if (toIsMatchingPoint) {
+        if (!fromSchemaField.hasDocValues()) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Numeric join 'from' field '"
+                  + fromField
+                  + "' must have docValues enabled; it doesn't need to be indexed.");
+        }
+        return JoinUtil.createJoinQuery(
+            fromField,
+            fromSchemaField.multiValued(),
+            toField,
+            numericClass(fromNumberType),
+            fromQuery,
+            fromSearcher,
+            scoreMode);
+      }
+      // A Point 'from' field can only be joined by point values: it has neither indexed terms nor
+      // the sorted/binary docValues the term-based join below needs, so fail with a clear message
+      // rather than letting Lucene stumble over the encoding.
+      if (fromSchemaField.getType().isPointField()) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Numeric join 'from' field '"
@@ -311,14 +328,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
                 + (toSchemaField == null ? "undefined" : toSchemaField.getType().getTypeName())
                 + ".");
       }
-      return JoinUtil.createJoinQuery(
-          fromField,
-          fromSchemaField.multiValued(),
-          toField,
-          numericClass(fromNumberType),
-          fromQuery,
-          fromSearcher,
-          scoreMode);
+      // Legacy (non-Point) numeric 'from' field with a non-Point 'to' field: keep joining on terms,
+      // as it was done before numeric joins were introduced.
     }
     return JoinUtil.createJoinQuery(fromField, true, toField, fromQuery, fromSearcher, scoreMode);
   }
