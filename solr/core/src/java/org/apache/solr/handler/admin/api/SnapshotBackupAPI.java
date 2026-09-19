@@ -16,13 +16,11 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.inject.Inject;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.function.Consumer;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ReplicationBackupApis;
@@ -34,8 +32,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.jersey.PermissionName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * v2 API implementation for replication-handler based backup creation.
@@ -44,7 +40,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SnapshotBackupAPI extends JerseyResource implements ReplicationBackupApis {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCore solrCore;
   private final ReplicationHandlerConfig replicationHandlerConfig;
 
@@ -86,14 +81,15 @@ public class SnapshotBackupAPI extends JerseyResource implements ReplicationBack
           name,
           solrCore,
           resultConsumer);
-      response.status = ReplicationHandler.OK_STATUS;
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      log.error("Exception while creating a snapshot", e);
-      reportErrorOnResponse(
-          response, "Error encountered while creating a snapshot: " + e.getMessage(), e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error encountered while creating a snapshot: " + e.getMessage(),
+          e);
     }
+    response.status = ReplicationHandler.OK_STATUS;
     return response;
   }
 
@@ -117,14 +113,5 @@ public class SnapshotBackupAPI extends JerseyResource implements ReplicationBack
         name,
         solrCore,
         resultConsumer);
-  }
-
-  private static void reportErrorOnResponse(
-      ReplicationBackupResponse response, String message, Exception e) {
-    response.status = ERR_STATUS;
-    response.message = message;
-    if (e != null) {
-      response.exception = e;
-    }
   }
 }
