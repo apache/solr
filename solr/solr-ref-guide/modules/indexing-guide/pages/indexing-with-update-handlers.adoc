@@ -38,6 +38,156 @@ The default configuration file has the update request handler configured by defa
 <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 ----
 
+== JSON Formatted Index Updates
+
+Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents.
+If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section xref:transforming-and-indexing-custom-json.adoc[].
+
+=== Solr-Style JSON
+
+JSON formatted update requests may be sent to Solr's `/update` handler using `Content-Type: application/json` or `Content-Type: text/json`.
+
+JSON formatted updates can take 3 basic forms, described in depth below:
+
+* <<Adding a Single JSON Document,A single document>>, expressed as a top level JSON Object.
+To differentiate this from a set of commands, the `json.command=false` request parameter is required.
+* <<Adding Multiple JSON Documents,A list of documents>>, expressed as a top level JSON Array containing a JSON Object per document.
+* <<Sending JSON Update Commands,A sequence of update commands>>, expressed as a top level JSON Object (a Map).
+
+==== Adding a Single JSON Document
+
+The simplest way to add documents via JSON is to send each document individually as a JSON Object, using the `/update/json/docs` path:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update/json/docs' --data-binary '
+{
+  "id": "1",
+  "title": "Doc 1"
+}'
+----
+
+==== Adding Multiple JSON Documents
+
+Adding multiple documents at one time via JSON can be done via a JSON Array of JSON Objects, where each object represents a document:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+[
+  {
+    "id": "1",
+    "title": "Doc 1"
+  },
+  {
+    "id": "2",
+    "title": "Doc 2"
+  }
+]'
+----
+
+A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr "techproducts" example:
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' --data-binary @example/exampledocs/books.json -H 'Content-type:application/json'
+----
+
+==== Sending JSON Update Commands
+
+In general, the JSON update syntax supports all of the update commands that the XML update handler supports, through a straightforward mapping.
+Multiple commands, adding and deleting documents, may be contained in one message:
+
+[source,bash,subs="verbatim,callouts"]
+----
+curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+{
+  "add": {
+    "doc": {
+      "id": "DOC1",
+      "my_field": 2.3,
+      "my_multivalued_field": [ "aaa", "bbb" ]   --<1>
+    }
+  },
+  "add": {
+    "commitWithin": 5000, --<2>
+    "overwrite": false,  --<3>
+    "doc": {
+      "f1": "v1", --<4>
+      "f1": "v2"
+    }
+  },
+
+  "commit": {},
+  "optimize": { "waitSearcher":false },
+
+  "delete": { "id":"ID" },  --<5>
+  "delete": { "query":"QUERY" } --<6>
+}'
+----
+
+<1> Can use an array for a multi-valued field
+<2> Commit this document within 5 seconds
+<3> Don't check for existing documents with the same uniqueKey
+<4> Can use repeated keys for a multi-valued field
+<5> Delete by ID (uniqueKey field)
+<6> Delete by Query
+
+As with other update handlers, parameters such as `commit`, `commitWithin`, `optimize`, and `overwrite` may be specified in the URL instead of in the body of the message.
+
+The JSON update format allows for a simple delete-by-id.
+The value of a `delete` can be an array which contains a list of zero or more specific document id's (not a range) to be deleted.
+For example, a single document:
+
+[source,json]
+----
+{ "delete":"myid" }
+----
+
+Or a list of document IDs:
+
+[source,json]
+----
+{ "delete":["id1","id2"] }
+----
+
+Note: Delete-by-id doesn't work for child/nested docs.
+
+You can also specify `\_version_` with each "delete":
+
+[source,json]
+----
+{
+  "delete":"id":50,
+  "_version_":12345
+}
+----
+
+You can specify the version of deletes in the body of the update request as well.
+
+=== JSON Update Convenience Paths
+
+In addition to the `/update` handler, there are a few additional JSON specific request handler paths available by default in Solr, that implicitly override the behavior of some request parameters:
+
+[width="100%",options="header",]
+|===
+|Path |Default Parameters
+|`/update/json` |`update.contentType=application/json`
+|`/update/json/docs` a|
+`stream.contentType=application/json`
+
+`json.command=false`
+
+|===
+
+The `/update/json` path may be useful for clients sending in JSON formatted update commands from applications where setting the Content-Type proves difficult, while the `/update/json/docs` path can be particularly convenient for clients that always want to send in documents – either individually or as a list – without needing to worry about the full JSON command syntax.
+
+=== Custom JSON Documents
+
+Solr can support custom JSON.
+This is covered in the section xref:transforming-and-indexing-custom-json.adoc[].
+
+
 == XML Formatted Index Updates
 
 Index update commands can be sent as XML message to the update handler using `Content-type: application/xml` or `Content-type: text/xml`.
@@ -350,156 +500,6 @@ $ curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "htt
 ----
 
 NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
-
-== JSON Formatted Index Updates
-
-Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents.
-If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section xref:transforming-and-indexing-custom-json.adoc[].
-
-=== Solr-Style JSON
-
-JSON formatted update requests may be sent to Solr's `/update` handler using `Content-Type: application/json` or `Content-Type: text/json`.
-
-JSON formatted updates can take 3 basic forms, described in depth below:
-
-* <<Adding a Single JSON Document,A single document>>, expressed as a top level JSON Object.
-To differentiate this from a set of commands, the `json.command=false` request parameter is required.
-* <<Adding Multiple JSON Documents,A list of documents>>, expressed as a top level JSON Array containing a JSON Object per document.
-* <<Sending JSON Update Commands,A sequence of update commands>>, expressed as a top level JSON Object (a Map).
-
-==== Adding a Single JSON Document
-
-The simplest way to add documents via JSON is to send each document individually as a JSON Object, using the `/update/json/docs` path:
-
-[source,bash]
-----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update/json/docs' --data-binary '
-{
-  "id": "1",
-  "title": "Doc 1"
-}'
-----
-
-==== Adding Multiple JSON Documents
-
-Adding multiple documents at one time via JSON can be done via a JSON Array of JSON Objects, where each object represents a document:
-
-[source,bash]
-----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
-[
-  {
-    "id": "1",
-    "title": "Doc 1"
-  },
-  {
-    "id": "2",
-    "title": "Doc 2"
-  }
-]'
-----
-
-A sample JSON file is provided at `example/exampledocs/books.json` and contains an array of objects that you can add to the Solr "techproducts" example:
-
-[source,bash]
-----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' --data-binary @example/exampledocs/books.json -H 'Content-type:application/json'
-----
-
-==== Sending JSON Update Commands
-
-In general, the JSON update syntax supports all of the update commands that the XML update handler supports, through a straightforward mapping.
-Multiple commands, adding and deleting documents, may be contained in one message:
-
-[source,bash,subs="verbatim,callouts"]
-----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
-{
-  "add": {
-    "doc": {
-      "id": "DOC1",
-      "my_field": 2.3,
-      "my_multivalued_field": [ "aaa", "bbb" ]   --<1>
-    }
-  },
-  "add": {
-    "commitWithin": 5000, --<2>
-    "overwrite": false,  --<3>
-    "doc": {
-      "f1": "v1", --<4>
-      "f1": "v2"
-    }
-  },
-
-  "commit": {},
-  "optimize": { "waitSearcher":false },
-
-  "delete": { "id":"ID" },  --<5>
-  "delete": { "query":"QUERY" } --<6>
-}'
-----
-
-<1> Can use an array for a multi-valued field
-<2> Commit this document within 5 seconds
-<3> Don't check for existing documents with the same uniqueKey
-<4> Can use repeated keys for a multi-valued field
-<5> Delete by ID (uniqueKey field)
-<6> Delete by Query
-
-As with other update handlers, parameters such as `commit`, `commitWithin`, `optimize`, and `overwrite` may be specified in the URL instead of in the body of the message.
-
-The JSON update format allows for a simple delete-by-id.
-The value of a `delete` can be an array which contains a list of zero or more specific document id's (not a range) to be deleted.
-For example, a single document:
-
-[source,json]
-----
-{ "delete":"myid" }
-----
-
-Or a list of document IDs:
-
-[source,json]
-----
-{ "delete":["id1","id2"] }
-----
-
-Note: Delete-by-id doesn't work for child/nested docs.
-
-You can also specify `\_version_` with each "delete":
-
-[source,json]
-----
-{
-  "delete":"id":50,
-  "_version_":12345
-}
-----
-
-You can specify the version of deletes in the body of the update request as well.
-
-=== JSON Update Convenience Paths
-
-In addition to the `/update` handler, there are a few additional JSON specific request handler paths available by default in Solr, that implicitly override the behavior of some request parameters:
-
-[width="100%",options="header",]
-|===
-|Path |Default Parameters
-|`/update/json` |`update.contentType=application/json`
-|`/update/json/docs` a|
-`stream.contentType=application/json`
-
-`json.command=false`
-
-|===
-
-The `/update/json` path may be useful for clients sending in JSON formatted update commands from applications where setting the Content-Type proves difficult, while the `/update/json/docs` path can be particularly convenient for clients that always want to send in documents – either individually or as a list – without needing to worry about the full JSON command syntax.
-
-=== Custom JSON Documents
-
-Solr can support custom JSON.
-This is covered in the section xref:transforming-and-indexing-custom-json.adoc[].
-
 
 == CSV Formatted Index Updates
 
