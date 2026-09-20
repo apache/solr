@@ -46,7 +46,7 @@ class DefaultMainComponent internal constructor(
     private val clusterComponent: (AppComponentContext) -> ClusterComponent,
     private val configsetsComponent: () -> ConfigsetsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
-    private val loggingComponent: (AppComponentContext) -> LoggingComponent,
+    private val loggingComponent: () -> LoggingComponent,
     private val output: (Output) -> Unit,
 ) : MainComponent,
     AppComponentContext by componentContext {
@@ -85,12 +85,7 @@ class DefaultMainComponent internal constructor(
                 httpClient = httpClient,
             )
         },
-        loggingComponent = { childContext ->
-            DefaultLoggingComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
-            )
-        },
+        loggingComponent = { DefaultLoggingComponent() },
     )
 
     override fun onNavigate(menuItem: MainMenu) = navigation.bringToFront(menuItem.toConfiguration())
@@ -144,7 +139,7 @@ class DefaultMainComponent internal constructor(
 
         Configuration.Environment -> Child.Environment(environmentComponent(componentContext))
 
-        Configuration.Logging -> Child.Logging(loggingComponent(componentContext))
+        Configuration.Logging -> Child.Logging(loggingComponent())
 
         // TODO Uncomment once ThreadDump available
         // Configuration.ThreadDump ->
