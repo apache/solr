@@ -48,6 +48,10 @@ public class SnapshotDeleteTool extends ToolBase {
           .desc("Name of the snapshot to delete")
           .get();
 
+  /** Parameters for the snapshot-delete command, independent of the command line parser. */
+  record SnapshotDeleteParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
   public SnapshotDeleteTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -68,10 +72,18 @@ public class SnapshotDeleteTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      deleteSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotDeleteParams params =
+        new SnapshotDeleteParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    deleteSnapshot(params);
+  }
+
+  void deleteSnapshot(SnapshotDeleteParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      deleteSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 

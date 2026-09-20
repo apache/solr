@@ -96,7 +96,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
             .process(cluster.getSolrClient())
             .getStatus()));
-    adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    adminClient = cluster.getJettySolrRunners().get(0).getSolrClient();
     initCoreNameAndSolrCoreClient();
   }
 
@@ -104,13 +104,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   public void afterTest() throws Exception {
     // we use a clean cluster instance for every test, so we need to clean it up
     shutdownCluster();
-
-    if (null != adminClient) {
-      adminClient.close();
-    }
-    if (null != coreClient) {
-      coreClient.close();
-    }
   }
 
   @Test
@@ -371,7 +364,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r);
+    coreClient = cluster.getSolrClient(r);
   }
 
   /**

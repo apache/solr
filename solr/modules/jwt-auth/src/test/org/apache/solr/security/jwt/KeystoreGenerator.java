@@ -56,7 +56,7 @@ public class KeystoreGenerator {
   private static final String PASS_PHRASE = "secret";
 
   public void generateKeystore(Path existingKeystore, Path newKeystore, String cn) {
-    KeyStore ks = null;
+    KeyStore ks;
     try (FileInputStream fis = new FileInputStream(existingKeystore.toFile())) {
       ks = KeyStore.getInstance(KeyStore.getDefaultType());
       ks.load(fis, PASS_PHRASE.toCharArray());

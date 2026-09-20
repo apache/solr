@@ -203,8 +203,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     return claims;
   }
 
-  private static JsonWebSignature makeJws(KeyHolder keyHolder, JwtClaims claims)
-      throws JoseException {
+  private static JsonWebSignature makeJws(KeyHolder keyHolder, JwtClaims claims) {
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
     jws.setKey(keyHolder.getRsaKey().getPrivateKey());

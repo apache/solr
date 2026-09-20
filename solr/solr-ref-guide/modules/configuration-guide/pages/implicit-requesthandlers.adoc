@@ -83,6 +83,8 @@ This handler must have a collection name in the path to the endpoint.
 Ping:: Health check.
 This handler must have a collection name in the path to the endpoint.
 +
+CAUTION: `PingRequestHandler` is deprecated and will be removed in a future release. Use the `Health` endpoint below instead.
++
 *Documentation*: xref:deployment-guide:ping.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]

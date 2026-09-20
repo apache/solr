@@ -62,6 +62,8 @@ public class RawValueTransformerFactory extends TransformerFactory
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // QueryResponseWriter identity, not equality, is what matters here
   public DocTransformer create(
       String display,
       SolrParams params,

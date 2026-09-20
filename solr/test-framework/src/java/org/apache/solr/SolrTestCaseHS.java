@@ -35,6 +35,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -405,7 +406,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     public SolrClient getSolrJ() {
       if (solrj == null) {
-        solrj = getHttpSolrClient(getBaseURL(), collection);
+        solrj =
+            new HttpJettySolrClient.Builder(getBaseURL()).withDefaultCollection(collection).build();
       }
       return solrj;
     }

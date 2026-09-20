@@ -44,7 +44,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   protected static final String BUCKET_NAME = "test-bucket";
 
   @ClassRule
-  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   S3StorageClient client;
   private SocketProxy proxy;
@@ -58,7 +58,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     // We are using a proxy in front of S3Mock to be able to test connection loss
     proxy = new SocketProxy();
-    proxy.open(URI.create(S3_MOCK_RULE.getHttpEndpoint()));
+    proxy.open(URI.create(s3MockContainer.getHttpEndpoint()));
     client =
         new S3StorageClient(
             BUCKET_NAME,

@@ -2997,7 +2997,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * Constructs an instance based on the (raw, un-rewritten) SortFields to be used, and an initial
      * number of expected groups (will grow as needed).
      */
-    @SuppressWarnings({"rawtypes"})
+    @SuppressWarnings({
+      "rawtypes",
+      "ReferenceEquality" // SortField.STRING_LAST is a Lucene sentinel; identity check is
+      // intentional
+    })
     public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
       this.sorts = sorts;
       numClauses = sorts.length;
@@ -3140,7 +3144,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * overwrites them (and returns true) if this document is the new group head in accordance with
      * the SortFields. (otherwise returns false)
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({
+      "unchecked",
+      "rawtypes",
+      "ReferenceEquality" // detecting whether the same DocValues instance is still in use
+    })
     private boolean testAndSetGroupValues(Object[] values, int contextDoc) throws IOException {
       Object[] stash = new Object[numClauses];
       int lastCompare = 0;

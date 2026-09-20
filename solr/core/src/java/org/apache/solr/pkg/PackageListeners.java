@@ -60,6 +60,8 @@ public class PackageListeners {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // removing the exact registered listener instance, not an equal one
   public synchronized void removeListener(Listener listener) {
     Iterator<Reference<Listener>> it = listeners.iterator();
     while (it.hasNext()) {

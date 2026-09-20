@@ -419,8 +419,6 @@ Specifically, the following actions of the Collections API would be allowed:
 | ADDREPLICA
 | CLUSTERPROP
 | MIGRATE
-| ADDROLE
-| REMOVEROLE
 | ADDREPLICAPROP
 | DELETEREPLICAPROP
 | BALANCESHARDUNIQUE

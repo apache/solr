@@ -27,7 +27,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +52,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -455,11 +453,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     @Override
     public ModifiableSolrParams getParams() {
       return params;
-    }
-
-    @Override
-    public Collection<ContentStream> getContentStreams() {
-      return null;
     }
 
     @Override

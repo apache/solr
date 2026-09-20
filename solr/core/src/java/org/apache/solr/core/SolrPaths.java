@@ -123,6 +123,8 @@ public final class SolrPaths {
      * Adds an allowed path. Detects "_ALL_" which means all paths are allowed. Does not detect "*"
      * (not supported as a {@link Path} on Windows), see {@link #addPath(String)}.
      */
+    @SuppressWarnings(
+        "ReferenceEquality") // ALL_PATHS is a unique sentinel; identity check is intentional
     public AllowPathBuilder addPath(Path path) {
       if (path == null) {
         return this;

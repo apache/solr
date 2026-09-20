@@ -366,6 +366,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     listenerFactory.setDelegate(() -> listener);
   }
 
+  // Identity against the internal singleton is intentionally stricter than equals().
+  @SuppressWarnings("ReferenceEquality")
   public boolean needsAuthorization(HttpServletRequest req) {
     return req.getUserPrincipal() != CLUSTER_MEMBER_NODE;
   }

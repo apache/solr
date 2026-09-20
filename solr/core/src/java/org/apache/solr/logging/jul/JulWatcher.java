@@ -84,6 +84,9 @@ public class JulWatcher extends LogWatcher<LogRecord> {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // java.util.logging.Logger has no equals() override; identity check is
+  // intentional
   public Collection<LoggerInfo> getAllLoggers() {
     LogManager manager = LogManager.getLogManager();
 

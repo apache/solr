@@ -1,0 +1,9 @@
+title: >
+  HttpSolrClient impls now sends certain interesting request parameters in the URL query string when a POST of parameters is submitted.  In other words, withTheseParamNamesInTheUrl now has a default set.
+  This improves observability, particularly for distributed search & admin commands.
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4871
+    url: https://github.com/apache/solr/pull/4871

@@ -73,8 +73,7 @@ import org.apache.solr.cli.tools.zk.ZkMvTool;
 import org.apache.solr.cli.tools.zk.ZkRmTool;
 import org.apache.solr.cli.tools.zk.ZkToolHelp;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -411,10 +410,8 @@ public class SolrCLI implements CLIO {
 
   public static NamedList<Object> postJsonToSolr(
       SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
-    ContentStreamBase.StringStream contentStream = new ContentStreamBase.StringStream(jsonBody);
-    contentStream.setContentType(JSON_CONTENT_TYPE);
-    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest(updatePath);
-    req.addContentStream(contentStream);
+    ContentWriterUpdateRequest req = new ContentWriterUpdateRequest(updatePath);
+    req.addContentWithType(jsonBody, JSON_CONTENT_TYPE);
     return solrClient.request(req);
   }
 
