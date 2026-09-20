@@ -102,8 +102,8 @@ public class CSVStrategy implements Cloneable, Serializable {
    * @param escape a Char used for escaping
    * @param ignoreTrailingWhitespaces TRUE when trailing whitespaces should be ignored
    * @param ignoreLeadingWhitespaces TRUE when leading whitespaces should be ignored
-   * @param interpretUnicodeEscapes TRUE when unicode escapes should be interpreted
-   * @param ignoreEmptyLines TRUE when the parser should skip emtpy lines
+   * @param interpretUnicodeEscapes TRUE when Unicode escapes should be interpreted
+   * @param ignoreEmptyLines TRUE when the parser should skip empty lines
    * @param printerNewline The string to use when printing a newline
    */
   public CSVStrategy(
@@ -137,10 +137,6 @@ public class CSVStrategy implements Cloneable, Serializable {
 
   public char getCommentStart() {
     return this.commentStart;
-  }
-
-  public boolean isCommentingDisabled() {
-    return this.commentStart == COMMENTS_DISABLED;
   }
 
   public char getEscape() {

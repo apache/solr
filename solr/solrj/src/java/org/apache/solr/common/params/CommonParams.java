@@ -75,7 +75,13 @@ public interface CommonParams {
   String INDENT = "indent";
 
   // SOLR-4228 start
-  /** handler value for SolrPing */
+  /**
+   * handler value for SolrPing
+   *
+   * @deprecated <code>PingRequestHandler</code> (the <code>/admin/ping</code> endpoint) is
+   *     deprecated and will be removed in a future release.
+   */
+  @Deprecated(since = "10.1")
   String PING_HANDLER = "/admin/ping";
 
   /** "action" parameter for SolrPing */
@@ -91,9 +97,6 @@ public interface CommonParams {
   String PING = "ping";
 
   // SOLR-4228 end
-
-  /** stylesheet to apply to XML results */
-  String XSL = "xsl";
 
   /** query and init param for field list */
   String FL = "fl";
@@ -313,7 +316,6 @@ public interface CommonParams {
   String JAVABIN_MIME = "application/javabin";
 
   String FILE = "file";
-  String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
 }

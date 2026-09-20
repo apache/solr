@@ -1,0 +1,11 @@
+title: >
+  Fix Thread Pool Starvation in HttpJdkSolrClient.
+  HttpJdkSolrClient defaults would often create 32 threads, likely under-utilizing them. and it would cap threads to 256.
+  Now it does neither by default but Executor customization (and other saturation controls) remain.
+type: fixed
+authors:
+  - name: Renato Haeberli
+  - name: David Smiley
+links:
+  - name: SOLR-18312
+    url: https://issues.apache.org/jira/browse/SOLR-18312

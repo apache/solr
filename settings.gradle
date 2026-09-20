@@ -16,10 +16,7 @@
  */
 
 pluginManagement {
-  repositories {
-    mavenCentral()
-    gradlePluginPortal()
-  }
+  apply from: file("build-tools/build-infra/declare-repositories.gradle"), to: delegate
 
   includeBuild("build-tools/build-infra")
 }
@@ -41,7 +38,7 @@ plugins {
   id 'com.gradle.develocity' version '4.2.2'
   id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.4.0'
   id 'com.autonomousapps.build-health' version '3.16.0'
-  id 'org.jetbrains.kotlin.multiplatform' version '2.4.0' apply false
+  id 'org.jetbrains.kotlin.multiplatform' version '2.4.20' apply false
 }
 
 apply from: file('gradle/develocity.gradle')

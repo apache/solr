@@ -131,185 +131,185 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
 
     commit();
 
-    final String tv = "tvrh";
+    final String tv = "/tvrh";
 
     for (String q : new String[] {"id:0", "id:7", "id:[3 TO 6]", "*:*"}) {
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true"));
 
       // tv.fl diff from fl
       query(
-          "sort",
-          "id asc",
-          "qt",
           tv,
-          "q",
-          q,
-          "fl",
-          "*,score",
-          "tv.fl",
-          "test_basictv,test_offtv",
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true");
+          params(
+              "sort",
+              "id asc",
+              "q",
+              q,
+              "fl",
+              "*,score",
+              "tv.fl",
+              "test_basictv,test_offtv",
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true"));
 
       // multi-valued tv.fl
       query(
-          "sort",
-          "id asc",
-          "qt",
           tv,
-          "q",
-          q,
-          "fl",
-          "*,score",
-          "tv.fl",
-          "test_basictv",
-          "tv.fl",
-          "test_offtv",
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true");
+          params(
+              "sort",
+              "id asc",
+              "q",
+              q,
+              "fl",
+              "*,score",
+              "tv.fl",
+              "test_basictv",
+              "tv.fl",
+              "test_offtv",
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true"));
       // re-use fl glob
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          "fl",
-          "*,score",
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              "fl",
+              "*,score",
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true"));
       // re-use fl, ignore things we can't handle
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          "fl",
-          "score,test_basictv,[docid],test_postv,val:sum(3,4)",
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              "fl",
+              "score,test_basictv,[docid],test_postv,val:sum(3,4)",
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true"));
 
       // re-use (multi-valued) fl, ignore things we can't handle
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          "fl",
-          "score,test_basictv",
-          "fl",
-          "[docid],test_postv,val:sum(3,4)",
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              "fl",
+              "score,test_basictv",
+              "fl",
+              "[docid],test_postv,val:sum(3,4)",
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true"));
 
       // test some other options
 
       query(
-          "sort",
-          "id asc",
-          "qt",
           tv,
-          "q",
-          q,
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true",
-          TermVectorParams.DF,
-          "true",
-          TermVectorParams.OFFSETS,
-          "true",
-          TermVectorParams.POSITIONS,
-          "true",
-          TermVectorParams.TF_IDF,
-          "true");
+          params(
+              "sort",
+              "id asc",
+              "q",
+              q,
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true",
+              TermVectorParams.DF,
+              "true",
+              TermVectorParams.OFFSETS,
+              "true",
+              TermVectorParams.POSITIONS,
+              "true",
+              TermVectorParams.TF_IDF,
+              "true"));
 
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.ALL,
-          "true");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.ALL,
+              "true"));
 
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          "rows",
-          1,
-          ShardParams.DISTRIB_SINGLE_PASS,
-          "true",
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.ALL,
-          "true");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              "rows",
+              "1",
+              ShardParams.DISTRIB_SINGLE_PASS,
+              "true",
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.ALL,
+              "true"));
 
       // per field stuff
 
       query(
-          "sort",
-          "id desc",
-          "qt",
           tv,
-          "q",
-          q,
-          TermVectorComponent.COMPONENT_NAME,
-          "true",
-          TermVectorParams.TF,
-          "true",
-          TermVectorParams.DF,
-          "true",
-          TermVectorParams.OFFSETS,
-          "true",
-          TermVectorParams.POSITIONS,
-          "true",
-          TermVectorParams.TF_IDF,
-          "true",
-          TermVectorParams.FIELDS,
-          "test_basictv,test_notv,test_postv,test_offtv,test_posofftv",
-          "f.test_posofftv." + TermVectorParams.POSITIONS,
-          "false",
-          "f.test_offtv." + TermVectorParams.OFFSETS,
-          "false",
-          "f.test_basictv." + TermVectorParams.DF,
-          "false",
-          "f.test_basictv." + TermVectorParams.TF,
-          "false",
-          "f.test_basictv." + TermVectorParams.TF_IDF,
-          "false");
+          params(
+              "sort",
+              "id desc",
+              "q",
+              q,
+              TermVectorComponent.COMPONENT_NAME,
+              "true",
+              TermVectorParams.TF,
+              "true",
+              TermVectorParams.DF,
+              "true",
+              TermVectorParams.OFFSETS,
+              "true",
+              TermVectorParams.POSITIONS,
+              "true",
+              TermVectorParams.TF_IDF,
+              "true",
+              TermVectorParams.FIELDS,
+              "test_basictv,test_notv,test_postv,test_offtv,test_posofftv",
+              "f.test_posofftv." + TermVectorParams.POSITIONS,
+              "false",
+              "f.test_offtv." + TermVectorParams.OFFSETS,
+              "false",
+              "f.test_basictv." + TermVectorParams.DF,
+              "false",
+              "f.test_basictv." + TermVectorParams.TF,
+              "false",
+              "f.test_basictv." + TermVectorParams.TF_IDF,
+              "false"));
     }
   }
 }

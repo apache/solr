@@ -52,7 +52,7 @@ public class FastOutputStream extends OutputStream implements DataOutput {
   }
 
   @Override
-  public void write(byte b[]) throws IOException {
+  public void write(byte[] b) throws IOException {
     write(b, 0, b.length);
   }
 
@@ -66,7 +66,7 @@ public class FastOutputStream extends OutputStream implements DataOutput {
   }
 
   @Override
-  public void write(byte arr[], int off, int len) throws IOException {
+  public void write(byte[] arr, int off, int len) throws IOException {
 
     for (; ; ) {
       int space = buf.length - pos;

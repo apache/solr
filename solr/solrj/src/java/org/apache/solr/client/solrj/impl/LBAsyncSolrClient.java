@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -218,13 +219,17 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
       if (!isNonRetryable
           && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
-      } else if (isNonRetryable && isConnectException(rootCause)) {
+      } else if (isNonRetryable
+          && (isConnectException(rootCause)
+              || SolrException.hasCause(e, RequestNotSentException.class))) {
+        // Nothing of the request reached the server, so replaying it elsewhere is safe even though
+        // it isn't idempotent.
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
       }
     } catch (IOException e) {
-      if (!isNonRetryable || isConnectException(e)) {
+      if (!isNonRetryable || isConnectException(e) || e instanceof RequestNotSentException) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);

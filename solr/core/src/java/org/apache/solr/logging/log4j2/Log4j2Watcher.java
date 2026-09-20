@@ -167,13 +167,15 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // fast-path identity check before the equals() fallback right after it
   public Collection<LoggerInfo> getAllLoggers() {
     Logger root = LogManager.getRootLogger();
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
     LoggerConfig rootConfig = ctx.getConfiguration().getRootLogger();
     Map<String, LoggerInfo> map = new HashMap<>(ctx.getLoggers().size());
 
-    // First add the ROOT loger with the ROOT level
+    // First add the ROOT logger with the ROOT level
     map.put(
         LoggerInfo.ROOT_NAME,
         new Log4j2Info(

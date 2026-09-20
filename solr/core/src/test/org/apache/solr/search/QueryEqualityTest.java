@@ -661,6 +661,32 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryGlobalOrdinalsJoin() throws Exception {
+    SolrQueryRequest req =
+        req(
+            "myVar",
+            "5",
+            "df",
+            "text",
+            "jf",
+            "foo_s_dvo",
+            "which",
+            "type_s:parent",
+            "scoreavg",
+            "avg");
+
+    try {
+      assertQueryEquals(
+          "globalOrdinalsJoin",
+          req,
+          "{!globalOrdinalsJoin joinField=foo_s_dvo which='type_s:parent' score=avg}asdf",
+          "{!globalOrdinalsJoin joinField=$jf which='type_s:parent' score=Avg}asdf",
+          "{!globalOrdinalsJoin joinField=$jf which=$which score=$scoreavg}text:asdf");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testTerms() throws Exception {
     assertQueryEquals(
         "terms", "{!terms f=foo_i}10,20,30,-10,-20,-30", "{!terms f=foo_i}10,20,30,-10,-20,-30");
@@ -1121,16 +1147,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   public void testFuncHsin() throws Exception {
     assertFuncEquals("hsin(45,true,0,0,45,45)");
-  }
-
-  public void testFuncGhhsin() throws Exception {
-    assertFuncEquals(
-        "ghhsin(45,id,'asdf')",
-        "ghhsin(45,field(id),'asdf')"); // "id" is just a single-valued string field
-  }
-
-  public void testFuncGeohash() throws Exception {
-    assertFuncEquals("geohash(45,99)");
   }
 
   public void testFuncDist() throws Exception {

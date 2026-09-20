@@ -126,8 +126,7 @@ public class UuidAtomicUpdateTest extends SolrCloudTestCase {
       final ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set("id", identifyingDocId);
       solrParams.set("shards.preference", "replica.leader:" + tf);
-      QueryRequest request = new QueryRequest(solrParams);
-      request.setPath("/get");
+      QueryRequest request = new QueryRequest("/get", solrParams);
       final QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION);
 
       final NamedList<Object> rawResponse = response.getResponse();

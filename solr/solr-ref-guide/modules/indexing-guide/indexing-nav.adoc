@@ -58,5 +58,6 @@
 ** xref:partial-document-updates.adoc[]
 ** xref:reindexing.adoc[]
 ** xref:language-detection.adoc[]
+** xref:document-enrichment-with-llms.adoc[]
 ** xref:de-duplication.adoc[]
 ** xref:content-streams.adoc[]

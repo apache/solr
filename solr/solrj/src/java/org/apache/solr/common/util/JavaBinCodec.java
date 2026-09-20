@@ -359,7 +359,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -826,6 +826,8 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   public Map<Object, Object> readMapIter(DataInputInputStream dis) throws IOException {
     Map<Object, Object> m = newMap(-1);
     for (; ; ) {
@@ -931,6 +933,8 @@ public class JavaBinCodec implements PushWriter {
     writeTag(END);
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   public List<Object> readIterator(DataInputInputStream fis) throws IOException {
     ArrayList<Object> l = new ArrayList<>();
     while (true) {
@@ -1237,6 +1241,8 @@ public class JavaBinCodec implements PushWriter {
     daos.writeFloat(val);
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   public boolean writePrimitive(Object val) throws IOException {
     if (val == null) {
       daos.writeByte(NULL);
@@ -1250,16 +1256,16 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof Number) {
 
       if (val instanceof Integer) {
-        writeInt(((Integer) val).intValue());
+        writeInt((Integer) val);
         return true;
       } else if (val instanceof Long) {
-        writeLong(((Long) val).longValue());
+        writeLong((Long) val);
         return true;
       } else if (val instanceof Float) {
-        writeFloat(((Float) val).floatValue());
+        writeFloat((Float) val);
         return true;
       } else if (val instanceof Double) {
-        writeDouble(((Double) val).doubleValue());
+        writeDouble((Double) val);
         return true;
       } else if (val instanceof Byte) {
         daos.writeByte(BYTE);

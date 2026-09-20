@@ -72,7 +72,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    * @deprecated new field types should not be added to this list, instead use {@link
    *     ExternalizeStoredValuesAsObjects}
    */
-  @Deprecated public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
+  @Deprecated(since = "10.1")
+  public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
 
   private final ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
@@ -122,18 +123,6 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       }
     }
     return sdoc;
-  }
-
-  /**
-   * This method is less efficient then the 3 arg version because it may convert some fields that
-   * are not needed
-   *
-   * @see #convertLuceneDocToSolrDoc(Document, IndexSchema, ReturnFields)
-   * @deprecated use the 3 arg version for better performance
-   */
-  @Deprecated
-  public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
-    return convertLuceneDocToSolrDoc(doc, schema, new SolrReturnFields());
   }
 
   /**

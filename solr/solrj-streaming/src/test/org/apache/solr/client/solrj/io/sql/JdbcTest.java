@@ -646,7 +646,6 @@ public class JdbcTest extends SolrCloudTestCase {
       }
 
       CloudSolrClient solrClient = cluster.getSolrClient();
-      solrClient.connect();
       ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
 
       var tables = new TreeSet<String>(zkStateReader.getClusterState().getCollectionNames());

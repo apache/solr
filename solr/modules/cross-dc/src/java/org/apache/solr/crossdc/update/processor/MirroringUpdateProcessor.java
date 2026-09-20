@@ -86,16 +86,10 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
   /** If true then commit commands are mirrored, otherwise they are processed only locally. */
   private final boolean mirrorCommits;
 
-  /** Controls the processing of Delete-By-Query requests.. */
+  /** Controls the processing of Delete-By-Query requests */
   private final CrossDcConf.ExpandDbq expandDbq;
 
   private final long maxMirroringDocSizeBytes;
-
-  /**
-   * The distributed processor downstream from us so we can establish if we're running on a leader
-   * shard
-   */
-  // private DistributedUpdateProcessor distProc;
 
   /** Distribution phase of the incoming requests */
   private DistributedUpdateProcessor.DistribPhase distribPhase;
@@ -255,7 +249,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     super.processDelete(cmd); // let this throw to prevent mirroring invalid requests
     producerMetrics.getLocal().inc();
     if (doMirroring) {
-      boolean isLeader = false;
+      boolean isLeader;
       UpdateRequest mirrorRequest = createMirrorRequest();
       if (cmd.isDeleteById()) {
         // deleteById requests runs once per leader, so we just submit the request from the leader
@@ -279,6 +273,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           } catch (Exception e) {
             log.error("mirror submit failed", e);
             producerMetrics.getSubmittedDeleteByIdError().inc();
+            producerMetrics.getSubmitError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }
