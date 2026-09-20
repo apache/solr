@@ -16,8 +16,8 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
@@ -73,7 +73,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
     {
       // Prior to SOLR-8175, the required term would cause an AIOOBE.
-      Collection<Token> tokens = qc.convert("+pine apple good ness");
+      List<SpellCheckToken> tokens = SpellCheckToken.drain(qc.convert("+pine apple good ness"));
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
       SpellingResult result = checker.getSuggestions(spellOpts);
       searcher.decref();
@@ -81,7 +81,8 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
       assertEquals(5, result.getSuggestions().size());
     }
 
-    Collection<Token> tokens = qc.convert("paintable pine apple good ness");
+    List<SpellCheckToken> tokens =
+        SpellCheckToken.drain(qc.convert("paintable pine apple good ness"));
     SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
     SpellingResult result = checker.getSuggestions(spellOpts);
     searcher.decref();
@@ -89,8 +90,9 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(result != null && result.getSuggestions() != null);
     assertEquals(9, result.getSuggestions().size());
 
-    for (Map.Entry<Token, LinkedHashMap<String, Integer>> s : result.getSuggestions().entrySet()) {
-      Token orig = s.getKey();
+    for (Map.Entry<SpellCheckToken, LinkedHashMap<String, Integer>> s :
+        result.getSuggestions().entrySet()) {
+      SpellCheckToken orig = s.getKey();
       String[] corr = s.getValue().keySet().toArray(new String[0]);
       if (orig.toString().equals("paintable")) {
         assertEquals(0, orig.startOffset());

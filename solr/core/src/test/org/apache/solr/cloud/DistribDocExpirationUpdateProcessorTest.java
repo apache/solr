@@ -285,10 +285,11 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     DocCollection collectionState =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
 
-    for (Replica replica : collectionState.getReplicas()) {
+    for (Slice slice : collectionState) {
+      for (Replica replica : slice.getReplicas()) {
 
-      String coreName = replica.getCoreName();
-      try (SolrClient client = getHttpSolrClient(replica)) {
+        String coreName = replica.getCoreName();
+        SolrClient client = cluster.getSolrClient(replica);
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");

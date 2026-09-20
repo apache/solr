@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -33,11 +32,9 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -71,14 +68,10 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
 
     clients = new ArrayList<>();
     ClusterState clusterState = cloudClient.getClusterState();
-    for (Replica replica : clusterState.getCollection(DEFAULT_COLLECTION).getReplicas()) {
-      clients.add(getHttpSolrClient(replica));
-    }
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    IOUtils.close(clients);
+    clusterState
+        .getCollection(DEFAULT_COLLECTION)
+        .replicaStream()
+        .forEach(replica -> clients.add(cluster.getSolrClient(replica)));
   }
 
   @Test

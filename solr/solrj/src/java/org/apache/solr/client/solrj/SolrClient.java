@@ -895,7 +895,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    *     response from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
+   * @deprecated This method is deprecated and will be removed in a future release.
    */
+  @Deprecated(since = "10.1")
   public SolrPingResponse ping(String collection) throws SolrServerException, IOException {
     return new SolrPing().process(this, collection);
   }
@@ -907,7 +909,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    *     response from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
+   * @deprecated This method is deprecated and will be removed in a future release.
    */
+  @Deprecated(since = "10.1")
   public SolrPingResponse ping() throws SolrServerException, IOException {
     return new SolrPing().process(this, null);
   }
@@ -1198,6 +1202,8 @@ public abstract class SolrClient implements Serializable, Closeable {
    * This method defines the context in which this Solr client is being used (e.g. for internal
    * communication between Solr nodes or as an external client). The default value is {@code
    * SolrClientContext#Client}
+   *
+   * @deprecated No replacement has been designed yet; see SOLR-14720.
    */
   @Deprecated(since = "10.1") // TODO replace or refactor; see SOLR-14720 related
   public SolrRequest.SolrClientContext getContext() {

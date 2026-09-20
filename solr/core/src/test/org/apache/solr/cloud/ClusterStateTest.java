@@ -75,8 +75,10 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     byte[] bytes = Utils.toJSON(clusterState);
 
     Instant creationTime = Instant.now();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length);
     ClusterState loadedClusterState =
-        ClusterState.createFromJson(-1, bytes, liveNodes, creationTime, null);
+        ClusterState.createFromCollectionMap(-1, stateMap, liveNodes, creationTime, null);
     assertFalse(
         loadedClusterState.getCollection("collection1").getProperties().containsKey("shards"));
 
@@ -104,19 +106,5 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
 
     assertEquals(creationTime, loadedClusterState.getCollection("collection1").getCreationTime());
     assertEquals(creationTime, loadedClusterState.getCollection("collection2").getCreationTime());
-
-    loadedClusterState =
-        ClusterState.createFromJson(-1, new byte[0], liveNodes, Instant.now(), null);
-
-    assertEquals(
-        "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.size());
-
-    loadedClusterState =
-        ClusterState.createFromJson(-1, (byte[]) null, liveNodes, Instant.now(), null);
-
-    assertEquals(
-        "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.size());
   }
 }

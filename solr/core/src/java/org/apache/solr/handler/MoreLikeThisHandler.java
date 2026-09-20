@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.api.MoreLikeThisAPI;
+import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SimpleFacets;
@@ -246,12 +247,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         dbgQuery = true;
         dbgResults = true;
       }
-      // TODO resolve duplicated code with DebugComponent.  Perhaps it should be added to
-      // doStandardDebug?
       if (dbg == true) {
         try {
           NamedList<Object> dbgInfo =
-              SolrPluginUtils.doStandardDebug(
+              DebugComponent.doStandardDebug(
                   req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
           if (null != filters) {
             dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));

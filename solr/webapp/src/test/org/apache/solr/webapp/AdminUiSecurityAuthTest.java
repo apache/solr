@@ -18,7 +18,6 @@ package org.apache.solr.webapp;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.util.NamedList;
@@ -26,7 +25,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebElement;
 
 /**
  * Tests the Admin UI with BasicAuth enabled: the login screen flow and the Security screen,
@@ -61,12 +59,8 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
   public void testLoginAndSecurityScreen() throws Exception {
     // an unauthenticated visit is redirected to the login screen
     openPage("", By.id("login"));
-    WebElement username = waitFor(By.id("username"));
-    username.clear();
-    username.sendKeys(USER);
-    WebElement password = waitFor(By.id("password"));
-    password.clear();
-    password.sendKeys(PASS);
+    setText(By.id("username"), USER);
+    setText(By.id("password"), PASS);
     click(By.xpath("//div[@id='login']//button[@type='submit']"));
 
     // after login the dashboard loads and shows the authenticated security info
@@ -139,11 +133,11 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
 
   /** Returns the authorization config as fetched with credentials. */
   private NamedList<Object> authorizationApi() {
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+    try {
       GenericSolrRequest req =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/authorization", params());
       req.setBasicAuthCredentials(USER, PASS);
-      return client.request(req);
+      return cluster.getJettySolrRunner(0).getSolrClient().request(req);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -163,11 +157,11 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
 
   /** Checks via the authentication API (with credentials) whether the user exists. */
   private boolean userExists(String user) {
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
+    try {
       GenericSolrRequest req =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/authentication", params());
       req.setBasicAuthCredentials(USER, PASS);
-      NamedList<Object> response = client.request(req);
+      NamedList<Object> response = cluster.getJettySolrRunner(0).getSolrClient().request(req);
       Map<?, ?> authentication = (Map<?, ?>) response.get("authentication");
       Map<?, ?> credentials = (Map<?, ?>) authentication.get("credentials");
       return credentials.containsKey(user);

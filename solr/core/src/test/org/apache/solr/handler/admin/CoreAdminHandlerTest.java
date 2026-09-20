@@ -49,6 +49,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -132,6 +133,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testCoreAdminHandler() throws Exception {
     final Path workDir = createTempDir();
 
@@ -194,26 +196,25 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertEquals(cd.getCoreProperty("foo", null), "baz");
 
     // attempt to create a bogus core and confirm failure
-    ignoreException("Could not load config");
-    se =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              admin.handleRequestBody(
-                  req(
-                      CoreAdminParams.ACTION,
-                      CoreAdminParams.CoreAdminAction.CREATE.toString(),
-                      CoreAdminParams.NAME,
-                      "bogus_dir_core",
-                      CoreAdminParams.INSTANCE_DIR,
-                      "dir_does_not_exist_127896"),
-                  new SolrQueryResponse());
-            });
-    // :NOOP:
-    // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert
-    // something useful here
-
-    unIgnoreException("Could not load config");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Could not load config")) {
+      se =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                admin.handleRequestBody(
+                    req(
+                        CoreAdminParams.ACTION,
+                        CoreAdminParams.CoreAdminAction.CREATE.toString(),
+                        CoreAdminParams.NAME,
+                        "bogus_dir_core",
+                        CoreAdminParams.INSTANCE_DIR,
+                        "dir_does_not_exist_127896"),
+                    new SolrQueryResponse());
+              });
+      // :NOOP:
+      // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert
+      // something useful here
+    }
 
     // check specifically for status of the failed core name
     resp = new SolrQueryResponse();
@@ -418,12 +419,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.getSolrClient().commit("corex");
 
     Path dataDir = null;
-    try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
-      final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
-      String dataDirectory = status.dataDir;
-      dataDir = Path.of(dataDirectory);
-      assertTrue(Files.exists(dataDir));
-    }
+    SolrClient client = runner.getSolrClient();
+    final var status = CoreAdminRequest.getCoreStatus("corex", true, client);
+    String dataDirectory = status.dataDir;
+    dataDir = Path.of(dataDirectory);
+    assertTrue(Files.exists(dataDir));
 
     Path subHome = solrHomeDirectory.resolve("corex").resolve("conf");
     Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");

@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -68,8 +69,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -131,17 +132,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     r = new Random(random().nextLong());
   }
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
   public static void setSolrEnableUrlUrlAllowList() {
-    systemSetPropertyEnableUrlAllowList(false);
-  }
-
-  @SuppressWarnings("deprecation")
-  @AfterClass
-  public static void clearSolrEnableUrlUrlAllowList() {
-    systemClearPropertySolrEnableUrlAllowList();
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
   }
 
   protected BaseDistributedSearchTestCase() {
@@ -267,7 +261,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public void distribSetUp() throws Exception {
     distribSetUpCalled = true;
-    SolrTestCaseJ4.resetExceptionIgnores(); // ignore anything with ignore_exception in it
     testDir = createTempDir();
   }
 
@@ -455,7 +448,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected HttpSolrClient createNewSolrClient(int port) {
-    return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
+    return new HttpJettySolrClient.Builder(buildUrl(port))
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .build();
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {
@@ -910,6 +905,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public static String compare(Object a, Object b, int flags, Map<String, Integer> handle) {
     if (a == b) return null;
     if (a == null || b == null) return ":" + a + "!=" + b;

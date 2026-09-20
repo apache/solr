@@ -1,0 +1,2 @@
+jOOU
+Copyright (c) Data Geekery GmbH (https://www.jooq.org)

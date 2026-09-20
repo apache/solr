@@ -69,8 +69,10 @@ public class SliceStateTest extends SolrTestCaseJ4 {
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length);
     ClusterState loadedClusterState =
-        ClusterState.createFromJson(-1, bytes, liveNodes, Instant.now(), null);
+        ClusterState.createFromCollectionMap(-1, stateMap, liveNodes, Instant.now(), null);
 
     assertSame(
         "Default state not set to active",

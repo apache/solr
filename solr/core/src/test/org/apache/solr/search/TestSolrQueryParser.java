@@ -58,6 +58,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -476,6 +477,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Solr() throws Exception {
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
 
@@ -484,12 +486,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String too_long = "id:(" + a + a + a + a + a + ")";
 
     final String expectedMsg = "Too many clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     // but should still work as a filter query since TermsQuery can be used...
@@ -499,6 +503,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Lucene() throws Exception {
     final int numZ = IndexSearcher.getMaxClauseCount();
 
@@ -515,12 +520,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String way_too_long = sb.toString();
 
     final String expectedMsg = "too many boolean clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     assertNotNull(e.getCause());

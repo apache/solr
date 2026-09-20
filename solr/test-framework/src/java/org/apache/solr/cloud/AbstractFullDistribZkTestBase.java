@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -281,8 +282,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     if (schema == null) schema = "schema.xml";
     zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
 
-    // ignoreException(".*");
-
     cloudInit = false;
 
     if (sliceCount > 0) {
@@ -357,7 +356,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     assert (cloudInit == false);
     cloudInit = true;
     cloudClient = createCloudClient(DEFAULT_COLLECTION);
-    cloudClient.connect();
 
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
@@ -407,7 +405,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       // create the normal cloud client.
       // this can change if more tests need it.
       controlClientCloud = createCloudClient("control_collection");
-      controlClientCloud.connect();
+      controlClientCloud.getClusterStateProvider().getLiveNodes(); // force the connection
       // NOTE: we are skipping creation of the chaos monkey by returning here
       cloudClient = controlClientCloud; // temporary - some code needs/uses
       // cloudClient
@@ -1874,11 +1872,11 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jettyList) {
         CoreContainer cores = jetty.jetty.getCoreContainer();
-        for (SolrCore core : cores.getCores()) {
-          ((DirectUpdateHandler2) core.getUpdateHandler())
-              .getSoftCommitTracker()
-              .setTimeUpperBound(time);
-        }
+        cores.forEachLoadedCore(
+            core ->
+                ((DirectUpdateHandler2) core.getUpdateHandler())
+                    .getSoftCommitTracker()
+                    .setTimeUpperBound(time));
       }
     }
   }
@@ -2185,8 +2183,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       closeRestTestHarnesses(); // TODO: close here or later?
 
     } finally {
-      resetExceptionIgnores();
-
       try {
         zkServer.shutdown();
       } catch (Exception e) {
@@ -2549,7 +2545,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         commonCloudSolrClient =
             createNewCloudSolrClient(
                 zkServer.getZkAddress(), DEFAULT_COLLECTION, random().nextBoolean(), 5000, 120000);
-        commonCloudSolrClient.connect();
+        commonCloudSolrClient.getClusterStateProvider().getLiveNodes(); // force it now
         if (log.isInfoEnabled()) {
           log.info(
               "Created commonCloudSolrClient with updatesToLeaders={} and parallelUpdates={}",
@@ -2561,6 +2557,31 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return commonCloudSolrClient;
   }
 
+  /** Returns the jetty identified by node name or base URL. */
+  protected JettySolrRunner getJetty(String nodeNameOrUrl) {
+    return MiniSolrCloudCluster.findJetty(allRunners(), nodeNameOrUrl);
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close it -- the jetty owns it.
+   */
+  protected SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        MiniSolrCloudCluster.findReplicaJetty(allRunners(), replica).getSolrClient(),
+        replica.getCoreName());
+  }
+
+  /** All runners of this cluster; the control jetty is kept outside {@link #jettys}. */
+  private List<JettySolrRunner> allRunners() {
+    if (controlJetty == null) {
+      return jettys;
+    }
+    List<JettySolrRunner> all = new ArrayList<>(jettys);
+    all.add(controlJetty);
+    return all;
+  }
+
   protected CloudSolrClient getSolrClient(String collectionName) {
     return solrClientByCollection.computeIfAbsent(
         collectionName,
@@ -2569,7 +2590,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               createNewCloudSolrClient(
                   zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
 
-          solrClient.connect();
+          solrClient.getClusterStateProvider().getLiveNodes(); // force the connection now
           if (log.isInfoEnabled()) {
             log.info(
                 "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
@@ -2821,7 +2842,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
+    try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

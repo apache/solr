@@ -515,6 +515,8 @@ public class Builders {
       return this;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // ReplicaBuilder identity, not equality, is what matters here
     public Shard build(SolrCollection collection) {
       ClusterAbstractionsForTest.ShardImpl shard =
           new ClusterAbstractionsForTest.ShardImpl(shardName, collection, Shard.ShardState.ACTIVE);

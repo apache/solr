@@ -185,9 +185,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
       fieldProps.add("multiValued", true);
       fieldProps.remove("name");
       fieldProps.remove("type");
-      schema =
-          schema.replaceField(
-              schemaField.getName(), schemaField.getType(), fieldProps.asShallowMap());
+      schema = schema.replaceField(schemaField.getName(), schemaField.getType(), fieldProps);
     }
     // TODO: other "healing" type operations here ... but we have to be careful about overriding
     // explicit user changes such as a user making a text field a string field, we wouldn't want to

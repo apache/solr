@@ -46,6 +46,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -1456,7 +1457,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings("JdkObsolete")
+  @SuppressWarnings({"JdkObsolete", "try"})
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
@@ -1596,13 +1597,14 @@ public class TestRecovery extends SolrTestCaseJ4 {
             "This is a trashed log file that really shouldn't work at all, but we'll see...");
       }
 
-      ignoreException("Failure to open existing");
-      createCore();
-      // we should still be able to get the list of versions (not including the trashed log file)
-      assertJQ(
-          reqWithPath("/get", "getVersions", "" + maxReq),
-          "/versions==" + versions.subList(0, Math.min(maxReq, expectedToRetain)));
-      resetExceptionIgnores();
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("Failure to open existing")) {
+        createCore();
+        // we should still be able to get the list of versions (not including the trashed log
+        // file)
+        assertJQ(
+            reqWithPath("/get", "getVersions", "" + maxReq),
+            "/versions==" + versions.subList(0, Math.min(maxReq, expectedToRetain)));
+      }
 
     } finally {
       UpdateLog.testing_logReplayHook = null;
@@ -1616,6 +1618,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // that were not cut off.
   //
   @Test
+  @SuppressWarnings("try")
   public void testTruncatedLog() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
@@ -1657,10 +1660,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       logReplay.release(1000);
       logReplayFinish.drainPermits();
       // this is what the corrupted log currently produces... subject to change.
-      ignoreException("OutOfBoundsException");
-      createCore();
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
-      resetExceptionIgnores();
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("OutOfBoundsException")) {
+        createCore();
+        assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      }
       assertJQ(req("q", "*:*"), "/response/numFound==3");
 
       //
@@ -1695,6 +1698,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // test that a corrupt tlog doesn't stop us from coming up
   //
   @Test
+  @SuppressWarnings("try")
   public void testCorruptLog() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
@@ -1721,9 +1725,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       }
 
       // this is what the corrupted log currently produces... subject to change.
-      ignoreException("Failure to open existing log file");
-      createCore();
-      resetExceptionIgnores();
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("Failure to open existing log file")) {
+        createCore();
+      }
 
       // just make sure it responds
       assertJQ(req("q", "*:*"), "/response/numFound==0");
@@ -1766,6 +1770,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // in rare circumstances, two logs can be left uncapped (lacking a commit at the end signifying
   // that all the content in the log was committed)
   @Test
+  @SuppressWarnings("try")
   public void testRecoveryMultipleLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
@@ -1836,10 +1841,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       logReplay.release(1000);
       logReplayFinish.drainPermits();
       // this is what the corrupted log currently produces... subject to change.
-      ignoreException("OutOfBoundsException");
-      createCore();
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
-      resetExceptionIgnores();
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("OutOfBoundsException")) {
+        createCore();
+        assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      }
       assertJQ(req("q", "*:*"), "/response/numFound==6");
 
     } finally {

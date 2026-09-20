@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -53,6 +54,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
+    StreamExpressionNamedParameter pathExpression = factory.getNamedOperand(expression, "path");
 
     // Collection Name
     if (null == collectionName) {
@@ -64,13 +66,21 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     }
 
     ModifiableSolrParams mParams =
-        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases"));
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases", "path"));
 
     var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    if (mParams.get(CommonParams.QT) != null && mParams.get(CommonParams.QT).equals("/export")) {
+    String path = null;
+    if (null != pathExpression && pathExpression.getParameter() instanceof StreamExpressionValue) {
+      path = ((StreamExpressionValue) pathExpression.getParameter()).getValue();
+    }
+
+    if ("/export".equals(path)
+        || (mParams.get(CommonParams.QT) != null
+            && mParams.get(CommonParams.QT).equals("/export"))) {
       CloudSolrStream cloudSolrStream = new CloudSolrStream();
       cloudSolrStream.init(solrConnection, collectionName, mParams);
+      cloudSolrStream.path = path;
       this.innerStream = cloudSolrStream;
     } else {
 

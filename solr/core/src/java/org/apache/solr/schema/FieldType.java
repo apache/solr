@@ -1070,14 +1070,30 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     if (field.hasDocValues()) {
-      return new FieldExistsQuery(field.getName());
+      return validateFieldExistsQuery(parser, new FieldExistsQuery(field.getName()));
     } else if (!field.omitNorms()
         && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new FieldExistsQuery(field.getName());
+      return validateFieldExistsQuery(parser, new FieldExistsQuery(field.getName()));
     } else {
       // Default to an unbounded range query
       return getSpecializedExistenceQuery(parser, field);
     }
+  }
+
+  private static Query validateFieldExistsQuery(QParser parser, FieldExistsQuery query) {
+    if (parser == null || parser.getReq() == null || parser.getReq().getCore() == null) {
+      return query;
+    }
+
+    try {
+      parser.getReq().getCore().withSearcher(searcher -> searcher.rewrite(query));
+    } catch (IllegalStateException e) {
+      // FieldExistsQuery.rewrite throws this if the field lacks doc values, norms, and vectors.
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    return query;
   }
 
   /**

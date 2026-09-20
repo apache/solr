@@ -64,6 +64,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Assume;
 import org.junit.Before;
@@ -2034,11 +2035,11 @@ public class StreamingTest extends SolrCloudTestCase {
     // Wait for the checkpoint
     JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
 
-    SolrParams sParams1 = params("qt", "/get", "ids", "50000000", "fl", "id");
+    SolrParams sParams1 = params("ids", "50000000", "fl", "id");
     int count = 0;
     while (count == 0) {
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
+          new SolrStream(jetty.getBaseUrl().toString(), COLLECTIONORALIAS, "/get", sParams1);
       solrStream.setStreamContext(context);
       List<Tuple> tuples = getTuples(solrStream);
       count = tuples.size();
@@ -2125,13 +2126,17 @@ public class StreamingTest extends SolrCloudTestCase {
       List<String> shardUrls =
           TupleStream.getShards(solrConnection, COLLECTIONORALIAS, streamContext);
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
           "rollup(search("
               + COLLECTIONORALIAS
-              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", qt=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+              + ",q=\"*:*\",fl=\"a_s,a_i,a_f,b_f\",sort=\"a_s asc\",partitionKeys=\"a_s\", path=\"/export\"),over=\"a_s\",sum(a_i),sum(a_f),min(a_i),min(a_f),max(a_i),max(a_f),avg(a_i),avg(a_f),count(*),missing(b_f))\n");
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
@@ -2731,7 +2736,7 @@ public class StreamingTest extends SolrCloudTestCase {
     String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
     zkStateReader.forceUpdateCollection(collName);
     DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collName);
-    List<Replica> replicas = collection.getReplicas();
+    List<Replica> replicas = collection.replicaStream().toList();
     streamContext
         .getEntries()
         .put("core", replicas.get(random().nextInt(replicas.size())).getCoreName());
@@ -3177,7 +3182,7 @@ public class StreamingTest extends SolrCloudTestCase {
     String expr =
         "search("
             + MULTI_REPLICA_COLLECTIONORALIAS
-            + ",q=*:*,fl=\"a_i\", qt=\"/export\", sort=\"a_i asc\")";
+            + ",q=*:*,fl=\"a_i\", path=\"/export\", sort=\"a_i asc\")";
     try (CloudSolrStream stream =
         new CloudSolrStream(StreamExpressionParser.parse(expr), streamFactory)) {
       stream.setStreamContext(streamContext);
@@ -3217,7 +3222,7 @@ public class StreamingTest extends SolrCloudTestCase {
       streamContext.setLocal(true);
 
       for (String coll : resolved) {
-        Replica rr = zkStateReader.getCollection(coll).getReplicas().get(0);
+        Replica rr = zkStateReader.getCollection(coll).replicaStream().findFirst().orElseThrow();
         streamContext.put("core", rr.core);
         List<Replica> replicas =
             TupleStream.getReplicas(

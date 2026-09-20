@@ -31,10 +31,8 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.crossdc.common.CrossDcConstants;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
@@ -165,7 +163,7 @@ public class SolrMessageProcessor extends MessageProcessor
   }
 
   private void logIf4xxException(SolrException solrException) {
-    // This shouldn't really happen but if it doesn, it most likely requires fixing in the return
+    // This shouldn't really happen but if it does, it most likely requires fixing in the return
     // code from Solr.
     if (solrException != null && 400 <= solrException.code() && solrException.code() < 500) {
       log.error("Exception occurred with 4xx response. {}", solrException.code(), solrException);
@@ -335,50 +333,17 @@ public class SolrMessageProcessor extends MessageProcessor
     }
   }
 
-  /**
-   * Adds {@link CrossDcConstants#SHOULD_MIRROR}=false to the params if it's not already specified.
-   * Logs a warning if it is specified and NOT set to false. (i.e. circular mirror may occur)
-   *
-   * @param mirroredSolrRequest MirroredSolrRequest object that is being processed.
-   */
-  void preventCircularMirroring(MirroredSolrRequest<?> mirroredSolrRequest) {
-    if (mirroredSolrRequest.getSolrRequest() instanceof UpdateRequest updateRequest) {
-      ModifiableSolrParams params = updateRequest.getParams();
-      String shouldMirror = (params == null ? null : params.get(CrossDcConstants.SHOULD_MIRROR));
-      if (shouldMirror == null) {
-        log.warn(
-            "{} param is missing - setting to false. Request={}",
-            CrossDcConstants.SHOULD_MIRROR,
-            mirroredSolrRequest);
-        updateRequest.setParam(CrossDcConstants.SHOULD_MIRROR, "false");
-      } else if (!"false".equalsIgnoreCase(shouldMirror)) {
-        log.warn("{} param equal to {}", CrossDcConstants.SHOULD_MIRROR, shouldMirror);
-      }
-    } else {
-      SolrParams params = mirroredSolrRequest.getSolrRequest().getParams();
-      assert params != null;
-      String shouldMirror = params.get(CrossDcConstants.SHOULD_MIRROR);
-      if (shouldMirror == null) {
-        if (params instanceof ModifiableSolrParams) {
-          log.warn("{} param is missing - setting to false", CrossDcConstants.SHOULD_MIRROR);
-          ((ModifiableSolrParams) params).set(CrossDcConstants.SHOULD_MIRROR, "false");
-        } else {
-          log.warn(
-              "{} param is missing and params are not modifiable", CrossDcConstants.SHOULD_MIRROR);
-        }
-      } else if (!"false".equalsIgnoreCase(shouldMirror)) {
-        log.warn("{} param is present and set to {}", CrossDcConstants.SHOULD_MIRROR, shouldMirror);
-      }
-    }
-  }
-
   private void connectToSolrIfNeeded() {
     // Don't try to consume anything if we can't connect to the solr server
     boolean connected = false;
     while (!connected) {
       try {
-        clientSupplier.get().connect(); // volatile null-check if already connected
+        // a probe; throws if the cluster isn't reachable
+        clientSupplier.get().getClusterStateProvider().getLiveNodes();
         connected = true;
+      } catch (NullPointerException | ClassCastException e) {
+        // a bug rather than an unreachable cluster; retrying it would loop forever
+        throw e;
       } catch (Exception e) {
         log.error("Unable to connect to solr server. Not consuming.", e);
         uncheckedSleep(5000);

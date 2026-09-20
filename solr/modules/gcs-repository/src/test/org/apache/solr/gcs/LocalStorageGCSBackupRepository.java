@@ -81,8 +81,8 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
     }
 
     // FakeStorageRpc isn't thread-safe, which causes flaky test failures when multiple cores
-    // attempt to backup files
-    // simultaneously.  We work around this here by wrapping it in a delegating instance that adds a
+    // attempt to back up files simultaneously.  We work around this here by wrapping it in a
+    // delegating instance that adds a
     // measure of thread safety.
     stashedStorage =
         new ConcurrentDelegatingStorage(LocalStorageHelper.customOptions(false).getService());
@@ -96,13 +96,14 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
       createDirectory(baseLocationUri);
     } catch (Exception e) {
       final Throwable cause = e.getCause();
-      if (cause != null) {
-        assumeFalse(
-            "This test uses a GCS mock library that is incompatible with the current default locale",
-            e instanceof StorageException
-                && cause.getMessage().contains("Invalid date/time format")
-                && cause instanceof NumberFormatException);
-      }
+      assumeFalse(
+          "This test uses a GCS mock library that is incompatible with the current default locale",
+          cause != null
+              && e instanceof StorageException
+              && cause.getMessage().contains("Invalid date/time format")
+              && cause instanceof NumberFormatException);
+      // Not the known locale incompatibility - a genuine failure, so don't swallow it.
+      throw new RuntimeException(e);
     }
   }
 }

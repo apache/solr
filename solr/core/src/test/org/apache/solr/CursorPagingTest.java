@@ -48,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
@@ -1155,22 +1156,15 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /** execute a local request, verify that we get an expected error */
+  @SuppressWarnings("try")
   public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) {
 
-    try {
-      SolrException e =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                ignoreException(expSubstr);
-                assertJQ(req(p));
-              });
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expSubstr)) {
+      SolrException e = expectThrows(SolrException.class, () -> assertJQ(req(p)));
       assertEquals(expCode.code, e.code());
       assertTrue(
           "Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
           e.getMessage().contains(expSubstr));
-    } finally {
-      unIgnoreException(expSubstr);
     }
   }
 

@@ -23,6 +23,7 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Before;
 
 public class TestAddFieldRealTimeGet extends TestRTGBase {
@@ -50,6 +51,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     initCore(configFileName, schemaFileName, tmpSolrHome);
   }
 
+  @SuppressWarnings("try")
   public void test() throws Exception {
     clearIndex();
     assertU(commit());
@@ -58,11 +60,11 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     String newFieldType = "string";
     String newFieldValue = "xyz";
 
-    ignoreException("unknown field");
-    assertFailedU(
-        "Should fail due to unknown field '" + newFieldName + "'",
-        adoc("id", "1", newFieldName, newFieldValue));
-    unIgnoreException("unknown field");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("unknown field")) {
+      assertFailedU(
+          "Should fail due to unknown field '" + newFieldName + "'",
+          adoc("id", "1", newFieldName, newFieldValue));
+    }
 
     IndexSchema schema = h.getCore().getLatestSchema();
     SchemaField newField = schema.newField(newFieldName, newFieldType, Map.of());
