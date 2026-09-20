@@ -85,40 +85,67 @@ If the following document exists in our collection:
 
 [source,json]
 ----
-{"id":"mydoc",
- "price":10,
- "popularity":42,
- "categories":["kids"],
- "sub_categories":["under_5","under_10"],
- "promo_ids":["a123x"],
- "tags":["free_to_try","buy_now","clearance","on_sale"]
+{"id":"SOLR1000",
+ "name":"Solr, the Enterprise Search Server",
+ "manu":"Apache Software Foundation",
+ "cat":["software","search"],
+ "features":["Advanced Full-Text Search Capabilities using Lucene",
+             "Optimized for High Volume Web Traffic"],
+ "price":0.0,
+ "popularity":10
 }
 ----
 
 And we apply the following update command:
 
-[source,json]
+[tabs#atomic-update-request]
+======
+V1 API::
++
+====
+[source,bash]
 ----
-{"id":"mydoc",
- "price":{"set":99},
- "popularity":{"inc":-7},
- "categories":{"add":["toys","games"]},
- "sub_categories":{"add-distinct":"under_10"},
- "promo_ids":{"remove":"a123x"},
- "tags":{"remove":["free_to_try","on_sale"]}
-}
+curl 'http://localhost:8983/solr/techproducts/update' \
+  -H 'Content-Type: application/json' \
+  -d '[
+  {"id":"SOLR1000",
+   "price":{"set":9.99},
+   "popularity":{"inc":5},
+   "cat":{"add":"enterprise"},
+   "features":{"remove":"Optimized for High Volume Web Traffic"}}
+]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update' \
+  -H 'Content-Type: application/json' \
+  -d '[
+  {"id":"SOLR1000",
+   "price":{"set":9.99},
+   "popularity":{"inc":5},
+   "cat":{"add":"enterprise"},
+   "features":{"remove":"Optimized for High Volume Web Traffic"}}
+]'
+----
+====
+======
 
 The resulting document in our collection will be:
 
 [source,json]
 ----
-{"id":"mydoc",
- "price":99,
- "popularity":35,
- "categories":["kids","toys","games"],
- "sub_categories":["under_5","under_10"],
- "tags":["buy_now","clearance"]
+{"id":"SOLR1000",
+ "name":"Solr, the Enterprise Search Server",
+ "manu":"Apache Software Foundation",
+ "cat":["software","search","enterprise"],
+ "features":["Advanced Full-Text Search Capabilities using Lucene"],
+ "price":9.99,
+ "popularity":15
 }
 ----
 
@@ -155,79 +182,301 @@ This is how Solr understands that you are updating a child document, and not a R
 All of the examples below use `id` prefixes, so no `\_route_` parameter will be necessary for these examples.
 ====
 
-For the upcoming examples, we'll assume an index containing the same documents covered in xref:indexing-nested-documents.adoc#example-indexing-syntax[Indexing Nested Documents]:
+For the upcoming examples, we'll use a nested MacBook Pro product block.
+The block must be indexed before applying the child updates below.
 
-include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
+The following request creates the sample block used in the first child-document example:
+
+[tabs#child-document-sample]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
+  {
+    "id": "APPLE-MACBOOK-PRO-14",
+    "type_s": "product",
+    "name": "MacBook Pro 14-inch",
+    "manu": "Apple",
+    "cat": ["computers", "laptops"],
+    "features": ["14-inch Liquid Retina XDR display", "Thunderbolt 4", "MagSafe charging"],
+    "skus": [
+      {
+        "id": "APPLE-MBP14-M3-16-512",
+        "type_s": "sku",
+        "processor_s": "Apple M3 Pro",
+        "ram_gb_i": 16,
+        "storage_gb_i": 512,
+        "color_s": "Space Black",
+        "price": 1999.00,
+        "inventory_i": 24,
+        "manuals": [
+          {
+            "id": "APPLE-MBP14-MANUAL-EN",
+            "type_s": "manual",
+            "language_s": "en",
+            "title_t": "MacBook Pro User Guide"
+          }
+        ]
+      },
+      {
+        "id": "APPLE-MBP14-M3-36-1TB",
+        "type_s": "sku",
+        "processor_s": "Apple M3 Pro",
+        "ram_gb_i": 36,
+        "storage_gb_i": 1024,
+        "color_s": "Silver",
+        "price": 2399.00,
+        "inventory_i": 11
+      }
+    ]
+  }
+]'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
+  {
+    "id": "APPLE-MACBOOK-PRO-14",
+    "type_s": "product",
+    "name": "MacBook Pro 14-inch",
+    "manu": "Apple",
+    "cat": ["computers", "laptops"],
+    "features": ["14-inch Liquid Retina XDR display", "Thunderbolt 4", "MagSafe charging"],
+    "skus": [
+      {
+        "id": "APPLE-MBP14-M3-16-512",
+        "type_s": "sku",
+        "processor_s": "Apple M3 Pro",
+        "ram_gb_i": 16,
+        "storage_gb_i": 512,
+        "color_s": "Space Black",
+        "price": 1999.00,
+        "inventory_i": 24,
+        "manuals": [
+          {
+            "id": "APPLE-MBP14-MANUAL-EN",
+            "type_s": "manual",
+            "language_s": "en",
+            "title_t": "MacBook Pro User Guide"
+          }
+        ]
+      },
+      {
+        "id": "APPLE-MBP14-M3-36-1TB",
+        "type_s": "sku",
+        "processor_s": "Apple M3 Pro",
+        "ram_gb_i": 36,
+        "storage_gb_i": 1024,
+        "color_s": "Silver",
+        "price": 2399.00,
+        "inventory_i": 11
+      }
+    ]
+  }
+]'
+----
+====
+======
 
 ==== Modifying Child Document Fields
 
 All of the <<atomic-updates,Atomic Update operations>> mentioned above are supported for "real" fields of Child Documents:
 
+[tabs#child-field-update]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
 {
-  "id": "P11!S31",
-  "_root_": "P11!prod",
-  "price_i": { "inc": 73 },
-  "color_s": { "set": "GREY" }
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "price": { "inc": 100 },
+  "inventory_i": { "inc": -1 }
 } ]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
+{
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "price": { "inc": 100 },
+  "inventory_i": { "inc": -1 }
+} ]'
+----
+====
+======
 
 ==== Replacing All Child Documents
 
 As with normal (multiValued) fields, the `set` keyword can be used to replace all child documents in a pseudo-field:
 
+[tabs#child-replace-update]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
 {
-  "id": "P22!S22",
-  "_root_": "P22!prod",
-  "manuals": { "set": [ { "id": "P22!D77",
-                          "name_s": "Why Red Pens Are the Best",
-                          "content_t": "... correcting papers ...",
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "manuals": { "set": [ { "id": "APPLE-MBP14-MANUAL-EN",
+                          "type_s": "manual",
+                          "language_s": "en",
+                          "title_t": "MacBook Pro User Guide"
                         },
-                        { "id": "P22!D88",
-                          "name_s": "How to get Red ink stains out of fabric",
-                          "content_t": "... vinegar ...",
+                        { "id": "APPLE-MBP14-MANUAL-FR",
+                          "type_s": "manual",
+                          "language_s": "fr",
+                          "title_t": "Guide de l’utilisateur du MacBook Pro"
                         } ] }
 
 } ]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
+{
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "manuals": { "set": [ { "id": "APPLE-MBP14-MANUAL-EN",
+                          "type_s": "manual",
+                          "language_s": "en",
+                          "title_t": "MacBook Pro User Guide"
+                        },
+                        { "id": "APPLE-MBP14-MANUAL-FR",
+                          "type_s": "manual",
+                          "language_s": "fr",
+                          "title_t": "Guide de l’utilisateur du MacBook Pro"
+                        } ] }
+
+} ]'
+----
+====
+======
 
 ==== Adding a Child Document
 
 As with normal (multiValued) fields, the `add` keyword can be used to add additional child documents to a pseudo-field:
 
+[tabs#child-add-update]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
 {
-  "id": "P11!S21",
-  "_root_": "P11!prod",
-  "manuals": { "add": { "id": "P11!D99",
-                        "name_s": "Why Red Staplers Are the Best",
-                        "content_t": "Once upon a time, Mike Judge ...",
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "manuals": { "add": { "id": "APPLE-MBP14-MANUAL-ES",
+                        "type_s": "manual",
+                        "language_s": "es",
+                        "title_t": "Guía del usuario del MacBook Pro"
                       } }
 } ]'
 ----
+====
 
-Note that this is add-or-replace (by ID).  Meaning, if it happens that doc `P11!S21` already has a child doc with the ID `P11!D99` (the one we are adding), then it will be replaced.
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
+{
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "manuals": { "add": { "id": "APPLE-MBP14-MANUAL-ES",
+                        "type_s": "manual",
+                        "language_s": "es",
+                        "title_t": "Guía del usuario del MacBook Pro"
+                      } }
+} ]'
+----
+====
+======
+
+Note that this is add-or-replace (by ID).  Meaning, if it happens that doc `APPLE-MBP14-M3-16-512` already has a child doc with the ID `APPLE-MBP14-MANUAL-ES` (the one we are adding), then it will be replaced.
 
 ==== Removing a Child Document
 
 As with normal (multiValued) fields, the `remove` keyword can be used to remove a child document (by `id`) from it's pseudo-field:
 
+[tabs#child-remove-update]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
 {
-  "id": "P11!S21",
-  "_root_": "P11!prod",
-  "manuals": { "remove": { "id": "P11!D41" } }
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "manuals": { "remove": { "id": "APPLE-MBP14-MANUAL-ES" } }
 } ]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[
+{
+  "id": "APPLE-MBP14-M3-16-512",
+  "_root_": "APPLE-MACBOOK-PRO-14",
+  "manuals": { "remove": { "id": "APPLE-MBP14-MANUAL-ES" } }
+} ]'
+----
+====
+======
 
 
 == In-Place Updates
@@ -266,11 +515,11 @@ Users can specify this option when they would prefer that an update request "fai
 
 === In-Place Update Example
 
-If the price and popularity fields are defined in the schema as:
+If your schema defines the price and popularity fields like the techproducts example:
 
-`<field name="price" type="float" indexed="false" stored="false" docValues="true"/>`
+`<field name="price" type="pfloat" indexed="false" stored="false" docValues="true"/>`
 
-`<field name="popularity" type="float" indexed="false" stored="false" docValues="true"/>`
+`<field name="popularity" type="pint" indexed="false" stored="false" docValues="true"/>`
 
 [TIP]
 ====
@@ -280,42 +529,58 @@ If the price and popularity fields are defined in the schema as:
 `docValues="true"` is the default for schemas with version >= `1.7`, so it can be omitted.
 ====
 
-If the following document exists in our collection:
+Assuming the following document exists in our collection:
 
 [source,json]
 ----
 {
- "id":"mydoc",
- "price":10,
- "popularity":42,
- "categories":["kids"],
- "promo_ids":["a123x"],
- "tags":["free_to_try","buy_now","clearance","on_sale"]
+ "id":"SOLR1000",
+ "name":"Solr, the Enterprise Search Server",
+ "manu":"Apache Software Foundation",
+ "cat":["software","search"],
+ "price":0.0,
+ "popularity":10
 }
 ----
 
 And we apply the following update command:
 
-[source,json]
+[tabs#in-place-update-request]
+======
+V1 API::
++
+====
+[source,bash]
 ----
-{
- "id":"mydoc",
- "price":{"set":99},
- "popularity":{"inc":20}
-}
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[{"id":"SOLR1000","price":{"set":1.0},"popularity":{"inc":1}}]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  -d '[{"id":"SOLR1000","price":{"set":1.0},"popularity":{"inc":1}}]'
+----
+====
+======
 
 The resulting document in our collection will be:
 
 [source,json]
 ----
 {
- "id":"mydoc",
- "price":99,
- "popularity":62,
- "categories":["kids"],
- "promo_ids":["a123x"],
- "tags":["free_to_try","buy_now","clearance","on_sale"]
+ "id":"SOLR1000",
+ "name":"Solr, the Enterprise Search Server",
+ "manu":"Apache Software Foundation",
+ "cat":["software","search"],
+ "price":1.0,
+ "popularity":11
 }
 ----
 
@@ -354,29 +619,92 @@ This allows clients to immediately know what the `\_version_` is of every docume
 
 Following are some examples using `versions=true` in queries:
 
+[tabs#optimistic-add]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' --data-binary '
-[ { "id" : "aaa" },
-  { "id" : "bbb" } ]'
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[ { "id" : "SOLR1000" },
+  { "id" : "0579B002" } ]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[ { "id" : "SOLR1000" },
+  { "id" : "0579B002" } ]'
+----
+====
+======
+[tabs#optimistic-add-response]
+======
+V1 API::
++
+====
 [source,json]
 ----
 {
   "adds":[
-    "aaa",1632740120218042368,
-    "bbb",1632740120250548224]}
+    "SOLR1000",1632740120218042368,
+    "0579B002",1632740120250548224]}
 ----
+====
 
-In this example, we have added 2 documents "aaa" and "bbb".
+V2 API::
++
+====
+[source,json]
+----
+{
+  "adds":[
+    {"id":"SOLR1000","version":1632740120218042368},
+    {"id":"0579B002","version":1632740120250548224}]}
+----
+====
+======
+
+In this example, we have added 2 documents "SOLR1000" and "0579B002".
 Because we added `versions=true` to the request, the response shows the document version for each document.
 
+[tabs#optimistic-wrong-version]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' --data-binary '
-  [{ "id" : "aaa",
-     "foo_s" : "update attempt with wrong existing version" }]'
+curl 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+  [{ "id" : "SOLR1000",
+     "name" : "update attempt with wrong existing version" }]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?_version_=999999&versions=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+  [{ "id" : "SOLR1000",
+     "name" : "update attempt with wrong existing version" }]'
+----
+====
+======
 [source,json]
 ----
 {
@@ -384,35 +712,97 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "metadata":[
       "error-class","org.apache.solr.common.SolrException",
       "root-error-class","org.apache.solr.common.SolrException"],
-    "msg":"version conflict for aaa expected=999999 actual=1632740120218042368",
+    "msg":"version conflict for SOLR1000 expected=999999 actual=1632740120218042368",
     "code":409}}
 ----
 
 
-In this example, we've attempted to update document "aaa" but specified the wrong version in the request: `_version_=999999` doesn't match the document version we just got when we added the document.
+In this example, we've attempted to update document "SOLR1000" but specified the wrong version in the request: `_version_=999999` doesn't match the document version we just got when we added the document.
 We get an error in response.
 
+[tabs#optimistic-correct-version]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' --data-binary '
-[{ "id" : "aaa",
-   "foo_s" : "update attempt with correct existing version" }]'
+curl 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[{ "id" : "SOLR1000",
+   "name" : "update attempt with correct existing version" }]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[{ "id" : "SOLR1000",
+   "name" : "update attempt with correct existing version" }]'
+----
+====
+======
+[tabs#optimistic-correct-response]
+======
+V1 API::
++
+====
 [source,json]
 ----
 {
   "adds":[
-    "aaa",1632740462042284032]}
+    "SOLR1000",1632740462042284032]}
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "adds":[
+    {"id":"SOLR1000","version":1632740462042284032}]}
+----
+====
+======
 
 Now we've sent an update with a value for `\_version_` that matches the value in the index, and it succeeds.
 Because we included `versions=true` to the update request, the response includes a different value for the `\_version_` field.
+[tabs#optimistic-embedded-wrong-version]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
-[{ "id" : "aaa", _version_ : 100,
-   "foo_s" : "update attempt with wrong existing version embedded in document" }]'
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&commit=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[{ "id" : "SOLR1000", "_version_" : 100,
+   "name" : "update attempt with wrong existing version embedded in document" }]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&commit=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[{ "id" : "SOLR1000", "_version_" : 100,
+   "name" : "update attempt with wrong existing version embedded in document" }]'
+----
+====
+======
 [source,json]
 ----
 {
@@ -420,7 +810,7 @@ $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/t
     "metadata":[
       "error-class","org.apache.solr.common.SolrException",
       "root-error-class","org.apache.solr.common.SolrException"],
-    "msg":"version conflict for aaa expected=100 actual=1632740462042284032",
+    "msg":"version conflict for SOLR1000 expected=100 actual=1632740462042284032",
     "code":409}}
 ----
 
@@ -428,18 +818,58 @@ Now we've sent an update with a value for `\_version_` embedded in the document 
 This request fails because we have specified the wrong version.
 This is useful when documents are sent in a batch and different `\_version_` values need to be specified for each doc.
 
+[tabs#optimistic-embedded-correct-version]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
-[{ "id" : "aaa", _version_ : 1632740462042284032,
-   "foo_s" : "update attempt with correct version embedded in document" }]'
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&commit=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[{ "id" : "SOLR1000", "_version_" : 1632740462042284032,
+   "name" : "update attempt with correct version embedded in document" }]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&commit=true&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[{ "id" : "SOLR1000", "_version_" : 1632740462042284032,
+   "name" : "update attempt with correct version embedded in document" }]'
+----
+====
+======
+[tabs#optimistic-embedded-correct-response]
+======
+V1 API::
++
+====
 [source,json]
 ----
 {
   "adds":[
-    "aaa",1632741942747987968]}
+    "SOLR1000",1632741942747987968]}
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "adds":[
+    {"id":"SOLR1000","version":1632741942747987968}]}
+----
+====
+======
 
 Now we've sent an update with a value for `\_version_` embedded in the document itself.
 This request fails because we have specified the wrong version.
@@ -456,32 +886,72 @@ $ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_&omit
 {
   "response":{"numFound":3,"start":0,"docs":[
       { "_version_":1632740120250548224,
-        "id":"bbb"},
+        "id":"0579B002"},
       { "_version_":1632741942747987968,
-        "id":"aaa"}]
+        "id":"SOLR1000"}]
   }}
 
 ----
 
 Finally, we can issue a query that requests the `\_version_` field be included in the response, and we can see that for the two documents in our example index.
 
+[tabs#optimistic-fail-conflicts]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' --data-binary '
-[ { "id" : "aaa" },
-  { "id" : "ccc" } ]'
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[ { "id" : "SOLR1000" },
+  { "id" : "IW-02" } ]'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' \
+  -H 'Content-Type: application/json' \
+  -d '
+[ { "id" : "SOLR1000" },
+  { "id" : "IW-02" } ]'
+----
+====
+======
+[tabs#optimistic-fail-response]
+======
+V1 API::
++
+====
 [source,json]
 ----
 {
   "adds":[
-    "ccc",1632740949182382080]}
+    "IW-02",1632740949182382080]}
 ----
+====
 
-In this example, we have added 2 documents "aaa" and "ccc".
-As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `aaa` because it already exists.
+V2 API::
++
+====
+[source,json]
+----
+{
+  "adds":[
+    {"id":"IW-02","version":1632740949182382080}]}
+----
+====
+======
+
+In this example, we have added 2 documents "SOLR1000" and "IW-02".
+As we have specified the parameter `\_version_=-1`, this request should not add the document with the id `SOLR1000` because it already exists.
 The request succeeds & does not throw any error because the `failOnVersionConflicts=false` parameter is specified.
-The response shows that only document `ccc` is added and `aaa` is silently ignored.
+The response shows that only document `IW-02` is added and `SOLR1000` is silently ignored.
 
 
 For more information, please also see Yonik Seeley's presentation on https://www.youtube.com/watch?v=WYVM6Wz-XTw[NoSQL features in Solr 4] from Apache Lucene EuroCon 2012.
