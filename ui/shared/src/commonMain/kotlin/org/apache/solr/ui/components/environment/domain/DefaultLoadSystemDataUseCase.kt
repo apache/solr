@@ -15,17 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.environment.store
+package org.apache.solr.ui.components.environment.domain
 
-import org.apache.solr.ui.components.environment.data.JavaProperty
 import org.apache.solr.ui.components.environment.data.SystemData
+import org.apache.solr.ui.components.environment.repository.EnvironmentRepository
 
-class MockedEnvironmentStoreClient(
-    private val onGetSystemData: () -> Result<SystemData>,
-    private val onGetJavaProperties: () -> Result<List<JavaProperty>>,
-) : EnvironmentStoreProvider.Client {
-
-    override suspend fun getSystemData(): Result<SystemData> = onGetSystemData()
-
-    override suspend fun getJavaProperties(): Result<List<JavaProperty>> = onGetJavaProperties()
+internal class DefaultLoadSystemDataUseCase(
+    private val repository: EnvironmentRepository,
+) : LoadSystemDataUseCase {
+    override suspend fun invoke(): Result<SystemData> = repository.getSystemData()
 }

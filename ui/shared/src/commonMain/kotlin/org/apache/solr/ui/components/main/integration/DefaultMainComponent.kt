@@ -45,7 +45,7 @@ class DefaultMainComponent internal constructor(
     destination: String? = null,
     private val clusterComponent: () -> ClusterComponent,
     private val configsetsComponent: () -> ConfigsetsComponent,
-    private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
+    private val environmentComponent: () -> EnvironmentComponent,
     private val loggingComponent: () -> LoggingComponent,
     private val output: (Output) -> Unit,
 ) : MainComponent,
@@ -74,13 +74,7 @@ class DefaultMainComponent internal constructor(
         output = output,
         clusterComponent = { DefaultClusterComponent() },
         configsetsComponent = { DefaultConfigsetsComponent(httpClient = httpClient) },
-        environmentComponent = { childContext ->
-            DefaultEnvironmentComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
-                httpClient = httpClient,
-            )
-        },
+        environmentComponent = { DefaultEnvironmentComponent(httpClient = httpClient) },
         loggingComponent = { DefaultLoggingComponent() },
     )
 
@@ -133,7 +127,7 @@ class DefaultMainComponent internal constructor(
         // Configuration.QueriesAndOperations ->
         //     NavigationComponent.Child.QueriesAndOperations(queriesAndOperationsComponent(componentContext))
 
-        Configuration.Environment -> Child.Environment(environmentComponent(componentContext))
+        Configuration.Environment -> Child.Environment(environmentComponent())
 
         Configuration.Logging -> Child.Logging(loggingComponent())
 
