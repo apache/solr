@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.environment.integration
+package org.apache.solr.ui.components.environment.domain
 
-import org.apache.solr.ui.components.environment.EnvironmentComponent
-import org.apache.solr.ui.components.environment.store.EnvironmentStore
+import org.apache.solr.ui.components.environment.data.JavaProperty
+import org.apache.solr.ui.components.environment.repository.EnvironmentRepository
 
-internal val environmentStateToModel: (EnvironmentStore.State) -> EnvironmentComponent.Model = {
-    EnvironmentComponent.Model(
-        versions = it.lucene,
-        jvm = it.jvm,
-        javaProperties = it.javaProperties,
-    )
+internal class DefaultLoadJavaPropertiesUseCase(
+    private val repository: EnvironmentRepository,
+) : LoadJavaPropertiesUseCase {
+    override suspend fun invoke(): Result<List<JavaProperty>> = repository.getJavaProperties()
 }

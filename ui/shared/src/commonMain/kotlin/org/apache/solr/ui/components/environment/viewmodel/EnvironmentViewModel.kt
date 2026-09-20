@@ -15,35 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.environment
+package org.apache.solr.ui.components.environment.viewmodel
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import org.apache.solr.ui.components.environment.domain.LoadJavaPropertiesUseCase
 import org.apache.solr.ui.components.environment.domain.LoadSystemDataUseCase
-import org.apache.solr.ui.components.environment.repository.EnvironmentRepository
-import org.apache.solr.ui.components.environment.viewmodel.EnvironmentViewModel
+import org.apache.solr.ui.utils.AppDispatchers
 
-/**
- * Component interface that represents the environment section.
- */
-interface EnvironmentComponent {
+class EnvironmentViewModel(
+    loadSystemDataUseCase: LoadSystemDataUseCase,
+    loadJavaPropertiesUseCase: LoadJavaPropertiesUseCase,
+    dispatchers: AppDispatchers,
+) : ViewModel() {
 
-    /**
-     * Dependencies provided by the application.
-     */
-    val environmentRepository: EnvironmentRepository
-
-    /**
-     * Use case responsible for loading the system data.
-     */
-    val loadSystemDataUseCase: LoadSystemDataUseCase
+    private val environmentState = EnvironmentStateHolder(
+        scope = viewModelScope,
+        loadSystemDataUseCase = loadSystemDataUseCase,
+        loadJavaPropertiesUseCase = loadJavaPropertiesUseCase,
+        dispatchers = dispatchers,
+    )
 
     /**
-     * Use case responsible for loading the java properties.
+     * UI state of the environment.
      */
-    val loadJavaPropertiesUseCase: LoadJavaPropertiesUseCase
+    val uiState = environmentState.uiState
 
     /**
-     * Factory method to create a [EnvironmentViewModel] instance.
+     * Fetches the system data and the java properties again.
      */
-    fun createEnvironmentViewModel(): EnvironmentViewModel
+    fun fetchSystemData() = environmentState.fetchSystemData()
 }
