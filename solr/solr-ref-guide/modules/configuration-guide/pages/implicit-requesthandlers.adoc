@@ -130,12 +130,25 @@ Core Info:: Return core information.
 
 Threads:: Return info on all JVM threads.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/threads`
+[tabs#thread-dump-api]
+======
+V1 API::
++
+====
+`solr/admin/info/threads`
+====
 
-v2: `api/node/threads` |{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
+V2 API::
++
+====
+`api/node/threads`
+====
+======
++
+[cols="2*.",frame=none,grid=cols,options="header"]
+|===
+|Class & Javadocs |Paramset
+|{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
 === Analysis Handlers
