@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth.integration
+package org.apache.solr.ui.components.auth.data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -36,7 +36,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CompletableDeferred
 import org.apache.solr.ui.components.auth.getRedirectUri
-import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
+import org.apache.solr.ui.components.auth.repository.OAuthRepository
 import org.apache.solr.ui.data.AuthorizationResponse
 import org.apache.solr.ui.domain.OAuthData
 import org.apache.solr.ui.errors.InvalidResponseException
@@ -44,7 +44,7 @@ import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.UnknownResponseException
 
 /**
- * OAuth store implementation that uses a server instance for handling callbacks.
+ * OAuth repository implementation that uses a server instance for handling callbacks.
  *
  * The flow on desktop looks as follows:
  * 1. The application launches a server that listens on 127.0.0.1:8088
@@ -60,7 +60,7 @@ import org.apache.solr.ui.errors.UnknownResponseException
  * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
  * already set.
  */
-actual class PlatformOAuthStoreClient actual constructor(private val httpClient: HttpClient) : OAuthStoreProvider.Client {
+actual class PlatformOAuthRepository actual constructor(private val httpClient: HttpClient) : OAuthRepository {
 
     actual override suspend fun authenticate(
         state: String,

@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth.integration
+package org.apache.solr.ui.components.auth.data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.auth.providers.BearerTokens
-import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
+import org.apache.solr.ui.components.auth.repository.OAuthRepository
 import org.apache.solr.ui.domain.OAuthData
 
 /**
- * OAuth store implementation that uses a server instance for handling callbacks.
+ * OAuth repository implementation that uses a server instance for handling callbacks.
  *
  * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
  * already set.
  */
-expect class PlatformOAuthStoreClient(httpClient: HttpClient) : OAuthStoreProvider.Client {
+expect class PlatformOAuthRepository(httpClient: HttpClient) : OAuthRepository {
     override suspend fun authenticate(
         state: String,
         verifier: String,

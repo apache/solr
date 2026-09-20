@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth.integration
+package org.apache.solr.ui.components.auth.data
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
@@ -32,7 +32,7 @@ import kotlin.js.unsafeCast
 import kotlinx.browser.window
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.apache.solr.ui.components.auth.getRedirectUri
-import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
+import org.apache.solr.ui.components.auth.repository.OAuthRepository
 import org.apache.solr.ui.data.AuthorizationResponse
 import org.apache.solr.ui.domain.OAuthData
 import org.apache.solr.ui.errors.InvalidResponseException
@@ -43,7 +43,7 @@ import org.w3c.dom.MessageEvent
 private val logger = KotlinLogging.logger {}
 
 /**
- * OAuth store implementation that uses event listener and postMessage for handling callbacks
+ * OAuth repository implementation that uses event listener and postMessage for handling callbacks
  * from the identity provider after authentication / authorization.
  *
  * The basic flow on web looks as follows:
@@ -59,7 +59,7 @@ private val logger = KotlinLogging.logger {}
  * already set.
  */
 @OptIn(ExperimentalWasmJsInterop::class)
-actual class PlatformOAuthStoreClient actual constructor(private val httpClient: HttpClient) : OAuthStoreProvider.Client {
+actual class PlatformOAuthRepository actual constructor(private val httpClient: HttpClient) : OAuthRepository {
 
     actual override suspend fun authenticate(
         state: String,

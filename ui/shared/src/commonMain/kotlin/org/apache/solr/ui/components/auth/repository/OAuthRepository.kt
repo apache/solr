@@ -15,30 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth.store
+package org.apache.solr.ui.components.auth.repository
 
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import org.apache.solr.ui.domain.OAuthData
 
 /**
- * OAuth client for mocking the OAuth server responses.
+ * Repository interface for authenticating with OAuth.
  */
-internal class FakeOAuthClient(
-    private val result: suspend () -> Result<BearerTokens>,
-) : OAuthStoreProvider.Client {
+interface OAuthRepository {
 
-    var lastState: String? = null
-    var lastVerifier: String? = null
-    var lastData: OAuthData? = null
-
-    override suspend fun authenticate(
-        state: String,
-        verifier: String,
-        data: OAuthData,
-    ): Result<BearerTokens> {
-        lastState = state
-        lastVerifier = verifier
-        lastData = data
-        return result()
-    }
+    /**
+     * Authenticates the user with the current Solr instance.
+     *
+     * @param state The state value used in the authorization flow with PKCE.
+     * @param verifier Code verifier used in the authorization flow with PKCE.
+     * @param data The OAuth data to use for the auth flow.
+     * @return Returns success results iff the user has successfully authenticated.
+     */
+    suspend fun authenticate(state: String, verifier: String, data: OAuthData): Result<BearerTokens>
 }

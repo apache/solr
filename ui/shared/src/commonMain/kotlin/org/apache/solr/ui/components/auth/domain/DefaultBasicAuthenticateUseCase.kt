@@ -15,29 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.auth
+package org.apache.solr.ui.components.auth.domain
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.auth.BasicAuthComponent
-import org.apache.solr.ui.components.auth.BasicAuthComponent.Model
+import org.apache.solr.ui.components.auth.repository.BasicAuthRepository
 
-internal class TestBasicAuthComponent(model: Model = Model()) : BasicAuthComponent {
-    var onChangeUsernameClicked = false
-    var onChangePasswordClicked = false
-    var onAuthenticateClicked = false
+internal class DefaultBasicAuthenticateUseCase(
+    private val repository: BasicAuthRepository,
+) : BasicAuthenticateUseCase {
 
-    override val model: StateFlow<Model> = MutableStateFlow(model)
-
-    override fun onChangeUsername(username: String) {
-        onChangeUsernameClicked = true
-    }
-
-    override fun onChangePassword(password: String) {
-        onChangePasswordClicked = true
-    }
-
-    override fun onAuthenticate() {
-        onAuthenticateClicked = true
-    }
+    override suspend fun invoke(username: String, password: String): Result<Unit> =
+        authenticationCatching { repository.authenticate(username, password) }
 }
