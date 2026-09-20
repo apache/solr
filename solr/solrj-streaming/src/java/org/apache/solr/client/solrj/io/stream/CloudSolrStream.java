@@ -51,9 +51,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.URLUtil;
 
@@ -375,6 +377,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   public static List<Slice> getSlices(
       String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias)
       throws IOException {
+    return getSlices(collectionName, cloudSolrClient, checkAlias, new ModifiableSolrParams());
+  }
+
+  public static List<Slice> getSlices(
+      String collectionName,
+      CloudSolrClient cloudSolrClient,
+      boolean checkAlias,
+      SolrParams solrParams)
+      throws IOException {
 
     Stream<String> allCollections = Arrays.stream(collectionName.split(","));
 
@@ -385,19 +396,28 @@ public class CloudSolrStream extends TupleStream implements Expressible {
           allCollections.flatMap(
               col -> cloudSolrClient.getClusterStateProvider().resolveAlias(col).stream());
     }
-
+    // Check for _route_ param
+    final String routeKeys = solrParams.get(ShardParams._ROUTE_);
     // Lookup all actives slices for these collections
     ClusterState clusterState = cloudSolrClient.getClusterState();
     List<Slice> slices =
         allCollections
             .map(c -> clusterState.getCollectionOrNull(c, true))
             .filter(Objects::nonNull)
-            .flatMap(docCol -> docCol.getActiveSlices().stream())
+            .flatMap(docCol -> sliceResolution(docCol, routeKeys, solrParams))
             .toList();
     if (slices.isEmpty()) {
       throw new IOException("Slices not found for " + collectionName);
     }
     return slices;
+  }
+
+  private static Stream<Slice> sliceResolution(
+      DocCollection docCol, String routeKeys, SolrParams solrParams) {
+    if (routeKeys == null || routeKeys.isEmpty()) {
+      return docCol.getActiveSlices().stream();
+    }
+    return docCol.getRouter().getSearchSlices(routeKeys, solrParams, docCol).stream();
   }
 
   protected void constructStreams() throws IOException {
