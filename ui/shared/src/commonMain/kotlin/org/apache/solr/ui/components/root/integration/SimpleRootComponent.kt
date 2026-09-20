@@ -29,6 +29,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.Url
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.components.auth.AuthenticationComponent
+import org.apache.solr.ui.components.auth.domain.AuthenticationEvent
 import org.apache.solr.ui.components.auth.integration.DefaultAuthenticationComponent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.integration.DefaultMainComponent
@@ -90,14 +91,11 @@ class SimpleRootComponent(
                 output = output,
             )
         },
-        authenticationComponent = { childContext, url, methods, output ->
+        authenticationComponent = { url, methods ->
             DefaultAuthenticationComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
                 httpClient = getDefaultClient(url),
                 url = url,
                 methods = methods,
-                output = output,
             )
         },
     )
@@ -114,12 +112,8 @@ class SimpleRootComponent(
         is Configuration.Main -> Main(mainComponent(componentContext, configuration.authOption, ::mainOutput))
 
         is Configuration.Authentication -> Authentication(
-            authenticationComponent(
-                componentContext,
-                configuration.url,
-                configuration.methods,
-                ::authenticationOutput,
-            ),
+            component = authenticationComponent(configuration.url, configuration.methods),
+            onEvent = ::authenticationEvent,
         )
     }
 
@@ -150,15 +144,15 @@ class SimpleRootComponent(
     }
 
     /**
-     * Output handler for any output returned by the [AuthenticationComponent].
+     * Event handler for any event emitted by the authentication screen.
      *
-     * @param output The output returned by the authentication component implementation.
+     * @param event The event emitted by the authentication screen.
      */
-    private fun authenticationOutput(output: AuthenticationComponent.Output) = when (output) {
-        is AuthenticationComponent.Output.OnAuthenticated ->
-            navigation.replaceAll(Configuration.Main(authOption = output.option))
+    private fun authenticationEvent(event: AuthenticationEvent) = when (event) {
+        is AuthenticationEvent.Authenticated ->
+            navigation.replaceAll(Configuration.Main(authOption = event.option))
 
-        is AuthenticationComponent.Output.OnAbort -> navigation.pop()
+        is AuthenticationEvent.Aborted -> navigation.pop()
     }
 
     @Serializable
@@ -185,9 +179,4 @@ class SimpleRootComponent(
 /**
  * The authentication component producer (alias)
  */
-private typealias AuthenticationComponentProducer = (
-    AppComponentContext,
-    Url,
-    List<AuthMethod>,
-    (AuthenticationComponent.Output) -> Unit,
-) -> AuthenticationComponent
+private typealias AuthenticationComponentProducer = (Url, List<AuthMethod>) -> AuthenticationComponent

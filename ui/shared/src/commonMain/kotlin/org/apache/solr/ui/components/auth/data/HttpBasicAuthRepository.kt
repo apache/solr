@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth.integration
+package org.apache.solr.ui.components.auth.data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.basicAuth
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
-import org.apache.solr.ui.components.auth.store.BasicAuthStoreProvider
+import org.apache.solr.ui.components.auth.repository.BasicAuthRepository
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.UnknownResponseException
 
 /**
- * HTTP client implementation of the basic auth store.
+ * HTTP repository implementation for basic authentication.
  *
  * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
  * already set.
  */
-class HttpBasicAuthStoreClient(private val httpClient: HttpClient) : BasicAuthStoreProvider.Client {
+class HttpBasicAuthRepository(private val httpClient: HttpClient) : BasicAuthRepository {
     override suspend fun authenticate(
         username: String,
         password: String,

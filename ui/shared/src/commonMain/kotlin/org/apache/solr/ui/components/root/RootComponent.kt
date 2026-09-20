@@ -20,6 +20,7 @@ package org.apache.solr.ui.components.root
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
 import org.apache.solr.ui.components.auth.AuthenticationComponent
+import org.apache.solr.ui.components.auth.domain.AuthenticationEvent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.domain.StartEvent
@@ -49,6 +50,15 @@ interface RootComponent {
 
         data class Main(val component: MainComponent) : Child
 
-        data class Authentication(val component: AuthenticationComponent) : Child
+        /**
+         * Child that leads to the authentication screen.
+         *
+         * @property component Component that provides the state of this child.
+         * @property onEvent Handler for events emitted by the authentication screen.
+         */
+        data class Authentication(
+            val component: AuthenticationComponent,
+            val onEvent: (AuthenticationEvent) -> Unit,
+        ) : Child
     }
 }

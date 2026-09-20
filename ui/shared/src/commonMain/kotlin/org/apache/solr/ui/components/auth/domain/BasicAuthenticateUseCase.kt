@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.auth
+package org.apache.solr.ui.components.auth.domain
 
-import io.ktor.http.Url
-import org.apache.solr.ui.domain.AuthorizationFlow
-import org.apache.solr.ui.domain.OAuthData
+/**
+ * Use case for authenticating with a username and password (basic authentication).
+ */
+interface BasicAuthenticateUseCase {
 
-internal val TestOAuthData = OAuthData(
-    clientId = "client-id",
-    authorizationFlow = AuthorizationFlow.CodePKCE,
-    scope = "openid solr",
-    redirectUris = listOf(Url("http://127.0.0.1:8088")),
-    authorizationEndpoint = Url("http://127.0.0.1:3000/auth"),
-    tokenEndpoint = Url("http://127.0.0.1:3000/token"),
-)
+    /**
+     * Authenticates the user with the given credentials.
+     *
+     * @param username The username to use.
+     * @param password The password to use.
+     * @return Success if the credentials authenticated the user. Otherwise, a failure with the
+     * error that occurred, where invalid credentials are reported as
+     * [org.apache.solr.ui.errors.InvalidCredentialsException].
+     */
+    suspend operator fun invoke(username: String, password: String): Result<Unit>
+}

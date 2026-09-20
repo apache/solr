@@ -59,6 +59,7 @@ fun RootContent(
 
                 is RootComponent.Child.Authentication -> UserAuthenticationContent(
                     component = child.component,
+                    onEvent = child.onEvent,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

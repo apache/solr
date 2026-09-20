@@ -15,24 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.views.auth
+package org.apache.solr.ui.components.auth.repository
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.auth.OAuthComponent
-import org.apache.solr.ui.components.auth.OAuthComponent.Model
-import org.apache.solr.ui.components.auth.store.OAuthStore
+/**
+ * Repository interface for authenticating with basic authentication.
+ */
+interface BasicAuthRepository {
 
-internal class TestOAuthComponent(
-    model: Model = Model(),
-    override val labels: Flow<OAuthStore.Label> = MutableSharedFlow(),
-) : OAuthComponent {
-    var onAuthenticateClicked = false
-
-    override val model: StateFlow<Model> = MutableStateFlow(model)
-    override fun onAuthenticate() {
-        onAuthenticateClicked = true
-    }
+    /**
+     * Authenticates the user with the current Solr instance.
+     *
+     * @param username The username to use.
+     * @param password The password to use.
+     * @return Returns success results iff the credentials authenticated the user.
+     */
+    suspend fun authenticate(username: String, password: String): Result<Unit>
 }
