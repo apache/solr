@@ -15,35 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.start.integration
+package org.apache.solr.ui.components.start.data
 
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.http.URLParserException
 import io.ktor.http.Url
-import org.apache.solr.ui.components.start.StartComponent
-import org.apache.solr.ui.components.start.store.StartStore
 import org.apache.solr.ui.data.SolrAuthData
 import org.apache.solr.ui.domain.AuthorizationFlow
 import org.apache.solr.ui.domain.OAuthData
-import org.apache.solr.ui.errors.HostNotFoundException
-import org.apache.solr.ui.shared.generated.resources.Res
-import org.apache.solr.ui.shared.generated.resources.error_invalid_url
-import org.apache.solr.ui.shared.generated.resources.error_solr_host_not_found
-import org.apache.solr.ui.shared.generated.resources.error_unknown
-
-internal val startStateToModel: (StartStore.State) -> StartComponent.Model = {
-    StartComponent.Model(
-        url = it.url,
-        error = it.error?.let { error ->
-            when (error) {
-                is URLParserException -> Res.string.error_invalid_url
-                is HostNotFoundException -> Res.string.error_solr_host_not_found
-                is ConnectTimeoutException -> Res.string.error_solr_host_not_found
-                else -> Res.string.error_unknown
-            }
-        },
-    )
-}
 
 internal fun SolrAuthData.toOAuthData() = OAuthData(
     clientId = clientId,

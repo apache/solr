@@ -15,29 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.start
+package org.apache.solr.ui.components.start.viewmodel
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import org.apache.solr.ui.components.start.domain.ConnectUseCase
-import org.apache.solr.ui.components.start.repository.StartRepository
-import org.apache.solr.ui.components.start.viewmodel.StartViewModel
+import org.apache.solr.ui.utils.AppDispatchers
 
-/**
- * Component interface that represents the start screen.
- */
-interface StartComponent {
+class StartViewModel(
+    connectUseCase: ConnectUseCase,
+    dispatchers: AppDispatchers,
+) : ViewModel() {
 
-    /**
-     * Dependencies provided by the application.
-     */
-    val startRepository: StartRepository
-
-    /**
-     * Use case responsible for connecting to a Solr instance.
-     */
-    val connectUseCase: ConnectUseCase
+    private val startState = StartStateHolder(
+        scope = viewModelScope,
+        connectUseCase = connectUseCase,
+        dispatchers = dispatchers,
+    )
 
     /**
-     * Factory method to create a [StartViewModel] instance.
+     * UI state of the start screen.
      */
-    fun createStartViewModel(): StartViewModel
+    val uiState = startState.uiState
+
+    /**
+     * Events emitted by the start screen.
+     */
+    val events = startState.events
+
+    /**
+     * Updates the Solr URL.
+     *
+     * @param url The new Solr URL value.
+     */
+    fun changeSolrUrl(url: String) = startState.changeSolrUrl(url)
+
+    /**
+     * Connects to the Solr instance with the current URL.
+     */
+    fun connect() = startState.connect()
 }

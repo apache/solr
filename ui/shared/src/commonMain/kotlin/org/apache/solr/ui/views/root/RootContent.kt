@@ -48,6 +48,7 @@ fun RootContent(
             when (val child = it.instance) {
                 is RootComponent.Child.Start -> StartContent(
                     component = child.component,
+                    onEvent = child.onEvent,
                     modifier = Modifier.fillMaxSize(),
                 )
 

@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.start.integration
+package org.apache.solr.ui.components.start.viewmodel
 
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
-import com.arkivanov.essenty.lifecycle.resume
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import com.arkivanov.mvikotlin.core.utils.isAssertOnMainThreadEnabled
-import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.MockRequestHandler
@@ -32,31 +26,27 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.fullPath
 import io.ktor.http.path
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.apache.solr.ui.components.start.StartComponent
-import org.apache.solr.ui.components.start.StartComponent.Output
+import org.apache.solr.ui.TestDispatchers
+import org.apache.solr.ui.components.start.data.HttpStartRepository
+import org.apache.solr.ui.components.start.domain.DefaultConnectUseCase
+import org.apache.solr.ui.components.start.domain.StartEvent
 import org.apache.solr.ui.createMockEngine
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.error_invalid_url
-import org.apache.solr.ui.utils.AppComponentContext
-import org.apache.solr.ui.utils.DEFAULT_SOLR_URL
-import org.apache.solr.ui.utils.DefaultAppComponentContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class DefaultStartComponentIntegrationTest {
+class StartStateHolderIntegrationTest {
 
     /**
      * Response handler that always responds with HTTP code OK.
@@ -65,29 +55,12 @@ class DefaultStartComponentIntegrationTest {
         scope.respond(content = "Ignore", status = HttpStatusCode.OK)
     }
 
-    /**
-     * Response handler that always responds with HTTP code Forbidden.
-     */
-    private val forbiddenResponseHandler: MockRequestHandler = { scope: MockRequestHandleScope, data: HttpRequestData ->
-        scope.respond(content = "Forbidden", status = HttpStatusCode.Forbidden)
-    }
-
-    @BeforeTest
-    fun beforeTest() {
-        isAssertOnMainThreadEnabled = false
-    }
-
-    @AfterTest
-    fun afterTest() {
-        isAssertOnMainThreadEnabled = true
-    }
-
     @Test
-    fun `GIVEN initial state WHEN onConnect THEN use default Solr URL`() = runTest {
+    fun `GIVEN initial state WHEN connect THEN use default Solr URL`() = runTest {
         val engine = createMockEngine(okResponseHandler)
-        val component = createComponent(httpClient = HttpClient(engine))
+        val stateHolder = createStateHolder(httpClient = HttpClient(engine))
 
-        component.onConnect()
+        stateHolder.connect()
         advanceUntilIdle()
 
         assertEquals(
@@ -105,13 +78,13 @@ class DefaultStartComponentIntegrationTest {
     }
 
     @Test
-    fun `GIVEN invalid URL WHEN onConnect THEN invalidUrlError`() = runTest {
+    fun `GIVEN invalid URL WHEN connect THEN invalidUrlError`() = runTest {
         val engine = createMockEngine(okResponseHandler)
-        val component = createComponent(httpClient = HttpClient(engine))
+        val stateHolder = createStateHolder(httpClient = HttpClient(engine))
 
-        component.onSolrUrlChange("some.-invalid-url")
+        stateHolder.changeSolrUrl("some.-invalid-url")
 
-        component.onConnect()
+        stateHolder.connect()
         advanceUntilIdle()
 
         assertEquals(
@@ -122,19 +95,19 @@ class DefaultStartComponentIntegrationTest {
 
         assertEquals(
             expected = Res.string.error_invalid_url,
-            actual = component.model.value.error,
+            actual = stateHolder.uiState.value.error,
             message = "Expected invalid url error",
         )
     }
 
     @Test
-    fun `GIVEN valid Solr URL WHEN onConnect THEN connection request sent`() = runTest {
+    fun `GIVEN valid Solr URL WHEN connect THEN connection request sent`() = runTest {
         val engine = createMockEngine(okResponseHandler)
-        val component = createComponent(httpClient = HttpClient(engine))
+        val stateHolder = createStateHolder(httpClient = HttpClient(engine))
         val validSolrUrl = "https://my-solr-instance.local/"
 
-        component.onSolrUrlChange(validSolrUrl)
-        component.onConnect()
+        stateHolder.changeSolrUrl(validSolrUrl)
+        stateHolder.connect()
         advanceUntilIdle()
 
         assertEquals(
@@ -152,70 +125,52 @@ class DefaultStartComponentIntegrationTest {
     }
 
     @Test
-    fun `GIVEN a solr instance with no auth WHEN onConnect THEN output Connected`() = runTest {
-        val outputStack = mutableListOf<Output>()
+    fun `GIVEN a solr instance with no auth WHEN connect THEN event Connected`() = runTest {
+        val events = mutableListOf<StartEvent>()
         val engine = createMockEngine(okResponseHandler)
-        val component = createComponent(
-            output = { outputStack.add(it) },
-            httpClient = HttpClient(engine),
-        )
+        val stateHolder = createStateHolder(httpClient = HttpClient(engine))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            stateHolder.events.collect { events.add(it) }
+        }
 
-        component.onConnect()
+        stateHolder.connect()
         advanceUntilIdle()
 
         assertEquals(
             expected = 1,
-            actual = outputStack.size,
-            message = "Expected one output",
+            actual = events.size,
+            message = "Expected one event",
         )
-        assertIs<Output.OnConnected>(
-            value = outputStack[0],
-            message = "Expected output to be Connected",
+        assertIs<StartEvent.Connected>(
+            value = events[0],
+            message = "Expected event to be Connected",
         )
     }
 
     @Test
     fun `GIVEN input error WHEN input changes THEN error resets`() = runTest {
-        val component = createComponent()
-        component.onSolrUrlChange("some.-invalid-url")
+        val stateHolder = createStateHolder()
+        stateHolder.changeSolrUrl("some.-invalid-url")
         // Cause an error in state
-        component.onConnect()
+        stateHolder.connect()
 
         advanceUntilIdle()
-        assertNotNull(component.model.value.error)
+        assertNotNull(stateHolder.uiState.value.error)
 
-        component.onSolrUrlChange("some-other-url")
+        stateHolder.changeSolrUrl("some-other-url")
         advanceUntilIdle()
 
-        assertNull(component.model.value.error)
+        assertNull(stateHolder.uiState.value.error)
     }
 
     /**
-     * Helper function for creating an instance of the [DefaultStartComponent].
+     * Helper function for creating an instance of the [StartStateHolder].
      */
-    private fun TestScope.createComponent(
-        lifecycle: LifecycleRegistry = LifecycleRegistry(),
-        scheduler: TestCoroutineScheduler = testScheduler,
-        componentContext: AppComponentContext = DefaultAppComponentContext(
-            componentContext = DefaultComponentContext(lifecycle = lifecycle),
-            mainContext = StandardTestDispatcher(scheduler),
-            ioContext = UnconfinedTestDispatcher(scheduler),
-        ),
-        storeFactory: StoreFactory = DefaultStoreFactory(),
+    private fun TestScope.createStateHolder(
         httpClient: HttpClient = HttpClient(),
-        output: (Output) -> Unit = {},
-    ): StartComponent {
-        val lifecycle = LifecycleRegistry()
-
-        val component =
-            DefaultStartComponent(
-                componentContext = componentContext,
-                storeFactory = storeFactory,
-                httpClient = httpClient,
-                output = output,
-            )
-
-        lifecycle.resume()
-        return component
-    }
+    ) = StartStateHolder(
+        scope = this,
+        connectUseCase = DefaultConnectUseCase(HttpStartRepository(httpClient)),
+        dispatchers = TestDispatchers(UnconfinedTestDispatcher(scheduler = testScheduler)),
+    )
 }

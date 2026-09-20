@@ -22,6 +22,7 @@ import com.arkivanov.decompose.value.Value
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.domain.StartEvent
 
 /**
  * Root component used by each target as an entry point to the application.
@@ -35,7 +36,16 @@ interface RootComponent {
 
     sealed interface Child {
 
-        data class Start(val component: StartComponent) : Child
+        /**
+         * Child that leads to the start screen.
+         *
+         * @property component Component that provides the state of this child.
+         * @property onEvent Handler for events emitted by the start screen.
+         */
+        data class Start(
+            val component: StartComponent,
+            val onEvent: (StartEvent) -> Unit,
+        ) : Child
 
         data class Main(val component: MainComponent) : Child
 
