@@ -136,12 +136,42 @@ V1 API::
 +
 ====
 `solr/admin/info/threads`
+
+Abbreviated JSON response with the default `json.nl=flat` format.
+The thread dump alternates `"thread"` keys and thread objects:
+
+[source,json]
+----
+{
+  "system": {
+    "threadDump": [
+      "thread", {"id": 1, "name": "main", "state": "RUNNABLE"},
+      "thread", {"id": 2, "name": "worker", "state": "WAITING"}
+    ]
+  }
+}
+----
 ====
 
 V2 API::
 +
 ====
 `api/node/threads`
+
+Abbreviated JSON response.
+The thread dump is an array of objects, each containing a `"thread"` property:
+
+[source,json]
+----
+{
+  "system": {
+    "threadDump": [
+      {"thread": {"id": 1, "name": "main", "state": "RUNNABLE"}},
+      {"thread": {"id": 2, "name": "worker", "state": "WAITING"}}
+    ]
+  }
+}
+----
 ====
 ======
 +

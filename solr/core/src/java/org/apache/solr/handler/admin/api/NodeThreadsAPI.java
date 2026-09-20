@@ -19,11 +19,19 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.METRICS_READ_PERM;
 
 import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeThreadsApi;
 import org.apache.solr.client.api.model.NodeThreadsResponse;
+import org.apache.solr.client.api.model.NodeThreadsResponse.SystemInfo;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadCount;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadEntry;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadInfo;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJacksonMapper;
 
 /** Implementation of {@link NodeThreadsApi}. */
 public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
@@ -34,6 +42,28 @@ public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
   @Override
   @PermissionName(METRICS_READ_PERM)
   public NodeThreadsResponse getThreadDump() {
-    return ThreadDumpHandler.getThreadDump();
+    final var system = ThreadDumpHandler.getThreadDump();
+    final var response = new NodeThreadsResponse();
+    response.system = new SystemInfo();
+    response.system.threadCount =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(((NamedList<?>) system.get("threadCount")).asMap(1), ThreadCount.class);
+    response.system.threadDump = toThreadEntries((NamedList<?>) system.get("threadDump"));
+    if (system.get("deadlocks") instanceof NamedList<?> deadlocks) {
+      response.system.deadlocks = toThreadEntries(deadlocks);
+    }
+    return response;
+  }
+
+  private static List<ThreadEntry> toThreadEntries(NamedList<?> threads) {
+    final List<ThreadEntry> entries = new ArrayList<>(threads.size());
+    for (var thread : threads) {
+      final var entry = new ThreadEntry();
+      entry.thread =
+          SolrJacksonMapper.getObjectMapper()
+              .convertValue(((NamedList<?>) thread.getValue()).asMap(3), ThreadInfo.class);
+      entries.add(entry);
+    }
+    return entries;
   }
 }
