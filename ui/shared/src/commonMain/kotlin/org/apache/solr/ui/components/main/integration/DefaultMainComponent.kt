@@ -43,7 +43,7 @@ class DefaultMainComponent internal constructor(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     destination: String? = null,
-    private val clusterComponent: (AppComponentContext) -> ClusterComponent,
+    private val clusterComponent: () -> ClusterComponent,
     private val configsetsComponent: () -> ConfigsetsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: () -> LoggingComponent,
@@ -72,11 +72,7 @@ class DefaultMainComponent internal constructor(
         storeFactory = storeFactory,
         destination = destination,
         output = output,
-        clusterComponent = { childContext ->
-            DefaultClusterComponent(
-                componentContext = childContext,
-            )
-        },
+        clusterComponent = { DefaultClusterComponent() },
         configsetsComponent = { DefaultConfigsetsComponent(httpClient = httpClient) },
         environmentComponent = { childContext ->
             DefaultEnvironmentComponent(
@@ -121,7 +117,7 @@ class DefaultMainComponent internal constructor(
         // Configuration.Metrics ->
         //     NavigationComponent.Child.Metrics(metricsComponent(componentContext))
 
-        Configuration.Cluster -> Child.Cluster(clusterComponent(componentContext))
+        Configuration.Cluster -> Child.Cluster(clusterComponent())
 
         // TODO Uncomment once Security available
         // Configuration.Security ->

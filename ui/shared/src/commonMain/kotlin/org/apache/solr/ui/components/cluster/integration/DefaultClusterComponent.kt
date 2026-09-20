@@ -17,41 +17,13 @@
 
 package org.apache.solr.ui.components.cluster.integration
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.router.slot.SlotNavigation
-import com.arkivanov.decompose.router.slot.activate
-import com.arkivanov.decompose.router.slot.childSlot
-import com.arkivanov.decompose.value.Value
 import org.apache.solr.ui.components.cluster.ClusterComponent
-import org.apache.solr.ui.components.cluster.ClusterComponent.Child
-import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
-import org.apache.solr.ui.components.navigation.TabNavigationComponent
-import org.apache.solr.ui.utils.AppComponentContext
+import org.apache.solr.ui.components.cluster.viewmodel.ClusterViewModel
 
-class DefaultClusterComponent(
-    componentContext: AppComponentContext,
-) : ClusterComponent,
-    AppComponentContext by componentContext,
-    TabNavigationComponent<ClusterTab, Child> {
+/**
+ * Default implementation of [ClusterComponent].
+ */
+class DefaultClusterComponent : ClusterComponent {
 
-    private val navigation = SlotNavigation<ClusterTab>()
-
-    override val tabSlot: Value<ChildSlot<ClusterTab, Child>> = childSlot(
-        source = navigation,
-        serializer = ClusterTab.serializer(),
-        handleBackButton = true,
-        childFactory = { configuration, childContext ->
-            when (configuration) {
-                ClusterTab.Zookeeper -> Child.Zookeeper
-                ClusterTab.Nodes -> Child.Nodes
-                ClusterTab.Cores -> Child.Cores
-            }
-        },
-    )
-
-    init {
-        navigation.activate(configuration = ClusterTab.Zookeeper)
-    }
-
-    override fun onNavigate(tab: ClusterTab) = navigation.activate(configuration = tab)
+    override fun createClusterViewModel(): ClusterViewModel = ClusterViewModel()
 }

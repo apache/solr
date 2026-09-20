@@ -15,20 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.cluster
+package org.apache.solr.ui.components.cluster.viewmodel
 
-import org.apache.solr.ui.components.cluster.viewmodel.ClusterViewModel
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 
 /**
- * Cluster component that represents our current Cluster section.
+ * View model of the cluster section.
  *
  * The cluster section's goal is to provide a "physical" representation of the connected Solr
  * instance.
  */
-interface ClusterComponent {
+class ClusterViewModel : ViewModel() {
 
     /**
-     * Factory method to create a [ClusterViewModel] instance.
+     * UI state of the cluster section.
      */
-    fun createClusterViewModel(): ClusterViewModel
+    val uiState: StateFlow<ClusterUiState>
+        field = MutableStateFlow(ClusterUiState())
+
+    /**
+     * Switches to the cluster [tab] that was provided.
+     *
+     * @param tab The tab to select.
+     */
+    fun selectTab(tab: ClusterTab) = uiState.update { it.copy(selectedTab = tab) }
+}
+
+data class ClusterUiState(
+    val selectedTab: ClusterTab = ClusterTab.Zookeeper,
+)
+
+enum class ClusterTab {
+    Zookeeper,
+    Nodes,
+    Cores,
 }
