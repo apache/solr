@@ -16,28 +16,24 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.security.PermissionNameProvider.Name.METRICS_READ_PERM;
 
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.NodeThreadsApi;
+import org.apache.solr.client.api.model.NodeThreadsResponse;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.jersey.PermissionName;
 
-public class NodeThreadsAPI {
+/** Implementation of {@link NodeThreadsApi}. */
+public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
 
-  private final ThreadDumpHandler handler;
+  @Inject
+  public NodeThreadsAPI() {}
 
-  public NodeThreadsAPI(ThreadDumpHandler handler) {
-    this.handler = handler;
-  }
-
-  @EndPoint(
-      path = {"/node/threads"},
-      method = GET,
-      permission = METRICS_READ_PERM)
-  public void triggerThreadDump(
-      SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    handler.handleRequestBody(req, rsp);
+  @Override
+  @PermissionName(METRICS_READ_PERM)
+  public NodeThreadsResponse getThreadDump() {
+    return ThreadDumpHandler.getThreadDump();
   }
 }
