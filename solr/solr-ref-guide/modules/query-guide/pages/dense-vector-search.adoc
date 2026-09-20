@@ -1243,7 +1243,7 @@ EOF
 +
 [source,sh]
 ----
-curl -s -X POST "http://localhost:8983/solr/vectors/update?commit=true" \
+curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
      -H "Content-Type: application/json" \
      -d '[
        {"id": "doc1", "article_vector": [0.35648, 0.11664, 0.85660, 0.25043, 0.80778, 0.08031, 0.48444, 0.39083]},

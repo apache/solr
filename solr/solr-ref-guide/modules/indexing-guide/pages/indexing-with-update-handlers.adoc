@@ -344,9 +344,9 @@ One example usage would be to copy a Solr 1.3 index (which does not have CSV res
 
 [source,bash]
 ----
-$ curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
+curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
 
-$ curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl"
+curl "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl" -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml
 ----
 
 NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
@@ -373,7 +373,7 @@ The simplest way to add documents via JSON is to send each document individually
 
 [source,bash]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update/json/docs' --data-binary '
+curl 'http://localhost:8983/solr/my_collection/update/json/docs' -H 'Content-Type: application/json' --data-binary '
 {
   "id": "1",
   "title": "Doc 1"
@@ -386,7 +386,7 @@ Adding multiple documents at one time via JSON can be done via a JSON Array of J
 
 [source,bash]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' --data-binary '
 [
   {
     "id": "1",
@@ -413,7 +413,7 @@ Multiple commands, adding and deleting documents, may be contained in one messag
 
 [source,bash,subs="verbatim,callouts"]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' --data-binary '
 {
   "add": {
     "doc": {

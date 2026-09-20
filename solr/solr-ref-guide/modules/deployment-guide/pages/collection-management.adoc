@@ -51,7 +51,7 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
     "name": "techproducts_v2",
     "config": "techproducts",
@@ -335,7 +335,7 @@ With the v2 API, the `reload` command is provided as a part of URL path. The req
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
     "async": "someAsyncId"
   }
@@ -401,7 +401,7 @@ With the v2 API, the `modify` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
   {
     "modify": {
       "replicationFactor": 2
@@ -541,7 +541,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
     "to": "newName"
   }
@@ -827,7 +827,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
   {
     "migrate-docs": {
       "target": "postMigrationCollection",
@@ -1599,7 +1599,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
   {
     "location": "file:///path/to/my/shared/drive"
   }
@@ -1896,7 +1896,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
   {
       "collection": "techproducts_v3",
       "location": "file:///path/to/my/shared/drive",
@@ -2219,7 +2219,7 @@ With the v2 API, the `rebalance-leaders` command is provided as part of the JSON
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "rebalance-leaders": {
       "maxAtOnce": 3
@@ -2357,7 +2357,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
   {
     "followAliases": true,
     "async": "someAsyncId"

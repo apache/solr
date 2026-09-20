@@ -162,31 +162,31 @@ If you wanted to do this by hand using curl, the sequence of requests would look
 
 [source,plain]
 ----
-$ curl '...&rows=10&sort=id+asc&cursorMark=*'
+curl '...&rows=10&sort=id+asc&cursorMark=*'
 {
   "response":{"numFound":32,"start":0,"docs":[
     // ... 10 docs here ...
   ]},
   "nextCursorMark":"AoEjR0JQ"}
-$ curl '...&rows=10&sort=id+asc&cursorMark=AoEjR0JQ'
+curl '...&rows=10&sort=id+asc&cursorMark=AoEjR0JQ'
 {
   "response":{"numFound":32,"start":0,"docs":[
     // ... 10 more docs here ...
   ]},
   "nextCursorMark":"AoEpVkRCREIxQTE2"}
-$ curl '...&rows=10&sort=id+asc&cursorMark=AoEpVkRCREIxQTE2'
+curl '...&rows=10&sort=id+asc&cursorMark=AoEpVkRCREIxQTE2'
 {
   "response":{"numFound":32,"start":0,"docs":[
     // ... 10 more docs here ...
   ]},
   "nextCursorMark":"AoEmbWF4dG9y"}
-$ curl '...&rows=10&sort=id+asc&cursorMark=AoEmbWF4dG9y'
+curl '...&rows=10&sort=id+asc&cursorMark=AoEmbWF4dG9y'
 {
   "response":{"numFound":32,"start":0,"docs":[
     // ... 2 docs here because we've reached the end.
   ]},
   "nextCursorMark":"AoEpdmlld3Nvbmlj"}
-$ curl '...&rows=10&sort=id+asc&cursorMark=AoEpdmlld3Nvbmlj'
+curl '...&rows=10&sort=id+asc&cursorMark=AoEpdmlld3Nvbmlj'
 {
   "response":{"numFound":32,"start":0,"docs":[
     // no more docs here, and note that the nextCursorMark

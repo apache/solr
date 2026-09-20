@@ -46,7 +46,7 @@ The current implementation has a query rate limiter which can free up resources 
 The default rate limiter is search rate limiter.
 Accordingly, it can be configured using the following command:
 
- curl -X POST -H 'Content-type:application/json' -d '{
+ curl 'http://localhost:8983/api/cluster' -H 'Content-type:application/json' -d '{
    "set-ratelimiter": {
      "enabled": true,
      "guaranteedSlots":5,
@@ -54,7 +54,7 @@ Accordingly, it can be configured using the following command:
      "slotBorrowingEnabled":true,
      "slotAcquisitionTimeoutInMS":70
    }
- }' http://localhost:8983/api/cluster
+ }'
 
 === Enable Query Rate Limiter
 Controls enabling of query rate limiter.

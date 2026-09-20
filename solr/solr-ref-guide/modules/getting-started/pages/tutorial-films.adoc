@@ -168,7 +168,7 @@ At the command line, enter this curl command:
 
 [,console]
 ----
-$ curl -X POST -H 'Content-type:application/json' --data-binary '{"add-field": {"name":"name", "type":"text_general", "multiValued":false, "stored":true}}' http://localhost:8983/solr/films/schema
+curl 'http://localhost:8983/solr/films/schema' -H 'Content-type:application/json' --data-binary '{"add-field": {"name":"name", "type":"text_general", "multiValued":false, "stored":true}}'
 ----
 
 This command uses the Schema API to explicitly define a field named "name" that has the field type "text_general" (a text field).
@@ -197,7 +197,7 @@ At the command line, use the Schema API again to define a copy field:
 
 [,console]
 ----
-$ curl -X POST -H 'Content-type:application/json' --data-binary '{"add-copy-field" : {"source":"*","dest":"_text_"}}' http://localhost:8983/solr/films/schema
+curl 'http://localhost:8983/solr/films/schema' -H 'Content-type:application/json' --data-binary '{"add-copy-field" : {"source":"*","dest":"_text_"}}'
 ----
 
 In the Admin UI, choose btn:[Add Copy Field], then fill out the source and destination for your field, as in this screenshot.
@@ -301,7 +301,7 @@ The `curl` command below will return facet counts for the `genre_str` field:
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"
+curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"
 ----
 
 In your terminal, you'll see something like:
@@ -342,7 +342,7 @@ If you wanted to control the number of items in a bucket, you could do something
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/films/select?=&q=\*:*&facet.field=genre_str&facet.mincount=200&facet=on&rows=0"
+curl "http://localhost:8983/solr/films/select?=&q=\*:*&facet.field=genre_str&facet.mincount=200&facet=on&rows=0"
 ----
 
 You should only see 4 facets returned.
@@ -362,7 +362,7 @@ If we construct a query that looks like this:
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/films/select?q=*:*&rows=0\
+curl "http://localhost:8983/solr/films/select?q=*:*&rows=0\
 &facet=true\
 &facet.range=initial_release_date\
 &facet.range.start=NOW/YEAR-25YEAR\
@@ -432,7 +432,7 @@ Here's how to get at the raw data for this scenario:
 
 [,console]
 ----
-$ curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=on&facet.pivot=genre_str,directed_by_str"
+curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=on&facet.pivot=genre_str,directed_by_str"
 ----
 
 This results in the following response, which shows a facet for each category and director combination:

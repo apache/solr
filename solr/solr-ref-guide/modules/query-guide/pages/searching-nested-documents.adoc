@@ -43,7 +43,7 @@ A simple query matching all documents with a description that includes "staplers
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers'
+curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers'
 {
   "response":{"numFound":1,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -59,7 +59,7 @@ Note that the `numFound` has not changed, we are still matching the same set of 
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers&fl=*,[child]'
+curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers&fl=*,[child]'
 {
   "response":{"numFound":1,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -112,7 +112,7 @@ Let's consider again the `description_t:staplers` query used above -- if we wrap
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/"}description_t:staplers'
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/"}description_t:staplers'
 {
   "response":{"numFound":5,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -153,7 +153,7 @@ In the query below, we search for all children of `skus` with a `price_i` less t
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/skus"}price_i:[* TO 50]'
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/skus"}price_i:[* TO 50]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
       {
@@ -174,7 +174,7 @@ Let's first consider this example of searching for all "manual" type documents t
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
+curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
 {
   "response":{"numFound":3,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
       {
@@ -202,7 +202,7 @@ We can wrap that query in a `{!parent}` query with `parentPath="/"` to return th
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/"}pages_i:1'
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -226,7 +226,7 @@ Adding `childPath="manuals"` constrains the child query to only docs nested at `
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus" childPath="manuals"}pages_i:1'
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus" childPath="manuals"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -256,7 +256,7 @@ Here for example is a query where:
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child parentPath="/" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent parentPath="/"}content_t:"lifetime guarantee"' -d 'fl=*,[child]'
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child parentPath="/" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent parentPath="/"}content_t:"lifetime guarantee"' -d 'fl=*,[child]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {

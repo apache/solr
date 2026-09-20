@@ -36,7 +36,7 @@ Like a database system holds data in tables, Solr holds data in collections. A c
 
 [,console]
 ----
-$ curl --request POST \
+curl --request POST \
 --url http://localhost:8983/api/collections \
 --header 'Content-Type: application/json' \
 --data '{
@@ -52,7 +52,7 @@ Let us define some of the fields that our documents will contain.
 
 [,console]
 ----
-$ curl --request POST \
+curl --request POST \
   --url http://localhost:8983/api/collections/techproducts/schema \
   --header 'Content-Type: application/json' \
   --data '{
@@ -76,7 +76,7 @@ A single document can be indexed as:
 
 [,console]
 ----
-$ curl --request POST \
+curl --request POST \
   --url 'http://localhost:8983/api/collections/techproducts/update' \
   --header 'Content-Type: application/json' \
   --data '  {
@@ -97,7 +97,7 @@ Multiple documents can be indexed in the same request:
 
 [,console]
 ----
-$ curl --request POST \
+curl --request POST \
   --url 'http://localhost:8983/api/collections/techproducts/update' \
   --header 'Content-Type: application/json' \
   --data '  [
@@ -133,7 +133,7 @@ A file containing the documents can be indexed as follows:
 
 [,console]
 ----
-$ curl -H "Content-Type: application/json" \
+curl -H "Content-Type: application/json" \
        -X POST \
        -d @example/exampledocs/books.json \
        --url 'http://localhost:8983/api/collections/techproducts/update?commit=true'
@@ -144,7 +144,7 @@ After documents are indexed into a collection, they are not immediately availabl
 
 [,console]
 ----
-$ curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}'
 ----
 
 == Make some Basic search queries
