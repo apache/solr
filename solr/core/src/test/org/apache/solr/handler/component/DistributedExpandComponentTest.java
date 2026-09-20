@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 
 /**
@@ -57,6 +58,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         "4"); // NOTE: using 0 to explicitly confim we don't assume null
   }
 
+  @SuppressWarnings("try")
   private void _test(
       final String group, final String aaa, final String bbb, final String ccc, final String ddd)
       throws Exception {
@@ -248,11 +250,12 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         "fq", "{!collapse cost=1000 field=" + group + "}", "{!collapse cost=200 field=test_i}");
     query(baseParams);
 
-    ignoreException("missing expand field");
-    SolrException e = expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertTrue(e.getMessage().contains("missing expand field"));
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("missing expand field")) {
+      SolrException e =
+          expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(e.getMessage().contains("missing expand field"));
+    }
 
     // Since none of these queries will match any doc w/null in the group field, it shouldn't matter
     // what nullPolicy is used...
@@ -268,7 +271,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("expand", "true");
 
       setDistributedParams(params);
-      QueryResponse rsp = queryServer(params);
+      QueryResponse rsp = query(params);
       assertCountAndOrder(
           4, rsp.getResults(), "10" /* c */, "2" /* a */, "13" /* d */, "6" /* b */);
       Map<String, SolrDocumentList> results = rsp.getExpandedResults();
@@ -288,7 +291,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("expand", "true");
       params.add("expand.sort", "test_l desc");
       setDistributedParams(params);
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           4, rsp.getResults(), "10" /* c */, "2" /* a */, "13" /* d */, "6" /* b */);
       results = rsp.getExpandedResults();
@@ -309,7 +312,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("expand.sort", "test_l desc");
       params.add("expand.rows", "1");
       setDistributedParams(params);
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           4, rsp.getResults(), "10" /* c */, "2" /* a */, "13" /* d */, "6" /* b */);
       results = rsp.getExpandedResults();
@@ -330,7 +333,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("expand.rows", "0");
       params.add("fl", "id");
       setDistributedParams(params);
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           4, rsp.getResults(), "10" /* c */, "2" /* a */, "13" /* d */, "6" /* b */);
       results = rsp.getExpandedResults();
@@ -353,7 +356,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("expand.rows", "0");
       params.add("fl", "id,score");
       setDistributedParams(params);
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(3, rsp.getResults(), "12" /* d */, "1" /* a */, "5" /* b */);
       results = rsp.getExpandedResults();
       assertExpandGroups(results, aaa, ddd);
@@ -371,7 +374,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("fl", "id");
 
       setDistributedParams(params);
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           4, rsp.getResults(), "10" /* c */, "2" /* a */, "13" /* d */, "6" /* b */);
       results = rsp.getExpandedResults();
@@ -392,7 +395,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.add("distrib.singlePass", "true");
 
       setDistributedParams(params);
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           4, rsp.getResults(), "10" /* c */, "2" /* a */, "13" /* d */, "6" /* b */);
       results = rsp.getExpandedResults();
@@ -414,7 +417,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       // nullPolicy=expand
       params.add("fq", "{!collapse field=" + group + " nullPolicy=expand}");
 
-      QueryResponse rsp = queryServer(params);
+      QueryResponse rsp = query(params);
       assertCountAndOrder(
           6,
           rsp.getResults(),
@@ -434,7 +437,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       // nullPolicy=collapse
       params.set("fq", "{!collapse field=" + group + " nullPolicy=collapse}");
 
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           5,
           rsp.getResults(),
@@ -454,7 +457,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.set("fq", "{!collapse field=" + group + " nullPolicy=collapse}");
       params.set("expand.nullGroup", "true");
 
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(
           5,
           rsp.getResults(),
@@ -475,7 +478,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       params.set("fq", "{!collapse field=" + group + " nullPolicy=expand}");
       params.set("rows", "3");
 
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(3, rsp.getResults(), "10" /* c */, "88" /* null */, "2" /* a */);
       results = rsp.getExpandedResults();
       assertExpandGroups(results, aaa, ccc, null);
@@ -486,7 +489,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       // nullPolicy=expand w/ expand.nullGroup=true & expand.rows = 0
       params.set("expand.rows", "0");
 
-      rsp = queryServer(params);
+      rsp = query(params);
       assertCountAndOrder(3, rsp.getResults(), "10" /* c */, "88" /* null */, "2" /* a */);
       results = rsp.getExpandedResults();
       assertExpandGroups(results, aaa, ccc, null);

@@ -44,9 +44,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -60,9 +63,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Create a query-time join query with scoring. It just calls {@link
  * JoinUtil#createJoinQuery(String, boolean, String, Query, org.apache.lucene.search.IndexSearcher,
- * ScoreMode)}. It runs subordinate query and collects values of "from" field and scores, then it
- * lookups these collected values in "to" field, and yields aggregated scores. Local parameters are
- * similar to {@link JoinQParserPlugin} <a
+ * ScoreMode)} or, when the "from" field holds numeric doc values, {@link
+ * JoinUtil#createJoinQuery(String, boolean, String, Class, Query,
+ * org.apache.lucene.search.IndexSearcher, ScoreMode)}. It runs subordinate query and collects
+ * values of "from" field and scores, then it lookups these collected values in "to" field, and
+ * yields aggregated scores. Local parameters are similar to {@link JoinQParserPlugin} <a
  * href="https://solr.apache.org/guide/solr/latest/query-guide/join-query-parser.html">{!join}</a>
  * This plugin doesn't have its own name, and is called by specifying local parameter <code>
  * {!join score=...}...</code>. Note: this parser is invoked even if you specify <code>score=none
@@ -75,10 +80,11 @@ import org.slf4j.LoggerFactory;
  *       <code>type="string" docValues="true"</code>. note: if <a
  *       href="https://solr.apache.org/guide/solr/latest/indexing-guide/docvalues.html">docValues</a>
  *       are not enabled for this field, it will work anyway, but it costs some memory for {@link
- *       UninvertingReader}. Also, numeric doc values are not supported until <a
- *       href="https://issues.apache.org/jira/browse/LUCENE-5868">LUCENE-5868</a>. Thus, it only
- *       supports {@link DocValuesType#SORTED}, {@link DocValuesType#SORTED_SET}, {@link
- *       DocValuesType#BINARY}.
+ *       UninvertingReader}. Non-numeric fields only support {@link DocValuesType#SORTED}, {@link
+ *       DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}. Numeric fields having {@link
+ *       DocValuesType#NUMERIC} or {@link DocValuesType#SORTED_NUMERIC} doc values &#8212; such a
+ *       field does not need to be indexed, only {@code docValues="true"} is required &#8212; in
+ *       which case the matching "to" field must be indexed as the same numeric Point field type.
  *   <li>fromIndex - optional parameter, a core name where subordinate query should run (and <code>
  *       from</code> values are collected) rather than current core. <br>
  *       Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code>
@@ -132,13 +138,19 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final Query joinQuery;
       try {
         joinQuery =
-            JoinUtil.createJoinQuery(
-                fromField, true, toField, fromQuery, fromHolder.get(), this.scoreMode);
+            createJoinQuery(
+                fromField,
+                fromCore.getLatestSchema(),
+                toField,
+                info.getReq().getSchema(),
+                fromQuery,
+                fromHolder.get(),
+                this.scoreMode);
       } finally {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
+      return joinQuery.rewrite(searcher).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -189,10 +201,17 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost)
         throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+      final IndexSchema schema = info.getReq().getSchema();
       final Query jq =
-          JoinUtil.createJoinQuery(
-              fromField, true, toField, fromQuery, info.getReq().getSearcher(), this.scoreMode);
-      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, scoreMode, boost);
+          createJoinQuery(
+              fromField,
+              schema,
+              toField,
+              schema,
+              fromQuery,
+              info.getReq().getSearcher(),
+              this.scoreMode);
+      return jq.rewrite(searcher).createWeight(searcher, scoreMode, boost);
     }
 
     @Override
@@ -234,6 +253,105 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     @Override
     public void visit(QueryVisitor visitor) {
       visitor.visitLeaf(this);
+    }
+  }
+
+  /**
+   * Creates a join query, delegating to {@link JoinUtil#createJoinQuery(String, boolean, String,
+   * Class, Query, IndexSearcher, ScoreMode)} for a numeric {@code fromField}/Point {@code toField}
+   * pair, or to {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher,
+   * ScoreMode)} otherwise. A legacy (non-Point) numeric {@code fromField} paired with a non-Point
+   * {@code toField} keeps using the term-based join, as it did before numeric joins were supported.
+   *
+   * @param fromField "foreign key" field name; any field type with a numeric {@link NumberType}
+   *     (not necessarily a Point field type) qualifies, as long as {@code docValues="true"} is set.
+   *     It doesn't need to be {@code indexed}.
+   * @param fromSchema schema holding {@code fromField}, used to detect numeric doc values
+   * @param toField "primary key" field name
+   * @param toSchema schema holding {@code toField}, used to detect numeric Point fields
+   * @param fromQuery the query to match documents on the from side
+   * @param fromSearcher the searcher that executed the specified fromQuery
+   * @param scoreMode instructs how scores from the fromQuery are mapped to the returned query
+   * @return a {@link Query} instance that can be used to join documents based on the values in the
+   *     from and to field
+   */
+  static Query createJoinQuery(
+      String fromField,
+      IndexSchema fromSchema,
+      String toField,
+      IndexSchema toSchema,
+      Query fromQuery,
+      IndexSearcher fromSearcher,
+      ScoreMode scoreMode)
+      throws IOException {
+    final SchemaField fromSchemaField = fromSchema.getFieldOrNull(fromField);
+    final NumberType fromNumberType =
+        fromSchemaField == null ? null : fromSchemaField.getType().getNumberType();
+    if (fromNumberType != null) {
+      final SchemaField toSchemaField = toSchema.getFieldOrNull(toField);
+      final NumberType toNumberType =
+          toSchemaField == null ? null : toSchemaField.getType().getNumberType();
+      final boolean toIsMatchingPoint =
+          toSchemaField != null
+              && toSchemaField.getType().isPointField()
+              && fromNumberType == toNumberType;
+      if (toIsMatchingPoint) {
+        if (!fromSchemaField.hasDocValues()) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Numeric join 'from' field '"
+                  + fromField
+                  + "' must have docValues enabled; it doesn't need to be indexed.");
+        }
+        return JoinUtil.createJoinQuery(
+            fromField,
+            fromSchemaField.multiValued(),
+            toField,
+            numericClass(fromNumberType),
+            fromQuery,
+            fromSearcher,
+            scoreMode);
+      }
+      // A Point 'from' field can only be joined by point values: it has neither indexed terms nor
+      // the sorted/binary docValues the term-based join below needs, so fail with a clear message
+      // rather than letting Lucene stumble over the encoding.
+      if (fromSchemaField.getType().isPointField()) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Numeric join 'from' field '"
+                + fromField
+                + "' ("
+                + fromNumberType
+                + ") requires a 'to' field of the same numeric Point field type, but '"
+                + toField
+                + "' is "
+                + (toSchemaField == null ? "undefined" : toSchemaField.getType().getTypeName())
+                + ".");
+      }
+      // Legacy (non-Point) numeric 'from' field with a non-Point 'to' field: keep joining on terms,
+      // as it was done before numeric joins were introduced.
+    }
+    return JoinUtil.createJoinQuery(fromField, true, toField, fromQuery, fromSearcher, scoreMode);
+  }
+
+  /** Maps a schema {@link NumberType} to the {@link Class} expected by {@link JoinUtil}. */
+  private static Class<? extends Number> numericClass(NumberType numberType) {
+    switch (numberType) {
+      case INTEGER:
+        return Integer.class;
+      case LONG:
+      // DatePointField values are internally represented as milliseconds since epoch (long),
+      // via LongPoint, so DATE shares the same encoding as LONG.
+      case DATE:
+        return Long.class;
+      case FLOAT:
+        return Float.class;
+      case DOUBLE:
+        return Double.class;
+      default:
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Unsupported numeric join field type " + numberType);
     }
   }
 
@@ -284,7 +402,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           }
 
           long fromCoreOpenTime = 0;
-          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
+          SolrQueryRequestBase otherReq = new SolrQueryRequestBase(fromCore, params);
 
           try {
             QParser fromQueryParser = QParser.getParser(fromQueryStr, otherReq);
@@ -496,7 +614,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     final String nodeName = zkController.getNodeName();
     String fromReplica = null;
 
-    for (Slice slice : fromCollection.getActiveSlicesArr()) {
+    for (Slice slice : fromCollection.getActiveSlices()) {
       assert fromReplica == null;
       for (Replica replica : slice.getReplicas()) {
         if (replica.getNodeName().equals(nodeName)) {

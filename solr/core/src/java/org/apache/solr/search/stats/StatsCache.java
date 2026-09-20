@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.stats;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -32,9 +33,12 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.SolrCache;
@@ -51,7 +55,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * is aggregated), and on each core involved in a shard request (where this data is maintained and
  * updated from the aggregator's cache).
  */
-public abstract class StatsCache implements PluginInfoInitialized {
+public abstract class StatsCache implements PluginInfoInitialized, SolrInfoBean {
   // TODO: decouple use in response from use in request context for these keys
   /** Map of terms and {@link TermStats}. */
   public static final String TERM_STATS_KEY = "solr.stats.term";
@@ -64,6 +68,8 @@ public abstract class StatsCache implements PluginInfoInitialized {
 
   /** List of fields in the query. */
   public static final String FIELDS_KEY = "solr.stats.fields";
+
+  private SolrMetricsContext solrMetricsContext;
 
   public static final class StatsCacheMetrics {
     public final LongAdder lookups = new LongAdder();
@@ -297,5 +303,81 @@ public abstract class StatsCache implements PluginInfoInitialized {
       }
       return super.collectionStatistics(field);
     }
+  }
+
+  @Override
+  public String getName() {
+    return StatsCache.class.getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return "A cache of global document frequency information for selected terms";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.CACHE;
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+    var cacheBaseAttribute =
+        attributes.toBuilder()
+            .put(SolrMetricProducer.CATEGORY_ATTR, Category.CACHE.toString())
+            .build();
+    solrMetricsContext.observableLongGauge(
+        "solr.core.indexsearcher.termstats.cache",
+        "Operation counts for the searcher term statistics cache, reported per operation type",
+        obs -> {
+          var cacheMetrics = getCacheMetrics();
+          obs.record(
+              cacheMetrics.lookups.sum(),
+              cacheBaseAttribute.toBuilder().put(SolrMetricProducer.TYPE_ATTR, "lookups").build());
+          obs.record(
+              cacheMetrics.missingGlobalFieldStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "missing_global_field")
+                  .build());
+          obs.record(
+              cacheMetrics.missingGlobalTermStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "missing_global_term")
+                  .build());
+          obs.record(
+              cacheMetrics.mergeToGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "merge_to_global")
+                  .build());
+          obs.record(
+              cacheMetrics.retrieveStats.sum(),
+              cacheBaseAttribute.toBuilder().put(SolrMetricProducer.TYPE_ATTR, "retrieve").build());
+          obs.record(
+              cacheMetrics.returnLocalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "return_local")
+                  .build());
+          obs.record(
+              cacheMetrics.sendGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "send_global")
+                  .build());
+          obs.record(
+              cacheMetrics.useCachedGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "use_cached_global")
+                  .build());
+          obs.record(
+              cacheMetrics.receiveGlobalStats.sum(),
+              cacheBaseAttribute.toBuilder()
+                  .put(SolrMetricProducer.TYPE_ATTR, "receive_global")
+                  .build());
+        });
   }
 }

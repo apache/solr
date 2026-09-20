@@ -88,7 +88,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
 
     assertEquals(10, tieredMP.getMaxMergeAtOnce());
-    assertEquals(10.0D, tieredMP.getSegmentsPerTier(), 0.0D);
+    assertEquals(8.0D, tieredMP.getSegmentsPerTier(), 0.0D);
 
     assertCommitSomeNewDocs();
     assertCompoundSegments(h.getCore(), expectCFS);

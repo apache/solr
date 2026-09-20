@@ -18,8 +18,8 @@
 package org.apache.solr.core;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -81,7 +81,7 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
         // ... or should *all* Caching DirFactories consult the cache as well as the disk itself?
         // assertTrue(path + " should exist once file is closed", dirFac.exists(path));
 
-        dir.sync(Collections.singleton("test_file"));
+        dir.sync(Set.of("test_file"));
         assertTrue(path + " should exist once file is synced", dirFac.exists(path));
 
       } finally {

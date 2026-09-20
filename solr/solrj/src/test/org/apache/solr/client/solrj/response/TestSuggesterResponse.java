@@ -16,35 +16,36 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
-import org.junit.Before;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test for SuggesterComponent's response in Solrj */
-public class TestSuggesterResponse extends SolrJettyTestBase {
+public class TestSuggesterResponse extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
-  @Before
-  public void setUpClient() {
-    getSolrClient();
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   static String field = "cat";
@@ -55,11 +56,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
 
     try (SolrClient solrClient = createSuggestSolrClient()) {
       SolrQuery query = new SolrQuery("*:*");
-      query.set(CommonParams.QT, "/suggest");
       query.set("suggest.dictionary", "mySuggester");
       query.set("suggest.q", "Com");
       query.set("suggest.build", true);
-      QueryRequest request = new QueryRequest(query);
+      QueryRequest request = new QueryRequest("/suggest", query);
       QueryResponse queryResponse = request.process(solrClient);
       SuggesterResponse response = queryResponse.getSuggesterResponse();
       Map<String, List<Suggestion>> dictionary2suggestions = response.getSuggestions();
@@ -81,11 +81,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
 
     try (SolrClient solrClient = createSuggestSolrClient()) {
       SolrQuery query = new SolrQuery("*:*");
-      query.set(CommonParams.QT, "/suggest");
       query.set("suggest.dictionary", "mySuggester");
       query.set("suggest.q", "Com");
       query.set("suggest.build", true);
-      QueryRequest request = new QueryRequest(query);
+      QueryRequest request = new QueryRequest("/suggest", query);
       QueryResponse queryResponse = request.process(solrClient);
       SuggesterResponse response = queryResponse.getSuggesterResponse();
       Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
@@ -103,11 +102,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
 
     try (SolrClient solrClient = createSuggestSolrClient()) {
       SolrQuery query = new SolrQuery("*:*");
-      query.set(CommonParams.QT, "/suggest");
       query.set("suggest.dictionary", "mySuggester");
       query.set("suggest.q", "Empty");
       query.set("suggest.build", true);
-      QueryRequest request = new QueryRequest(query);
+      QueryRequest request = new QueryRequest("/suggest", query);
       QueryResponse queryResponse = request.process(solrClient);
       SuggesterResponse response = queryResponse.getSuggesterResponse();
       Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
@@ -119,8 +117,8 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
-    getSolrClient().deleteByQuery("*:*");
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().deleteByQuery("*:*");
+    solrTestRule.getSolrClient().commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Computer");
@@ -130,22 +128,24 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.setField("id", "333");
     doc3.setField(field, "Laptop");
-    getSolrClient().add(doc);
-    getSolrClient().add(doc2);
-    getSolrClient().add(doc3);
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().add(doc);
+    solrTestRule.getSolrClient().add(doc2);
+    solrTestRule.getSolrClient().add(doc3);
+    solrTestRule.getSolrClient().commit(true, true);
   }
 
   /*
-   * Randomizes the ResponseParser to test that both javabin and xml responses parse correctly.  See SOLR-15070
+   * Randomizes the ResponseParser so that every wt the response classes are expected to work with is
+   * exercised: javabin and xml (SOLR-15070), and the JSON map parser, whose raw Maps are converted to
+   * the canonical shape by the parser itself (SOLR-17316).
    */
   private SolrClient createSuggestSolrClient() {
     final ResponseParser randomParser =
-        random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
-    return new HttpSolrClient.Builder()
-        .withBaseSolrUrl(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
-        .withResponseParser(randomParser)
-        .build();
+        switch (random().nextInt(3)) {
+          case 0 -> new JavaBinResponseParser();
+          case 1 -> new XMLResponseParser();
+          default -> new CanonicalJsonResponseParser();
+        };
+    return solrTestRule.newSolrClientBuilder().withResponseParser(randomParser).build();
   }
 }

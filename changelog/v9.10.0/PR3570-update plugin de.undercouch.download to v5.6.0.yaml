@@ -1,0 +1,7 @@
+title: Update plugin de.undercouch.download to v5.6.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3570
+  url: https://github.com/apache/solr/pull/3570

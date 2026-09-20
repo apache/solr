@@ -261,7 +261,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
           field, "multivalued", toStringArray(getRandomInts(numValues, false)));
     }
 
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -642,7 +642,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testIntPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestIntPointFieldsAtomicUpdates("number_p_i");
@@ -652,7 +652,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedIntPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] ints = toStringArray(getRandomInts(3, false));
@@ -880,7 +880,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -1284,7 +1284,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDoublePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestDoublePointFieldsAtomicUpdates("number_p_d");
@@ -1294,7 +1294,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedDoublePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] doubles = toStringArray(getRandomDoubles(3, false));
@@ -1496,7 +1496,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34");
       doTestPointFieldFunctionQueryError(field, "multivalued", "42.34", "66.6");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -1900,7 +1900,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestFloatPointFieldsAtomicUpdates("number_p_f");
@@ -1910,7 +1910,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedFloatPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] floats = toStringArray(getRandomFloats(3, false));
@@ -2077,7 +2077,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -2463,7 +2463,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testLongPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestLongPointFieldsAtomicUpdates("number_p_l");
@@ -2473,7 +2473,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedLongPointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] longs = toStringArray(getRandomLongs(3, false));
@@ -2636,7 +2636,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       doTestPointFieldFunctionQueryError(
           field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
     }
-    assertEquals("Missing types in the test", Collections.<String>emptySet(), regexToTest);
+    assertEquals("Missing types in the test", Set.of(), regexToTest);
   }
 
   @Test
@@ -3096,7 +3096,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDatePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     doTestDatePointFieldsAtomicUpdates("number_p_dt");
@@ -3106,7 +3106,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiValuedDatePointFieldsAtomicUpdates() throws Exception {
-    if (!Boolean.getBoolean("enable.update.log")) {
+    if (!Boolean.getBoolean("solr.index.updatelog.enabled")) {
       return;
     }
     String[] dates =
@@ -3430,10 +3430,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }
     // Check using RTG
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < values.length; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
       }
     }
@@ -3455,10 +3455,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(values.length)), expected);
 
     // Check using RTG
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < values.length; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/" + type + "[@name='" + field + "'][.='" + values[i] + "']");
       }
     }
@@ -4077,10 +4077,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i + 10]));
     }
     // Check using RTG before commit
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < 10; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i] + "']",
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i + 10] + "']",
             "count(//doc/arr[@name='" + fieldName + "']/" + type + ")=2");
@@ -4088,10 +4088,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     // Check using RTG after commit
     assertU(commit());
-    if (Boolean.getBoolean("enable.update.log")) {
+    if (Boolean.getBoolean("solr.index.updatelog.enabled")) {
       for (int i = 0; i < 10; i++) {
         assertQ(
-            req("qt", "/get", "id", String.valueOf(i)),
+            reqWithPath("/get", "id", String.valueOf(i)),
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i] + "']",
             "//doc/arr[@name='" + fieldName + "']/" + type + "[.='" + numbers[i + 10] + "']",
             "count(//doc/arr[@name='" + fieldName + "']/" + type + ")=2");

@@ -55,7 +55,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
 
         float maxScore = Float.NEGATIVE_INFINITY;
         for (GroupDocs<BytesRef> group : topGroups.groups) {
-          for (ScoreDoc scoreDoc : group.scoreDocs) {
+          for (ScoreDoc scoreDoc : group.scoreDocs()) {
             if (maxScore < scoreDoc.score) {
               maxScore = scoreDoc.score;
             }
@@ -77,7 +77,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
         TopDocs topDocs = queryCommandResult.getTopDocs();
         SolrDocumentList docList = new SolrDocumentList();
         docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
-        docList.setNumFound(topDocs.totalHits.value);
+        docList.setNumFound(topDocs.totalHits.value());
 
         if (!Float.isNaN(queryCommandResult.getMaxScore())) {
           docList.setMaxScore(queryCommandResult.getMaxScore());

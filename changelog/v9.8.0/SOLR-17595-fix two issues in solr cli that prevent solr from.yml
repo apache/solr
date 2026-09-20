@@ -1,0 +1,9 @@
+title: Fix two issues in Solr CLI that prevent Solr from starting with the techproducts
+  example and from correctly parsing arguments on Windows that start with -D and have
+  multiple values separated by "," or spaces.
+type: fixed
+authors:
+- name: Christos Malliaridis
+links:
+- name: SOLR-17595
+  url: https://issues.apache.org/jira/browse/SOLR-17595

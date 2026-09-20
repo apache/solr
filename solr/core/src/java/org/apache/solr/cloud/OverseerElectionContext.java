@@ -53,8 +53,7 @@ final class OverseerElectionContext extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-      throws KeeperException, InterruptedException {
+  void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
     if (isClosed) {
       return;
     }
@@ -62,15 +61,8 @@ final class OverseerElectionContext extends ElectionContext {
     final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
-    zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL, true);
-    if (pauseBeforeStartMs > 0) {
-      try {
-        Thread.sleep(pauseBeforeStartMs);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-        log.warn("Wait interrupted ", e);
-      }
-    }
+    zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL);
+
     synchronized (this) {
       if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
         overseer.start(id);

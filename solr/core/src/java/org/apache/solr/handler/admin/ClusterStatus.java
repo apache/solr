@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +50,7 @@ public class ClusterStatus {
   public static final String INCLUDE_ALL = "includeAll";
   public static final String LIVENODES_PROP = "liveNodes";
   public static final String CLUSTER_PROP = "clusterProperties";
+
   public static final String ALIASES_PROP = "aliases";
 
   /** Shard / collection health state. */
@@ -108,14 +108,12 @@ public class ClusterStatus {
     boolean includeAll = solrParams.getBool(INCLUDE_ALL, true);
     boolean withLiveNodes = solrParams.getBool(LIVENODES_PROP, includeAll);
     boolean withClusterProperties = solrParams.getBool(CLUSTER_PROP, includeAll);
-    boolean withRoles = solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
     boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll);
 
     List<String> liveNodes = null;
     if (withLiveNodes || collection != null) {
-      liveNodes =
-          zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
       // add live_nodes
       if (withLiveNodes) clusterStatus.add("live_nodes", liveNodes);
     }
@@ -137,21 +135,9 @@ public class ClusterStatus {
     if (withClusterProperties) {
       Map<String, Object> clusterProps = zkStateReader.getClusterProperties();
       if (clusterProps == null) {
-        clusterProps = Collections.emptyMap();
+        clusterProps = Map.of();
       }
       clusterStatus.add("properties", clusterProps);
-    }
-
-    // add the roles map
-    if (withRoles) {
-      Map<?, ?> roles = Collections.emptyMap();
-      if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-        roles =
-            (Map<?, ?>)
-                Utils.fromJSON(
-                    zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
-      }
-      clusterStatus.add("roles", roles);
     }
 
     results.add("cluster", clusterStatus);
@@ -314,14 +300,13 @@ public class ClusterStatus {
   public static Map<String, Object> postProcessCollectionJSON(Map<String, Object> collection) {
     final Map<String, Map<String, Object>> shards =
         collection != null
-            ? (Map<String, Map<String, Object>>)
-                collection.getOrDefault("shards", Collections.emptyMap())
-            : Collections.emptyMap();
+            ? (Map<String, Map<String, Object>>) collection.getOrDefault("shards", Map.of())
+            : Map.of();
     final List<Health> healthStates = new ArrayList<>(shards.size());
     shards.forEach(
         (shardName, s) -> {
           final Map<String, Map<String, Object>> replicas =
-              (Map<String, Map<String, Object>>) s.getOrDefault("replicas", Collections.emptyMap());
+              (Map<String, Map<String, Object>>) s.getOrDefault("replicas", Map.of());
           int[] totalVsActive = new int[2];
           boolean hasLeader = false;
           for (Map<String, Object> r : replicas.values()) {

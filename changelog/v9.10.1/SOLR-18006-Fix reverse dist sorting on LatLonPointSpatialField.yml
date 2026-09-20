@@ -1,0 +1,13 @@
+title: Fix reverse distance sorting on LatLonPointSpatialField and "SRPT" fields when combined with the filter cache.  This is a regression since Solr 9.9.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+  - name: Umut Saribiyik
+    nick: umut-sar
+  - name: David Smiley
+links:
+  - name: SOLR-18006
+    url: https://issues.apache.org/jira/browse/SOLR-18006
+  - name: SOLR-18016
+    url: https://issues.apache.org/jira/browse/SOLR-18016

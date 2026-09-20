@@ -63,9 +63,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     TestSolrConfigHandler.testForResponseElement(
         writeHarness,
-        testServerBaseUrl,
         "/config/overlay",
-        cloudClient,
         Arrays.asList("overlay", "requestHandler", "/admin/luke", "class"),
         "org.apache.solr.handler.DumpRequestHandler",
         TIMEOUT_S);
@@ -77,7 +75,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   private void testReqHandlerAPIs() throws Exception {
     String testServerBaseUrl = getRandomServer(cloudClient, "collection1");
     RestTestHarness writeHarness = randomRestTestHarness();
-    TestSolrConfigHandler.reqhandlertests(writeHarness, testServerBaseUrl, cloudClient);
+    TestSolrConfigHandler.reqhandlertests(writeHarness.newWithUrl(testServerBaseUrl));
   }
 
   public static String getRandomServer(CloudSolrClient cloudClient, String collName) {
@@ -111,10 +109,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     Map<?, ?> result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "x", "a"),
             "A val",
             TIMEOUT_S);
@@ -128,30 +124,24 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        null,
-        urls.get(random().nextInt(urls.size())),
+        writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
         "/config/overlay",
-        cloudClient,
         asList("overlay", "requestHandler", "/dump", "name"),
         "/dump",
         TIMEOUT_S);
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump?useParams=x",
-            cloudClient,
             asList("params", "a"),
             "A val",
             TIMEOUT_S);
     compareValues(result, "", asList("params", RequestParams.USEPARAM));
 
     TestSolrConfigHandler.testForResponseElement(
-        null,
-        urls.get(random().nextInt(urls.size())),
+        writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
         "/dump?useParams=x&a=fomrequest",
-        cloudClient,
         asList("params", "a"),
         "fomrequest",
         TIMEOUT_S);
@@ -165,20 +155,16 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/overlay",
-            cloudClient,
             asList("overlay", "requestHandler", "/dump1", "name"),
             "/dump1",
             TIMEOUT_S);
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump1",
-            cloudClient,
             asList("params", "a"),
             "A val",
             TIMEOUT_S);
@@ -198,10 +184,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "y", "c"),
             "CY val",
             TIMEOUT_S);
@@ -209,10 +193,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/dump?useParams=y",
-            cloudClient,
             asList("params", "c"),
             "CY val",
             TIMEOUT_S);
@@ -234,10 +216,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "y", "c"),
             "CY val modified",
             TIMEOUT_S);
@@ -255,10 +235,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params", payload);
     result =
         TestSolrConfigHandler.testForResponseElement(
-            null,
-            urls.get(random().nextInt(urls.size())),
+            writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
             "/config/params",
-            cloudClient,
             asList("response", "params", "y", "p"),
             "P val",
             TIMEOUT_S);
@@ -267,10 +245,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        null,
-        urls.get(random().nextInt(urls.size())),
+        writeHarness.newWithUrl(urls.get(random().nextInt(urls.size()))),
         "/config/params",
-        cloudClient,
         asList("response", "params", "y", "p"),
         null,
         TIMEOUT_S);

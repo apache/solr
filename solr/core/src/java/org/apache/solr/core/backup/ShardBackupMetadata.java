@@ -28,11 +28,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.IndexInputInputStream;
 
 /**
  * Represents the shard-backup metadata file.
@@ -98,7 +99,7 @@ public class ShardBackupMetadata {
 
     try (IndexInput is =
         repository.openInput(dir, shardBackupMetadataFilename, IOContext.DEFAULT)) {
-      return from(new PropertiesInputStream(is));
+      return from(new IndexInputInputStream(is));
     }
   }
 
@@ -111,7 +112,7 @@ public class ShardBackupMetadata {
     final String filename = shardBackupId.getBackupMetadataFilename();
     URI fileURI = repository.resolve(folderURI, filename);
     if (repository.exists(fileURI)) {
-      repository.delete(folderURI, Collections.singleton(filename));
+      repository.delete(folderURI, Set.of(filename));
     }
 
     try (OutputStream os = repository.createOutput(repository.resolve(folderURI, filename))) {

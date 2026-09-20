@@ -28,9 +28,9 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -43,6 +43,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.loader.CSVLoaderBase;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -101,7 +102,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
               + MAX_STREAM_SIZE
               + " bytes is the max upload size for sample documents.");
     }
-    // use a byte stream for the parsers in case they need to re-parse using a different strategy
+    // use a byte stream for the parsers in case they need to reparse using a different strategy
     // e.g. JSON vs. JSON lines or different CSV strategies ...
     ContentStreamBase.ByteArrayStream byteStream =
         new ContentStreamBase.ByteArrayStream(uploadedBytes, fileSource, contentType);
@@ -139,7 +140,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
-      String csvStr = new String(streamBytes, charset);
+      String csvStr = new String(streamBytes, IOUtils.charsetForName(charset));
       char sep = detectTSV(csvStr);
       ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(params);
       modifiableSolrParams.set(SEPARATOR, String.valueOf(sep));
@@ -148,10 +149,10 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     } else {
       stream = new ContentStreamBase.ByteArrayStream(streamBytes, source, "text/csv");
     }
-    return (new SampleCSVLoader(new CSVRequest(params), maxDocsToLoad)).loadDocs(stream);
+    return (new SampleCSVLoader(new SolrQueryRequestBase(null, params), maxDocsToLoad))
+        .loadDocs(stream);
   }
 
-  @SuppressWarnings("unchecked")
   protected List<SolrInputDocument> loadJsonLines(
       ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad) throws IOException {
     List<Map<String, Object>> docs = new ArrayList<>();
@@ -159,13 +160,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       BufferedReader br = new BufferedReader(r);
       String line;
       while ((line = br.readLine()) != null) {
-        line = line.trim();
-        if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
-          Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
-          if (jsonLine instanceof Map) {
-            docs.add((Map<String, Object>) jsonLine);
-          }
-        }
+        parseStringToJson(docs, line);
         if (maxDocsToLoad > 0 && docs.size() == maxDocsToLoad) {
           break;
         }
@@ -173,6 +168,19 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
 
     return docs.stream().map(JsonLoader::buildDoc).collect(Collectors.toList());
+  }
+
+  private void parseStringToJson(List<Map<String, Object>> docs, String line) throws IOException {
+    line = line.trim();
+    if (line.startsWith("{") && line.endsWith("}")) {
+      Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
+      if (jsonLine instanceof Map<?, ?> rawMap) {
+        // JSON object keys are always Strings; the cast is safe
+        @SuppressWarnings("unchecked")
+        Map<String, Object> typedMap = (Map<String, Object>) rawMap;
+        docs.add(typedMap);
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -197,12 +205,13 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
-              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
+              readAllBytes(stream),
+              charset != null ? IOUtils.charsetForName(charset) : StandardCharsets.UTF_8);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {
           line = line.trim();
-          if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
+          if (line.startsWith("{") && line.endsWith("}")) {
             isJsonLines = true;
             break;
           }
@@ -211,7 +220,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       if (isJsonLines) {
         docs = loadJsonLines(lines);
       } else {
-        docs = Collections.singletonList((Map<String, Object>) json);
+        docs = List.of((Map<String, Object>) json);
       }
     } else {
       throw new SolrException(
@@ -269,7 +278,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       final int event;
       try {
         event = parser.next();
-      } catch (java.util.NoSuchElementException noSuchElementException) {
+      } catch (NoSuchElementException noSuchElementException) {
         return docs;
       }
       switch (event) {
@@ -292,17 +301,10 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
   }
 
-  @SuppressWarnings("unchecked")
   protected List<Map<String, Object>> loadJsonLines(String[] lines) throws IOException {
     List<Map<String, Object>> docs = new ArrayList<>(lines.length);
     for (String line : lines) {
-      line = line.trim();
-      if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
-        Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
-        if (jsonLine instanceof Map) {
-          docs.add((Map<String, Object>) jsonLine);
-        }
-      }
+      parseStringToJson(docs, line);
     }
     return docs;
   }
@@ -333,19 +335,13 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
   }
 
-  private static class CSVRequest extends SolrQueryRequestBase {
-    CSVRequest(SolrParams params) {
-      super(null, params);
-    }
-  }
-
   private static class SampleCSVLoader extends CSVLoaderBase {
     List<SolrInputDocument> docs = new ArrayList<>();
-    CSVRequest req;
+    SolrQueryRequestBase req;
     int maxDocsToLoad;
     String multiValueDelimiter;
 
-    SampleCSVLoader(CSVRequest req, int maxDocsToLoad) {
+    SampleCSVLoader(SolrQueryRequestBase req, int maxDocsToLoad) {
       super(req, new NoOpUpdateRequestProcessor());
       this.req = req;
       this.maxDocsToLoad = maxDocsToLoad;

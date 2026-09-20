@@ -1,0 +1,7 @@
+title: Update slf4j to v2.0.17
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3219
+  url: https://github.com/apache/solr/pull/3219

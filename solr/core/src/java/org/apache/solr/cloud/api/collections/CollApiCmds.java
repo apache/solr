@@ -30,7 +30,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
@@ -60,28 +59,26 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.OV
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REINDEXCOLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RENAME;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPRIORITIZE_OVERSEER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -114,7 +111,16 @@ public class CollApiCmds {
    * classes whose names ends in {@code Cmd}.
    */
   protected interface CollectionApiCommand {
-    void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception;
+    void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+        throws Exception;
+
+    default ZkNodeProps cloneZkPropsWithOperation(
+        ZkNodeProps original, CollectionParams.CollectionAction collectionAction) {
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, collectionAction.toLower());
+      propMap.putAll(original.getProperties());
+      return new ZkNodeProps(propMap);
+    }
   }
 
   /**
@@ -157,8 +163,8 @@ public class CollApiCmds {
               Map.entry(CREATESNAPSHOT, new CreateSnapshotCmd(ccc)),
               Map.entry(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc)),
               Map.entry(SPLITSHARD, new SplitShardCmd(ccc)),
-              Map.entry(ADDROLE, new OverseerRoleCmd(ccc, ADDROLE, overseerPrioritizer)),
-              Map.entry(REMOVEROLE, new OverseerRoleCmd(ccc, REMOVEROLE, overseerPrioritizer)),
+              Map.entry(
+                  REPRIORITIZE_OVERSEER, new OverseerPrioritizationCmd(ccc, overseerPrioritizer)),
               Map.entry(MOCK_COLL_TASK, new CollApiCmds.MockOperationCmd()),
               Map.entry(MOCK_SHARD_TASK, new CollApiCmds.MockOperationCmd()),
               Map.entry(MOCK_REPLICA_TASK, new CollApiCmds.MockOperationCmd()),
@@ -206,7 +212,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       final Span localSpan;
       final Context localContext;
@@ -217,7 +224,7 @@ public class CollApiCmds {
         String collection =
             Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
                 .orElse("unknown");
-        boolean isAsync = message.containsKey(ASYNC);
+        boolean isAsync = adminCmdContext.getAsyncId() != null;
         localSpan =
             TraceUtils.startCollectionApiCommandSpan(
                 command.getClass().getSimpleName(), collection, isAsync);
@@ -226,7 +233,7 @@ public class CollApiCmds {
 
       try (var scope = localContext.makeCurrent()) {
         assert scope != null; // prevent javac warning about scope being unused
-        command.call(state, message, results);
+        command.call(adminCmdContext, message, results);
       } finally {
         if (localSpan != null) {
           localSpan.end();
@@ -238,7 +245,8 @@ public class CollApiCmds {
   public static class MockOperationCmd implements CollectionApiCommand {
     @Override
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
-    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
         throws InterruptedException {
       // only for test purposes
       Thread.sleep(message.getInt("sleep", 1));
@@ -260,20 +268,13 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
+    public void call(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
-      String asyncId = message.getStr(ASYNC);
       CollectionHandlingUtils.collectionCmd(
-          message,
-          params,
-          results,
-          Replica.State.ACTIVE,
-          asyncId,
-          Collections.emptySet(),
-          ccc,
-          clusterState);
+          adminCmdContext, message, params, results, Replica.State.ACTIVE, Set.of(), ccc);
     }
   }
 
@@ -285,7 +286,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
@@ -306,7 +307,8 @@ public class CollApiCmds {
 
       String baseUrl = ccc.getZkStateReader().getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
       ShardRequest sreq = new ShardRequest();
-      sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
+      sreq.nodeName = message.getStr(NODE_NAME_PROP);
+      sreq.coreNodeName = message.getStr(CORE_NODE_NAME_PROP);
       // yes, they must use same admin handler path everywhere...
       params.set("qt", ccc.getAdminPath());
       sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
@@ -326,7 +328,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
@@ -335,10 +337,7 @@ public class CollApiCmds {
           REPLICA_PROP,
           PROPERTY_PROP,
           PROPERTY_VALUE_PROP);
-      Map<String, Object> propMap = new HashMap<>();
-      propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
-      propMap.putAll(message.getProperties());
-      ZkNodeProps m = new ZkNodeProps(propMap);
+      ZkNodeProps m = cloneZkPropsWithOperation(message, ADDREPLICAPROP);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -360,14 +359,11 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
-      Map<String, Object> propMap = new HashMap<>();
-      propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
-      propMap.putAll(message.getProperties());
-      ZkNodeProps m = new ZkNodeProps(propMap);
+      ZkNodeProps m = cloneZkPropsWithOperation(message, DELETEREPLICAPROP);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -389,7 +385,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       if (StrUtils.isBlank(message.getStr(COLLECTION_PROP))
           || StrUtils.isBlank(message.getStr(PROPERTY_PROP))) {
@@ -401,18 +397,16 @@ public class CollApiCmds {
                 + PROPERTY_PROP
                 + "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
       }
-      Map<String, Object> m = new HashMap<>();
-      m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
-      m.putAll(message.getProperties());
+      ZkNodeProps m = cloneZkPropsWithOperation(message, BALANCESHARDUNIQUE);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.BalanceShardsUnique,
-                new ZkNodeProps(m),
+                m,
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
     }
   }
@@ -425,9 +419,9 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
-
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       // the rest of the processing is based on writing cluster state properties
       String configName = (String) message.getProperties().get(COLL_CONF);
@@ -435,17 +429,8 @@ public class CollApiCmds {
       if (configName != null) {
         CollectionHandlingUtils.validateConfigOrThrowSolrException(
             ccc.getCoreContainer().getConfigSetService(), configName);
-
-        // Back-compatibility reason: update configName in old location
-        // TODO in Solr 10 this code should go away
-        String collPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName;
-        if (ccc.getSolrCloudManager().getDistribStateManager().hasData(collPath)) {
-          ccc.getSolrCloudManager()
-              .getDistribStateManager()
-              .setData(
-                  collPath, Utils.toJSON(Map.of(ZkStateReader.CONFIGNAME_PROP, configName)), -1);
-        }
       }
+      ZkNodeProps m = cloneZkPropsWithOperation(message, MODIFYCOLLECTION);
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         // Apply the state update right away. The wait will still be useful for the change to be
@@ -453,11 +438,11 @@ public class CollApiCmds {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection,
-                message,
+                m,
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(message);
+        ccc.offerStateUpdate(m);
       }
 
       try {
@@ -495,12 +480,14 @@ public class CollApiCmds {
                 });
       } catch (TimeoutException | InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
-        log.debug(
-            "modifyCollection(ClusterState={}, ZkNodeProps={}, NamedList={})",
-            clusterState,
-            message,
-            results,
-            e);
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "modifyCollection(ClusterState={}, ZkNodeProps={}, NamedList={})",
+              ccc.getZkStateReader().getClusterState(),
+              message,
+              results,
+              e);
+        }
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
       }
@@ -508,7 +495,10 @@ public class CollApiCmds {
       // if switching to/from read-only mode or configName is not null reload the collection
       if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
         new ReloadCollectionCmd(ccc)
-            .call(clusterState, new ZkNodeProps(NAME, collectionName), results);
+            .call(
+                adminCmdContext.subRequestContext(RELOAD, null),
+                new ZkNodeProps(NAME, collectionName),
+                results);
       }
     }
   }

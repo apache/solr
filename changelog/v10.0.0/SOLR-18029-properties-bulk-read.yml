@@ -1,0 +1,8 @@
+title: PropertiesInputStream overrides bulk read method, and rename it to IndexInputInputStream to match
+       symmetrical class IndexOutputOutputStream.
+type: changed
+authors:
+  - name: Pierre Salagnac
+links:
+  - name: SOLR-18029
+    url: https://issues.apache.org/jira/browse/SOLR-18029

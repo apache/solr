@@ -1,0 +1,11 @@
+title: Make CLUSTERSTATUS request configurable to improve performance by allowing
+  retrieval of specific information, reducing unnecessary data fetching. Enhanced
+  CloudSolrClient's HTTP ClusterStateProvider to use it, and to scale to more collections
+  better as well.
+type: changed
+authors:
+- name: Aparna Suresh
+- name: David Smiley
+links:
+- name: SOLR-17381
+  url: https://issues.apache.org/jira/browse/SOLR-17381

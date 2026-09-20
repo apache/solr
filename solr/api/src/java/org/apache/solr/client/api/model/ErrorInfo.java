@@ -35,17 +35,20 @@ public class ErrorInfo implements ReflectWritable {
   @JsonProperty("metadata")
   public ErrorMetadata metadata;
 
-  @JsonProperty("details")
-  public List<Map<String, Object>> details;
+  @JsonProperty("code")
+  public Integer code;
+
+  @JsonProperty("errorClass")
+  public String errorClass;
 
   @JsonProperty("msg")
   public String msg;
 
   @JsonProperty("trace")
-  public String trace;
+  public ErrorStackTrace trace;
 
-  @JsonProperty("code")
-  public Integer code;
+  @JsonProperty("details")
+  public List<Map<String, Object>> details;
 
   public static class ErrorMetadata implements ReflectWritable {
     @JsonProperty(ERROR_CLASS)
@@ -53,5 +56,27 @@ public class ErrorInfo implements ReflectWritable {
 
     @JsonProperty(ROOT_ERROR_CLASS)
     public String rootErrorClass;
+  }
+
+  public static class ErrorStackTrace implements ReflectWritable {
+    @JsonProperty("stackTrace")
+    public List<String> stackTrace;
+
+    @JsonProperty("causedBy")
+    public ErrorCausedBy causedBy;
+  }
+
+  public static class ErrorCausedBy implements ReflectWritable {
+    @JsonProperty("errorClass")
+    public String errorClass;
+
+    @JsonProperty("msg")
+    public String msg;
+
+    @JsonProperty("trace")
+    public ErrorStackTrace trace;
+
+    @JsonProperty("details")
+    public List<Map<String, Object>> details;
   }
 }

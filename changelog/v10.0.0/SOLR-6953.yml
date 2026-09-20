@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove back compat feature genericCoreNodeNames for Solr Cloud node naming.
+type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-6953
+    url: https://issues.apache.org/jira/browse/SOLR-6953

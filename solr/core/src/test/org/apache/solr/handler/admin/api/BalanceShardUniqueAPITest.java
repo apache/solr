@@ -17,30 +17,36 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.BalanceShardUniqueRequestBody;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link BalanceShardUnique} */
-public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
+public class BalanceShardUniqueAPITest extends MockV2APITest {
+
+  private BalanceShardUnique api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new BalanceShardUnique(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new BalanceShardUnique(null, null, null);
-              api.balanceShardUnique("someCollectionName", null);
-            });
+        expectThrows(SolrException.class, () -> api.balanceShardUnique("someCollectionName", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required request body", thrown.getMessage());
@@ -51,12 +57,7 @@ public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
     final var requestBody = new BalanceShardUniqueRequestBody();
     requestBody.property = "preferredLeader";
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new BalanceShardUnique(null, null, null);
-              api.balanceShardUnique(null, requestBody);
-            });
+        expectThrows(SolrException.class, () -> api.balanceShardUnique(null, requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -68,32 +69,31 @@ public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
     final var requestBody = new BalanceShardUniqueRequestBody();
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new BalanceShardUnique(null, null, null);
-              api.balanceShardUnique("someCollName", requestBody);
-            });
+            SolrException.class, () -> api.balanceShardUnique("someCollName", requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: property", thrown.getMessage());
   }
 
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new BalanceShardUniqueRequestBody();
     requestBody.property = "someProperty";
     requestBody.shardUnique = Boolean.TRUE;
     requestBody.onlyActiveNodes = Boolean.TRUE;
     requestBody.async = "someAsyncId";
-    final var remoteMessage =
-        BalanceShardUnique.createRemoteMessage("someCollName", requestBody).getProperties();
 
-    assertEquals(6, remoteMessage.size());
-    assertEquals("balanceshardunique", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someProperty", remoteMessage.get(PROPERTY_PROP));
-    assertEquals(Boolean.TRUE, remoteMessage.get(SHARD_UNIQUE));
-    assertEquals(Boolean.TRUE, remoteMessage.get(ONLY_ACTIVE_NODES));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
+    api.balanceShardUnique("someCollName", requestBody);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.BALANCESHARDUNIQUE,
+        requestBody.async,
+        message -> {
+          assertEquals(4, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someProperty", message.get(PROPERTY_PROP));
+          assertEquals(Boolean.TRUE, message.get(SHARD_UNIQUE));
+          assertEquals(Boolean.TRUE, message.get(ONLY_ACTIVE_NODES));
+        });
   }
 }

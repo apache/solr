@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -46,9 +47,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
@@ -216,8 +217,9 @@ public class SuggestComponent extends SearchComponent
   public int distributedProcess(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     log.info("SuggestComponent distributedProcess with : {}", params);
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) return ResponseBuilder.STAGE_EXECUTE_QUERY;
-    if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY)
+      return ResponseBuilder.STAGE_EXECUTE_QUERY;
+    if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       ShardRequest sreq = new ShardRequest();
       sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
       sreq.params = new ModifiableSolrParams(rb.req.getParams());
@@ -296,7 +298,7 @@ public class SuggestComponent extends SearchComponent
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     log.info("SuggestComponent finishStage with : {}", params);
-    if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
+    if (!params.getBool(COMPONENT_NAME, false) || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS)
       return;
     int count = params.getInt(SUGGEST_COUNT, 1);
 
@@ -381,21 +383,17 @@ public class SuggestComponent extends SearchComponent
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
-
-    this.solrMetricsContext.gauge(
-        () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());
-    MetricsMap suggestersMap =
-        new MetricsMap(
-            map -> {
-              for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
-                SolrSuggester suggester = entry.getValue();
-                map.putNoEx(entry.getKey(), suggester.toString());
-              }
-            });
-    this.solrMetricsContext.gauge(
-        suggestersMap, true, "suggesters", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
+    var suggesterAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
+    this.solrMetricsContext.observableLongGauge(
+        "solr.core.suggester.total.size",
+        "Total memory size in bytes of all suggester",
+        (observableLongMeasurement) -> {
+          observableLongMeasurement.record(ramBytesUsed(), suggesterAttributes);
+        },
+        OtelUnit.BYTES);
   }
 
   @Override

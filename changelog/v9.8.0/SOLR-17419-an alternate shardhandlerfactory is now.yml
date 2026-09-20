@@ -1,0 +1,9 @@
+title: An alternate ShardHandlerFactory is now available, ParallelHttpShardHandlerFactory,
+  which may help reduce distributed-search latency in collections with many shards,
+  especially when PKI is used between nodes.
+type: changed
+authors:
+- name: Jason Gerlowski
+links:
+- name: SOLR-17419
+  url: https://issues.apache.org/jira/browse/SOLR-17419

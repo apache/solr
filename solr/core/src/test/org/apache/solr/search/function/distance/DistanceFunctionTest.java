@@ -17,7 +17,7 @@
 package org.apache.solr.search.function.distance;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -282,25 +282,24 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
             "fq",
             "id:5"),
         "//float[@name='score']='" + (float) (2.3 * 2.3 + 5.5 * 5.5 + 7.9 * 7.9 + 2.4 * 2.4) + "'");
-    // Pass in imbalanced list, throw exception
-    try {
-      ignoreException("Illegal number of sources");
-      assertQ(
-          req(
-              "fl",
-              "*,score",
-              "q",
-              "{!func}sqedist(x_td, y_td, z_td, w_td, 0, 0, 0)",
-              "fq",
-              "id:1"),
-          "//float[@name='score']='0.0'");
-      fail("should throw an exception");
-    } catch (Exception e) {
-      Throwable cause = e.getCause();
-      assertNotNull(cause);
-      assertTrue(cause instanceof SolrException);
-    }
-    resetExceptionIgnores();
+
+    assertQEx(
+        "(should fail)",
+        "Illegal number of sources",
+        req("q", "{!func}sqedist(x_td, y_td, z_td, w_td, 0, 0, 0)"), // odd args
+        ErrorCode.BAD_REQUEST);
+
+    assertQEx(
+        "(should fail)",
+        "Unexpected text after function",
+        req("q", "{!func}sqedist(x_td, y_td), 0"), // text following the func call
+        ErrorCode.BAD_REQUEST);
+
+    assertQEx(
+        "(should fail)",
+        "Unexpected text after function",
+        req("q", "{!func}x_td, y_td, z_td, w_td, 0, 0, 0"),
+        ErrorCode.BAD_REQUEST);
 
     // do one test of Euclidean
     // two dimensions, notice how we only pass in 4 value sources

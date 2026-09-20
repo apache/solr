@@ -54,7 +54,6 @@ class HttpEnvironmentStoreClient(
 
         return when {
             response.status.isSuccess() -> {
-
                 // Map the response data to a list of JavaProperty for better readability
                 val javaProperties = response.body<JavaPropertiesResponse>()
                     .properties
@@ -62,6 +61,7 @@ class HttpEnvironmentStoreClient(
 
                 Result.success(javaProperties)
             }
+
             else -> Result.failure(Exception("Unknown error"))
             // TODO Add proper error handling
         }

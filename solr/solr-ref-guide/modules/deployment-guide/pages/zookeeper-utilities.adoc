@@ -28,6 +28,17 @@ The ZooKeeper specific commands are provided by the xref:solr-control-script-ref
 
 Use the `help` option to get a list of available ZooKeeper specific commands from the script itself, as in `bin/solr zk -h`.
 
+=== ZooKeeper Connection String
+
+All `bin/solr zk` sub-commands require a ZooKeeper connection string to function. You can provide this in three ways, in order of precedence:
+
+1. Explicitly pass the `-z` or `--zk-host` option: `bin/solr zk <command> -z <zkHost>`
+2. Set the `ZK_HOST` environment variable: `export ZK_HOST=<zkHost>`
+3. Define `ZK_HOST` in `solr.in.sh` (or `solr.in.cmd` on Windows)
+4. If none are provided, the tools will default to `localhost:2181`
+
+This means if you have `ZK_HOST` configured in your environment, you do not need to pass the `-z` option to every command.
+
 == Solr CLI Examples
 
 Below are some examples of using the `bin/solr` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud --no-prompt`)
@@ -44,13 +55,6 @@ bin/solr zk upconfig -z 127.0.0.1:9983 -n my_new_config -d server/solr/configset
 [source,bash]
 ----
 ./bin/solr zk cp ./my_local_file.txt zk:/my_zk_file.txt -z 127.0.0.1:9983
-----
-
-=== Link a Collection to a Configset
-
-[source,bash]
-----
-./bin/solr zk linkconfig --conf-name my_new_config -c gettingstarted -z 127.0.0.1:9983
 ----
 
 === Create a New ZooKeeper Path

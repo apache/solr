@@ -100,7 +100,7 @@ In the example configuration above, this is the name referenced in the line: `<s
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `JaspellLookupFactory`
+|Optional |Default: `FSTLookupFactory`
 |===
 +
 Lookup implementation.
@@ -492,7 +492,6 @@ Increasing this would mean you want more than the previous 2 tokens to be taken 
 
 An automaton-based lookup.
 This implementation is slower to build, but provides the lowest memory cost.
-We recommend using this implementation unless you need more sophisticated matching results, in which case you should use the Jaspell implementation.
 
 This implementation uses the following additional properties:
 
@@ -526,11 +525,6 @@ A weighted automaton representation which is an alternative to `FSTLookup` for m
 Note that it expects weights to be whole numbers.
 If weight is missing it's assumed to be `1.0`.
 Weights affect the sorting of matching suggestions when `spellcheck.onlyMorePopular=true` is selected: weights are treated as "popularity" score, with higher weights preferred over suggestions with lower weights.
-
-==== JaspellLookupFactory
-
-A more complex lookup based on a ternary trie from the http://jaspell.sourceforge.net/[JaSpell] project.
-Use this implementation if you need more sophisticated matching results.
 
 === Dictionary Implementations
 

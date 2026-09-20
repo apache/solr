@@ -17,29 +17,17 @@
 
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.overseer.ZkStateWriter.NO_OP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -56,8 +44,8 @@ import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -80,6 +68,9 @@ public class DistributedClusterStateUpdater {
    */
   private final boolean useDistributedStateUpdate;
 
+  private final int minStateByteLenForCompression;
+  private final Compressor compressor;
+
   /**
    * Builds an instance with the specified behavior regarding distribution of state updates,
    * allowing to know distributed updates are not enabled (parameter {@code
@@ -89,17 +80,16 @@ public class DistributedClusterStateUpdater {
    * @param useDistributedStateUpdate when this parameter is {@code false}, only method expected to
    *     ever be called on this instance is {@link #isDistributedStateUpdate}, and it will return
    *     {@code false}.
+   * @param minStateByteLenForCompression the minimum size of a state.json file that should be
+   *     compressed before being written to Zookeeper.
+   * @param compressor the compressor to use for compressing state.json files before writing them to
+   *     Zookeeper.
    */
-  public DistributedClusterStateUpdater(boolean useDistributedStateUpdate) {
+  public DistributedClusterStateUpdater(
+      boolean useDistributedStateUpdate, int minStateByteLenForCompression, Compressor compressor) {
     this.useDistributedStateUpdate = useDistributedStateUpdate;
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Creating DistributedClusterStateUpdater with useDistributedStateUpdate="
-              + useDistributedStateUpdate
-              + ". Solr will be using "
-              + (useDistributedStateUpdate ? "distributed" : "Overseer based")
-              + " cluster state updates."); // nowarn
-    }
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
+    this.compressor = compressor;
   }
 
   /**
@@ -114,7 +104,8 @@ public class DistributedClusterStateUpdater {
       throw new IllegalStateException(
           "Not expecting to create instances of StateChangeRecorder when not using distributed state update");
     }
-    return new StateChangeRecorder(collectionName, isCollectionCreation);
+    return new StateChangeRecorder(
+        collectionName, isCollectionCreation, minStateByteLenForCompression, compressor);
   }
 
   /** Syntactic sugar to allow a single change to the cluster state to be made in a single call. */
@@ -130,7 +121,11 @@ public class DistributedClusterStateUpdater {
     }
     String collectionName = command.getCollectionName(message);
     final StateChangeRecorder scr =
-        new StateChangeRecorder(collectionName, command.isCollectionCreation());
+        new StateChangeRecorder(
+            collectionName,
+            command.isCollectionCreation(),
+            minStateByteLenForCompression,
+            compressor);
     scr.record(command, message);
     scr.executeStateUpdates(scm, zkStateReader);
   }
@@ -140,7 +135,8 @@ public class DistributedClusterStateUpdater {
       throw new IllegalStateException(
           "Not expecting to execute executeNodeDownStateUpdate when not using distributed state update");
     }
-    CollectionNodeDownChangeCalculator.executeNodeDownStateUpdate(nodeName, zkStateReader);
+    CollectionNodeDownChangeCalculator.executeNodeDownStateUpdate(
+        nodeName, zkStateReader, minStateByteLenForCompression, compressor);
   }
 
   /**
@@ -166,7 +162,7 @@ public class DistributedClusterStateUpdater {
    * CollectionNodeDownChangeCalculator#executeNodeDownStateUpdate}.
    */
   public enum MutatingCommand {
-    BalanceShardsUnique(BALANCESHARDUNIQUE, ZkStateReader.COLLECTION_PROP) {
+    BalanceShardsUnique(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
@@ -179,7 +175,7 @@ public class DistributedClusterStateUpdater {
         }
       }
     },
-    ClusterCreateCollection(CREATE, CommonParams.NAME) {
+    ClusterCreateCollection(CommonParams.NAME) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
@@ -191,91 +187,91 @@ public class DistributedClusterStateUpdater {
         return true;
       }
     },
-    ClusterDeleteCollection(DELETE, CommonParams.NAME) {
+    ClusterDeleteCollection(CommonParams.NAME) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ClusterStateMutator(scm).deleteCollection(cs, message);
       }
     },
-    CollectionDeleteShard(DELETESHARD, ZkStateReader.COLLECTION_PROP) {
+    CollectionDeleteShard(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new CollectionMutator(scm).deleteShard(cs, message);
       }
     },
-    CollectionModifyCollection(MODIFYCOLLECTION, ZkStateReader.COLLECTION_PROP) {
+    CollectionModifyCollection(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new CollectionMutator(scm).modifyCollection(cs, message);
       }
     },
-    CollectionCreateShard(CREATESHARD, ZkStateReader.COLLECTION_PROP) {
+    CollectionCreateShard(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new CollectionMutator(scm).createShard(cs, message);
       }
     },
-    ReplicaAddReplicaProperty(ADDREPLICAPROP, ZkStateReader.COLLECTION_PROP) {
+    ReplicaAddReplicaProperty(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ReplicaMutator(scm).addReplicaProperty(cs, message);
       }
     },
-    ReplicaDeleteReplicaProperty(DELETEREPLICAPROP, ZkStateReader.COLLECTION_PROP) {
+    ReplicaDeleteReplicaProperty(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ReplicaMutator(scm).deleteReplicaProperty(cs, message);
       }
     },
-    ReplicaSetState(null, ZkStateReader.COLLECTION_PROP) {
+    ReplicaSetState(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new ReplicaMutator(scm).setState(cs, message);
       }
     },
-    SliceAddReplica(ADDREPLICA, ZkStateReader.COLLECTION_PROP) {
+    SliceAddReplica(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).addReplica(cs, message);
       }
     },
-    SliceAddRoutingRule(null, ZkStateReader.COLLECTION_PROP) {
+    SliceAddRoutingRule(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).addRoutingRule(cs, message);
       }
     },
-    SliceRemoveReplica(null, ZkStateReader.COLLECTION_PROP) {
+    SliceRemoveReplica(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).removeReplica(cs, message);
       }
     },
-    SliceRemoveRoutingRule(null, ZkStateReader.COLLECTION_PROP) {
+    SliceRemoveRoutingRule(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).removeRoutingRule(cs, message);
       }
     },
-    SliceSetShardLeader(null, ZkStateReader.COLLECTION_PROP) {
+    SliceSetShardLeader(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
         return new SliceMutator(scm).setShardLeader(cs, message);
       }
     },
-    SliceUpdateShardState(null, ZkStateReader.COLLECTION_PROP) {
+    SliceUpdateShardState(ZkStateReader.COLLECTION_PROP) {
       @Override
       public ZkWriteCommand buildWriteCommand(
           SolrCloudManager scm, ClusterState cs, ZkNodeProps message) {
@@ -283,24 +279,9 @@ public class DistributedClusterStateUpdater {
       }
     };
 
-    private static final EnumMap<CollectionParams.CollectionAction, MutatingCommand>
-        actionsToCommands;
-
-    static {
-      actionsToCommands = new EnumMap<>(CollectionParams.CollectionAction.class);
-      for (MutatingCommand mc : MutatingCommand.values()) {
-        if (mc.collectionAction != null) {
-          actionsToCommands.put(mc.collectionAction, mc);
-        }
-      }
-    }
-
-    private final CollectionParams.CollectionAction collectionAction;
     private final String collectionNameParamName;
 
-    MutatingCommand(
-        CollectionParams.CollectionAction collectionAction, String collectionNameParamName) {
-      this.collectionAction = collectionAction;
+    MutatingCommand(String collectionNameParamName) {
       this.collectionNameParamName = collectionNameParamName;
     }
 
@@ -310,18 +291,6 @@ public class DistributedClusterStateUpdater {
 
     public String getCollectionName(ZkNodeProps message) {
       return message.getStr(collectionNameParamName);
-    }
-
-    /**
-     * @return the {@link MutatingCommand} corresponding to the passed {@link
-     *     org.apache.solr.common.params.CollectionParams.CollectionAction} or {@code null} if no
-     *     cluster state update command is defined for that action (given that {@link
-     *     org.apache.solr.common.params.CollectionParams.CollectionAction} are used for the
-     *     Collection API and only some are used for the cluster state updates, this is expected).
-     */
-    public static MutatingCommand getCommandFor(
-        CollectionParams.CollectionAction collectionAction) {
-      return actionsToCommands.get(collectionAction);
     }
 
     /**
@@ -397,16 +366,29 @@ public class DistributedClusterStateUpdater {
 
     private final ZkStateReader zkStateReader;
     private final StateChangeCalculator updater;
+    private final int minStateByteLenForCompression;
+    private final Compressor compressor;
 
-    static void applyUpdate(ZkStateReader zkStateReader, StateChangeCalculator updater)
+    static void applyUpdate(
+        ZkStateReader zkStateReader,
+        StateChangeCalculator updater,
+        int minStateByteLenForCompression,
+        Compressor compressor)
         throws KeeperException, InterruptedException {
-      ZkUpdateApplicator zua = new ZkUpdateApplicator(zkStateReader, updater);
+      ZkUpdateApplicator zua =
+          new ZkUpdateApplicator(zkStateReader, updater, minStateByteLenForCompression, compressor);
       zua.applyUpdate();
     }
 
-    private ZkUpdateApplicator(ZkStateReader zkStateReader, StateChangeCalculator updater) {
+    private ZkUpdateApplicator(
+        ZkStateReader zkStateReader,
+        StateChangeCalculator updater,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       this.zkStateReader = zkStateReader;
       this.updater = updater;
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
     }
 
     /**
@@ -433,7 +415,7 @@ public class DistributedClusterStateUpdater {
       // For now trying to diverge as little as possible from existing data structures and code
       // given the need to support both the old way (Overseer) and new way (distributed) of handling
       // cluster state update.
-      final Set<String> liveNodes = Collections.emptySet();
+      final Set<String> liveNodes = Set.of();
 
       // Per Replica States updates are done before all other updates and not subject to the number
       // of attempts of CAS made here, given they have their own CAS strategy and implementation
@@ -458,7 +440,7 @@ public class DistributedClusterStateUpdater {
         // state. Knowing about all collections in the cluster might not be needed.
         ClusterState initialClusterState;
         if (updater.isCollectionCreation()) {
-          initialClusterState = new ClusterState(liveNodes, Collections.emptyMap());
+          initialClusterState = new ClusterState(liveNodes, Map.of());
         } else {
           // Get the state for existing data in ZK (and if no data exists we should fail)
           initialClusterState = fetchStateForCollection();
@@ -593,12 +575,17 @@ public class DistributedClusterStateUpdater {
       } else {
         // Collection update or creation
         DocCollection collection = updatedState.getCollection(updater.getCollectionName());
-        byte[] stateJson = Utils.toJSON(singletonMap(updater.getCollectionName(), collection));
+        byte[] stateJson = Utils.toJSON(Map.of(updater.getCollectionName(), collection));
+        if (minStateByteLenForCompression > -1
+            && stateJson.length > minStateByteLenForCompression) {
+          // When compressing state.json, we expect at least a 10:1 compression ratio.
+          stateJson = compressor.compressBytes(stateJson, stateJson.length / 10);
+        }
 
         if (updater.isCollectionCreation()) {
           // The state.json file does not exist yet (more precisely it is assumed not to exist)
           log.debug("going to create collection {}", jsonPath);
-          zkStateReader.getZkClient().create(jsonPath, stateJson, CreateMode.PERSISTENT, true);
+          zkStateReader.getZkClient().create(jsonPath, stateJson, CreateMode.PERSISTENT);
         } else {
           // We're updating an existing state.json
           if (log.isDebugEnabled()) {
@@ -607,9 +594,7 @@ public class DistributedClusterStateUpdater {
                 jsonPath,
                 collection.getZNodeVersion());
           }
-          zkStateReader
-              .getZkClient()
-              .setData(jsonPath, stateJson, collection.getZNodeVersion(), true);
+          zkStateReader.getZkClient().setData(jsonPath, stateJson, collection.getZNodeVersion());
         }
       }
     }
@@ -620,26 +605,20 @@ public class DistributedClusterStateUpdater {
      * enough... (we have to deal anyway with failures of conditional updates so trying to use non
      * fresh data is ok, a second attempt will be made)
      */
+    @SuppressWarnings("unchecked")
     private ClusterState fetchStateForCollection() throws KeeperException, InterruptedException {
       String collectionStatePath = DocCollection.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
-      byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
+      byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat);
+      Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(data);
 
-      // This factory method can detect a missing configName and supply it by reading it from the
-      // old ZK location.
-      // TODO in Solr 10 remove that factory method
-
-      ClusterState clusterState;
-      clusterState =
-          ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
-              stat.getVersion(),
-              data,
-              Collections.emptySet(),
-              updater.getCollectionName(),
-              zkStateReader.getZkClient(),
-              Instant.ofEpochMilli(stat.getCtime()));
-
-      return clusterState;
+      return ClusterState.createFromCollectionMap(
+          stat.getVersion(),
+          stateMap,
+          Set.of(),
+          Instant.ofEpochMilli(stat.getCtime()),
+          PerReplicaStatesOps.getZkClientPrsSupplier(
+              zkStateReader.getZkClient(), collectionStatePath));
     }
   }
 
@@ -683,7 +662,14 @@ public class DistributedClusterStateUpdater {
      */
     boolean creationCommandRecorded = false;
 
-    private StateChangeRecorder(String collectionName, boolean isCollectionCreation) {
+    final int minStateByteLenForCompression;
+    final Compressor compressor;
+
+    private StateChangeRecorder(
+        String collectionName,
+        boolean isCollectionCreation,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       if (collectionName == null) {
         final String err =
             "Internal bug. collectionName=null (isCollectionCreation=" + isCollectionCreation + ")";
@@ -693,6 +679,8 @@ public class DistributedClusterStateUpdater {
       mutations = new ArrayList<>();
       this.collectionName = collectionName;
       this.isCollectionCreation = isCollectionCreation;
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
     }
 
     /**
@@ -811,6 +799,8 @@ public class DistributedClusterStateUpdater {
       }
 
       @Override
+      @SuppressWarnings(
+          "ReferenceEquality") // NO_OP is a unique sentinel; identity check is intentional
       public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
         boolean hasJsonUpdates = false;
         List<PerReplicaStatesOps> perReplicaStateOps = new ArrayList<>();
@@ -863,14 +853,11 @@ public class DistributedClusterStateUpdater {
         throws KeeperException, InterruptedException {
       if (log.isDebugEnabled()) {
         log.debug(
-            "Executing updates for collection "
-                + collectionName
-                + ", is creation="
-                + isCollectionCreation
-                + ", "
-                + mutations.size()
-                + " recorded mutations.",
-            new Exception("StackTraceOnly")); // nowarn
+            "Executing updates for collection {}, is creation={}, {} recorded mutations.",
+            collectionName,
+            isCollectionCreation,
+            mutations.size(),
+            new Exception("StackTraceOnly"));
       }
       if (mutations.isEmpty()) {
         final String err =
@@ -882,7 +869,8 @@ public class DistributedClusterStateUpdater {
 
       RecordedMutationsPlayer mutationPlayer =
           new RecordedMutationsPlayer(scm, collectionName, isCollectionCreation, mutations);
-      ZkUpdateApplicator.applyUpdate(zkStateReader, mutationPlayer);
+      ZkUpdateApplicator.applyUpdate(
+          zkStateReader, mutationPlayer, minStateByteLenForCompression, compressor);
 
       // TODO update stats here for the various commands executed successfully or not?
       // This would replace the stats about cluster state updates that the Collection API currently
@@ -916,7 +904,11 @@ public class DistributedClusterStateUpdater {
      * Entry point to mark all replicas of all collections present on a single node as being DOWN
      * (because the node is down)
      */
-    public static void executeNodeDownStateUpdate(String nodeName, ZkStateReader zkStateReader) {
+    public static void executeNodeDownStateUpdate(
+        String nodeName,
+        ZkStateReader zkStateReader,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       // This code does a version of what NodeMutator.downNode() is doing. We can't assume we have a
       // cache of the collections, so we're going to read all of them from ZK, fetch the state.json
       // for each and if it has any replicas on the failed node, do an update (conditional of
@@ -936,14 +928,15 @@ public class DistributedClusterStateUpdater {
 
       try {
         final List<String> collectionNames =
-            zkStateReader.getZkClient().getChildren(COLLECTIONS_ZKNODE, null, true);
+            zkStateReader.getZkClient().getChildren(COLLECTIONS_ZKNODE, null);
 
         // Collections are totally independent of each other. Multiple threads could share the load
         // here (need a ZK connection for each though).
         for (String collectionName : collectionNames) {
           CollectionNodeDownChangeCalculator collectionUpdater =
               new CollectionNodeDownChangeCalculator(collectionName, nodeName);
-          ZkUpdateApplicator.applyUpdate(zkStateReader, collectionUpdater);
+          ZkUpdateApplicator.applyUpdate(
+              zkStateReader, collectionUpdater, minStateByteLenForCompression, compressor);
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
@@ -971,6 +964,8 @@ public class DistributedClusterStateUpdater {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // NO_OP is a unique sentinel; identity check is intentional
     public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       Optional<ZkWriteCommand> result =
@@ -981,10 +976,7 @@ public class DistributedClusterStateUpdater {
       if (docCollection == null) {
         // This is possible but should be rare. Logging warn in case it is seen often and likely a
         // sign of another issue
-        log.warn(
-            "Processing DOWNNODE, collection "
-                + collectionName
-                + " disappeared during iteration"); // nowarn
+        log.warn("Processing DOWNNODE, collection {} disappeared during iteration", collectionName);
       }
 
       if (result.isPresent()) {
@@ -993,10 +985,7 @@ public class DistributedClusterStateUpdater {
             (zkcmd != ZkStateWriter.NO_OP)
                 ? clusterState.copyWith(zkcmd.name, zkcmd.collection)
                 : null;
-        replicaOpsList =
-            (zkcmd.ops != null && zkcmd.ops.get() != null)
-                ? Collections.singletonList(zkcmd.ops)
-                : null;
+        replicaOpsList = (zkcmd.ops != null && zkcmd.ops.get() != null) ? List.of(zkcmd.ops) : null;
       } else {
         computedState = null;
         replicaOpsList = null;

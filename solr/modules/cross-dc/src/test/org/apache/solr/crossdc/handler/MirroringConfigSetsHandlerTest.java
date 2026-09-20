@@ -20,7 +20,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
@@ -41,8 +40,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.Before;
@@ -52,7 +51,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -80,7 +78,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
       String zipResource)
       throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(solrCore, params);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(solrCore, params);
     params.set(ConfigSetParams.ACTION, action.toLower());
     String method = "GET";
     if (action == ConfigSetParams.ConfigSetAction.UPLOAD) {
@@ -91,7 +89,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
           List.of(new ContentStreamBase.ByteArrayStream(content, configSetName, "application/zip"));
       req.setContentStreams(streams);
     }
-    req.getContext().put("httpMethod", method);
+    req.getContext().put("httpMethod", SolrRequest.METHOD.fromString(method));
     return req;
   }
 
@@ -104,7 +102,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
     Mockito.when(zkController.getZkClient()).thenReturn(solrZkClient);
     Mockito.doAnswer(inv -> null)
         .when(solrZkClient)
-        .getData(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+        .getData(Mockito.anyString(), Mockito.any(), Mockito.any());
     captor = ArgumentCaptor.forClass(MirroredSolrRequest.class);
     Mockito.doNothing().when(sink).submit(captor.capture());
   }
@@ -149,13 +147,15 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
       req.getParams()
           .forEach(
               entry -> {
-                assertEquals(entry.getValue(), mirroredParams.getParams(entry.getKey()));
+                assertArrayEquals(entry.getValue(), mirroredParams.getParams(entry.getKey()));
               });
       assertEquals("HTTP method", req.getHttpMethod(), solrRequest.getMethod().toString());
       if (expectStreams) {
         List<ContentStream> sourceStreams = (List<ContentStream>) req.getContentStreams();
         assertNotNull("source streams missing", sourceStreams);
-        List<ContentStream> mirroredStreams = (List<ContentStream>) solrRequest.getContentStreams();
+        List<ContentStream> mirroredStreams =
+            (List<ContentStream>)
+                ((MirroredSolrRequest.MirroredConfigSetRequest) solrRequest).getRawContentStreams();
         assertNotNull("mirrored streams missing", mirroredStreams);
         assertEquals("number of streams", sourceStreams.size(), mirroredStreams.size());
         for (int i = 0; i < sourceStreams.size(); i++) {
@@ -167,7 +167,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
               MirroredSolrRequest.ExposedByteArrayContentStream.of(source).byteArray();
           byte[] mirroredContent =
               MirroredSolrRequest.ExposedByteArrayContentStream.of(mirrored).byteArray();
-          assertTrue("different content", Arrays.equals(sourceContent, mirroredContent));
+          assertArrayEquals("different content", sourceContent, mirroredContent);
         }
       }
     } else {

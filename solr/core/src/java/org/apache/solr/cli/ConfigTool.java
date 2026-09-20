@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.MissingArgumentException;
@@ -42,7 +43,7 @@ public class ConfigTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the collection.")
-          .build();
+          .get();
 
   private static final Option ACTION_OPTION =
       Option.builder("a")
@@ -51,7 +52,7 @@ public class ConfigTool extends ToolBase {
           .argName("ACTION")
           .desc(
               "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
-          .build();
+          .get();
 
   private static final Option PROPERTY_OPTION =
       Option.builder()
@@ -61,7 +62,7 @@ public class ConfigTool extends ToolBase {
           .required()
           .desc(
               "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
-          .build();
+          .get();
 
   private static final Option VALUE_OPTION =
       Option.builder("v")
@@ -69,7 +70,16 @@ public class ConfigTool extends ToolBase {
           .hasArg()
           .argName("VALUE")
           .desc("Set the property to this value; accepts JSON objects and strings.")
-          .build();
+          .get();
+
+  /** Parameters for the config command, independent of the command line parser. */
+  record ConfigParams(
+      String solrUrl,
+      String action,
+      String collection,
+      String property,
+      String value,
+      String credentials) {}
 
   public ConfigTool(ToolRuntime runtime) {
     super(runtime);
@@ -95,14 +105,31 @@ public class ConfigTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     String solrUrl = CLIUtils.normalizeSolrUrl(cli);
     String action = cli.getOptionValue(ACTION_OPTION, "set-property");
-    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String property = cli.getOptionValue(PROPERTY_OPTION);
     String value = cli.getOptionValue(VALUE_OPTION);
 
-    // value is required unless the property is one of the unset- type.
+    // value is required unless the property is one of the "unset-" type.
     if (!action.contains("unset-") && value == null) {
       throw new MissingArgumentException("'value' is a required option.");
     }
+
+    ConfigParams params =
+        new ConfigParams(
+            solrUrl,
+            action,
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(PROPERTY_OPTION),
+            value,
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    updateConfig(params);
+  }
+
+  void updateConfig(ConfigParams params) throws Exception {
+    String solrUrl = params.solrUrl();
+    String action = params.action();
+    String collection = params.collection();
+    String property = params.property();
+    String value = params.value();
+
     Map<String, Object> jsonObj = new HashMap<>();
     if (value != null) {
       Map<String, String> setMap = new HashMap<>();
@@ -121,10 +148,9 @@ public class ConfigTool extends ToolBase {
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
     echoIfVerbose(jsonBody);
 
-    try (SolrClient solrClient =
-        CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+    try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.credentials())) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
-      Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
+      Integer statusCode = (Integer) result._get(List.of("responseHeader", "status"), null);
       if (statusCode == 0) {
         if (value != null) {
           echo("Successfully " + action + " " + property + " to " + value);

@@ -23,20 +23,23 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -101,7 +104,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               .setNumSubShards(10);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards > 8");
-    } catch (SolrClient.RemoteSolrException ex) {
+    } catch (RemoteSolrException ex) {
       assertTrue(
           ex.getMessage()
               .contains("A shard can only be split into 2 to 8 subshards in one split request."));
@@ -114,7 +117,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               .setNumSubShards(1);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards < 2");
-    } catch (SolrClient.RemoteSolrException ex) {
+    } catch (RemoteSolrException ex) {
       assertTrue(
           ex.getMessage()
               .contains(
@@ -226,18 +229,10 @@ public class SplitShardTest extends SolrCloudTestCase {
       if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
-        SolrClient replicaClient = getHttpSolrClient(replica);
-        long numFound;
-        try {
-          numFound =
-              replicaClient
-                  .query(params("q", "*:*", "distrib", "false"))
-                  .getResults()
-                  .getNumFound();
-          log.info("Replica count={} for {}", numFound, replica);
-        } finally {
-          replicaClient.close();
-        }
+        SolrClient replicaClient = cluster.getSolrClient(replica);
+        long numFound =
+            replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
+        log.info("Replica count={} for {}", numFound, replica);
         if (lastReplicaCount >= 0) {
           assertEquals("Replica doc count for " + replica, lastReplicaCount, numFound);
         }
@@ -260,10 +255,13 @@ public class SplitShardTest extends SolrCloudTestCase {
         new ConcurrentHashMap<>(); // what the index should contain
     final AtomicBoolean doIndex = new AtomicBoolean(true);
     final AtomicInteger docsIndexed = new AtomicInteger();
+    List<CountDownLatch> threadLatches = Collections.synchronizedList(new ArrayList<>());
     Thread[] indexThreads = new Thread[nThreads];
     try {
 
       for (int i = 0; i < nThreads; i++) {
+        int threadIndex = i;
+        threadLatches.add(new CountDownLatch(10));
         indexThreads[i] =
             new Thread(
                 () -> {
@@ -289,6 +287,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                       fail(e.getMessage());
                       break;
                     }
+                    threadLatches.get(threadIndex).countDown();
                   }
                 });
       }
@@ -297,8 +296,12 @@ public class SplitShardTest extends SolrCloudTestCase {
         thread.start();
       }
 
-      Thread.sleep(100); // wait for a few docs to be indexed before invoking split
+      // wait for a few docs (10 requests per threads) to be indexed before invoking split
+      for (int i = 0; i < nThreads; i++) {
+        assertTrue(threadLatches.get(i).await(30, TimeUnit.SECONDS));
+      }
       int docCount = model.size();
+      assertTrue("no docs indexed", docCount > 0);
 
       CollectionAdminRequest.SplitShard splitShard =
           CollectionAdminRequest.splitShard(collectionName).setShardName("shard1");
@@ -312,8 +315,14 @@ public class SplitShardTest extends SolrCloudTestCase {
       // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);
 
-      Thread.sleep(100); // wait for a few more docs to be indexed after split
-
+      // wait for a few more docs (10 more requests per thread) to be indexed after split
+      // Reset the latch of each thread, and them wait for all of them
+      for (int i = 0; i < nThreads; i++) {
+        threadLatches.set(i, new CountDownLatch(10));
+      }
+      for (int i = 0; i < nThreads; i++) {
+        assertTrue(threadLatches.get(i).await(30, TimeUnit.SECONDS));
+      }
     } finally {
       // shut down the indexers
       doIndex.set(false);

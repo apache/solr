@@ -24,28 +24,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.apache.lucene.search.TotalHits.Relation;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -71,7 +67,6 @@ import org.apache.solr.servlet.SolrRequestParsers;
 public class EmbeddedSolrServer extends SolrClient {
 
   protected final CoreContainer coreContainer;
-  protected final String coreName;
   private final SolrRequestParsers _parser;
   private final RequestWriterSupplier supplier;
   private boolean containerIsLocal = false;
@@ -147,7 +142,7 @@ public class EmbeddedSolrServer extends SolrClient {
       throw new NullPointerException("CoreContainer instance required");
     }
     this.coreContainer = coreContainer;
-    this.coreName = coreName;
+    this.defaultCollection = coreName;
     _parser = new SolrRequestParsers(null);
     this.supplier = supplier;
   }
@@ -170,7 +165,7 @@ public class EmbeddedSolrServer extends SolrClient {
         SolrQueryRequest req =
             _parser.buildRequestFrom(
                 null, getParams(request), getContentStreams(request), request.getUserPrincipal());
-        req.getContext().put("httpMethod", request.getMethod().name());
+        req.getContext().put("httpMethod", request.getMethod());
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
@@ -184,7 +179,7 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     if (coreName == null) {
-      coreName = this.coreName;
+      coreName = this.defaultCollection;
       if (coreName == null) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -223,7 +218,7 @@ public class EmbeddedSolrServer extends SolrClient {
               .buildRequestFrom(
                   core, params, getContentStreams(request), request.getUserPrincipal());
       req.getContext().put(PATH, path);
-      req.getContext().put("httpMethod", request.getMethod().name());
+      req.getContext().put("httpMethod", request.getMethod());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
@@ -248,13 +243,8 @@ public class EmbeddedSolrServer extends SolrClient {
     if (responseParser == null) {
       responseParser = new JavaBinResponseParser();
     }
-    var addParams =
-        new MapSolrParams(
-            Map.of(
-                CommonParams.WT,
-                responseParser.getWriterType(),
-                CommonParams.VERSION,
-                responseParser.getVersion()));
+    var addParams = SolrParams.of(CommonParams.WT, responseParser.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, responseParser.getAdditionalRequestParams());
     return SolrParams.wrapDefaults(addParams, params);
   }
 
@@ -317,12 +307,16 @@ public class EmbeddedSolrServer extends SolrClient {
   /** A list of streams, non-null. */
   private List<ContentStream> getContentStreams(SolrRequest<?> request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return List.of();
-    if (request instanceof ContentStreamUpdateRequest csur) {
-      final Collection<ContentStream> cs = csur.getContentStreams();
-      if (cs != null) return new ArrayList<>(cs);
-    }
 
     final RequestWriter.ContentWriter contentWriter = request.getContentWriter(null);
+
+    if (contentWriter instanceof RequestWriter.MultipartContentWriter multipartWriter) {
+      List<ContentStream> parts = new ArrayList<>();
+      for (RequestWriter.NamedPart part : multipartWriter.getParts()) {
+        parts.add(bufferedContentStream(part.name, part.writer));
+      }
+      return parts;
+    }
 
     String cType;
     final Utils.BAOS baos = new Utils.BAOS();
@@ -353,6 +347,28 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     return List.of();
+  }
+
+  private static ContentStream bufferedContentStream(
+      String name, RequestWriter.ContentWriter writer) throws IOException {
+    final Utils.BAOS baos = new Utils.BAOS();
+    writer.write(baos);
+    final byte[] buf = baos.toByteArray();
+    return new ContentStreamBase() {
+      {
+        setName(name);
+      }
+
+      @Override
+      public InputStream getStream() throws IOException {
+        return new ByteArrayInputStream(buf);
+      }
+
+      @Override
+      public String getContentType() {
+        return writer.getContentType();
+      }
+    };
   }
 
   private JavaBinCodec createJavaBinCodec(

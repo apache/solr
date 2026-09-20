@@ -58,16 +58,11 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.zkclienttimeout", "45000");
+    System.setProperty("solr.zookeeper.client.timeout", "45000");
     System.setProperty("distribUpdateSoTimeout", "15000");
 
     // these tests need to be isolated, so we don't share the minicluster
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .useOtherCollectionConfigSetExecution()
-        // Some tests (this one) use "the other" cluster Collection API execution strategy to
-        // increase coverage
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @After
@@ -491,7 +486,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   /**
    * see SOLR-16848 working around a timing issue where the callback will be faster than the
-   * dispatchFilter's init
+   * SolrServlet's init
    */
   private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
       throws InterruptedException {
@@ -543,7 +538,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     waitForState(
         "Waiting for single replica in state",
         collectionName,
-        collectionState -> collectionState.getReplicas().size() == 1);
+        collectionState -> collectionState.replicaStream().count() == 1);
   }
 
   /**

@@ -103,19 +103,19 @@ public class PostTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the collection.")
-          .build();
+          .get();
 
   private static final Option SKIP_COMMIT_OPTION =
       Option.builder()
           .longOpt("skip-commit")
           .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
-          .build();
+          .get();
 
   private static final Option OPTIMIZE_OPTION =
       Option.builder("o")
           .longOpt("optimize")
           .desc("Issue an optimize at end of posting documents.")
-          .build();
+          .get();
 
   private static final Option MODE_OPTION =
       Option.builder()
@@ -124,7 +124,7 @@ public class PostTool extends ToolBase {
           .argName("mode")
           .desc(
               "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
-          .build();
+          .get();
 
   private static final Option RECURSIVE_OPTION =
       Option.builder("r")
@@ -133,7 +133,7 @@ public class PostTool extends ToolBase {
           .argName("recursive")
           .type(Integer.class)
           .desc("For web crawl, how deep to go. default: 1")
-          .build();
+          .get();
 
   private static final Option DELAY_OPTION =
       Option.builder("d")
@@ -143,7 +143,7 @@ public class PostTool extends ToolBase {
           .type(Integer.class)
           .desc(
               "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
-          .build();
+          .get();
 
   private static final Option TYPE_OPTION =
       Option.builder("t")
@@ -151,7 +151,7 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("content-type")
           .desc("Specify a specific mimetype to use, such as application/json.")
-          .build();
+          .get();
 
   private static final Option FILE_TYPES_OPTION =
       Option.builder("ft")
@@ -159,7 +159,7 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("<type>[,<type>,...]")
           .desc("default: " + DEFAULT_FILE_TYPES)
-          .build();
+          .get();
 
   private static final Option PARAMS_OPTION =
       Option.builder()
@@ -167,21 +167,21 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("<key>=<value>[&<key>=<value>...]")
           .desc("Values must be URL-encoded; these pass through to Solr update request.")
-          .build();
+          .get();
 
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
           .desc(
               "sends application/json content as Solr commands to /update instead of /update/json/docs.")
-          .build();
+          .get();
 
   private static final Option DRY_RUN_OPTION =
       Option.builder()
           .longOpt("dry-run")
           .desc(
               "Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
-          .build();
+          .get();
 
   // Input args
   int recursive = 0;
@@ -244,6 +244,42 @@ public class PostTool extends ToolBase {
     mimeMap.put("log", "text/plain");
   }
 
+  /**
+   * Options controlling how posted content and the update request are shaped.
+   *
+   * @param type content type given by the user, or null to auto-detect from file endings
+   * @param format {@link #FORMAT_SOLR} when the input is Solr-formatted JSON commands, else ""
+   * @param params raw URL-encoded {@code key=value} pairs to pass through to the update request
+   */
+  record ContentOptions(String type, String format, String params) {}
+
+  /**
+   * Options controlling traversal of directories (files mode) and links (web mode).
+   *
+   * @param fileTypes comma-separated file endings to consider
+   * @param delay seconds to pause between posts
+   * @param recursive max recursion depth, 0 to disable
+   */
+  record CrawlOptions(String fileTypes, int delay, int recursive) {}
+
+  /** Index maintenance actions to run after posting completes. */
+  record UpdateOptions(boolean commit, boolean optimize) {}
+
+  /**
+   * Parameters for the post command, independent of the command line parser.
+   *
+   * @param args positional arguments; files, directories, urls or literal data depending on mode
+   */
+  record PostToolParams(
+      URI solrUpdateUrl,
+      String mode,
+      boolean dryRun,
+      String credentials,
+      String[] args,
+      ContentOptions content,
+      CrawlOptions crawl,
+      UpdateOptions update) {}
+
   public PostTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -267,57 +303,67 @@ public class PostTool extends ToolBase {
         .addOption(PARAMS_OPTION)
         .addOption(FORMAT_OPTION)
         .addOption(DRY_RUN_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    solrUpdateUrl = null;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
-      String url =
-          CLIUtils.normalizeSolrUrl(cli)
-              + "/solr/"
-              + cli.getOptionValue(COLLECTION_NAME_OPTION)
-              + "/update";
-      solrUpdateUrl = new URI(url);
-
-    } else {
-      String url =
-          CLIUtils.getDefaultSolrUrl()
-              + "/solr/"
-              + cli.getOptionValue(COLLECTION_NAME_OPTION)
-              + "/update";
-      solrUpdateUrl = new URI(url);
-    }
+    String baseUrl =
+        CLIUtils.hasConnectionOption(cli)
+            ? CLIUtils.normalizeSolrUrl(cli)
+            : CLIUtils.getDefaultSolrUrl();
+    URI updateUrl =
+        new URI(baseUrl + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION) + "/update");
 
     String mode = cli.getOptionValue(MODE_OPTION, DATA_MODE_FILES);
+    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
 
-    dryRun = cli.hasOption(DRY_RUN_OPTION);
+    PostToolParams postParams =
+        new PostToolParams(
+            updateUrl,
+            mode,
+            cli.hasOption(DRY_RUN_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getArgs(),
+            new ContentOptions(
+                cli.getOptionValue(TYPE_OPTION),
+                cli.hasOption(FORMAT_OPTION)
+                    ? FORMAT_SOLR
+                    : "", // i.e not solr formatted json commands
+                cli.getOptionValue(PARAMS_OPTION, "")),
+            new CrawlOptions(
+                cli.getOptionValue(FILE_TYPES_OPTION, PostTool.DEFAULT_FILE_TYPES),
+                cli.getParsedOptionValue(DELAY_OPTION, defaultDelay),
+                cli.getParsedOptionValue(RECURSIVE_OPTION, 1)),
+            new UpdateOptions(!cli.hasOption(SKIP_COMMIT_OPTION), cli.hasOption(OPTIMIZE_OPTION)));
+    postDocuments(postParams);
+  }
 
-    if (cli.hasOption(TYPE_OPTION)) {
-      type = cli.getOptionValue(TYPE_OPTION);
+  /** Seeds the tool state from the given parameters and runs the post job. */
+  void postDocuments(PostToolParams postParams) throws Exception {
+    solrUpdateUrl = postParams.solrUpdateUrl();
+    dryRun = postParams.dryRun();
+
+    if (postParams.content().type() != null) {
+      type = postParams.content().type();
       // Turn off automatically looking up the mimetype in favour of what is passed in.
       auto = false;
     }
-    format =
-        cli.hasOption(FORMAT_OPTION) ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
-    fileTypes = cli.getOptionValue(FILE_TYPES_OPTION, PostTool.DEFAULT_FILE_TYPES);
-
-    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = cli.getParsedOptionValue(DELAY_OPTION, defaultDelay);
-    recursive = cli.getParsedOptionValue(RECURSIVE_OPTION, 1);
+    format = postParams.content().format();
+    params = postParams.content().params();
+    fileTypes = postParams.crawl().fileTypes();
+    delay = postParams.crawl().delay();
+    recursive = postParams.crawl().recursive();
 
     out = isVerbose() ? CLIO.getOutStream() : null;
-    commit = !cli.hasOption(SKIP_COMMIT_OPTION);
-    optimize = cli.hasOption(OPTIMIZE_OPTION);
+    commit = postParams.update().commit();
+    optimize = postParams.update().optimize();
 
-    credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    args = cli.getArgs();
+    credentials = postParams.credentials();
+    args = postParams.args();
 
-    params = cli.getOptionValue(PARAMS_OPTION, "");
-
-    execute(mode);
+    execute(postParams.mode());
   }
 
   /**
@@ -326,16 +372,17 @@ public class PostTool extends ToolBase {
    */
   public void execute(String mode) throws SolrServerException, IOException {
     final RTimer timer = new RTimer();
-    if (PostTool.DATA_MODE_FILES.equals(mode)) {
-      doFilesMode();
-    } else if (DATA_MODE_ARGS.equals(mode)) {
-      doArgsMode(args);
-    } else if (PostTool.DATA_MODE_WEB.equals(mode)) {
-      doWebMode();
-    } else if (DATA_MODE_STDIN.equals(mode)) {
-      doStdinMode();
-    } else {
-      return;
+    switch (mode) {
+      case PostTool.DATA_MODE_FILES -> doFilesMode();
+      case DATA_MODE_ARGS -> doArgsMode(args);
+      case PostTool.DATA_MODE_WEB -> doWebMode();
+      case DATA_MODE_STDIN -> doStdinMode();
+      case null -> {
+        return;
+      }
+      default -> {
+        return;
+      }
     }
 
     if (optimize) {
@@ -710,7 +757,7 @@ public class PostTool extends ToolBase {
    */
   protected static String computeFullUrl(URL baseUrl, String link)
       throws MalformedURLException, URISyntaxException {
-    if (link == null || link.length() == 0) {
+    if (link == null || link.isEmpty()) {
       return null;
     }
     if (!link.startsWith("http")) {
@@ -799,7 +846,7 @@ public class PostTool extends ToolBase {
     String[] pa = param.split("&");
     StringBuilder urlBuilder = new StringBuilder(url);
     for (String p : pa) {
-      if (p.trim().length() == 0) {
+      if (p.trim().isEmpty()) {
         continue;
       }
       String[] kv = p.split("=");
@@ -1285,7 +1332,9 @@ public class PostTool extends ToolBase {
         l = arr[0].trim();
         if (l.startsWith(DISALLOW)) {
           l = l.substring(DISALLOW.length()).trim();
-          if (l.length() == 0) continue;
+          if (l.isEmpty()) {
+            continue;
+          }
           disallows.add(l);
         }
       }

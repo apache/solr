@@ -16,16 +16,10 @@
  */
 package org.apache.solr.ltr;
 
-import org.apache.solr.search.SolrIndexSearcher;
-
 /**
  * FeatureLogger can be registered in a model and provide a strategy for logging the feature values.
  */
 public abstract class FeatureLogger {
-
-  /** the name of the cache using for storing the feature value */
-  private final String fvCacheName;
-
   public enum FeatureFormat {
     DENSE,
     SPARSE
@@ -35,54 +29,15 @@ public abstract class FeatureLogger {
 
   protected Boolean logAll;
 
-  protected FeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll) {
-    this.fvCacheName = fvCacheName;
+  protected boolean logFeatures;
+
+  protected FeatureLogger(FeatureFormat f, Boolean logAll) {
     this.featureFormat = f;
     this.logAll = logAll;
+    this.logFeatures = false;
   }
 
-  /**
-   * Log will be called every time that the model generates the feature values for a document and a
-   * query.
-   *
-   * @param docid Solr document id whose features we are saving
-   * @param featuresInfo List of all the {@link LTRScoringQuery.FeatureInfo} objects which contain
-   *     name and value for all the features triggered by the result set
-   * @return true if the logger successfully logged the features, false otherwise.
-   */
-  public boolean log(
-      int docid,
-      LTRScoringQuery scoringQuery,
-      SolrIndexSearcher searcher,
-      LTRScoringQuery.FeatureInfo[] featuresInfo) {
-    final String featureVector = makeFeatureVector(featuresInfo);
-    if (featureVector == null) {
-      return false;
-    }
-
-    if (null == searcher.cacheInsert(fvCacheName, fvCacheKey(scoringQuery, docid), featureVector)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public abstract String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
-
-  private static int fvCacheKey(LTRScoringQuery scoringQuery, int docid) {
-    return scoringQuery.hashCode() + (31 * docid);
-  }
-
-  /**
-   * populate the document with its feature vector
-   *
-   * @param docid Solr document id
-   * @return String representation of the list of features calculated for docid
-   */
-  public String getFeatureVector(
-      int docid, LTRScoringQuery scoringQuery, SolrIndexSearcher searcher) {
-    return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
-  }
+  public abstract String printFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
 
   public Boolean isLoggingAll() {
     return logAll;
@@ -90,5 +45,13 @@ public abstract class FeatureLogger {
 
   public void setLogAll(Boolean logAll) {
     this.logAll = logAll;
+  }
+
+  public void setLogFeatures(boolean logFeatures) {
+    this.logFeatures = logFeatures;
+  }
+
+  public boolean isLogFeatures() {
+    return logFeatures;
   }
 }

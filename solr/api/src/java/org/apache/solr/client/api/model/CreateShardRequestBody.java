@@ -40,7 +40,14 @@ public class CreateShardRequestBody {
   @JsonProperty("nodeSet")
   public List<String> nodeSet;
 
-  @JsonProperty public Boolean waitForFinalState;
+  /**
+   * @deprecated Solr is moving toward always waiting for final state, with no option to opt out;
+   *     once that happens, this parameter will have no effect and will likely be removed. See
+   *     SOLR-17712.
+   */
+  @JsonProperty
+  @Deprecated(since = "9.10")
+  public Boolean waitForFinalState;
 
   @JsonProperty public Boolean followAliases;
 

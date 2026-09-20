@@ -51,7 +51,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
     System.setProperty("solr.tests.ramBufferSizeMB", "5000");
 
-    System.setProperty("enable.update.log", "false"); // no _version_ in our schema
+    System.setProperty("solr.index.updatelog.enabled", "false"); // no _version_ in our schema
     // segments API shouldn't depend on _version_ or ulog
     initCore("solrconfig.xml", "schema12.xml");
 
@@ -91,16 +91,13 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     int finalRefCount = iwRef.getRefcount();
     iwRef.decref();
     assertEquals("IW refcount mismatch", initialRefCount, finalRefCount);
-    systemClearPropertySolrTestsMergePolicyFactory();
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.tests.ramBufferSizeMB");
   }
 
   @Test
   public void testSegmentInfos() {
     assertQ(
         "Unexpected number of segments returned",
-        req("qt", "/admin/segments"),
+        reqWithPath("/admin/segments"),
         NUM_SEGMENTS + "=count(//lst[@name='segments']/lst)");
   }
 
@@ -108,7 +105,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   public void testSegmentInfosVersion() {
     assertQ(
         "Unexpected number of segments returned",
-        req("qt", "/admin/segments"),
+        reqWithPath("/admin/segments"),
         NUM_SEGMENTS
             + "=count(//lst[@name='segments']/lst/str[@name='version'][.='"
             + Version.LATEST
@@ -132,14 +129,15 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
 
               return null;
             });
-    assertQ("Unexpected segment names returned", req("qt", "/admin/segments"), segmentNamePatterns);
+    assertQ(
+        "Unexpected segment names returned", reqWithPath("/admin/segments"), segmentNamePatterns);
   }
 
   @Test
   public void testSegmentInfosData() {
     assertQ(
         "Unexpected document counts in result",
-        req("qt", "/admin/segments"),
+        reqWithPath("/admin/segments"),
         // #Document
         (DOC_COUNT * 2) + "=sum(//lst[@name='segments']/lst/int[@name='size'])",
         // #Deletes
@@ -150,7 +148,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   public void testCoreInfo() {
     assertQ(
         "Missing core info",
-        req("qt", "/admin/segments", "coreInfo", "true"),
+        reqWithPath("/admin/segments", "coreInfo", "true"),
         "boolean(//lst[@name='info']/lst[@name='core'])");
   }
 
@@ -196,7 +194,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
             });
     assertQ(
         "Unexpected field infos returned",
-        req("qt", "/admin/segments", "fieldInfo", "true"),
+        reqWithPath("/admin/segments", "fieldInfo", "true"),
         segmentNamePatterns);
   }
 }

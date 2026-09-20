@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,18 +36,13 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     // the default is 180s and our waitForState times out in 90s,
     // so we lower this so that we can still test timeouts
     System.setProperty("leaderConflictResolveWait", "5000");
-    System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
+    System.setProperty("solr.cloud.prep.recovery.read.timeout.additional.ms", "1000");
 
     configureCluster(2)
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
-  }
-
-  @AfterClass
-  public static void tearCluster() {
-    System.clearProperty("leaderConflictResolveWait");
   }
 
   @Test

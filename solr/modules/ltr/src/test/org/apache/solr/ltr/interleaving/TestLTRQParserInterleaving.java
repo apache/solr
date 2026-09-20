@@ -17,7 +17,7 @@
 package org.apache.solr.ltr.interleaving;
 
 import java.util.Random;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;

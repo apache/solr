@@ -18,20 +18,20 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.response.SmileWriterTest;
 import org.apache.solr.search.json.TestJsonRequest;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,8 +42,8 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -61,7 +61,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableUrlAllowList();
   }
 
   @Test
@@ -75,10 +74,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
               throws Exception {
             QueryRequest query = new QueryRequest(args);
             query.setResponseParser(new SmileResponseParser());
-            String path = args.get("qt");
-            if (path != null) {
-              query.setPath(path);
-            }
             NamedList<Object> rsp = client.request(query);
             @SuppressWarnings({"rawtypes"})
             Map m = rsp.asMap(5);
@@ -106,9 +101,12 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       return new NamedList(m);
     }
 
+    private static final Set<String> CONTENT_TYPES =
+        Set.of("application/x-jackson-smile", "application/octet-stream");
+
     @Override
-    public Collection<String> getContentTypes() {
-      return Set.of("application/x-jackson-smile", "application/octet-stream");
+    public Set<String> getContentTypes() {
+      return CONTENT_TYPES;
     }
   }
 }

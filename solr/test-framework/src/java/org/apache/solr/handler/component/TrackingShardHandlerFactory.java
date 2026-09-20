@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -157,7 +156,6 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
         ShardHandlerFactory factory = container.getShardHandlerFactory();
         assert factory instanceof TrackingShardHandlerFactory
             : "not a TrackingShardHandlerFactory: " + factory.getClass();
-        @SuppressWarnings("resource")
         TrackingShardHandlerFactory trackingShardHandlerFactory =
             (TrackingShardHandlerFactory) factory;
         trackingShardHandlerFactory.setTrackingQueue(queue);
@@ -278,7 +276,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
           }
         }
       }
-      return Collections.emptyList();
+      return List.of();
     }
 
     /**

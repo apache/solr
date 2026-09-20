@@ -36,7 +36,6 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +45,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
@@ -265,6 +264,8 @@ public class TimeRoutedAlias extends RoutedAlias {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // Aliases is replaced wholesale, so identity means "possibly changed"
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases = zkStateReader.getAliases();
     if (this.parsedCollectionsAliases != aliases) {
@@ -590,7 +591,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   private List<Action> calcDeletes(List<Action> actions) {
     final String autoDeleteAgeMathStr = this.getAutoDeleteAgeMath();
     if (autoDeleteAgeMathStr == null || actions.size() == 0) {
-      return Collections.emptyList();
+      return List.of();
     }
     if (actions.size() > 1) {
       throw new IllegalStateException(
@@ -673,9 +674,9 @@ public class TimeRoutedAlias extends RoutedAlias {
       String mostRecentTime = mostRecentCol.substring(getAliasName().length() + sepLen);
       Instant parsed = DATE_TIME_FORMATTER.parse(mostRecentTime, Instant::from);
       String nextCol = calcNextCollection(parsed);
-      return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
+      return List.of(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
     } else {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 

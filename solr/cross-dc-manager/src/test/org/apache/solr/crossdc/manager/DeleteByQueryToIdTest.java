@@ -16,6 +16,8 @@
  */
 package org.apache.solr.crossdc.manager;
 
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.ByteArrayOutputStream;
@@ -26,12 +28,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -42,19 +46,20 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
 import org.apache.solr.crossdc.manager.consumer.KafkaCrossDcConsumer;
 import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -66,10 +71,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String VERSION_FIELD = "_version_";
-
-  private static final int NUM_BROKERS = 1;
-  public static EmbeddedKafkaCluster kafkaCluster;
+  @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -93,16 +95,13 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     Properties config = new Properties();
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+    }
 
     Properties props = new Properties();
 
@@ -113,7 +112,7 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
             .configure();
 
     props.setProperty("solr.crossdc.topicName", TOPIC);
-    props.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    props.setProperty(BOOTSTRAP_SERVERS, bootstrapServers);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     props.store(baos, "");
@@ -147,7 +146,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
     solrCluster2.getSolrClient().request(createTarget2);
     solrCluster2.waitForActiveCollection(COLLECTION2, 1, 1);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -160,11 +158,12 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
         new Consumer() {
           @Override
           protected CrossDcConsumer getCrossDcConsumer(
-              KafkaCrossDcConf conf, CountDownLatch startLatch) {
-            return new KafkaCrossDcConsumer(conf, startLatch) {
+              KafkaCrossDcConf conf, ConsumerMetrics metrics, CountDownLatch startLatch) {
+            return new KafkaCrossDcConsumer(conf, metrics, startLatch) {
               @Override
               protected SolrMessageProcessor createSolrMessageProcessor() {
-                return new SolrMessageProcessor(solrClient, resubmitRequest -> 0L) {
+                return new SolrMessageProcessor(
+                    metrics, solrClientSupplier, resubmitRequest -> 0L) {
                   @Override
                   public Result<MirroredSolrRequest<?>> handleItem(
                       MirroredSolrRequest<?> mirroredSolrRequest) {
@@ -187,14 +186,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
       consumer.shutdown();
     }
 
-    try {
-      if (kafkaCluster != null) {
-        kafkaCluster.stop();
-      }
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
-    }
-
     if (solrCluster1 != null) {
       solrCluster1.getZkServer().getZkClient().printLayoutToStream(System.out);
       solrCluster1.shutdown();
@@ -206,7 +197,6 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
 
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaCluster = null;
     consumer = null;
   }
 

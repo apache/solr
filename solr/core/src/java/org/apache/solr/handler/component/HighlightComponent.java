@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -212,7 +213,7 @@ public class HighlightComponent extends SearchComponent
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.doHighlights && rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
 
       final Object[] objArr = newHighlightsArray(rb.resultIds.size());
       final String highlightingResponseField = highlightingResponseField();
@@ -240,18 +241,9 @@ public class HighlightComponent extends SearchComponent
     }
   }
 
-  ////////////////////////////////////////////
-  ///  SolrInfoBean
-  ////////////////////////////////////////////
-
   @Override
   public String getDescription() {
     return "Highlighting";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.HIGHLIGHTER;
   }
 
   ////////////////////////////////////////////
@@ -269,7 +261,7 @@ public class HighlightComponent extends SearchComponent
   protected Object[] newHighlightsArray(int size) {
     // Curious why this doesn't trigger an unchecked cast, but maybe the compiler is smart enough to
     // know
-    return (Object[]) Array.newInstance(NamedList.NamedListEntry.class, size);
+    return (Object[]) Array.newInstance(AbstractMap.SimpleEntry.class, size);
   }
 
   protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {

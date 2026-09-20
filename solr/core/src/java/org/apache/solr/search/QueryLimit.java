@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.QueryTimeout;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.component.ShardRequest;
 
 public interface QueryLimit extends QueryTimeout {
   /**
@@ -28,4 +30,16 @@ public interface QueryLimit extends QueryTimeout {
    *     user.
    */
   Object currentValue();
+
+  /**
+   * Allow limit to adjust shard request parameters if needed.
+   *
+   * @return true if the shard request should be skipped because a limit will be tripped after
+   *     sending, during execution.
+   */
+  default boolean adjustShardRequestLimit(
+      ShardRequest sreq, String shard, ModifiableSolrParams params) {
+    // default is to do nothing and process the request
+    return false;
+  }
 }

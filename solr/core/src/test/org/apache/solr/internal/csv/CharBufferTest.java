@@ -141,9 +141,6 @@ public class CharBufferTest extends SolrTestCaseJ4 {
   public void testAppendNull() {
     CharBuffer buffer = new CharBuffer(8);
 
-    buffer.append((StringBuffer) null);
-    assertEquals("", buffer.toString());
-
     buffer.append((String) null);
     assertEquals("", buffer.toString());
 

@@ -21,9 +21,12 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -33,6 +36,9 @@ import org.slf4j.LoggerFactory;
 @SuppressForbidden(reason = "load properties from byte array")
 public class ConfUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String KAFKA_ENV_PREFIX = "SOLR_CROSSDC_KAFKA_";
+  public static final String KAFKA_PROP_PREFIX = "solr.crossdc.kafka.";
 
   public static void fillProperties(SolrZkClient solrClient, Map<String, Object> properties) {
     // fill in from environment
@@ -47,6 +53,9 @@ public class ConfUtil {
         properties.put(configKey.getKey(), val);
       }
     }
+    // fill in aux Kafka env with prefix
+    addAdditionalKafkaProperties(properties, env, System.getProperties());
+
     // fill in from system properties
     for (ConfigProperty configKey : KafkaCrossDcConf.CONFIG_PROPERTIES) {
       String val = System.getProperty(configKey.getKey());
@@ -54,19 +63,19 @@ public class ConfUtil {
         properties.put(configKey.getKey(), val);
       }
     }
+
     Properties zkProps = new Properties();
     if (solrClient != null) {
       try {
         if (solrClient.exists(
-            System.getProperty(CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES),
-            true)) {
+            System.getProperty(
+                CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES))) {
           byte[] data =
               solrClient.getData(
                   System.getProperty(
                       CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES),
                   null,
-                  null,
-                  true);
+                  null);
 
           if (data == null) {
             log.error("{} file in Zookeeper has no data", CrossDcConf.CROSSDC_PROPERTIES);
@@ -90,6 +99,90 @@ public class ConfUtil {
             "Exception looking for CrossDC configuration in Zookeeper",
             e);
       }
+    }
+    // normalize any left aux properties by stripping prefixes
+    if (!properties.isEmpty()) {
+      Set<String> keys = new HashSet<>(properties.keySet());
+      keys.forEach(
+          key -> {
+            Object value = properties.get(key);
+            if (key.startsWith(KAFKA_ENV_PREFIX)) {
+              properties.remove(key);
+              putIfNonBlankAndMissing(properties, normalizeKafkaEnvKey(key), value);
+            } else if (key.startsWith(KAFKA_PROP_PREFIX)) {
+              properties.remove(key);
+              putIfNonBlankAndMissing(properties, normalizeKafkaSysPropKey(key), value);
+            }
+          });
+    }
+  }
+
+  // System properties override environment variables for pass-through Kafka properties.
+  // Existing explicit keys in properties are preserved.
+  static void addAdditionalKafkaProperties(
+      Map<String, Object> properties, Map<String, String> env, Properties sysProps) {
+    Set<String> envDerivedKeys = new LinkedHashSet<>();
+    env.forEach(
+        (key, val) -> {
+          if (!key.startsWith(KAFKA_ENV_PREFIX)) {
+            return;
+          }
+          String normalized = normalizeKafkaEnvKey(key);
+          if (!isValidAdditionalProperty(normalized, val)) {
+            return;
+          }
+          Object existingValue = properties.get(normalized);
+          if (isBlankValue(existingValue)) {
+            properties.put(normalized, val);
+            envDerivedKeys.add(normalized);
+          }
+        });
+
+    sysProps.forEach(
+        (key, val) -> {
+          String propKey = key.toString();
+          if (!propKey.startsWith(KAFKA_PROP_PREFIX)) {
+            return;
+          }
+          String normalized = normalizeKafkaSysPropKey(propKey);
+          if (!isValidAdditionalProperty(normalized, val)) {
+            return;
+          }
+          Object existingValue = properties.get(normalized);
+          if (isBlankValue(existingValue) || envDerivedKeys.contains(normalized)) {
+            properties.put(normalized, val.toString());
+          }
+        });
+  }
+
+  public static String normalizeKafkaEnvKey(String key) {
+    if (key.startsWith(KAFKA_ENV_PREFIX)) {
+      return key.substring(KAFKA_ENV_PREFIX.length()).toLowerCase(Locale.ROOT).replace('_', '.');
+    } else {
+      return key;
+    }
+  }
+
+  public static String normalizeKafkaSysPropKey(String key) {
+    if (key.startsWith(KAFKA_PROP_PREFIX)) {
+      return key.substring(KAFKA_PROP_PREFIX.length()).toLowerCase(Locale.ROOT);
+    } else {
+      return key;
+    }
+  }
+
+  private static boolean isValidAdditionalProperty(String key, Object value) {
+    return key != null && !key.isBlank() && !isBlankValue(value);
+  }
+
+  private static boolean isBlankValue(Object value) {
+    return value == null || (value instanceof String && ((String) value).isBlank());
+  }
+
+  private static void putIfNonBlankAndMissing(
+      Map<String, Object> properties, String key, Object value) {
+    if (isValidAdditionalProperty(key, value) && properties.get(key) == null) {
+      properties.put(key, value);
     }
   }
 

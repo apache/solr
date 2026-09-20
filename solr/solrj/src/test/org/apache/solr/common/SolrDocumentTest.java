@@ -143,7 +143,7 @@ public class SolrDocumentTest extends SolrTestCase {
     } catch (UnsupportedOperationException ex) {
     }
     try {
-      doc.getFieldValueMap().put("key", Collections.emptyList());
+      doc.getFieldValueMap().put("key", List.of());
       fail("should be unsupported!");
     } catch (UnsupportedOperationException ex) {
     }

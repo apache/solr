@@ -1,0 +1,10 @@
+title: Fixed inadvertent suppression of exceptions in the background tasks across
+  the codebase. For certain tasks that were scheduled via ExecutorService#submit,
+  the results of the task execution were never examined which led to the suppression
+  of exceptions.
+type: other
+authors:
+- name: Andrey Bozhko
+links:
+- name: SOLR-17448
+  url: https://issues.apache.org/jira/browse/SOLR-17448

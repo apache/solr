@@ -21,10 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,6 +107,27 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     } finally {
       if (!testFinished) {
         printLayoutOnTearDown = true;
+      }
+    }
+  }
+
+  @Test
+  public void testPullReplica() throws Exception {
+    try {
+      CollectionAdminRequest.addReplicaToShard(DEFAULT_COLLECTION, "shard1")
+          .setType(Replica.Type.PULL)
+          .process(cloudClient);
+    } finally {
+      List<Replica> pullReplicas =
+          cloudClient
+              .getClusterStateProvider()
+              .getCollection(DEFAULT_COLLECTION)
+              .getSlice("shard1")
+              .getReplicas(r -> r.getType().equals(Replica.Type.PULL));
+      waitForRecoveriesToFinish(DEFAULT_COLLECTION, true);
+      for (Replica replica : pullReplicas) {
+        CollectionAdminRequest.deleteReplica(DEFAULT_COLLECTION, "shard1", replica.getName())
+            .process(cloudClient);
       }
     }
   }
@@ -313,9 +337,9 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
       expectedIds.put(strs.get(i), Long.valueOf(verS.get(i)));
     }
 
-    solrClient.query(params("qt", "/get", "ids", ids));
+    new QueryRequest("/get", params("ids", ids)).process(solrClient);
 
-    QueryResponse rsp = cloudClient.query(params("qt", "/get", "ids", ids));
+    QueryResponse rsp = new QueryRequest("/get", params("ids", ids)).process(cloudClient);
     Map<String, Object> obtainedIds = new HashMap<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.put((String) doc.get("id"), doc.get(vfield));

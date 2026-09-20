@@ -51,7 +51,7 @@ public class TestLogLevelAnnotations extends SolrTestCase {
    * modifying the log4j run time configuration. The <code>@LogLevel</code> configuration of this
    * class <em>should</em> not affect the "root" Logger, but setting this in static class
    * initialization protect us (as best we can) against the possibility that it <em>might</em> due
-   * to an unforseen (future) bug.
+   * to an unforeseen (future) bug.
    *
    * @see #checkLogLevelsBeforeClass
    */

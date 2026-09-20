@@ -35,17 +35,15 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
-import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
+import org.apache.solr.spelling.SpellCheckToken;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
-import org.apache.solr.spelling.Token;
 import org.apache.solr.spelling.suggest.fst.FSTLookupFactory;
-import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
 import org.apache.solr.spelling.suggest.tst.TSTLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,10 +89,7 @@ public class Suggester extends SolrSpellChecker {
     lookupImpl = (String) config.get(LOOKUP_IMPL);
 
     // support the old classnames without -Factory for config file backwards compatibility.
-    if (lookupImpl == null
-        || "org.apache.solr.spelling.suggest.jaspell.JaspellLookup".equals(lookupImpl)) {
-      lookupImpl = JaspellLookupFactory.class.getName();
-    } else if ("org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
+    if (lookupImpl == null || "org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
       lookupImpl = TSTLookupFactory.class.getName();
     } else if ("org.apache.solr.spelling.suggest.fst.FSTLookup".equals(lookupImpl)) {
       lookupImpl = FSTLookupFactory.class.getName();
@@ -199,22 +194,17 @@ public class Suggester extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    log.debug("getSuggestions: {}", options.tokens);
     if (lookup == null) {
       log.info("Lookup is null - invoke spellchecker.build first");
       return EMPTY_RESULT;
     }
     SpellingResult res = new SpellingResult();
-    CharsRef scratch = new CharsRef();
-    for (Token t : options.tokens) {
-      scratch.chars = t.buffer();
-      scratch.offset = 0;
-      scratch.length = t.length();
+    for (SpellCheckToken t : options.tokens) {
       boolean onlyMorePopular =
           (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
               && !(lookup instanceof WFSTCompletionLookup)
               && !(lookup instanceof AnalyzingSuggester);
-      List<LookupResult> suggestions = lookup.lookup(scratch, onlyMorePopular, options.count);
+      List<LookupResult> suggestions = lookup.lookup(t.text(), onlyMorePopular, options.count);
       if (suggestions == null) {
         continue;
       }

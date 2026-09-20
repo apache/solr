@@ -1,0 +1,8 @@
+title: Remove parameter retryOnConnLoss everywhere from the codebase. This parameter
+  was already fully ignored since the move to Curator.
+type: removed
+authors:
+  - name: Pierre Salagnac
+links:
+  - name: SOLR-16116
+    url: https://issues.apache.org/jira/browse/SOLR-16116

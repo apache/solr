@@ -16,11 +16,8 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -28,12 +25,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
 import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -56,24 +51,16 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
       String collName, String snapshotName, boolean followAliases, String asyncId)
       throws Exception {
     final var response = instantiateJerseyResponse(DeleteCollectionSnapshotResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
     final String collectionName = resolveCollectionName(collName, followAliases);
 
-    final ZkNodeProps remoteMessage =
-        createRemoteMessage(collectionName, followAliases, snapshotName, asyncId);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETESNAPSHOT,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.DELETESNAPSHOT,
+        createRemoteMessage(collectionName, followAliases, snapshotName),
+        asyncId);
 
     response.collection = collName;
     response.snapshotName = snapshotName;
@@ -84,15 +71,12 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
   }
 
   public static ZkNodeProps createRemoteMessage(
-      String collectionName, boolean followAliases, String snapshotName, String asyncId) {
+      String collectionName, boolean followAliases, String snapshotName) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETESNAPSHOT.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(CoreAdminParams.COMMIT_NAME, snapshotName);
     remoteMessage.put(FOLLOW_ALIASES, followAliases);
-
-    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

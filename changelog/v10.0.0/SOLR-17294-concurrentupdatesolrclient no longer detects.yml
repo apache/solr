@@ -1,0 +1,8 @@
+title: ConcurrentUpdateSolrClient no longer detects "false-positive" stalls.
+type: fixed
+authors:
+- name: Mark Miller
+- name: Jason Gerlowski
+links:
+- name: SOLR-17294
+  url: https://issues.apache.org/jira/browse/SOLR-17294

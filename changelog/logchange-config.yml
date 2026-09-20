@@ -1,0 +1,96 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# More info about configuration you can find https://github.com/logchange/logchange#configuration
+changelog:
+  heading: This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. [https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc)
+  entryTypes: # you can define custom entry types
+    # Please do not use upgrade_notes type.
+    - key: upgrade_notes
+      order: 1
+    - key: added
+      order: 2
+    - key: changed
+      order: 3
+    - key: fixed
+      order: 4
+    - key: deprecated
+      order: 5
+    - key: removed
+      order: 6
+    - key: dependency_update
+      order: 7
+    - key: security
+      order: 8
+    - key: other
+      order: 9
+  labels:
+    unreleased: unreleased
+    important_notes: Important notes
+    types:
+      entryTypesLabels:
+        added: Added
+        changed: Changed
+        fixed: Fixed
+        deprecated: Deprecated
+        removed: Removed
+        dependency_update: Dependency Upgrades
+        security: Security
+        other: Other
+        # Please do not use upgrade_notes type.
+        upgrade_notes: Upgrade Notes
+      number_of_changes:
+        singular: change
+        plural: changes
+    configuration:
+      heading: Configuration changes
+      type: Type
+      actions:
+        add: Added
+        update: Updated
+        delete: Deleted
+      with_default_value: with default value
+      description: Description
+  templates:
+    entry: "${prefix}${title} ${merge_requests} ${issues} ${links} ${authors}"
+    author: "([${name}](${url}) @${nick})"
+# TODO: Using defaults for now, but want to test templates
+#    version_summary_templates:
+#      - path: version-summary.md
+#    changelog_templates:
+#      - path: CHANGELOG.md
+    # see examples of templates at examples/templates
+    # if you are missing some function, which will simplify your template (f.e getNumberOfEntries())
+    # feel free to create issue or pull request with change
+#    version_summary_templates:
+      # Relative path to the changelog/.templates directory.
+      # Following definition will require from you existence of template at
+      # changelog/.templates/my-version-summary.html
+      # It will create my-version-summary.html in every version directory
+      # changelog/vX.X.X/my-version-summary.html
+      # HOW TO CREATE VERSION SUMMARY TEMPLATE?
+      # Main object is version and its type of https://github.com/logchange/logchange/blob/main/logchange-core/src/main/java/dev/logchange/core/domain/changelog/model/version/ChangelogVersion.java
+#      - path: my-version-summary.html
+#    changelog_templates:
+      # Relative path to the changelog/.templates directory.
+      # Following definition will require from you existence of template at
+      # changelog/.templates/my-changelog.html
+      # It will create my-changelog.html in every version directory
+      # changelog/vX.X.X/my-version-summary.html
+      # HOW TO CREATE CHANGELOG TEMPLATE?
+      # Main object is changelog and its type of https://github.com/logchange/logchange/blob/main/logchange-core/src/main/java/dev/logchange/core/domain/changelog/model/Changelog.java
+#      - path: my-changelog.html

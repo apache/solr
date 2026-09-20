@@ -23,14 +23,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 /** Test for ClusteringComponent's response in Solrj */
-public class TestClusteringResponse extends SolrJettyTestBase {
+public class TestClusteringResponse extends SolrTestCaseJ4 {
 
   @Test
   public void testClusteringResponse() throws Exception {

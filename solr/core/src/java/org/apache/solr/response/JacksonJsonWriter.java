@@ -35,11 +35,16 @@ import org.apache.solr.request.SolrQueryRequest;
 /** A JSON ResponseWriter that uses jackson. */
 public class JacksonJsonWriter implements TextQueryResponseWriter {
 
+  protected static final DefaultPrettyPrinter.Indenter SMALL_ARRAY_IDENTIFIER =
+      DefaultPrettyPrinter.NopIndenter.instance;
+  protected static final DefaultPrettyPrinter.Indenter LARGE_ARRAY_IDENTIFIER =
+      new DefaultIndenter().withLinefeed("\n");
+
   protected final JsonFactory jsonfactory;
   protected static final DefaultPrettyPrinter pretty =
       new DefaultPrettyPrinter()
           .withoutSpacesInObjectEntries()
-          .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance)
+          .withArrayIndenter(SMALL_ARRAY_IDENTIFIER)
           .withObjectIndenter(new DefaultIndenter().withLinefeed("\n"));
 
   public JacksonJsonWriter() {
@@ -95,12 +100,16 @@ public class JacksonJsonWriter implements TextQueryResponseWriter {
   public static class WriterImpl extends JSONWriter {
 
     protected JsonGenerator gen;
+    private final DefaultPrettyPrinter prettyPrinter;
 
     public WriterImpl(SolrQueryRequest req, SolrQueryResponse rsp, JsonGenerator generator) {
       super(null, req, rsp);
       gen = generator;
       if (doIndent) {
-        gen.setPrettyPrinter(pretty.createInstance());
+        prettyPrinter = pretty.createInstance();
+        gen.setPrettyPrinter(prettyPrinter);
+      } else {
+        prettyPrinter = null;
       }
     }
 
@@ -187,6 +196,13 @@ public class JacksonJsonWriter implements TextQueryResponseWriter {
 
     @Override
     public void writeArrayOpener(int size) throws IOException, IllegalArgumentException {
+      if (prettyPrinter != null) {
+        if (size == 1 || size == 0) {
+          prettyPrinter.indentArraysWith(SMALL_ARRAY_IDENTIFIER);
+        } else {
+          prettyPrinter.indentArraysWith(LARGE_ARRAY_IDENTIFIER);
+        }
+      }
       gen.writeStartArray();
     }
 

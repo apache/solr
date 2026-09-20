@@ -1,0 +1,8 @@
+title: Improve reliablity of NpmTasks finding needed files/commands.
+type: other
+authors:
+- name: Tyler Bertrand
+- name: Eric Pugh
+links:
+- name: GITHUB#2680
+  url: https://github.com/apache/solr/pull/2680

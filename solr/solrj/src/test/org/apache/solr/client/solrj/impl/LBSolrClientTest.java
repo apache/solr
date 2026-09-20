@@ -96,20 +96,53 @@ public class LBSolrClientTest extends SolrTestCase {
   public void testServerIteratorWithZombieServers() throws SolrServerException {
     HashMap<String, LBSolrClient.EndpointWrapper> zombieServers = new HashMap<>();
     LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
-    LBSolrClient.EndpointIterator endpointIterator =
-        new LBSolrClient.EndpointIterator(req, zombieServers);
-    zombieServers.put("2", new LBSolrClient.EndpointWrapper(new LBSolrClient.Endpoint("2")));
 
-    assertTrue(endpointIterator.hasNext());
-    assertEquals(new LBSolrClient.Endpoint("1"), endpointIterator.nextOrError());
-    assertTrue(endpointIterator.hasNext());
-    assertEquals(new LBSolrClient.Endpoint("3"), endpointIterator.nextOrError());
-    assertTrue(endpointIterator.hasNext());
-    assertEquals(new LBSolrClient.Endpoint("4"), endpointIterator.nextOrError());
-
+    // pick a random number of endpoints to mark as zombies
+    final int numToShuffle = random().nextInt(SOLR_ENDPOINTS.size());
+    // yes, this might pick the same endpoint multiple times; fine for our purposes
+    for (int i = 0; i < numToShuffle; i++) {
+      final LBSolrClient.Endpoint z = SOLR_ENDPOINTS.get(random().nextInt(SOLR_ENDPOINTS.size()));
+      zombieServers.put(z.getUrl(), new LBSolrClient.EndpointWrapper(z));
+    }
     // Try those on the Zombie list after all other possibilities are exhausted.
-    assertTrue(endpointIterator.hasNext());
-    assertEquals(new LBSolrClient.Endpoint("2"), endpointIterator.nextOrError());
+    final List<LBSolrClient.Endpoint> expectedOrder = new ArrayList<>(SOLR_ENDPOINTS);
+    for (LBSolrClient.Endpoint e : SOLR_ENDPOINTS) {
+      if (zombieServers.containsKey(e.getUrl())) {
+        expectedOrder.remove(e);
+        expectedOrder.add(e);
+      }
+    }
+
+    final LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, zombieServers);
+    final List<LBSolrClient.Endpoint> actualOrder = new ArrayList<>();
+    while (endpointIterator.hasNext()) {
+      actualOrder.add(endpointIterator.nextOrError());
+    }
+    assertFalse(endpointIterator.hasNext()); // sanity check double call
+    assertEquals("randomZombies(" + zombieServers.keySet() + ")", expectedOrder, actualOrder);
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
+  }
+
+  @Test
+  public void testServerIteratorWithAllZombies() throws SolrServerException {
+    HashMap<String, LBSolrClient.EndpointWrapper> zombieServers = new HashMap<>();
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
+    for (LBSolrClient.Endpoint e : SOLR_ENDPOINTS) {
+      zombieServers.put(e.getBaseUrl(), new LBSolrClient.EndpointWrapper(e));
+    }
+
+    final LBSolrClient.EndpointIterator endpointIterator =
+        new LBSolrClient.EndpointIterator(req, zombieServers);
+    // if everyone is a zombie, then the original sorted preference order of
+    // endpoints should still be respected
+    final List<LBSolrClient.Endpoint> actualOrder = new ArrayList<>();
+    while (endpointIterator.hasNext()) {
+      actualOrder.add(endpointIterator.nextOrError());
+    }
+    assertFalse(endpointIterator.hasNext()); // sanity check double call
+    assertEquals(SOLR_ENDPOINTS, actualOrder);
+    LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
   }
 
   @Test

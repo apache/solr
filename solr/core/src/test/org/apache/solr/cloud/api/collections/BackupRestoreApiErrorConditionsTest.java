@@ -16,11 +16,13 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.junit.AfterClass;
+import org.apache.solr.core.backup.BackupManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,7 +48,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
    */
   @BeforeClass
   public static void setUpClass() throws Exception {
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
     validBackupLocation = createTempDir().toAbsolutePath().toString();
 
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
@@ -74,11 +76,6 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
             .setLocation(validBackupLocation)
             .processAndWait(cluster.getSolrClient(), ASYNC_COMMAND_WAIT_PERIOD_MILLIS);
     assertEquals(RequestStatusState.COMPLETED, backupState);
-  }
-
-  @AfterClass
-  public static void tearDownClass() {
-    System.clearProperty("solr.allowPaths");
   }
 
   @Test
@@ -210,13 +207,10 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   @Test
   public void testListAndDeleteFailOnOldBackupLocations() throws Exception {
     final String nonIncrementalBackupLocation = createTempDir().toAbsolutePath().toString();
-    final RequestStatusState backupState =
-        CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
-            .setRepositoryName(VALID_REPOSITORY_NAME)
-            .setLocation(nonIncrementalBackupLocation)
-            .setIncremental(false)
-            .processAndWait(cluster.getSolrClient(), ASYNC_COMMAND_WAIT_PERIOD_MILLIS);
-    assertEquals(RequestStatusState.COMPLETED, backupState);
+    // Solr can no longer create this legacy format; build the marker file by hand instead.
+    final Path backupDir = Path.of(nonIncrementalBackupLocation, BACKUP_NAME);
+    Files.createDirectories(backupDir);
+    Files.createFile(backupDir.resolve(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
 
     // Check message for list-backup
     Exception e =

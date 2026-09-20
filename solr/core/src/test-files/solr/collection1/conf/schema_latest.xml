@@ -732,7 +732,6 @@
   -->
   <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l_ns" codeStrSuffix="_s_ns" defaultCurrency="USD"
              currencyConfig="currency.xml"/>
-
   <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
   <field name="severity_mv" type="severityType" indexed="true" stored="true" multiValued="true" docValues="true" />
 

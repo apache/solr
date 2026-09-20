@@ -16,6 +16,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[WARNING]
+====
+The `/admin/ping` endpoint (`PingRequestHandler`) is deprecated and will be removed in a future release.
+For load balancer or orchestration health checks, use the `solr/admin/info/health` (v1) or `api/node/health` (v2) endpoint, documented in the "Health" section of xref:configuration-guide:implicit-requesthandlers.adoc[], instead.
+====
+
 Choosing Ping under a core name issues a `ping` request to check whether the core is up and responding to requests.
 
 .Ping Option in Core Dropdown

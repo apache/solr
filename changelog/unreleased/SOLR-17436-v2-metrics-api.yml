@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Create a v2 equivalent for /admin/metrics
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Isabelle Giguère
+links:
+  - name: SOLR-17436
+    url: https://issues.apache.org/jira/browse/SOLR-17436

@@ -1,0 +1,8 @@
+title: SolrTestCase now supports @LogLevel annotations (as SolrTestCaseJ4 has). Added
+  LogLevelTestRule for encapsulation and reuse.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: GITHUB#2869
+  url: https://github.com/apache/solr/pull/2869

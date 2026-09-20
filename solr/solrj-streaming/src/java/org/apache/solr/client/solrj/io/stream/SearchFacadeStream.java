@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -53,7 +54,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
+    StreamExpressionNamedParameter pathExpression = factory.getNamedOperand(expression, "path");
 
     // Collection Name
     if (null == collectionName) {
@@ -64,32 +65,22 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams mParams = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")) {
-        mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
+    ModifiableSolrParams mParams =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection", "aliases", "path"));
+
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
+
+    String path = null;
+    if (null != pathExpression && pathExpression.getParameter() instanceof StreamExpressionValue) {
+      path = ((StreamExpressionValue) pathExpression.getParameter()).getValue();
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    /*
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
-    }
-    */
-
-    if (mParams.get(CommonParams.QT) != null && mParams.get(CommonParams.QT).equals("/export")) {
+    if ("/export".equals(path)
+        || (mParams.get(CommonParams.QT) != null
+            && mParams.get(CommonParams.QT).equals("/export"))) {
       CloudSolrStream cloudSolrStream = new CloudSolrStream();
-      cloudSolrStream.init(collectionName, zkHost, mParams);
+      cloudSolrStream.init(solrConnection, collectionName, mParams);
+      cloudSolrStream.path = path;
       this.innerStream = cloudSolrStream;
     } else {
 
@@ -99,7 +90,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
       }
 
       SearchStream searchStream = new SearchStream();
-      searchStream.init(zkHost, collectionName, mParams);
+      searchStream.init(solrConnection, collectionName, mParams);
       this.innerStream = searchStream;
     }
   }

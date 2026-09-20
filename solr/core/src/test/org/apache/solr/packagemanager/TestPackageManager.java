@@ -19,12 +19,12 @@ package org.apache.solr.packagemanager;
 import com.jayway.jsonpath.InvalidPathException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -49,7 +49,7 @@ public class TestPackageManager extends SolrCloudTestCase {
   public void testWrongVerificationJPathIsThrown() throws IOException {
     SolrZkClient zkClient = cluster.getZkClient();
     URL baseURLV2 = cluster.getJettySolrRunner(0).getBaseURLV2();
-    try (Http2SolrClient solrClient = new Http2SolrClient.Builder(baseURLV2.toString()).build()) {
+    try (var solrClient = new HttpJettySolrClient.Builder(baseURLV2.toString()).build()) {
       ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
       try (PackageManager manager = new StubPackageManager(runtime, solrClient, zkClient)) {
         SolrPackage.Plugin plugin = new SolrPackage.Plugin();
@@ -64,13 +64,8 @@ public class TestPackageManager extends SolrCloudTestCase {
         plugin.verifyCommand.condition = "&[no_quotes_error_jpath]";
         manager.verify(
             new SolrPackageInstance(
-                "",
-                "",
-                "1.0",
-                new SolrPackage.Manifest(),
-                Collections.singletonList(plugin),
-                Collections.emptyMap()),
-            Collections.singletonList(COLLECTION_NAME),
+                "", "", "1.0", new SolrPackage.Manifest(), List.of(plugin), Map.of()),
+            List.of(COLLECTION_NAME),
             plugin.type.equals("cluster"),
             new String[0]);
         fail();
@@ -91,7 +86,7 @@ public class TestPackageManager extends SolrCloudTestCase {
 
     @Override
     Map<String, String> getPackageParams(String packageName, String collection) {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 }

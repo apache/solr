@@ -243,8 +243,8 @@ addClause(clauses, conj, mods, q);
         }
       }
     }
-if (clauses.size() == 1 && clauses.get(0).getOccur() == BooleanClause.Occur.SHOULD) {
-      Query firstQuery = clauses.get(0).getQuery();
+if (clauses.size() == 1 && clauses.get(0).occur() == BooleanClause.Occur.SHOULD) {
+      Query firstQuery = clauses.get(0).query();
       if ( ! (firstQuery instanceof RawQuery) || ((RawQuery)firstQuery).getTermCount() == 1) {
         {if ("" != null) return rawToNormal(firstQuery);}
       }

@@ -29,19 +29,20 @@ import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +50,7 @@ import org.junit.Test;
 @SuppressSSL
 public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   JettySolrRunner leaderJetty, followerJetty, followerJettyWithAuth;
-  Http2SolrClient leaderClient, followerClient, followerClientWithAuth;
+  HttpJettySolrClient leaderClient, followerClient, followerClientWithAuth;
   ReplicationTestHelper.SolrInstance leader = null, follower = null, followerWithAuth = null;
 
   private static String user = "solr";
@@ -74,7 +75,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    systemSetPropertySolrDisableUrlAllowList("true");
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     // leader with Basic auth enabled via security.json
     leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();
@@ -226,17 +227,16 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
-  private void disablePoll(JettySolrRunner Jetty, Http2SolrClient solrClient)
+  private void disablePoll(JettySolrRunner Jetty, HttpJettySolrClient solrClient)
       throws SolrServerException, IOException {
     ModifiableSolrParams disablePollParams = new ModifiableSolrParams();
     disablePollParams.set(COMMAND, CMD_DISABLE_POLL);
     disablePollParams.set(CommonParams.WT, JAVABIN);
-    disablePollParams.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(disablePollParams);
+    QueryRequest req = new QueryRequest(ReplicationHandler.PATH, disablePollParams);
     withBasicAuth(req);
 
     final var baseUrl = buildUrl(Jetty.getLocalPort());
-    solrClient.requestWithBaseUrl(baseUrl, DEFAULT_TEST_CORENAME, req);
+    solrClient.requestWithBaseUrl(baseUrl, req, DEFAULT_TEST_CORENAME);
   }
 
   private void pullIndexFromTo(
@@ -245,21 +245,20 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     String srcUrl = buildUrl(srcSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     QueryRequest req = getQueryRequestForFetchIndex(authEnabled, srcUrl);
     final var baseUrl = buildUrl(destSolr.getLocalPort());
-    followerClient.requestWithBaseUrl(baseUrl, DEFAULT_TEST_CORENAME, req);
+    followerClient.requestWithBaseUrl(baseUrl, req, DEFAULT_TEST_CORENAME);
   }
 
   private QueryRequest getQueryRequestForFetchIndex(boolean authEnabled, String srcUrl) {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(COMMAND, CMD_FETCH_INDEX);
     solrParams.set(CommonParams.WT, JAVABIN);
-    solrParams.set(CommonParams.QT, ReplicationHandler.PATH);
     solrParams.set("leaderUrl", srcUrl);
     solrParams.set("wait", "true");
     if (authEnabled) {
       solrParams.set("httpBasicAuthUser", user);
       solrParams.set("httpBasicAuthPassword", pass);
     }
-    QueryRequest req = new QueryRequest(solrParams);
+    QueryRequest req = new QueryRequest(ReplicationHandler.PATH, solrParams);
     return req;
   }
 }

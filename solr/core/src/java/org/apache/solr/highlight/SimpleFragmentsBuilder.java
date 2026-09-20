@@ -30,13 +30,4 @@ public class SimpleFragmentsBuilder extends SolrFragmentsBuilder {
     sfb.setMultiValuedSeparator(getMultiValuedSeparatorChar(params));
     return sfb;
   }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "SimpleFragmentsBuilder";
-  }
 }

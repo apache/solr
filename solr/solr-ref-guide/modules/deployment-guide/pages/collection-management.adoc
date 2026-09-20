@@ -232,6 +232,8 @@ For nested documents, the route field must match among all the documents in the 
 +
 Please note that xref:configuration-guide:realtime-get.adoc[] or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
+Use of docValues is highly encouraged on this field.
+
 `perReplicaState`::
 +
 [%autowidth,frame=none]
@@ -291,6 +293,15 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 
 Collections are first created in read-write mode but can be put in `readOnly`
 mode using the xref:collection-management.adoc#modifycollection[MODIFYCOLLECTION] action.
+
+Solr can occasionally enter an inconsistent state where remnant core files remain on disk after previous collection deletion operations fail.
+
+The system property `solr.cloud.delete.unknown.cores.enabled` is an expert-level setting designed to handle this situation.
+When enabled, Solr automatically deletes any remnant core data on startup that lacks a record in ZooKeeper.
+During core creation (whether for new collections or replicas), Solr also deletes preexisting remnant files, allowing operations to complete.
+Without this setting, these files would cause new core creation to fail.
+
+Enable this feature with caution— it indicates an underlying problem in your Solr setup that should be investigated.
 
 === CREATE Response
 
@@ -673,7 +684,8 @@ If the status is anything other than "success", an error message will explain wh
 [[collectionprop]]
 == COLLECTIONPROP: Collection Properties
 
-Add, edit or delete a collection property.
+Add, update, delete, or retrieve collection properties.
+(Listing all collection properties, or fetching an individual property by name are only supported in Solr's v2 API)
 
 [tabs#collectionproperty-request]
 ======
@@ -682,7 +694,7 @@ V1 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts_v2&propertyName=propertyName&propertyValue=propertyValue
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts&propertyName=propertyName&propertyValue=propertyValue
 ----
 ====
 
@@ -690,20 +702,36 @@ V2 API::
 +
 ====
 To create or update a collection property:
+
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/foo -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/propertyName -H 'Content-Type: application/json' -d '
   {
-    "value": "bar"
+    "value": "propertyValue"
   }
 '
 ----
+
+To list all properties for a collection:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/properties
+----
+
+To get a specific collection property by name:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/properties/propertyName
+----
+
 
 To delete an existing collection property:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo 
+curl -X DELETE http://localhost:8983/api/collections/techproducts/properties/propertyName
 ----
 ====
 ======
@@ -742,8 +770,39 @@ When not provided in v1 requests, the property is deleted.
 
 === COLLECTIONPROP Response
 
-The response will include the status of the request and the properties that were updated or removed.
+The response will include the status of the request.
 If the status is anything other than "0", an error message will explain why the request failed.
+
+For GET requests to list all properties, the response includes a `properties` object containing all property name-value pairs:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 5
+  },
+  "properties": {
+    "foo": "bar",
+    "myProperty": "myValue"
+  }
+}
+----
+
+For GET requests to retrieve a single property, the response includes a `value` field with the property value:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 3
+  },
+  "value": "bar"
+}
+----
+
+If a requested property does not exist, the API will return a 404 error with an appropriate error message.
 
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
@@ -1563,9 +1622,8 @@ Multiple collections cannot be backed up to the same location.
 
 [NOTE]
 ====
-Previous versions of Solr supported a different backup file format that lacked the incremental support described above.
-Solr can still restore from backups that use this old format, but creating new backups of this format is not recommended and is officially deprecated.
-See the `incremental` parameter below for more information.
+Previous versions of Solr supported creating a different, non-incremental backup file format that lacked the incremental support described above.
+That format can no longer be created, but Solr can still restore from backups that already use it.
 ====
 
 === BACKUP Parameters
@@ -1587,10 +1645,10 @@ Provided as a query parameter for v1 requests, and as a path segment for v2 requ
 s|Required |Default: none
 |===
 +
-What to name the backup that is created.
+The name of the backup to use.
 Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
 +
-For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does. 
+If a backup with this name already exists, a new backup point is added to it; otherwise a new backup is created.
 
 `location`::
 +
@@ -1638,7 +1696,6 @@ If no repository is specified then the local filesystem repository will be used 
 +
 The upper-bound on how many backups should be retained at the backup location.
 If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
-This parameter has no effect if `incremental=false` is specified.
 
 `backupConfigset`::
 +
@@ -1658,17 +1715,6 @@ Indicates if configset files should be included with the index backup or not. No
 +
 Allows storing additional key/value pairs for custom information related to the backup. In v2, the value is a map of key-value pairs.
 
-`incremental`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `true`
-|===
-+
-A boolean parameter allowing users to choose whether to create an incremental (`incremental=true`) or a "full" (`incremental=false`) backup.
-If unspecified, backups are done incrementally by default.
-Incremental backups are preferred in all known circumstances and "full" (i.e. non-incremental) backups are deprecated, so this parameter should only be used after much consideration.
-
 `indexBackup` (v1), `backupStrategy` (v2)::
 +
 [%autowidth,frame=none]
@@ -1678,16 +1724,6 @@ Incremental backups are preferred in all known circumstances and "full" (i.e. no
 +
 A string parameter allowing users to specify one of several different backup "strategies".
 Valid options are `copy-files` (which backs up both the collection configset and index data), and `none` (which will only backup the collection configset).
-
-`commitName` (v1), `snapshotName` (v2)::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name of the collection "snapshot" to create a backup from.
-If not provided, Solr will create the backup from the current collection state (instead of a previous snapshotted state).
 
 [tabs#backup-response-incremental]
 ======

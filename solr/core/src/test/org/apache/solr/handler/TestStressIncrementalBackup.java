@@ -50,10 +50,9 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
   @Before
   public void beforeTest() throws Exception {
     backupPath = createTempDir(getTestClass().getSimpleName() + "_backups");
-    System.setProperty("solr.allowPaths", backupPath.toString());
+    System.setProperty("solr.security.allow.paths", backupPath.toString());
 
-    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
-    // bring myself to deal with the nonsense that is SolrJettyTestBase.
+    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient.
 
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1).addConfig("conf1", configset("cloud-minimal")).configure();
@@ -63,7 +62,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
             .process(cluster.getSolrClient())
             .getStatus()));
-    adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    adminClient = cluster.getJettySolrRunners().get(0).getSolrClient();
     initCoreNameAndSolrCoreClient();
   }
 
@@ -81,22 +80,13 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r);
+    coreClient = cluster.getSolrClient(r);
   }
 
   @After
   public void afterTest() throws Exception {
     // we use a clean cluster instance for every test, so we need to clean it up
     shutdownCluster();
-
-    if (null != adminClient) {
-      adminClient.close();
-    }
-    if (null != coreClient) {
-      coreClient.close();
-    }
-
-    System.clearProperty("solr.allowPaths");
   }
 
   @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread
@@ -174,7 +164,6 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     CollectionAdminRequest.Backup backup =
         CollectionAdminRequest.backupCollection(DEFAULT_TEST_COLLECTION_NAME, "stressBackup")
             .setLocation(backupPath.toString())
-            .setIncremental(true)
             .setMaxNumberBackupPoints(5);
     if (random().nextBoolean()) {
       try {

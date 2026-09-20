@@ -49,7 +49,7 @@ DocValues are enabled by default for most field types that support them *when us
 ** `ICUCollationField`
 ** `SortableTextField`
 ** `SortableBinaryField`
-* `LatLonPointSpacialField` (not `PointType`, which is different than `PointField`)
+* `LatLonPointSpatialField` (not `PointType`, which is different than `PointField`)
 
 When using an earlier schemaVersion (\<= 1.6), you only need to enable docValues for a field that you will use it with.
 As with all schema design, you need to define a field type and then define fields of that type with docValues enabled.
@@ -81,7 +81,7 @@ Entries are kept in sorted order and duplicates are removed.
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `NUMERIC` type.
 ** If the field is multi-valued, Lucene will use the `SORTED_NUMERIC` type.
 Entries are kept in sorted order and duplicates are kept.
-* Any of the deprecated `Trie*` Numeric or Date fields, `EnumField` and `CurrencyField`:
+* Any of the deprecated `Trie*` Numeric or Date fields, and `CurrencyField`:
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `NUMERIC` type.
 ** If the field is multi-valued, Lucene will use the `SORTED_SET` type.
 Entries are kept in sorted order and duplicates are removed.

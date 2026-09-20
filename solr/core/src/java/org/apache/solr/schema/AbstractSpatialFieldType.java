@@ -110,7 +110,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected final Set<String> supportedScoreModes;
 
   protected AbstractSpatialFieldType() {
-    this(Collections.emptySet());
+    this(Set.of());
   }
 
   protected AbstractSpatialFieldType(Set<String> moreScoreModes) {
@@ -242,7 +242,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
     if (shape == null) {
       log.debug("Field {}: null shape for input: {}", field, val);
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<IndexableField> result = new ArrayList<>();
@@ -362,8 +362,9 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   @Override
   protected Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
-    PrefixQuery query = new PrefixQuery(new Term(field.getName(), ""));
-    query.setRewriteMethod(field.getType().getRewriteMethod(parser, field));
+    PrefixQuery query =
+        new PrefixQuery(
+            new Term(field.getName(), ""), field.getType().getRewriteMethod(parser, field));
     return query;
   }
 

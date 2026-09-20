@@ -28,7 +28,7 @@ There is future work planned to have finer grained execution here (https://issue
 
 The rate-limiting bucket of a request is determined by the value of the unique `Solr-Request-Type` HTTP header of
 that request. Requests with no `Solr-Request-Type` header will be accepted and processed with no rate-limiting.
-`"Slot borrowing" and "guaranteed slots" are defined with respect to the specified rate-limiting bucket.
+"Slot borrowing" and "guaranteed slots" are defined with respect to the specified rate-limiting bucket.
 
 NOTE: currently there is only one `Solr-Request-Type` value recognized for rate-limiting: the literal
 string value `QUERY`. So only requests that specify header `Solr-Request-Type: QUERY` will be rate-limited (and

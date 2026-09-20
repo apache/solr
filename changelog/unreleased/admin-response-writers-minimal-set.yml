@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Introduce minimal set of request writers for node/container-level requests. Core-specific request writers now leverage ImplicitPlugins.json for creation.
+type: other
+authors:
+  - name: Eric Pugh
+  - name: David Smiley
+links:
+- name: PR#4073
+  url: https://github.com/apache/solr/pull/4073

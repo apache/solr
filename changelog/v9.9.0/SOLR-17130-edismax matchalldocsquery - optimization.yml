@@ -1,0 +1,7 @@
+title: edismax MatchAllDocsQuery (*:*) Optimization
+type: changed
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-17130
+  url: https://issues.apache.org/jira/browse/SOLR-17130

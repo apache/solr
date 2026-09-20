@@ -228,7 +228,7 @@ In this example the focus will be on finding correlated nodes in a time series g
 
 The example below finds stock tickers whose daily movements tend to be correlated with the ticker *jpm* (JP Morgan).
 
-The inner `search` expression finds records between a specific date range where the ticker symbol is *jpm* and the `change_d` field (daily change in stock price) is greater then .25.
+The inner `search` expression finds records between a specific date range where the ticker symbol is *jpm* and the `change_d` field (daily change in stock price) is greater than .25.
 This search returns all fields in the index including the `yearMonthDay_s` which is the string representation of the year, month, and day of the matching records.
 
 The `nodes` function wraps the `search` function and operates over its results.
@@ -236,7 +236,7 @@ The `walk` parameter maps a field from the search results to a field in the inde
 In this case the `yearMonthDay_s` is mapped back  to the `yearMonthDay_s` field in the same index.
 This will find records that have same `yearMonthDay_s` field value returned by the initial search, and will return records for all tickers on those days.
 A filter query is applied to the search to filter the search to rows that have a `change_d` greater the .25.
-This will find all records on the matching days that have a daily change greater then .25.
+This will find all records on the matching days that have a daily change greater than .25.
 
 The `gather` parameter tells the nodes expression to gather the `ticker_s` symbols during the breadth first search.
 The `count(*)` parameter counts the occurrences of the tickers.
@@ -245,8 +245,8 @@ This will count the number of times each ticker appears in the breadth first sea
 Finally, the `top` function selects the top 5 tickers by count and returns them.
 
 The result below shows the ticker symbols in the `nodes` field and the counts for each node.
-Notice *jpm* is first, which shows how many days *jpm* had a change greater then .25 in this time period.
-The next set of ticker symbols (*mtb*, *slvb*, *gs* and *pnc*) are the symbols with the highest number of days with a change greater then .25 on the same days that *jpm* had a change greater then .25.
+Notice *jpm* is first, which shows how many days *jpm* had a change greater than .25 in this time period.
+The next set of ticker symbols (*mtb*, *slvb*, *gs* and *pnc*) are the symbols with the highest number of days with a change greater than .25 on the same days that *jpm* had a change greater than .25.
 
 image::math-expressions/nodestab.png[]
 

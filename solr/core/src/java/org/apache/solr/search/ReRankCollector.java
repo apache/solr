@@ -20,11 +20,14 @@ import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntFloatMap;
 import com.carrotsearch.hppc.IntIntHashMap;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
@@ -35,11 +38,14 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopFieldCollectorManager;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.SchemaField;
 
 /* A TopDocsCollector used by reranking queries. */
 public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
@@ -51,6 +57,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
   private final Set<BytesRef> boostedPriority; // order is the "priority"
   private final Rescorer reRankQueryRescorer;
   private final Sort sort;
+  private final List<SchemaField> sortSchemaFields;
   private final Query query;
   private ReRankScaler reRankScaler;
   private ReRankOperator reRankOperator;
@@ -84,15 +91,18 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     this.boostedPriority = boostedPriority;
     this.query = cmd.getQuery();
     Sort sort = cmd.getSort();
+    this.sortSchemaFields = cmd.getSortSchemaFields();
     int maxDoc = searcher.getIndexReader().maxDoc();
     int numHits = Math.min(Math.max(this.reRankDocs, length), maxDoc);
     if (sort == null) {
       this.sort = null;
-      this.mainCollector = TopScoreDocCollector.create(numHits, cmd.getMinExactCount());
+      this.mainCollector =
+          new TopScoreDocCollectorManager(numHits, cmd.getMinExactCount()).newCollector();
     } else {
       this.sort = sort = sort.rewrite(searcher);
       // scores are needed for Rescorer (regardless of whether sort needs it)
-      this.mainCollector = TopFieldCollector.create(sort, numHits, cmd.getMinExactCount());
+      this.mainCollector =
+          new TopFieldCollectorManager(sort, numHits, cmd.getMinExactCount()).newCollector();
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -120,7 +130,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       TopDocs mainDocs = mainCollector.topDocs(0, Math.max(reRankDocs, length));
 
-      if (mainDocs.totalHits.value == 0 || mainDocs.scoreDocs.length == 0) {
+      if (mainDocs.totalHits.value() == 0 || mainDocs.scoreDocs.length == 0) {
         return mainDocs;
       }
 
@@ -129,6 +139,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
+      final Object reRankCutoffValue = getReRankCutoffValue(mainScoreDocs);
       boolean zeroOutScores = reRankScaler != null && reRankScaler.scaleScores();
       IntFloatMap docToOriginalScore = new IntFloatHashMap();
       ScoreDoc[] mainScoreDocsClone = deepClone(mainScoreDocs, docToOriginalScore, zeroOutScores);
@@ -170,6 +181,8 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         Arrays.sort(
             rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, maxScore));
       }
+
+      updateResponseHeader(reRankCutoffValue);
 
       if (howMany == rescoredDocs.scoreDocs.length) {
         if (reRankScaler != null && reRankScaler.scaleScores()) {
@@ -219,6 +232,74 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       rescoredDocs[i] = new RescoreDoc(scoreDocs[i], originalScores.get(scoreDocs[i].doc));
     }
     return new TopDocs(topDocs.totalHits, rescoredDocs);
+  }
+
+  private Object getReRankCutoffValue(ScoreDoc[] mainScoreDocs) {
+    final ScoreDoc cutoffDoc = mainScoreDocs[Math.min(mainScoreDocs.length, reRankDocs) - 1];
+    if (sort == null) {
+      return cutoffDoc.score;
+    }
+
+    if (!(cutoffDoc instanceof FieldDoc fieldDoc)
+        || fieldDoc.fields == null
+        || fieldDoc.fields.length == 0) {
+      return cutoffDoc.score;
+    }
+
+    if (fieldDoc.fields.length == 1) {
+      return marshalSortValue(fieldDoc.fields[0], 0);
+    }
+
+    final List<Object> cutoffSortValues = new ArrayList<>(fieldDoc.fields.length);
+    for (int i = 0; i < fieldDoc.fields.length; i++) {
+      cutoffSortValues.add(marshalSortValue(fieldDoc.fields[i], i));
+    }
+    return cutoffSortValues;
+  }
+
+  private Object marshalSortValue(Object sortValue, int index) {
+    if (sortValue == null) {
+      return null;
+    }
+
+    if (sortSchemaFields != null && index < sortSchemaFields.size()) {
+      final SchemaField schemaField = sortSchemaFields.get(index);
+      if (schemaField != null) {
+        return schemaField.getType().marshalSortValue(sortValue);
+      }
+    }
+
+    if (sortValue instanceof BytesRef bytesRef) {
+      return bytesRef.utf8ToString();
+    }
+
+    return sortValue;
+  }
+
+  private void updateResponseHeader(Object reRankCutoffValue) {
+    SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+    if (info == null || info.getReq() == null || info.getRsp() == null) {
+      return;
+    }
+
+    Map<Object, Object> requestContext = info.getReq().getContext();
+    if (!Boolean.TRUE.equals(
+        requestContext.get(AbstractReRankQuery.RERANK_CUTOFF_ECHO_REQUEST_CONTEXT_KEY))) {
+      return;
+    }
+
+    final NamedList<Object> responseHeader = info.getRsp().getResponseHeader();
+    if (responseHeader == null) {
+      return;
+    }
+
+    final int existingIndex =
+        responseHeader.indexOf(AbstractReRankQuery.RERANK_CUTOFF_RESPONSE_HEADER_KEY, 0);
+    if (existingIndex >= 0) {
+      responseHeader.setVal(existingIndex, reRankCutoffValue);
+    } else {
+      responseHeader.add(AbstractReRankQuery.RERANK_CUTOFF_RESPONSE_HEADER_KEY, reRankCutoffValue);
+    }
   }
 
   private ScoreDoc[] deepClone(
@@ -271,11 +352,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   static class RescoreDoc extends ScoreDoc {
-    public float matchScore;
+    public float originalScore;
 
-    public RescoreDoc(ScoreDoc scoreDoc, float matchScore) {
+    public RescoreDoc(ScoreDoc scoreDoc, float originalScore) {
       super(scoreDoc.doc, scoreDoc.score, scoreDoc.shardIndex);
-      this.matchScore = matchScore;
+      this.originalScore = originalScore;
     }
   }
 }

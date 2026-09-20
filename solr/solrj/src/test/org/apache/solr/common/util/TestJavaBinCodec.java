@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.EnumFieldValue;
@@ -39,7 +40,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.RTimer;
 import org.junit.Test;
 import org.noggit.CharArr;
@@ -69,6 +69,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         jbcO.marshal(s, os);
         try (JavaBinCodec jbcI = new JavaBinCodec();
             ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
+          jbcI.readMapAsNamedList(false);
           Object o = jbcI.unmarshal(is);
           assertEquals(s, o);
         }
@@ -84,6 +85,17 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     idoc.addField("enumf", new EnumFieldValue(1, "foo"));
     types.add(idoc);
     compareObjects((List) getObject(getBytes(types, true)), (List) types);
+  }
+
+  public void testReadMap() throws Exception {
+    Map<String, String> types = new HashMap<>();
+    types.put("1", "one");
+
+    byte[] bytes = getBytes(types, true);
+    Object result = getObjectWithMapAsNl(bytes, true);
+
+    assertTrue(result instanceof SimpleOrderedMap);
+    assertEquals("one", ((SimpleOrderedMap<?>) result).get("1"));
   }
 
   public static SolrDocument generateSolrDocumentWithChildDocs() {
@@ -162,11 +174,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     types.add(new byte[] {1, 2, 3, 4, 5});
 
-    // TODO?
-    // List<String> list = new ArrayList<String>();
-    // list.add("one");
-    // types.add(list.iterator());
-
     types.add((byte) 15); // END
 
     SolrInputDocument idoc = new SolrInputDocument();
@@ -211,6 +218,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
                 return super.readIterator(fis);
               }
             }; ) {
+      javabin.readMapAsNamedList(false);
       @SuppressWarnings({"unchecked"})
       List<Object> unmarshalledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
@@ -285,6 +293,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
       Object data = generateAllDataTypes();
+      javabin.readMapAsNamedList(false);
       javabin.marshal(data, os);
       byte[] newFormatBytes = os.toByteArray();
 
@@ -294,7 +303,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         for (int i = 1;
             i < currentFormatBytes.length;
             i++) { // ignore the first byte. It is version information
-          assertEquals(newFormatBytes[i], currentFormatBytes[i]);
+          assertEquals("for i:" + i, newFormatBytes[i], currentFormatBytes[i]);
         }
       }
     }
@@ -383,6 +392,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     try (InputStream is = getClass().getResourceAsStream(fileName)) {
       try (DataInputInputStream dis = new FastInputStream(is)) {
         try (JavaBinCodec javabin = new JavaBinCodec()) {
+          javabin.readMapAsNamedList(false);
           return javabin.readMapEntry(dis);
         }
       }
@@ -410,10 +420,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
-  private static Object getObject(byte[] bytes) throws IOException {
+  private static Object getObjectWithMapAsNl(byte[] bytes, boolean mapAsNamedList)
+      throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.readMapAsNamedList(mapAsNamedList);
       return jbc.unmarshal(new ByteArrayInputStream(bytes));
     }
+  }
+
+  private static Object getObject(byte[] bytes) throws IOException {
+    return getObjectWithMapAsNl(bytes, false);
   }
 
   @Test
@@ -464,7 +480,19 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertNotSame(l1.get(1), l2.get(1));
 
     JavaBinCodec.StringCache stringCache =
-        new JavaBinCodec.StringCache(new MapBackedCache<>(new HashMap<>()));
+        new JavaBinCodec.StringCache() {
+          Map<StringBytes, String> cache = new HashMap<>();
+
+          @Override
+          protected String getFromCache(StringBytes b) {
+            return cache.get(b);
+          }
+
+          @Override
+          protected void putIntoCache(StringBytes b, String val) {
+            cache.put(b, val);
+          }
+        };
 
     try (JavaBinCodec c1 = new JavaBinCodec(null, stringCache);
         JavaBinCodec c2 = new JavaBinCodec(null, stringCache)) {
@@ -478,6 +506,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertEquals(l1, l2);
     assertSame(l1.get(0), l2.get(0));
     assertSame(l1.get(1), l2.get(1));
+  }
+
+  @Test
+  public void testBufferSize() {
+    assertEquals(512, JavaBinCodec.getBufferSize(1));
+    assertEquals(512, JavaBinCodec.getBufferSize(200));
+    assertEquals(512, JavaBinCodec.getBufferSize(500));
+    assertEquals(512, JavaBinCodec.getBufferSize(512));
+    assertEquals(1024, JavaBinCodec.getBufferSize(513));
+    assertEquals(2048, JavaBinCodec.getBufferSize(1500));
   }
 
   public void genBinaryFiles() throws IOException {
@@ -499,21 +537,24 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
   private void testPerf() throws InterruptedException {
     final ArrayList<StringBytes> l = new ArrayList<>();
-    Cache<StringBytes, String> cache = null;
-    /* cache = new ConcurrentLRUCache<JavaBinCodec.StringBytes,String>(10000, 9000, 10000, 1000, false, true, null){
-      @Override
-      public String put(JavaBinCodec.StringBytes key, String val) {
-        l.add(key);
-        return super.put(key, val);
-      }
-    };*/
     Runtime.getRuntime().gc();
     printMem("before cache init");
 
-    Cache<StringBytes, String> cache1 = new MapBackedCache<>(new HashMap<>());
-    final JavaBinCodec.StringCache STRING_CACHE = new JavaBinCodec.StringCache(cache1);
+    final JavaBinCodec.StringCache STRING_CACHE =
+        new JavaBinCodec.StringCache() {
+          Map<StringBytes, String> cache = new HashMap<>();
 
-    //    STRING_CACHE = new JavaBinCodec.StringCache(cache);
+          @Override
+          protected String getFromCache(StringBytes b) {
+            return cache.get(b);
+          }
+
+          @Override
+          protected void putIntoCache(StringBytes b, String val) {
+            cache.put(b, val);
+          }
+        };
+
     byte[] bytes = new byte[0];
     StringBytes stringBytes = new StringBytes(null, 0, 0);
 
@@ -582,16 +623,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     System.out.println("Free Memory:" + runtime.freeMemory() / mb);
   }
 
-  public static void main(String[] args) throws IOException {
-    TestJavaBinCodec test = new TestJavaBinCodec();
-    test.genBinaryFiles();
-    //    try {
-    //      doDecodePerf(args);
-    //    } catch (Exception e) {
-    //      throw new RuntimeException(e);
-    //    }
-  }
-
   // common-case ascii
   static String str(Random r, int sz) {
     StringBuilder sb = new StringBuilder(sz);
@@ -640,14 +671,26 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     int ret = 0;
     final RTimer timer = new RTimer();
-    ConcurrentLRUCache<StringBytes, String> underlyingCache =
-        cacheSz > 0
-            ? new ConcurrentLRUCache<>(
-                cacheSz, cacheSz - cacheSz / 10, cacheSz, cacheSz / 10, false, true, null)
-            : null; // the cache in the first version of the patch was
-    // 10000,9000,10000,1000,false,true,null
-    final JavaBinCodec.StringCache stringCache =
-        underlyingCache == null ? null : new JavaBinCodec.StringCache(underlyingCache);
+    final JavaBinCodec.StringCache stringCache;
+    if (cacheSz > 0) {
+      stringCache =
+          new JavaBinCodec.StringCache() {
+            private final Map<StringBytes, String> cache = new ConcurrentHashMap<>(cacheSz);
+
+            @Override
+            protected String getFromCache(StringBytes b) {
+              return cache.get(b);
+            }
+
+            @Override
+            protected void putIntoCache(StringBytes b, String val) {
+              cache.put(b, val);
+            }
+          };
+    } else {
+      stringCache = null;
+    }
+
     if (nThreads <= 0) {
       ret += doDecode(buffers, iter, stringCache);
     } else {
@@ -664,14 +707,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     long n = iter * Math.max(1, nThreads);
     System.out.println("ret=" + ret + " THROUGHPUT=" + (n * 1000 / timer.getTime()));
-    if (underlyingCache != null)
-      System.out.println(
-          "cache: hits="
-              + underlyingCache.getStats().getCumulativeHits()
-              + " lookups="
-              + underlyingCache.getStats().getCumulativeLookups()
-              + " size="
-              + underlyingCache.getStats().getCurrentSize());
   }
 
   public static int doDecode(byte[][] buffers, long iter, JavaBinCodec.StringCache stringCache)

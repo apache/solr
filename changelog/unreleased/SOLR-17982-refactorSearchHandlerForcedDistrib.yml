@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Provide an internal API to force distributed search (even when one shard). Also, refactor/reorganize SearchHandler for clarity & extensibility.
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+  - name: Sonu Sharma
+links:
+  - name: SOLR-17982
+    url: https://issues.apache.org/jira/browse/SOLR-17982

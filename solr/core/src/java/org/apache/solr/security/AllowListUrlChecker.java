@@ -25,16 +25,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Validates URLs based on an allow list or a {@link ClusterState} in SolrCloud. */
+/** Validates URLs using an allow-list or a {@link ClusterState} in SolrCloud. */
 public class AllowListUrlChecker {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -42,12 +42,12 @@ public class AllowListUrlChecker {
   /** {@link org.apache.solr.core.SolrXmlConfig} property to configure the allowed URLs. */
   public static final String URL_ALLOW_LIST = "allowUrls";
 
-  /** System property to disable URL checking and {@link #ALLOW_ALL} instead. */
-  public static final String DISABLE_URL_ALLOW_LIST = "solr.disable." + URL_ALLOW_LIST;
+  /** System property to enable URL checking against an allow-list and ignore {@link #ALLOW_ALL}. */
+  public static final String ENABLE_URL_ALLOW_LIST = "solr.security.allow.urls.enabled";
 
   /** Clue given in URL-forbidden exceptions messages. */
   public static final String SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE =
-      "Set -D" + DISABLE_URL_ALLOW_LIST + "=true to disable URL allow-list checks.";
+      "Set -D" + ENABLE_URL_ALLOW_LIST + "=false to disable URL allow-list checks.";
 
   /** Singleton checker which allows all URLs. {@link #isEnabled()} returns false. */
   public static final AllowListUrlChecker ALLOW_ALL;
@@ -55,7 +55,7 @@ public class AllowListUrlChecker {
   static {
     try {
       ALLOW_ALL =
-          new AllowListUrlChecker(Collections.emptyList()) {
+          new AllowListUrlChecker(List.of()) {
             @Override
             public void checkAllowList(List<String> urls, ClusterState clusterState) {
               // Allow.
@@ -78,12 +78,8 @@ public class AllowListUrlChecker {
   }
 
   /**
-   * Regex pattern to match any protocol, e.g. http:// https:// s3://. After a match, regex group 1
-   * contains the protocol and group 2 the rest.
+   * Allow list of hosts. Elements in the list are formatted as host:port (no protocol or context).
    */
-  private static final Pattern PROTOCOL_PATTERN = Pattern.compile("(\\w+)(://.*)");
-
-  /** Allow list of hosts. Elements in the list will be host:port (no protocol or context). */
   private final Set<String> hostAllowList;
 
   private volatile Set<String> liveHostUrlsCache;
@@ -94,7 +90,7 @@ public class AllowListUrlChecker {
    *     tolerated. An empty list means there is no explicit allow-list of URLs, in this case no URL
    *     is allowed unless a {@link ClusterState} is provided in {@link #checkAllowList(List,
    *     ClusterState)}.
-   * @throws MalformedURLException If an URL is invalid.
+   * @throws MalformedURLException If a URL is invalid.
    */
   public AllowListUrlChecker(List<String> urlAllowList) throws MalformedURLException {
     hostAllowList = parseHostPorts(urlAllowList);
@@ -104,12 +100,8 @@ public class AllowListUrlChecker {
    * Creates a URL checker based on the {@link NodeConfig} property to configure the allowed URLs.
    */
   public static AllowListUrlChecker create(NodeConfig config) {
-    if (Boolean.getBoolean(DISABLE_URL_ALLOW_LIST)) {
+    if (!EnvUtils.getPropertyAsBool(ENABLE_URL_ALLOW_LIST, true)) {
       return AllowListUrlChecker.ALLOW_ALL;
-    } else if (System.getProperty("solr.disable.shardsWhitelist") != null) {
-      log.warn(
-          "Property 'solr.disable.shardsWhitelist' is deprecated, please use '{}' instead.",
-          DISABLE_URL_ALLOW_LIST);
     }
     try {
       return new AllowListUrlChecker(config.getAllowUrls());
@@ -134,8 +126,8 @@ public class AllowListUrlChecker {
    *
    * @param urls The list of urls to check.
    * @param clusterState The up to date {@link ClusterState}, can be null in case of non-cloud mode.
-   * @throws MalformedURLException If an URL is invalid.
-   * @throws SolrException If an URL is not present in the allow-list or in the provided {@link
+   * @throws MalformedURLException If a URL is invalid.
+   * @throws SolrException If a URL is not present in the allow-list or in the provided {@link
    *     ClusterState}.
    */
   public void checkAllowList(List<String> urls, ClusterState clusterState)
@@ -161,6 +153,8 @@ public class AllowListUrlChecker {
    * Gets the set of live hosts urls (host:port) built from the set of live nodes. The set is cached
    * to be reused until the live nodes change.
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // live-nodes set is replaced wholesale, so identity means "unchanged"
   private Set<String> getLiveHostUrls(ClusterState clusterState) {
     if (clusterState == null) {
       return Set.of();
@@ -208,7 +202,7 @@ public class AllowListUrlChecker {
   @VisibleForTesting
   static Set<String> parseHostPorts(List<String> urls) throws MalformedURLException {
     if (urls == null || urls.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
     Set<String> hostPorts = new HashSet<>();
     for (String urlString : urls) {
@@ -218,20 +212,9 @@ public class AllowListUrlChecker {
   }
 
   private static String parseHostPort(String url) throws MalformedURLException {
-    // Parse the host and port.
-    // It doesn't really matter which protocol we set here because we are not going to use it.
+    // Detect the scheme the same way the shard URL fetch does (URLUtil#hasScheme).
     url = url.trim();
-    URI u;
-    Matcher protocolMatcher = PROTOCOL_PATTERN.matcher(url);
-    if (protocolMatcher.matches()) {
-      // Replace any protocol unsupported by URL.
-      if (!protocolMatcher.group(1).startsWith("http")) {
-        url = "http" + protocolMatcher.group(2);
-      }
-      u = URI.create(url);
-    } else {
-      u = URI.create("http://" + url);
-    }
+    URI u = URI.create(URLUtil.hasScheme(url) ? url : "http://" + url);
     if (u.getHost() == null || u.getPort() < 0) {
       throw new MalformedURLException("Invalid host or port in '" + url + "'");
     }

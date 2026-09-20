@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +50,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** */
-@LogLevel("org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG")
+@LogLevel(
+    "org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG")
 public class ReindexCollectionTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -77,7 +77,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     stateManager = cloudManager.getDistribStateManager();
     solrClient =
         new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
+                List.of(zkController.getZkServerAddress()), Optional.empty())
             .build();
   }
 

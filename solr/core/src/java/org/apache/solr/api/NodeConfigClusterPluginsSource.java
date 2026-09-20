@@ -79,8 +79,7 @@ public class NodeConfigClusterPluginsSource implements ClusterPluginsSource {
         pluginMap.put("class", p.className);
 
         if (p.initArgs.size() > 0) {
-          Map<String, Object> config = p.initArgs.toMap(new HashMap<>());
-          pluginMap.put("config", config);
+          pluginMap.put("config", p.initArgs.asMap(0));
         }
 
         pluginInfos.put(pluginName, pluginMap);

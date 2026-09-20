@@ -35,8 +35,8 @@ import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
@@ -147,7 +147,8 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
       if (doc == docTermOrds.docID()) {
         BytesRef edgeValue = new BytesRef();
         long ord;
-        while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        for (int o = 0; o < docTermOrds.docValueCount(); o++) {
+          ord = docTermOrds.nextOrd();
           edgeValue = docTermOrds.lookupOrd(ord);
           // add the edge id to the collector terms.
           collectorTerms.add(edgeValue);
@@ -196,7 +197,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
         termBytesHash.get(i, ref);
         terms.add(ref);
       }
-      final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
+      final Automaton a = Automata.makeStringUnion(terms);
       return a;
     }
   }

@@ -1,0 +1,8 @@
+title: Un-deprecate 'qt' for certain use-cases where there's no alternative.
+type: deprecated
+authors:
+  - name: David Smiley
+    nick: dsmiley
+links:
+  - name: SOLR-17715
+    url: https://issues.apache.org/jira/browse/SOLR-17715

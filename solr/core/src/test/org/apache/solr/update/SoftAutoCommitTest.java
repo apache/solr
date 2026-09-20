@@ -107,7 +107,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     softTracker.setTimeUpperBound(-1);
     hardTracker.setDocsUpperBound(hardCommitMaxDocs);
     hardTracker.setTimeUpperBound(-1);
-    // simplify whats going on by only having soft auto commits trigger new searchers
+    // simplify what's going on by only having soft auto commits trigger new searchers
     hardTracker.setOpenSearcher(false);
 
     // Note: doc id counting starts at 0, see comment at start of test regarding "upper bound"
@@ -199,7 +199,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     hardTracker.setTimeUpperBound(
         commitWithinType.equals(CommitWithinType.HARD) ? -1 : hardCommitWaitMillis);
     hardTracker.setDocsUpperBound(-1);
-    // simplify whats going on by only having soft auto commits trigger new searchers
+    // simplify what's going on by only having soft auto commits trigger new searchers
     hardTracker.setOpenSearcher(false);
 
     // Add a single document

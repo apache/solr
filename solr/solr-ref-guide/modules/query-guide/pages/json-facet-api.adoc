@@ -824,7 +824,7 @@ Only after the top candidate buckets have been refined, will the actual `sort` b
     "prelim_sort": "sales_rank desc",
     "sort": "prod_quality desc",
     "facet": {
-      "prod_quality": "avg(div(prod(rating,sales_rank),prod(num_returns,price)))"
+      "prod_quality": "avg(div(product(rating,sales_rank),product(num_returns,price)))"
       "sales_rank": "sum(sales_rank)"
     }
   }

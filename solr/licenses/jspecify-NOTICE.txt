@@ -1,0 +1,3 @@
+This product includes software developed by the jspecify project
+https://github.com/jspecify/jspecify
+Copyright The JSpecify Authors

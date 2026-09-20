@@ -27,6 +27,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -37,7 +38,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
@@ -85,7 +85,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #INTEGER_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_INTEGER,
     /**
      * Single-valued Long, (e.g. indexed with {@link org.apache.solr.legacy.LegacyLongField})
@@ -94,7 +94,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #LONG_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_LONG,
     /**
      * Single-valued Float, (e.g. indexed with {@link org.apache.solr.legacy.LegacyFloatField})
@@ -103,7 +103,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #FLOAT_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_FLOAT,
     /**
      * Single-valued Double, (e.g. indexed with {@link org.apache.solr.legacy.LegacyDoubleField})
@@ -112,7 +112,7 @@ public class UninvertingReader extends FilterLeafReader {
      *
      * @deprecated Index with points and use {@link #DOUBLE_POINT} instead.
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     LEGACY_DOUBLE,
     /**
      * Single-valued Binary, (e.g. indexed with {@link StringField})
@@ -285,11 +285,12 @@ public class UninvertingReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasVectors(),
+                fi.hasTermVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 type,
+                DocValuesSkipIndexType.NONE,
                 fi.getDocValuesGen(),
                 fi.attributes(),
                 fi.getPointDimensionCount(),
@@ -465,8 +466,7 @@ public class UninvertingReader extends FilterLeafReader {
       info[i] = entries[i].toString();
       totalBytesUsed += entries[i].getValue().ramBytesUsed();
     }
-    String totalSize = RamUsageEstimator.humanReadableUnits(totalBytesUsed);
-    return new FieldCacheStats(totalSize, info);
+    return new FieldCacheStats(totalBytesUsed, info);
   }
 
   public static int getUninvertedStatsSize() {
@@ -479,10 +479,10 @@ public class UninvertingReader extends FilterLeafReader {
    * @lucene.internal
    */
   public static class FieldCacheStats {
-    public String totalSize;
+    public Long totalSize;
     public String[] info;
 
-    public FieldCacheStats(String totalSize, String[] info) {
+    public FieldCacheStats(Long totalSize, String[] info) {
       this.totalSize = totalSize;
       this.info = info;
     }

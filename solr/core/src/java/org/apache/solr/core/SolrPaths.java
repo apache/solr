@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.exec.OS;
@@ -36,7 +35,7 @@ public final class SolrPaths {
   public static final Path ALL_PATH = Path.of("_ALL_");
 
   /** Special singleton path set containing only {@link #ALL_PATH}. */
-  private static final Set<Path> ALL_PATHS = Collections.singleton(ALL_PATH);
+  private static final Set<Path> ALL_PATHS = Set.of(ALL_PATH);
 
   private SolrPaths() {} // don't create this
 
@@ -78,7 +77,7 @@ public final class SolrPaths {
           SolrException.ErrorCode.BAD_REQUEST,
           "Path "
               + path
-              + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
+              + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.security.allow.paths' to add other allowed paths.");
     }
   }
 
@@ -124,7 +123,13 @@ public final class SolrPaths {
      * Adds an allowed path. Detects "_ALL_" which means all paths are allowed. Does not detect "*"
      * (not supported as a {@link Path} on Windows), see {@link #addPath(String)}.
      */
+    @SuppressWarnings(
+        "ReferenceEquality") // ALL_PATHS is a unique sentinel; identity check is intentional
     public AllowPathBuilder addPath(Path path) {
+      if (path == null) {
+        return this;
+      }
+
       if (paths != ALL_PATHS) {
         if (path.equals(ALL_PATH)) {
           paths = ALL_PATHS;
@@ -139,7 +144,7 @@ public final class SolrPaths {
     }
 
     public Set<Path> build() {
-      return paths == null ? Collections.emptySet() : paths;
+      return paths == null ? Set.of() : paths;
     }
   }
 }

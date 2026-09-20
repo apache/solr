@@ -43,8 +43,8 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -112,7 +112,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
     assertU(commit());
 
     try (SolrQueryRequest solrQueryRequest =
-        new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
+        new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
 
       final BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       bqBuilder.add(new TermQuery(new Term("field", "wizard")), BooleanClause.Occur.SHOULD);
@@ -120,7 +120,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       final SolrIndexSearcher searcher = solrQueryRequest.getSearcher();
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
-      assertEquals(2, hits.totalHits.value);
+      assertEquals(2, hits.totalHits.value());
       assertEquals("0", searcher.getDocFetcher().doc(hits.scoreDocs[0].doc).get("id"));
       assertEquals("1", searcher.getDocFetcher().doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -162,7 +162,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
     assertU(commit());
 
     try (SolrQueryRequest solrQueryRequest =
-        new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
+        new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
       // Do ordinary BooleanQuery:
       final BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       bqBuilder.add(new TermQuery(new Term("field", "wizard")), BooleanClause.Occur.SHOULD);
@@ -171,7 +171,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
 
       // first run the standard query
       TopDocs hits = searcher.search(bqBuilder.build(), 10);
-      assertEquals(5, hits.totalHits.value);
+      assertEquals(5, hits.totalHits.value());
 
       assertEquals("0", searcher.getDocFetcher().doc(hits.scoreDocs[0].doc).get("id"));
       assertEquals("1", searcher.getDocFetcher().doc(hits.scoreDocs[1].doc).get("id"));
@@ -235,7 +235,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
   @Test
   public void testDocParam() throws Exception {
     try (SolrQueryRequest solrQueryRequest =
-        new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
+        new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
       List<Feature> features = makeFieldValueFeatures(new int[] {0}, "finalScore");
       List<Normalizer> norms =
           new ArrayList<Normalizer>(
@@ -245,11 +245,13 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
       query.setRequest(solrQueryRequest);
       LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
-      LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
+      LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.modelScorer(null);
       modelScr.getDocInfo().setOriginalDocScore(1f);
       for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
         assertNotNull(
-            ((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
+            ((Feature.FeatureWeight.FeatureScorer) feat.child())
+                .getDocInfo()
+                .getOriginalDocScore());
       }
 
       features = makeFieldValueFeatures(new int[] {0, 1, 2}, "finalScore");
@@ -261,11 +263,13 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
       query = new LTRScoringQuery(ltrScoringModel);
       query.setRequest(solrQueryRequest);
       wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
-      modelScr = wgt.scorer(null);
+      modelScr = wgt.modelScorer(null);
       modelScr.getDocInfo().setOriginalDocScore(1f);
       for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
         assertNotNull(
-            ((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
+            ((Feature.FeatureWeight.FeatureScorer) feat.child())
+                .getDocInfo()
+                .getOriginalDocScore());
       }
     }
   }

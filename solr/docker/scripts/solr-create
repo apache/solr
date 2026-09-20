@@ -60,7 +60,7 @@ else
 
     # See https://github.com/docker-solr/docker-solr/issues/27
     echo "Checking core"
-    if ! wget -O - "http://localhost:${SOLR_PORT:-8983}/solr/admin/cores?action=STATUS" | grep instanceDir >/dev/null; then
+    if ! wget -O - "http://localhost:${SOLR_PORT_LISTEN:-8983}/solr/admin/cores?action=STATUS" | grep instanceDir >/dev/null; then
       echo "Could not find any cores"
       exit 1
     fi

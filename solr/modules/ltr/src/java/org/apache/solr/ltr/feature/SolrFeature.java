@@ -29,10 +29,10 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
@@ -135,6 +135,7 @@ public class SolrFeature extends Feature {
   public class SolrFeatureWeight extends FeatureWeight {
     private final Weight solrQueryWeight;
 
+    @SuppressWarnings("ReferenceEquality")
     public SolrFeatureWeight(
         SolrIndexSearcher searcher,
         SolrQueryRequest request,
@@ -189,6 +190,8 @@ public class SolrFeature extends Feature {
           }
 
           DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+          // getDocSet() returns the live docs instance itself when there's nothing to filter;
+          // identity comparison detects that no-op case.
           if (filtersDocSet != searcher.getLiveDocSet()) {
             filterDocSetQuery = filtersDocSet.makeQuery();
           }
@@ -203,9 +206,9 @@ public class SolrFeature extends Feature {
       }
     }
 
-    private LocalSolrQueryRequest makeRequest(
+    private SolrQueryRequestBase makeRequest(
         SolrCore core, String solrQuery, List<String> fqs, String df) {
-      final NamedList<String> returnList = new NamedList<>();
+      final ModifiableSolrParams returnList = new ModifiableSolrParams();
       if ((solrQuery != null) && !solrQuery.isEmpty()) {
         returnList.add(CommonParams.Q, solrQuery);
       }
@@ -218,14 +221,14 @@ public class SolrFeature extends Feature {
         returnList.add(CommonParams.DF, df);
       }
       if (returnList.size() > 0) {
-        return new LocalSolrQueryRequest(core, returnList);
+        return new SolrQueryRequestBase(core, returnList);
       } else {
         return null;
       }
     }
 
     @Override
-    public FeatureScorer scorer(LeafReaderContext context) throws IOException {
+    public FeatureScorer featureScorer(LeafReaderContext context) throws IOException {
       Scorer solrScorer = solrQueryWeight.scorer(context);
       if (solrScorer == null) {
         return null;
@@ -245,8 +248,7 @@ public class SolrFeature extends Feature {
         try {
           return in.score();
         } catch (UnsupportedOperationException e) {
-          throw new FeatureException(
-              e.toString() + ": " + "Unable to extract feature for " + name, e);
+          throw new FeatureException(e + ": " + "Unable to extract feature for " + name, e);
         }
       }
     }

@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -71,7 +70,7 @@ import org.slf4j.LoggerFactory;
 // asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
-  static final String PARAM_WHITELIST_CTX_KEY =
+  public static final String PARAM_WHITELIST_CTX_KEY =
       DistributedUpdateProcessor.class + "PARAM_WHITELIST_CTX_KEY";
   public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
   public static final String DISTRIB_FROM_COLLECTION = "distrib.from.collection";
@@ -128,7 +127,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected final SolrQueryResponse rsp;
   private final AtomicUpdateDocumentMerger docMerger;
 
-  private final UpdateLog ulog;
+  protected final UpdateLog ulog;
   private final VersionInfo vinfo;
   private final boolean versionsStored;
   private boolean returnVersions;
@@ -214,7 +213,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return Replica.Type.NRT;
   }
 
-  boolean isLeader() {
+  public boolean isLeader() {
     return isLeader;
   }
 
@@ -681,8 +680,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
-    SolrRequest<SimpleSolrResponse> ur =
-        new GenericSolrRequest(METHOD.GET, "/get", params).setRequiresCollection(true);
+    var ur =
+        new GenericSolrRequest(METHOD.GET, "/get", SolrRequest.SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     String leaderUrl = getLeaderUrl(id);
 
@@ -692,11 +692,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> rsp;
     try {
-      rsp =
-          updateShardHandler
-              .getUpdateOnlyHttpClient()
-              .requestWithBaseUrl(leaderUrl, null, ur)
-              .getResponse();
+      rsp = updateShardHandler.getUpdateOnlyHttpClient().requestWithBaseUrl(leaderUrl, ur, null);
     } catch (SolrServerException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
@@ -999,9 +995,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  // internal helper method to setup request by processors who use this class.
-  // NOTE: not called by this class!
-  void setupRequest(UpdateCommand cmd) {
+  /**
+   * Set up / initialize. Exposed for other processors to determine {@link #isLeader()} afterward.
+   *
+   * @lucene.internal
+   */
+  public void setupRequest(UpdateCommand cmd) {
     isLeader = getNonZkLeaderAssumption(req);
   }
 

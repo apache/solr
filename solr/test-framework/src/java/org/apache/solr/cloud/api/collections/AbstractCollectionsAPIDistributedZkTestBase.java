@@ -20,12 +20,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,19 +32,17 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -63,15 +58,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests the Cloud Collections API.
@@ -80,7 +72,6 @@ import org.slf4j.LoggerFactory;
  * creation to subclasses
  */
 public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() {
@@ -89,7 +80,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @Override
@@ -113,9 +104,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -131,9 +120,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -288,7 +275,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .isSuccess());
 
     expectThrows(
-        SolrClient.RemoteSolrException.class,
+        RemoteSolrException.class,
         () -> {
           CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
               .setCreateNodeSet(nn1 + "," + nn2)
@@ -347,7 +334,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     waitForState(
         "Collection creation after a bad delete failed",
         "acollectionafterbaddelete",
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
   }
 
   @Test
@@ -375,16 +362,18 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         .process(cluster.getSolrClient());
 
     DocCollection collectionState = getCollectionState("nodeset_collection");
-    for (Replica replica : collectionState.getReplicas()) {
-      String replicaUrl = replica.getCoreUrl();
-      boolean matchingJetty = false;
-      for (String jettyUrl : baseUrls) {
-        if (replicaUrl.startsWith(jettyUrl)) {
-          matchingJetty = true;
+    for (Slice slice : collectionState) {
+      for (Replica replica : slice.getReplicas()) {
+        String replicaUrl = replica.getCoreUrl();
+        boolean matchingJetty = false;
+        for (String jettyUrl : baseUrls) {
+          if (replicaUrl.startsWith(jettyUrl)) {
+            matchingJetty = true;
+          }
         }
-      }
-      if (matchingJetty == false) {
-        fail("Expected replica to be on " + baseUrls + " but was on " + replicaUrl);
+        if (matchingJetty == false) {
+          fail("Expected replica to be on " + baseUrls + " but was on " + replicaUrl);
+        }
       }
     }
   }
@@ -483,7 +472,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
           collectionName,
           (n, c) -> {
             CollectionAdminRequest.Create req = createRequests[j];
-            return DocCollection.isFullyActive(
+            return SolrCloudTestCase.replicasForCollectionAreFullyActive(
                 n, c, req.getNumShards(), req.getReplicationFactor());
           });
 
@@ -513,22 +502,26 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     assertTrue("some core start times did not change on reload", allTimesAreCorrect);
   }
 
-  private void checkInstanceDirs(JettySolrRunner jetty) throws IOException {
+  private void checkInstanceDirs(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
-    Collection<SolrCore> theCores = cores.getCores();
-    for (SolrCore core : theCores) {
-      // look for core props file
-      Path instancedir = core.getInstancePath();
-      assertTrue(
-          "Could not find expected core.properties file",
-          Files.exists(instancedir.resolve("core.properties")));
+    cores.forEachLoadedCore(
+        core -> {
+          // look for core props file
+          Path instancedir = core.getInstancePath();
+          assertTrue(
+              "Could not find expected core.properties file",
+              Files.exists(instancedir.resolve("core.properties")));
 
-      Path expected = Path.of(jetty.getSolrHome()).resolve(core.getName());
+          Path expected = Path.of(jetty.getSolrHome()).resolve(core.getName());
 
-      assertTrue(
-          "Expected: " + expected + "\nFrom core stats: " + instancedir,
-          Files.isSameFile(expected, instancedir));
-    }
+          try {
+            assertTrue(
+                "Expected: " + expected + "\nFrom core stats: " + instancedir,
+                Files.isSameFile(expected, instancedir));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   private boolean waitForReloads(String collectionName, Map<String, Long> urlToTimeBefore)
@@ -567,9 +560,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
           CoreStatusResponse.SingleCoreData coreStatus;
-          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
-          }
+          SolrClient server = cluster.getSolrClient(replica);
+          coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           long before = coreStatus.startTime.getTime();
           urlToTime.put(replica.getCoreUrl(), before);
         }
@@ -582,28 +574,17 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private void checkNoTwoShardsUseTheSameIndexDir() {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
 
-    List<MBeanServer> servers = new ArrayList<>();
-    servers.add(ManagementFactory.getPlatformMBeanServer());
-    servers.addAll(MBeanServerFactory.findMBeanServer(null));
-    for (final MBeanServer server : servers) {
-      Set<ObjectName> mbeans = new HashSet<>(server.queryNames(null, null));
-      for (final ObjectName mbean : mbeans) {
-        try {
-          Map<String, String> props = mbean.getKeyPropertyList();
-          String category = props.get("category");
-          String name = props.get("name");
-          if ((category != null && category.equals(Category.CORE.toString()))
-              && (name != null && name.equals("indexDir"))) {
-            String indexDir = server.getAttribute(mbean, "Value").toString();
-            String key = props.get("dom2") + "." + props.get("dom3") + "." + props.get("dom4");
-            if (!indexDirToShardNamesMap.containsKey(indexDir)) {
-              indexDirToShardNamesMap.put(indexDir, new HashSet<>());
-            }
-            indexDirToShardNamesMap.get(indexDir).add(key);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      CoreContainer coreContainer = jetty.getCoreContainer();
+      List<String> coreNames = coreContainer.getAllCoreNames();
+      for (String coreName : coreNames) {
+        try (SolrCore core = coreContainer.getCore(coreName)) {
+          String indexDir = core.getIndexDir();
+          String shardKey = jetty.getNodeName() + "." + coreName;
+          if (!indexDirToShardNamesMap.containsKey(indexDir)) {
+            indexDirToShardNamesMap.put(indexDir, new HashSet<>());
           }
-        } catch (Exception e) {
-          // ignore, just continue - probably a "Value" attribute
-          // not found
+          indexDirToShardNamesMap.get(indexDir).add(shardKey);
         }
       }
     }
@@ -614,11 +595,12 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             + " : "
             + indexDirToShardNamesMap,
         indexDirToShardNamesMap.size() > 0);
-    for (Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
+
+    for (Map.Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
       if (entry.getValue().size() > 1) {
         fail(
             "We have shards using the same indexDir. E.g. shards "
-                + entry.getValue().toString()
+                + entry.getValue()
                 + " all use indexDir "
                 + entry.getKey());
       }
@@ -657,12 +639,10 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     assertNotNull(newReplica);
     cluster.waitForActiveCollection(collectionName, 2, 6);
 
-    try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
-      final var coreStatus = status.getCoreStatus(newReplica.getStr("core"));
-      String instanceDirStr = coreStatus.instanceDir;
-      assertEquals(instanceDirStr, instancePath.toString());
-    }
+    SolrClient coreclient = cluster.getSolrClient(newReplica);
+    CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
+    final var coreStatus = status.getCoreStatus(newReplica.getStr("core"));
+    assertEquals(coreStatus.instanceDir, instancePath.toString());
 
     // Test to make sure we can't create another replica with an existing core_name of that
     // collection
@@ -704,7 +684,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {

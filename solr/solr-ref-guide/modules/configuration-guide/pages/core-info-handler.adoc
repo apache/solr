@@ -1,0 +1,182 @@
+= Core Info Handler
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This API provides the same information displayed on the Dashboard.
+
+Core information is available via:
+
+[source,bash]
+----
+http://localhost:8983/solr/<collection-name>/admin/info
+----
+
+The `core` key in the response is an object with these keys:
+
+`schema`::
+Schema name.
+
+`host`::
+Hostname.  `null` if not available.
+
+`start`::
+Core start time.
+
+`now`::
+Current time on the core's host.
+
+`directory`::
+Object with directories relevant to the core.
+
+== Core Information API Examples
+
+Retrieve core information from a node in cloud mode.
+
+[source.bash]
+----
+curl http://localhost:8983/solr/techproducts/admin/info
+----
+
+[source.json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":9
+  },
+  "core":{
+    "schema":"techprodducts",
+    "now":"2026-01-31T17:47:54.199Z",
+    "start":"2026-01-31T17:41:52.034Z",
+    "directory":{
+      "cwd":"/var/solr/server",
+      "instance":"/var/solr/server/solr/techproducts_shard1_replica_n1",
+      "data":"/var/solr/server/solr/techproducts_shard1_replica_n1/data",
+      "dirimpl":"org.apache.solr.core.NRTCachingDirectoryFactory",
+      "index":"/var/solr/server/solr/techproducts_shard1_replica_n1/data/index"
+    }
+  }
+}
+----
+
+Retrieve system information from a core, without cloud mode.
+
+[source.bash]
+----
+curl http://localhost:8983/solr/gettingstarted/admin/system
+----
+
+[source.json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":23},
+  "core":{
+    "schema":"default-config",
+    "host":"fd7fbdff8b3e",
+    "now":"2019-07-18T11:56:51.472Z",
+    "start":"2019-07-18T11:54:52.509Z",
+    "directory":{
+      "cwd":"/opt/solr-8.1.1/server",
+      "instance":"/var/solr/data/gettingstarted",
+      "data":"/var/solr/data/gettingstarted/data",
+      "dirimpl":"org.apache.solr.core.NRTCachingDirectoryFactory",
+      "index":"/var/solr/data/gettingstarted/data/index"}},
+  "mode":"std",
+  "lucene":{
+    "solr-spec-version":"8.1.1",
+    "solr-impl-version":"8.1.1 fcbe46c28cef11bc058779afba09521de1b19bef - ab - 2019-05-22 15:20:01",
+    "lucene-spec-version":"8.1.1",
+    "lucene-impl-version":"8.1.1 fcbe46c28cef11bc058779afba09521de1b19bef - ab - 2019-05-22 15:15:24"},
+  "jvm":{
+    "version":"11.0.3 11.0.3+7",
+    "name":"Oracle Corporation OpenJDK 64-Bit Server VM",
+    "spec":{
+      "vendor":"Oracle Corporation",
+      "name":"Java Platform API Specification",
+      "version":"11"},
+    "jre":{
+      "vendor":"Oracle Corporation",
+      "version":"11.0.3"},
+    "vm":{
+      "vendor":"Oracle Corporation",
+      "name":"OpenJDK 64-Bit Server VM",
+      "version":"11.0.3+7"},
+    "processors":4,
+    "memory":{
+      "free":"394.9 MB",
+      "total":"512 MB",
+      "max":"512 MB",
+      "used":"117.1 MB (%22.9)",
+      "raw":{
+        "free":414074904,
+        "total":536870912,
+        "max":536870912,
+        "used":122796008,
+        "used%":22.87253886461258}},
+    "jmx":{
+      "classpath":"start.jar",
+      "commandLineArgs":["-Xms512m",
+        "-Xmx512m",
+        "-XX:+UseG1GC",
+        "-XX:+PerfDisableSharedMem",
+        "-XX:+ParallelRefProcEnabled",
+        "-XX:MaxGCPauseMillis=250",
+        "-XX:+UseLargePages",
+        "-XX:+AlwaysPreTouch",
+        "-Xlog:gc*:file=/var/solr/logs/solr_gc.log:time,uptime:filecount=9,filesize=20M",
+        "-Dcom.sun.management.jmxremote",
+        "-Dcom.sun.management.jmxremote.local.only=false",
+        "-Dcom.sun.management.jmxremote.ssl=false",
+        "-Dcom.sun.management.jmxremote.authenticate=false",
+        "-Dcom.sun.management.jmxremote.port=18983",
+        "-Dcom.sun.management.jmxremote.rmi.port=18983",
+        "-Dsolr.logs.dir=/var/solr/logs",
+        "-Dsolr.port.listen=8983",
+        "-DSTOP.PORT=7983",
+        "-DSTOP.KEY=solrrocks",
+        "-Duser.timezone=UTC",
+        "-Djetty.home=/opt/solr/server",
+        "-Dsolr.solr.home=/var/solr/data",
+        "-Dsolr.data.home=",
+        "-Dsolr.install.dir=/opt/solr",
+        "-Dsolr.configset.default.confdir=/opt/solr/server/solr/configsets/_default/conf",
+        "-Dlog4j.configurationFile=file:/var/solr/log4j2.xml",
+        "-Xss256k",
+        "-Dsolr.jetty.https.port=8983"],
+      "startTime":"2019-07-16T05:52:16.213Z",
+      "upTimeMS":194675370}},
+  "system":{
+    "name":"Linux",
+    "arch":"amd64",
+    "availableProcessors":4,
+    "systemLoadAverage":0.88,
+    "version":"4.9.0-9-amd64",
+    "committedVirtualMemorySize":4306059264,
+    "freePhysicalMemorySize":144179200,
+    "freeSwapSpaceSize":11626409984,
+    "processCpuLoad":0.0,
+    "processCpuTime":557920000000,
+    "systemCpuLoad":0.0,
+    "totalPhysicalMemorySize":4005376000,
+    "totalSwapSpaceSize":12884897792,
+    "maxFileDescriptorCount":1048576,
+    "openFileDescriptorCount":223,
+    "uname":"Linux fd7fbdff8b3e 4.9.0-9-amd64 #1 SMP Debian 4.9.168-1+deb9u3 (2019-06-16) x86_64 GNU/Linux\n",
+    "uptime":" 11:56:51 up 28 days, 23:00,  0 users,  load average: 0.88, 0.65, 0.62\n"}}
+----

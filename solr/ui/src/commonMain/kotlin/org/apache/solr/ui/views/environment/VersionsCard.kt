@@ -45,7 +45,7 @@ internal fun VersionsCard(
     modifier: Modifier = Modifier,
 ) = SolrCard(
     modifier = modifier,
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+    verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
     Text(
         text = "Versions",

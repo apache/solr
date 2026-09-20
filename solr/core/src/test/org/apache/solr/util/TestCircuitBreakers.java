@@ -19,8 +19,10 @@ package org.apache.solr.util;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import com.sun.management.OperatingSystemMXBean;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -43,6 +46,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +60,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     System.setProperty("filterCache.enabled", "false");
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
+    System.setProperty("solr.metrics.jvm.enabled", "true");
     System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
 
     initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
@@ -164,40 +169,35 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     props.setProperty("solr.circuitbreaker.update.cpu.warnonly", "true");
     System.setProperties(props);
 
-    try {
-      final var parsedBreakers =
-          CircuitBreakerRegistry.parseCircuitBreakersFromProperties(h.getCoreContainer()).stream()
-              .sorted(Comparator.comparing(breaker -> breaker.toString()))
-              .collect(Collectors.toList());
+    final var parsedBreakers =
+        CircuitBreakerRegistry.parseCircuitBreakersFromProperties(h.getCoreContainer()).stream()
+            .sorted(Comparator.comparing(breaker -> breaker.toString()))
+            .collect(Collectors.toList());
 
-      assertEquals(3, parsedBreakers.size());
+    assertEquals(3, parsedBreakers.size());
 
-      assertTrue(
-          "Expected CPUCircuitBreaker, but got " + parsedBreakers.get(0).getClass().getName(),
-          parsedBreakers.get(0) instanceof CPUCircuitBreaker);
-      final var cpuBreaker = (CPUCircuitBreaker) parsedBreakers.get(0);
-      assertEquals(56.0, cpuBreaker.getCpuUsageThreshold(), 0.1);
-      assertEquals(true, cpuBreaker.isWarnOnly());
-      assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), cpuBreaker.getRequestTypes());
+    assertTrue(
+        "Expected CPUCircuitBreaker, but got " + parsedBreakers.get(0).getClass().getName(),
+        parsedBreakers.get(0) instanceof CPUCircuitBreaker);
+    final var cpuBreaker = (CPUCircuitBreaker) parsedBreakers.get(0);
+    assertEquals(56.0, cpuBreaker.getCpuUsageThreshold(), 0.1);
+    assertEquals(true, cpuBreaker.isWarnOnly());
+    assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), cpuBreaker.getRequestTypes());
 
-      assertTrue(
-          "Expected LoadAverageCircuitBreaker, but got "
-              + parsedBreakers.get(1).getClass().getName(),
-          parsedBreakers.get(1) instanceof LoadAverageCircuitBreaker);
-      final var loadAvgBreaker = (LoadAverageCircuitBreaker) parsedBreakers.get(1);
-      assertEquals(3.4, loadAvgBreaker.getLoadAverageThreshold(), 0.1);
-      assertEquals(false, loadAvgBreaker.isWarnOnly());
-      assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), loadAvgBreaker.getRequestTypes());
+    assertTrue(
+        "Expected LoadAverageCircuitBreaker, but got " + parsedBreakers.get(1).getClass().getName(),
+        parsedBreakers.get(1) instanceof LoadAverageCircuitBreaker);
+    final var loadAvgBreaker = (LoadAverageCircuitBreaker) parsedBreakers.get(1);
+    assertEquals(3.4, loadAvgBreaker.getLoadAverageThreshold(), 0.1);
+    assertEquals(false, loadAvgBreaker.isWarnOnly());
+    assertEquals(Set.of(SolrRequest.SolrRequestType.UPDATE), loadAvgBreaker.getRequestTypes());
 
-      assertTrue(
-          "Expected MemoryCircuitBreaker, but got " + parsedBreakers.get(2).getClass().getName(),
-          parsedBreakers.get(2) instanceof MemoryCircuitBreaker);
-      final var memBreaker = (MemoryCircuitBreaker) parsedBreakers.get(2);
-      assertEquals(false, memBreaker.isWarnOnly());
-      assertEquals(Set.of(SolrRequest.SolrRequestType.QUERY), memBreaker.getRequestTypes());
-    } finally {
-      props.keySet().stream().forEach(k -> System.clearProperty((String) k));
-    }
+    assertTrue(
+        "Expected MemoryCircuitBreaker, but got " + parsedBreakers.get(2).getClass().getName(),
+        parsedBreakers.get(2) instanceof MemoryCircuitBreaker);
+    final var memBreaker = (MemoryCircuitBreaker) parsedBreakers.get(2);
+    assertEquals(false, memBreaker.isWarnOnly());
+    assertEquals(Set.of(SolrRequest.SolrRequestType.QUERY), memBreaker.getRequestTypes());
   }
 
   @SuppressWarnings("resource")
@@ -211,7 +211,6 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
                 SolrException ex =
                     expectThrows(SolrException.class, () -> new MockCircuitBreaker(true));
                 assertTrue(ex.getMessage().contains("Invalid error code"));
-                System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
               });
     }
   }
@@ -274,6 +273,39 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     circuitBreaker.setThreshold(75);
 
     assertThatHighQueryLoadTrips(circuitBreaker, 5);
+  }
+
+  /**
+   * Reads a real CPU usage value from the metrics, guarding against a regression where a renamed
+   * JVM metric made {@link CPUCircuitBreaker#calculateLiveCPUUsage()} silently return -1. Gated by
+   * an independent native-CPU probe so that a name regression fails here rather than being mistaken
+   * for an unsupported machine (both otherwise yield -1).
+   */
+  public void testCPUCircuitBreakerReadsLiveUsage() {
+    Assume.assumeTrue("No native CPU measurement on this machine", nativeCpuMeasurementSupported());
+
+    double usage = new ExposedCPUCircuitBreaker(h.getCoreContainer()).liveCPUUsage();
+    assertTrue("Expected CPU usage >= 0 but got " + usage, usage >= 0);
+  }
+
+  @SuppressForbidden(reason = "Probing com.sun OperatingSystemMXBean for native CPU support")
+  private static boolean nativeCpuMeasurementSupported() {
+    if (!(ManagementFactory.getOperatingSystemMXBean() instanceof OperatingSystemMXBean osBean)) {
+      return false;
+    }
+    // getCpuLoad() needs two samples and may return a negative value on the first calls
+    for (int i = 0; i < 10; i++) {
+      if (osBean.getCpuLoad() >= 0) {
+        return true;
+      }
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return false;
+      }
+    }
+    return false;
   }
 
   /**
@@ -393,11 +425,11 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
     public FakeMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
     }
 
     @Override
-    protected long getAvgMemoryUsage() {
+    protected long getCurrentMemoryUsage() {
       return Long.MAX_VALUE;
     }
   }
@@ -406,12 +438,12 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker() {
-      super(1, 1);
+      super();
       this.count = new AtomicInteger(0);
     }
 
     @Override
-    protected long getAvgMemoryUsage() {
+    protected long getCurrentMemoryUsage() {
       int localCount = count.getAndIncrement();
 
       if (localCount >= 4) {
@@ -443,6 +475,17 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     @Override
     protected double calculateLiveCPUUsage() {
       return Double.MAX_VALUE;
+    }
+  }
+
+  /** Exposes the real (protected) CPU usage calculation for testing. */
+  private static class ExposedCPUCircuitBreaker extends CPUCircuitBreaker {
+    public ExposedCPUCircuitBreaker(CoreContainer coreContainer) {
+      super(coreContainer);
+    }
+
+    double liveCPUUsage() {
+      return calculateLiveCPUUsage();
     }
   }
 

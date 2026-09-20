@@ -1,0 +1,7 @@
+title: SolrJ RemoteSolrException moved to SolrClient.
+type: other
+authors:
+- name: '@samuelrivascoding'
+links:
+- name: SOLR-17285
+  url: https://issues.apache.org/jira/browse/SOLR-17285

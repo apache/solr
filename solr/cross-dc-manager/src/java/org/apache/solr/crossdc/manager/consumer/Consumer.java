@@ -17,12 +17,8 @@
 package org.apache.solr.crossdc.manager.consumer;
 
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.PORT;
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.ZK_CONNECT_STRING;
 
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.servlets.MetricsServlet;
-import com.codahale.metrics.servlets.ThreadDumpServlet;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,17 +32,15 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.ConfUtil;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.SensitivePropRedactionUtils;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // Cross-DC Consumer main class
 public class Consumer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String METRICS_REGISTRY = "metrics";
 
   private Server server;
   private CrossDcConsumer crossDcConsumer;
@@ -84,11 +78,10 @@ public class Consumer {
 
     ConfUtil.verifyProperties(properties);
 
-    String bootstrapServers = (String) properties.get(KafkaCrossDcConf.BOOTSTRAP_SERVERS);
-    String topicName = (String) properties.get(TOPIC_NAME);
+    OtelMetrics metrics = new OtelMetrics();
 
     KafkaCrossDcConf conf = new KafkaCrossDcConf(properties);
-    crossDcConsumer = getCrossDcConsumer(conf, startLatch);
+    crossDcConsumer = getCrossDcConsumer(conf, metrics, startLatch);
 
     // jetty endpoint for /metrics
     int port = conf.getInt(PORT);
@@ -98,11 +91,14 @@ public class Consumer {
       ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
       context.setContextPath("/");
       server.setHandler(context);
+
       context.addServlet(ThreadDumpServlet.class, "/threads/*");
-      context.addServlet(MetricsServlet.class, "/metrics/*");
       context.setAttribute(
-          "com.codahale.metrics.servlets.MetricsServlet.registry",
-          SharedMetricRegistries.getOrCreate(METRICS_REGISTRY));
+          MetricsServlet.SOLR_METRICS_MANAGER_ATTRIBUTE, metrics.getMetricManager());
+      context.addServlet(MetricsServlet.class, "/metrics/*");
+      context.setAttribute(HealthCheckServlet.KAFKA_CROSSDC_CONSUMER, crossDcConsumer);
+      context.addServlet(HealthCheckServlet.class, "/health/*");
+
       for (ServletMapping mapping : context.getServletHandler().getServletMappings()) {
         if (log.isInfoEnabled()) {
           log.info(" - {}", mapping.getPathSpecs()[0]);
@@ -153,8 +149,9 @@ public class Consumer {
     }
   }
 
-  protected CrossDcConsumer getCrossDcConsumer(KafkaCrossDcConf conf, CountDownLatch startLatch) {
-    return new KafkaCrossDcConsumer(conf, startLatch);
+  protected CrossDcConsumer getCrossDcConsumer(
+      KafkaCrossDcConf conf, ConsumerMetrics metrics, CountDownLatch startLatch) {
+    return new KafkaCrossDcConsumer(conf, metrics, startLatch);
   }
 
   public static void main(String[] args) {

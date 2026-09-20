@@ -1,0 +1,9 @@
+title: MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme
+  if "Basic" authentication used and no plugin with "Basic" scheme found. This allows
+  the new UI to authenticate in browser without a credentials prompt being displayed.
+  The MultiAuthPlugin can now also be configured with a single plugin.
+type: changed
+authors: []
+links:
+- name: SOLR-17930
+  url: https://issues.apache.org/jira/browse/SOLR-17930

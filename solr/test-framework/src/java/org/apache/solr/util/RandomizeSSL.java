@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.junit.Assume.assumeFalse;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -42,12 +44,12 @@ public @interface RandomizeSSL {
   // we don't choose ssl that often by default because of SOLR-5776
   public static final double DEFAULT_ODDS = 0.2D;
 
-  /** Comment to inlcude when logging details of SSL randomization */
+  /** Comment to include when logging details of SSL randomization */
   public String reason() default "";
 
   /**
    * Odds (as ratio relative to 1) that SSL should be selected in a typical run. Must either be
-   * betwen 0.0 and 1.0 (inclusively) or NaN in which case a sensible should be used. Actual Odds
+   * between 0.0 and 1.0 (inclusively) or NaN in which case a sensible should be used. Actual Odds
    * used for randomization may be higher depending on runner options such as <code>tests.multiplier
    * </code> or <code>tests.nightly</code>
    *
@@ -59,7 +61,7 @@ public @interface RandomizeSSL {
 
   /**
    * Odds (as ratio relative to 1) that SSL should be selected in a typical run. Must either be
-   * betwen 0.0 and 1.0 (inclusively) or NaN in which case the effective value of {@link #ssl}
+   * between 0.0 and 1.0 (inclusively) or NaN in which case the effective value of {@link #ssl}
    * should be used. Actual Odds used for randomization may be higher depending on runner options
    * such as <code>tests.multiplier</code> or <code>tests.nightly</code>
    *
@@ -126,6 +128,16 @@ public @interface RandomizeSSL {
                           LuceneTestCase.TEST_NIGHTLY,
                           LuceneTestCase.RANDOM_MULTIPLIER));
 
+      // a test can configure @RandomizeSSL(0.0) or with 1.0, and we must honor that.
+      final String sslProp = System.getProperty("tests.ssl");
+      if ("true".equals(sslProp)) {
+        assumeFalse("tests.ssl=true but test does not support SSL", ssl == 0.0);
+        return new SSLTestConfig(true, useClientAuth);
+      } else if ("false".equals(sslProp)) {
+        assumeFalse("tests.ssl=false but test requires SSL", ssl == 1.0);
+        return new SSLTestConfig(false, false);
+      }
+
       return new SSLTestConfig(useSSL, useClientAuth);
     }
 
@@ -143,14 +155,14 @@ public @interface RandomizeSSL {
 
       assert 0 < multiplier;
 
-      // negate the odds so we can then divide it by our multipling factors
+      // negate the odds so we can then divide it by our multiplying factors
       // to increase the final odds
       return 1.0D
           - ((1.0D - declaredOdds) / ((nightly ? 1.1D : 1.0D) * (1.0D + Math.log(multiplier))));
     }
 
     /** Returns an SSLRandomizer suitable for the specified (test) class */
-    public static final SSLRandomizer getSSLRandomizerForClass(Class<?> clazz) {
+    public static SSLRandomizer getSSLRandomizerForClass(Class<?> clazz) {
 
       final SuppressSSL suppressSSL = clazz.getAnnotation(SuppressSSL.class);
       if (null != suppressSSL) {
@@ -172,24 +184,18 @@ public @interface RandomizeSSL {
       final double def = Double.isNaN(randomizeSSL.value()) ? DEFAULT_ODDS : randomizeSSL.value();
       if (def < 0.0D || 1.0D < def) {
         throw new IllegalArgumentException(
-            clazz.getName()
-                + ": default value is not a ratio between 0 and 1: "
-                + randomizeSSL.toString());
+            clazz.getName() + ": default value is not a ratio between 0 and 1: " + randomizeSSL);
       }
       final double ssl = Double.isNaN(randomizeSSL.ssl()) ? def : randomizeSSL.ssl();
       if (ssl < 0.0D || 1.0D < ssl) {
         throw new IllegalArgumentException(
-            clazz.getName()
-                + ": ssl value is not a ratio between 0 and 1: "
-                + randomizeSSL.toString());
+            clazz.getName() + ": ssl value is not a ratio between 0 and 1: " + randomizeSSL);
       }
       final double clientAuth =
           Double.isNaN(randomizeSSL.clientAuth()) ? ssl : randomizeSSL.clientAuth();
       if (clientAuth < 0.0D || 1 < clientAuth) {
         throw new IllegalArgumentException(
-            clazz.getName()
-                + ": clientAuth value is not a ratio between 0 and 1: "
-                + randomizeSSL.toString());
+            clazz.getName() + ": clientAuth value is not a ratio between 0 and 1: " + randomizeSSL);
       }
       return new SSLRandomizer(ssl, clientAuth, randomizeSSL.toString());
     }

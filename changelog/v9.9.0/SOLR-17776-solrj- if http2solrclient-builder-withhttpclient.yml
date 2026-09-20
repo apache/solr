@@ -1,0 +1,13 @@
+title: 'SolrJ: If Http2SolrClient.Builder.withHttpClient is used, (and it''s used
+  more in 9.8, shifted from deprecated Apache HttpClient based clients), settings
+  affecting HttpClient construction cannot be customized; an IllegalStateException
+  will now be thrown if you try. The connection timeout cannot be customized, but
+  idle & request timeouts can be. Callers (various places in Solr) no longer customize
+  the connection timeout.'
+type: changed
+authors:
+- name: David Smiley
+- name: Luke Kot-Zaniewski
+links:
+- name: SOLR-17776
+  url: https://issues.apache.org/jira/browse/SOLR-17776

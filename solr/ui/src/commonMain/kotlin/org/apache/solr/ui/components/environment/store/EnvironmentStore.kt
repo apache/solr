@@ -42,7 +42,7 @@ internal interface EnvironmentStore : Store<Intent, State, Nothing> {
         /**
          * Intent for requesting system data.
          */
-        data object FetchSystemData: Intent
+        data object FetchSystemData : Intent
     }
 
     /**

@@ -49,7 +49,6 @@ import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -72,7 +71,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
@@ -89,11 +87,12 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.api.model.FileMetaData;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -102,6 +101,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -110,13 +110,14 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -177,15 +178,11 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final Http2SolrClient solrClient;
-
-  private Integer connTimeout;
+  private final HttpJettySolrClient solrClient;
 
   private Integer soTimeout;
 
   private boolean skipCommitOnLeaderVersionZero = true;
-
-  private boolean clearLocalIndexFirst = false;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE =
       "Interrupted while waiting for modify lock";
@@ -251,14 +248,13 @@ public class IndexFetcher {
   // It's crucial not to remove the authentication credentials as they are essential for User
   // managed replication.
   // GitHub PR #2276
-  private Http2SolrClient createSolrClient(
+  private HttpJettySolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
-    return new Http2SolrClient.Builder(leaderBaseUrl)
+    return new HttpJettySolrClient.Builder(leaderBaseUrl)
         .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
         .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
         .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -287,11 +283,10 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
     useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
-    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
-    soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
+    soTimeout = getParameter(initArgs, SolrHttpConstants.PROP_SO_TIMEOUT, 120000, null);
 
-    String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
-    String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+    String httpBasicAuthUser = (String) initArgs.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
+    String httpBasicAuthPassword = (String) initArgs.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
     solrClient =
         createSolrClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, leaderBaseUrl);
   }
@@ -307,7 +302,7 @@ public class IndexFetcher {
         solrCore
             .getCoreContainer()
             .getAllowListUrlChecker()
-            .checkAllowList(Collections.singletonList(leaderCoreUrl), clusterState);
+            .checkAllowList(List.of(leaderCoreUrl), clusterState);
       } catch (MalformedURLException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Malformed 'leaderUrl' " + leaderCoreUrl, e);
@@ -344,15 +339,23 @@ public class IndexFetcher {
     return toReturn;
   }
 
+  private GenericSolrRequest createReplicationHandlerRequest(SolrParams solrParams) {
+    return new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            ReplicationHandler.PATH,
+            SolrRequest.SolrRequestType.ADMIN,
+            solrParams)
+        .setRequiresCollection(true);
+  }
+
   /** Gets the latest commit version and generation from the leader */
   public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req = createReplicationHandlerRequest(params);
     try {
-      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -368,16 +371,14 @@ public class IndexFetcher {
     params.set(COMMAND, CMD_GET_FILE_LIST);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response =
-          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      NamedList<?> response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
       else {
-        filesToDownload = Collections.emptyList();
+        filesToDownload = List.of();
         log.error("No files to download for index generation: {}", gen);
       }
 
@@ -404,8 +405,19 @@ public class IndexFetcher {
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload)
       throws IOException, InterruptedException {
+    try {
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload);
+    } catch (InvalidIndexGenerationException e) {
+      log.info(
+          "Leader no longer has index generation {}; restarting replication from its latest generation",
+          e.generation);
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload);
+    }
+  }
 
-    this.clearLocalIndexFirst = false;
+  private IndexFetchResult fetchLatestIndexOnce(boolean forceReplication, boolean forceCoreReload)
+      throws IOException, InterruptedException {
+
     boolean cleanupDone = false;
     boolean successfulInstall = false;
     markReplicationStart();
@@ -509,9 +521,7 @@ public class IndexFetcher {
 
       if (log.isInfoEnabled()) {
         log.info("Follower's generation: {}", commit.getGeneration());
-        log.info(
-            "Follower's version: {}",
-            IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // nowarn
+        log.info("Follower's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
       }
 
       // Leader's version is 0 and generation is 0 -  not open for replication
@@ -526,17 +536,17 @@ public class IndexFetcher {
           // we just clear ours and commit
           log.info("New index in Leader. Deleting mine...");
           RefCounted<IndexWriter> iw =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore, false);
           try {
             iw.get().deleteAll();
           } finally {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeFollowerCommitRefresh();
-          if (skipCommitOnLeaderVersionZero) {
+          if (skipCommitOnLeaderVersionZero || solrCore.readOnly) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
-            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+            SolrQueryRequest req = new SolrQueryRequestBase(solrCore, new ModifiableSolrParams());
             solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
           }
         }
@@ -558,6 +568,7 @@ public class IndexFetcher {
       log.info("Starting replication process");
       // get the list of files first
       fetchFileList(latestGeneration);
+      assert testWait.getAsBoolean();
       // this can happen if the commit point is deleted before we fetch the file list.
       if (filesToDownload.isEmpty()) {
         return IndexFetchResult.PEER_INDEX_COMMIT_DELETED;
@@ -620,7 +631,7 @@ public class IndexFetcher {
           // are successfully deleted
           solrCore.getUpdateHandler().newIndexWriter(true);
           RefCounted<IndexWriter> writer =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null, false);
           try {
             IndexWriter indexWriter = writer.get();
             int c = 0;
@@ -693,9 +704,7 @@ public class IndexFetcher {
                 // let the system know we are changing dir's and the old one
                 // may be closed
                 if (indexDir != null) {
-                  if (!this.clearLocalIndexFirst) { // it was closed earlier
-                    solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-                  }
+                  solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
                   // Cleanup all index files not associated with any *named* snapshot.
                   solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
                 }
@@ -718,8 +727,6 @@ public class IndexFetcher {
             }
           }
         } finally {
-          solrCore.searchEnabled = true;
-          solrCore.indexEnabled = true;
           if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
@@ -767,6 +774,8 @@ public class IndexFetcher {
       } catch (ReplicationHandlerException e) {
         log.error("User aborted Replication", e);
         return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
+      } catch (InvalidIndexGenerationException e) {
+        throw e;
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
@@ -923,9 +932,6 @@ public class IndexFetcher {
       props.setProperty(INDEX_REPLICATED_AT, String.valueOf(replicationTime));
       props.setProperty(PREVIOUS_CYCLE_TIME_TAKEN, String.valueOf(replicationTimeTaken));
       props.setProperty(TIMES_INDEX_REPLICATED, String.valueOf(indexCount));
-      if (clearLocalIndexFirst) {
-        props.setProperty(CLEARED_LOCAL_IDX, "true");
-      }
       if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
         props.setProperty(CONF_FILES_REPLICATED, confFiles.toString());
         props.setProperty(CONF_FILES_REPLICATED_AT, String.valueOf(replicationTime));
@@ -952,7 +958,7 @@ public class IndexFetcher {
       try (Writer outFile =
           new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8)) {
         props.store(outFile, "Replication details");
-        dir.sync(Collections.singleton(tmpFileName));
+        dir.sync(Set.of(tmpFileName));
       }
 
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
@@ -1010,12 +1016,18 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a
     // reload
     // todo stop keeping solrCore around
-    try (SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName())) {
+    final CoreContainer coreContainer = solrCore.getCoreContainer();
+    if (coreContainer.isShutDown()) {
+      log.info("CoreContainer is shut down, skipping opening a new searcher");
+      // Opening a searcher now would fail anyway, and taking a reference would make this thread
+      // the one that runs the core's close -- from which a partial failure leaks directories.
+      return;
+    }
+    try (SolrCore core = coreContainer.getCore(solrCore.getName())) {
       if (core == null) {
         return; // core closed, presumably
       }
-      @SuppressWarnings("unchecked")
-      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
       RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true, true, waitSearcher, true);
       try {
         if (waitSearcher[0] != null) {
@@ -1125,21 +1137,11 @@ public class IndexFetcher {
                 || (tmpIndexDir instanceof FilterDirectory
                     && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
 
-    long totalSpaceRequired = 0;
-    for (Map<String, Object> file : filesToDownload) {
-      long size = (Long) file.get(SIZE);
-      totalSpaceRequired += size;
-    }
-
     if (log.isInfoEnabled()) {
       log.info(
           "tmpIndexDir_type  : {} , {}",
           tmpIndexDir.getClass(),
           FilterDirectory.unwrap(tmpIndexDir));
-    }
-    long usableSpace = usableDiskSpaceProvider.apply(tmpIndexDirPath);
-    if (getApproxTotalSpaceReqd(totalSpaceRequired) > usableSpace) {
-      deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
     }
 
     for (Map<String, Object> file : filesToDownload) {
@@ -1198,84 +1200,8 @@ public class IndexFetcher {
   // only for testing purposes. do not use this anywhere else
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
-  static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
 
   // ------------ END---------------------
-
-  private static Long getUsableSpace(String dir) {
-    try {
-      Path file = Path.of(dir);
-      if (Files.notExists(file)) {
-        file = file.getParent();
-        // this is not a disk directory. so just pretend that there is enough space
-        if (Files.notExists(file)) {
-          return Long.MAX_VALUE;
-        }
-      }
-      FileStore fileStore = Files.getFileStore(file);
-      return fileStore.getUsableSpace();
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not free disk space", e);
-    }
-  }
-
-  private long getApproxTotalSpaceReqd(long totalSpaceRequired) {
-    long approxTotalSpaceReqd = (long) (totalSpaceRequired * 1.05); // add 5% extra for safety
-    // we should have an extra of 100MB free after everything is downloaded
-    approxTotalSpaceReqd += (100 * 1024 * 1024);
-    return approxTotalSpaceReqd;
-  }
-
-  private void deleteFilesInAdvance(
-      Directory indexDir, String indexDirPath, long usableDiskSpace, long totalSpaceRequired)
-      throws IOException {
-    long actualSpaceReqd = totalSpaceRequired;
-    List<String> filesTobeDeleted = new ArrayList<>();
-    long clearedSpace = 0;
-    // go through each file to check if this needs to be deleted
-    for (String f : indexDir.listAll()) {
-      for (Map<String, Object> fileInfo : filesToDownload) {
-        if (f.equals(fileInfo.get(NAME))) {
-          String filename = (String) fileInfo.get(NAME);
-          long size = (Long) fileInfo.get(SIZE);
-          CompareResult compareResult =
-              compareFile(indexDir, filename, size, (Long) fileInfo.get(CHECKSUM));
-          if (!compareResult.equal || filesToAlwaysDownloadIfNoChecksums(f, size, compareResult)) {
-            filesTobeDeleted.add(f);
-            clearedSpace += size;
-          } else {
-            /*this file will not be downloaded*/
-            actualSpaceReqd -= size;
-          }
-        }
-      }
-    }
-    if (usableDiskSpace > getApproxTotalSpaceReqd(actualSpaceReqd)) {
-      // after considering the files actually available locally we really don't need to do any
-      // delete
-      return;
-    }
-    log.info(
-        "This disk does not have enough space to download the index from leader. So cleaning up the local index. "
-            + " This may lead to loss of data/or node if index replication fails in between");
-    // now we should disable searchers and index writers because this core will not have all the
-    // required files
-    this.clearLocalIndexFirst = true;
-    this.solrCore.searchEnabled = false;
-    this.solrCore.indexEnabled = false;
-    solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-    solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
-    this.solrCore.closeSearcher();
-    assert testWait.getAsBoolean();
-    solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
-    for (String f : filesTobeDeleted) {
-      try {
-        indexDir.deleteFile(f);
-      } catch (FileNotFoundException | NoSuchFileException e) {
-        // no problem , it was deleted by someone else
-      }
-    }
-  }
 
   static boolean filesToAlwaysDownloadIfNoChecksums(
       String filename, long size, CompareResult compareResult) {
@@ -1297,11 +1223,11 @@ public class IndexFetcher {
       Directory indexDir, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum) {
     CompareResult compareResult = new CompareResult();
     try {
-      try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
-        long indexFileLen = indexInput.length();
-        long indexFileChecksum = 0;
-
-        if (backupIndexFileChecksum != null) {
+      long indexFileLen;
+      long indexFileChecksum = 0;
+      if (backupIndexFileChecksum != null) {
+        try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
+          indexFileLen = indexInput.length();
           try {
             indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
             compareResult.checkSummed = true;
@@ -1309,47 +1235,49 @@ public class IndexFetcher {
             log.warn("Could not retrieve checksum from file.", e);
           }
         }
+      } else {
+        indexFileLen = indexDir.fileLength(filename);
+      }
 
-        if (!compareResult.checkSummed) {
-          // we don't have checksums to compare
+      if (!compareResult.checkSummed) {
+        // we don't have checksums to compare
 
-          if (indexFileLen == backupIndexFileLen) {
-            compareResult.equal = true;
-            return compareResult;
-          } else {
-            log.info(
-                "File {} did not match. expected length is {} and actual length is {}",
-                filename,
-                backupIndexFileLen,
-                indexFileLen);
-            compareResult.equal = false;
-            return compareResult;
-          }
-        }
-
-        // we have checksums to compare
-
-        if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+        if (indexFileLen == backupIndexFileLen) {
           compareResult.equal = true;
           return compareResult;
         } else {
-          log.warn(
-              "File {} did not match. expected checksum is {} and actual is checksum {}. "
-                  + "expected length is {} and actual length is {}",
+          log.info(
+              "File {} did not match. expected length is {} and actual length is {}",
               filename,
-              backupIndexFileChecksum,
-              indexFileChecksum,
               backupIndexFileLen,
               indexFileLen);
           compareResult.equal = false;
           return compareResult;
         }
       }
+
+      // we have checksums to compare
+
+      if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+        compareResult.equal = true;
+        return compareResult;
+      } else {
+        log.warn(
+            "File {} did not match. expected checksum is {} and actual is checksum {}. "
+                + "expected length is {} and actual length is {}",
+            filename,
+            backupIndexFileChecksum,
+            indexFileChecksum,
+            backupIndexFileLen,
+            indexFileLen);
+        compareResult.equal = false;
+        return compareResult;
+      }
     } catch (NoSuchFileException | FileNotFoundException e) {
       compareResult.equal = false;
       return compareResult;
     } catch (IOException e) {
-      log.error("Could not read file {}. Downloading it again", filename, e);
+      log.error("Could not read file {}. Assuming it is out of date", filename, e);
       compareResult.equal = false;
       return compareResult;
     }
@@ -1380,22 +1308,9 @@ public class IndexFetcher {
       String filename = (String) file.get(NAME);
       Long length = (Long) file.get(SIZE);
       Long checksum = (Long) file.get(CHECKSUM);
-      if (slowFileExists(dir, filename)) {
-        if (checksum != null) {
-          if (!(compareFile(dir, filename, length, checksum).equal)) {
-            // file exists and size or checksum is different, therefore we must download it again
-            return true;
-          }
-        } else {
-          if (length != dir.fileLength(filename)) {
-            log.warn(
-                "File {} did not match. expected length is {} and actual length is {}",
-                filename,
-                length,
-                dir.fileLength(filename));
-            return true;
-          }
-        }
+      if (!(compareFile(dir, filename, length, checksum).equal)) {
+        // file exists and size or checksum is different, therefore we must download it again
+        return true;
       }
     }
     return false;
@@ -1470,7 +1385,7 @@ public class IndexFetcher {
       return Files.walk(dir).filter(Files::isRegularFile).collect(Collectors.toList());
     } catch (IOException e) {
       log.warn("Could not walk file tree", e);
-      return Collections.emptyList();
+      return List.of();
     }
   }
 
@@ -1529,8 +1444,7 @@ public class IndexFetcher {
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(
       List<Map<String, Object>> confFilesToDownload) {
-    if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return Collections.emptyList();
+    if (confFilesToDownload == null || confFilesToDownload.isEmpty()) return List.of();
     // build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
     NamedList<String> names = new NamedList<>();
@@ -1552,7 +1466,7 @@ public class IndexFetcher {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
+    return nameVsFile.isEmpty() ? List.of() : nameVsFile.values();
   }
 
   static boolean delTree(Path dir) {
@@ -1597,25 +1511,25 @@ public class IndexFetcher {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     // create a new instance. or else iterator may fail
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     // make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.emptyList() : new ArrayList<>(tmp);
+    return tmp == null ? List.of() : new ArrayList<>(tmp);
   }
 
   // TODO: currently does not reflect conf files
@@ -1694,6 +1608,8 @@ public class IndexFetcher {
       bytesDownloaded = 0;
       try {
         fetch();
+      } catch (InvalidIndexGenerationException e) {
+        throw e;
       } catch (Exception e) {
         if (!aborted) {
           IndexFetcher.log.error("Error fetching file, doing one retry...", e);
@@ -1706,6 +1622,7 @@ public class IndexFetcher {
     }
 
     private void fetch() throws Exception {
+      boolean invalidIndexGeneration = false;
       try {
         while (true) {
           try (FastInputStream fis = getStream()) {
@@ -1718,17 +1635,22 @@ public class IndexFetcher {
             // if there is an error continue. But continue from the point where it got broken
           }
         }
+      } catch (InvalidIndexGenerationException e) {
+        invalidIndexGeneration = true;
+        throw e;
       } finally {
-        cleanup();
-        // if cleanup succeeds, and the file is downloaded fully, then do a fsync.
-        fsyncService.execute(
-            () -> {
-              try {
-                file.sync();
-              } catch (IOException | AlreadyClosedException e) {
-                fsyncException = e;
-              }
-            });
+        cleanup(invalidIndexGeneration);
+        if (!invalidIndexGeneration) {
+          // if cleanup succeeds, and the file is downloaded fully, then do a fsync.
+          fsyncService.execute(
+              () -> {
+                try {
+                  file.sync();
+                } catch (IOException | AlreadyClosedException e) {
+                  fsyncException = e;
+                }
+              });
+        }
       }
     }
 
@@ -1845,7 +1767,7 @@ public class IndexFetcher {
     }
 
     /** cleanup everything */
-    private void cleanup() {
+    private void cleanup(boolean invalidIndexGeneration) {
       try {
         file.close();
       } catch (Exception e) {
@@ -1861,7 +1783,7 @@ public class IndexFetcher {
           log.error("Error deleting file: {}", this.saveAs, e);
         }
         // if the failure is due to a user abort it is returned normally else an exception is thrown
-        if (!aborted)
+        if (!aborted && !invalidIndexGeneration)
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "Unable to download "
@@ -1880,7 +1802,6 @@ public class IndexFetcher {
       // the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
-      params.set(CommonParams.QT, ReplicationHandler.PATH);
       // add the version to download. This is used to reserve the download
       params.set(solrParamOutput, fileName);
       if (useInternalCompression) {
@@ -1900,14 +1821,17 @@ public class IndexFetcher {
 
       NamedList<?> response;
       InputStream is = null;
-      // TODO use shardhandler
       try {
-        QueryRequest req = new QueryRequest(params);
+        var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
+
+        if (responseStatus == ErrorCode.CONFLICT.code) {
+          throw new InvalidIndexGenerationException(indexGen);
+        }
 
         if (responseStatus != 200) {
           final var errorMsg =
@@ -1916,13 +1840,16 @@ public class IndexFetcher {
                   "Unexpected status code [%d] when downloading file [%s].",
                   responseStatus,
                   fileName);
-          closeStreamAndBuildIOE(is, errorMsg, null);
+          throw closeStreamAndBuildIOE(is, errorMsg, null);
         }
 
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
+      } catch (InvalidIndexGenerationException e) {
+        IOUtils.closeQuietly(is);
+        throw e;
       } catch (Exception e) {
         final var ioe = closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
         throw ioe;
@@ -1939,6 +1866,15 @@ public class IndexFetcher {
     }
   }
 
+  private static class InvalidIndexGenerationException extends IOException {
+    private final long generation;
+
+    InvalidIndexGenerationException(long generation) {
+      super("Leader no longer has index generation " + generation);
+      this.generation = generation;
+    }
+  }
+
   private static class DirectoryFile implements FileInterface {
     private final String saveAs;
     private Directory copy2Dir;
@@ -1952,7 +1888,7 @@ public class IndexFetcher {
 
     @Override
     public void sync() throws IOException {
-      copy2Dir.sync(Collections.singleton(saveAs));
+      copy2Dir.sync(Set.of(saveAs));
     }
 
     @Override
@@ -2046,11 +1982,9 @@ public class IndexFetcher {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("follower", false);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
 
-    QueryRequest request = new QueryRequest(params);
-    // TODO use shardhandler
-    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
+    var request = createReplicationHandlerRequest(params);
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, request, leaderCoreName);
   }
 
   public void destroy() {
@@ -2073,8 +2007,6 @@ public class IndexFetcher {
   static final String INDEX_REPLICATED_AT = "indexReplicatedAt";
 
   static final String TIMES_INDEX_REPLICATED = "timesIndexReplicated";
-
-  static final String CLEARED_LOCAL_IDX = "clearedLocalIndexFirst";
 
   static final String CONF_FILES_REPLICATED = "confFilesReplicated";
 

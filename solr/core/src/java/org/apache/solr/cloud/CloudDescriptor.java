@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 
@@ -31,8 +30,6 @@ public class CloudDescriptor {
 
   private String shardId;
   private String collectionName;
-  private String roles = null;
-  private Integer numShards;
   private String nodeName = null;
   private Map<String, String> collectionParams = new HashMap<>();
 
@@ -42,8 +39,6 @@ public class CloudDescriptor {
   // set to false on detecting a session expiration
   private volatile boolean hasRegistered = false;
   private volatile Replica.State lastPublished = Replica.State.ACTIVE;
-
-  public static final String NUM_SHARDS = "numShards";
 
   public static final String REPLICA_TYPE = "replicaType";
 
@@ -56,10 +51,8 @@ public class CloudDescriptor {
     if (StrUtils.isNullOrEmpty(shardId)) this.shardId = null;
     // If no collection name is specified, we default to the core name
     this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
-    this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
     this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
     if (StrUtils.isNullOrEmpty(nodeName)) this.nodeName = null;
-    this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
     this.replicaType = Replica.Type.get(props.getProperty(CloudDescriptor.REPLICA_TYPE));
     for (String propName : props.stringPropertyNames()) {
       if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
@@ -110,26 +103,9 @@ public class CloudDescriptor {
     this.collectionName = collectionName;
   }
 
-  public String getRoles() {
-    return roles;
-  }
-
-  public void setRoles(String roles) {
-    this.roles = roles;
-  }
-
   /** Optional parameters that can change how a core is created. */
   public Map<String, String> getParams() {
     return collectionParams;
-  }
-
-  // setting only matters on core creation
-  public Integer getNumShards() {
-    return numShards;
-  }
-
-  public void setNumShards(int numShards) {
-    this.numShards = numShards;
   }
 
   public String getCoreNodeName() {
@@ -152,10 +128,6 @@ public class CloudDescriptor {
         StrUtils.isNullOrEmpty(reloadFrom.getCollectionName())
             ? getCollectionName()
             : reloadFrom.getCollectionName());
-    setRoles(StrUtils.isNullOrEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
-    if (reloadFrom.getNumShards() != null) {
-      setNumShards(reloadFrom.getNumShards());
-    }
     setCoreNodeName(
         StrUtils.isNullOrEmpty(reloadFrom.getCoreNodeName())
             ? getCoreNodeName()

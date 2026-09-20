@@ -18,11 +18,11 @@ package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -30,8 +30,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -57,7 +55,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final SolrInputDocument document;
 
-  protected final Metadata metadata;
+  protected final ExtractionMetadata metadata;
   protected final SolrParams params;
   protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
   protected final IndexSchema schema;
@@ -74,7 +72,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   private Set<String> literalFieldNames = null;
 
-  public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
+  public SolrContentHandler(ExtractionMetadata metadata, SolrParams params, IndexSchema schema) {
     this.document = new SolrInputDocument();
     this.metadata = metadata;
     this.params = params;
@@ -93,7 +91,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
         fieldBuilders.put(captureFields[i], new StringBuilder());
       }
     } else {
-      fieldBuilders = Collections.emptyMap();
+      fieldBuilders = Map.of();
     }
     bldrStack.add(catchAllBuilder);
   }
@@ -144,12 +142,19 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   }
 
   /**
-   * Add in the catch all content to the field. Default impl. uses the {@link #contentFieldName} and
+   * Add in the catch-all content to the field. Default impl. uses the {@link #contentFieldName} and
    * the {@link #catchAllBuilder}
    */
   protected void addContent() {
     if (literalsOverride && literalFieldNames.contains(contentFieldName)) return;
     addField(contentFieldName, catchAllBuilder.toString(), null);
+  }
+
+  /** Append pre-extracted plain text content to the catch-all builder. */
+  public void appendToContent(String text) {
+    if (text != null && !text.isEmpty()) {
+      catchAllBuilder.append(text);
+    }
   }
 
   /**
@@ -170,10 +175,10 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   /** Add in any metadata using {@link #metadata} as the source. */
   protected void addMetadata() {
-    for (String name : metadata.names()) {
+    for (String name : metadata.keySet()) {
       if (literalsOverride && literalFieldNames.contains(name)) continue;
-      String[] vals = metadata.getValues(name);
-      addField(name, null, vals);
+      List<String> vals = metadata.get(name);
+      addField(name, null, vals.toArray(new String[0]));
     }
   }
 
@@ -199,9 +204,10 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       name = unknownFieldPrefix + name;
       sf = schema.getFieldOrNull(name);
     } else if (sf == null
-        && defaultField.length() > 0
-        && name.equals(TikaMetadataKeys.RESOURCE_NAME_KEY)
-            == false /*let the fall through below handle this*/) {
+        && !defaultField.isEmpty()
+        && !name.equals(
+            ExtractingMetadataConstants
+                .RESOURCE_NAME_KEY) /*let the fall through below handle this*/) {
       name = defaultField;
       sf = schema.getFieldOrNull(name);
     }
@@ -213,7 +219,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // you?
     if (sf == null
         && unknownFieldPrefix.length() == 0
-        && Objects.equals(name, TikaMetadataKeys.RESOURCE_NAME_KEY)) {
+        && Objects.equals(name, ExtractingMetadataConstants.RESOURCE_NAME_KEY)) {
       return;
     }
 
@@ -261,7 +267,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       // we need to switch the currentBuilder
       bldrStack.add(theBldr);
     }
-    if (captureAttribs == true) {
+    if (captureAttribs) {
       for (int i = 0; i < attributes.getLength(); i++) {
         addField(localName, attributes.getValue(i), null);
       }

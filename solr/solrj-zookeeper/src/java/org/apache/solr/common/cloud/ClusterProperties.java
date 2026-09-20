@@ -20,7 +20,6 @@ package org.apache.solr.common.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,10 +93,10 @@ public class ClusterProperties {
     try {
       Map<String, Object> properties =
           (Map<String, Object>)
-              Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+              Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
       return properties;
     } catch (KeeperException.NoNodeException e) {
-      return Collections.emptyMap();
+      return Map.of();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
     }
@@ -154,23 +153,21 @@ public class ClusterProperties {
     for (; ; ) {
       Stat s = new Stat();
       try {
-        if (client.exists(ZkStateReader.CLUSTER_PROPS, true)) {
+        if (client.exists(ZkStateReader.CLUSTER_PROPS)) {
           @SuppressWarnings({"rawtypes"})
           Map properties =
-              (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s, true));
+              (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s));
           if (propertyValue == null) {
             // Don't update ZK unless absolutely necessary.
             if (properties.get(propertyName) != null) {
               properties.remove(propertyName);
-              client.setData(
-                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
+              client.setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
             }
           } else {
             // Don't update ZK unless absolutely necessary.
             if (!propertyValue.equals(properties.get(propertyName))) {
               properties.put(propertyName, propertyValue);
-              client.setData(
-                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
+              client.setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
             }
           }
         } else {
@@ -178,7 +175,7 @@ public class ClusterProperties {
           Map properties = new LinkedHashMap();
           properties.put(propertyName, propertyValue);
           client.makePath(
-              ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
+              ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT);
         }
       } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
         // race condition

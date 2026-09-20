@@ -51,10 +51,11 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.StatsField.HllOptions;
 import org.apache.solr.handler.component.StatsField.Stat;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.hll.HLL;
 import org.junit.BeforeClass;
 
@@ -571,7 +572,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("f.active_dt.stats.calcdistinct", "true");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test date statistics values",
@@ -604,7 +605,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test date statistics values",
@@ -911,7 +912,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_i");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test string statistics values",
@@ -949,7 +950,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test string statistics values",
@@ -982,7 +983,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test string statistics values",
@@ -1046,7 +1047,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!ex=id}id_i");
     args.put("fq", "{!tag=id}id_i:[2 TO 3]");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test excluding filter query",
@@ -1059,7 +1060,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!key=id2}id_i");
     args.put("fq", "{!tag=id}id_i:[2 TO 3]");
-    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test rename field",
@@ -1105,7 +1106,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "cat_docValues");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test min/max on docValues and multiValued",
@@ -1156,7 +1157,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_CALC_DISTINCT, "true");
     args.put("indent", "true");
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "test min/max on docValues and multiValued",
@@ -1215,7 +1216,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_CALC_DISTINCT, "true");
     args.put("indent", "true");
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQEx("can not use FieldCache on multivalued field: cat_intDocValues", req, 400);
   }
@@ -1517,8 +1518,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           perShardXpaths.addAll(expectedDep.perShardXpaths);
         }
       }
-      ALL.put(
-          stat, new ExpectedStat(stat, input, perShardXpaths, Collections.singletonList(xpath)));
+      ALL.put(stat, new ExpectedStat(stat, input, perShardXpaths, List.of(xpath)));
     }
 
     public static void create(
@@ -1608,10 +1608,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ExpectedStat.createSimple(Stat.stddev, "true", "double", String.valueOf(stddev));
     final String distinctValsXpath = "count(" + kpre + "arr[@name='distinctValues']/*)=10";
     ExpectedStat.create(
-        Stat.distinctValues,
-        "true",
-        Collections.singletonList(distinctValsXpath),
-        Collections.singletonList(distinctValsXpath));
+        Stat.distinctValues, "true", List.of(distinctValsXpath), List.of(distinctValsXpath));
     ExpectedStat.createSimple(Stat.countDistinct, "true", "long", "10");
     final String percentileShardXpath =
         kpre
@@ -1624,7 +1621,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ExpectedStat.create(
         Stat.percentiles,
         "'90, 99'",
-        Collections.singletonList(percentileShardXpath),
+        List.of(percentileShardXpath),
         Arrays.asList(
             "count(" + kpre + "lst[@name='percentiles']/*)=2",
             kpre + "lst[@name='percentiles']/double[@name='90.0'][.=" + p90 + "]",
@@ -1636,10 +1633,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             + "']";
     final String cardinalityXpath = kpre + "long[@name='cardinality'][.='10']";
     ExpectedStat.create(
-        Stat.cardinality,
-        "true",
-        Collections.singletonList(cardinalityShardXpath),
-        Collections.singletonList(cardinalityXpath));
+        Stat.cardinality, "true", List.of(cardinalityShardXpath), List.of(cardinalityXpath));
 
     // canary in the coal mine
     assertEquals(
@@ -2127,116 +2121,119 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality
    * @see #testHllOptions
    */
+  @SuppressWarnings("try")
   public void testHllOptionsErrors() {
     String[] baseParams = new String[] {"q", "*:*", "stats", "true", "indent", "true", "rows", "0"};
     SolrCore core = h.getCore();
     SchemaField foo_s = core.getLatestSchema().getField("foo_s");
     SchemaField foo_i = core.getLatestSchema().getField("foo_i");
 
-    ignoreException("hllPreHashed");
-    for (SchemaField field : new SchemaField[] {foo_s, foo_i}) {
-      // whitebox - field
+    try (ErrorLogMuter hllPreHashed = ErrorLogMuter.regex("hllPreHashed");
+        ErrorLogMuter accuracy = ErrorLogMuter.regex("accuracy");
+        ErrorLogMuter hllLog2m = ErrorLogMuter.regex("hllLog2m must be");
+        ErrorLogMuter hllRegwidth = ErrorLogMuter.regex("hllRegwidth must be")) {
+      for (SchemaField field : new SchemaField[] {foo_s, foo_i}) {
+        // whitebox - field
+        SolrException ex =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  HllOptions.parseHllOptions(
+                      params("cardinality", "true", "hllPreHashed", "true"), field);
+                });
+        assertTrue(
+            "MSG: " + ex.getMessage(),
+            ex.getMessage().contains("hllPreHashed is only supported with Long"));
+        // blackbox - field
+        assertQEx(
+            "hllPreHashed " + field.getName(),
+            "hllPreHashed is only supported with Long",
+            req(
+                params("stats.field", "{!cardinality=true hllPreHashed=true}" + field.getName()),
+                baseParams),
+            ErrorCode.BAD_REQUEST);
+      }
+
+      // whitebox - function
       SolrException ex =
           expectThrows(
               SolrException.class,
               () -> {
                 HllOptions.parseHllOptions(
-                    params("cardinality", "true", "hllPreHashed", "true"), field);
+                    params("cardinality", "true", "hllPreHashed", "true"), null);
               });
       assertTrue(
           "MSG: " + ex.getMessage(),
           ex.getMessage().contains("hllPreHashed is only supported with Long"));
-      // blackbox - field
+
+      // blackbox - function
       assertQEx(
-          "hllPreHashed " + field.getName(),
+          "hllPreHashed function",
           "hllPreHashed is only supported with Long",
           req(
-              params("stats.field", "{!cardinality=true hllPreHashed=true}" + field.getName()),
+              params("stats.field", "{!func cardinality=true hllPreHashed=true}sum(foo_i,foo_l)"),
               baseParams),
           ErrorCode.BAD_REQUEST);
-    }
 
-    // whitebox - function
-    SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              HllOptions.parseHllOptions(
-                  params("cardinality", "true", "hllPreHashed", "true"), null);
-            });
-    assertTrue(
-        "MSG: " + ex.getMessage(),
-        ex.getMessage().contains("hllPreHashed is only supported with Long"));
+      for (String invalid : new String[] {"-1", "1.1", "100"}) {
+        // whitebox
+        ex =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  HllOptions.parseHllOptions(params("cardinality", invalid), foo_s);
+                });
+        assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("number between 0 and 1"));
+        // blackbox
+        assertQEx(
+            "cardinality=" + invalid,
+            "number between 0 and 1",
+            req(params("stats.field", "{!cardinality=" + invalid + "}foo_s"), baseParams),
+            ErrorCode.BAD_REQUEST);
+      }
 
-    // blackbox - function
-    assertQEx(
-        "hllPreHashed function",
-        "hllPreHashed is only supported with Long",
-        req(
-            params("stats.field", "{!func cardinality=true hllPreHashed=true}sum(foo_i,foo_l)"),
-            baseParams),
-        ErrorCode.BAD_REQUEST);
+      for (int invalid : new int[] {HLL.MINIMUM_LOG2M_PARAM - 1, HLL.MAXIMUM_LOG2M_PARAM + 11}) {
+        // whitebox
+        ex =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  HllOptions.parseHllOptions(
+                      params("cardinality", "true", "hllLog2m", "" + invalid), foo_s);
+                });
+        assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllLog2m must be"));
 
-    ignoreException("accuracy");
-    for (String invalid : new String[] {"-1", "1.1", "100"}) {
-      // whitebox
-      ex =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                HllOptions.parseHllOptions(params("cardinality", invalid), foo_s);
-              });
-      assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("number between 0 and 1"));
-      // blackbox
-      assertQEx(
-          "cardinality=" + invalid,
-          "number between 0 and 1",
-          req(params("stats.field", "{!cardinality=" + invalid + "}foo_s"), baseParams),
-          ErrorCode.BAD_REQUEST);
-    }
+        // blackbox
+        assertQEx(
+            "hllLog2m=" + invalid,
+            "hllLog2m must be",
+            req(
+                params("stats.field", "{!cardinality=true hllLog2m=" + invalid + "}foo_s"),
+                baseParams),
+            ErrorCode.BAD_REQUEST);
+      }
 
-    ignoreException("hllLog2m must be");
-    for (int invalid : new int[] {HLL.MINIMUM_LOG2M_PARAM - 1, HLL.MAXIMUM_LOG2M_PARAM + 11}) {
-      // whitebox
-      ex =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                HllOptions.parseHllOptions(
-                    params("cardinality", "true", "hllLog2m", "" + invalid), foo_s);
-              });
-      assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllLog2m must be"));
+      for (int invalid :
+          new int[] {HLL.MINIMUM_REGWIDTH_PARAM - 1, HLL.MAXIMUM_REGWIDTH_PARAM + 1}) {
+        // whitebox
+        ex =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  HllOptions.parseHllOptions(
+                      params("cardinality", "true", "hllRegwidth", "" + invalid), foo_s);
+                });
+        assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllRegwidth must be"));
 
-      // blackbox
-      assertQEx(
-          "hllLog2m=" + invalid,
-          "hllLog2m must be",
-          req(
-              params("stats.field", "{!cardinality=true hllLog2m=" + invalid + "}foo_s"),
-              baseParams),
-          ErrorCode.BAD_REQUEST);
-    }
-
-    ignoreException("hllRegwidth must be");
-    for (int invalid : new int[] {HLL.MINIMUM_REGWIDTH_PARAM - 1, HLL.MAXIMUM_REGWIDTH_PARAM + 1}) {
-      // whitebox
-      ex =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                HllOptions.parseHllOptions(
-                    params("cardinality", "true", "hllRegwidth", "" + invalid), foo_s);
-              });
-      assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllRegwidth must be"));
-
-      // blackbox
-      assertQEx(
-          "hllRegwidth=" + invalid,
-          "hllRegwidth must be",
-          req(
-              params("stats.field", "{!cardinality=true hllRegwidth=" + invalid + "}foo_s"),
-              baseParams),
-          ErrorCode.BAD_REQUEST);
+        // blackbox
+        assertQEx(
+            "hllRegwidth=" + invalid,
+            "hllRegwidth must be",
+            req(
+                params("stats.field", "{!cardinality=true hllRegwidth=" + invalid + "}foo_s"),
+                baseParams),
+            ErrorCode.BAD_REQUEST);
+      }
     }
   }
 

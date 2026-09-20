@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Concrete implementations of client API classes. */
+/** Implementations of some client API classes, and their friends. */
 package org.apache.solr.client.solrj.impl;

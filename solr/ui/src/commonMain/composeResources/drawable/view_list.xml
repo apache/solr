@@ -1,0 +1,26 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp"
+  android:height="24dp"
+  android:viewportWidth="960"
+  android:viewportHeight="960"
+  android:autoMirrored="true">
+  <path
+    android:fillColor="#000000"
+    android:pathData="M360,720L800,720Q800,720 800,720Q800,720 800,720L800,613Q800,613 800,613Q800,613 800,613L360,613Q360,613 360,613Q360,613 360,613L360,720Q360,720 360,720Q360,720 360,720ZM160,347L280,347Q280,347 280,347Q280,347 280,347L280,240Q280,240 280,240Q280,240 280,240L160,240Q160,240 160,240Q160,240 160,240L160,347Q160,347 160,347Q160,347 160,347ZM160,534L280,534Q280,534 280,534Q280,534 280,534L280,427Q280,427 280,427Q280,427 280,427L160,427Q160,427 160,427Q160,427 160,427L160,534Q160,534 160,534Q160,534 160,534ZM160,720L280,720Q280,720 280,720Q280,720 280,720L280,613Q280,613 280,613Q280,613 280,613L160,613Q160,613 160,613Q160,613 160,613L160,720Q160,720 160,720Q160,720 160,720ZM360,534L800,534Q800,534 800,534Q800,534 800,534L800,427Q800,427 800,427Q800,427 800,427L360,427Q360,427 360,427Q360,427 360,427L360,534Q360,534 360,534Q360,534 360,534ZM360,347L800,347Q800,347 800,347Q800,347 800,347L800,240Q800,240 800,240Q800,240 800,240L360,240Q360,240 360,240Q360,240 360,240L360,347Q360,347 360,347Q360,347 360,347ZM160,800Q127,800 103.5,776.5Q80,753 80,720L80,240Q80,207 103.5,183.5Q127,160 160,160L800,160Q833,160 856.5,183.5Q880,207 880,240L880,720Q880,753 856.5,776.5Q833,800 800,800L160,800Z"/>
+</vector>

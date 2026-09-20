@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -131,7 +130,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   private static final String MAX_CHARS_PARAM = "maxChars";
   private static final String IS_DEFAULT_PARAM = "default";
 
-  private List<TypeMapping> typeMappings = Collections.emptyList();
+  private List<TypeMapping> typeMappings = List.of();
   private SelectorParams inclusions = new SelectorParams();
   private Collection<SelectorParams> exclusions = new ArrayList<>();
   private SolrResourceLoader solrResourceLoader = null;
@@ -450,7 +449,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
                       .collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
             }
           }
-          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.emptyMap()));
+          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Map.of()));
         }
         if (newFields.isEmpty() && newCopyFields.isEmpty()) {
           // nothing to do - no fields will be added - exit from the retry loop
@@ -494,7 +493,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // the schema on the request is the latest
         synchronized (oldSchema.getSchemaUpdateLock()) {
           try {
-            IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
+            IndexSchema newSchema = oldSchema.addFields(newFields, Map.of(), false);
             // Add copyFields
             for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry :
                 newCopyFields.entrySet()) {
@@ -571,7 +570,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       NEXT_TYPE_MAPPING:
       for (TypeMapping typeMapping : typeMappings) {
         for (SolrInputField field : fields) {
-          // We do a assert and a null check because even after SOLR-12710 is addressed
+          // We do an assert and a null check because even after SOLR-12710 is addressed
           // older SolrJ versions can send null values causing an NPE
           assert field.getValues() != null;
           if (field.getValues() != null) {

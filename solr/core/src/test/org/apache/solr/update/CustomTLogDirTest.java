@@ -25,7 +25,6 @@ import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.SolrClientTestRule;
@@ -34,12 +33,12 @@ import org.junit.ClassRule;
 public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   @ClassRule
-  public static final SolrClientTestRule solrClientTestRule =
+  public static final SolrClientTestRule solrTestRule =
       new EmbeddedSolrServerTestRule() {
         @Override
         protected void before() {
           System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
-          solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
+          solrTestRule.startSolr();
         }
       };
 
@@ -47,9 +46,9 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testExternal() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -63,9 +62,9 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testRelative() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -80,7 +79,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     Path ulogDir = Path.of("../");
 
     Path configSet = LuceneTestCase.createTempDir();
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     System.setProperty("solr.ulog.dir", ulogDir.toString()); // picked up from `solrconfig.xml`
     SolrTestCaseJ4.copyMinConf(configSet, null, "solrconfig.xml");
@@ -89,18 +88,14 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     // check that this config is unsuccessful
     expectThrows(
         Exception.class,
-        () ->
-            solrClientTestRule
-                .newCollection("illegal")
-                .withConfigSet(configSet.toString())
-                .create());
+        () -> solrTestRule.newCollection("illegal").withConfigSet(configSet).create());
   }
 
   public void testAbsoluteSubdir() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -114,9 +109,9 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testDefault() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -128,9 +123,9 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testExplicitDefault() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
-    Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
+    Path coreRootDir = solrTestRule.getCoreContainer().getCoreRootDirectory();
 
     Path instanceDir = FilterPath.unwrap(coreRootDir.resolve(collectionName));
 
@@ -144,7 +139,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
   private static void validateTlogPath(
       SolrClient client, Path instanceDir, Path ulogDir, Path resolvedTlogDir) throws Exception {
     Path configSet = LuceneTestCase.createTempDir();
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     if (ulogDir != null) {
       System.setProperty("solr.ulog.dir", ulogDir.toString()); // picked up from `solrconfig.xml`
@@ -153,7 +148,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
     String collectionName = instanceDir.getFileName().toString();
 
-    solrClientTestRule.newCollection(collectionName).withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection(collectionName).withConfigSet(configSet).create();
 
     // resolvedTlogDir = instanceDir.resolve("data/tlog"); // legacy impl _always_ resulted in this
 
@@ -173,7 +168,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
               .toList();
       assertNotNull(list);
       assertEquals(1, list.size());
-      CoreContainer cc = ((EmbeddedSolrServer) client).getCoreContainer();
+      CoreContainer cc = solrTestRule.getCoreContainer();
       cc.unload(collectionName, true, true, true);
       assertFalse(Files.exists(resolvedTlogDir));
     }

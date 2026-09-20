@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -71,7 +71,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String backupLocation = message.getStr(CoreAdminParams.BACKUP_LOCATION);
     String backupName = message.getStr(NAME);
@@ -207,13 +207,14 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
             .map(ShardBackupId::getBackupMetadataFilename)
             .collect(Collectors.toList()));
     repository.delete(incBackupFiles.getIndexDir(), unusedFiles);
-    try {
-      for (BackupId backupId : backupIdsDeletes) {
-        repository.deleteDirectory(
-            repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId)));
+    for (BackupId backupId : backupIdsDeletes) {
+      URI zkStateDir =
+          repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId));
+      try {
+        repository.deleteDirectory(zkStateDir);
+      } catch (FileNotFoundException | NoSuchFileException e) {
+        // zk_backup_* is created after shard copy, so a failed incremental backup may not have it
       }
-    } catch (FileNotFoundException e) {
-      // ignore this
     }
 
     // add details to result before deleting backupPropFiles
@@ -271,7 +272,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
           "Backup ID [" + bid + "] not found; cannot be deleted");
     }
 
-    deleteBackupIds(backupPath, repository, Collections.singleton(backupId), results);
+    deleteBackupIds(backupPath, repository, Set.of(backupId), results);
   }
 
   static final class PurgeGraph {

@@ -1,0 +1,8 @@
+title: Improve system metrics collection by skipping unreadable MXBean properties,
+  making /admin/info/system calls faster
+type: changed
+authors:
+- name: Haythem Khiri
+links:
+- name: SOLR-17441
+  url: https://issues.apache.org/jira/browse/SOLR-17441

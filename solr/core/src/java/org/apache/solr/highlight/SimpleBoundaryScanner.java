@@ -32,13 +32,4 @@ public class SimpleBoundaryScanner extends SolrBoundaryScanner {
     }
     return new org.apache.lucene.search.vectorhighlight.SimpleBoundaryScanner(maxScan, chars);
   }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "SimpleBoundaryScanner";
-  }
 }

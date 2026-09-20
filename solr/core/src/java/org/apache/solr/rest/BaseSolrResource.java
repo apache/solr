@@ -80,8 +80,8 @@ public abstract class BaseSolrResource {
   }
 
   /**
-   * Pulls the SolrQueryRequest constructed in SolrDispatchFilter from the SolrRequestInfo thread
-   * local, then gets the SolrCore and IndexSchema and sets up the response. writer.
+   * Pulls the SolrQueryRequest constructed in SolrServlet from the SolrRequestInfo thread local,
+   * then gets the SolrCore and IndexSchema and sets up the response. writer.
    */
   public void doInit(SolrQueryRequest solrRequest, SolrQueryResponse solrResponse) {
     try {
@@ -92,13 +92,6 @@ public abstract class BaseSolrResource {
       String responseWriterName = solrRequest.getParams().get(CommonParams.WT, JSON);
       responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
       contentType = responseWriter.getContentType(solrRequest, solrResponse);
-      final String path = solrRequest.getPath();
-      if (!RestManager.SCHEMA_BASE_PATH.equals(path)) {
-        // don't set webapp property on the request when context and core/collection are excluded
-        final int cutoffPoint = path.indexOf('/', 1);
-        final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
-        solrRequest.getContext().put("webapp", firstPathElement); // Context path
-      }
 
       // client application can set a timeout for update requests
       String updateTimeoutSecsParam = solrRequest.getParams().get(UPDATE_TIMEOUT_SECS);

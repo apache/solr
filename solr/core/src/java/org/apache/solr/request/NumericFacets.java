@@ -18,7 +18,6 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
@@ -321,7 +320,7 @@ final class NumericFacets {
       // Entries from the PQ first, then using the terms dictionary
       for (Entry entry : counts) {
         final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);
-        final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
+        final FunctionValues values = vs.getValues(Map.of(), leaves.get(readerIdx));
         result.add(values.strVal(entry.docID - leaves.get(readerIdx).docBase), entry.count);
       }
 
@@ -339,7 +338,7 @@ final class NumericFacets {
         while (pq.size() > 0) {
           Entry entry = pq.pop();
           final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);
-          final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
+          final FunctionValues values = vs.getValues(Map.of(), leaves.get(readerIdx));
           alreadySeen.add(values.strVal(entry.docID - leaves.get(readerIdx).docBase));
         }
         result.forEach((name, __) -> alreadySeen.add(name));
@@ -404,7 +403,7 @@ final class NumericFacets {
       while (pq.size() > 0) {
         final Entry entry = pq.pop();
         final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);
-        final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
+        final FunctionValues values = vs.getValues(Map.of(), leaves.get(readerIdx));
         counts.put(values.strVal(entry.docID - leaves.get(readerIdx).docBase), entry.count);
       }
       final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);

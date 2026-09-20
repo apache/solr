@@ -1,0 +1,9 @@
+title: Passing additional arguments to solr.cmd using "--jvm-opts" (formerly "-a")
+  in conjunction with "-e" (examples like 'techproducts') wouldn't reflect on Windows
+type: fixed
+authors:
+- name: Rahul Goswami
+- name: Eric Pugh
+links:
+- name: SOLR-7962
+  url: https://issues.apache.org/jira/browse/SOLR-7962

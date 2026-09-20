@@ -50,7 +50,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
@@ -65,6 +65,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
  * The GraphTermsQuery builds a disjunction query from a list of terms. The terms are first filtered
@@ -200,7 +201,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     public void setCost(int cost) {}
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Query rewrite(IndexSearcher searcher) throws IOException {
       return this;
     }
 
@@ -210,6 +211,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // id is a unique marker Object created per non-clone construction, so
+    // identity is the intended equality check (clones share it, independent instances don't)
     public boolean equals(Object other) {
       return sameClassAs(other) && id == ((GraphTermsQuery) other).id;
     }
@@ -253,7 +257,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           Terms terms = reader.terms(field);
           if (terms == null) {
@@ -264,17 +268,22 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i = 0; i < finalContexts.size(); i++) {
             TermStates ts = finalContexts.get(i);
-            TermState termState = ts.get(context);
-            if (termState != null) {
-              Term term = finalTerms.get(i);
-              termsEnum.seekExact(term.bytes(), ts.get(context));
-              docs = termsEnum.postings(docs, PostingsEnum.NONE);
-              builder.add(docs);
+            final var termStateSupplier = ts.get(context);
+            if (termStateSupplier != null) {
+              TermState termState = termStateSupplier.get();
+              if (termState != null) {
+                Term term = finalTerms.get(i);
+                termsEnum.seekExact(term.bytes(), termStateSupplier.get());
+                docs = termsEnum.postings(docs, PostingsEnum.NONE);
+                builder.add(docs);
+              }
             }
           }
           DocIdSet docIdSet = builder.build();
           DocIdSetIterator disi = docIdSet.iterator();
-          return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
+          return disi == null
+              ? null
+              : new SolrDefaultScorerSupplier(new ConstantScoreScorer(score(), scoreMode, disi));
         }
 
         @Override
@@ -284,6 +293,8 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       };
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // TermsEnum.EMPTY is a Lucene sentinel; identity check is intentional
     private void collectTermStates(
         IndexReader reader,
         List<LeafReaderContext> leaves,
@@ -593,7 +604,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
       DocSet docs;
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         if (docs == null) {
           docs = getDocSet(searcher);
         }
@@ -603,7 +614,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
         if (readerSetIterator == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+        return new SolrDefaultScorerSupplier(
+            new ConstantScoreScorer(score(), scoreMode, readerSetIterator));
       }
 
       @Override

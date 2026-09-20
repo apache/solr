@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
@@ -32,7 +32,6 @@ public abstract class ShardHandlerFactory {
   public abstract void close();
 
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {}
-  ;
 
   /**
    * Create a new ShardHandlerFactory instance
@@ -71,5 +70,5 @@ public abstract class ShardHandlerFactory {
           "shardHandlerFactory",
           Map.of("class", HttpShardHandlerFactory.class.getName()),
           null,
-          Collections.<PluginInfo>emptyList());
+          List.of());
 }

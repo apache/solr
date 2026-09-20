@@ -23,9 +23,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -53,11 +54,11 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
 
   private String collection;
-  private ModifiableSolrParams params;
+  private SolrParams params;
   private Bucket x;
   private Bucket y;
   private Metric metric;
-  private String zkHost;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private Iterator<Tuple> out;
   private List<Tuple> tuples = new ArrayList<Tuple>();
   private int dimensionX;
@@ -68,7 +69,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private transient boolean doCloseCache;
 
   public Facet2DStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       ModifiableSolrParams params,
       Bucket x,
@@ -89,7 +90,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String bucketSortString = metric.getIdentifier() + " desc";
     this.bucketSort = parseBucketSort(bucketSortString, x, y);
 
-    init(collection, params, x, y, bucketSort, dimensionX, dimensionY, metric, zkHost);
+    init(solrConnection, collection, params, x, y, bucketSort, dimensionX, dimensionY, metric);
   }
 
   public Facet2DStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -107,7 +108,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
         factory.getNamedOperand(expression, "dimensions");
     List<StreamExpression> metricExpression =
         factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     if (collectionName == null) {
       throw new IOException(
@@ -117,15 +117,9 @@ public class Facet2DStream extends TupleStream implements Expressible {
               expression));
     }
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("x")
-          && !namedParam.getName().equals("y")
-          && !namedParam.getName().equals("dimensions")
-          && !namedParam.getName().equals("zkHost")) {
-        params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(
+            namedParams, Set.of("x", "y", "dimensions", "zkHost", "solrConnection"));
 
     if (params.get("q") == null) {
       params.set("q", "*:*");
@@ -184,26 +178,9 @@ public class Facet2DStream extends TupleStream implements Expressible {
       }
     }
 
-    String zkHost = null;
-    if (zkHostExpression == null) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-      if (zkHost == null) {
-        zkHost = factory.getDefaultZkHost();
-      }
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    if (zkHost == null) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
-
-    init(collectionName, params, x, y, bucketSort, dimensionX, dimensionY, metric, zkHost);
+    init(solrConnection, collectionName, params, x, y, bucketSort, dimensionX, dimensionY, metric);
   }
 
   private FieldComparator parseBucketSort(String bucketSortString, Bucket x, Bucket y)
@@ -215,6 +192,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collection,
       SolrParams params,
       Bucket x,
@@ -222,8 +200,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
       FieldComparator bucketSort,
       int dimensionX,
       int dimensionY,
-      Metric metric,
-      String zkHost) {
+      Metric metric) {
+    this.solrConnection = solrConnection;
     this.collection = collection;
     this.params = new ModifiableSolrParams(params);
     this.x = x;
@@ -232,7 +210,6 @@ public class Facet2DStream extends TupleStream implements Expressible {
     this.dimensionY = dimensionY;
     this.metric = metric;
     this.bucketSort = bucketSort;
-    this.zkHost = zkHost;
   }
 
   @Override
@@ -260,50 +237,16 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    if (collection.indexOf(',') > -1) {
-      expression.addParameter("\"" + collection + "\"");
-    } else {
-      expression.addParameter(collection);
-    }
-
-    // parameters for q,fl etc
-    for (Entry<String, String[]> param : params.getMap().entrySet()) {
-      for (String val : param.getValue()) {
-        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), val));
-      }
-    }
-
-    // bucket x
-    {
-      StringBuilder builder = new StringBuilder();
-
-      builder.append(x.toString());
-      expression.addParameter(new StreamExpressionNamedParameter("x", builder.toString()));
-    }
-
-    // bucket y
-    {
-      StringBuilder builder = new StringBuilder();
-
-      builder.append(y.toString());
-      expression.addParameter(new StreamExpressionNamedParameter("y", builder.toString()));
-    }
-
-    // dimensions
-    expression.addParameter(
-        new StreamExpressionNamedParameter(
-            "dimensions", Integer.toString(dimensionX) + "," + Integer.toString(dimensionY)));
-
-    // metric
-    expression.addParameter(metric.toExpression(factory));
-
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection.indexOf(',') > -1 ? "\"" + collection + "\"" : collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("x", x.toString()))
+        .withParameter(new StreamExpressionNamedParameter("y", y.toString()))
+        .withParameter(
+            new StreamExpressionNamedParameter("dimensions", dimensionX + "," + dimensionY))
+        .withParameter(metric.toExpression(factory))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   @Override
@@ -335,7 +278,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       NamedList<Object> response = cloudSolrClient.request(request, collection);
       getTuples(response, x, y, metric);
       this.out = tuples.iterator();

@@ -1,0 +1,7 @@
+title: Allow the -j or --jettyconfig option to start with a dash (-).
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17790
+  url: https://issues.apache.org/jira/browse/SOLR-17790

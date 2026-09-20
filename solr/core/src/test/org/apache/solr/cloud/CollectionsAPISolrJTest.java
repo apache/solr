@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionPropertiesApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -112,8 +113,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
-    // Sometimes multiple cores land on the same node so it's less than 4
-    int nodesCreated = response.getCollectionNodesStatus().size();
+
     // Use of _default configset should generate a warning for data-driven functionality in
     // production use
     assertTrue(
@@ -125,7 +125,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    assertEquals(nodesStatus.toString(), nodesCreated, nodesStatus.size());
+    assertEquals(nodesStatus.toString(), 4, nodesStatus.size());
 
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
@@ -230,9 +230,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = getSaferTestName();
-    CollectionAdminResponse response =
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-            .process(cluster.getSolrClient());
+    CollectionAdminRequest.Create createREq =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
+    createREq.setWaitForFinalState(false);
+    CollectionAdminResponse response = createREq.process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -244,8 +245,16 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertTrue(status.get("QTime") > 0);
     }
 
-    // Sometimes multiple cores land on the same node so it's less than 4
-    int nodesCreated = response.getCollectionNodesStatus().size();
+    waitForState(
+        "Expected " + collectionName + " to disappear from cluster state",
+        collectionName,
+        ((liveNodes, collectionState) ->
+            collectionState.getSlices().stream()
+                .flatMap(
+                    s -> s.getReplicas(r -> !r.getState().equals(Replica.State.ACTIVE)).stream())
+                .findAny()
+                .isEmpty()));
+
     response =
         CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
@@ -253,7 +262,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
     // Delete could have been sent before the collection was finished coming online
-    assertEquals(nodesStatus.toString(), nodesCreated, nodesStatus.size());
+    assertEquals(nodesStatus.toString(), 4, nodesStatus.size());
 
     waitForState(
         "Expected " + collectionName + " to disappear from cluster state",
@@ -287,17 +296,16 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
-    String nodeName = (String) response._get("success[0]/key", null);
-    String corename = (String) response._get(asList("success", nodeName, "core"), null);
+    String successKey = response._getStr("success[0]/key"); // "nodeName/coreNodeName"
+    String corename = response._getStr(asList("success", successKey, "core"), null);
+    String nodeName = successKey.substring(0, successKey.indexOf('/'));
 
-    try (SolrClient coreClient =
-        getHttpSolrClient(cluster.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
-      assertEquals(
-          collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
-      assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
-      assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
-    }
+    SolrClient coreClient = cluster.getJetty(nodeName).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
+    assertEquals(
+        collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
+    assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
+    assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
   }
 
   @Test
@@ -400,13 +408,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected all shards to be active and parent shard to be removed",
         collectionName,
-        (n, c) -> {
-          if (c.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
-          for (Replica r : c.getReplicas()) {
-            if (r.isActive(n) == false) return false;
-          }
-          return true;
-        });
+        (n, collectionState) ->
+            collectionState.getSlice("shard1").getState() != Slice.State.ACTIVE
+                && collectionState.replicaStream().allMatch(r -> r.isActive(n)));
 
     // Test splitting using split.key
     response =
@@ -446,7 +450,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 = testCollection.getReplicas().iterator().next();
+    Replica replica1 = testCollection.replicaStream().findFirst().orElseThrow();
     final var coreStatus = getCoreStatus(replica1);
 
     assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
@@ -492,7 +496,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {
@@ -534,7 +539,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCollectionProp() throws InterruptedException, IOException, SolrServerException {
+  public void testCollectionProp() throws Exception {
     String collectionName = getSaferTestName();
     final String propName = "testProperty";
 
@@ -552,18 +557,43 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.setCollectionProperty(collectionName, propName, null)
         .process(cluster.getSolrClient());
     checkCollectionProperty(collectionName, propName, null);
+
+    // Test that "list-properties" returns all properties
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName + "1", "prop1Val")
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName + "2", "prop2Val")
+        .process(cluster.getSolrClient());
+    final var allProperties =
+        new CollectionPropertiesApi.ListCollectionProperties(collectionName)
+            .process(cluster.getSolrClient())
+            .properties;
+    assertEquals(2, allProperties.size());
+    assertEquals("prop1Val", allProperties.get(propName + "1"));
+    assertEquals("prop2Val", allProperties.get(propName + "2"));
+
+    // Test GET single property API
+    final var prop1Response =
+        new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName + "1")
+            .process(cluster.getSolrClient());
+    assertEquals("prop1Val", prop1Response.value);
+
+    final var prop2Response =
+        new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName + "2")
+            .process(cluster.getSolrClient());
+    assertEquals("prop2Val", prop2Response.value);
   }
 
   private void checkCollectionProperty(String collection, String propertyName, String propertyValue)
-      throws InterruptedException {
+      throws Exception {
     TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
-      Thread.sleep(10);
-      if (Objects.equals(
-          cluster.getZkStateReader().getCollectionProperties(collection).get(propertyName),
-          propertyValue)) {
+      final var listCollPropRsp =
+          new CollectionPropertiesApi.ListCollectionProperties(collection)
+              .process(cluster.getSolrClient());
+      if (Objects.equals(listCollPropRsp.properties.get(propertyName), propertyValue)) {
         return;
       }
+      Thread.sleep(10);
     }
 
     fail("Timed out waiting for cluster property value");
@@ -620,19 +650,23 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
     assertNotNull(rsp.getResponse().get(collectionName));
-    assertNotNull(rsp.getResponse().findRecursive(collectionName, "properties"));
+    assertNotNull(rsp.getResponse()._get(List.of(collectionName, "properties"), null));
     final var collPropMap =
-        (Map<String, Object>) rsp.getResponse().findRecursive(collectionName, "properties");
+        (Map<String, Object>) rsp.getResponse()._get(List.of(collectionName, "properties"), null);
     assertEquals("conf2", collPropMap.get("configName"));
     assertEquals(2L, collPropMap.get("nrtReplicas"));
     assertEquals("0", collPropMap.get("tlogReplicas"));
     assertEquals("0", collPropMap.get("pullReplicas"));
     assertEquals(
-        2, ((NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards")).size());
-    assertNotNull(rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader"));
+        2,
+        ((NamedList<Object>) rsp.getResponse()._get(List.of(collectionName, "shards"), null))
+            .size());
+    assertNotNull(
+        rsp.getResponse()._get(List.of(collectionName, "shards", "shard1", "leader"), null));
     // Ensure more advanced info is not returned
     assertNull(
-        rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos"));
+        rsp.getResponse()
+            ._get(List.of(collectionName, "shards", "shard1", "leader", "segInfos"), null));
 
     // Returns segment metadata iff requested
     req = CollectionAdminRequest.collectionStatus(collectionName);
@@ -689,7 +723,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     @SuppressWarnings({"unchecked"})
     List<Object> nonCompliant =
-        (List<Object>) rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
+        (List<Object>) rsp.getResponse()._get(List.of(collectionName, "schemaNonCompliant"), null);
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
     assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
     @SuppressWarnings({"unchecked"})
@@ -880,8 +914,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         new AtomicReference<>(getCoreStatus(leader).startTime.getTime());
 
     // Check for value change
-    CollectionAdminRequest.modifyCollection(
-            collectionName, Collections.singletonMap(ZkStateReader.READ_ONLY, "true"))
+    CollectionAdminRequest.modifyCollection(collectionName, Map.of(ZkStateReader.READ_ONLY, "true"))
         .process(solrClient);
 
     DocCollection coll = solrClient.getClusterState().getCollection(collectionName);
@@ -954,8 +987,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     // Check for removing value
     // setting to empty string is equivalent to removing the property, see SOLR-12507
-    CollectionAdminRequest.modifyCollection(
-            collectionName, Collections.singletonMap(ZkStateReader.READ_ONLY, ""))
+    CollectionAdminRequest.modifyCollection(collectionName, Map.of(ZkStateReader.READ_ONLY, ""))
         .process(cluster.getSolrClient());
     coll = solrClient.getClusterState().getCollection(collectionName);
     assertNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
@@ -1298,8 +1330,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting 'preferredleader' property to be balanced across all shards",
         collection,
-        c -> {
-          for (Slice slice : c) {
+        collectionState -> {
+          for (Slice slice : collectionState) {
             int count = 0;
             for (Replica replica : slice) {
               if ("true".equals(replica.getProperty("preferredleader"))) count += 1;
@@ -1369,7 +1401,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
 
     NamedList<?> colStatus = (NamedList<?>) response.getResponse().get(collectionName);
-    Long creationTimeMillis = (Long) colStatus._get("creationTimeMillis", null);
+    Long creationTimeMillis = (Long) colStatus._get("creationTimeMillis");
     assertNotNull("creationTimeMillis was not included in COLSTATUS response", creationTimeMillis);
 
     Instant creationTime = Instant.ofEpochMilli(creationTimeMillis);

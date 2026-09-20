@@ -16,25 +16,23 @@
  */
 package org.apache.solr.search.join;
 
-import com.codahale.metrics.Metric;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -45,7 +43,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
     initCore("solrconfig.xml", "schema12.xml");
   }
@@ -115,6 +114,216 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     indexSearcher.getIndexReader().close();
     dir.close();*/
+  }
+
+  public void testNumericJoinSingleValued() throws Exception {
+    clearIndex();
+
+    // products
+    assertU(add(doc("name", "name1", idField, "1", "cat_pi", "100")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_pi", "200")));
+
+    // offers, referencing the product via a numeric Point field
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+    assertU(add(doc("price_s", "20.0", idField, "6", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_pi to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_pi to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    // reverse direction: from Point ("to" side of a Point field can also serve as the numeric
+    // docValues "from" side for the join, since pint fields have both indexed points & docValues)
+    assertJQ(
+        req("q", "{!join from=prodRef_pi to=cat_pi score=None}id:5", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'4'}]}");
+  }
+
+  public void testNumericJoinMultiValued() throws Exception {
+    clearIndex();
+
+    // products, each may belong to several categories (multi-valued numeric field)
+    assertU(add(doc("name", "name1", idField, "1", "cat_pis", "100", "cat_pis", "300")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_pis", "200")));
+
+    // offers, referencing a single category
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "300")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_pis to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_pis to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
+  }
+
+  public void testNumericJoinWithScoring() throws Exception {
+    clearIndex();
+
+    assertU(
+        add(
+            doc(
+                "t_description",
+                "A random movie",
+                "name",
+                "Movie 1",
+                idField,
+                "1",
+                "movieId_pi",
+                "10")));
+    assertU(
+        add(doc("title", "The first subtitle of this movie", idField, "2", "prodRef_pi", "10")));
+    assertU(
+        add(doc("title", "random subtitle; random event movie", idField, "3", "prodRef_pi", "10")));
+    assertU(
+        add(
+            doc(
+                "t_description",
+                "A second random movie",
+                "name",
+                "Movie 2",
+                idField,
+                "4",
+                "movieId_pi",
+                "20")));
+    assertU(
+        add(
+            doc(
+                "title",
+                "a very random event happened during christmas night",
+                idField,
+                "5",
+                "prodRef_pi",
+                "20")));
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=prodRef_pi to=movieId_pi score=Max}title:random", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
+  }
+
+  public void testNumericJoinDateField() throws Exception {
+    clearIndex();
+
+    // products, referenced by a release date (pdate uses the same Long encoding as plong)
+    assertU(add(doc("name", "name1", idField, "1", "releaseDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(add(doc("name", "name2", idField, "4", "releaseDate_pdt", "2021-06-15T00:00:00Z")));
+
+    // offers, referencing the product via the same date value
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodDate_pdt", "2020-01-01T00:00:00Z")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodDate_pdt", "2021-06-15T00:00:00Z")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    assertJQ(
+        req("q", "{!join from=releaseDate_pdt to=prodDate_pdt score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
+  }
+
+  public void testNumericJoinFromNonIndexedDocValues() throws Exception {
+    clearIndex();
+
+    // products: "cat_ii" is declared indexed="false", so it only carries numeric doc values,
+    // no indexed points at all; the numeric join must still work off doc values alone.
+    assertU(add(doc("name", "name1", idField, "1", "cat_ii", "100")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_ii", "200")));
+
+    // offers, referencing the product via an indexed numeric Point field
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+    assertU(add(doc("price_s", "20.0", idField, "6", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_ii to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_ii to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+  }
+
+  public void testNumericJoinFromLegacyTrieField() throws Exception {
+    clearIndex();
+
+    // products: "cat_trie_i" is a legacy (non-Point) TrieIntField with docValues, not indexed;
+    // the numeric join's "from" side only relies on numeric doc values, not on Point encoding.
+    assertU(add(doc("name", "name1", idField, "1", "cat_trie_i", "100")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_trie_i", "200")));
+
+    // offers, referencing the product via an indexed numeric Point field
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_pi", "200")));
+    assertU(add(doc("price_s", "20.0", idField, "6", "prodRef_pi", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_i to=prodRef_pi score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_i to=prodRef_pi score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+  }
+
+  public void testNumericJoinTypeMismatch() throws Exception {
+    clearIndex();
+    assertU(add(doc("name", "name1", idField, "1", "cat_pi", "100")));
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_pl", "100")));
+    assertU(commit());
+
+    // "from" is an int field, "to" is a long point field: types don't match, a clear error is
+    // raised instead of a low-level Lucene point encoding failure.
+    assertQEx(
+        "numeric join type mismatch",
+        "Numeric join",
+        req("q", "{!join from=cat_pi to=prodRef_pl score=None}name:name1", "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  public void testLegacyNumericToLegacyNumericJoin() throws Exception {
+    clearIndex();
+
+    // Both sides are legacy (non-Point) Trie int fields without docValues. Such a pair can't use
+    // the point-based numeric join, but it has always worked through the term-based join, which
+    // reads the uninverted SortedSetDocValues of the "from" field, so it must keep working.
+    assertU(add(doc("name", "name1", idField, "1", "cat_trie_is", "100", "cat_trie_is", "300")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_trie_is", "200")));
+
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_trie_is", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_trie_is", "300")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_trie_is", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_is to=prodRef_trie_is score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_is to=prodRef_trie_is score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
   }
 
   public void testDeleteByScoreJoinQuery() throws Exception {
@@ -216,9 +425,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
             "true");
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
     final Query luceneQ =
-        QParser.getParser(req.getParams().get("q"), req)
-            .getQuery()
-            .rewrite(req.getSearcher().getSlowAtomicReader());
+        QParser.getParser(req.getParams().get("q"), req).getQuery().rewrite(req.getSearcher());
     assertTrue(luceneQ instanceof BoostQuery);
     float boost = ((BoostQuery) luceneQ).getBoost();
     assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));
@@ -229,19 +436,17 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   public void testCacheHit() throws Exception {
     indexDataForScoring();
 
-    Map<String, Metric> metrics =
-        h.getCoreContainer()
-            .getMetricManager()
-            .registry(h.getCore().getCoreMetricManager().getRegistryName())
-            .getMetrics();
-
-    @SuppressWarnings("rawtypes")
-    MetricsMap mm =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper) metrics.get("CACHE.searcher.queryResultCache"))
-                .getGauge();
     {
-      Map<String, Object> statPre = mm.getValue();
+      double lookupsPre =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
       h.query(
           req(
               "q",
@@ -250,11 +455,21 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
               "id",
               "omitHeader",
               "true"));
-      assertHitOrInsert(mm.getValue(), statPre);
+
+      assertHitOrInsert(lookupsPre, hitsPre, insertsPre);
     }
 
     {
-      Map<String, Object> statPre = mm.getValue();
+      double lookupsPre =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
       h.query(
           req(
               "q",
@@ -263,11 +478,20 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
               "id",
               "omitHeader",
               "true"));
-      assertHit(mm.getValue(), statPre);
+
+      assertHit(lookupsPre, hitsPre, insertsPre);
     }
 
     {
-      Map<String, Object> statPre = mm.getValue();
+      double lookupsPre =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPre =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
 
       Random r = random();
       boolean changed = false;
@@ -301,9 +525,19 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
                   "id",
                   "omitHeader",
                   "true"));
-      assertInsert(mm.getValue(), statPre);
 
-      statPre = mm.getValue();
+      assertInsert(lookupsPre, hitsPre, insertsPre);
+
+      double lookupsPreRepeat =
+          SolrMetricTestUtils.getCacheSearcherTotalLookups(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot hitsPreRepeat =
+          SolrMetricTestUtils.getCacheSearcherOpsHits(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+      CounterSnapshot.CounterDataPointSnapshot insertsPreRepeat =
+          SolrMetricTestUtils.getCacheSearcherOpsInserts(
+              h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
       final String repeat =
           h.query(
               req(
@@ -322,7 +556,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
                   "id",
                   "omitHeader",
                   "true"));
-      assertHit(mm.getValue(), statPre);
+
+      assertHit(lookupsPreRepeat, hitsPreRepeat, insertsPreRepeat);
 
       assertEquals("lowercase shouldn't change anything", resp, repeat);
 
@@ -343,7 +578,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     // however, it might be better to extract this method into a separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
-    SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("queryResultCache");
+    SolrCache cache =
+        (SolrCache) h.getCore().getInfoRegistry().get(SolrMetricTestUtils.QUERY_RESULT_CACHE);
     cache.clear();
   }
 
@@ -354,27 +590,71 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     return l.get(r.nextInt(l.size()));
   }
 
-  private void assertInsert(Map<String, Object> current, final Map<String, Object> statPre) {
-    assertEquals("it lookups", 1, delta("lookups", current, statPre));
-    assertEquals("it doesn't hit", 0, delta("hits", current, statPre));
-    assertEquals("it inserts", 1, delta("inserts", current, statPre));
+  private void assertInsert(
+      double lookupsPre,
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
+    double lookupsPost =
+        SolrMetricTestUtils.getCacheSearcherTotalLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
+    assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
+    assertEquals("it doesn't hit", 0, delta(hitsPost, hitsPre));
+    assertEquals("it inserts", 1, delta(insertsPost, insertsPre));
   }
 
-  private void assertHit(Map<String, Object> current, final Map<String, Object> statPre) {
-    assertEquals("it lookups", 1, delta("lookups", current, statPre));
-    assertEquals("it hits", 1, delta("hits", current, statPre));
-    assertEquals("it doesn't insert", 0, delta("inserts", current, statPre));
+  private void assertHit(
+      double lookupsPre,
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
+    double lookupsPost =
+        SolrMetricTestUtils.getCacheSearcherTotalLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
+    assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
+    assertEquals("it hits", 1, delta(hitsPost, hitsPre));
+    assertEquals("it doesn't insert", 0, delta(insertsPost, insertsPre));
   }
 
-  private void assertHitOrInsert(Map<String, Object> current, final Map<String, Object> statPre) {
-    assertEquals("it lookups", 1, delta("lookups", current, statPre));
-    final long mayHit = delta("hits", current, statPre);
+  private void assertHitOrInsert(
+      double lookupsPre,
+      CounterSnapshot.CounterDataPointSnapshot hitsPre,
+      CounterSnapshot.CounterDataPointSnapshot insertsPre) {
+    double lookupsPost =
+        SolrMetricTestUtils.getCacheSearcherTotalLookups(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot hitsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+    CounterSnapshot.CounterDataPointSnapshot insertsPost =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+            h.getCore(), SolrMetricTestUtils.QUERY_RESULT_CACHE);
+
+    assertEquals("it lookups", 1, delta(lookupsPost, lookupsPre));
+    final long mayHit = delta(hitsPost, hitsPre);
     assertTrue("it may hit", 0 == mayHit || 1 == mayHit);
-    assertEquals("or insert on cold", 1, delta("inserts", current, statPre) + mayHit);
+    assertEquals("or insert on cold", 1, delta(insertsPost, insertsPre) + mayHit);
   }
 
-  private long delta(String key, Map<String, Object> a, Map<String, Object> b) {
-    return (Long) a.get(key) - (Long) b.get(key);
+  private long delta(
+      CounterSnapshot.CounterDataPointSnapshot post, CounterSnapshot.CounterDataPointSnapshot pre) {
+    return delta(post.getValue(), pre.getValue());
+  }
+
+  private long delta(double post, double pre) {
+    return (long) post - (long) pre;
   }
 
   private void indexDataForScoring() {

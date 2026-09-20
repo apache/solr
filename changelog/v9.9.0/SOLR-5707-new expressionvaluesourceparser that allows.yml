@@ -1,0 +1,12 @@
+title: New ExpressionValueSourceParser that allows custom function queries / VSPs
+  to be defined in a subset of JavaScript, pre-compiled, and that which can access
+  the score and fields. It's powered by the Lucene Expressions module.
+type: added
+authors:
+- name: hossman
+- name: David Smiley
+- name: Ryan Ernst
+- name: Kevin Risden
+links:
+- name: SOLR-5707
+  url: https://issues.apache.org/jira/browse/SOLR-5707

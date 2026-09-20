@@ -57,13 +57,12 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     protected String collection;
     private Integer numShards;
     private String shardId;
-    private String roles;
     private String coreNodeName;
     private Boolean loadOnStartup;
-    private Boolean isTransient;
     private String collectionConfigName;
 
     public Create() {
+      super(METHOD.POST);
       action = CoreAdminAction.CREATE;
     }
 
@@ -103,16 +102,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       this.shardId = shardId;
     }
 
-    public void setRoles(String roles) {
-      this.roles = roles;
-    }
-
     public void setCoreNodeName(String coreNodeName) {
       this.coreNodeName = coreNodeName;
-    }
-
-    public void setIsTransient(Boolean isTransient) {
-      this.isTransient = isTransient;
     }
 
     public void setIsLoadOnStartup(Boolean loadOnStartup) {
@@ -156,20 +147,12 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       return shardId;
     }
 
-    public String getRoles() {
-      return roles;
-    }
-
     public String getCoreNodeName() {
       return coreNodeName;
     }
 
     public Boolean getIsLoadOnStartup() {
       return loadOnStartup;
-    }
-
-    public Boolean getIsTransient() {
-      return isTransient;
     }
 
     public String getCollectionConfigName() {
@@ -226,15 +209,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       if (shardId != null) {
         params.set(CoreAdminParams.SHARD, shardId);
       }
-      if (roles != null) {
-        params.set(CoreAdminParams.ROLES, roles);
-      }
       if (coreNodeName != null) {
         params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
-      }
-
-      if (isTransient != null) {
-        params.set(CoreAdminParams.TRANSIENT, isTransient);
       }
 
       if (loadOnStartup != null) {
@@ -258,6 +234,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     protected Boolean onlyIfLeaderActive;
 
     public WaitForState() {
+      super(METHOD.POST);
       action = CoreAdminAction.PREPRECOVERY;
     }
 
@@ -355,6 +332,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static class RequestRecovery extends CoreAdminRequest {
 
     public RequestRecovery() {
+      super(METHOD.POST);
       action = CoreAdminAction.REQUESTRECOVERY;
     }
 
@@ -377,6 +355,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     private String collection;
 
     public RequestSyncShard() {
+      super(METHOD.POST);
       action = CoreAdminAction.REQUESTSYNCSHARD;
     }
 
@@ -411,39 +390,12 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     }
   }
 
-  public static class OverrideLastPublished extends CoreAdminRequest {
-    protected String state;
-
-    public OverrideLastPublished() {
-      action = CoreAdminAction.FORCEPREPAREFORLEADERSHIP;
-    }
-
-    @Override
-    public SolrParams getParams() {
-      if (action == null) {
-        throw new RuntimeException("no action specified!");
-      }
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CoreAdminParams.ACTION, action.toString());
-      params.set(CoreAdminParams.CORE, core);
-      params.set("state", state);
-      return params;
-    }
-
-    public String getState() {
-      return state;
-    }
-
-    public void setState(String state) {
-      this.state = state;
-    }
-  }
-
   public static class MergeIndexes extends CoreAdminRequest {
     protected List<String> indexDirs;
     protected List<String> srcCores;
 
     public MergeIndexes() {
+      super(METHOD.POST);
       action = CoreAdminAction.MERGEINDEXES;
     }
 
@@ -491,6 +443,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     protected boolean deleteInstanceDir;
 
     public Unload(boolean deleteIndex) {
+      super(METHOD.POST);
       action = CoreAdminAction.UNLOAD;
       this.deleteIndex = deleteIndex;
     }
@@ -533,7 +486,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     private String commitName;
 
     public CreateSnapshot(String commitName) {
-      super();
+      super(METHOD.POST);
       this.action = CoreAdminAction.CREATESNAPSHOT;
       if (commitName == null) {
         throw new NullPointerException("Please specify non null value for commitName parameter.");
@@ -557,7 +510,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     private String commitName;
 
     public DeleteSnapshot(String commitName) {
-      super();
+      super(METHOD.POST);
       this.action = CoreAdminAction.DELETESNAPSHOT;
 
       if (commitName == null) {
@@ -580,17 +533,33 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
   public static class ListSnapshots extends CoreAdminRequest {
     public ListSnapshots() {
-      super();
+      super(METHOD.GET);
       this.action = CoreAdminAction.LISTSNAPSHOTS;
     }
   }
 
-  public CoreAdminRequest() {
-    super(METHOD.GET, "/admin/cores", SolrRequestType.ADMIN);
+  public CoreAdminRequest(METHOD method) {
+    this(method, "/admin/cores");
   }
 
+  public CoreAdminRequest(METHOD method, String path) {
+    super(method, path, SolrRequestType.ADMIN);
+  }
+
+  /**
+   * @deprecated Use {@link #CoreAdminRequest(METHOD)}.
+   */
+  @Deprecated(since = "10.1")
+  public CoreAdminRequest() {
+    this(METHOD.POST);
+  }
+
+  /**
+   * @deprecated Use {@link #CoreAdminRequest(METHOD, String)}.
+   */
+  @Deprecated(since = "10.1")
   public CoreAdminRequest(String path) {
-    super(METHOD.GET, path, SolrRequestType.ADMIN);
+    this(METHOD.POST, path);
   }
 
   public void setCoreName(String coreName) {
@@ -647,7 +616,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
   public static CoreAdminResponse reloadCore(String name, SolrClient client)
       throws SolrServerException, IOException {
-    CoreAdminRequest req = new CoreAdminRequest();
+    CoreAdminRequest req = new CoreAdminRequest(METHOD.POST);
     req.setCoreName(name);
     req.setAction(CoreAdminAction.RELOAD);
     return req.process(client);
@@ -679,7 +648,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
    */
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client)
       throws SolrServerException, IOException {
-    CoreAdminRequest req = new CoreAdminRequest();
+    CoreAdminRequest req = new CoreAdminRequest(METHOD.POST);
     req.setCoreName(coreName);
     req.setOtherCoreName(SolrIdentifierValidator.validateCoreName(newName));
     req.setAction(CoreAdminAction.RENAME);
@@ -698,7 +667,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
    */
   public static CoreAdminResponse swapCore(String core1, String core2, SolrClient client)
       throws SolrServerException, IOException {
-    CoreAdminRequest req = new CoreAdminRequest();
+    CoreAdminRequest req = new CoreAdminRequest(METHOD.POST);
     req.setCoreName(core1);
     req.setOtherCoreName(core2);
     req.setAction(CoreAdminAction.SWAP);
@@ -713,7 +682,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static CoreStatusResponse.SingleCoreData getCoreStatus(
       String coreName, boolean getIndexInfo, SolrClient client)
       throws SolrServerException, IOException {
-    CoreAdminRequest req = new CoreAdminRequest();
+    CoreAdminRequest req = new CoreAdminRequest(METHOD.GET);
     req.setAction(CoreAdminAction.STATUS);
     req.setIndexInfoNeeded(getIndexInfo);
     return req.process(client).getCoreStatus(coreName);
@@ -721,7 +690,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
   public static CoreAdminResponse getStatus(String name, SolrClient client)
       throws SolrServerException, IOException {
-    CoreAdminRequest req = new CoreAdminRequest();
+    CoreAdminRequest req = new CoreAdminRequest(METHOD.GET);
     req.setCoreName(name);
     req.setAction(CoreAdminAction.STATUS);
     return req.process(client);

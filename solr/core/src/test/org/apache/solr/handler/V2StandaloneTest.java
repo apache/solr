@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -35,21 +34,19 @@ public class V2StandaloneTest extends SolrTestCaseJ4 {
     Path solrHomeTmp = createTempDir();
     PathUtils.copyDirectory(
         TEST_HOME().resolve("configsets/minimal/conf"), solrHomeTmp.resolve("conf"));
-    Files.copy(TEST_HOME().resolve("solr.xml"), solrHomeTmp.resolve("solr.xml"));
 
     JettySolrRunner jetty =
         new JettySolrRunner(solrHomeTmp.toString(), JettyConfig.builder().build());
     jetty.start();
 
-    try (SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort()))) {
-      NamedList<?> res = client.request(new V2Request.Builder("/").build());
-      NamedList<?> header = (NamedList<?>) res.get("responseHeader");
-      assertEquals(0, header.get("status"));
+    SolrClient client = jetty.getSolrClient();
+    NamedList<?> res = client.request(new V2Request.Builder("/").build());
+    NamedList<?> header = (NamedList<?>) res.get("responseHeader");
+    assertEquals(0, header.get("status"));
 
-      res = client.request(new V2Request.Builder("/_introspect").build());
-      header = (NamedList<?>) res.get("responseHeader");
-      assertEquals(0, header.get("status"));
-    }
+    res = client.request(new V2Request.Builder("/_introspect").build());
+    header = (NamedList<?>) res.get("responseHeader");
+    assertEquals(0, header.get("status"));
 
     jetty.stop();
   }

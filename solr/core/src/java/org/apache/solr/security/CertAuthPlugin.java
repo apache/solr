@@ -16,17 +16,17 @@
  */
 package org.apache.solr.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpHeaders;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.cert.CertPrincipalResolver;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +38,9 @@ public class CertAuthPlugin extends AuthenticationPlugin {
   private static final String PARAM_PRINCIPAL_RESOLVER = "principalResolver";
   private static final String PARAM_CLASS = "class";
   private static final String PARAM_PARAMS = "params";
+
+  private static final String JAKARTA_REQUEST_ATTRIBUTE_NAME =
+      "jakarta.servlet.request.X509Certificate";
 
   private static final CertPrincipalResolver DEFAULT_PRINCIPAL_RESOLVER =
       certificate -> certificate.getSubjectX500Principal();
@@ -102,7 +105,8 @@ public class CertAuthPlugin extends AuthenticationPlugin {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
     X509Certificate[] certs =
-        (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        (X509Certificate[]) request.getAttribute(JAKARTA_REQUEST_ATTRIBUTE_NAME);
+
     if (certs == null || certs.length == 0) {
       return sendError(response, "require certificate");
     }
@@ -116,7 +120,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
 
   private boolean sendError(HttpServletResponse response, String msg) throws IOException {
     numMissingCredentials.inc();
-    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Certificate");
+    response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Certificate");
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, msg);
     return false;
   }

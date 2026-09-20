@@ -1,0 +1,9 @@
+title: Fix various methods of invoking "local" solr requests to re-use the same searcher
+  as the original request. This notably fixes the use of spellcheck.maxCollationTries
+  in firstSearcher warming queries to prevent deadlock
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-5386
+  url: https://issues.apache.org/jira/browse/SOLR-5386

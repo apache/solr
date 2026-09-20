@@ -28,6 +28,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -63,7 +64,7 @@ public abstract class FacetProcessor<T extends FacetRequest> {
     fcontext.processor = this;
   }
 
-  public org.apache.solr.common.MapWriter getResponse() {
+  public MapWriter getResponse() {
     return response;
   }
 

@@ -187,7 +187,7 @@ class CollectionTester {
         sb.append(seg);
         sb.append(']');
       } else {
-        sb.append(seg.toString());
+        sb.append(seg);
       }
     }
     return sb.toString();
@@ -215,6 +215,7 @@ class CollectionTester {
     return match();
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   boolean match() {
     if (expected == val) {
       return true;

@@ -47,8 +47,36 @@ When building the image, Solr accepts arguments for customization. Currently onl
 - `BASE_IMAGE`: Change the base java image for Solr. This can be used to change java versions, jvms, etc.
 
 ```bash
-docker build --build-arg BASE_IMAGE=custom/jdk:17-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
+docker build --build-arg BASE_IMAGE=custom/jdk:21-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
 ```
+
+Multi-Platform Builds
+----
+
+To build multi-platform Docker images from the binary distribution, use Docker Buildx.
+
+**Prerequisites**:
+- Docker Buildx must be installed (included with Docker Desktop and recent Docker Engine)
+- A buildx builder must be configured. Create one if needed:
+  ```bash
+  docker buildx create --name solr-builder --use
+  ```
+- For cross-platform builds, QEMU is be required
+
+**Important**: When building for multiple platforms, you cannot use `--load` to load the image into your local Docker daemon. You must use `--push` to push directly to a registry.
+
+```bash
+# Build and push for multiple platforms
+docker buildx build --platform linux/amd64,linux/arm64 -f solr-X.Y.Z/docker/Dockerfile --tag myrepo/solr:X.Y.Z --push - < solr-X.Y.Z.tgz
+
+# Build for a single specific platform (can use --load for local testing)
+docker buildx build --platform linux/arm64 -f solr-X.Y.Z/docker/Dockerfile --tag myrepo/solr:X.Y.Z-arm64 --load - < solr-X.Y.Z.tgz
+```
+
+**Note**: When building Docker images using Gradle tasks (`./gradlew dockerBuild`, `./gradlew dockerPush`),
+the `dockerBuild` task always builds for your current local architecture only. Multi-platform and
+single-platform targeting is only supported by the `dockerPush` task via the `SOLR_DOCKER_PLATFORM`
+environment variable or property `-Psolr.docker.platform`. See `./gradlew helpDocker` for details.
 
 Official Image Management
 ----

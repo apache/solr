@@ -24,7 +24,8 @@ upon large dependencies/dictionaries.
 It includes integration with ICU for multilingual support,
 analyzers for Chinese and Polish, and integration with
 OpenNLP for multilingual tokenization, part-of-speech tagging
-lemmatization, phrase chunking, and named-entity recognition.
+lemmatization, phrase chunking, and named-entity recognition
+including being able to run models sourced from Huggingface.
 
 Each of the jars below relies upon including `/modules/analysis-extras/lib/solr-analysis-extras-X.Y.Z.jar`
 in the `solrconfig.xml`

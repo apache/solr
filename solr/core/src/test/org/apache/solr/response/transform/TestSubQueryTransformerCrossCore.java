@@ -16,13 +16,14 @@
  */
 package org.apache.solr.response.transform;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,18 +31,19 @@ import org.junit.Test;
 public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
 
   private static SolrCore fromCore;
+  private static EmbeddedSolrServer fromServer;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig-basic.xml", "schema-docValuesJoin.xml");
     final CoreContainer coreContainer = h.getCoreContainer();
 
-    fromCore =
-        coreContainer.create(
-            "fromCore", // FileSystems.getDefault().getPath( TEST_HOME()),
-            // ImmutableMap.of("config","solrconfig-basic.xml","schema","schema-docValuesJoin.xml"
-            Map.of("configSet", "minimal"));
+    fromCore = coreContainer.create("fromCore", Map.of("configSet", "minimal"));
+    fromServer = new EmbeddedSolrServer(fromCore.getCoreContainer(), fromCore.getName());
+
+    // Add documents to the main core
     assertU(
         add(
             doc(
@@ -111,61 +113,32 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
                 "These guys develop stuff")));
     assertU(commit());
 
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "10",
-                "dept_id_s",
-                "Engineering",
-                "text_t",
-                "These guys develop stuff",
-                "salary_i_dv",
-                "1000")));
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "11",
-                "dept_id_s",
-                "Marketing",
-                "text_t",
-                "These guys make you look good",
-                "salary_i_dv",
-                "1500")));
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "12",
-                "dept_id_s",
-                "Sales",
-                "text_t",
-                "These guys sell stuff",
-                "salary_i_dv",
-                "1600")));
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "13",
-                "dept_id_s",
-                "Support",
-                "text_t",
-                "These guys help customers",
-                "salary_i_dv",
-                "800")));
-    update(fromCore, commit());
-  }
+    // Add documents to the fromCore
+    List<SolrInputDocument> docs =
+        sdocs(
+            sdoc(
+                "id", "10",
+                "dept_id_s", "Engineering",
+                "text_t", "These guys develop stuff",
+                "salary_i_dv", 1000),
+            sdoc(
+                "id", "11",
+                "dept_id_s", "Marketing",
+                "text_t", "These guys make you look good",
+                "salary_i_dv", 1500),
+            sdoc(
+                "id", "12",
+                "dept_id_s", "Sales",
+                "text_t", "These guys sell stuff",
+                "salary_i_dv", 1600),
+            sdoc(
+                "id", "13",
+                "dept_id_s", "Support",
+                "text_t", "These guys help customers",
+                "salary_i_dv", 800));
 
-  public static String update(SolrCore core, String xml) throws Exception {
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/update");
-    return connection.request(handler, null, xml);
+    fromServer.add(docs);
+    fromServer.commit();
   }
 
   @Test
@@ -244,6 +217,14 @@ public class TestSubQueryTransformerCrossCore extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void nukeAll() {
+    if (fromServer != null) {
+      try {
+        fromServer.close();
+      } catch (Exception e) {
+        // ignore
+      }
+    }
     fromCore = null;
+    fromServer = null;
   }
 }

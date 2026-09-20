@@ -1,0 +1,7 @@
+title: Minor refactoring of the TextToVectorQParserPlugin
+type: changed
+authors:
+- name: Ilaria Petreti
+links:
+  - name: PR#3651
+    url: https://github.com/apache/solr/pull/3651

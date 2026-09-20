@@ -53,6 +53,7 @@ public class QueryParsing {
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
+  public static final String NAME = "name";
 
   /**
    * @param txt Text to parse
@@ -298,7 +299,7 @@ public class QueryParsing {
         } else if (c.isRequired()) {
           out.append('+');
         }
-        Query subQuery = c.getQuery();
+        Query subQuery = c.query();
 
         toString(subQuery, schema, out, subflag | FLAG_IS_CLAUSE);
       }

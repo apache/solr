@@ -26,10 +26,10 @@ import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesSkipper;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafMetaData;
@@ -46,11 +46,12 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.AcceptDocs;
 import org.apache.lucene.search.KnnCollector;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
@@ -84,40 +85,52 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
    * This method is sugar for getting an {@link LeafReader} from an {@link IndexReader} of any kind.
    * If the reader is already atomic, it is returned unchanged, otherwise wrapped by this class.
    */
-  public static LeafReader wrap(IndexReader reader) throws IOException {
-    if (reader instanceof CompositeReader) {
-      return new SlowCompositeReaderWrapper((CompositeReader) reader);
+  public static LeafReader wrap(IndexReader reader) {
+    if (reader instanceof CompositeReader compositeReader) {
+      return new SlowCompositeReaderWrapper(compositeReader);
     } else {
       assert reader instanceof LeafReader;
       return (LeafReader) reader;
     }
   }
 
-  SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+  SlowCompositeReaderWrapper(CompositeReader reader) {
     in = reader;
     in.registerParentReader(this);
-    if (reader.leaves().isEmpty()) {
+    List<LeafReaderContext> leaves = reader.leaves();
+    if (leaves.isEmpty()) {
       metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null, false);
     } else {
       Version minVersion = Version.LATEST;
-      for (LeafReaderContext leafReaderContext : reader.leaves()) {
-        Version leafVersion = leafReaderContext.reader().getMetaData().getMinVersion();
-        if (leafVersion == null) {
-          minVersion = null;
-          break;
-        } else if (minVersion.onOrAfter(leafVersion)) {
-          minVersion = leafVersion;
+      boolean hasBlocks = false;
+      for (LeafReaderContext leafReaderContext : leaves) {
+        LeafMetaData leafMetaData = leafReaderContext.reader().getMetaData();
+        if (minVersion != null) {
+          Version leafVersion = leafMetaData.minVersion();
+          if (leafVersion == null) {
+            minVersion = null;
+          } else if (minVersion.onOrAfter(leafVersion)) {
+            minVersion = leafVersion;
+          }
         }
+        // A block (child/nested docs), once written, is never split across segments, so the
+        // composite view has blocks as soon as any one of its segments does.
+        hasBlocks |= leafMetaData.hasBlocks();
       }
-      LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
+      LeafMetaData firstLeafMetaData = leaves.getFirst().reader().getMetaData();
+      // The composite view is only actually sorted in the trivial single-leaf case: concatenating
+      // multiple segments does not preserve their shared per-segment sort as a sort of the whole.
+      Sort sort = leaves.size() == 1 ? firstLeafMetaData.sort() : null;
       metaData =
-          new LeafMetaData(
-              leafMetaData.getCreatedVersionMajor(),
-              minVersion,
-              leafMetaData.getSort(),
-              leafMetaData.hasBlocks());
+          new LeafMetaData(firstLeafMetaData.createdVersionMajor(), minVersion, sort, hasBlocks);
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
+  }
+
+  @Override
+  public DocValuesSkipper getDocValuesSkipper(String field) throws IOException {
+    // TODO implement skipping
+    return null;
   }
 
   @Override
@@ -313,12 +326,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  @Deprecated
-  public Fields getTermVectors(int docID) throws IOException {
-    return in.getTermVectors(docID);
-  }
-
-  @Override
   public TermVectors termVectors() throws IOException {
     ensureOpen();
     return in.termVectors();
@@ -340,13 +347,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.maxDoc();
-  }
-
-  @Override
-  @Deprecated
-  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
-    ensureOpen();
-    in.document(docID, visitor);
   }
 
   @Override
@@ -375,13 +375,15 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public void searchNearestVectors(
-      String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+      String field, float[] target, KnnCollector knnCollector, AcceptDocs acceptDocs)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public void searchNearestVectors(
-      String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+      String field, byte[] target, KnnCollector knnCollector, AcceptDocs acceptDocs)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 

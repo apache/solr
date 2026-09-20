@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import com.carrotsearch.hppc.IntHashSet;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -772,7 +771,7 @@ public class SortedIntDocSet extends DocSet {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override

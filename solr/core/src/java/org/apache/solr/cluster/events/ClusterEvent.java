@@ -32,8 +32,8 @@ public interface ClusterEvent {
     COLLECTIONS_REMOVED,
     /** Cluster properties have changed. */
     CLUSTER_PROPERTIES_CHANGED
-    // other types? eg. Overseer leader change, shard leader change,
-    // node overload (eg. CPU / MEM circuit breakers tripped)?
+    // other types? e.g. Overseer leader change, shard leader change,
+    // node overload (e.g. CPU / MEM circuit breakers tripped)?
   }
 
   /** Get event type. */

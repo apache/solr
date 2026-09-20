@@ -26,24 +26,26 @@ import java.util.Locale;
 public enum RequestStatusState {
 
   /** The request was completed. */
-  COMPLETED("completed"),
+  COMPLETED("completed", true),
 
   /** The request has failed. */
-  FAILED("failed"),
+  FAILED("failed", true),
 
   /** The request is in progress. */
-  RUNNING("running"),
+  RUNNING("running", false),
 
   /** The request was submitted, but has not yet started. */
-  SUBMITTED("submitted"),
+  SUBMITTED("submitted", false),
 
   /** The request was not found. */
-  NOT_FOUND("notfound");
+  NOT_FOUND("notfound", true);
 
   private final String key;
+  private final boolean isFinal;
 
-  private RequestStatusState(String key) {
+  RequestStatusState(String key, boolean isFinal) {
     this.key = key;
+    this.isFinal = isFinal;
   }
 
   /**
@@ -52,6 +54,11 @@ public enum RequestStatusState {
    */
   public String getKey() {
     return key;
+  }
+
+  /** Returns whether this state should be considered the final state for the request status. */
+  public boolean isFinal() {
+    return isFinal;
   }
 
   /**

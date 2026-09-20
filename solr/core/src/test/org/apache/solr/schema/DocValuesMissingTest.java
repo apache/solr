@@ -436,7 +436,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   @Test
   public void testStringSort() {
 
-    // note: cant use checkSortMissingDefault because
+    // note: can't use checkSortMissingDefault because
     // nothing sorts lower then the default of ""
     for (String field : new String[] {"stringdv", "dyn_stringdv"}) {
       assertU(adoc("id", "0")); // missing
@@ -520,7 +520,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   /** bool (and dynamic bool) with default lucene sort (treats as "") */
   @Test
   public void testBoolSort() {
-    // note: cant use checkSortMissingDefault because
+    // note: can't use checkSortMissingDefault because
     // nothing sorts lower then the default of "" and
     // bool fields are, at root, string fields.
     for (String field : new String[] {"booldv", "dyn_booldv"}) {

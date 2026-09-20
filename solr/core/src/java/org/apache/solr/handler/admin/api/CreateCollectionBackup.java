@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
@@ -25,12 +24,9 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_CONFIGSET;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -50,7 +46,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
@@ -97,9 +92,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     requestBody.location =
         getAndValidateBackupLocation(requestBody.repository, requestBody.location);
 
-    if (requestBody.incremental == null) {
-      requestBody.incremental = Boolean.TRUE;
-    }
     if (requestBody.backupStrategy == null) {
       requestBody.backupStrategy = CollectionAdminParams.COPY_FILES_STRATEGY;
     }
@@ -109,21 +101,12 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
           "Unknown index backup strategy " + requestBody.backupStrategy);
     }
 
+    final var response = instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, backupName, requestBody);
     final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
-            remoteMessage,
-            CollectionParams.CollectionAction.BACKUP,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    final SolrJerseyResponse response =
-        objectMapper.convertValue(
-            remoteResponse.getResponse(), CreateCollectionBackupResponseBody.class);
+        submitRemoteMessageAndHandleResponse(
+            response, CollectionParams.CollectionAction.BACKUP, remoteMessage, requestBody.async);
+    objectMapper.updateValue(response, remoteResponse.getResponse());
 
     return response;
   }
@@ -131,14 +114,11 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
   public static ZkNodeProps createRemoteMessage(
       String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
     final Map<String, Object> remoteMessage = Utils.reflectToMap(requestBody);
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
+    remoteMessage.remove(ASYNC);
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(NAME, backupName);
     if (!StringUtils.isBlank(requestBody.backupStrategy)) {
       remoteMessage.put(INDEX_BACKUP_STRATEGY, remoteMessage.remove("backupStrategy"));
-    }
-    if (!StringUtils.isBlank(requestBody.snapshotName)) {
-      remoteMessage.put(COMMIT_NAME, remoteMessage.remove("snapshotName"));
     }
     return new ZkNodeProps(remoteMessage);
   }
@@ -150,8 +130,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     requestBody.repository = params.get(BACKUP_REPOSITORY);
     requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
     requestBody.backupStrategy = params.get(INDEX_BACKUP_STRATEGY);
-    requestBody.snapshotName = params.get(COMMIT_NAME);
-    requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
     requestBody.backupConfigset = params.getBool(BACKUP_CONFIGSET);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
     requestBody.extraProperties =

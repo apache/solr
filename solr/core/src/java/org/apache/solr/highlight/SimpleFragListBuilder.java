@@ -27,17 +27,6 @@ public class SimpleFragListBuilder extends HighlightingPluginBase implements Sol
     // If that ever changes, it should wrap them with defaults...
     // params = SolrParams.wrapDefaults(params, defaults)
 
-    numRequests.inc();
-
     return new org.apache.lucene.search.vectorhighlight.SimpleFragListBuilder();
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "SimpleFragListBuilder";
   }
 }

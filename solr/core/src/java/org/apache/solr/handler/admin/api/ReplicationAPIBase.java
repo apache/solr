@@ -28,7 +28,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -140,7 +139,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       if (generation == -1) {
         commit = delPol.getAndSaveLatestCommit();
         if (null == commit) {
-          filesResponse.fileList = Collections.emptyList();
+          filesResponse.fileList = List.of();
           return filesResponse;
         }
       } else {
@@ -255,6 +254,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
     protected Long indexGen;
     protected IndexDeletionPolicyWrapper delPolicy;
+    private boolean commitPointSaved;
 
     protected String fileName;
     protected String cfileName;
@@ -343,7 +343,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
       // reserve commit point till write is complete
       if (indexGen != null) {
-        delPolicy.saveCommitPoint(indexGen);
+        try {
+          delPolicy.saveCommitPoint(indexGen);
+          commitPointSaved = true;
+        } catch (IllegalStateException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.CONFLICT, "invalid index generation: " + indexGen, e);
+        }
       }
     }
 
@@ -361,7 +367,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       ReplicationHandler replicationHandler =
           (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
 
-      if (indexGen != null) {
+      if (commitPointSaved) {
         // Reserve the commit point for another 10s for the next file to be to fetched.
         // We need to keep extending the commit reservation between requests so that the replica can
         // fetch all the files correctly.
@@ -392,6 +398,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         while (true) {
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
+
+          if (read <= 0) {
+            writeNothingAndFlush();
+            fos.close();
+            break;
+          }
+
           in.readBytes(buf, 0, read);
 
           fos.writeInt(read);
@@ -430,7 +443,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
             sLen,
             compress,
             indexGen,
-            useChecksum);
+            useChecksum,
+            e);
       } finally {
         IOUtils.closeQuietly(in);
         if (dir != null) {
@@ -516,7 +530,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
             sLen,
             compress,
             indexGen,
-            useChecksum);
+            useChecksum,
+            e);
       } finally {
         extendReserveAndReleaseCommitPoint();
       }

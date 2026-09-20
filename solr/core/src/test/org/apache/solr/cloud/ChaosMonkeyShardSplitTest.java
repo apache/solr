@@ -67,9 +67,11 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
     ClusterState clusterState = cloudClient.getClusterState();
     final DocRouter router =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
+        clusterState.getCollection(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getSlice(SHARD1);
+        clusterState
+            .getCollection(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION)
+            .getSlice(SHARD1);
     DocRouter.Range shard1Range =
         shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
@@ -142,7 +144,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       killerThread.start();
       killCounter.incrementAndGet();
 
-      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, null, null, false);
+      splitShard(AbstractFullDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, null, null, false);
 
       log.info("Layout after split: \n");
       printLayout();

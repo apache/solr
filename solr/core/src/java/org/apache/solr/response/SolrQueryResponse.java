@@ -18,12 +18,12 @@ package org.apache.solr.response;
 
 import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -258,7 +258,7 @@ public class SolrQueryResponse {
   }
 
   /** Set response header */
-  public void addResponseHeader(NamedList<Object> header) {
+  public void addResponseHeader(SimpleOrderedMap<Object> header) {
     values.add(RESPONSE_HEADER_KEY, header);
   }
 
@@ -268,10 +268,9 @@ public class SolrQueryResponse {
   }
 
   /** Response header to be logged */
-  public NamedList<Object> getResponseHeader() {
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get(RESPONSE_HEADER_KEY);
-    return header;
+  @SuppressWarnings("unchecked")
+  public SimpleOrderedMap<Object> getResponseHeader() {
+    return (SimpleOrderedMap<Object>) values.get(RESPONSE_HEADER_KEY);
   }
 
   /** Set response */
@@ -349,7 +348,7 @@ public class SolrQueryResponse {
    *
    * @param name the name of the header
    * @param value the header value If it contains octet string, it should be encoded according to
-   *     RFC 2047 (http://www.ietf.org/rfc/rfc2047.txt)
+   *     RFC 2047 (<a href="http://www.ietf.org/rfc/rfc2047.txt">...</a>)
    * @see #addHttpHeader
    * @see HttpServletResponse#setHeader
    */
@@ -364,7 +363,7 @@ public class SolrQueryResponse {
    *
    * @param name the name of the header
    * @param value the additional header value If it contains octet string, it should be encoded
-   *     according to RFC 2047 (http://www.ietf.org/rfc/rfc2047.txt)
+   *     according to RFC 2047 (<a href="http://www.ietf.org/rfc/rfc2047.txt">...</a>)
    * @see #setHttpHeader
    * @see HttpServletResponse#addHeader
    */

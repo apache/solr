@@ -1,0 +1,7 @@
+title: Update amazon.awssdk to v2.32.31
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3596
+  url: https://github.com/apache/solr/pull/3596

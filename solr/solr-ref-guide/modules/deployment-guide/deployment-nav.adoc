@@ -30,10 +30,10 @@
 *** xref:docker-faq.adoc[]
 
 * Scaling Solr
-** xref:cluster-types.adoc[]
 ** SolrCloud Clusters
 *** xref:solrcloud-shards-indexing.adoc[]
 *** xref:solrcloud-recoveries-and-write-tolerance.adoc[]
+*** xref:solrcloud-update-consistency.adoc[]
 *** xref:solrcloud-distributed-requests.adoc[]
 *** xref:node-roles.adoc[]
 *** xref:aliases.adoc[]
@@ -61,8 +61,6 @@
 ** xref:metrics-reporting.adoc[]
 ** xref:performance-statistics-reference.adoc[]
 ** xref:plugins-stats-screen.adoc[]
-** xref:mbean-request-handler.adoc[]
-** xref:monitoring-with-prometheus-and-grafana.adoc[]
 ** xref:jmx-with-solr.adoc[]
 ** xref:thread-dump.adoc[]
 ** xref:distributed-tracing.adoc[]

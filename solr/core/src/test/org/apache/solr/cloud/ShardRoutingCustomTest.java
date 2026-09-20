@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -61,8 +60,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     Files.createDirectories(jettyDir);
     setupJettySolrHome(jettyDir);
     JettySolrRunner j =
-        createJetty(
-            jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
+        createJetty(jettyDir, createTempDir().toString(), "shardA", "solrconfig.xml", null);
     j.start();
     assertEquals(
         0,
@@ -77,8 +75,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
             .process(cloudClient)
             .isSuccess());
     jettys.add(j);
-    SolrClient client = createNewSolrClient(j.getLocalPort());
-    clients.add(client);
+    clients.add(createNewSolrClient(j.getLocalPort()));
 
     waitForActiveReplicaCount(cloudClient, DEFAULT_COLLECTION, 1);
 

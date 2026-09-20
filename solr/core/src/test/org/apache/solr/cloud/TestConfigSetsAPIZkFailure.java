@@ -35,6 +35,7 @@ import org.apache.jute.InputArchive;
 import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.common.SolrException;
@@ -107,8 +108,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateZkFailure() throws Exception {
-    final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = solrCluster.getJettySolrRunners().get(0).getSolrClient();
     final ConfigSetService configSetService =
         solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 
@@ -127,23 +127,20 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
       Create create = new Create();
       create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
-      SolrClient.RemoteSolrException se =
-          expectThrows(SolrClient.RemoteSolrException.class, () -> create.process(solrClient));
+      RemoteSolrException se =
+          expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
       // partial creation should have been cleaned up
       assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
       assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
     } finally {
       zkClient.close();
     }
-
-    solrClient.close();
   }
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       Files.writeString(
@@ -156,8 +153,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
         .getZkClient()
         .setData(
             "/configs/" + baseConfigSetName,
-            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8),
-            true);
+            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8));
   }
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {

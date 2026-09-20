@@ -41,7 +41,7 @@ You'll be doing a rolling restart of your cluster (each node, one-by-one), but w
 . Re-build and test all custom server-side components against the new Solr JAR files.
 . Determine the values of the following variables that are used by the Solr Control Scripts:
 * `ZK_HOST`: The ZooKeeper connection string your current SolrCloud nodes use to connect to ZooKeeper; this value will be the same for all nodes in the cluster.
-* `SOLR_HOST`: The hostname each Solr node used to register with ZooKeeper when joining the SolrCloud cluster; this value will be used to set the *host* Java system property when starting the new Solr process.
+* `SOLR_HOST_ADVERTISE`: The hostname each Solr node used to register with ZooKeeper when joining the SolrCloud cluster; this value will be used to set the *host* Java system property when starting the new Solr process.
 * `SOLR_PORT`: The port each Solr node is listening on, such as 8983.
 * `SOLR_HOME`: The absolute path to the Solr home directory for each Solr node.
 This value will be passed to the new Solr process using the `solr.solr.home` system property, see: xref:configuration-guide:configuring-solr-xml.adoc[].
@@ -85,7 +85,7 @@ Open `/etc/default/solr.in.sh` with a text editor and verify that the following 
 
 [source,properties]
 ZK_HOST=
-SOLR_HOST=
+SOLR_HOST_ADVERTISE=
 SOLR_PORT=
 SOLR_HOME=
 
@@ -96,7 +96,7 @@ For instance, if you plan to run Solr as the "solr" user and `SOLR_HOME` is `/va
 === Step 4: Start Solr
 
 You are now ready to start the upgraded Solr node by doing: `sudo service solr start`.
-The upgraded instance will join the existing cluster because you're using the same `SOLR_HOME`, `SOLR_PORT`, and `SOLR_HOST` settings used by the old Solr node; thus, the new server will look like the old node to the running cluster.
+The upgraded instance will join the existing cluster because you're using the same `SOLR_HOME`, `SOLR_PORT`, and `SOLR_HOST_ADVERTISE` settings used by the old Solr node; thus, the new server will look like the old node to the running cluster.
 Be sure to look in `/var/solr/logs/solr.log` for errors during startup.
 
 === Step 5: Run Healthcheck

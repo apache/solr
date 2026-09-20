@@ -58,7 +58,7 @@ public class QueryMatchers {
 
   /**
    * Matches is a Query object's toString result is equal to this query string. A useful shortcut
-   * when constructing complex queries with deterministic string repr
+   * when constructing complex queries with deterministic string representation.
    *
    * <p>Note: Do not use this in place of DisjunctionMaxQuery, but safe to use for the disjunct
    * clauses
@@ -138,14 +138,14 @@ public class QueryMatchers {
       protected boolean matchesSafely(BooleanClause item, Description mismatchDescription) {
         boolean match = true;
         mismatchDescription.appendText("was a BooleanClause ");
-        if (occur != item.getOccur()) {
+        if (occur != item.occur()) {
           match = false;
-          mismatchDescription.appendText("that " + item.getOccur().name() + " occur ");
+          mismatchDescription.appendText("that " + item.occur().name() + " occur ");
         }
-        if (!query.matches(item.getQuery())) {
+        if (!query.matches(item.query())) {
           match = false;
-          mismatchDescription.appendText("with " + item.getQuery());
-          query.describeMismatch(item.getQuery(), mismatchDescription);
+          mismatchDescription.appendText("with " + item.query());
+          query.describeMismatch(item.query(), mismatchDescription);
         }
         return match;
       }

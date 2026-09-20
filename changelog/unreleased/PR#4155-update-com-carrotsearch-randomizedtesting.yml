@@ -1,0 +1,9 @@
+title: Update com.carrotsearch.randomizedtesting:randomizedtesting-runner to v2.8.4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4155
+  url: https://github.com/apache/solr/pull/4155
+- name: PR#4305
+  url: https://github.com/apache/solr/pull/4305

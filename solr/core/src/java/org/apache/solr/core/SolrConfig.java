@@ -53,14 +53,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
@@ -78,6 +77,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -96,7 +96,7 @@ import org.slf4j.LoggerFactory;
  * Provides a static reference to a Config object modeling the main configuration data for a Solr
  * core -- typically found in "solrconfig.xml".
  */
-public class SolrConfig implements MapSerializable {
+public class SolrConfig implements MapWriter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -127,8 +127,6 @@ public class SolrConfig implements MapSerializable {
   private int multipartUploadLimitKB;
 
   private int formUploadLimitKB;
-
-  private boolean handleSelect;
 
   private final SolrRequestParsers solrRequestParsers;
 
@@ -232,7 +230,9 @@ public class SolrConfig implements MapSerializable {
               .txt();
 
       luceneMatchVersion = SolrConfig.parseLuceneVersionString(val);
-      log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
+      if (!luceneMatchVersion.equals(Version.LATEST)) {
+        log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
+      }
 
       String indexConfigPrefix;
 
@@ -267,12 +267,12 @@ public class SolrConfig implements MapSerializable {
       indexConfig = new SolrIndexConfig(get("indexConfig"), null);
 
       booleanQueryMaxClauseCount =
-          get("query").get("maxBooleanClauses").intVal(BooleanQuery.getMaxClauseCount());
+          get("query").get("maxBooleanClauses").intVal(IndexSearcher.getMaxClauseCount());
       if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
         log.warn(
             "solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} and will have no effect {}",
             booleanQueryMaxClauseCount,
-            BooleanQuery.getMaxClauseCount(),
+            IndexSearcher.getMaxClauseCount(),
             "set 'maxBooleanClauses' in solr.xml to increase global limit");
       }
       prefixQueryMinPrefixLength =
@@ -304,6 +304,9 @@ public class SolrConfig implements MapSerializable {
       queryResultCacheConfig =
           CacheConfig.getConfig(
               this, get("query").get("queryResultCache"), "query/queryResultCache");
+      featureVectorCacheConfig =
+          CacheConfig.getConfig(
+              this, get("query").get("featureVectorCache"), "query/featureVectorCache");
       documentCacheConfig =
           CacheConfig.getConfig(this, get("query").get("documentCache"), "query/documentCache");
       CacheConfig conf =
@@ -320,7 +323,7 @@ public class SolrConfig implements MapSerializable {
       dataDir = get("dataDir").txt();
       if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
-      org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
+      SolrIndexSearcher.initRegenerators(this);
 
       if (get("jmx").exists()) {
         log.warn(
@@ -354,16 +357,6 @@ public class SolrConfig implements MapSerializable {
 
       formUploadLimitKB = requestParsersNode.intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
-
-      if (requestParsersNode.attr("enableRemoteStreaming") != null) {
-        log.warn("Ignored deprecated enableRemoteStreaming in config; use sys-prop");
-      }
-
-      if (requestParsersNode.attr("enableStreamBody") != null) {
-        log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
-      }
-
-      handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -526,7 +519,7 @@ public class SolrConfig implements MapSerializable {
 
       this.clazz = clz;
       this.tag = tag;
-      this.options = opts == null ? Collections.emptySet() : EnumSet.of(NOOP, opts);
+      this.options = opts == null ? Set.of() : EnumSet.of(NOOP, opts);
     }
 
     public String getCleanTag() {
@@ -548,7 +541,7 @@ public class SolrConfig implements MapSerializable {
         // TODO: we should be explicitly looking for file not found exceptions
         // and logging if it's not the expected IOException
         // hopefully no problem, assume no overlay.json file
-        return new ConfigOverlay(Collections.emptyMap(), -1);
+        return new ConfigOverlay(Map.of(), -1);
       }
 
       int version = 0;
@@ -573,7 +566,7 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private Map<String, InitParams> initParams = Collections.emptyMap();
+  private Map<String, InitParams> initParams = Map.of();
 
   public Map<String, InitParams> getInitParams() {
     return initParams;
@@ -667,6 +660,7 @@ public class SolrConfig implements MapSerializable {
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
   public final CacheConfig fieldValueCacheConfig;
+  public final CacheConfig featureVectorCacheConfig;
   public final Map<String, CacheConfig> userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
@@ -693,23 +687,17 @@ public class SolrConfig implements MapSerializable {
     return httpCachingConfig;
   }
 
-  public static class HttpCachingConfig implements MapSerializable {
+  public static class HttpCachingConfig implements MapWriter {
 
     /** For extracting Expires "ttl" from <cacheControl> config */
     private static final Pattern MAX_AGE = Pattern.compile("\\bmax-age=(\\d+)");
 
     @Override
-    public Map<String, Object> toMap(Map<String, Object> map) {
-      // Could have nulls
-      return Utils.makeMap(
-          "never304",
-          never304,
-          "etagSeed",
-          etagSeed,
-          "lastModFrom",
-          lastModFrom.name().toLowerCase(Locale.ROOT),
-          "cacheControl",
-          cacheControlHeader);
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("never304", never304)
+          .put("etagSeed", etagSeed)
+          .put("lastModFrom", lastModFrom.name().toLowerCase(Locale.ROOT))
+          .put("cacheControl", cacheControlHeader);
     }
 
     public enum LastModFrom {
@@ -791,7 +779,7 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  public static class UpdateHandlerInfo implements MapSerializable {
+  public static class UpdateHandlerInfo implements MapWriter {
     public final String className;
     public final int autoCommmitMaxDocs,
         autoCommmitMaxTime,
@@ -800,6 +788,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final String commitPollInterval;
     public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
@@ -815,7 +804,8 @@ public class SolrConfig implements MapSerializable {
         boolean openSearcher,
         int autoSoftCommmitMaxDocs,
         int autoSoftCommmitMaxTime,
-        boolean commitWithinSoftCommit) {
+        boolean commitWithinSoftCommit,
+        String commitPollInterval) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
@@ -826,6 +816,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.commitPollInterval = commitPollInterval;
       this.aggregateNodeLevelMetricsEnabled = false;
     }
 
@@ -841,23 +832,24 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
       this.commitWithinSoftCommit =
           updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.commitPollInterval = updateHandler.get("commitPollInterval").txt();
       this.aggregateNodeLevelMetricsEnabled =
           updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
 
     @Override
-    public Map<String, Object> toMap(Map<String, Object> map) {
-      map.put("commitWithin", Map.of("softCommit", commitWithinSoftCommit));
-      map.put(
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("commitWithin", Map.of("softCommit", commitWithinSoftCommit));
+      ew.put(
           "autoCommit",
           Map.of(
               "maxDocs", autoCommmitMaxDocs,
               "maxTime", autoCommmitMaxTime,
               "openSearcher", openSearcher));
-      map.put(
+      ew.put(
           "autoSoftCommit",
           Map.of("maxDocs", autoSoftCommmitMaxDocs, "maxTime", autoSoftCommmitMaxTime));
-      return map;
+      ew.put("commitPollInterval", commitPollInterval);
     }
   }
 
@@ -904,7 +896,7 @@ public class SolrConfig implements MapSerializable {
         result = new ArrayList<>(map.values());
       }
     }
-    return result == null ? Collections.emptyList() : result;
+    return result == null ? List.of() : result;
   }
 
   public PluginInfo getPluginInfo(String type) {
@@ -954,25 +946,35 @@ public class SolrConfig implements MapSerializable {
     return formUploadLimitKB;
   }
 
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
   @Override
-  public Map<String, Object> toMap(Map<String, Object> result) {
-    if (znodeVersion > -1) result.put(ZNODEVER, znodeVersion);
-    if (luceneMatchVersion != null)
-      result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
-    result.put("updateHandler", getUpdateHandlerInfo());
-    Map<String, Object> m = new LinkedHashMap<>();
-    result.put("query", m);
-    m.put("useFilterForSortedQuery", useFilterForSortedQuery);
-    m.put("queryResultWindowSize", queryResultWindowSize);
-    m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
-    m.put("enableLazyFieldLoading", enableLazyFieldLoading);
-    m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
-    m.put(MIN_PREFIX_QUERY_TERM_LENGTH, prefixQueryMinPrefixLength);
+  public void writeMap(EntryWriter ew) throws IOException {
+    if (znodeVersion > -1) {
+      ew.put(ZNODEVER, znodeVersion);
+    }
+    if (luceneMatchVersion != null) {
+      ew.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
+    }
 
+    ew.put("updateHandler", getUpdateHandlerInfo());
+    ew.put(
+        "query",
+        (MapWriter)
+            m -> {
+              m.put("useFilterForSortedQuery", useFilterForSortedQuery);
+              m.put("queryResultWindowSize", queryResultWindowSize);
+              m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
+              m.put("enableLazyFieldLoading", enableLazyFieldLoading);
+              m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
+              m.put(MIN_PREFIX_QUERY_TERM_LENGTH, prefixQueryMinPrefixLength);
+
+              addCacheConfig(
+                  m,
+                  filterCacheConfig,
+                  queryResultCacheConfig,
+                  documentCacheConfig,
+                  fieldValueCacheConfig,
+                  featureVectorCacheConfig);
+            });
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
@@ -989,41 +991,46 @@ public class SolrConfig implements MapSerializable {
             overlay.getNamedPlugins(plugin.tag).entrySet()) {
           items.put(e.getKey(), e.getValue());
         }
-        result.put(tag, items);
+        ew.put(
+            tag,
+            (MapWriter)
+                m -> {
+                  for (Map.Entry<String, Object> item : items.entrySet()) {
+                    m.put(item.getKey(), item.getValue());
+                  }
+                });
       } else {
         if (plugin.options.contains(MULTI_OK)) {
-          ArrayList<MapSerializable> l = new ArrayList<>();
-          for (PluginInfo info : infos) l.add(info);
-          result.put(tag, l);
+          ew.put(tag, infos);
         } else {
-          result.put(tag, infos.get(0));
+          ew.put(tag, infos.getFirst());
         }
       }
     }
 
-    addCacheConfig(
-        m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
-    m = new LinkedHashMap<>();
-    result.put("requestDispatcher", m);
-    m.put("handleSelect", handleSelect);
-    if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
-    m.put(
-        "requestParsers",
-        Map.of(
-            "multipartUploadLimitKB",
-            multipartUploadLimitKB,
-            "formUploadLimitKB",
-            formUploadLimitKB));
-    if (indexConfig != null) result.put("indexConfig", indexConfig);
-
-    // TODO there is more to add
-
-    return result;
+    ew.put(
+        "requestDispatcher",
+        (MapWriter)
+            m -> {
+              if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
+              m.put(
+                  "requestParsers",
+                  Map.of(
+                      "multipartUploadLimitKB",
+                      multipartUploadLimitKB,
+                      "formUploadLimitKB",
+                      formUploadLimitKB));
+            });
+    if (indexConfig != null) ew.put("indexConfig", indexConfig);
   }
 
-  private void addCacheConfig(Map<String, Object> queryMap, CacheConfig... cache) {
+  private void addCacheConfig(EntryWriter queryMap, CacheConfig... cache) throws IOException {
     if (cache == null) return;
-    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
+    for (CacheConfig cc : cache) {
+      if (cc != null) {
+        queryMap.put(cc.getNodeName(), cc);
+      }
+    }
   }
 
   public Properties getSubstituteProperties() {

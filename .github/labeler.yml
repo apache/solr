@@ -98,12 +98,6 @@ admin-ui:
           - solr/webapp/**
           - solr/ui/**
 
-# Add 'prometheus-exporter' label
-prometheus-exporter:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/prometheus-exporter/**
-
 # Add labels for changes to solr modules
 module:analysis-extras:
   - changed-files:
@@ -114,6 +108,16 @@ module:clustering:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/clustering/**
+
+module:cross-dc:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/cross-dc/**
+
+module:cuvs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/cuvs/**
 
 module:extraction:
   - changed-files:
@@ -134,6 +138,11 @@ module:langid:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/langid/**
+
+module:language-models:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/language-models/**
 
 module:ltr:
   - changed-files:

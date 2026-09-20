@@ -48,8 +48,7 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
         "//str[@name='dummy1'][.='collection1']",
         "//str[@name='dummy2'][.='data']",
         "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']",
-        "//str[@name='dummy4'][.='schema.xml']",
-        "//str[@name='dummy5'][.='false']");
+        "//str[@name='dummy4'][.='schema.xml']");
   }
 
   // SOLR-5279
@@ -61,8 +60,7 @@ public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
         "//str[@name='dummy1'][.='collection1']",
         "//str[@name='dummy2'][.='data']",
         "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']",
-        "//str[@name='dummy4'][.='schema.xml']",
-        "//str[@name='dummy5'][.='false']");
+        "//str[@name='dummy4'][.='schema.xml']");
   }
 
   // SOLR-8712

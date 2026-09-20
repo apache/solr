@@ -25,7 +25,7 @@ import java.util.Arrays;
  * Use this to serialize an object into Json. This only supports standard Objects and not the
  * server-side Objects
  */
-public class SolrJSONWriter implements JsonTextWriter {
+class SolrJSONWriter implements JsonTextWriter {
   // indent up to 40 spaces
   static final char[] indentChars = new char[81];
 
@@ -48,8 +48,13 @@ public class SolrJSONWriter implements JsonTextWriter {
     this.namedListStyle = namedListStyle;
   }
 
+  /**
+   * Writes out the passed object as JSON. This is this principal entrypoint into JSON writing.
+   * {@code this} is returned.
+   */
   public SolrJSONWriter writeObj(Object o) throws IOException {
     writeVal(null, o);
+    if (doIndent()) writer.write('\n');
     return this;
   }
 

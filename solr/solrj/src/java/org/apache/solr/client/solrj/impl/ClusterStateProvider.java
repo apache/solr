@@ -123,8 +123,8 @@ public interface ClusterStateProvider extends SolrCloseable {
   /** Get the collection-specific policy */
   String getPolicyNameByCollection(String coll);
 
-  @Deprecated // just call getLiveNodes()
-  void connect();
-
   String getQuorumHosts();
+
+  /** Get url scheme like http or https but never null. */
+  String getUrlScheme();
 }

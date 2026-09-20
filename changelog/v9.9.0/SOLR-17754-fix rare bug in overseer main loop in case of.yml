@@ -1,0 +1,8 @@
+title: Fix rare bug in overseer main loop in case of high load, that may cause the
+  overseer be fully stuck until server restart.
+type: fixed
+authors:
+- name: Pierre Salagnac
+links:
+- name: SOLR-17754
+  url: https://issues.apache.org/jira/browse/SOLR-17754

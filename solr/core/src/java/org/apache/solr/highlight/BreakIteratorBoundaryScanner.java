@@ -63,13 +63,4 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
 
     return new org.apache.lucene.search.vectorhighlight.BreakIteratorBoundaryScanner(bi);
   }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "BreakIteratorBoundaryScanner";
-  }
 }

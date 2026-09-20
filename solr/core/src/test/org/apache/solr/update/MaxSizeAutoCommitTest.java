@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,9 +26,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -89,6 +90,8 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
     updateRequestHandler = new UpdateRequestHandler();
     updateRequestHandler.init(null);
+    updateRequestHandler.initializeMetrics(
+        core.getCoreMetricManager().getSolrMetricsContext(), Attributes.empty());
   }
 
   @Override
@@ -98,8 +101,10 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
       monitor.assertSaneOffers();
       monitor.clear();
     }
+    if (null != updateRequestHandler) {
+      updateRequestHandler.close();
+    }
     super.tearDown();
-    System.clearProperty("solr.ulog");
     deleteCore();
   }
 
@@ -247,7 +252,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private List<ContentStream> toContentStreams(List<String> strs) {
     ArrayList<ContentStream> streams = new ArrayList<>();
     for (String str : strs) {
-      streams.addAll(ClientUtils.toContentStreams(str, "text/xml"));
+      streams.add(new ContentStreamBase.StringStream(str, "text/xml"));
     }
     return streams;
   }

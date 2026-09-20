@@ -323,8 +323,8 @@ public class DistributedApiAsyncTracker {
       this.rootNodePath = rootNodePath;
 
       try {
-        if (!zkClient.exists(rootNodePath, true)) {
-          zkClient.makePath(rootNodePath, new byte[0], CreateMode.PERSISTENT, true);
+        if (!zkClient.exists(rootNodePath)) {
+          zkClient.makePath(rootNodePath, new byte[0], CreateMode.PERSISTENT);
         }
       } catch (KeeperException.NodeExistsException nee) {
         // Some other thread (on this or another JVM) beat us to create the node, that's ok, the
@@ -341,34 +341,30 @@ public class DistributedApiAsyncTracker {
       zkClient.create(
           getPath(asyncId),
           State.SUBMITTED.shorthand.getBytes(StandardCharsets.UTF_8),
-          CreateMode.EPHEMERAL,
-          true);
+          CreateMode.EPHEMERAL);
     }
 
     void setTaskRunning(String asyncId) throws KeeperException, InterruptedException {
-      zkClient.setData(
-          getPath(asyncId), State.RUNNING.shorthand.getBytes(StandardCharsets.UTF_8), true);
+      zkClient.setData(getPath(asyncId), State.RUNNING.shorthand.getBytes(StandardCharsets.UTF_8));
     }
 
     void deleteInFlightTask(String asyncId) throws KeeperException, InterruptedException {
-      zkClient.delete(getPath(asyncId), -1, true);
+      zkClient.delete(getPath(asyncId), -1);
     }
 
     State getInFlightState(String asyncId) throws KeeperException, InterruptedException {
-      if (!zkClient.exists(getPath(asyncId), true)) {
+      if (!zkClient.exists(getPath(asyncId))) {
         return State.NOT_FOUND;
       }
 
       final byte[] bytes;
       try {
-        bytes = zkClient.getData(getPath(asyncId), null, null, true);
+        bytes = zkClient.getData(getPath(asyncId), null, null);
       } catch (KeeperException.NoNodeException nne) {
         // Unlikely race, but not impossible...
         if (log.isInfoEnabled()) {
           log.info(
-              "AsyncId ephemeral node "
-                  + getPath(asyncId)
-                  + " vanished from underneath us. Funny."); // nowarn
+              "AsyncId ephemeral node {} vanished from underneath us. Funny.", getPath(asyncId));
         }
         return State.NOT_FOUND;
       }
@@ -376,9 +372,8 @@ public class DistributedApiAsyncTracker {
       if (bytes == null) {
         // This is not expected. The ephemeral nodes are always created with content.
         log.error(
-            "AsyncId ephemeral node "
-                + getPath(asyncId)
-                + " has null content. This is unexpected (bug)."); // nowarn
+            "AsyncId ephemeral node {} has null content. This is unexpected (bug).",
+            getPath(asyncId));
         return State.NOT_FOUND;
       }
 
@@ -389,11 +384,9 @@ public class DistributedApiAsyncTracker {
         return State.SUBMITTED;
       } else {
         log.error(
-            "AsyncId ephemeral node "
-                + getPath(asyncId)
-                + " has unexpected content \""
-                + content
-                + "\". This is unexpected (bug)."); // nowarn
+            "AsyncId ephemeral node {} has unexpected content \"{}\". This is unexpected (bug).",
+            getPath(asyncId),
+            content);
         return State.NOT_FOUND;
       }
     }

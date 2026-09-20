@@ -1,0 +1,13 @@
+title: 'The Solr Cross-DC Project has graduated from the sandbox repository. It will
+  now be released as a fully supported Solr feature. This feature closes SIP-13: Cross
+  Data Center Replication.'
+type: added
+authors:
+- name: Mark Miller
+- name: Anshum Gupta
+- name: Andrzej Bialecki
+- name: Jason Gerlowski
+- name: Houston Putman
+links:
+- name: SOLR-17065
+  url: https://issues.apache.org/jira/browse/SOLR-17065

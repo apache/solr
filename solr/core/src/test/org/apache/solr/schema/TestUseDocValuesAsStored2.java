@@ -37,20 +37,14 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml", "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome, "solrconfig-managed-schema.xml", "schema-rest.xml");
   }
 
   @After
   public void after() throws Exception {
-    solrClientTestRule.reset();
-
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
+    solrTestRule.reset();
   }
 
   public void testSchemaAPI() throws Exception {

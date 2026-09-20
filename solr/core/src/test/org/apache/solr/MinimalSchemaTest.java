@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import java.util.Set;
-import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,8 +38,6 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
        a uniqueKey field and defeat the point of the tests
     */
     assertNull("UniqueKey Field isn't null", h.getCore().getLatestSchema().getUniqueKeyField());
-
-    lrf.args.put(CommonParams.VERSION, "2.2");
 
     assertNull(
         "Simple assertion that adding a document works",
@@ -74,13 +71,12 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testLuke() {
 
-    assertQ("basic luke request failed", req("qt", "/admin/luke"), "//int[@name='numDocs'][.='2']");
+    assertQ(
+        "basic luke request failed", reqWithPath("/admin/luke"), "//int[@name='numDocs'][.='2']");
 
     assertQ(
         "luke show schema failed",
-        req(
-            "qt", "/admin/luke",
-            "show", "schema"),
+        reqWithPath("/admin/luke", "show", "schema"),
         "//int[@name='numDocs'][.='2']",
         "//null[@name='uniqueKeyField']");
   }
@@ -114,11 +110,12 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
 
         assertQ(
             "failure w/handler: '" + handler + "'",
-            req(
-                "qt", handler,
-                // this should be fairly innocuous for any type of query
-                "q", "foo:bar",
-                "omitHeader", "false"),
+            reqWithPath(
+                handler, // this should be fairly innocuous for any type of query
+                "q",
+                "foo:bar",
+                "omitHeader",
+                "false"),
             "//lst[@name='responseHeader']");
       } catch (Exception e) {
         throw new RuntimeException("exception w/handler: '" + handler + "'", e);

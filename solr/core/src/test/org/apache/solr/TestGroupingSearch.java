@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -42,7 +42,6 @@ import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,13 +68,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     // when doing unsorted group collection
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Before
@@ -435,8 +430,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(request, response));
-      String handlerName = request.getParams().get(CommonParams.QT);
-      h.getCore().execute(h.getCore().getRequestHandler(handlerName), request, response);
+      h.getCore().execute(h.getCore().getRequestHandler(null), request, response);
       JavaBinResponseWriter responseWriter = new JavaBinResponseWriter();
       responseWriter.write(out, request, response);
     } finally {
@@ -486,7 +480,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "200"),
+            "10000"), // generous; must complete fully even on slow CI
         "/grouped/id:1/matches==5",
         "/grouped/id:2/matches==5");
   }
@@ -1591,6 +1585,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("ReferenceEquality")
   public void testRandomGrouping() throws Exception {
     /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
@@ -1731,6 +1726,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         // now sort the groups
 
         // if sort != group.sort, we need to find the max doc by "sort"
+        // Identity check: groupComparator may deliberately be set to the same instance as
+        // sortComparator above.
         if (groupComparator != sortComparator) {
           for (Grp grp : groups.values()) grp.setMaxDoc(sortComparator);
         }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
 
 import java.lang.invoke.MethodHandles;
@@ -31,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -46,6 +46,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
@@ -55,8 +56,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.CommonTestInjection;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -76,7 +79,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";
   public static final String CORE_NODE_NAME_PROP = "core_node_name";
-  public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
@@ -103,15 +105,8 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
 
-  // TODO: Deprecate and remove support for roles.json in an upcoming release.
-  /**
-   * The following, node_roles and roles.json are for assigning roles to nodes. The node_roles is
-   * the preferred way (using -Dsolr.node.roles param), and roles.json is used by legacy ADDROLE API
-   * command.
-   */
+  /** Node roles are assigned at startup with the {@code -Dsolr.node.roles} property. */
   public static final String NODE_ROLES = "/node_roles";
-
-  public static final String ROLES = "/roles.json";
 
   public static final String ALIASES = "/aliases.json";
 
@@ -138,6 +133,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String NRT_REPLICAS = "nrtReplicas";
   public static final String TLOG_REPLICAS = "tlogReplicas";
   public static final String READ_ONLY = "readOnly";
+  public static final String OVERSEER_ENABLED = "overseerEnabled";
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public static final String CONFIGNAME_PROP = "configName";
@@ -167,13 +163,19 @@ public class ZkStateReader implements SolrCloseable {
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
 
+  /** Live node JSON property keys. */
+  public static final String LIVE_NODE_SOLR_VERSION = "solrVersion";
+
+  public static final String LIVE_NODE_NODE_NAME = "nodeName";
+  public static final String LIVE_NODE_ROLES = "roles";
+
   /** "Interesting" but not actively watched Collections. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates =
       new ConcurrentHashMap<>();
 
   private volatile SortedSet<String> liveNodes = emptySortedSet();
 
-  private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
+  private volatile Map<String, Object> clusterProperties = Map.of();
 
   /**
    * Collections with active watches. The {@link StatefulCollectionWatch} inside for each collection
@@ -375,11 +377,15 @@ public class ZkStateReader implements SolrCloseable {
           SOLR_ENVIRONMENT,
           CollectionAdminParams.DEFAULTS,
           CONTAINER_PLUGINS,
-          PLACEMENT_PLUGIN);
+          PLACEMENT_PLUGIN,
+          OVERSEER_ENABLED);
 
   private final SolrZkClient zkClient;
 
   private final boolean closeClient;
+  private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
+  private final OnDisconnect onDisconnect = this::onDisconnect;
+  private final OnReconnect onReconnect = this::onReconnect;
 
   private volatile boolean closed = false;
 
@@ -414,27 +420,32 @@ public class ZkStateReader implements SolrCloseable {
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withUseDefaultCredsAndACLs(canUseZkACLs)
             .build();
-    this.zkClient
-        .getCuratorFramework()
-        .getConnectionStateListenable()
-        .addListener(
-            (OnReconnect)
-                () -> {
-                  // on reconnect, reload cloud info
-                  try {
-                    this.createClusterStateWatchersAndUpdate();
-                  } catch (InterruptedException e) {
-                    // Restore the interrupted status
-                    Thread.currentThread().interrupt();
-                    log.warn("Interrupted", e);
-                  } catch (Throwable e) {
-                    log.error("An error has occurred while updating the cluster state", e);
-                  }
-                });
+    this.zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onReconnect);
+    this.zkClient.getCuratorFramework().getConnectionStateListenable().addListener(onDisconnect);
     this.closeClient = true;
     this.securityNodeWatcher = null;
     collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void onDisconnect(boolean sessionExpired) {
+    if (sessionExpired) {
+      zkSessionExpired.set(true);
+    }
+  }
+
+  private void onReconnect() {
+    if (!zkSessionExpired.compareAndSet(true, false)) {
+      return;
+    }
+    try {
+      createClusterStateWatchersAndUpdate();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted", e);
+    } catch (Throwable e) {
+      log.error("An error has occurred while updating the cluster state", e);
+    }
   }
 
   /**
@@ -498,7 +509,7 @@ public class ZkStateReader implements SolrCloseable {
           // What do you know, it exists!
           log.debug("Adding lazily-loaded reference for collection {}", collection);
           lazyCollectionStates.putIfAbsent(collection, tryLazyCollection);
-          constructState(Collections.singleton(collection));
+          constructState(Set.of(collection));
         }
       } else if (ref.isLazilyLoaded()) {
         log.debug("Refreshing lazily-loaded state for collection {}", collection);
@@ -510,7 +521,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null);
         if (collectionWatches.updateDocCollection(collection, newState)) {
-          constructState(Collections.singleton(collection));
+          constructState(Set.of(collection));
         }
       } else {
         log.error("Collection {} is not lazy nor watched!", collection);
@@ -535,7 +546,7 @@ public class ZkStateReader implements SolrCloseable {
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (collectionWatches.updateDocCollection(coll, nu)) {
           synchronized (getUpdateLock()) {
-            constructState(Collections.singleton(coll));
+            constructState(Set.of(coll));
           }
         }
         collection = nu;
@@ -661,7 +672,7 @@ public class ZkStateReader implements SolrCloseable {
     synchronized (refreshCollectionListLock) {
       List<String> children = null;
       try {
-        children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher, true);
+        children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher);
       } catch (KeeperException.NoNodeException e) {
         log.warn("Error fetching collection names: ", e);
         // fall through
@@ -709,7 +720,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private void notifyNewCloudCollectionsListener(CloudCollectionsListener listener) {
-    listener.onChange(Collections.emptySet(), lastFetchedCollectionSet.get());
+    listener.onChange(Set.of(), lastFetchedCollectionSet.get());
   }
 
   private void notifyCloudCollectionsListeners() {
@@ -755,7 +766,8 @@ public class ZkStateReader implements SolrCloseable {
         if (cachedDocCollection != null) {
           Stat freshStats = null;
           try {
-            freshStats = zkClient.exists(DocCollection.getCollectionPath(collName), null, true);
+            freshStats = zkClient.exists(DocCollection.getCollectionPath(collName), null);
+            lastUpdateTime = System.nanoTime();
           } catch (Exception e) {
           }
           if (freshStats != null
@@ -793,7 +805,7 @@ public class ZkStateReader implements SolrCloseable {
     synchronized (refreshLiveNodesLock) {
       SortedSet<String> newLiveNodes;
       try {
-        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
+        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher);
         newLiveNodes = new TreeSet<>(nodeList);
       } catch (KeeperException.NoNodeException | AlreadyClosedException e) {
         newLiveNodes = emptySortedSet();
@@ -838,6 +850,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void registerClusterPropertiesListener(ClusterPropertiesListener listener) {
+    log.debug("registerClusterPropertiesListener");
     // fire it once with current properties
     if (listener.onChange(getClusterProperties())) {
       removeClusterPropertiesListener(listener);
@@ -851,6 +864,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void registerLiveNodesListener(LiveNodesListener listener) {
+    log.debug("registerLiveNodesListener");
     // fire it once with current live nodes
     if (listener.onChange(
         new TreeSet<>(getClusterState().getLiveNodes()),
@@ -863,6 +877,43 @@ public class ZkStateReader implements SolrCloseable {
 
   public void removeLiveNodesListener(LiveNodesListener listener) {
     liveNodesListeners.remove(listener);
+  }
+
+  /**
+   * Returns the lowest Solr version among all live nodes in the cluster. If older Solr nodes have
+   * joined that don't declare their version, the result won't be accurate, but it's at least an
+   * upper bound on the possible version it might be.
+   *
+   * @return an Optional containing the lowest Solr version of nodes in the cluster, or empty if no
+   *     live nodes exist or all nodes return 9.9.0 for unspecified versions
+   */
+  public Optional<SolrVersion> fetchLowestSolrVersion()
+      throws KeeperException, InterruptedException {
+    List<String> liveNodeNames = zkClient.getChildren(LIVE_NODES_ZKNODE, null);
+    SolrVersion lowest = null;
+    // the last version to not specify its version in live nodes
+    final SolrVersion UNSPECIFIED_VERSION = SolrVersion.valueOf("9.9.0");
+
+    for (String nodeName : liveNodeNames) {
+      String path = LIVE_NODES_ZKNODE + "/" + nodeName;
+      byte[] data = zkClient.getData(path, null, null);
+      if (data == null || data.length == 0) {
+        return Optional.of(UNSPECIFIED_VERSION);
+      }
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> props = (Map<String, Object>) Utils.fromJSON(data);
+      String nodeVersionStr = (String) props.get(LIVE_NODE_SOLR_VERSION);
+      if (nodeVersionStr == null) { // weird
+        log.warn("No Solr version found: {}", props);
+        return Optional.of(UNSPECIFIED_VERSION);
+      }
+      SolrVersion nodeVersion = SolrVersion.valueOf(nodeVersionStr);
+      if (lowest == null || nodeVersion.compareTo(lowest) < 0) {
+        lowest = nodeVersion;
+      }
+    }
+    return Optional.ofNullable(lowest);
   }
 
   /**
@@ -955,7 +1006,7 @@ public class ZkStateReader implements SolrCloseable {
             if (c == null) return false;
             Replica l = getLeader(n, c, shard);
             if (l != null) {
-              log.debug("leader found for {}/{} to be {}", collection, shard, l);
+              log.trace("leader found for {}/{} to be {}", collection, shard, l);
               leader.set(l);
               return true;
             }
@@ -1000,10 +1051,9 @@ public class ZkStateReader implements SolrCloseable {
         + (shardId != null ? ("/" + shardId + "/" + ELECTION_NODE) : "");
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection, String shardId, String thisCoreNodeName) {
+  public List<Replica> getReplicas(String collection, String shardId, String thisCoreNodeName) {
     // TODO: It's odd that the default is to return replicas of type TLOG and NRT only
-    return getReplicaProps(
+    return getReplicas(
         collection,
         shardId,
         thisCoreNodeName,
@@ -1012,7 +1062,7 @@ public class ZkStateReader implements SolrCloseable {
         EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(
+  public List<Replica> getReplicas(
       String collection,
       String shardId,
       String thisCoreNodeName,
@@ -1031,39 +1081,37 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     Map<String, Slice> slices = docCollection.getSlicesMap();
-    Slice replicas = slices.get(shardId);
-    if (replicas == null) {
+    Slice shard = slices.get(shardId);
+    if (shard == null) {
       throw new ZooKeeperException(
           ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);
     }
 
-    Map<String, Replica> shardMap = replicas.getReplicasMap();
-    List<ZkCoreNodeProps> nodes = new ArrayList<>(shardMap.size());
+    Map<String, Replica> shardMap = shard.getReplicasMap();
+    List<Replica> replicas = new ArrayList<>(shardMap.size());
     for (Entry<String, Replica> entry :
         shardMap.entrySet().stream()
             .filter((e) -> acceptReplicaType.contains(e.getValue().getType()))
             .collect(Collectors.toList())) {
-      ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
+      Replica replica = entry.getValue();
 
       String coreNodeName = entry.getValue().getName();
 
-      if (clusterState.liveNodesContain(nodeProps.getNodeName())
+      if (clusterState.liveNodesContain(replica.getNodeName())
           && !coreNodeName.equals(thisCoreNodeName)) {
-        if (mustMatchStateFilter == null
-            || mustMatchStateFilter == Replica.State.getState(nodeProps.getState())) {
-          if (mustNotMatchStateFilter == null
-              || mustNotMatchStateFilter != Replica.State.getState(nodeProps.getState())) {
-            nodes.add(nodeProps);
+        if (mustMatchStateFilter == null || mustMatchStateFilter == replica.getState()) {
+          if (mustNotMatchStateFilter == null || mustNotMatchStateFilter != replica.getState()) {
+            replicas.add(replica);
           }
         }
       }
     }
-    if (nodes.size() == 0) {
+    if (replicas.size() == 0) {
       // no replicas
       return null;
     }
 
-    return nodes;
+    return replicas;
   }
 
   public SolrZkClient getZkClient() {
@@ -1131,8 +1179,7 @@ public class ZkStateReader implements SolrCloseable {
       while (true) {
         try {
           byte[] data =
-              zkClient.getData(
-                  ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
+              zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat());
           this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
@@ -1141,11 +1188,11 @@ public class ZkStateReader implements SolrCloseable {
           }
           return;
         } catch (KeeperException.NoNodeException e) {
-          this.clusterProperties = Collections.emptyMap();
+          this.clusterProperties = Map.of();
           log.debug("Loaded empty cluster properties");
           // set an exists watch, and if the node has been created since the last call,
           // read the data again
-          if (zkClient.exists(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, true) == null)
+          if (zkClient.exists(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher) == null)
             return;
         }
       }
@@ -1174,7 +1221,7 @@ public class ZkStateReader implements SolrCloseable {
    * returns null.
    */
   public ConfigData getSecurityProps(boolean getFresh) {
-    if (securityNodeWatcher == null) return new ConfigData(emptyMap(), -1);
+    if (securityNodeWatcher == null) return new ConfigData(Map.of(), -1);
     return securityNodeWatcher.getSecurityProps(getFresh);
   }
 
@@ -1186,8 +1233,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return url that looks like {@code https://localhost:8983/solr}
    */
   public String getBaseUrlForNodeName(final String nodeName) {
-    String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, false);
+    return URLUtil.getBaseUrlForNodeName(nodeName, getUrlScheme(), false);
   }
 
   /**
@@ -1198,8 +1244,20 @@ public class ZkStateReader implements SolrCloseable {
    * @return url that looks like {@code https://localhost:8983/api}
    */
   public String getBaseUrlV2ForNodeName(final String nodeName) {
-    String urlScheme = getClusterProperty(URL_SCHEME, "http");
-    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, true);
+    return URLUtil.getBaseUrlForNodeName(nodeName, getUrlScheme(), true);
+  }
+
+  /**
+   * Returns the URL scheme for hosts in the cluster.
+   *
+   * @return the URL scheme ("http" or "https")
+   */
+  public String getUrlScheme() {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool("solr.ssl.enabled");
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    return getClusterProperty(URL_SCHEME, "http");
   }
 
   /** Watches a single collection's state.json. */
@@ -1213,6 +1271,8 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // checking identity of the registered watcher, not equality
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
@@ -1260,7 +1320,7 @@ public class ZkStateReader implements SolrCloseable {
         DocCollection newState = fetchCollectionState(coll, this);
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
-          constructState(Collections.singleton(coll));
+          constructState(Set.of(coll));
         }
 
       } catch (KeeperException.SessionExpiredException
@@ -1279,7 +1339,7 @@ public class ZkStateReader implements SolrCloseable {
       Stat stat = new Stat();
       List<String> replicaStates = null;
       try {
-        replicaStates = zkClient.getChildren(collectionPath, this, stat, true);
+        replicaStates = zkClient.getChildren(collectionPath, this, stat);
         PerReplicaStates newStates =
             new PerReplicaStates(collectionPath, stat.getCversion(), replicaStates);
         DocCollection oldState = collectionWatches.getDocCollection(coll);
@@ -1289,7 +1349,7 @@ public class ZkStateReader implements SolrCloseable {
                 : fetchCollectionState(coll, null);
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
-          constructState(Collections.singleton(coll));
+          constructState(Set.of(coll));
         }
         if (log.isDebugEnabled()) {
           log.debug(
@@ -1321,7 +1381,7 @@ public class ZkStateReader implements SolrCloseable {
       log.debug("A collections change: [{}], has occurred - updating...", event);
       refreshAndWatch();
       synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
+        constructState(Set.of());
       }
     }
 
@@ -1393,31 +1453,29 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
     while (true) {
       try {
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
+        byte[] data = zkClient.getData(collectionPath, watcher, stat);
+        Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(data);
 
-        // This factory method can detect a missing configName and supply it by reading it from the
-        // old ZK location.
-        // TODO in Solr 10 remove that factory method
-        ClusterState state =
-            ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
+        final var state =
+            ClusterState.createFromCollectionMap(
                 stat.getVersion(),
-                data,
-                Collections.emptySet(),
-                coll,
-                zkClient,
-                Instant.ofEpochMilli(stat.getCtime()));
-
+                stateMap,
+                liveNodes,
+                Instant.ofEpochMilli(stat.getCtime()),
+                PerReplicaStatesOps.getZkClientPrsSupplier(
+                    zkClient, DocCollection.getCollectionPath(coll)));
         return state.getCollectionOrNull(coll);
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a state.json is created later.
-          Stat exists = zkClient.exists(collectionPath, watcher, true);
+          Stat exists = zkClient.exists(collectionPath, watcher);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
             // it exists. Loop and try again.
@@ -1430,7 +1488,7 @@ public class ZkStateReader implements SolrCloseable {
             ZkStateReader.class.getName() + "/exercised", e);
         // could be a race condition that state.json and PRS entries are deleted between the
         // state.json fetch and PRS entry fetch
-        Stat exists = zkClient.exists(collectionPath, watcher, true);
+        Stat exists = zkClient.exists(collectionPath, watcher);
         if (exists == null) {
           log.info(
               "PRS entry for collection {} not found in ZK. It was probably deleted between state.json read and PRS entry read.",
@@ -1442,16 +1500,6 @@ public class ZkStateReader implements SolrCloseable {
         }
       }
     }
-  }
-
-  @Deprecated // see DocCollection
-  public static String getCollectionPathRoot(String coll) {
-    return DocCollection.getCollectionPathRoot(coll);
-  }
-
-  @Deprecated // see DocCollection
-  public static String getCollectionPath(String coll) {
-    return DocCollection.getCollectionPath(coll);
   }
 
   /**
@@ -1511,7 +1559,7 @@ public class ZkStateReader implements SolrCloseable {
         });
     if (reconstructState.get()) {
       synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
+        constructState(Set.of());
       }
     }
   }
@@ -1555,6 +1603,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerDocCollectionWatcher(
       String collection, DocCollectionWatcher docCollectionWatcher) {
+    log.debug("registerDocCollectionWatcher collection={}", collection);
     AtomicReference<StateWatcher> newWatcherRef = new AtomicReference<>();
     collectionWatches.compute(
         collection,
@@ -1611,7 +1660,7 @@ public class ZkStateReader implements SolrCloseable {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (liveNodes != null && docCollection != null) {
         if (predicate.matches(liveNodes, docCollection)) {
-          log.debug("Found {} directly in clusterState", predicate);
+          log.trace("waitForState collection={}: cache hit in clusterState", collection);
           return;
         }
       }
@@ -1693,7 +1742,7 @@ public class ZkStateReader implements SolrCloseable {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (docCollection != null) {
         if (predicate.test(docCollection)) {
-          log.debug("Found {} directly in clusterState", predicate);
+          log.trace("waitForState collection={}: cache hit in clusterState", collection);
           return docCollection;
         }
       }
@@ -1817,7 +1866,7 @@ public class ZkStateReader implements SolrCloseable {
         });
     if (reconstructState.get()) {
       synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
+        constructState(Set.of());
       }
     }
   }
@@ -1933,8 +1982,8 @@ public class ZkStateReader implements SolrCloseable {
   // called by createClusterStateWatchersAndUpdate()
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
-      constructState(Collections.emptySet());
-      zkClient.exists(ALIASES, watcher, true);
+      constructState(Set.of());
+      zkClient.exists(ALIASES, watcher);
     }
     aliasesManager.update();
   }
@@ -1961,6 +2010,8 @@ public class ZkStateReader implements SolrCloseable {
      * modifications, giving up after 30 seconds with a SolrException. The caller should understand
      * it's possible the aliases has further changed if it examines it.
      */
+    @SuppressWarnings(
+        "ReferenceEquality") // op.apply returning the same instance means "no change made"
     public void applyModificationAndExportToZk(UnaryOperator<Aliases> op) {
       // The current aliases hasn't been update()'ed yet -- which is impossible?  Any way just
       // update it first.
@@ -1993,7 +2044,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           try {
             final Stat stat =
-                getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion(), true);
+                getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion());
             setIfNewer(new SolrZkClient.NodeData(stat, modAliasesJson));
             return;
           } catch (KeeperException.BadVersionException e) {
@@ -2037,7 +2088,7 @@ public class ZkStateReader implements SolrCloseable {
       // Call sync() first to ensure the subsequent read (getData) is up-to-date.
       zkClient.runWithCorrectThrows(
           "syncing aliases", () -> zkClient.getCuratorFramework().sync().forPath(ALIASES));
-      return setIfNewer(zkClient.getNode(ALIASES, null, true));
+      return setIfNewer(zkClient.getNode(ALIASES, null));
     }
 
     // ZK Watcher interface
@@ -2051,7 +2102,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Aliases: updating");
 
         // re-register the watch
-        setIfNewer(zkClient.getNode(ALIASES, this, true));
+        setIfNewer(zkClient.getNode(ALIASES, this));
       } catch (NoNodeException e) {
         // /aliases.json will not always exist
       } catch (KeeperException.ConnectionLossException

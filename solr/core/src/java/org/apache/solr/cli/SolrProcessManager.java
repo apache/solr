@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
+import static org.apache.solr.servlet.CoreContainerProvider.SOLR_INSTALL_DIR;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -61,10 +61,11 @@ public class SolrProcessManager {
     if (Constants.WINDOWS) {
       pidToWindowsCommandLineMap.putAll(commandLinesWindows());
     }
+
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
-            .filter(p -> commandLine(p).orElse("").contains("-Djetty.port="))
+            .filter(p -> commandLine(p).orElse("").contains("-Dsolr.port.listen="))
             .filter(
                 p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
             .collect(
@@ -75,7 +76,7 @@ public class SolrProcessManager {
                             ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
-    String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE);
+    String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
     pidDir =
         Path.of(
             EnvUtils.getProperty(
@@ -116,15 +117,15 @@ public class SolrProcessManager {
     try (Stream<Path> pidFiles =
         Files.list(pidDir)
             .filter(p -> pidFilePattern.matcher(p.getFileName().toString()).matches())) {
-      for (Path p : pidFiles.collect(Collectors.toList())) {
+      for (Path p : pidFiles.toList()) {
         Optional<SolrProcess> process;
         if (p.toString().endsWith(".port")) {
           // On Windows, the file is a 'PORT' file containing the port number.
-          Integer port = Integer.valueOf(Files.readAllLines(p).get(0));
+          Integer port = Integer.valueOf(Files.readAllLines(p).getFirst());
           process = processForPort(port);
         } else {
           // On Linux, the file is a 'PID' file containing the process ID.
-          Long pid = Long.valueOf(Files.readAllLines(p).get(0));
+          Long pid = Long.valueOf(Files.readAllLines(p).getFirst());
           process = getProcessForPid(pid);
         }
         if (process.isPresent()) {
@@ -145,7 +146,7 @@ public class SolrProcessManager {
   private Optional<Integer> parsePortFromProcess(ProcessHandle ph) {
     Optional<String> portStr =
         arguments(ph).stream()
-            .filter(a -> a.contains("-Djetty.port="))
+            .filter(a -> a.contains("-Dsolr.port.listen="))
             .map(s -> s.split("=")[1])
             .findFirst();
     return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
@@ -158,7 +159,7 @@ public class SolrProcessManager {
   }
 
   /**
-   * Gets the command line of a process as a string. For Windows we need to fetch command lines
+   * Gets the command line of a process as a string. For Windows, we need to fetch command lines
    * using a PowerShell command.
    *
    * @param ph the process handle
@@ -237,28 +238,7 @@ public class SolrProcessManager {
   }
 
   /** Represents a running Solr process */
-  public static class SolrProcess {
-    private final long pid;
-    private final int port;
-    private final boolean isHttps;
-
-    public SolrProcess(long pid, int port, boolean isHttps) {
-      this.pid = pid;
-      this.port = port;
-      this.isHttps = isHttps;
-    }
-
-    public long getPid() {
-      return pid;
-    }
-
-    public int getPort() {
-      return port;
-    }
-
-    public boolean isHttps() {
-      return isHttps;
-    }
+  public record SolrProcess(long pid, int port, boolean isHttps) {
 
     public String getLocalUrl() {
       return String.format(Locale.ROOT, "%s://localhost:%s/solr", isHttps ? "https" : "http", port);

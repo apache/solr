@@ -21,7 +21,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.http.util.Args;
 import org.apache.solr.security.VerifiedUserRoles;
 
 /**
@@ -36,8 +35,7 @@ public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedU
   public JWTPrincipalWithUserRoles(
       final String username, String token, Map<String, Object> claims, Set<String> roles) {
     super(username, token, claims);
-    Args.notNull(roles, "User roles");
-    this.roles = roles;
+    this.roles = Objects.requireNonNull(roles, "User roles");
   }
 
   /** Gets the list of roles */

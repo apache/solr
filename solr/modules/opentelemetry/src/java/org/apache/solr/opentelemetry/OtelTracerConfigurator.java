@@ -27,14 +27,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP format.
+ * An {@link OpenTelemetryConfigurator} implementation which exports spans to OpenTelemetry in OTLP
+ * format.
  */
-public class OtelTracerConfigurator extends TracerConfigurator {
+public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, String> currentEnv;
@@ -53,7 +54,9 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   }
 
   @Override
-  public OpenTelemetry createOtel() {
+  public OpenTelemetry createOpenTelemetry() {
+    // deliberately build() and not initialize(); the latter sets GlobalOpenTelemetry, which is
+    // OpenTelemetryConfigurator's job
     return AutoConfiguredOpenTelemetrySdk.builder().build().getOpenTelemetrySdk();
   }
 
@@ -61,11 +64,11 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     injectPluginSettingsIfNotConfigured(args);
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
-    setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+    setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    if (EnvUtils.getProperty("host") != null) {
-      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("host")));
+    if (EnvUtils.getProperty("solr.host.advertise") != null) {
+      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("solr.host.advertise")));
     }
 
     final String currentConfig = getCurrentOtelConfigAsString();

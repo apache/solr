@@ -22,7 +22,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
-      Map<String, Replica> replicas = Collections.emptyMap();
+      Map<String, Replica> replicas = Map.of();
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
@@ -155,7 +155,7 @@ public class CollectionMutator {
     }
     // other aux properties are also modifiable
     for (String prop : message.keySet()) {
-      if (prop.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
+      if (prop.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         hasAnyOps = true;
         if (message.get(prop) == null) {
           props.remove(prop);

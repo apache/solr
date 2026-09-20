@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -35,10 +36,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -71,6 +73,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
+  protected static final String ERROR_BACKUP_REPO_NAME = "errorBackupRepository";
 
   private static long docsSeed; // see indexDocs()
 
@@ -81,7 +84,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   }
 
   @Before
-  public void clearCollsToDelete() {
+  public void clearCollectionsToDelete() {
     collectionsToDelete = new ArrayList<>();
   }
 
@@ -92,20 +95,20 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     }
   }
 
-  private String deleteAfterTest(String collName) {
+  protected String deleteAfterTest(String collName) {
     collectionsToDelete.add(collName);
     return collName;
   }
 
   // Populated by 'bootstrapBackupRepositoryData'
-  private static int singleShardNumDocs = -1;
-  private static int replicasPerShard = -1;
-  private static int multiShardNumDocs = -1;
-  private static URI singleShard1Uri = null;
-  private static URI nonExistentLocationUri = null;
-  private static URI[] multiShardUris = null;
+  protected static int singleShardNumDocs = -1;
+  protected static int replicasPerShard = -1;
+  protected static int multiShardNumDocs = -1;
+  protected static URI singleShard1Uri = null;
+  protected static URI nonExistentLocationUri = null;
+  protected static URI[] multiShardUris = null;
 
-  private List<String> collectionsToDelete;
+  protected List<String> collectionsToDelete;
 
   public static void bootstrapBackupRepositoryData(String baseRepositoryLocation) throws Exception {
     final int numShards = /*random().nextInt(3) + 2*/ 4;
@@ -149,9 +152,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
-    final SolrClient.RemoteSolrException rse =
+    final RemoteSolrException rse =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               CollectionAdminRequest.installDataToShard(
                       collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
@@ -174,6 +177,12 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     CollectionAdminRequest.installDataToShard(
             collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
         .process(cluster.getSolrClient());
+    waitForState(
+        "The failed core-install (previous leader) should recover and become healthy",
+        collectionName,
+        30,
+        TimeUnit.SECONDS,
+        SolrCloudTestCase.activeClusterShape(1, replicasPerShard));
 
     assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
   }
@@ -188,7 +197,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     { // Test synchronous request error reporting
       final var expectedException =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.installDataToShard(
                         collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
@@ -232,9 +241,48 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
     enableReadOnly(collectionName);
 
-    runParallelShardInstalls(collectionName, multiShardUris);
+    runParallelShardInstalls(collectionName);
 
     assertCollectionHasNumDocs(collectionName, multiShardNumDocs);
+  }
+
+  @Test
+  public void testInstallSucceedsOnASingleError() throws Exception {
+    final String collectionName = createAndAwaitEmptyCollection(1, 2);
+    deleteAfterTest(collectionName);
+    enableReadOnly(collectionName);
+
+    AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.portsToFailOn =
+        Set.of(cluster.getJettySolrRunner(0).getLocalPort());
+    final String singleShardLocation = singleShard1Uri.toString();
+    { // Test synchronous request error reporting
+      CollectionAdminRequest.installDataToShard(
+              collectionName, "shard1", singleShardLocation, ERROR_BACKUP_REPO_NAME)
+          .process(cluster.getSolrClient());
+      waitForState(
+          "The failed core-install should recover and become healthy",
+          collectionName,
+          30,
+          TimeUnit.SECONDS,
+          SolrCloudTestCase.activeClusterShape(1, 2));
+      assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
+    }
+
+    { // Test asynchronous request error reporting
+      final var requestStatusState =
+          CollectionAdminRequest.installDataToShard(
+                  collectionName, "shard1", singleShardLocation, ERROR_BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 15);
+
+      assertEquals(RequestStatusState.COMPLETED, requestStatusState);
+      waitForState(
+          "The failed core-install should recover and become healthy",
+          collectionName,
+          30,
+          TimeUnit.SECONDS,
+          SolrCloudTestCase.activeClusterShape(1, 2));
+      assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
+    }
   }
 
   /**
@@ -260,8 +308,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         + "  <solrcloud>\n"
         + "    <str name=\"host\">127.0.0.1</str>\n"
         + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-        + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
-        + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
+        + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
         + "    <int name=\"leaderVoteWait\">10000</int>\n"
         + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
         + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
@@ -272,7 +319,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         + "</solr>\n";
   }
 
-  private static void assertCollectionHasNumDocs(String collection, int expectedNumDocs)
+  protected static void assertCollectionHasNumDocs(String collection, int expectedNumDocs)
       throws Exception {
     final SolrClient solrClient = cluster.getSolrClient();
     assertEquals(
@@ -352,7 +399,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", (useUUID ? java.util.UUID.randomUUID().toString() : i));
+      doc.addField("id", (useUUID ? UUID.randomUUID().toString() : i));
       doc.addField("val_s", "some value");
       docs.add(doc);
     }
@@ -364,7 +411,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
   }
 
-  private static String createAndAwaitEmptyCollection(int numShards, int replicasPerShard)
+  protected static String createAndAwaitEmptyCollection(int numShards, int replicasPerShard)
       throws Exception {
     final SolrClient solrClient = cluster.getSolrClient();
 
@@ -377,13 +424,12 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     return collectionName;
   }
 
-  private static void enableReadOnly(String collectionName) throws Exception {
+  protected static void enableReadOnly(String collectionName) throws Exception {
     CollectionAdminRequest.modifyCollection(collectionName, Map.of("readOnly", true))
         .process(cluster.getSolrClient());
   }
 
-  private void runParallelShardInstalls(String collectionName, URI[] dataLocations)
-      throws Exception {
+  private void runParallelShardInstalls(String collectionName) throws Exception {
     final SolrClient solrClient = cluster.getSolrClient();
     final List<Callable<Exception>> tasks = new ArrayList<>();
     for (int i = 0; i < multiShardUris.length; i++) {

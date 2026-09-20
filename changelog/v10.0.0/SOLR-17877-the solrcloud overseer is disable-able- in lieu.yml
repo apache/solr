@@ -1,0 +1,12 @@
+title: The SolrCloud Overseer is disable-able, in lieu of a simpler distributed mode
+  of cluster command and collection state processing. In Solr 9 this was possible
+  with undocumented / unsupported configuration in solr.xml (`distributedClusterStateUpdates`
+  & `distributedCollectionConfigSetExecution`). Those are now removed. In their place
+  is a new overseerEnabled cluster property and an env var SOLR_CLOUD_OVERSEER_ENABLED.
+  Read more in the upgrade guide.
+type: other
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17877
+  url: https://issues.apache.org/jira/browse/SOLR-17877

@@ -1,0 +1,9 @@
+title: There is no longer a distinction between trusted and untrusted configSets;
+  all are now trusted. To ensure security, Solr should enforce authentication and
+  authorization, allowing only authorized admins to publish them.
+type: other
+authors:
+- name: Abhishek Umarjikar
+links:
+- name: SOLR-17584
+  url: https://issues.apache.org/jira/browse/SOLR-17584

@@ -1,0 +1,7 @@
+title: Update org.jetbrains.kotlinx:kotlinx-datetime to v0.8.0-0.6.x-compat
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4436
+  url: https://github.com/apache/solr/pull/4436

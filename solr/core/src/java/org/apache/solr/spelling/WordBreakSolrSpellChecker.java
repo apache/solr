@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -159,9 +158,11 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     int numSuggestions = options.count;
 
     StringBuilder sb = new StringBuilder();
-    Token[] tokenArr = options.tokens.toArray(new Token[0]);
-    List<Token> tokenArrWithSeparators = new ArrayList<>(options.tokens.size() + 2);
-    List<Term> termArr = new ArrayList<>(options.tokens.size() + 2);
+    // an array because, unlike the other SolrSpellCheckers, this one reads several positions at
+    // once to combine adjacent terms into one corrected phrase
+    SpellCheckToken[] tokenArr = options.tokens.toArray(new SpellCheckToken[0]);
+    List<SpellCheckToken> tokenArrWithSeparators = new ArrayList<>(tokenArr.length + 2);
+    List<Term> termArr = new ArrayList<>(tokenArr.length + 2);
     List<ResultEntry> breakSuggestionList = new ArrayList<>();
     List<ResultEntry> noBreakSuggestionList = new ArrayList<>();
     boolean lastOneProhibited = false;
@@ -169,13 +170,13 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     boolean lastOneprocedesNewBooleanOp = false;
     for (int i = 0; i < tokenArr.length; i++) {
       boolean prohibited =
-          (tokenArr[i].getFlags() & QueryConverter.PROHIBITED_TERM_FLAG)
+          (tokenArr[i].flags() & QueryConverter.PROHIBITED_TERM_FLAG)
               == QueryConverter.PROHIBITED_TERM_FLAG;
       boolean required =
-          (tokenArr[i].getFlags() & QueryConverter.REQUIRED_TERM_FLAG)
+          (tokenArr[i].flags() & QueryConverter.REQUIRED_TERM_FLAG)
               == QueryConverter.REQUIRED_TERM_FLAG;
       boolean procedesNewBooleanOp =
-          (tokenArr[i].getFlags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG)
+          (tokenArr[i].flags() & QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG)
               == QueryConverter.TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
       if (i > 0
           && (prohibited != lastOneProhibited
@@ -219,15 +220,15 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
     breakSuggestionList.addAll(noBreakSuggestionList);
 
-    List<ResultEntry> combineSuggestionList = Collections.emptyList();
+    List<ResultEntry> combineSuggestionList = List.of();
     CombineSuggestion[] combineSuggestions =
         wbsp.suggestWordCombinations(
             termArr.toArray(new Term[0]), numSuggestions, ir, options.suggestMode);
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(combineSuggestions.length);
       for (CombineSuggestion cs : combineSuggestions) {
-        int firstTermIndex = cs.originalTermIndexes[0];
-        int lastTermIndex = cs.originalTermIndexes[cs.originalTermIndexes.length - 1];
+        int firstTermIndex = cs.originalTermIndexes()[0];
+        int lastTermIndex = cs.originalTermIndexes()[cs.originalTermIndexes().length - 1];
         sb.delete(0, sb.length());
         for (int i = firstTermIndex; i <= lastTermIndex; i++) {
           if (i > firstTermIndex) {
@@ -235,12 +236,13 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
           }
           sb.append(tokenArrWithSeparators.get(i).toString());
         }
-        Token token =
-            new Token(
+        SpellCheckToken token =
+            new SpellCheckToken(
                 sb.toString(),
                 tokenArrWithSeparators.get(firstTermIndex).startOffset(),
                 tokenArrWithSeparators.get(lastTermIndex).endOffset());
-        combineSuggestionList.add(new ResultEntry(token, cs.suggestion.string, cs.suggestion.freq));
+        combineSuggestionList.add(
+            new ResultEntry(token, cs.suggestion().string, cs.suggestion().freq));
       }
     }
 
@@ -316,12 +318,12 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
 
   private void addToResult(
       SpellingResult result,
-      Token token,
+      SpellCheckToken token,
       int tokenFrequency,
       String suggestion,
       int suggestionFrequency) {
     if (suggestion == null) {
-      result.add(token, Collections.<String>emptyList());
+      result.add(token, List.of());
       result.addFrequency(token, tokenFrequency);
     } else {
       result.add(token, suggestion, suggestionFrequency);
@@ -329,7 +331,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
   }
 
-  private int getCombineFrequency(IndexReader ir, Token token) throws IOException {
+  private int getCombineFrequency(IndexReader ir, SpellCheckToken token) throws IOException {
     String[] words = spacePattern.split(token.toString());
     int result = 0;
     if (sortMethod == BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY) {

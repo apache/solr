@@ -179,7 +179,7 @@ public class SimpleFacets {
     DocSet docs = docsOrig;
     String facetValue = param;
     String key = param;
-    List<String> tags = Collections.emptyList();
+    List<String> tags = List.of();
     int threads = -1;
 
     if (localParams == null) {
@@ -203,7 +203,7 @@ public class SimpleFacets {
     key = localParams.get(CommonParams.OUTPUT_KEY, key);
 
     String tagStr = localParams.get(CommonParams.TAG);
-    tags = tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+    tags = tagStr == null ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
     String threadStr = localParams.get(CommonParams.THREADS);
     if (threadStr != null) {
@@ -819,11 +819,11 @@ public class SimpleFacets {
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
-      if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
+      if (termFilter != null && !termFilter.test(facetEntry.value())) {
         continue;
       }
-      facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
-      facetCounts.add(charsRef.toString(), facetEntry.getCount());
+      facetFieldType.indexedToReadable(facetEntry.value(), charsRef);
+      facetCounts.add(charsRef.toString(), facetEntry.count());
     }
 
     if (missing) {
@@ -1184,7 +1184,7 @@ public class SimpleFacets {
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
-                  int base = sub.slice.start;
+                  int base = sub.slice.start();
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     if (fastForRandomSet.get(docid + base)) {
@@ -1318,7 +1318,7 @@ public class SimpleFacets {
       final ParsedParams parsed = parseParams(FacetParams.FACET_INTERVAL, field);
       String[] intervalStrs =
           parsed.required.getFieldParams(parsed.facetValue, FacetParams.FACET_INTERVAL_SET);
-      SchemaField schemaField = searcher.getCore().getLatestSchema().getField(parsed.facetValue);
+      SchemaField schemaField = searcher.getSchema().getField(parsed.facetValue);
       if (parsed.params.getBool(GroupParams.GROUP_FACET, false)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,

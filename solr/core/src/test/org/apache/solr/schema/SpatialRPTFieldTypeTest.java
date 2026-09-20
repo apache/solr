@@ -58,15 +58,13 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "false");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome);
   }
 
   @After
   public void afterClass() {
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
   }
 
   static final String INDEXED_COORDINATES = "25,82";

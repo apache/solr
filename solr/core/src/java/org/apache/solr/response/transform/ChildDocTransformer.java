@@ -24,9 +24,13 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -35,6 +39,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
@@ -42,7 +47,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.DocSet;
@@ -138,6 +145,20 @@ class ChildDocTransformer extends DocTransformer {
       final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
+      Set<String> multiValuedFLoatVectorFields =
+          this.getMultiValuedVectorFields(
+              searcher.getSchema(), childReturnFields, VectorEncoding.FLOAT32);
+      Set<String> multiValuedByteVectorFields =
+          this.getMultiValuedVectorFields(
+              searcher.getSchema(), childReturnFields, VectorEncoding.BYTE);
+      if ((multiValuedFLoatVectorFields.size() + multiValuedByteVectorFields.size()) > 0
+          && (multiValuedFLoatVectorFields.size() + multiValuedByteVectorFields.size())
+              != childReturnFields.getExplicitlyRequestedFieldNames().size()) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "When using the Child transformer to flatten nested vectors, all 'fl' must be "
+                + "multivalued vector fields");
+      }
 
       // can return be -1 and that's okay  (happens for very first block)
       final int segPrevRootId;
@@ -219,8 +240,21 @@ class ChildDocTransformer extends DocTransformer {
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
-            addChildrenToParent(
-                doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
+            if (!multiValuedFLoatVectorFields.isEmpty() || !multiValuedByteVectorFields.isEmpty()) {
+              addFlatMultiValuedVectorsToParent(
+                  rootDoc,
+                  pendingParentPathsToChildren.values().iterator().next(),
+                  multiValuedFLoatVectorFields,
+                  VectorEncoding.FLOAT32);
+              addFlatMultiValuedVectorsToParent(
+                  rootDoc,
+                  pendingParentPathsToChildren.values().iterator().next(),
+                  multiValuedByteVectorFields,
+                  VectorEncoding.BYTE);
+            } else {
+              addChildrenToParent(
+                  doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
+            }
           }
 
           // get parent path
@@ -248,13 +282,45 @@ class ChildDocTransformer extends DocTransformer {
       assert pendingParentPathsToChildren.keySet().size() == 1;
 
       // size == 1, so get the last remaining entry
-      addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
+      if (!multiValuedFLoatVectorFields.isEmpty() || !multiValuedByteVectorFields.isEmpty()) {
+        addFlatMultiValuedVectorsToParent(
+            rootDoc,
+            pendingParentPathsToChildren.values().iterator().next(),
+            multiValuedFLoatVectorFields,
+            VectorEncoding.FLOAT32);
+        addFlatMultiValuedVectorsToParent(
+            rootDoc,
+            pendingParentPathsToChildren.values().iterator().next(),
+            multiValuedByteVectorFields,
+            VectorEncoding.BYTE);
+      } else {
+        addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
+      }
 
     } catch (IOException e) {
       // TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
       log.warn("Could not fetch child documents", e);
       rootDoc.put(getName(), "Could not fetch child documents");
     }
+  }
+
+  private Set<String> getMultiValuedVectorFields(
+      IndexSchema schema, SolrReturnFields childReturnFields, VectorEncoding encoding) {
+    Set<String> multiValuedVectorsFields = new HashSet<>();
+    Set<String> explicitlyRequestedFieldNames =
+        childReturnFields.getExplicitlyRequestedFieldNames();
+    if (explicitlyRequestedFieldNames != null) {
+      for (String fieldName : explicitlyRequestedFieldNames) {
+        SchemaField sfield = schema.getFieldOrNull(fieldName);
+        if (sfield != null
+            && sfield.getType() instanceof DenseVectorField
+            && sfield.multiValued()
+            && ((DenseVectorField) sfield.getType()).getVectorEncoding() == encoding) {
+          multiValuedVectorsFields.add(fieldName);
+        }
+      }
+    }
+    return multiValuedVectorsFields;
   }
 
   private static void addChildrenToParent(
@@ -283,6 +349,54 @@ class ChildDocTransformer extends DocTransformer {
     }
     // is single value
     parent.setField(trimmedPath, children.get(0));
+  }
+
+  private void addFlatMultiValuedVectorsToParent(
+      SolrDocument parent,
+      Map<String, List<SolrDocument>> children,
+      Set<String> multiValuedVectorFields,
+      VectorEncoding encoding) {
+    for (String multiValuedVectorField : multiValuedVectorFields) {
+      List<SolrDocument> solrDocuments = children.get(multiValuedVectorField);
+      List<List<Number>> multiValuedVectors = new ArrayList<>(solrDocuments.size());
+      for (SolrDocument singleVector : solrDocuments) {
+        List<Number> extractedVectors;
+        switch (encoding) {
+          case FLOAT32:
+            extractedVectors =
+                this.extractFloatVector(singleVector.getFieldValues(multiValuedVectorField));
+            break;
+          case BYTE:
+            extractedVectors =
+                this.extractByteVector(singleVector.getFieldValues(multiValuedVectorField));
+            break;
+          default:
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Unsupported vector encoding: " + encoding);
+        }
+        multiValuedVectors.add(extractedVectors);
+      }
+      parent.setField(multiValuedVectorField, multiValuedVectors);
+    }
+  }
+
+  private List<Number> extractFloatVector(Collection<Object> fieldValues) {
+    List<Number> vector = new ArrayList<>(fieldValues.size());
+    for (Object fieldValue : fieldValues) {
+      StoredField storedVectorValue = (StoredField) fieldValue;
+      vector.add(storedVectorValue.numericValue());
+    }
+    return vector;
+  }
+
+  private List<Number> extractByteVector(Collection<Object> singleVector) {
+    StoredField vector = (StoredField) singleVector.iterator().next();
+    BytesRef byteVector = vector.binaryValue();
+    List<Number> extractedVector = new ArrayList<>(byteVector.length);
+    for (Byte element : byteVector.bytes) {
+      extractedVector.add(element.byteValue());
+    }
+    return extractedVector;
   }
 
   private static String getLastPath(String path) {

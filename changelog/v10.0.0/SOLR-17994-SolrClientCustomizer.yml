@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Rename HttpClientBuilderFactory to SolrClientCustomizer, and property solr.httpclient.builder.factory to solr.solrj.http.jetty.customizer
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-17994
+    url: https://issues.apache.org/jira/browse/SOLR-17994

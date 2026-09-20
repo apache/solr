@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
@@ -87,7 +86,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
     location = getAndValidateBackupLocation(repositoryName, location);
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(backupName, backupId, null, null, location, repositoryName, asyncId);
+        createRemoteMessage(backupName, backupId, null, null, location, repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
@@ -113,8 +112,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
     location = getAndValidateBackupLocation(repositoryName, location);
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(
-            backupName, null, versionsToRetain, null, location, repositoryName, asyncId);
+        createRemoteMessage(backupName, null, versionsToRetain, null, location, repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
@@ -139,13 +137,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
-            backupName,
-            null,
-            null,
-            Boolean.TRUE,
-            requestBody.location,
-            requestBody.repositoryName,
-            requestBody.async);
+            backupName, null, null, Boolean.TRUE, requestBody.location, requestBody.repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response,
@@ -167,12 +159,10 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
       Integer versionsToRetain,
       Boolean purgeUnused,
       String location,
-      String repositoryName,
-      String asyncId) {
+      String repositoryName) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
     // Always provided
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEBACKUP.toLower());
     remoteMessage.put(NAME, backupName);
     // Mutually exclusive
     assert backupId != null || versionsToRetain != null || purgeUnused != null;
@@ -182,7 +172,6 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
     // Remaining params are truly optional
     insertIfNotNull(remoteMessage, BACKUP_LOCATION, location);
     insertIfNotNull(remoteMessage, BACKUP_REPOSITORY, repositoryName);
-    insertIfNotNull(remoteMessage, ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

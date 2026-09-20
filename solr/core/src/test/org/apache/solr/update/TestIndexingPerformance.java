@@ -24,7 +24,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.RTimer;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,23 +38,12 @@ import org.slf4j.LoggerFactory;
 public class TestIndexingPerformance extends SolrTestCaseJ4 {
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
 
     initCore("solrconfig_perf.xml", "schema12.xml");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

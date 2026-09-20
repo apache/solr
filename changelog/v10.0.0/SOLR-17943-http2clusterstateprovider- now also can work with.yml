@@ -1,0 +1,7 @@
+title: '`Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`.'
+type: changed
+authors:
+- name: James Dyer
+links:
+- name: SOLR-17943
+  url: https://issues.apache.org/jira/browse/SOLR-17943

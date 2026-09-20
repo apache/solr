@@ -30,6 +30,29 @@ This exercise is intended to get you thinking about what you will need to do for
 * What kinds of search options do you want to provide to users?
 * How much testing will you need to do to ensure everything works the way you expect?
 
+The tutorial assumes that you have Docker installed and running on your computer.
+
+=== Start an external Apache Tika Server
+
+Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Tool requires the Solr extraction module to be enabled and an external Apache Tika Server to be running. See xref:indexing-guide:indexing-with-tika.adoc#tika-server[Tika Server] for background. We will be running Tika Server using Docker.
+
+.Start a Tika Server quickly using Docker (exposes port 9998 on localhost)
+[,bash]
+----
+docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+----
+
+=== Start Solr with the extraction module enabled
+
+[,console]
+----
+# Stop Solr if it is running
+bin/solr stop --all
+
+# Start Solr with extraction module
+bin/solr start -Dsolr.modules=extraction
+----
+
 === Create Your Own Collection
 
 Before you get started, create a new collection, named whatever you'd like.
@@ -43,6 +66,22 @@ $ bin/solr create -c localDocs --shards 2 -rf 2
 Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides.
 As we noted previously, this may cause problems when we index our data.
 You may need to iterate on indexing a few times before you get the schema right.
+
+=== Enable the extraction handler
+
+Add the /update/extract handler to your collection, pointing to the Tika Server you just started
+
+[,console]
+----
+curl -X POST -H 'Content-type:application/json' -d '{
+  "add-requesthandler": {
+    "name": "/update/extract",
+    "class": "solr.extraction.ExtractingRequestHandler",
+    "tikaserver.url": "http://localhost:9998",
+    "defaults": { "lowernames": "true", "captureAttr": "true" }
+  }
+}' 'http://localhost:8983/solr/localDocs/config'
+----
 
 === Indexing Ideas
 
@@ -120,5 +159,7 @@ You can also modify the above to only delete documents that match a specific que
 At this point, you're ready to start working on your own.
 
 Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.
+
+To stop Tika Server when done, run `docker stop tika` in a Terminal window.
 
 Or if you'd like, you could work your way through the remaining exercises.

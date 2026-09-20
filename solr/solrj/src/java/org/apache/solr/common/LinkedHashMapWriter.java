@@ -20,22 +20,11 @@ package org.apache.solr.common;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.solr.common.util.SuppressForbidden;
 
 public class LinkedHashMapWriter<V> extends LinkedHashMap<String, V> implements MapWriter {
 
-  @SuppressForbidden(reason = "extends LinkedHashMap")
-  public LinkedHashMapWriter(int initialCapacity) {
-    super(initialCapacity);
-  }
-
   public LinkedHashMapWriter() {
     super();
-  }
-
-  public LinkedHashMapWriter(Map<? extends String, ? extends V> m) {
-    super(m);
   }
 
   @Override
@@ -45,9 +34,9 @@ public class LinkedHashMapWriter<V> extends LinkedHashMap<String, V> implements 
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Object _get(String path, Object def) {
-    if (path.indexOf('/') == -1) return getOrDefault(path, (V) def);
-    return MapWriter.super._get(path, def);
+  public Object _get(String path) {
+    if (path.indexOf('/') == -1) return get(path);
+    return MapWriter.super._get(path);
   }
 
   @Override

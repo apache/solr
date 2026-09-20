@@ -17,7 +17,6 @@
 package org.apache.solr.uninverting;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -78,20 +77,19 @@ public class TestUninvertingReader extends SolrTestCase {
     iw.close();
 
     DirectoryReader ir =
-        UninvertingReader.wrap(
-            DirectoryReader.open(dir), Collections.singletonMap("foo", Type.SORTED_SET_INTEGER));
+        UninvertingReader.wrap(DirectoryReader.open(dir), Map.of("foo", Type.SORTED_SET_INTEGER));
     LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(-3, LegacyNumericUtils.prefixCodedToInt(value));
@@ -120,8 +118,7 @@ public class TestUninvertingReader extends SolrTestCase {
     iw.close();
 
     DirectoryReader ir =
-        UninvertingReader.wrap(
-            DirectoryReader.open(dir), Collections.singletonMap("foo", Type.SORTED_SET_FLOAT));
+        UninvertingReader.wrap(DirectoryReader.open(dir), Map.of("foo", Type.SORTED_SET_FLOAT));
     LeafReader ar = ir.leaves().get(0).reader();
 
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
@@ -129,12 +126,12 @@ public class TestUninvertingReader extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(Float.floatToRawIntBits(-3f), LegacyNumericUtils.prefixCodedToInt(value));
@@ -163,20 +160,19 @@ public class TestUninvertingReader extends SolrTestCase {
     iw.close();
 
     DirectoryReader ir =
-        UninvertingReader.wrap(
-            DirectoryReader.open(dir), Collections.singletonMap("foo", Type.SORTED_SET_LONG));
+        UninvertingReader.wrap(DirectoryReader.open(dir), Map.of("foo", Type.SORTED_SET_LONG));
     LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(-3, LegacyNumericUtils.prefixCodedToLong(value));
@@ -205,20 +201,19 @@ public class TestUninvertingReader extends SolrTestCase {
     iw.close();
 
     DirectoryReader ir =
-        UninvertingReader.wrap(
-            DirectoryReader.open(dir), Collections.singletonMap("foo", Type.SORTED_SET_DOUBLE));
+        UninvertingReader.wrap(DirectoryReader.open(dir), Map.of("foo", Type.SORTED_SET_DOUBLE));
     LeafReader ar = ir.leaves().get(0).reader();
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(Double.doubleToRawLongBits(-3d), LegacyNumericUtils.prefixCodedToLong(value));

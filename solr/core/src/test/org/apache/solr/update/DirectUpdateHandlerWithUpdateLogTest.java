@@ -35,7 +35,7 @@ public class DirectUpdateHandlerWithUpdateLogTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("solr.updateHandler", SpyingUpdateHandler.class.getName());
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     initCore("solrconfig.xml", "schema11.xml");
   }
 

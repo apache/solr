@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -93,7 +92,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
 
       List<WeightedNode> nodesForRequest =
-          weightedNodes.stream().filter(request::isTargetingNode).collect(Collectors.toList());
+          weightedNodes.stream().filter(request::isTargetingNode).toList();
 
       SolrCollection solrCollection = request.getCollection();
       // Now place all replicas of all shards on available nodes
@@ -202,14 +201,21 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   public BalancePlan computeBalancing(
       BalanceRequest balanceRequest, PlacementContext placementContext) throws PlacementException {
     Map<Replica, Node> replicaMovements = new HashMap<>();
-    TreeSet<WeightedNode> orderedNodes = new TreeSet<>();
-    orderedNodes.addAll(
+    Collection<WeightedNode> weightedNodes =
         getWeightedNodes(
                 placementContext,
                 balanceRequest.getNodes(),
                 placementContext.getCluster().collections(),
                 true)
-            .values());
+            .values();
+
+    // First move replicas that share a node with another replica of the same shard, a state the
+    // weight-based balancing below cannot necessarily detect since such duplicates do not have to
+    // make their node weigh more than its peers.
+    moveDuplicateShardReplicas(weightedNodes, replicaMovements);
+
+    TreeSet<WeightedNode> orderedNodes = new TreeSet<>();
+    orderedNodes.addAll(weightedNodes);
 
     // While the node with the lowest weight still has room to take a replica from the node with the
     // highest weight, loop
@@ -241,7 +247,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         List<Replica> availableReplicasToMove =
             highestWeight.getAllReplicasOnNode().stream()
                 .sorted(Comparator.comparing(Replica::getReplicaName))
-                .collect(Collectors.toList());
+                .toList();
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node
@@ -284,7 +290,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
       }
-      // For now we do not have any way to see if there are out-of-date notes in the middle of the
+      // For now, we do not have any way to see if there are out-of-date nodes in the middle of the
       // TreeSet. Therefore, we need to re-sort this list after every selection. In the future, we
       // should find a way to re-sort the out-of-date nodes without having to sort all nodes.
       traversedHighNodes.addAll(orderedNodes);
@@ -304,6 +310,64 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     return placementContext
         .getBalancePlanFactory()
         .createBalancePlan(balanceRequest, replicaMovements);
+  }
+
+  /**
+   * Move replicas that share a node with another replica of the same shard to other nodes, since
+   * multiple replicas of the same shard on one node give neither availability nor capacity
+   * benefits. Placement will never create such a state, per the default {@link
+   * WeightedNode#canAddReplica(Replica)}, but users can, e.g. by adding a replica to an explicit
+   * node. Each duplicate replica is moved to the accepting node with the lowest projected weight
+   * with the replica added, like {@link #computePlacements(Collection, PlacementContext)} does.
+   */
+  private static void moveDuplicateShardReplicas(
+      Collection<WeightedNode> weightedNodes, Map<Replica, Node> replicaMovements) {
+    List<WeightedNode> sourceNodes = new ArrayList<>(weightedNodes);
+    sourceNodes.sort(Comparator.comparing(node -> node.getNode().getName()));
+    for (WeightedNode sourceNode : sourceNodes) {
+      Map<String, List<Replica>> replicasPerShard =
+          sourceNode.getAllReplicasOnNode().stream()
+              .collect(Collectors.groupingBy(replica -> replica.getShard().getUniqueShardId()));
+      for (List<Replica> shardReplicas : replicasPerShard.values()) {
+        if (shardReplicas.size() < 2) {
+          continue;
+        }
+        // Move extra replicas of this shard away until only one remains on the node, in replica
+        // name order like the weight-based balancing below. A replica that cannot be removed or has
+        // no eligible target is left in place and does not stop us from moving the others, so a
+        // single stuck replica no longer leaves the duplicate unresolved.
+        shardReplicas.sort(Comparator.comparing(Replica::getReplicaName));
+        int remainingOnNode = shardReplicas.size();
+        for (Replica replica : shardReplicas) {
+          if (remainingOnNode < 2) {
+            break;
+          }
+          if (!sourceNode.canRemoveReplicas(Set.of(replica)).isEmpty()) {
+            continue;
+          }
+          Optional<WeightedNode> targetNode =
+              weightedNodes.stream()
+                  .filter(node -> !node.equals(sourceNode))
+                  .filter(node -> node.canAddReplica(replica))
+                  .min(
+                      Comparator.<WeightedNode>comparingInt(
+                              node -> node.calcRelevantWeightWithReplica(replica))
+                          .thenComparing(Comparator.naturalOrder()));
+          if (targetNode.isPresent()) {
+            WeightedNode target = targetNode.get();
+            log.debug(
+                "Duplicate replica movement chosen. From: {}, To: {}, Replica: {}",
+                sourceNode,
+                target,
+                replica);
+            target.addReplica(replica);
+            sourceNode.removeReplica(replica);
+            replicaMovements.put(replica, target.getNode());
+            remainingOnNode--;
+          }
+        }
+      }
+    }
   }
 
   protected Map<Node, WeightedNode> getWeightedNodes(
@@ -439,19 +503,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<String> getShardsOnNode(String collection) {
-      return replicas.getOrDefault(collection, Collections.emptyMap()).keySet();
-    }
-
-    public boolean hasShardOnNode(Shard shard) {
-      return replicas
-          .getOrDefault(shard.getCollection().getName(), Collections.emptyMap())
-          .containsKey(shard.getShardName());
+      return replicas.getOrDefault(collection, Map.of()).keySet();
     }
 
     public Set<Replica> getReplicasForShardOnNode(Shard shard) {
       return Optional.ofNullable(replicas.get(shard.getCollection().getName()))
           .map(m -> m.get(shard.getShardName()))
-          .orElseGet(Collections::emptySet);
+          .orElseGet(Set::of);
     }
 
     public abstract int calcWeight();
@@ -505,7 +563,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      *     removed.
      */
     public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
-      return Collections.emptyMap();
+      return Map.of();
     }
 
     public final void removeReplica(Replica replica) {
@@ -776,15 +834,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * Get the number of nodes in the heap.
-     *
-     * @return number of nodes
-     */
-    public int size() {
-      return size;
-    }
-
-    /**
      * Check if the heap is empty.
      *
      * @return if the heap has no nodes
@@ -899,7 +948,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           .map(Map::keySet)
           // Use a sorted TreeSet to make sure that tests are repeatable
           .<Collection<Replica.ReplicaType>>map(TreeSet::new)
-          .orElseGet(Collections::emptyList);
+          .orElseGet(List::of);
     }
 
     /**

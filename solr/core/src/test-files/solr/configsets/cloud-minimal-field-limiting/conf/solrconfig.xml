@@ -47,6 +47,7 @@
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="true">
     <processor class="solr.NumFieldLimitingUpdateRequestProcessorFactory" name="max-fields">
       <int name="maxFields">${solr.test.maxFields:1234}</int>
+      <bool name="warnOnly">${solr.test.fieldLimit.warnOnly:false}</bool>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>

@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix several concurrency bugs in HttpShardHandler / ParallelHttpShardHandler that
+  could cause search threads to hang in take() or return HTTP 500 instead of honoring
+  shards.tolerant under thread-pool saturation
+type: fixed
+authors:
+  - name: Mark Miller
+links:
+  - name: SOLR-18244
+    url: https://issues.apache.org/jira/browse/SOLR-18244

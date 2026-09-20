@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.solr.common.SolrException;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example
@@ -29,38 +30,38 @@ import java.nio.file.Path;
 public class ExternalPaths {
 
   /**
-   * The main directory path for the solr source being built if it can be determined. If it can not
+   * The main directory path for the solr source being built if it can be determined. If it cannot
    * be determined -- possibly because the current context is a client code base using the test
    * framework -- then this variable will be null.
    *
    * <p>Note that all other static paths available in this class are derived from the source home,
-   * and if it is null, those paths will just be relative to 'null' and may not be meaningful.
+   * and if it is null, those paths will be null as well.
    */
-  public static final Path SOURCE_HOME = determineSourceHome();
+  public static final Path SOURCE_HOME = determineSourceHome(); // absolute
 
   /**
    * @see #SOURCE_HOME
    */
-  public static Path WEBAPP_HOME = SOURCE_HOME.resolve("webapp/web").toAbsolutePath();
+  public static Path WEBAPP_HOME = SOURCE_HOME == null ? null : SOURCE_HOME.resolve("webapp/web");
 
   /**
    * @see #SOURCE_HOME
    */
   public static Path DEFAULT_CONFIGSET =
-      SOURCE_HOME.resolve("server/solr/configsets/_default/conf").toAbsolutePath();
+      SOURCE_HOME == null ? null : SOURCE_HOME.resolve("server/solr/configsets/_default/conf");
 
   /**
    * @see #SOURCE_HOME
    */
   public static Path TECHPRODUCTS_CONFIGSET =
-      SOURCE_HOME
-          .resolve("server/solr/configsets/sample_techproducts_configs/conf")
-          .toAbsolutePath();
+      SOURCE_HOME == null
+          ? null
+          : SOURCE_HOME.resolve("server/solr/configsets/sample_techproducts_configs/conf");
 
   /**
    * @see #SOURCE_HOME
    */
-  public static Path SERVER_HOME = SOURCE_HOME.resolve("server/solr").toAbsolutePath();
+  public static Path SERVER_HOME = SOURCE_HOME == null ? null : SOURCE_HOME.resolve("server/solr");
 
   /**
    * Ugly, ugly hack to determine the example home without depending on the CWD this is needed for
@@ -82,13 +83,17 @@ public class ExternalPaths {
       }
 
       Path base = file.toAbsolutePath();
-      while (!Files.exists(base.resolve("solr/CHANGES.txt")) && null != base) {
+      while (!Files.exists(base.resolve("test-framework/build.gradle"))) {
         base = base.getParent();
+        if (base == null) {
+          return null;
+        }
       }
-      return (null == base) ? null : base.resolve("solr/").toAbsolutePath();
+      return base;
     } catch (Exception e) {
       // all bets are off
-      return null;
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Failed to determine source home", e);
     }
   }
 }

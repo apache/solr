@@ -45,8 +45,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -155,7 +155,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
 
   private List<ScriptFile> scriptFiles;
 
-  /** if non null, this is an override for the engine for all scripts */
+  /** if non-null, this is an override for the engine for all scripts */
   private String engineName = null;
 
   private Object params = null;
@@ -200,7 +200,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    List<EngineInfo> scriptEngines = null;
+    List<EngineInfo> scriptEngines;
 
     scriptEngines = initEngines(req, rsp);
 
@@ -220,7 +220,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
     // test that our engines & scripts are valid
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
     try {
       initEngines(req, rsp);
     } catch (Exception e) {
@@ -286,7 +286,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
             "Engine "
                 + ((null != engineName) ? engineName : ("for script " + scriptFile.getFileName()))
                 + " does not support function invocation (via Invocable): "
-                + engine.getClass().toString()
+                + engine.getClass()
                 + " ("
                 + engine.getFactory().getEngineName()
                 + ")";
@@ -335,7 +335,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
   }
 
   /**
-   * For error messages - returns null if there are any exceptions of any kind building the string
+   * For error messages - returns null if there are any exceptions registered building the string
    * (or of the list is empty for some unknown reason).
    *
    * @param ext - if true, list of extensions, otherwise a list of engine names
@@ -437,8 +437,8 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
       for (EngineInfo engine : engines) {
         try {
           Object result = engine.getEngine().invokeFunction(name, cmd);
-          if (null != result && result instanceof Boolean) {
-            if (!((Boolean) result).booleanValue()) {
+          if (result instanceof Boolean) {
+            if (!(Boolean) result) {
               return false;
             }
           }

@@ -47,7 +47,6 @@ import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
@@ -113,9 +112,10 @@ public class JavaBinCodec implements PushWriter {
       NAMED_LST = (byte) (6 << 5), // NamedList
       EXTERN_STRING = (byte) (7 << 5);
 
+  private static final int MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 512;
   private static final int MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY = 65536;
 
-  private static byte VERSION = 2;
+  private static final byte VERSION = 2;
   private final ObjectResolver resolver;
   protected FastOutputStream daos;
   private StringCache stringCache;
@@ -123,6 +123,9 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyMarshalled;
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
+
+  private boolean readMapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.readMapAsNamedList", false);
 
   public JavaBinCodec() {
     resolver = null;
@@ -356,7 +359,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -422,11 +425,6 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof Map.Entry) {
       writeMapEntry((Map.Entry) val);
-      return true;
-    }
-    if (val instanceof MapSerializable) {
-      // todo find a better way to reuse the map more efficiently
-      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
       return true;
     }
     if (val instanceof AtomicInteger) {
@@ -828,6 +826,8 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   public Map<Object, Object> readMapIter(DataInputInputStream dis) throws IOException {
     Map<Object, Object> m = newMap(-1);
     for (; ; ) {
@@ -848,9 +848,14 @@ public class JavaBinCodec implements PushWriter {
     return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
-  public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
+  public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    return readMap(dis, sz);
+
+    if (readMapAsNamedList) {
+      return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
+    } else {
+      return readMap(dis, sz);
+    }
   }
 
   protected Map<Object, Object> readMap(DataInputInputStream dis, int sz) throws IOException {
@@ -861,6 +866,17 @@ public class JavaBinCodec implements PushWriter {
       m.put(key, val);
     }
     return m;
+  }
+
+  protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
+      throws IOException {
+    SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
+    for (int i = 0; i < sz; i++) {
+      Object key = readVal(dis);
+      Object val = readVal(dis);
+      entries.add((String) key, val); // using NL.add() since key won't repeat
+    }
+    return entries;
   }
 
   public final ItemWriter itemWriter =
@@ -917,6 +933,8 @@ public class JavaBinCodec implements PushWriter {
     writeTag(END);
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   public List<Object> readIterator(DataInputInputStream fis) throws IOException {
     ArrayList<Object> l = new ArrayList<>();
     while (true) {
@@ -1053,7 +1071,11 @@ public class JavaBinCodec implements PushWriter {
     int maxSize = end * ByteUtils.MAX_UTF8_BYTES_PER_CHAR;
 
     if (maxSize <= MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
-      if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
+      if (bytes == null || bytes.length < maxSize) {
+        int bufferSize = getBufferSize(maxSize);
+        bytes = new byte[bufferSize];
+      }
+
       int sz = ByteUtils.UTF16toUTF8(s, 0, end, bytes, 0);
       writeTag(STR, sz);
       daos.write(bytes, 0, sz);
@@ -1086,7 +1108,10 @@ public class JavaBinCodec implements PushWriter {
 
   private CharSequence _readStr(DataInputInputStream dis, StringCache stringCache, int sz)
       throws IOException {
-    if (bytes == null || bytes.length < sz) bytes = new byte[sz];
+    if (bytes == null || bytes.length < sz) {
+      int bufferSize = getBufferSize(sz);
+      bytes = new byte[bufferSize];
+    }
     dis.readFully(bytes, 0, sz);
     if (stringCache != null) {
       return stringCache.get(bytesRef.reset(bytes, 0, sz));
@@ -1094,6 +1119,28 @@ public class JavaBinCodec implements PushWriter {
       arr.reset();
       ByteUtils.UTF8toUTF16(bytes, 0, sz, arr);
       return arr.toString();
+    }
+  }
+
+  /**
+   * Compute the buffer size for given required size. This returns the next power of 2 that is
+   * greater than or equal to the given size.
+   *
+   * <p>This is a trade-off so we don't start with a useless too big buffer, but we don't do too
+   * many allocations.
+   */
+  static int getBufferSize(int required) {
+
+    if (required < MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
+      return MIN_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY;
+    }
+
+    int oneBit = Integer.highestOneBit(required);
+
+    if (oneBit == required) {
+      return oneBit;
+    } else {
+      return oneBit << 1;
     }
   }
 
@@ -1194,6 +1241,8 @@ public class JavaBinCodec implements PushWriter {
     daos.writeFloat(val);
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   public boolean writePrimitive(Object val) throws IOException {
     if (val == null) {
       daos.writeByte(NULL);
@@ -1207,16 +1256,16 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof Number) {
 
       if (val instanceof Integer) {
-        writeInt(((Integer) val).intValue());
+        writeInt((Integer) val);
         return true;
       } else if (val instanceof Long) {
-        writeLong(((Long) val).longValue());
+        writeLong((Long) val);
         return true;
       } else if (val instanceof Float) {
-        writeFloat(((Float) val).floatValue());
+        writeFloat((Float) val);
         return true;
       } else if (val instanceof Double) {
-        writeDouble(((Double) val).doubleValue());
+        writeDouble((Double) val);
         return true;
       } else if (val instanceof Byte) {
         daos.writeByte(BYTE);
@@ -1407,15 +1456,12 @@ public class JavaBinCodec implements PushWriter {
     boolean wantsAllFields();
   }
 
-  public static class StringCache {
-    private final Cache<StringBytes, String> cache;
-
-    public StringCache(Cache<StringBytes, String> cache) {
-      this.cache = cache;
-    }
-
+  /**
+   * @lucene.internal
+   */
+  public abstract static class StringCache {
     public String get(StringBytes b) {
-      String result = cache.get(b);
+      String result = getFromCache(b);
       if (result == null) {
         // make a copy because the buffer received may be changed later by the caller
         StringBytes copy =
@@ -1424,16 +1470,30 @@ public class JavaBinCodec implements PushWriter {
         CharArr arr = new CharArr();
         ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
         result = arr.toString();
-        cache.put(copy, result);
+        putIntoCache(copy, result);
       }
       return result;
     }
+
+    protected abstract String getFromCache(StringBytes b);
+
+    protected abstract void putIntoCache(StringBytes b, String val);
   }
 
   @Override
   public void close() throws IOException {
-    if (daos != null) {
+    // marshal() already flushes in its own finally block, so skip the redundant flush.
+    // Flushing again after a marshal failure would re-throw the same exception from the broken
+    // stream, causing "Self-suppression not permitted" in the caller's try-with-resources.
+    if (daos != null && !alreadyMarshalled) {
       daos.flushBuffer();
     }
+  }
+
+  /**
+   * If set, Maps will be deserialized as {@link SimpleOrderedMap} instead of {@link LinkedHashMap}
+   */
+  public void readMapAsNamedList(boolean readMapAsNamedList) {
+    this.readMapAsNamedList = readMapAsNamedList;
   }
 }

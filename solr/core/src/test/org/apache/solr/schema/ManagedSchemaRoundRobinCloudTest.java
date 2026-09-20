@@ -27,8 +27,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.DocCollection;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,34 +49,22 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
             COLLECTION,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));
-  }
-
-  @AfterClass
-  public static void clearSysProps() {
-    System.clearProperty("managed.schema.mutable");
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, NUM_SHARDS, 1));
   }
 
   @Test
   public void testAddFieldsRoundRobin() throws Exception {
     List<SolrClient> clients = new ArrayList<>(NUM_SHARDS);
-    try {
-      for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
-        clients.add(
-            getHttpSolrClient(cluster.getJettySolrRunners().get(shardNum).getBaseUrl().toString()));
-      }
-      int shardNum = 0;
-      for (int fieldNum = 0; fieldNum < NUM_FIELDS_TO_ADD; ++fieldNum) {
-        addField(
-            clients.get(shardNum),
-            keyValueArrayToMap("name", FIELD_PREFIX + fieldNum, "type", "string"));
-        if (++shardNum == NUM_SHARDS) {
-          shardNum = 0;
-        }
-      }
-    } finally {
-      for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
-        clients.get(shardNum).close();
+    for (int shardNum = 0; shardNum < NUM_SHARDS; ++shardNum) {
+      clients.add(cluster.getJettySolrRunners().get(shardNum).getSolrClient());
+    }
+    int shardNum = 0;
+    for (int fieldNum = 0; fieldNum < NUM_FIELDS_TO_ADD; ++fieldNum) {
+      addField(
+          clients.get(shardNum),
+          keyValueArrayToMap("name", FIELD_PREFIX + fieldNum, "type", "string"));
+      if (++shardNum == NUM_SHARDS) {
+        shardNum = 0;
       }
     }
   }

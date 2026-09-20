@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
@@ -38,6 +39,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
+import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -51,6 +55,7 @@ public class TestMessageProcessor {
 
   @Mock private CloudSolrClient solrClient;
   private SolrMessageProcessor processor;
+  private AutoCloseable mocks;
 
   private final ResubmitBackoffPolicy backoffPolicy =
       spy(
@@ -68,10 +73,22 @@ public class TestMessageProcessor {
 
   @Before
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
+    mocks = MockitoAnnotations.openMocks(this);
 
-    processor = Mockito.spy(new SolrMessageProcessor(solrClient, backoffPolicy));
+    // handleItem() probes the cluster through the state provider, so the mock must supply one
+    ClusterStateProvider clusterStateProvider = Mockito.mock(ClusterStateProvider.class);
+    when(solrClient.getClusterStateProvider()).thenReturn(clusterStateProvider);
+
+    ConsumerMetrics metrics = Mockito.mock(OtelMetrics.class);
+    processor = Mockito.spy(new SolrMessageProcessor(metrics, () -> solrClient, backoffPolicy));
     Mockito.doNothing().when(processor).uncheckedSleep(anyLong());
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (mocks != null) {
+      mocks.close();
+    }
   }
 
   @Test

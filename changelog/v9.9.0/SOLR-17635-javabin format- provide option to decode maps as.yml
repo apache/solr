@@ -1,0 +1,10 @@
+title: 'javabin format: provide option to decode maps as SimpleOrderedMap (a NamedList
+  & Map) instead of LinkedHashMap. Intended to aid in 10.x compatibility. Enable via
+  sys prop: solr.solrj.javabin.readMapAsNamedList=true'
+type: other
+authors:
+- name: Renato Haeberli
+- name: David Smiley
+links:
+- name: SOLR-17635
+  url: https://issues.apache.org/jira/browse/SOLR-17635

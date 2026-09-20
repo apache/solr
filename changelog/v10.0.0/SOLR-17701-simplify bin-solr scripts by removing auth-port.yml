@@ -1,0 +1,8 @@
+title: Simplify bin/solr scripts by removing AUTH_PORT export in favour of more commonly
+  used SOLR_PORT export.
+type: changed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-17701
+  url: https://issues.apache.org/jira/browse/SOLR-17701

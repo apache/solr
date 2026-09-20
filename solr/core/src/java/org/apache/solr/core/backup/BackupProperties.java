@@ -35,7 +35,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.IndexInputInputStream;
 
 /**
  * Represents a backup[-*].properties file, responsible for holding whole-collection and
@@ -104,7 +104,7 @@ public class BackupProperties {
     Properties props = new Properties();
     try (Reader is =
         new InputStreamReader(
-            new PropertiesInputStream(
+            new IndexInputInputStream(
                 repository.openInput(backupPath, fileName, IOContext.DEFAULT)),
             StandardCharsets.UTF_8)) {
       props.load(is);

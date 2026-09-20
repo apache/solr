@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,7 +49,7 @@ public class ShardDoc extends FieldDoc {
 
   public int positionInResponse;
 
-  public Map<String, Object> scoreDependentFields = Collections.emptyMap();
+  public Map<String, Object> scoreDependentFields = Map.of();
 
   // the ordinal position in the merged response arraylist
 

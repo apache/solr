@@ -47,6 +47,7 @@ public class ComplementStream extends TupleStream implements Expressible {
   private PushBackStream streamB;
   private TupleStream originalStreamB;
   private StreamEqualitor eq;
+  private StreamComparator crossStreamComparator;
 
   public ComplementStream(TupleStream streamA, TupleStream streamB, StreamEqualitor eq)
       throws IOException {
@@ -94,15 +95,23 @@ public class ComplementStream extends TupleStream implements Expressible {
   private void init(TupleStream streamA, TupleStream streamB, StreamEqualitor eq)
       throws IOException {
     this.streamA = new PushBackStream(streamA);
-    this.streamB = new PushBackStream(new UniqueStream(streamB, eq));
+    // dedup streamB using only its own (right-side) field(s); using the full, possibly
+    // asymmetric eq here would compare streamB's field against a field it doesn't have.
+    this.streamB =
+        new PushBackStream(new UniqueStream(streamB, StreamEqualitor.deriveRightEqualitor(eq)));
     this.originalStreamB = streamB; // hold onto this for toExpression
     this.eq = eq;
 
     // streamA and streamB must both be sorted so that comp can be derived from
-    if (!eq.isDerivedFrom(streamA.getStreamSort()) || !eq.isDerivedFrom(streamB.getStreamSort())) {
+    if (!eq.isDerivedFromLeft(this.streamA.getStreamSort())
+        || !eq.isDerivedFromRight(this.streamB.getStreamSort())) {
       throw new IOException(
           "Invalid ComplementStream - both substream comparators (sort) must be a superset of this stream's equalitor.");
     }
+
+    // comparator used to order a streamA tuple against a streamB tuple; unlike either stream's own
+    // sort, it carries eq's (possibly different) left/right field names.
+    crossStreamComparator = StreamEqualitor.deriveComparator(eq, this.streamA.getStreamSort());
   }
 
   @Override
@@ -201,9 +210,12 @@ public class ComplementStream extends TupleStream implements Expressible {
       }
 
       // if a != b && a < b then we know there is no b which a might equal so return a
-      if (!eq.test(a, b) && streamA.getStreamSort().compare(a, b) < 0) {
-        streamB.pushBack(b);
-        return a;
+      if (!eq.test(a, b)) {
+        eq.assertFieldsPresent(a, b);
+        if (crossStreamComparator.compare(a, b) < 0) {
+          streamB.pushBack(b);
+          return a;
+        }
       }
 
       // if a == b then ignore a cause it exists in b

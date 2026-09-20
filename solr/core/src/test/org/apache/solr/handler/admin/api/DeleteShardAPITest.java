@@ -17,30 +17,40 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link DeleteShard} */
-public class DeleteShardAPITest extends SolrTestCaseJ4 {
+public class DeleteShardAPITest extends MockV2APITest {
+
+  private DeleteShard api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new DeleteShard(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     final SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              final var api = new DeleteShard(null, null, null);
-              api.deleteShard(null, "someShard", null, null, null, null, null);
-            });
+            () -> api.deleteShard(null, "someShard", null, null, null, null, null));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -51,43 +61,42 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
     final SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              final var api = new DeleteShard(null, null, null);
-              api.deleteShard("someCollection", null, null, null, null, null, null);
-            });
+            () -> api.deleteShard("someCollection", null, null, null, null, null, null));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: shard", thrown.getMessage());
   }
 
   @Test
-  public void testCreateRemoteMessageAllProperties() {
-    final var remoteMessage =
-        DeleteShard.createRemoteMessage(
-                "someCollName", "someShardName", true, false, true, false, "someAsyncId")
-            .getProperties();
+  public void testCreateRemoteMessageAllProperties() throws Exception {
+    when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
+    api.deleteShard("someCollName", "someShardName", true, false, true, false, "someAsyncId");
 
-    assertEquals(8, remoteMessage.size());
-    assertEquals("deleteshard", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_INSTANCE_DIR));
-    assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_DATA_DIR));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_INDEX));
-    assertEquals(Boolean.FALSE, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESHARD,
+        "someAsyncId",
+        message -> {
+          assertEquals(6, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals(Boolean.TRUE, message.get(DELETE_INSTANCE_DIR));
+          assertEquals(Boolean.FALSE, message.get(DELETE_DATA_DIR));
+          assertEquals(Boolean.TRUE, message.get(DELETE_INDEX));
+          assertEquals(Boolean.FALSE, message.get(FOLLOW_ALIASES));
+        });
   }
 
   @Test
-  public void testMissingValuesExcludedFromRemoteMessage() {
-    final var remoteMessage =
-        DeleteShard.createRemoteMessage(
-                "someCollName", "someShardName", null, null, null, null, null)
-            .getProperties();
+  public void testMissingValuesExcludedFromRemoteMessage() throws Exception {
+    when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
+    api.deleteShard("someCollName", "someShardName", null, null, null, null, null);
 
-    assertEquals(3, remoteMessage.size());
-    assertEquals("deleteshard", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESHARD,
+        message -> {
+          assertEquals(2, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+        });
   }
 }

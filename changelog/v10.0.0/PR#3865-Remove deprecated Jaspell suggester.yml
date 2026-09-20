@@ -1,0 +1,7 @@
+title: Remove deprecated JaspellLookupFactory suggester implementation
+type: removed
+authors:
+- name: Jan Høydahl
+links:
+- name: PR#3865
+  url: https://github.com/apache/solr/pull/3865

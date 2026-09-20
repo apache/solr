@@ -19,12 +19,12 @@ package org.apache.solr.cloud;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,9 +57,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @AfterClass
   public static void afterTest() {
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("useCompoundFile");
     TestInjection.reset();
   }
 

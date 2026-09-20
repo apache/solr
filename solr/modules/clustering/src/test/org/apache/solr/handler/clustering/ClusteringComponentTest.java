@@ -40,8 +40,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SearchHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.carrot2.clustering.Cluster;
@@ -130,7 +130,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
    * shorter when highlighter is in use.
    */
   @Test
-  public void testClusteringOnHighlights() throws Exception {
+  public void testClusteringOnHighlights() {
     String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common =
@@ -179,7 +179,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
    * check that the results differ.
    */
   @Test
-  public void testSummaryFragSize() throws Exception {
+  public void testSummaryFragSize() {
     String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common =
@@ -243,7 +243,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
   /** Test maximum label truncation. */
   @Test
-  public void testParamMaxLabels() throws Exception {
+  public void testParamMaxLabels() {
     List<Cluster<SolrDocument>> clusters =
         clusters(
             "mock",
@@ -339,7 +339,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
     clusters.forEach(
         c -> {
           sb.append(indent);
-          sb.append("- " + c.getLabels().stream().collect(Collectors.joining("; ")));
+          sb.append("- " + String.join("; ", c.getLabels()));
           if (!c.getDocuments().isEmpty()) {
             sb.append(" [" + c.getDocuments().size() + "]");
           }
@@ -385,7 +385,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, reqParams)) {
+    try (SolrQueryRequest req = new SolrQueryRequestBase(core, reqParams)) {
       handler.handleRequest(req, rsp);
       NamedList<?> values = rsp.getValues();
       @SuppressWarnings("unchecked")

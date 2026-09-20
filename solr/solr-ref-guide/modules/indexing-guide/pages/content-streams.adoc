@@ -23,38 +23,15 @@ When Solr RequestHandlers are accessed using path based URLs, the `SolrQueryRequ
 
 == Content Stream Sources
 
-Currently request handlers can get content streams in a variety of ways:
+Currently request handlers can get content streams in two ways:
 
 * For multipart file uploads, each file is passed as a stream.
 * For POST requests where the content-type is not `application/x-www-form-urlencoded`, the raw POST body is passed as a stream.
 The full POST body is parsed as parameters and included in the Solr parameters.
-* The contents of parameter `stream.body` is passed as a stream.
-Requires `SOLR_ENABLE_STREAM_BODY=true`.
-* Each `stream.url` and `stream.file` parameters is resolved / fetched and passed as a stream.
-Requires `SOLR_ENABLE_REMOTE_STREAMING=true`.
 
 By default, curl sends a `contentType="application/x-www-form-urlencoded"` header.
 If you need to test a SolrContentHeader content stream, you will need to set the content type with curl's `-H` flag.
 
-== Remote Streaming
-
-Remote streaming lets you send the contents of a URL as a stream to a given Solr RequestHandler.
-You could use remote streaming to send a remote or local file to an update plugin.
-
-Remote streaming is disabled by default.
-Enabling it is not recommended in a production situation without additional security between you and untrusted remote clients.
-
-[IMPORTANT]
-====
-If remote streaming is used, be aware that this allows _anyone_ to send a request to any URL or local file.
-And with the <<Debugging Requests,DumpRequestHandler>> anyone can view what Solr has access to.
-====
-
-Enable it with this environment variable: `SOLR_ENABLE_REMOTE_STREAMING=true`
-
-The source of the data can be compressed using gzip, and Solr will generally detect this.
-The detection is based on either the presence of a `Content-Encoding: gzip` HTTP header or the file ending with .gz or .gzip.
-Gzip doesn't apply to `stream.body`.
 
 == Debugging Requests
 

@@ -25,8 +25,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -54,7 +54,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "title:test");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
 
     assertQ(
         "Make sure they got in",
@@ -65,13 +65,13 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put(CommonParams.Q, "aaa_dynamic:aaa");
     args.put("indent", "true");
-    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
     assertQ("dynamic source", req, "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='10']");
 
     args = new HashMap<>();
     args.put(CommonParams.Q, "dynamic_aaa:aaa");
     args.put("indent", "true");
-    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
     assertQ(
         "dynamic destination",
         req,

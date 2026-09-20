@@ -25,20 +25,10 @@ import org.apache.solr.common.params.SolrParams;
 public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatter {
   @Override
   public Formatter getFormatter(String fieldName, SolrParams params) {
-    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     return new SimpleHTMLFormatter(
         params.getFieldParam(fieldName, HighlightParams.SIMPLE_PRE, "<em>"),
         params.getFieldParam(fieldName, HighlightParams.SIMPLE_POST, "</em>"));
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //////////////////////// SolrInfoMBeans methods ///////////////////////
-  ///////////////////////////////////////////////////////////////////////
-
-  @Override
-  public String getDescription() {
-    return "HtmlFormatter";
   }
 }

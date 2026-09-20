@@ -1,0 +1,7 @@
+title: Add a ReplicaCount class to keep track of replicas per type
+type: other
+authors:
+- name: Vincent Primault
+links:
+- name: SOLR-16995
+  url: https://issues.apache.org/jira/browse/SOLR-16995

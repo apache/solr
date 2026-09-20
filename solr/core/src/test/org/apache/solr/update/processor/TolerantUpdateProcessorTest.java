@@ -26,21 +26,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,19 +51,25 @@ import org.xml.sax.SAXException;
 
 public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
+  private static EmbeddedSolrServer server;
+
   /** List of valid + invalid documents */
   private static List<SolrInputDocument> docs = null;
 
   /** IDs of the invalid documents in <code>docs</code> */
   private static String[] badIds = null;
 
+  private ErrorLogMuter errorAddingFieldMuter;
+  private ErrorLogMuter missingUniqueKeyMuter;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema12.xml");
+    server = new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName());
   }
 
   @AfterClass
-  public static void tearDownClass() {
+  public static void afterClass() {
     docs = null;
     badIds = null;
   }
@@ -69,8 +78,8 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void setUp() throws Exception {
     super.setUp();
     // expected exception messages
-    ignoreException("Error adding field");
-    ignoreException("Document is missing mandatory uniqueKey field");
+    errorAddingFieldMuter = ErrorLogMuter.regex("Error adding field");
+    missingUniqueKeyMuter = ErrorLogMuter.regex("Document is missing mandatory uniqueKey field");
     if (docs == null) {
       docs = new ArrayList<>(20);
       badIds = new String[10];
@@ -86,7 +95,8 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   @Override
   public void tearDown() throws Exception {
-    resetExceptionIgnores();
+    errorAddingFieldMuter.close();
+    missingUniqueKeyMuter.close();
     assertU(delQ("*:*"));
     assertU(commit());
     assertQ(req("q", "*:*"), "//result[@numFound='0']");
@@ -270,52 +280,56 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testInvalidDelete() throws XPathExpressionException, SAXException {
-    ignoreException("undefined field invalidfield");
-    String response =
-        update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
-    assertNull(
-        BaseTestHarness.validateXPath(
-            response,
-            "//int[@name='status']=0",
-            "//arr[@name='errors']",
-            "count(//arr[@name='errors']/lst)=0"));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("undefined field invalidfield")) {
+      String response =
+          update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
+      assertNull(
+          BaseTestHarness.validateXPath(
+              response,
+              "//int[@name='status']=0",
+              "//arr[@name='errors']",
+              "count(//arr[@name='errors']/lst)=0"));
 
-    response = update("tolerant-chain-max-errors-10", delQ("invalidfield:1"));
-    assertNull(
-        BaseTestHarness.validateXPath(
-            response,
-            "//int[@name='status']=0",
-            "count(//arr[@name='errors']/lst)=1",
-            "//arr[@name='errors']/lst/str[@name='type']/text()='DELQ'",
-            "//arr[@name='errors']/lst/str[@name='id']/text()='invalidfield:1'",
-            "//arr[@name='errors']/lst/str[@name='message']/text()='undefined field invalidfield'"));
+      response = update("tolerant-chain-max-errors-10", delQ("invalidfield:1"));
+      assertNull(
+          BaseTestHarness.validateXPath(
+              response,
+              "//int[@name='status']=0",
+              "count(//arr[@name='errors']/lst)=1",
+              "//arr[@name='errors']/lst/str[@name='type']/text()='DELQ'",
+              "//arr[@name='errors']/lst/str[@name='id']/text()='invalidfield:1'",
+              "//arr[@name='errors']/lst/str[@name='message']/text()='undefined field invalidfield'"));
+    }
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testValidDelete() throws XPathExpressionException, SAXException {
-    ignoreException("undefined field invalidfield");
-    String response =
-        update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
-    assertNull(
-        BaseTestHarness.validateXPath(
-            response,
-            "//int[@name='status']=0",
-            "//arr[@name='errors']",
-            "count(//arr[@name='errors']/lst)=0"));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("undefined field invalidfield")) {
+      String response =
+          update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
+      assertNull(
+          BaseTestHarness.validateXPath(
+              response,
+              "//int[@name='status']=0",
+              "//arr[@name='errors']",
+              "count(//arr[@name='errors']/lst)=0"));
 
-    assertU(commit());
-    assertQ(req("q", "*:*"), "//result[@numFound='1']");
+      assertU(commit());
+      assertQ(req("q", "*:*"), "//result[@numFound='1']");
 
-    response = update("tolerant-chain-max-errors-10", delQ("id:1"));
-    assertNull(
-        BaseTestHarness.validateXPath(
-            response,
-            "//int[@name='status']=0",
-            "//arr[@name='errors']",
-            "count(//arr[@name='errors']/lst)=0"));
-    assertU(commit());
-    assertQ(req("q", "*:*"), "//result[@numFound='0']");
+      response = update("tolerant-chain-max-errors-10", delQ("id:1"));
+      assertNull(
+          BaseTestHarness.validateXPath(
+              response,
+              "//int[@name='status']=0",
+              "//arr[@name='errors']",
+              "count(//arr[@name='errors']/lst)=0"));
+      assertU(commit());
+      assertQ(req("q", "*:*"), "//result[@numFound='0']");
+    }
   }
 
   @Test
@@ -379,12 +393,20 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   public String update(String chain, String xml) {
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/update");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("update.chain", chain);
     try {
-      return connection.request(handler, params, xml);
+      ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
+      xmlRequest.addContentWithType(xml, "text/xml");
+
+      // Set the update chain parameter and request XML response
+      xmlRequest.getParams().add("update.chain", chain);
+      xmlRequest.getParams().add("wt", "xml");
+
+      // Use InputStreamResponseParser to get the raw XML response directly
+      xmlRequest.setResponseParser(new InputStreamResponseParser("xml"));
+      NamedList<Object> response = server.request(xmlRequest);
+
+      // Extract the XML string from the response
+      return InputStreamResponseParser.consumeResponseToString(response);
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -435,7 +457,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap<>());
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
+    SolrQueryRequest req = new SolrQueryRequestBase(core, requestParams);
     UpdateRequestProcessor processor = null;
     try {
       processor = pc.createProcessor(req, rsp);

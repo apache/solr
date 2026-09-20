@@ -16,11 +16,11 @@
  */
 package org.apache.solr.core;
 
-import java.util.List;
+import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -35,16 +35,20 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
 
-  private final Http2SolrClient httpSolrClient;
+  private final HttpJettySolrClient httpSolrClient;
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
+
+  private final MutableListenerFactory securityListenerFactory = new MutableListenerFactory();
 
   HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
-    Http2SolrClient.Builder httpClientBuilder =
-        new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
+    var httpClientBuilder =
+        new HttpJettySolrClient.Builder()
+            .addListenerFactory(trackHttpSolrMetrics)
+            .addListenerFactory(securityListenerFactory);
 
     if (cfg != null) {
       httpClientBuilder
@@ -66,17 +70,15 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private void initializeMetrics(SolrMetricsContext parentContext) {
     var solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope =
-        SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
   }
 
-  Http2SolrClient getSolrClient() {
+  HttpJettySolrClient getSolrClient() {
     return httpSolrClient;
   }
 
   void setSecurityBuilder(HttpClientBuilderPlugin builder) {
-    builder.setup(httpSolrClient);
+    builder.setup(securityListenerFactory);
   }
 
   @Override

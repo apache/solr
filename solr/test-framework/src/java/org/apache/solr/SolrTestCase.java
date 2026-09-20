@@ -24,9 +24,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -37,9 +35,11 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
+import org.apache.solr.util.QueryLimitsTestInjectionRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -83,9 +83,6 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Pattern NAMING_CONVENTION_TEST_SUFFIX =
-      Pattern.compile("(.+\\.)([^.]+)(Test)");
-
   private static final Pattern NAMING_CONVENTION_TEST_PREFIX =
       Pattern.compile("(.+\\.)(Test)([^.]+)");
 
@@ -97,6 +94,7 @@ public class SolrTestCase extends LuceneTestCase {
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(new LogLevelTestRule())
+          .around(new QueryLimitsTestInjectionRule(LuceneTestCase::rarely))
           .around(
               new TestRuleAdapter() {
                 @Override
@@ -115,45 +113,45 @@ public class SolrTestCase extends LuceneTestCase {
               });
 
   /**
-   * Sets the <code>solr.default.confdir</code> system property to the value of {@link
+   * Sets the <code>solr.configset.default.confdir</code> system property to the value of {@link
    * ExternalPaths#DEFAULT_CONFIGSET} if and only if the system property is not already set, and the
    * <code>DEFAULT_CONFIGSET</code> exists and is a readable directory.
    *
    * <p>Logs INFO/WARNing messages as appropriate based on these 2 conditions.
    *
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see ConfigSetService#SOLR_CONFIGSET_DEFAULT_CONFDIR
    */
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        EnvUtils.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           existingValue);
       return;
     }
     final Path extPath = ExternalPaths.DEFAULT_CONFIGSET;
-    if (Files.isReadable(extPath /* implies exists() */) && Files.isDirectory(extPath)) {
+    if (extPath != null) {
       log.info(
           "Setting '{}' system property to test-framework derived value of '{}'",
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET);
       assert null == existingValue;
       System.setProperty(
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET.toString());
     } else {
       log.warn(
           "System property '{}' is not already set, but test-framework derived value ('{}') either "
               + "does not exist or is not a readable directory, you may need to set the property yourself "
               + "for tests to run properly",
-          SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE,
+          ConfigSetService.SOLR_CONFIGSET_DEFAULT_CONFDIR,
           ExternalPaths.DEFAULT_CONFIGSET);
     }
 
-    // set solr.install.dir needed by some test configs outside of the test sandbox (!)
+    // set solr.install.dir needed by some test configs outside the test sandbox (!)
     if (ExternalPaths.SOURCE_HOME != null) {
       System.setProperty("solr.install.dir", ExternalPaths.SOURCE_HOME.toString());
     }
@@ -175,18 +173,17 @@ public class SolrTestCase extends LuceneTestCase {
    *
    * <p>Rationale: to have better coverage of all methods that deal with span creation without
    * having to enable tracing.
-   *
-   * @see TraceUtils#resetRecordingFlag()
    */
   private static void injectRandomTraceRecordingFlag() {
-    if (LuceneTestCase.rarely()) {
-      TraceUtils.IS_RECORDING = (ignored) -> true;
-    } // else default behavior is fine -- which is to honor Span::isRecording
+    TraceUtils.IS_RECORDING =
+        LuceneTestCase.rarely()
+            ? (ignored) -> true
+            : TraceUtils.DEFAULT_IS_RECORDING; // honors Span::isRecording
   }
 
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
-   * occures in a {@link BeforeClass} method
+   * occurs in a {@link BeforeClass} method
    *
    * @lucene.internal
    */
@@ -218,7 +215,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   @AfterClass
   public static void afterSolrTestCase() {
-    GlobalOpenTelemetry.resetForTest();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
   //              UTILITY METHODS FOLLOW

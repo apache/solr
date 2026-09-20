@@ -1,0 +1,7 @@
+title: Update actions/setup-java action to v5
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3571
+  url: https://github.com/apache/solr/pull/3571

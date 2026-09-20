@@ -26,13 +26,13 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.bench.generators.MultiString;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.quicktheories.core.Gen;
@@ -110,11 +110,7 @@ public class Docs {
       executorService.execute(() -> docs.add(Docs.this.inputDocument()));
     }
 
-    executorService.shutdown();
-    boolean result = executorService.awaitTermination(10, TimeUnit.MINUTES);
-    if (!result) {
-      throw new RuntimeException("Timeout waiting for doc adds to finish");
-    }
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
     log(
         "done preGenerateDocs docs="
             + docs.size()

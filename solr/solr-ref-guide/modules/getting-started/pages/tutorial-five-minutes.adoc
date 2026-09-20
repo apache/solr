@@ -70,7 +70,7 @@ $ curl --request POST \
 }'
 ----
 
-## Index some documents
+== Index some documents
 
 A single document can be indexed as:
 

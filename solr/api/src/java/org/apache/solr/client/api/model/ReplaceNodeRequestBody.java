@@ -36,12 +36,18 @@ public class ReplaceNodeRequestBody {
   @JsonProperty("targetNodeName")
   public String targetNodeName;
 
+  /**
+   * @deprecated Solr is moving toward always waiting for final state, with no option to opt out;
+   *     once that happens, this parameter will have no effect and will likely be removed. See
+   *     SOLR-17712.
+   */
   @Schema(
       description =
           "If true, the request will complete only when all affected replicas become active. "
               + "If false, the API will return the status of the single action, which may be "
               + "before the new replica is online and active.")
   @JsonProperty("waitForFinalState")
+  @Deprecated(since = "9.10")
   public Boolean waitForFinalState = false;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")

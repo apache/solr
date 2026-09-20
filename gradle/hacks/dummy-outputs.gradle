@@ -18,7 +18,7 @@
 // LUCENE-9505: utility function that sets up dummy outputs for a task so that
 // clean[TaskName] works and allows selective re-runs.
 
-def setupDummyOutputs = { Task task ->
+def setupDummyOutputs = {Task task ->
   File dummyOutput = file("${task.project.buildDir}/tasks/${task.name}/dummy-output.txt")
   task.outputs.file(dummyOutput)
   task.doLast {
@@ -31,11 +31,12 @@ def setupDummyOutputs = { Task task ->
 allprojects {
   tasks.matching {
     it.name.startsWith("ecjLint") ||
-    it.name in [
+        it.name in [
         "gradlewScriptsTweaked",
         "validateSourcePatterns",
         "validateLogCalls"
-    ] }.configureEach { Task task ->
+    ]
+  }.configureEach {Task task ->
     task.logger.info("Setting up ${task.path} as no-output.")
     setupDummyOutputs(task)
   }

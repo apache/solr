@@ -1,0 +1,7 @@
+title: Bump OWASP Dependency-Check to 12.1.3 (fix CVSS v4/SAFETY crash)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3192
+  url: https://github.com/apache/solr/pull/3192

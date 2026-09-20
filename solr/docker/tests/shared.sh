@@ -51,25 +51,6 @@ function wait_for_container_and_solr {
   sleep 4
 }
 
-function wait_for_container_and_solr_exporter {
-  local container_name
-  container_name=$1
-  wait_for_server_started "$container_name" 0 'org.apache.solr.prometheus.exporter.SolrExporter; Solr Prometheus Exporter is running'
-
-  printf '\nWaiting for Solr Prometheus Exporter...\n'
-  local status
-  status=$(docker exec --env SOLR_PORT=8989 "$container_name" wait-for-solr.sh --max-attempts 15 --wait-seconds 1)
-#  echo "Got status from Solr Prometheus Exporter: $status"
-  if ! grep -E -i -q 'Solr is running' <<<"$status"; then
-    echo "Solr Prometheus Exporter did not start"
-    container_cleanup "$container_name"
-    exit 1
-  else
-    echo "Solr Prometheus Exporter is running"
-  fi
-  sleep 4
-}
-
 function wait_for_server_started {
   local container_name
   container_name=$1

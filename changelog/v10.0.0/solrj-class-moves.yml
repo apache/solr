@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: 'SolrJ: move classes out of .solrj, .impl, .cloud to better homes, like .request and .response.'
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#3889
+    url: https://github.com/apache/solr/pull/3889

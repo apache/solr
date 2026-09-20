@@ -31,7 +31,7 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     initCore("solrconfig.xml", "atomic-update-json-test.xml");
   }
 

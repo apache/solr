@@ -21,7 +21,7 @@ public interface IQueueHandler<T> {
     /** Item was successfully processed */
     HANDLED,
 
-    /** Item was not processed, and the consumer should shutdown */
+    /** Item was not processed, and the consumer should shut down */
     NOT_HANDLED_SHUTDOWN,
 
     /** Item processing failed, and the item should be retried immediately */
@@ -39,16 +39,8 @@ public interface IQueueHandler<T> {
     private final Throwable _throwable;
     private final T _item;
 
-    public Result(final ResultStatus status) {
-      _status = status;
-      _throwable = null;
-      _item = null;
-    }
-
-    public Result(final ResultStatus status, final Throwable throwable) {
-      _status = status;
-      _throwable = throwable;
-      _item = null;
+    public Result(final ResultStatus status, final T newItem) {
+      this(status, null, newItem);
     }
 
     public Result(final ResultStatus status, final Throwable throwable, final T newItem) {

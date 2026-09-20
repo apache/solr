@@ -18,10 +18,9 @@ package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public interface SolrFragListBuilder extends SolrInfoBean, NamedListInitializedPlugin {
+public interface SolrFragListBuilder extends NamedListInitializedPlugin {
   /**
    * Return a FragListBuilder.
    *

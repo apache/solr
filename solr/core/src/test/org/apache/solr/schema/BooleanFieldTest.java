@@ -116,7 +116,7 @@ public class BooleanFieldTest extends SolrTestCaseJ4 {
     // do atomic update
     assertU(adoc(sdoc("id", "7", "bindsto", Map.of("set", "1"))));
     assertQ(
-        req("qt", "/get", "id", "7"),
+        reqWithPath("/get", "id", "7"),
         "count(//doc)=1",
         "//doc/str[@name='id'][.='7']",
         "//doc/bool[@name='bindsto'][.='true']");

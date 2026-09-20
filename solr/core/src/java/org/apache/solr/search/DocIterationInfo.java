@@ -30,11 +30,11 @@ public interface DocIterationInfo {
   float score();
 
   /**
-   * Returns the query match score in case of rerank queries
+   * Returns the original query match score in case of rerank queries
    *
-   * @return the query match score in case of a rerank query, null otherwise.
+   * @return the original query match score in case of a rerank query, null otherwise.
    */
-  default Float matchScore() {
+  default Float originalScore() {
     return null;
   }
 

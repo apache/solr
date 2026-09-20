@@ -56,7 +56,7 @@
   </query>
 
   <updateHandler>
-    <updateLog enable="${enable.update.log}">
+    <updateLog enable="${solr.index.updatelog.enabled}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog> 
   </updateHandler>

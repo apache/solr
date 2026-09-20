@@ -16,12 +16,11 @@
  */
 package org.apache.solr.opentelemetry;
 
+import static org.apache.solr.opentelemetry.TracingTestUtil.getAndClearSpans;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
-import io.opentelemetry.sdk.trace.data.SpanData;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -65,7 +64,7 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
   /** See SOLR-16955 */
   @Test
   public void testSetupBasicAuth() throws Exception {
-    getAndClearSpans(); // reset
+    getAndClearSpans(otelRule); // reset
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
     Map<String, Object> ops =
@@ -80,7 +79,7 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
     req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     assertEquals(0, req.process(cloudClient, COLLECTION).getStatus());
 
-    var finishedSpans = getAndClearSpans();
+    var finishedSpans = getAndClearSpans(otelRule);
     assertEquals(1, finishedSpans.size());
     var span = finishedSpans.get(0);
     assertEquals("post:/cluster/security/authentication", span.getName());
@@ -88,13 +87,5 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
     assertEquals(
         BasicAuthPlugin.class.getSimpleName(), span.getAttributes().get(TraceUtils.TAG_CLASS));
     assertEquals(List.copyOf(ops.keySet()), span.getAttributes().get(TraceUtils.TAG_OPS));
-  }
-
-  // code duplication here...
-  static List<SpanData> getAndClearSpans() {
-    List<SpanData> result = new ArrayList<>(otelRule.getSpans());
-    Collections.reverse(result); // nicer to see spans chronologically
-    otelRule.clearSpans();
-    return result;
   }
 }

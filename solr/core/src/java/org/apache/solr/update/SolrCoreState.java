@@ -178,7 +178,19 @@ public abstract class SolrCoreState {
    *
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException;
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException {
+    return getIndexWriter(core, true);
+  }
+
+  /**
+   * Get the current IndexWriter. If a new IndexWriter must be created, use the settings from the
+   * given {@link SolrCore}. Be very careful using the {@code failOnReadOnly=false} flag, by default
+   * it should be true if the returned indexWriter will be used for writing.
+   *
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core, boolean failOnReadOnly)
+      throws IOException;
 
   /**
    * Rollback the current IndexWriter. When creating the new IndexWriter use the settings from the

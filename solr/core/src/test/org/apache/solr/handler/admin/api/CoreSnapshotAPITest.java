@@ -34,7 +34,7 @@ import org.junit.Test;
 
 public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
 
-  private CoreSnapshot coreSnapshotAPI;
+  private CoreSnapshot api;
 
   @BeforeClass
   public static void initializeCoreAndRequestFactory() throws Exception {
@@ -54,7 +54,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
         new CoreAdminHandler.CoreAdminAsyncTracker();
 
-    coreSnapshotAPI =
+    api =
         new CoreSnapshot(solrQueryRequest, solrQueryResponse, coreContainer, coreAdminAsyncTracker);
   }
 
@@ -63,7 +63,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
   @After
   public void deleteSnapshots() throws Exception {
     for (String snapshotName : snapshotsToCleanup) {
-      coreSnapshotAPI.deleteSnapshot(coreName, snapshotName, null);
+      api.deleteSnapshot(coreName, snapshotName, null);
     }
 
     snapshotsToCleanup.clear();
@@ -73,8 +73,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
   public void testCreateSnapshotReturnsValidResponse() throws Exception {
     final String snapshotName = "my-new-snapshot";
 
-    final CreateCoreSnapshotResponse response =
-        coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
+    final CreateCoreSnapshotResponse response = api.createSnapshot(coreName, snapshotName, null);
     snapshotsToCleanup.add(snapshotName);
 
     assertEquals(coreName, response.core);
@@ -91,9 +90,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     final SolrException solrException =
         expectThrows(
             SolrException.class,
-            () -> {
-              coreSnapshotAPI.createSnapshot(nonExistentCoreName, "my-new-snapshot", null);
-            });
+            () -> api.createSnapshot(nonExistentCoreName, "my-new-snapshot", null));
     assertEquals(400, solrException.code());
     assertTrue(
         "Exception message differed from expected: " + solrException.getMessage(),
@@ -106,11 +103,11 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
 
     for (int i = 0; i < 5; i++) {
       final String snapshotName = snapshotNameBase + i;
-      coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
+      api.createSnapshot(coreName, snapshotName, null);
       snapshotsToCleanup.add(snapshotName);
     }
 
-    final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
+    final ListCoreSnapshotsResponse response = api.listSnapshots(coreName);
 
     assertEquals(5, response.snapshots.size());
   }
@@ -123,7 +120,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              coreSnapshotAPI.listSnapshots(nonExistentCoreName);
+              api.listSnapshots(nonExistentCoreName);
             });
     assertEquals(400, solrException.code());
     assertTrue(
@@ -135,15 +132,14 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
   public void testDeleteSnapshotReturnsValidResponse() throws Exception {
     final String snapshotName = "my-new-snapshot";
 
-    coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
+    api.createSnapshot(coreName, snapshotName, null);
 
-    final DeleteSnapshotResponse deleteResponse =
-        coreSnapshotAPI.deleteSnapshot(coreName, snapshotName, null);
+    final DeleteSnapshotResponse deleteResponse = api.deleteSnapshot(coreName, snapshotName, null);
 
     assertEquals(coreName, deleteResponse.coreName);
     assertEquals(snapshotName, deleteResponse.commitName);
 
-    final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
+    final ListCoreSnapshotsResponse response = api.listSnapshots(coreName);
 
     assertEquals(0, response.snapshots.size());
   }
@@ -155,9 +151,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     final SolrException solrException =
         expectThrows(
             SolrException.class,
-            () -> {
-              coreSnapshotAPI.deleteSnapshot(nonExistentCoreName, "non-existent-snapshot", null);
-            });
+            () -> api.deleteSnapshot(nonExistentCoreName, "non-existent-snapshot", null));
     assertEquals(400, solrException.code());
     assertTrue(
         "Exception message differed from expected: " + solrException.getMessage(),

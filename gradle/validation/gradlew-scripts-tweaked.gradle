@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets
 // don't fork a daemon subprocess on the initial run.
 
 configure(rootProject) {
-  task gradlewScriptsTweaked() { task ->
+  task gradlewScriptsTweaked() {task ->
     def scripts = [
         file("gradlew"),
         file("gradlew.bat")
@@ -30,7 +30,7 @@ configure(rootProject) {
     inputs.files(scripts)
 
     doFirst {
-      scripts.each { file ->
+      scripts.each {file ->
         def content = new String(file.readBytes(), StandardCharsets.US_ASCII)
         if (content.indexOf("GradlePropertiesGenerator") < 0) {
           throw new GradleException("Launch script ${file} does not have a tweak to generate gradle.properties (see SOLR-16641).")

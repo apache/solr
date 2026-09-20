@@ -20,13 +20,11 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 
-import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
@@ -38,14 +36,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -117,21 +115,15 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(nodeToBeDecommissioned, emptyNode, null)
         .processAndWait("000", cloudClient, 15);
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    try (SolrClient coreClient =
-        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(0, status.getCoreStatus().size());
-    }
+    SolrClient coreClient = cluster.getJetty(nodeToBeDecommissioned).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
+    assertEquals(0, status.getCoreStatus().size());
 
     Thread.sleep(5000);
     collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
-    if (replicas == null) {
-      replicas = Collections.emptyList();
-    }
     log.debug("### Existing replicas on decommissioned node: {}", replicas);
 
     // let's do it back - this time wait for recoveries
@@ -140,14 +132,12 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replaceNodeRequest.setWaitForFinalState(true);
     replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
-    try (SolrClient coreClient =
-        getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(emptyNode))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(
-          "Expecting no cores but found some: " + status.getCoreStatus(),
-          0,
-          status.getCoreStatus().size());
-    }
+    SolrClient emptyNodeClient = cluster.getJetty(emptyNode).getSolrClient();
+    CoreAdminResponse emptyNodeStatus = CoreAdminRequest.getStatus(null, emptyNodeClient);
+    assertEquals(
+        "Expecting no cores but found some: " + emptyNodeStatus.getCoreStatus(),
+        0,
+        emptyNodeStatus.getCoreStatus().size());
 
     collection = cluster.getSolrClient().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());
@@ -171,48 +161,36 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
     // make sure all replicas on emptyNode are not active
     replicas = collection.getReplicasOnNode(emptyNode);
-    if (replicas != null) {
-      for (Replica r : replicas) {
-        assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
-      }
+    for (Replica r : replicas) {
+      assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
 
     // check replication metrics on this jetty - see SOLR-14924
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      if (jetty.getCoreContainer() == null) {
+      if (emptyNode.equals(jetty.getNodeName())) {
+        // No cores on this node, ignore it
         continue;
       }
-      SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
-      String registryName = null;
-      for (String name : metricManager.registryNames()) {
-        if (name.startsWith("solr.core.")) {
-          registryName = name;
+      CoreContainer coreContainer = jetty.getCoreContainer();
+      List<String> coreNames = jetty.getCoreContainer().getAllCoreNames();
+      for (String coreName : coreNames) {
+        try (var core = coreContainer.getCore(coreName)) {
+          var dp =
+              SolrMetricTestUtils.getGaugeDatapoint(
+                  core,
+                  "solr_core_replication_is_replicating",
+                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                      .label("category", SolrInfoBean.Category.REPLICATION.toString())
+                      .label("handler", "/replication")
+                      .build());
+          if (dp == null) continue;
+
+          double isReplicating = dp.getValue();
+          assertTrue(
+              "solr_core_replication_is_replicating should be 0 or 1, got: " + isReplicating,
+              isReplicating == 0.0 || isReplicating == 1.0);
         }
       }
-      Map<String, Metric> metrics = metricManager.registry(registryName).getMetrics();
-      if (!metrics.containsKey("REPLICATION./replication.fetcher")) {
-        continue;
-      }
-      MetricsMap fetcherGauge =
-          (MetricsMap)
-              ((SolrMetricManager.GaugeWrapper<?>) metrics.get("REPLICATION./replication.fetcher"))
-                  .getGauge();
-      assertNotNull("no IndexFetcher gauge in metrics", fetcherGauge);
-      Map<String, Object> value = fetcherGauge.getValue();
-      if (value.isEmpty()) {
-        continue;
-      }
-      assertNotNull("isReplicating missing: " + value, value.get("isReplicating"));
-      assertTrue(
-          "isReplicating should be a boolean: " + value,
-          value.get("isReplicating") instanceof Boolean);
-      if (value.get("indexReplicatedAt") == null) {
-        continue;
-      }
-      assertNotNull("timesIndexReplicated missing: " + value, value.get("timesIndexReplicated"));
-      assertTrue(
-          "timesIndexReplicated should be a number: " + value,
-          value.get("timesIndexReplicated") instanceof Number);
     }
   }
 
@@ -267,13 +245,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
-    if (replicas == null) {
-      replicas = Collections.emptyList();
-    }
-    assertEquals(
+    assertTrue(
         "There should be no more replicas on the sourceNode after a replaceNode request.",
-        Collections.emptyList(),
-        replicas);
+        replicas.isEmpty());
     int sizeA = collection.getReplicasOnNode(emptyNodes.get(0)).size();
     int sizeB = collection.getReplicasOnNode(emptyNodes.get(1)).size();
     assertEquals(

@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,7 +38,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
@@ -123,7 +124,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         String slice = "s" + shardCounts.hashCode();
         List<Replica> replicas = new ArrayList<>();
         for (int myRepNum = 0; myRepNum < shardCounts.myReplicas; myRepNum++) {
-          addNewReplica(replicas, collection, slice, Collections.singletonList(thisNode));
+          addNewReplica(replicas, collection, slice, List.of(thisNode));
           // save this mapping for later
           myCountsToDescs.put(
               shardCounts,
@@ -137,16 +138,18 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         }
         Map<String, Replica> replicaMap =
             replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
-        sliceMap.put(slice, new Slice(slice, replicaMap, Collections.emptyMap(), collection));
+        sliceMap.put(slice, new Slice(slice, replicaMap, Map.of(), collection));
       }
       @SuppressWarnings({"unchecked"})
       DocCollection col =
-          new DocCollection(
+          DocCollection.create(
               collection,
               sliceMap,
-              Collections.singletonMap(
-                  ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT);
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT,
+              Integer.MAX_VALUE,
+              Instant.EPOCH,
+              null);
       collToState.put(collection, col);
     }
     // reverse map
@@ -224,7 +227,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
                 ZkStateReader.NODE_NAME_PROP,
                 node,
                 ZkStateReader.BASE_URL_PROP,
-                Utils.getBaseUrlForNodeName(node, "http")),
+                URLUtil.getBaseUrlForNodeName(node, "http")),
             collection,
             slice);
     replicaList.add(r);

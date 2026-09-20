@@ -61,6 +61,7 @@ public class TestLang extends SolrTestCase {
     "stats",
     "innerJoin",
     "leftOuterJoin",
+    "fullOuterJoin",
     "hashJoin",
     "outerHashJoin",
     "intersect",
@@ -350,7 +351,8 @@ public class TestLang extends SolrTestCase {
     "std",
     "drill",
     "input",
-    "countDist"
+    "countDist",
+    "missing"
   };
 
   @Test

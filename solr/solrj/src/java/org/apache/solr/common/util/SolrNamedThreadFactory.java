@@ -25,10 +25,17 @@ public class SolrNamedThreadFactory implements ThreadFactory {
   private final ThreadGroup group;
   private final AtomicInteger threadNumber = new AtomicInteger(1);
   private final String prefix;
+  private final String poolName;
 
   public SolrNamedThreadFactory(String namePrefix) {
     group = getThreadGroup();
     prefix = namePrefix + "-" + poolNumber.getAndIncrement() + "-thread-";
+    poolName = namePrefix;
+  }
+
+  /** Returns the name prefix passed to the constructor as a pool name. */
+  public String getPoolName() {
+    return poolName;
   }
 
   @SuppressWarnings("removal")

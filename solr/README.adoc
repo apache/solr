@@ -55,9 +55,6 @@ Contains modules to extend the functionality of Solr.
 link:packaging/[]::
 Gradle project to build the binary release of Solr.
 
-link:prometheus-exporter/[]::
-Contains a separate application to monitor Solr instances and export Prometheus metrics.
-
 link:server/[]::
 Gradle project that builds the Jetty server to run Solr.
 

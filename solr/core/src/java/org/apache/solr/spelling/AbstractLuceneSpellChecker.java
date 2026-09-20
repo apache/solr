@@ -19,7 +19,6 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.lucene.index.IndexReader;
@@ -60,7 +59,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public static final String SCORE_COMP = "score";
   public static final String FREQ_COMP = "freq";
 
-  protected org.apache.lucene.search.spell.SpellChecker spellChecker;
+  protected SpellChecker spellChecker;
 
   protected String sourceLocation;
   /*
@@ -133,19 +132,19 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    SpellingResult result = new SpellingResult(options.tokens);
+    SpellingResult result = new SpellingResult();
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy =
         (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
-    for (Token token : options.tokens) {
-      if (token.length() == 0) {
-        result.add(token, Collections.emptyList());
+    for (SpellCheckToken token : options.tokens) {
+      String tokenText = token.text();
+      if (tokenText.isEmpty()) {
+        result.add(token, List.of());
         continue;
       }
-      String tokenText = new String(token.buffer(), 0, token.length());
       term = new Term(field, tokenText);
       int docFreq = 0;
       if (reader != null) {
@@ -194,7 +193,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
             result.add(token, suggestions[i], reader.docFreq(term));
           }
         } else {
-          List<String> suggList = Collections.emptyList();
+          List<String> suggList = List.of();
           result.add(token, suggList);
         }
       } else {
@@ -205,7 +204,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
           }
           result.add(token, suggList);
         } else {
-          List<String> suggList = Collections.emptyList();
+          List<String> suggList = List.of();
           result.add(token, suggList);
         }
       }

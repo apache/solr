@@ -134,6 +134,8 @@ The xref:indexing-with-update-handlers.adoc#csv-formatted-index-updates[CSV hand
 
 Index a PDF file into `gettingstarted`.
 
+NOTE: This requires a Tika Server to be configured. See xref:indexing-with-tika.adoc#tika-server[Indexing With Tika] for details.
+
 [,console]
 ----
 $ bin/solr post --solr-url http://localhost:8983/solr --name gettingstarted a.pdf
@@ -162,9 +164,9 @@ Index a PDF as the user "solr" with password "SolrRocks":
 $ bin/solr post -u solr:SolrRocks --solr-url http://localhost:8983 --name gettingstarted a.pdf
 ----
 
-=== Crawling a Website to Index Documents 
+=== Crawling a Website to Index Documents
 
-Crawl the Apache Solr website going one layer deep and indexing the pages into Solr.   
+Crawl the Apache Solr website going one layer deep and indexing the pages into Solr.
 
 See xref:indexing-with-tika.adoc#trying-out-solr-cell[Trying Out Solr Cell] to learn more about setting up Solr for extracting content from web pages.
 
@@ -175,7 +177,7 @@ $ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://sol
 
 === Standard Input as Source for Indexing
 
-You can use the standard input as your source for data to index.  
+You can use the standard input as your source for data to index.
 Notice the `--verbose` providing raw responses from Solr.
 
 [,console]
@@ -189,5 +191,5 @@ Provide the raw document as a string for indexing.
 
 [,console]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv --verbose $'id,value\n1,0.47' 
+$ bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv --verbose $'id,value\n1,0.47'
 ----

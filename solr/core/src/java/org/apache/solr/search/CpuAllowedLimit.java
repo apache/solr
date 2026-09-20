@@ -107,7 +107,7 @@ public class CpuAllowedLimit implements QueryLimit {
       return false;
     } finally {
       if (log.isTraceEnabled()) {
-        java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
         String threadName = Thread.currentThread().getName();
         String deltaFmt = formatter.format(delta);

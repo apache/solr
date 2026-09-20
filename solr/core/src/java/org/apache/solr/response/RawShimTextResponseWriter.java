@@ -48,6 +48,11 @@ class RawShimTextResponseWriter extends TextResponseWriter {
     backing.writeArray(name, val, true);
   }
 
+  @Override
+  public void writeArray(String name, Iterator<?> val, int size, boolean raw) throws IOException {
+    backing.writeArray(name, val, size, true);
+  }
+
   // Other stuff; just no-op delegation
   @Override
   public void writeStartDocumentList(

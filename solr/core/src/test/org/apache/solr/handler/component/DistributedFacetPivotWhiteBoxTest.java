@@ -115,7 +115,6 @@ public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTest
             // "wt", "javabin",
             "facet.pivot",
             "{!stats=s1}place_t,company_t",
-            // "version", "2",
             "start",
             "0",
             "rows",
@@ -140,7 +139,7 @@ public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTest
             "true",
             "distrib",
             "false");
-    QueryResponse rsp = queryServer(new ModifiableSolrParams(params));
+    QueryResponse rsp = queryRandomShard(new ModifiableSolrParams(params));
 
     assertNotNull(
         "initial shard request should include non-null top level stats", rsp.getFieldStatsInfo());
@@ -168,7 +167,6 @@ public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTest
             "facet.limit", "4",
             "distrib", "false",
             // "wt", "javabin",
-            // "version", "2",
             "rows", "0",
             "facet.sort", "index",
             "fpt0", "~krakow",

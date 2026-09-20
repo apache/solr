@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
@@ -32,8 +33,8 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.ZooKeeperReadApis;
 import org.apache.solr.client.api.model.ZooKeeperListChildrenResponse;
 import org.apache.solr.client.api.model.ZooKeeperStat;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
@@ -68,6 +69,9 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   @PermissionName(ZK_READ_PERM)
   public StreamingOutput readNode(String zkPath) {
     zkPath = sanitizeZkPath(zkPath);
+    if (SOLR_SECURITY_CONF_PATH.equals(zkPath)) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: " + zkPath);
+    }
     return readNodeAndAddToResponse(zkPath);
   }
 
@@ -88,20 +92,18 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
 
     zkPath = sanitizeZkPath(zkPath);
     try {
-      Stat stat = coreContainer.getZkController().getZkClient().exists(zkPath, null, true);
+      Stat stat = coreContainer.getZkController().getZkClient().exists(zkPath, null);
       listResponse.stat = createAnnotatedStatFrom(stat);
       if (includeChildren != null && !includeChildren.booleanValue()) {
         return listResponse;
       }
-      List<String> l =
-          coreContainer.getZkController().getZkClient().getChildren(zkPath, null, false);
+      List<String> l = coreContainer.getZkController().getZkClient().getChildren(zkPath, null);
       String prefix = zkPath.endsWith("/") ? zkPath : zkPath + "/";
 
       Map<String, Stat> stats = new LinkedHashMap<>();
       for (String s : l) {
         try {
-          stats.put(
-              s, coreContainer.getZkController().getZkClient().exists(prefix + s, null, false));
+          stats.put(s, coreContainer.getZkController().getZkClient().exists(prefix + s, null));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -120,13 +122,14 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   }
 
   private String sanitizeZkPath(String zkPath) {
-    if (zkPath == null || zkPath.isEmpty()) {
+    if (zkPath == null) {
       return "/";
-    } else if (zkPath.length() > 1 && zkPath.endsWith("/")) {
-      return zkPath.substring(0, zkPath.length() - 1);
     }
-
-    return zkPath;
+    zkPath = zkPath.trim();
+    while (zkPath.length() > 1 && zkPath.endsWith("/")) {
+      zkPath = zkPath.substring(0, zkPath.length() - 1);
+    }
+    return zkPath.isEmpty() ? "/" : zkPath;
   }
 
   /** Simple mime type guessing based on first character of the response */
@@ -162,7 +165,7 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   private byte[] readPathFromZookeeper(String path) {
     byte[] d;
     try {
-      d = coreContainer.getZkController().getZkClient().getData(path, null, null, false);
+      d = coreContainer.getZkController().getZkClient().getData(path, null, null);
     } catch (KeeperException.NoNodeException e) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: " + path);
     } catch (Exception e) {

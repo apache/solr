@@ -17,18 +17,16 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,13 +123,8 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // doc should be on leader and 1 replica
     sendDoc(testCollectionName, 5);
 
-    try (SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
-      assertDocExists(server, "5");
-    }
-
-    try (SolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
-      assertDocExists(server, "5");
-    }
+    assertDocExists(getSolrClient(leader), "5");
+    assertDocExists(getSolrClient(notLeaders.get(1)), "5");
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
@@ -190,7 +183,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(6));
     doc.addField("a_t", "hello" + 6);
-    sendDocsWithRetry(testCollectionName, Collections.singletonList(doc), 1, 3, 1);
+    sendDocsWithRetry(testCollectionName, List.of(doc), 1, 3, 1);
 
     Set<String> replicasToCheck = new HashSet<>();
     for (Replica stillUp : participatingReplicas) replicasToCheck.add(stillUp.getName());

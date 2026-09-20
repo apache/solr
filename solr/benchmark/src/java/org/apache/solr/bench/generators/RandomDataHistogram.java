@@ -23,7 +23,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -509,7 +508,7 @@ public class RandomDataHistogram {
                       }
                       return Integer.compare(e2.getValue().get(), e1.getValue().get());
                     })
-                .filter(entry -> !entry.getKey().equals(Collections.emptyList()))
+                .filter(entry -> !entry.getKey().equals(List.of()))
                 .map(
                     entry -> {
                       double percentage = entry.getValue().get() * 100.0 / sum;

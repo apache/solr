@@ -1,0 +1,7 @@
+title: CloudSolrClient- fixed state refresh race; didn't refresh.  Regression from 9.10.1/10.0.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18142
+    url: https://issues.apache.org/jira/browse/SOLR-18142

@@ -1,0 +1,7 @@
+title: Use TotalHitCountCollector to collect count when no rows needed
+type: changed
+authors:
+- name: Kevin Risden
+links:
+- name: SOLR-17801
+  url: https://issues.apache.org/jira/browse/SOLR-17801

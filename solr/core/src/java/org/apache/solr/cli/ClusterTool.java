@@ -42,7 +42,7 @@ public class ClusterTool extends ToolBase {
           .argName("PROPERTY")
           .required()
           .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
-          .build();
+          .get();
 
   private static final Option VALUE_OPTION =
       Option.builder()
@@ -50,7 +50,10 @@ public class ClusterTool extends ToolBase {
           .hasArg()
           .argName("VALUE")
           .desc("Set the property to this value.")
-          .build();
+          .get();
+
+  /** Parameters for the cluster command, independent of the command line parser. */
+  record ClusterParams(String propertyName, String propertyValue, String zkHost) {}
 
   public ClusterTool(ToolRuntime runtime) {
     super(runtime);
@@ -71,10 +74,18 @@ public class ClusterTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    ClusterParams params =
+        new ClusterParams(
+            cli.getOptionValue(PROPERTY_OPTION),
+            cli.getOptionValue(VALUE_OPTION),
+            CLIUtils.getZkHost(cli));
+    setClusterProperty(params);
+  }
 
-    String propertyName = cli.getOptionValue(PROPERTY_OPTION);
-    String propertyValue = cli.getOptionValue(VALUE_OPTION);
-    String zkHost = CLIUtils.getZkHost(cli);
+  void setClusterProperty(ClusterParams params) throws Exception {
+    String propertyName = params.propertyName();
+    String propertyValue = params.propertyValue();
+    String zkHost = params.zkHost();
 
     if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(
