@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class DeleteToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
     configureCluster(2)
@@ -62,7 +67,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
       SecurityJson.USER_PASS,
       "--verbose"
     };
-    assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+    assertEquals(0, runTool(args, DeleteTool.class));
   }
 
   @Test
@@ -90,7 +95,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
         SecurityJson.USER_PASS,
         "--verbose"
       };
-      assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+      assertEquals(0, runTool(args, DeleteTool.class));
     }
   }
 
@@ -114,6 +119,6 @@ public class DeleteToolTest extends SolrCloudTestCase {
       cluster.getZkClient().getZkServerAddress(),
       "--verbose"
     };
-    assertEquals(1, CLITestHelper.runTool(args, DeleteTool.class));
+    assertEquals(1, runTool(args, DeleteTool.class));
   }
 }

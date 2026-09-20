@@ -16,21 +16,24 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.solr.common.util.EnvUtils;
+import java.util.Arrays;
 import picocli.CommandLine;
 
-/** Provides default values for CLI arguments. */
-public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvider {
+/**
+ * Runs all {@link CreateToolTest} tests through the picocli invocation path.
+ *
+ * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
+ */
+public class CreateToolPicocliTest extends CreateToolTest {
+
   @Override
-  public String defaultValue(CommandLine.Model.ArgSpec argSpec) throws Exception {
-    return switch (argSpec.paramLabel()) {
-      case "<zkHost>" -> EnvUtils.getProperty("zkHost");
-      case "<solrConnection>" -> EnvUtils.getProperty("solr-connection");
-      case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
-      // Must match CLIUtils.getDefaultSolrUrl(), which reads solr.port.listen
-      case "<port>" -> EnvUtils.getProperty("solr.port.listen", "8983");
-      case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
-      default -> null;
-    };
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    // args[0] is the tool name used by commons-cli dispatch; strip it for picocli.
+    String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    ToolBase tool = clazz.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
+    return new CommandLine(tool)
+        .setDefaultValueProvider(new CliDefaultValueProvider())
+        .execute(toolArgs);
   }
 }

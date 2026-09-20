@@ -120,6 +120,10 @@ public class StatusTool extends ToolBase {
           "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
   private String credentials;
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
   @Deprecated
   private static final Option MAX_WAIT_SECS_OPTION =
       Option.builder()
@@ -131,6 +135,10 @@ public class StatusTool extends ToolBase {
           .desc("Wait up to the specified number of seconds to see Solr running.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
   @Deprecated
   public static final Option PORT_OPTION =
       Option.builder("p")
@@ -141,6 +149,10 @@ public class StatusTool extends ToolBase {
           .desc("Port on localhost to check status for")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
   @Deprecated
   public static final Option SHORT_OPTION =
       Option.builder()

@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "delete",
-    mixinStandardHelpOptions = true,
     description =
         "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.",
     exitCodeListHeading = "%nExit Codes:%n",

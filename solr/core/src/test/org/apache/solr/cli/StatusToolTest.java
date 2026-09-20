@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import java.io.Reader;
 import java.util.Map;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
@@ -30,6 +31,14 @@ public class StatusToolTest extends SolrCloudTestCase {
     configureCluster(2).configure();
   }
 
+  /** Runs the tool and returns a reader over its output. Overridden by the picocli variant. */
+  protected Reader runStatusTool(String[] toolArgs) throws Exception {
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    StatusTool tool = new StatusTool(runtime);
+    tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+    return runtime.getReader();
+  }
+
   /** Check the tool returns expected details by specifying Solr URL on the command line. */
   @Test
   public void testSolrUrlStatus() throws Exception {
@@ -37,12 +46,8 @@ public class StatusToolTest extends SolrCloudTestCase {
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     String baseUrl = randomJetty.getBaseUrl().toString();
 
-    String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
-    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    StatusTool tool = new StatusTool(runtime);
-    tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-
-    Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(runtime.getReader());
+    Map<?, ?> obj =
+        (Map<?, ?>) Utils.fromJSON(runStatusTool(new String[] {"status", "--solr-url", baseUrl}));
     assertTrue(obj.containsKey("version"));
     assertTrue(obj.containsKey("startTime"));
     assertTrue(obj.containsKey("uptime"));
