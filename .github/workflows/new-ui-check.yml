@@ -5,7 +5,7 @@ on:
     branches:
       - '*'
     paths:
-      - 'new-ui-check.yml'
+      - '.github/workflows/new-ui-check.yml'
       # the new UI
       - 'ui/**'
       # the v2 API contract the UI is built against

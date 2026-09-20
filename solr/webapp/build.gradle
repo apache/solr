@@ -52,7 +52,7 @@ dependencies {
   if (gradle.ext.withJsClient) {
     generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
-  uiBundle project(path: ":solr:webapp", configuration: "wasmJsUIBundle")
+  uiBundle files(layout.buildDirectory.dir("generated/ui-resources")) { builtBy tasks.named('prepareUiResources') }
 
   // Browser-based tests of the AngularJS Admin UI (see src/test)
   testImplementation project(':solr:core')
