@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.navigation
+package org.apache.solr.ui.components.main.domain
 
 /**
- * Interface that provides the basic functionality for any navigation component. Navigation
- * components can use this interface as base and extend it.
+ * Events emitted by the main screen that are meant to be handled by the parent.
  */
-interface NavigationComponent {
+sealed interface MainEvent {
 
     /**
-     * This method is called when the user navigates back. It is used to perform any necessary
-     * actions or updates.
+     * Emitted when the user logs out.
      */
-    fun onNavigateBack()
+    data object UserLoggedOut : MainEvent
 }
