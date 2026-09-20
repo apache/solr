@@ -51,10 +51,6 @@ dependencies {
     generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
 
-  if (gradle.ext.withUiModule) {
-    generatedUIBundle project(path: ":solr:ui", configuration: "wasmJsUIBundle")
-  }
-
   // Browser-based tests of the AngularJS Admin UI (see src/test)
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
@@ -117,11 +113,6 @@ war {
   // note: nonetheless may be disabled, copying nothing
   from(configurations.generatedJSClientBundle, {
     into "libs/solr"
-  })
-
-  // note: nonetheless may be disabled, copying nothing
-  from(configurations.generatedUIBundle, {
-    into "ui"
   })
 }
 

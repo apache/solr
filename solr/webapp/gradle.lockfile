@@ -197,4 +197,4 @@ org.slf4j:jcl-over-slf4j:2.0.18=jarValidation,serverLib,solrCore,testRuntimeClas
 org.slf4j:jul-to-slf4j:2.0.18=serverLib
 org.slf4j:slf4j-api:2.0.18=jarValidation,serverLib,solrCore,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=jarValidation,solrCore,testRuntimeClasspath
-empty=compileClasspath,generatedJSClientBundle,generatedUIBundle,missingdoclet,providedCompile,providedRuntime,runtimeClasspath,war
+empty=compileClasspath,generatedJSClientBundle,generatedUIBundle,missingdoclet,providedCompile,providedRuntime,runtimeClasspath,uiBundle,war
