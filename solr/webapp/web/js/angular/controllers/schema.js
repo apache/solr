@@ -398,7 +398,12 @@ solrAdminApp.controller('SchemaController',
                 });
             }
             var fieldType = parsed["add-field-type"] || parsed["replace-field-type"];
-            if (fieldType) {
+            if (parsed["replace-field-type"]) {
+                var schemaChange = [angular.extend({}, fieldType, {
+                    operationType: "replace-field-type"
+                })];
+                SchemaV2.bulkSchemaModification(indexType, $routeParams.core, {schemaChange: schemaChange}, callback);
+            } else if (fieldType) {
                 SchemaV2.addFieldType(indexType, $routeParams.core, fieldType.name,
                     {upsertFieldTypeOperation: fieldType}, callback);
             } else if (parsed["delete-field-type"]) {
