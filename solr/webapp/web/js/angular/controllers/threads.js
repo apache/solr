@@ -16,10 +16,10 @@
 */
 
 solrAdminApp.controller('ThreadsController',
-  function($scope, $timeout, ThreadsV2, Constants, ApiErrorHandler){
+  function($scope, $timeout, SystemV2, Constants, ApiErrorHandler){
     $scope.resetMenu("threads", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
-      ThreadsV2.getThreadDump(function(error, data, response) {
+      SystemV2.getThreadDump(function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
           if (!data || !data.system) {

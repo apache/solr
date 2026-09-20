@@ -42,8 +42,8 @@ public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
   @Override
   @PermissionName(METRICS_READ_PERM)
   public NodeThreadsResponse getThreadDump() {
+    final var response = instantiateJerseyResponse(NodeThreadsResponse.class);
     final var system = ThreadDumpHandler.getThreadDump();
-    final var response = new NodeThreadsResponse();
     response.system = new SystemInfo();
     response.system.threadCount =
         SolrJacksonMapper.getObjectMapper()
