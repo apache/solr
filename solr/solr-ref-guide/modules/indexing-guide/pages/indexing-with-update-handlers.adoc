@@ -886,7 +886,7 @@ This parameter is supported by both the V1 update handlers and the V2 update end
 It can be used with JSON, XML, CSV, Javabin, and CBOR update requests where the format is supported by the endpoint.
 The `adds` field applies to document-ingest formats; `deletes` and `deleteByQuery` apply to formats that accept delete commands, such as JSON command updates, XML, and Javabin.
 
-See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more information about update versions.
+See xref:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency] for more information about versioned updates.
 
 [tabs#versioned-update-response]
 ======
