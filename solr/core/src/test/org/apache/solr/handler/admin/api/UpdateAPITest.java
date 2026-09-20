@@ -212,10 +212,13 @@ public class UpdateAPITest extends SolrTestCase {
     addReq.setResponseParser(new JsonMapResponseParser());
     addReq.setContentWriter(
         new RequestWriter.StringPayloadContentWriter(
-            "[{\"id\":\"v2version1\"}]", "application/json"));
+            "[{\"id\":\"v2version1\",\"name\":\"Generic V2 update document\"}]",
+            "application/json"));
 
     final var response = client.request(addReq);
     assertTypedVersion(response, "adds", "id", "v2version1", true);
+    client.commit(CORE_NAME);
+    assertIndexedField(client, CORE_NAME, "v2version1", "name", "Generic V2 update document");
   }
 
   @Test
