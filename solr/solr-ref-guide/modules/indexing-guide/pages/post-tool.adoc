@@ -1,4 +1,4 @@
-= Post Tool
+= Post Command
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -30,7 +30,7 @@ $ bin/solr post --solr-url http://localhost:8983 --name gettingstarted example/f
 This will contact the server at `localhost:8983`.
 The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr post -h)`.
 
-== Using the bin/solr post Tool
+== Using the bin/solr post Command
 
 You must either specify `url` that is the full path to the update handler or provide a `c` collection/core name when using `bin/solr post`.
 

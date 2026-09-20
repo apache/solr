@@ -34,7 +34,7 @@ The tutorial assumes that you have Docker installed and running on your computer
 
 === Start an external Apache Tika Server
 
-Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Tool requires the Solr extraction module to be enabled and an external Apache Tika Server to be running. See xref:indexing-guide:indexing-with-tika.adoc#tika-server[Tika Server] for background. We will be running Tika Server using Docker.
+Indexing binary files (PDF, DOCX, PPTX, etc.) with the Post Command requires the Solr extraction module to be enabled and an external Apache Tika Server to be running. See xref:indexing-guide:indexing-with-tika.adoc#tika-server[Tika Server] for background. We will be running Tika Server using Docker.
 
 .Start a Tika Server quickly using Docker (exposes port 9998 on localhost)
 [,bash]
@@ -89,10 +89,10 @@ Solr has lots of ways to index data.
 Choose one of the approaches below and try it out with your system:
 
 Local Files with `bin/solr post`::
-If you have a local directory of files, the Post Tool (`bin/solr post`) can index a directory of files.
+If you have a local directory of files, the Post Command (`bin/solr post`) can index a directory of files.
 We saw this in action in our first exercise.
 +
-We used only JSON, XML and CSV in our exercises, but the Post Tool can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
+We used only JSON, XML and CSV in our exercises, but the Post Command can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
 +
 In this example, assume there is a directory named "Documents" locally.
 To index it, we would issue a command like this (correcting the collection name after the `-c` parameter as needed):
@@ -126,7 +126,7 @@ You can see that has happened by looking at the values for `numDocs` and `maxDoc
 The `maxDoc` value may be larger as the `maxDoc` count includes logically deleted documents that have not yet been physically removed from the index.
 You can re-post the sample files over and over again as much as you want and `numDocs` will never increase, because the new documents will constantly be replacing the old.
 
-Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/solr post`).
+Go ahead and edit any of the existing example data files, change some of the data, and re-run the Post Command (`bin/solr post`).
 You'll see your changes reflected in subsequent searches.
 
 === Deleting Data
