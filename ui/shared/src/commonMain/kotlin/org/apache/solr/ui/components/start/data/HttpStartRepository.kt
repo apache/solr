@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.start.integration
+package org.apache.solr.ui.components.start.data
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
@@ -28,7 +28,7 @@ import io.ktor.http.Url
 import io.ktor.http.path
 import kotlin.io.encoding.Base64
 import kotlinx.serialization.json.Json
-import org.apache.solr.ui.components.start.store.StartStoreProvider
+import org.apache.solr.ui.components.start.repository.StartRepository
 import org.apache.solr.ui.data.SolrAuthData
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.UnauthorizedException
@@ -37,7 +37,7 @@ import org.apache.solr.ui.errors.UnknownResponseException
 private val logger = KotlinLogging.logger {}
 
 /**
- * Client implementation of the [StartStoreProvider.Client] that makes use
+ * Repository implementation of the [StartRepository] that makes use
  * of a preconfigured HTTP client for accessing the Solr API.
  *
  * @property httpClient HTTP client to use for accessing the API. The client has to be
@@ -45,9 +45,9 @@ private val logger = KotlinLogging.logger {}
  * should also include the necessary authentication data if authentication / authorization
  * is enabled.
  */
-class HttpStartStoreClient(
+class HttpStartRepository(
     private val httpClient: HttpClient,
-) : StartStoreProvider.Client {
+) : StartRepository {
 
     override suspend fun connect(url: Url): Result<Unit> {
         val url = URLBuilder(url).apply {

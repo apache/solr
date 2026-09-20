@@ -37,6 +37,7 @@ import org.apache.solr.ui.components.root.RootComponent.Child.Authentication
 import org.apache.solr.ui.components.root.RootComponent.Child.Main
 import org.apache.solr.ui.components.root.RootComponent.Child.Start
 import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.domain.StartEvent
 import org.apache.solr.ui.components.start.integration.DefaultStartComponent
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.domain.AuthOption
@@ -54,7 +55,7 @@ import org.apache.solr.ui.utils.getHttpClientWithAuthOption
 class SimpleRootComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
-    private val startComponent: (AppComponentContext, (StartComponent.Output) -> Unit) -> StartComponent,
+    private val startComponent: () -> StartComponent,
     private val mainComponent: (AppComponentContext, AuthOption, (MainComponent.Output) -> Unit) -> MainComponent,
     private val authenticationComponent: AuthenticationComponentProducer,
 ) : RootComponent,
@@ -79,14 +80,7 @@ class SimpleRootComponent(
     ) : this(
         componentContext = componentContext,
         storeFactory = storeFactory,
-        startComponent = { childContext, output ->
-            DefaultStartComponent(
-                componentContext = childContext,
-                storeFactory = storeFactory,
-                httpClient = httpClient,
-                output = output,
-            )
-        },
+        startComponent = { DefaultStartComponent(httpClient = httpClient) },
         mainComponent = { childContext, authOption, output ->
             DefaultMainComponent(
                 componentContext = childContext,
@@ -112,7 +106,10 @@ class SimpleRootComponent(
         configuration: Configuration,
         componentContext: AppComponentContext,
     ): RootComponent.Child = when (configuration) {
-        is Configuration.Start -> Start(startComponent(componentContext, ::startOutput))
+        is Configuration.Start -> Start(
+            component = startComponent(),
+            onEvent = ::startEvent,
+        )
 
         is Configuration.Main -> Main(mainComponent(componentContext, configuration.authOption, ::mainOutput))
 
@@ -127,20 +124,20 @@ class SimpleRootComponent(
     }
 
     /**
-     * Output handler for any output returned by the [StartComponent].
+     * Event handler for any event emitted by the start screen.
      *
-     * @param output The output returned by the start component implementation.
+     * @param event The event emitted by the start screen.
      */
-    private fun startOutput(output: StartComponent.Output) = when (output) {
-        is StartComponent.Output.OnAuthRequired -> navigation.pushNew(
+    private fun startEvent(event: StartEvent) = when (event) {
+        is StartEvent.AuthRequired -> navigation.pushNew(
             Configuration.Authentication(
-                url = output.url,
-                methods = output.methods,
+                url = event.url,
+                methods = event.methods,
             ),
         )
 
-        is StartComponent.Output.OnConnected ->
-            navigation.replaceAll(Configuration.Main(authOption = AuthOption.None(url = output.url)))
+        is StartEvent.Connected ->
+            navigation.replaceAll(Configuration.Main(authOption = AuthOption.None(url = event.url)))
     }
 
     /**
