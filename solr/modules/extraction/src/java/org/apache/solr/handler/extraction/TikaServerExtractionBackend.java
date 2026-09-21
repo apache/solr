@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -72,7 +73,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
   private static RefCounted<HttpClientResources> SHARED_RESOURCES;
   // Per-backend handle (same RefCounted instance as SHARED_RESOURCES) that this instance will
   // decref() on close
-  private RefCounted<HttpClientResources> acquiredResourcesRef;
+  private final RefCounted<HttpClientResources> acquiredResourcesRef;
+  private final AtomicBoolean closed = new AtomicBoolean();
 
   public TikaServerExtractionBackend(String baseUrl) {
     this(baseUrl, DEFAULT_TIMEOUT_SECONDS, null, DEFAULT_MAXCHARS_LIMIT);
@@ -366,9 +368,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
       super(r);
     }
 
-    // only reached via decref() from close(), which holds INIT_LOCK
     @Override
     protected void close() {
+      assert Thread.holdsLock(INIT_LOCK);
       // stop client and shutdown executor
       try {
         if (resource.client != null) resource.client.stop();
@@ -445,10 +447,9 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
 
   @Override
   public void close() {
-    synchronized (INIT_LOCK) {
-      if (acquiredResourcesRef != null) {
+    if (closed.compareAndSet(false, true)) {
+      synchronized (INIT_LOCK) {
         acquiredResourcesRef.decref();
-        acquiredResourcesRef = null;
       }
     }
   }
