@@ -144,9 +144,10 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoDuplicateJvmMemoryMetrics() {
-    // Guards against the java8/java17 RuntimeMetrics split emitting the same series twice (each
-    // scope reporting e.g. jvm.memory.committed with identical labels), which is what motivated
-    // migrating to the unified opentelemetry-runtime-telemetry module.
+    // A metric is only truly duplicated if it is emitted from more than one otel scope (e.g. one
+    // scope per runtime-telemetry variant), so otel_scope_name must be excluded from the
+    // uniqueness key -- comparing full label sets would never catch it, since otel_scope_name is
+    // exactly the label that differs between the duplicate series.
     FilterablePrometheusMetricReader reader =
         solrTestRule
             .getJetty()
@@ -155,17 +156,26 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
             .getPrometheusMetricReader("solr.jvm");
     MetricSnapshots snapshots = reader.collect();
 
+    Set<String> seen = new HashSet<>();
     for (MetricSnapshot snapshot : snapshots) {
-      Set<Labels> seen = new HashSet<>();
+      String metricName = snapshot.getMetadata().getPrometheusName();
       for (DataPointSnapshot dataPoint : snapshot.getDataPoints()) {
+        String key = metricName + labelsExcludingOtelScope(dataPoint.getLabels());
         assertTrue(
-            "Duplicate series for metric "
-                + snapshot.getMetadata().getPrometheusName()
-                + " with labels "
-                + dataPoint.getLabels(),
-            seen.add(dataPoint.getLabels()));
+            "Duplicate series for metric " + metricName + " with labels " + dataPoint.getLabels(),
+            seen.add(key));
       }
     }
+  }
+
+  private static String labelsExcludingOtelScope(Labels labels) {
+    StringBuilder key = new StringBuilder();
+    for (int i = 0; i < labels.size(); i++) {
+      if (!"otel_scope_name".equals(labels.getName(i))) {
+        key.append(labels.getName(i)).append('=').append(labels.getValue(i)).append(',');
+      }
+    }
+    return key.toString();
   }
 
   @Test
