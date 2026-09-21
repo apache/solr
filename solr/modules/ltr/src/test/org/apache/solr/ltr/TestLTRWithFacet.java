@@ -75,7 +75,7 @@ public class TestLTRWithFacet extends TestRerankBase {
     // Normal term match
     assertJQ(
         "/query" + query.toQueryString(),
-        "" + "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
+        "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
 
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
     query.set("debugQuery", "on");
@@ -92,6 +92,6 @@ public class TestLTRWithFacet extends TestRerankBase {
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "" + "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
+        "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
   }
 }
