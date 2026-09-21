@@ -16,125 +16,89 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes a general tracing framework based on OpenTelemetry that can be used to trace the lifecycle of a request for performance monitoring.
+Solr uses https://opentelemetry.io/[OpenTelemetry] APIs/standards for its https://opentelemetry.io/docs/concepts/signals/traces/[distributed tracing] support.
+Tracing is an observability signal focused on diagnosing performance of requests across distributed systems.
 
-Tracing data can be configured to send to various backends, either directly or via an agent.
-Solr can send traces directly in OTLP/HTTP format with the opentelemetry module, out-of-the-box.
-Other protocols, destinations and cloud providers may be supported.
-For example, gRPC can be supported by adding more JARs and tweaking configuration.
-
-A sampled distributed tracing query request displayed in Jaeger UI looks like this:
+The power of tracing is best appreciated in visualizing a distributed request over a time axis as a tree of layered temporal spans emitted by systems and sub-systems/components.
+A sampled distributed tracing query request displayed in https://www.jaegertracing.io/[Jaeger] looks like this:
 
 .Tracing of a Solr query
 image::distributed-tracing/query-request-tracing.png[]
 
-== Always-on Trace Id generation
+While logs and metrics can be observed directly in Solr, tracing requires that you integrate with an OTEL compliant server that includes visualization capabilities or is part of a larger system plumbed into one.
+See xref:opentelemetry.adoc[] for the ways to do that -- a Java agent, Solr's `opentelemetry` module, or a custom configurator -- and how each is configured.
+This page describes what Solr emits once one of them is in place.
 
-Solr includes an always-on trace id generator. This will inject trace id headers for every Solr request, propagating the client supplied value or generating a new id as needed and replaces the existing `rid` mechanism.
+== Spans
 
-The header name it uses for propagation is `X-Trace-Id`, this can be changed by updating the system property `solr.traceIdHeader`.
+Solr names a request span after the operation and the path it resolves to, as `_verb_:_path_`.
+The verb is the `action` request parameter when there is one, otherwise the lowercased HTTP method.
+The path is prefixed with `/\{core}` or `/\{collection}` when the request targets one, so that spans group by operation rather than by which core happened to serve them.
+For example, `get:/\{collection}/select`, `post:/\{core}/update`, `list:/admin/collections`, or `reload:/admin/cores`.
+These spans have kind `SERVER`.
 
-This plugin will not be enabled if another Tracing mechanism is setup via Solr config.
-This plugin can be disabled by setting the `solr.tracing.always.on.enabled` system property to `false`.
+Collection API commands that Solr runs internally produce a span named after the command, such as `CreateCollectionCmd` or `ReloadCollectionCmd`, of kind `CLIENT` -- or `PRODUCER` when the command was submitted asynchronously.
+These are the parent of the per-node work the command fans out.
 
-== Modules and Configuration
+Spans carry these attributes, where applicable:
 
-The `OpenTelemetryConfigurator` is a class used to provide an instance of `io.opentelemetry.api.OpenTelemetry` based on configuration in `solr.xml`.
-Solr installs it as the `GlobalOpenTelemetry` instance.
-These are pluggable, and each plugin is shipped as a xref:configuration-guide:solr-modules.adoc[Solr Module]:
+[cols="2,4",options="header"]
+|===
+| Attribute | Description
 
-**opentelemetry**: The `opentelemetry` module supports OTLP over HTTP.
+| `db.instance` | The core or collection the request targets.
+| `db.type` | Always `solr`.
+| `db.user` | The authenticated user, when a security plugin is in use.
+| `http.request.method` | The HTTP method.
+| `http.response.status_code` | The HTTP status code.
+| `http.url` | The request URL.
+| `http.params` | The query string.
+| `ops` | On a security configuration request, the operation names in the payload.
+| `class` | The security plugin class that handled those operations.
+|===
 
-A setup of an `OpenTelemetryConfigurator` in `solr.xml` looks like this:
+Solr injects the trace context into the requests it makes to other Solr nodes, so a client request and all the internal requests it causes share one trace.
+The header used depends on the configured propagator; by default that is https://www.w3.org/TR/trace-context/[W3C TraceContext], which uses `traceparent`.
 
-[source,xml]
-----
-<solr>
-  <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator" />
-</solr>
-----
+== Sampling
 
-== OpenTelemetry Java Agent
+Tracing every request is rarely affordable in production.
+Sampling is an SDK setting, so it applies when you use the `opentelemetry` module; with a Java agent, configure sampling through the agent.
 
-Instead of configuring Solr to set up OpenTelemetry, you can run Solr with the
-https://opentelemetry.io/docs/zero-code/java/agent/[OpenTelemetry Java agent].
-Solr detects the agent and uses the `OpenTelemetry` that the agent registered, leaving all configuration to the agent.
-No `<tracerConfig>` is needed, and the `opentelemetry` module does not need to be enabled -- the agent isolates its own dependencies from Solr's.
-
-[source,bash]
-----
-SOLR_OPTS="-javaagent:/path/to/opentelemetry-javaagent.jar"
-----
-
-The agent adds capabilities the module does not have, such as automatic instrumentation of third party libraries and support for the `@WithSpan` annotation.
-Solr's own instrumentation continues to work, provided the `opentelemetry-api` instrumentation remains enabled in the agent's configuration.
-
-== Open Telemetry Module
-
-This module brings support for the industry standard https://opentelemetry.io[OpenTelemetry] ("OTEL").
-OTEL is broader than tracing, but nonetheless, Solr's focal configuration element for it in Solr is `<tracerConfig>` in `solr.xml` as follows:
-
-[source,xml]
-----
-<tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator"/>
-----
-
-As an alternative to changing the `solr.xml` file, the `OTEL` tracer will be enabled if the system property `otel.service.name` or environment variable `OTEL_SERVICE_NAME` is present. The `opentelemetry` module still needs to be enabled for the tracer to work.
-
-Enable the module with either system property `-Dsolr.modules=opentelemetry` or environment variable `SOLR_MODULES=opentelemetry`.
-
-=== Configuration
-
-The tracer can be configured through environment variables or Java system properties, see https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL SDK Environment Variables] and https://github.com/open-telemetry/opentelemetry-java/blob/v{dep-version-opentelemetry}/sdk-extensions/autoconfigure/README.md[Java SDK Autoconfigure].
-
-The default configuration will ship traces to a collector running on localhost, using https://opentelemetry.io/docs/reference/specification/protocol/[OTLP] over HTTP (Protobuf), and will propagate trace IDs using https://www.w3.org/TR/trace-context/[W3C TraceContext]. Here are the environment settings that are enabled by default:
+The module defaults to `parentbased_always_on`, which records every trace that Solr starts and honors the decision of an upstream caller when there is one.
+To record 10% of traces instead:
 
 [source,bash]
 ----
-OTEL_SDK_DISABLED=false
-OTEL_SERVICE_NAME=solr
-OTEL_TRACES_EXPORTER=otlp
-OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-OTEL_TRACES_SAMPLER=parentbased_always_on
-OTEL_PROPAGATORS=tracecontext,baggage
-----
-
-NOTE: gRPC transport is not supported out of the box.
-To use gRPC, add the required gRPC and Netty JARs to the `opentelemetry` module's lib directory and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
-
-Say you want to send traces to a remote https://opentelemetry.io/docs/collector/[OTEL Collector], with 10% sampling. That could be done with this configuration:
-
-[source,bash]
-----
-OTEL_EXPORTER_OTLP_ENDPOINT=http://my-remote-collector:4318
 OTEL_TRACES_SAMPLER=parentbased_traceidratio
 OTEL_TRACES_SAMPLER_ARG=0.1
 ----
 
-An equivalent configuration using system properties would be:
+The equivalent with system properties:
 
 [source,bash]
 ----
-SOLR_OPTS=-Dotel.exporter.otlp.endpoint=http://my-remote-collector:4318 -Dotel.traces.sampler=parentbased_traceidratio -Dotel.traces.sampler.arg=0.1
+SOLR_OPTS="-Dotel.traces.sampler=parentbased_traceidratio -Dotel.traces.sampler.arg=0.1"
 ----
 
-To add custom tags to the trace, use `OTEL_RESOURCE_ATTRIBUTES`:
+Because the default is parent-based, a sampling decision made by the client that called Solr is respected either way.
 
-[source,bash]
+== Always-on Trace Id generation
+
+If no other OTEL configuration/integration is active, Solr includes a simple "always-on" trace id generator.
+This will create an internal trace ID and propagate them in an HTTP header on every request Solr makes, thus appearing in Solr's logs.
+
+The header name it uses for propagation is `X-Trace-Id`, which can be changed by updating the system property `solr.traceIdHeader`.
+
+Solr puts the trace ID into the logging MDC as `trace_id`, and the default `log4j2.xml` already includes it in the log pattern as `t:%X\{trace_id}`, so a trace ID looks like this in a log line:
+
+[source,text]
 ----
-OTEL_RESOURCE_ATTRIBUTES="application=OnlineBanking,exampleKey=exampleValue"
+2026-09-21 10:15:42.123 INFO  (qtp1234-25) [c:techproducts s:shard1 r:core_node2 x:techproducts_shard1_replica_n1 t:solr-node1-17] o.a.s.c.S.Request webapp=/solr path=/select params={q=*:*}
 ----
 
-Consult the https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL documentation] for details on all the configuration options.
-This version of Solr uses https://github.com/open-telemetry/opentelemetry-java/tree/v{dep-version-opentelemetry}[OpenTelemetry SDK v{dep-version-opentelemetry}].
+This means you can follow one request across every node's log without any tracing backend at all.
+See xref:configuring-logging.adoc[] to change the pattern.
 
-=== Using other exporters
-
-The OTEL tracer also supports other exporters like Jaeger and Zipkin. However, Solr does not ship with those 3rd party libraries, thus you need to add them to Solr yourself if you have this as a requirement. Say you add the Zipkin exporter jar file(s) to `$SOLR_TIP/lib/`, then you would enable OpenTelemetry module to send traces on the Zipkin format using the Protobuf encoding with a configuration like this:
-
-[source,bash]
-----
-OTEL_TRACES_EXPORTER=zipkin
-OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans
-----
+This mechanism is a default for when no other tracing configuration is in effect.  Those mechanisms will generally _at least_ do what this does anyway.
+This mechanism can be disabled by setting the `solr.tracing.always.on.enabled` system property to `false`.

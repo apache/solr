@@ -200,7 +200,7 @@ OpenMetrics can be used to pull/scrape metrics to a Prometheus server or any Ope
 
 ==== Prometheus setup with exemplars
 
-OpenMetrics includes `exemplars` that provide additional information and allow users to leverage Solr's xref:deployment-guide:distributed-tracing.adoc[OpenTelemetry distributed tracing module] and metrics in a cohesive view for correlating traces and metrics.
+OpenMetrics includes `exemplars` that provide additional information and allow users to leverage Solr's xref:deployment-guide:distributed-tracing.adoc[distributed tracing] and metrics in a cohesive view for correlating traces and metrics.
 
 Distributed tracing must be enabled to see exemplars. Exemplars will never appear in OpenMetrics format otherwise. You can then scrape OpenMetrics format to a Prometheus server or OpenMetrics-compatible backend.
 
@@ -312,15 +312,13 @@ http://localhost:8983/api/metrics?name=solr_core_index_size_bytes&collection=foo
 
 == OTLP
 
-For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics.
+For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing telemetry data.
 
 OTLP is widely supported by many tools, vendors, and pipelines. See the OpenTelemetry https://opentelemetry.io/ecosystem/vendors/[vendors list] for more details on available and compatible options.
 
+This exporter is disabled by default and is packaged with the `opentelemetry` module; see xref:opentelemetry.adoc[] for enabling that module.  *It does NOT work with the OTEL Java Agent in any way*.
+
 === OTLP properties
-
-Solr's internal OTLP exporter is disabled by default and is packaged with the OpenTelemetry module.
-
-The module can be enabled with either the system property `-Dsolr.modules=opentelemetry` or the environment variable `SOLR_MODULES=opentelemetry`, similar to distributed tracing.
 
 The OTLP exporter can be configured with the supported system properties below. These can also be set as environment variables by following these mapping rules:
 

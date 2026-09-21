@@ -1,0 +1,188 @@
+= OpenTelemetry
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+https://opentelemetry.io/[OpenTelemetry] ("OTEL") is the vendor-neutral standard that Solr uses.
+Solr uses its Java APIs for Metrics and Tracing (not logging), and to emit observability data via OTLP (if desired).
+This page covers how OpenTelemetry gets into a Solr JVM and how it is configured; what Solr emits through it is covered on the pages for each signal.
+
+== Traces and Metrics
+
+Solr uses OpenTelemetry for two signals, configured independently:
+
+xref:distributed-tracing.adoc[]::
+Spans describing requests as they move between nodes.
+Exported by the OpenTelemetry SDK itself, so it is configured with the standard `OTEL_*` environment variables (or `otel.*` system properties).
+
+xref:metrics-reporting.adoc#otlp[Metrics over OTLP]::
+Solr's own metrics, pushed periodically.
+Solr builds and owns the meter providers these come from -- it has to, so that the `/metrics` endpoints can read them -- so they are configured with `solr.metrics.otlp*` properties, with their own endpoint and protocol settings.
+
+Only tracing goes through `GlobalOpenTelemetry`.
+A Java agent therefore takes over tracing but not Solr's metrics, which keep their own configuration and exporter either way.
+
+NOTE: The `opentelemetry` module turns the autoconfigured SDK's metrics and logs exporters off (`otel.metrics.exporter=none`, `otel.logs.exporter=none`) so they cannot duplicate or conflict with the above.
+Setting `OTEL_METRICS_EXPORTER` or `OTEL_LOGS_EXPORTER` has no effect and logs a warning.
+
+== Integration Options
+
+[cols="2,5",options="header"]
+|===
+| Option | When to use it
+
+| <<opentelemetry-java-agent,OpenTelemetry Java agent>>
+| You want automatic instrumentation of third-party libraries (e.g. for backups), `@WithSpan` support, wide exporter format support, or a vendor's agent distribution. Requires a JVM argument and an external special JAR that you must install.
+
+| <<opentelemetry-module,`opentelemetry` module>>
+| You want OTLP metrics push, or prefer the convenience of using software that ships with Solr.
+
+| <<custom-configurator,Custom configurator>>
+| Neither of the above fits, for example an OTEL SDK setup your organization standardizes on.
+
+| _(none)_
+| Solr falls back to xref:distributed-tracing.adoc#always-on-trace-id-generation[always-on trace ID generation], which propagates a trace ID but exports nothing.
+|===
+
+Solr resolves these in a fixed order, using the first that applies: a Java agent, then a `<tracerConfig>` in `solr.xml`, then auto-activation from `OTEL_SERVICE_NAME`, then always-on trace ID generation.
+A Java agent always wins; when one is present Solr configures nothing and `<tracerConfig>` is ignored.
+
+== OpenTelemetry Java Agent
+
+Run Solr with the https://opentelemetry.io/docs/zero-code/java/agent/[OpenTelemetry Java agent] and it takes over OpenTelemetry entirely:
+
+[source,bash]
+----
+SOLR_OPTS="-javaagent:/path/to/opentelemetry-javaagent.jar"
+----
+
+The agent loads its dependencies in an isolated classloader, so it cannot conflict with Solr's.  The `opentelemetry` module should not be enabled.
+All configuration is the agent's; see its documentation.
+
+Solr's own instrumentation continues to work as long as the agent's `opentelemetry-api` instrumentation stays enabled.
+That matters if you disable instrumentation by default in order to opt in selectively:
+
+[source,properties]
+----
+otel.instrumentation.common.default-enabled=false
+otel.instrumentation.opentelemetry-api.enabled=true
+otel.instrumentation.opentelemetry-instrumentation-annotations.enabled=true
+----
+
+Agents from observability vendors generally work the same way, provided they register an OpenTelemetry `GlobalOpenTelemetry` instance.
+
+== OpenTelemetry Module
+
+The `opentelemetry` xref:configuration-guide:solr-modules.adoc[module] bundles the OpenTelemetry SDK and an OTLP exporter.
+Enable it with either the system property `-Dsolr.modules=opentelemetry` or the environment variable `SOLR_MODULES=opentelemetry`.
+
+Then activate it in one of two ways.
+Either declare it in `solr.xml`:
+
+[source,xml]
+----
+<solr>
+  <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator"/>
+</solr>
+----
+
+Or, without touching `solr.xml`, set the system property `otel.service.name` or the environment variable `OTEL_SERVICE_NAME`; Solr then loads the module's configurator automatically.
+Setting `OTEL_SDK_DISABLED=true` suppresses that auto-activation.
+
+=== Configuration
+
+The SDK is configured through environment variables or Java system properties -- see https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL SDK Environment Variables] and https://github.com/open-telemetry/opentelemetry-java/blob/v{dep-version-opentelemetry}/sdk-extensions/autoconfigure/README.md[Java SDK Autoconfigure].
+The effective defaults, some set by Solr and the rest by the SDK, are:
+
+[source,bash]
+----
+OTEL_SDK_DISABLED=false
+OTEL_SERVICE_NAME=solr
+OTEL_TRACES_EXPORTER=otlp
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+OTEL_TRACES_SAMPLER=parentbased_always_on
+OTEL_PROPAGATORS=tracecontext,baggage
+----
+
+So out of the box, traces go to a collector on localhost using https://opentelemetry.io/docs/reference/specification/protocol/[OTLP] over HTTP (Protobuf), and trace IDs propagate using https://www.w3.org/TR/trace-context/[W3C TraceContext].
+
+To send to a remote https://opentelemetry.io/docs/collector/[OTEL Collector]:
+
+[source,bash]
+----
+OTEL_EXPORTER_OTLP_ENDPOINT=http://my-remote-collector:4318
+----
+
+The equivalent with system properties:
+
+[source,bash]
+----
+SOLR_OPTS=-Dotel.exporter.otlp.endpoint=http://my-remote-collector:4318
+----
+
+=== Exporters and Transports
+
+The module ships a deliberately minimal set of dependencies: OTLP over HTTP, and nothing else.
+Anything beyond that means adding JARs yourself (or use the Java agent).
+
+gRPC:: Add the required gRPC and Netty JARs to the module's lib directory, then set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
+
+Other backends:: Exporters such as Jaeger and Zipkin are supported by the SDK but not shipped. Add the exporter JAR(s) to `$SOLR_TIP/lib/` and configure the exporter, for example:
++
+[source,bash]
+----
+OTEL_TRACES_EXPORTER=zipkin
+OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans
+----
+
+A Java agent avoids the need to add more JARs and risking version conflicts, since it carries its own exporters in an isolated classloader.
+
+== Custom Configurator
+
+`org.apache.solr.core.OpenTelemetryConfigurator` is the plugin API behind `<tracerConfig>`.
+A subclass implements `createOpenTelemetry()`, returning the `io.opentelemetry.api.OpenTelemetry` that Solr will install as `GlobalOpenTelemetry`; implementations must not install it themselves.
+Configure it exactly as the module's own configurator is configured, with your class name:
+
+[source,xml]
+----
+<solr>
+  <tracerConfig name="tracerConfig" class="com.example.MyOpenTelemetryConfigurator"/>
+</solr>
+----
+
+NOTE: The `<tracerConfig>` element name and the module's `OtelTracerConfigurator` class name predate OpenTelemetry covering more than tracing; both now configure OpenTelemetry as a whole.
+
+== Verifying Which Integration Is Active
+
+Each mode logs a distinct line at startup, which is the quickest way to confirm what Solr actually picked up:
+
+[cols="3,2",options="header"]
+|===
+| Log message | Meaning
+
+| `OpenTelemetry Java agent is installed; using the OpenTelemetry it registered.`
+| A Java agent was detected; Solr configured nothing.
+
+| `OpenTelemetry loaded via auto configuration.`
+| The module's configurator was loaded, via `<tracerConfig>` or `OTEL_SERVICE_NAME`.
+
+| `OpenTelemetry loaded with simple propagation only.`
+| No integration; always-on trace ID generation is in effect.
+
+| `Unable to auto-config OpenTelemetry with class ...`
+| `OTEL_SERVICE_NAME` is set but the `opentelemetry` module is not enabled.
+|===
