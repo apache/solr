@@ -7,12 +7,12 @@
   "enabledManagers": ["gradle", "github-actions"],
   "labels": ["exempt-stale"],
   "milestone": 1,
-  "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
+   "includePaths": ["gradle/libs.versions.toml", "ui/gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [
       "./gradlew resolveAndLockAll --write-locks",
-      "./gradlew kotlinUpgradeYarnLock",
-      "./gradlew updateLicenses"
+      "./gradlew updateLicenses",
+      "./gradlew -p ui kotlinUpgradeYarnLock"
     ],
     "fileFilters": ["solr/licenses/*.sha1", "**/gradle.lockfile", "settings-gradle.lockfile"],
     "executionMode": "branch"

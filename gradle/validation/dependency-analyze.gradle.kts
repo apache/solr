@@ -29,18 +29,6 @@ tasks.register("analyzeDependencies") {
 
 configure<DependencyAnalysisExtension> {
   issues {
-    project(":solr:ui") {
-      onUnusedDependencies {
-        severity("ignore")
-      }
-      onUsedTransitiveDependencies {
-        severity("ignore")
-      }
-      onIncorrectConfiguration {
-        severity("ignore")
-      }
-    }
-
     project(":solr:solrj-jetty") {
       onUnusedDependencies {
         exclude(":solr:solrj")
