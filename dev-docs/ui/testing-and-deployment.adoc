@@ -32,7 +32,7 @@ To launch the JVM client, you can use:
 
 [source,bash]
 ----
-./gradlew :solr:ui:run
+./gradlew -p ui :desktopApp:run
 ----
 
 To run the app on the web, you can launch the web target with:
@@ -40,7 +40,7 @@ To run the app on the web, you can launch the web target with:
 [source,bash]
 ----
 # not recommended for the above reasons
-./gradlew :solr:ui:wasmJsBrowserRun
+./gradlew -p ui :webApp:wasmJsBrowserDevelopmentRun
 ----
 
 Build times may be a bit longer than with the standalone JVM build.
@@ -105,16 +105,16 @@ you can use:
 
 [source,bash]
 ----
-./gradlew :solr:ui:packageDistributionForCurrentOS
+./gradlew -p ui :desktopApp:packageDistributionForCurrentOS
 ----
 
-The distribution can be found at `solr/ui/build/compose/binaries/main/[deb|msi|dmg]/`.
+The distribution can be found at `ui/desktopApp/build/compose/binaries/main/[deb|msi|dmg]/`.
 
 To build the JVM target for production, you can use:
 
 [source,bash]
 ----
-./gradlew :solr:ui:packageReleaseDistributionForCurrentOS
+./gradlew -p ui :desktopApp:packageReleaseDistributionForCurrentOS
 ----
 
 Platform-specific gradle tasks exist as well, but you cannot build for a
@@ -125,10 +125,10 @@ If the client machine has Java installed, you can also generate an UberJar:
 [source,bash]
 ----
 # for development
-./gradlew :solr:ui:packageUberJarForCurrentOs
+./gradlew -p ui :desktopApp:packageUberJarForCurrentOS
 
 # for production
-./gradlew :solr:ui:packageReleaseUberJarForCurrentOs
+./gradlew -p ui :desktopApp:packageReleaseUberJarForCurrentOS
 ----
 
 When building the entire Solr project, the wasmJs target is included in the build artifacts.
