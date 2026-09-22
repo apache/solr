@@ -28,6 +28,15 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionAdminParams;
 
 /** Supports snapshot-export command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "snapshot-export",
+    description = "Backs up a collection's current state to a local directory.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Export a collection's current state as a backup",
+      "  bin/solr snapshot-export -c mycollection --dest-dir /tmp/backups --backup-repo-name local"
+    })
 public class SnapshotExportTool extends ToolBase {
 
   private static final DateTimeFormatter BACKUP_NAME_TIMESTAMP =
@@ -89,6 +98,53 @@ public class SnapshotExportTool extends ToolBase {
       String destDir,
       String backupRepo,
       String asyncReqId) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection to be backed up.")
+  private String nameOpt;
+
+  // Accepted only so that passing it can be rejected with an explanation; see callTool().
+  @picocli.CommandLine.Option(
+      names = "--snapshot-name",
+      paramLabel = "NAME",
+      description = "No longer supported; passing it fails with an error.")
+  private String snapshotNameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--dest-dir",
+      required = true,
+      paramLabel = "DIR",
+      description =
+          "Path of a temporary directory on local filesystem during snapshot export command.")
+  private String destDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--backup-repo-name",
+      paramLabel = "DIR",
+      description =
+          "Specifies name of the backup repository to be used during snapshot export preparation.")
+  private String backupRepoNameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--async-id",
+      paramLabel = "ID",
+      description =
+          "Specifies the async request identifier to be used during snapshot export preparation.")
+  private String asyncIdOpt;
+
+  public SnapshotExportTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotExportTool(ToolRuntime runtime) {
     super(runtime);
@@ -178,6 +234,21 @@ public class SnapshotExportTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    if (snapshotNameOpt != null) {
+      throw new IllegalArgumentException(
+          "--snapshot-name is no longer supported. Exporting a named snapshot required the "
+              + "non-incremental backup format, which was removed in Solr 11; this command now "
+              + "always backs up the collection's current state. Re-run without --snapshot-name.");
+    }
+    SnapshotExportParams params =
+        new SnapshotExportParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            nameOpt,
+            destDirOpt,
+            backupRepoNameOpt,
+            asyncIdOpt);
+    exportSnapshot(params);
+    return 0;
   }
 }
