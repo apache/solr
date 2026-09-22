@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -90,11 +89,11 @@ public class CrossCollectionJoinQParser extends QParser {
           "zkHost and solrUrl are mutually exclusive; specify at most one of them.");
     }
     CoreContainer cc = req.getCoreContainer(); // null in some unit tests
+    if (cc != null && cc.getZkController() == null) {
+      throw new SyntaxError("Cross-collection join requires SolrCloud.");
+    }
     // Test if this is a valid solr url.
     if (solrUrl != null) {
-      if (cc != null && cc.getZkController() == null) {
-        throw new SyntaxError("solrUrl is not allowed when Solr is not in SolrCloud mode.");
-      }
       if (allowSolrUrls == null) {
         throw new SyntaxError("allowSolrUrls list must be configured to use solrUrl parameter.");
       }
@@ -131,15 +130,8 @@ public class CrossCollectionJoinQParser extends QParser {
       solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     }
     if (solrConnection != null && cc != null) { // no CoreContainer -- unit test
-      ZkController zkController = cc.getZkController();
-      if (zkController == null) {
-        throw new SyntaxError(
-            "zkHost/solrConnection '"
-                + solrConnection
-                + "' is not allowed when Solr is not in SolrCloud mode.");
-      }
       try {
-        zkController.validateSolrConnection(solrConnection);
+        cc.getZkController().validateSolrConnection(solrConnection);
       } catch (SolrException e) {
         throw new SyntaxError(e.getMessage(), e);
       }
