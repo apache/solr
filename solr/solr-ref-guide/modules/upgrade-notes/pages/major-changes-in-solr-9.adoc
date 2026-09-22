@@ -86,6 +86,11 @@ Streaming expressions and the cross-collection join query parser now restrict wh
 
 If you use these features to query another cluster, add its connection details to `allowZkHosts` before upgrading.
 
+=== /update/extract requires the "update" permission
+
+`/update/extract` (`ExtractingRequestHandler` in the `extraction` module) requires the `update` permission rather than `read`, since it indexes documents.
+Deployments where `read`-only users submit documents through `/update/extract` must grant those users `update` as well.
+
 == Solr 9.11
 
 === Max distributed requests now configurable
