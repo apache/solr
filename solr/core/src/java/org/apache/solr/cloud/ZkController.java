@@ -124,6 +124,7 @@ import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListZkHostChecker;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.AddressUtils;
 import org.apache.solr.util.RTimer;
@@ -218,6 +219,7 @@ public class ZkController implements Closeable {
   private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
+  private final AllowListZkHostChecker allowListZkHostChecker;
 
   private final int localHostPort; // example: 54065
   private final String hostName; // example: 127.0.0.1
@@ -302,6 +304,7 @@ public class ZkController implements Closeable {
     this.cloudConfig = cloudConfig;
 
     this.zkServerAddress = zkServerAddress;
+    this.allowListZkHostChecker = AllowListZkHostChecker.create(cc.getConfig(), zkServerAddress);
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
     this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort));
@@ -1008,6 +1011,15 @@ public class ZkController implements Closeable {
    */
   public String getZkServerAddress() {
     return zkServerAddress;
+  }
+
+  /**
+   * Returns the ZooKeeper-host checker based on the {@code allowZkHosts} configuration in {@code
+   * solr.xml}, always allowing this cluster's ZK ensemble. Used by features that accept a
+   * caller-supplied {@code zkHost}.
+   */
+  public AllowListZkHostChecker getAllowListZkHostChecker() {
+    return allowListZkHostChecker;
   }
 
   boolean isClosed() {
