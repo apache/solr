@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -149,7 +150,10 @@ public final class AuxIndexManager implements Closeable {
     this.writer =
         new IndexWriter(
             directory,
-            new IndexWriterConfig().setMergePolicy(mergePolicy).setMergeScheduler(mergeScheduler));
+            new IndexWriterConfig()
+                .setCodec(Codec.forName(config.getCodecName()))
+                .setMergePolicy(mergePolicy)
+                .setMergeScheduler(mergeScheduler));
     // set once, not per batch: live commit data sticks on the writer and is applied by whichever
     // commit comes next, including the wipe's just below and the one close() makes
     this.writer.setLiveCommitData(
