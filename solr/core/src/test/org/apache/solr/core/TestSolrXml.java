@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -208,6 +209,24 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
     assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
     assertEquals("hostPort", 8000, cfg.getCloudConfig().getSolrHostPort());
+  }
+
+  // SOLR-18224: allowZkHosts is parsed via a helper that drops blank entries so a
+  // stray comma or unset ${prop:} expansion cannot produce an empty allow-list entry.
+  public void testAllowZkHostsParsing() {
+    String withEntries =
+        "<solr><str name=\"allowZkHosts\">zk-a:2181,,zk-b:2181/chroot, ,zk-c:2181</str></solr>";
+    NodeConfig cfgEntries = SolrXmlConfig.fromString(solrHome, withEntries);
+    assertEquals(
+        List.of("zk-a:2181", "zk-b:2181/chroot", "zk-c:2181"), cfgEntries.getAllowZkHosts());
+
+    String empty = "<solr><str name=\"allowZkHosts\"></str></solr>";
+    NodeConfig cfgEmpty = SolrXmlConfig.fromString(solrHome, empty);
+    assertEquals(List.of(), cfgEmpty.getAllowZkHosts());
+
+    String absent = "<solr></solr>";
+    NodeConfig cfgAbsent = SolrXmlConfig.fromString(solrHome, absent);
+    assertEquals(List.of(), cfgAbsent.getAllowZkHosts());
   }
 
   public void testIntAsLongBad() {

@@ -75,6 +75,17 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.12
+
+=== Connecting to Other Clusters
+
+Streaming expressions and the cross-collection join query parser now restrict which SolrCloud clusters a `zkHost` parameter may refer to:
+
+* A ZooKeeper connection string must match the local cluster's exactly (including any chroot), or be listed in the new xref:configuration-guide:configuring-solr-xml.adoc#allow-zk-hosts[`allowZkHosts`] setting in `solr.xml` (or the `solr.allowZkHosts` system property).
+* The cross-collection join query parser no longer accepts both `zkHost` and `solrUrl`; specify at most one.
+
+If you use these features to query another cluster, add its connection details to `allowZkHosts` before upgrading.
+
 == Solr 9.11
 
 === Max distributed requests now configurable

@@ -22,9 +22,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
@@ -77,6 +79,11 @@ public class CrossCollectionJoinQParser extends QParser {
     String query = localParams.get(QueryParsing.V);
     String zkHost = localParams.get(ZK_HOST);
     String solrUrl = localParams.get(SOLR_URL);
+    // CrossCollectionJoinQuery.getDocSet() silently prefers zkHost when both are set.
+    if (zkHost != null && solrUrl != null) {
+      throw new SyntaxError(
+          "zkHost and solrUrl are mutually exclusive; specify at most one of them.");
+    }
     // Test if this is a valid solr url.
     if (solrUrl != null) {
       if (allowSolrUrls == null) {
@@ -109,6 +116,14 @@ public class CrossCollectionJoinQParser extends QParser {
       otherParams.set(ShardParams.SHARDS_PREFERENCE, shardsPreference);
     }
 
+    CoreContainer cc = req.getCoreContainer();
+    if (zkHost != null && cc != null) { // no CoreContainer -- unit test
+      try {
+        cc.getSolrClientCache().validateZkHost(zkHost);
+      } catch (SolrException e) {
+        throw new SyntaxError(e.getMessage(), e);
+      }
+    }
     return new CrossCollectionJoinQuery(
         query, zkHost, solrUrl, collection, fromField, toField, routedByJoinKey, ttl, otherParams);
   }
