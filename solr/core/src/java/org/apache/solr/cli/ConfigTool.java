@@ -34,6 +34,16 @@ import org.noggit.JSONWriter;
  *
  * <p>Sends a POST to the Config API to perform a specified action.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "config",
+    description = "Sends a POST to the Config API to perform a specified action.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Set a config property",
+      "  bin/solr config -c mycollection --property updateHandler.autoSoftCommit.maxTime --value"
+          + " 10000"
+    })
 public class ConfigTool extends ToolBase {
 
   private static final Option COLLECTION_NAME_OPTION =
@@ -80,6 +90,52 @@ public class ConfigTool extends ToolBase {
       String property,
       String value,
       String credentials) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-a", "--action"},
+      defaultValue = "set-property",
+      paramLabel = "ACTION",
+      description =
+          "Config API action, one of: set-property, unset-property, set-user-property,"
+              + " unset-user-property; default is 'set-property'.")
+  private String actionOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--property",
+      required = true,
+      paramLabel = "PROP",
+      description =
+          "Name of the Config API property to apply the action to, such as:"
+              + " 'updateHandler.autoSoftCommit.maxTime'.")
+  private String propertyOpt;
+
+  // No short "-v": that letter is already ToolBase's --verbose. In the commons-cli path the two
+  // silently collide (VALUE_OPTION is added to the Options set after VERBOSE_OPTION, so its
+  // short form wins and -v currently means --value, not --verbose) - picocli refuses that
+  // collision outright, so --value is long-only here and -v keeps its ToolBase meaning.
+  @picocli.CommandLine.Option(
+      names = "--value",
+      paramLabel = "VALUE",
+      description = "Set the property to this value; accepts JSON objects and strings.")
+  private String valueOpt;
+
+  public ConfigTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ConfigTool(ToolRuntime runtime) {
     super(runtime);
@@ -165,6 +221,17 @@ public class ConfigTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String solrUrl = CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials);
+
+    // value is required unless the property is one of the "unset-" type.
+    if (!actionOpt.contains("unset-") && valueOpt == null) {
+      throw new MissingArgumentException("'value' is a required option.");
+    }
+
+    ConfigParams params =
+        new ConfigParams(
+            solrUrl, actionOpt, nameOpt, propertyOpt, valueOpt, credentialsOptions.credentials);
+    updateConfig(params);
+    return 0;
   }
 }
