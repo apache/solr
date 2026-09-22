@@ -36,6 +36,7 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongHistogramBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableDoubleCounter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
@@ -62,13 +63,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
@@ -95,7 +93,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Access to metric instruments such as {@link LongCounter}, {@link LongUpDownCounter}, {@link
  *       LongGauge}, {@link LongHistogram} and observable instruments to a specific MeterProvider
  *       instances
- *   <li>{@link FilterablePrometheusMetricReader} for reading and fitlering OpenTelemetry metrics in
+ *   <li>{@link FilterablePrometheusMetricReader} for reading and filtering OpenTelemetry metrics in
  *       Prometheus Format from all MeterProviders
  *   <li>Enablement of optional OTLP exporter
  * </ul>
@@ -116,23 +114,17 @@ public class SolrMetricManager {
    * Registry name for JVM-specific metrics. This name is also subject to overrides controlled by
    * system properties. This registry is shared between instances of {@link SolrMetricManager}.
    */
-  public static final String JVM_REGISTRY =
-      REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
+  public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm;
 
-  public static final String NODE_REGISTRY =
-      REGISTRY_NAME_PREFIX + SolrInfoBean.Group.node.toString();
-
-  private final Lock reportersLock = new ReentrantLock();
-  private final Lock swapLock = new ReentrantLock();
+  public static final String NODE_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.node;
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
-
-  private final MetricsConfig metricsConfig;
 
   private final ConcurrentMap<String, MeterProviderAndReaders> meterProviderAndReaders =
       new ConcurrentHashMap<>();
 
   private final MetricExporter metricExporter;
+  private final boolean enabled;
   private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
 
   private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
@@ -153,14 +145,24 @@ public class SolrMetricManager {
           1_000_000_000.0);
 
   public SolrMetricManager(MetricExporter exporter) {
-    metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
-    metricExporter = exporter;
+    this(exporter, true);
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
-    this.metricsConfig = metricsConfig;
-    this.metricExporter = loadMetricExporter(loader);
-    this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
+  public SolrMetricManager(MetricExporter exporter, boolean enabled) {
+    metricExporter = exporter;
+    this.enabled = enabled;
+  }
+
+  public SolrMetricManager(SolrResourceLoader loader) {
+    this(loader, true);
+  }
+
+  public SolrMetricManager(SolrResourceLoader loader, boolean enabled) {
+    this.enabled = enabled;
+    this.metricExporter = enabled ? loadMetricExporter(loader) : null;
+    if (enabled) {
+      this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
+    }
   }
 
   public LongCounter longCounter(
@@ -441,9 +443,12 @@ public class SolrMetricManager {
    * Get (or create if not present) a named {@link SdkMeterProvider}.
    *
    * @param providerName name of the meter provider and prometheus metric reader
-   * @return existing or newly created meter provider
+   * @return existing or newly created meter provider, or a no-op one when metrics are disabled
    */
-  public SdkMeterProvider meterProvider(String providerName) {
+  public MeterProvider meterProvider(String providerName) {
+    if (!enabled) {
+      return MeterProvider.noop();
+    }
     providerName = enforcePrefix(providerName);
     return meterProviderAndReaders
         .computeIfAbsent(

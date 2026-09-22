@@ -1,0 +1,12 @@
+{
+  "class": "dev.langchain4j.model.googleai.GoogleAiGeminiChatModel",
+  "name": "gemini-1",
+  "params": {
+    "apiKey": "apiKey-gemini",
+    "modelName": "gemini-2.0-flash",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}

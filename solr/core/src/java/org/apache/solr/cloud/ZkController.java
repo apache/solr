@@ -24,7 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPRIORITIZE_OVERSEER;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 import io.opentelemetry.api.internal.StringUtils;
@@ -32,6 +32,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -124,6 +126,8 @@ import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.security.AllowListZkHostChecker;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.AddressUtils;
 import org.apache.solr.util.RTimer;
@@ -217,8 +221,10 @@ public class ZkController implements Closeable {
           new SolrNamedThreadFactory("zkConnectionListenerCallback"));
   private final OnReconnect onReconnect = this::onReconnect;
   private final OnDisconnect onDisconnect = this::onDisconnect;
+  private final AtomicBoolean zkSessionExpired = new AtomicBoolean();
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
+  private final AllowListZkHostChecker allowListZkHostChecker;
 
   private final int localHostPort; // example: 54065
   private final String hostName; // example: 127.0.0.1
@@ -227,6 +233,8 @@ public class ZkController implements Closeable {
 
   private final CloudConfig cloudConfig;
   private final NodesSysPropsCacher sysPropsCacher;
+
+  private final Compressor compressor;
 
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
@@ -301,6 +309,7 @@ public class ZkController implements Closeable {
     this.cloudConfig = cloudConfig;
 
     this.zkServerAddress = zkServerAddress;
+    this.allowListZkHostChecker = AllowListZkHostChecker.create(cc.getConfig(), zkServerAddress);
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
     this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort));
@@ -327,7 +336,7 @@ public class ZkController implements Closeable {
 
     addOnReconnectListener(getConfigDirListener());
 
-    final var compressor =
+    compressor =
         loadPluginOrDefault(
             Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
 
@@ -385,7 +394,9 @@ public class ZkController implements Closeable {
           "The Overseer is disabled.  Cluster commands & state updates will happen on any/all nodes.");
     }
     // These "distributed" things replace the Overseer when that's disabled
-    this.distributedClusterStateUpdater = new DistributedClusterStateUpdater(!overseerEnabled);
+    this.distributedClusterStateUpdater =
+        new DistributedClusterStateUpdater(
+            !overseerEnabled, cloudConfig.getMinStateByteLenForCompression(), compressor);
     this.distributedCommandRunner =
         !overseerEnabled
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(cc, zkClient))
@@ -404,7 +415,15 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
+  public Compressor getCompressor() {
+    return compressor;
+  }
+
   private void onDisconnect(boolean sessionExpired) {
+    if (!sessionExpired) {
+      return;
+    }
+    zkSessionExpired.set(true);
     try {
       overseer.close();
     } catch (Exception e) {
@@ -434,6 +453,9 @@ public class ZkController implements Closeable {
   }
 
   private void onReconnect() {
+    if (!zkSessionExpired.compareAndSet(true, false)) {
+      return;
+    }
     // on reconnect, reload cloud info
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
@@ -666,7 +688,10 @@ public class ZkController implements Closeable {
         if (internalSolrClientCache == null) {
           var connection = CloudSolrClient.CloudSolrClientConnection.parse(zkServerAddress);
           internalSolrClientCache =
-              new InternalSolrClientCache(cc.getDefaultHttpSolrClient(), connection);
+              new InternalSolrClientCache(
+                  (HttpJettySolrClient) cc.getDefaultHttpSolrClient(),
+                  connection,
+                  this::validateSolrConnection);
         }
       }
     }
@@ -1008,6 +1033,44 @@ public class ZkController implements Closeable {
    */
   public String getZkServerAddress() {
     return zkServerAddress;
+  }
+
+  /**
+   * Returns the ZooKeeper-host checker based on the {@code allowZkHosts} configuration in {@code
+   * solr.xml}, always allowing this cluster's ZK ensemble. Used by features that accept a
+   * caller-supplied {@code zkHost}.
+   */
+  public AllowListZkHostChecker getAllowListZkHostChecker() {
+    return allowListZkHostChecker;
+  }
+
+  /**
+   * Validates a connection to a SolrCloud cluster: ZooKeeper via {@link
+   * #getAllowListZkHostChecker()}, HTTP via {@link AllowListUrlChecker} (live nodes of this cluster
+   * are allowed).
+   *
+   * @throws SolrException FORBIDDEN if not allowed
+   */
+  public void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    if (solrConnection.isZookeeper()) {
+      String zkHost = solrConnection.toString();
+      if (!allowListZkHostChecker.isAllowed(zkHost)) {
+        throw new SolrException(
+            ErrorCode.FORBIDDEN,
+            "ZooKeeper host '"
+                + zkHost
+                + "' is not on the '"
+                + AllowListZkHostChecker.ZK_HOST_ALLOW_LIST
+                + "' allow-list in solr.xml and does not match the local cluster's ZK ensemble.");
+      }
+    } else {
+      try {
+        cc.getAllowListUrlChecker().checkAllowList(solrConnection.quorumItems(), getClusterState());
+      } catch (MalformedURLException e) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid URL in solrConnection: " + solrConnection, e);
+      }
+    }
   }
 
   boolean isClosed() {
@@ -2327,7 +2390,7 @@ public class ZkController implements Closeable {
         // listeners
         try (SolrClient client =
             new HttpJettySolrClient.Builder(leaderBaseUrl)
-                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withHttpClient((HttpJettySolrClient) getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
@@ -2559,34 +2622,17 @@ public class ZkController implements Closeable {
     }
   }
 
-  public void checkOverseerDesignate() {
-    try {
-      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat());
-      if (data == null) return;
-      Map<?, ?> roles = (Map<?, ?>) Utils.fromJSON(data);
-      if (roles == null) return;
-      List<?> nodeList = (List<?>) roles.get("overseer");
-      if (nodeList == null) return;
-      if (nodeList.contains(getNodeName())) {
-        setPreferredOverseer();
-      }
-    } catch (NoNodeException nne) {
-      return;
-    } catch (Exception e) {
-      log.warn("could not read the overseer designate ", e);
-    }
-  }
-
   public void setPreferredOverseer() throws KeeperException, InterruptedException {
     MapWriter props =
         ew ->
-            ew.put(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT))
-                .put(getNodeName(), getNodeName())
-                .put("role", "overseer")
-                .put("persist", "false");
-    log.warn(
-        "Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.",
-        props.jsonStr());
+            ew.put(
+                Overseer.QUEUE_OPERATION,
+                REPRIORITIZE_OVERSEER.toString().toLowerCase(Locale.ROOT));
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Asking the Overseer to re-run node prioritization for this preferred overseer: {}",
+          props.jsonStr());
+    }
     getOverseerCollectionQueue().offer(props);
   }
 
@@ -2992,8 +3038,17 @@ public class ZkController implements Closeable {
     log.info("Publish node={} as DOWN", nodeName);
 
     ClusterState clusterState = getClusterState();
-    Map<String, List<Replica>> replicasPerCollectionOnNode =
-        clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
+    Map<String, List<Replica>> replicasPerCollectionOnNode = new HashMap<>();
+    clusterState
+        .collectionStream()
+        .forEach(
+            col -> {
+              List<Replica> replicas = col.getReplicasOnNode(nodeName);
+              if (!replicas.isEmpty()) {
+                replicasPerCollectionOnNode.put(col.getName(), replicas);
+              }
+            });
+
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       // Note that with the current implementation, when distributed cluster state updates are
       // enabled, we mark the node down synchronously from this thread, whereas the Overseer cluster

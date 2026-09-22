@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 
 /**
  * It is possible to define an environment code when starting Solr, through
@@ -87,8 +88,8 @@ public class SolrEnvironment {
    */
   public static SolrEnvironment getFromSyspropOrClusterprop(ZkStateReader zkStateReader) {
     String env = "unknown";
-    if (System.getProperty("solr.environment") != null) {
-      env = System.getProperty("solr.environment");
+    if (EnvUtils.getProperty("solr.environment") != null) {
+      env = EnvUtils.getProperty("solr.environment");
     } else if (zkStateReader != null) {
       env = zkStateReader.getClusterProperty("environment", "unknown");
     }

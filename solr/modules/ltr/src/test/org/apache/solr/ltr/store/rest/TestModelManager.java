@@ -58,7 +58,7 @@ public class TestModelManager extends TestRerankBase {
 
     final ManagedResource res = restManager.getManagedResource(resourceId);
     assertTrue(res instanceof ManagedFeatureStore);
-    assertEquals(res.getResourceId(), resourceId);
+    assertEquals(resourceId, res.getResourceId());
   }
 
   @Test

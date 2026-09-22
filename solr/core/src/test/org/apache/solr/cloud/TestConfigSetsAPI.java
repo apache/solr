@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -93,6 +94,7 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.SimplePrincipal;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -134,39 +136,37 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testCreateErrors() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      getConfigSetService().uploadConfig("configSet", configset("configset-2"));
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
+    getConfigSetService().uploadConfig("configSet", configset("configset-2"));
 
-      // no action
-      CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
-      createNoAction.setAction(null);
-      verifyException(solrClient, createNoAction, "action");
+    // no action
+    CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
+    createNoAction.setAction(null);
+    verifyException(solrClient, createNoAction, "action");
 
-      // no ConfigSet name
-      CreateNoErrorChecking create = new CreateNoErrorChecking();
-      verifyException(solrClient, create, NAME);
+    // no ConfigSet name
+    CreateNoErrorChecking create = new CreateNoErrorChecking();
+    verifyException(solrClient, create, NAME);
 
-      // set ConfigSet
-      create.setConfigSetName("configSetName");
+    // set ConfigSet
+    create.setConfigSetName("configSetName");
 
-      // ConfigSet already exists
-      Create alreadyExists = new Create();
-      alreadyExists.setConfigSetName("configSet").setBaseConfigSetName("baseConfigSet");
-      verifyException(solrClient, alreadyExists, "ConfigSet already exists");
+    // ConfigSet already exists
+    Create alreadyExists = new Create();
+    alreadyExists.setConfigSetName("configSet").setBaseConfigSetName("baseConfigSet");
+    verifyException(solrClient, alreadyExists, "ConfigSet already exists");
 
-      // Base ConfigSet does not exist
-      Create baseConfigNoExists = new Create();
-      baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
-      verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
+    // Base ConfigSet does not exist
+    Create baseConfigNoExists = new Create();
+    baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
+    verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
 
-      // Invalid configset names
-      for (String invalidName :
-          new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
-        Create invalidNameCreate = new Create();
-        invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
-        verifyException(solrClient, invalidNameCreate, "Invalid configset");
-      }
+    // Invalid configset names
+    for (String invalidName :
+        new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
+      Create invalidNameCreate = new Create();
+      invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
+      verifyException(solrClient, invalidNameCreate, "Invalid configset");
     }
   }
 
@@ -221,25 +221,23 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Map<String, String> newProps,
       String username)
       throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      setupBaseConfigSet(baseConfigSetName, oldProps);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
+    setupBaseConfigSet(baseConfigSetName, oldProps);
 
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(cluster.getZkServer().getZkAddress())
-              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        assertFalse(getConfigSetService().checkConfigExists(configSetName));
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      assertFalse(getConfigSetService().checkConfigExists(configSetName));
 
-        ConfigSetAdminResponse response =
-            createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
-        assertNotNull(response.getResponse());
-        assertTrue(getConfigSetService().checkConfigExists(configSetName));
+      ConfigSetAdminResponse response =
+          createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
+      assertNotNull(response.getResponse());
+      assertTrue(getConfigSetService().checkConfigExists(configSetName));
 
-        verifyProperties(configSetName, oldProps, newProps, zkClient);
-      }
+      verifyProperties(configSetName, oldProps, newProps, zkClient);
     }
   }
 
@@ -328,19 +326,21 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testUploadErrors() throws Exception {
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
-    ignoreException("The configuration name should be provided");
     // Checking error when no configuration name is specified in request
-    Map<?, ?> map =
-        postDataAndGetResponse(
-            cluster.getJettySolrRunners().getFirst(),
-            "/admin/configs?action=UPLOAD",
-            emptyData,
-            null,
-            false);
-    unIgnoreException("The configuration name should be provided");
+    Map<?, ?> map;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("The configuration name should be provided")) {
+      map =
+          postDataAndGetResponse(
+              cluster.getJettySolrRunners().getFirst(),
+              "/admin/configs?action=UPLOAD",
+              emptyData,
+              null,
+              false);
+    }
     assertEquals(400, getStatusCode(map));
 
     SolrZkClient zkClient =
@@ -362,15 +362,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         CreateMode.PERSISTENT);
 
     // Checking error when configuration name specified already exists
-    ignoreException("already exists");
-    map =
-        postDataAndGetResponse(
-            cluster.getJettySolrRunners().getFirst(),
-            "/admin/configs?action=UPLOAD&name=myconf",
-            emptyData,
-            null,
-            false);
-    unIgnoreException("already exists`");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("already exists")) {
+      map =
+          postDataAndGetResponse(
+              cluster.getJettySolrRunners().getFirst(),
+              "/admin/configs?action=UPLOAD&name=myconf",
+              emptyData,
+              null,
+              false);
+    }
     assertEquals(400, getStatusCode(map));
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
@@ -402,15 +402,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     testUploadDisabled(true);
   }
 
+  @SuppressWarnings("try")
   public void testUploadDisabled(boolean v2) throws Exception {
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(cluster.getZkServer().getZkAddress())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
-            .build()) {
+            new SolrZkClient.Builder()
+                .withUrl(cluster.getZkServer().getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+                .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
+                .build();
+        ErrorLogMuter ignored = ErrorLogMuter.regex("Configset upload feature is disabled")) {
 
-      ignoreException("Configset upload feature is disabled");
       for (boolean enabled : new boolean[] {true, false}) {
         System.setProperty("solr.configset.upload.enabled", String.valueOf(enabled));
 
@@ -423,7 +424,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             enabled ? 0l : 400l,
             statusCode);
       }
-      unIgnoreException("Configset upload feature is disabled");
     }
   }
 
@@ -481,6 +481,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     testOverwrite(true);
   }
 
+  @SuppressWarnings("try")
   public void testOverwrite(boolean v2) throws Exception {
     String configsetName = "regular";
     String configsetSuffix = "testOverwrite-1-" + v2;
@@ -493,12 +494,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .build()) {
       int solrconfigZkVersion =
           getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
-      ignoreException("The configuration regulartestOverwrite-1 already exists in zookeeper");
-      assertEquals(
-          "Can't overwrite an existing configset unless the overwrite parameter is set",
-          400,
-          uploadConfigSet(configsetName, configsetSuffix, null, false, false, v2, false, false));
-      unIgnoreException("The configuration regulartestOverwrite-1 already exists in zookeeper");
+      try (ErrorLogMuter ignored =
+          ErrorLogMuter.regex(
+              "The configuration regulartestOverwrite-1 already exists in zookeeper")) {
+        assertEquals(
+            "Can't overwrite an existing configset unless the overwrite parameter is set",
+            400,
+            uploadConfigSet(configsetName, configsetSuffix, null, false, false, v2, false, false));
+      }
       assertEquals(
           "Expecting version to remain equal",
           solrconfigZkVersion,
@@ -596,6 +599,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   // V2 API not tested: single file uploads always overwrite (no overwrite parameter)
 
+  @SuppressWarnings("try")
   public void testSingleFileOverwrite(boolean v2) throws Exception {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathOverwrite-1-" + v2;
@@ -608,20 +612,22 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .build()) {
       int solrconfigZkVersion =
           getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
-      ignoreException("The configuration regulartestOverwrite-1 already exists in zookeeper");
-      assertEquals(
-          "Can't overwrite an existing configset unless the overwrite parameter is set",
-          400,
-          uploadSingleConfigSetFile(
-              configsetName,
-              configsetSuffix,
-              null,
-              "solr/configsets/upload/regular/solrconfig.xml",
-              "solrconfig.xml",
-              false,
-              false,
-              v2));
-      unIgnoreException("The configuration regulartestOverwrite-1 already exists in zookeeper");
+      try (ErrorLogMuter ignored =
+          ErrorLogMuter.regex(
+              "The configuration regulartestOverwrite-1 already exists in zookeeper")) {
+        assertEquals(
+            "Can't overwrite an existing configset unless the overwrite parameter is set",
+            400,
+            uploadSingleConfigSetFile(
+                configsetName,
+                configsetSuffix,
+                null,
+                "solr/configsets/upload/regular/solrconfig.xml",
+                "solrconfig.xml",
+                false,
+                false,
+                v2));
+      }
       assertEquals(
           "Expecting version to remain equal",
           solrconfigZkVersion,
@@ -740,17 +746,20 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   // Single file uploads do not support cleanup parameter
   // V2 API not tested: single file uploads do not support cleanup parameter
   @Test
+  @SuppressWarnings("try")
   public void testSingleWithCleanup() throws Exception {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathCleanup-1";
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(cluster.getZkServer().getZkAddress())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
-            .build()) {
-      ignoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
+            new SolrZkClient.Builder()
+                .withUrl(cluster.getZkServer().getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+                .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
+                .build();
+        ErrorLogMuter ignored =
+            ErrorLogMuter.regex(
+                "ConfigSet uploads do not allow cleanup=true when filePath is used.")) {
       assertEquals(
           400,
           uploadSingleConfigSetFile(
@@ -767,7 +776,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           zkClient.exists(
               "/configs/" + configsetName + configsetSuffix + "/test/upload/path/solrconfig.xml"));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
-      unIgnoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
     }
   }
 
@@ -781,6 +789,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     testSingleFileForbiddenType(true);
   }
 
+  @SuppressWarnings("try")
   public void testSingleFileForbiddenType(boolean v2) throws Exception {
     String configsetName = "regular";
     String configsetSuffix = "testSingleFileForbiddenType-1-" + v2;
@@ -792,28 +801,28 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       for (String fileType : ConfigSetService.DEFAULT_FORBIDDEN_FILE_TYPES) {
-        ignoreException("is forbidden for use in configSets");
-        assertEquals(
-            "Can't upload a configset file with a forbidden type: " + fileType,
-            400,
-            uploadSingleConfigSetFile(
-                configsetName,
-                configsetSuffix,
-                "solr",
-                "solr/configsets/upload/regular/solrconfig.xml",
-                "/test/different/path/solrconfig." + fileType,
-                false,
-                false,
-                v2));
-        assertFalse(
-            "New file should not exist, since the filetype is forbidden: " + fileType,
-            zkClient.exists(
-                "/configs/"
-                    + configsetName
-                    + configsetSuffix
-                    + "/test/different/path/solrconfig."
-                    + fileType));
-        unIgnoreException("is forbidden for use in configSets");
+        try (ErrorLogMuter ignored = ErrorLogMuter.regex("is forbidden for use in configSets")) {
+          assertEquals(
+              "Can't upload a configset file with a forbidden type: " + fileType,
+              400,
+              uploadSingleConfigSetFile(
+                  configsetName,
+                  configsetSuffix,
+                  "solr",
+                  "solr/configsets/upload/regular/solrconfig.xml",
+                  "/test/different/path/solrconfig." + fileType,
+                  false,
+                  false,
+                  v2));
+          assertFalse(
+              "New file should not exist, since the filetype is forbidden: " + fileType,
+              zkClient.exists(
+                  "/configs/"
+                      + configsetName
+                      + configsetSuffix
+                      + "/test/different/path/solrconfig."
+                      + fileType));
+        }
       }
     }
   }
@@ -822,6 +831,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   // V2 API not tested: single file uploads do not support cleanup parameter
 
+  @SuppressWarnings("try")
   public void testSingleFileUpload(boolean v2) throws Exception {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathUpload-1-" + v2;
@@ -894,28 +904,30 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
 
       // Make sure that cleanup flag validation works correctly.
-      ignoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
-      extraFileZkVersion =
-          getConfigZNodeVersion(
-              zkClient, configsetName, configsetSuffix, "test/different/path/solrconfig.xml");
-      assertEquals(
-          400,
-          uploadSingleConfigSetFile(
-              configsetName,
-              configsetSuffix,
-              "solr",
-              "solr/configsets/upload/regular/solrconfig.xml",
-              "/test/different/path/solrconfig.xml",
-              true,
-              true,
-              v2));
-      assertEquals(
-          "Expecting version to stay the same",
-          extraFileZkVersion,
-          getConfigZNodeVersion(
-              zkClient, configsetName, configsetSuffix, "test/different/path/solrconfig.xml"));
-      assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
-      unIgnoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
+      try (ErrorLogMuter ignored =
+          ErrorLogMuter.regex(
+              "ConfigSet uploads do not allow cleanup=true when filePath is used.")) {
+        extraFileZkVersion =
+            getConfigZNodeVersion(
+                zkClient, configsetName, configsetSuffix, "test/different/path/solrconfig.xml");
+        assertEquals(
+            400,
+            uploadSingleConfigSetFile(
+                configsetName,
+                configsetSuffix,
+                "solr",
+                "solr/configsets/upload/regular/solrconfig.xml",
+                "/test/different/path/solrconfig.xml",
+                true,
+                true,
+                v2));
+        assertEquals(
+            "Expecting version to stay the same",
+            extraFileZkVersion,
+            getConfigZNodeVersion(
+                zkClient, configsetName, configsetSuffix, "test/different/path/solrconfig.xml"));
+        assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
+      }
     }
   }
 
@@ -1000,6 +1012,32 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     // Uploads a config set containing a script, a class file and jar file, will return 400 error
     long res = uploadConfigSet("forbidden", "suffix", "foo", true, false, true, false, true);
     assertEquals(400, res);
+  }
+
+  @Test
+  public void testUploadWithBlankFile() throws Exception {
+    // Uploads a zip containing a blank (0-byte) file using STORED method with an EXT descriptor.
+    // Java's ZipInputStream cannot read this format, but ZipFile can.
+    // Verifies the upload succeeds and the empty file is stored in the configset.
+    final String configSetName = "blank-file-configset";
+    final String suffix = "-suffix";
+    final Path zipFile = createTempZipWithStoredEntryAndExtDescriptor();
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
+            .build()) {
+      long res = uploadGivenConfigSet(zipFile, configSetName, suffix, null, true, false, true);
+      assertEquals("Upload of configset with blank file should succeed", 0L, res);
+      assertTrue(
+          "blank.txt should have been uploaded to the configset",
+          zkClient.exists("/configs/" + configSetName + suffix + "/blank.txt"));
+      assertArrayEquals(
+          "blank.txt in configset should be empty",
+          new byte[0],
+          zkClient.getData("/configs/" + configSetName + suffix + "/blank.txt", null, null));
+    }
   }
 
   @Test
@@ -1331,6 +1369,99 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * Creates a zip file (in the temp directory) containing an empty file entry that uses the STORED
+   * compression method with the EXT descriptor flag set. Some zip tools produce this format for
+   * empty (0-byte) files, e.g., when using {@code touch conf/blank.txt} followed by {@code zip -r
+   * ...}. Java's {@link java.util.zip.ZipInputStream} cannot read this combination, but {@link
+   * java.util.zip.ZipFile} handles it correctly by reading from the central directory.
+   */
+  private Path createTempZipWithStoredEntryAndExtDescriptor() throws IOException {
+    final Path zipFile = createTempFile("configset-blank", "zip");
+    // Build a valid ZIP file manually with one STORED entry that has the EXT (data descriptor)
+    // flag set (flag bit 3 = 0x08). Java's ZipInputStream rejects this combination.
+    // All multi-byte fields are little-endian.
+    byte[] fileName = "blank.txt".getBytes(UTF_8);
+    int fileNameLen = fileName.length; // 9
+
+    // Offsets for computing central directory offset
+    // Local file header size: 30 + fileNameLen
+    int localHeaderSize = 30 + fileNameLen;
+    // Data descriptor size: 16 (with signature)
+    int dataDescriptorSize = 16;
+    // Central directory header size: 46 + fileNameLen
+    int centralDirHeaderSize = 46 + fileNameLen;
+    int centralDirOffset = localHeaderSize + dataDescriptorSize; // = 55
+
+    try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(zipFile))) {
+      // --- Local file header ---
+      dos.write(new byte[] {0x50, 0x4b, 0x03, 0x04}); // signature PK\x03\x04
+      dos.write(new byte[] {0x14, 0x00}); // version needed = 20
+      dos.write(new byte[] {0x08, 0x00}); // flag: bit 3 (data descriptor / EXT)
+      dos.write(new byte[] {0x00, 0x00}); // compression method: STORED
+      dos.write(new byte[] {0x00, 0x00}); // last mod time
+      dos.write(new byte[] {0x00, 0x00}); // last mod date
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // CRC-32 (0, deferred to data descriptor)
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // compressed size (deferred)
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // uncompressed size (deferred)
+      dos.write(new byte[] {(byte) fileNameLen, 0x00}); // file name length
+      dos.write(new byte[] {0x00, 0x00}); // extra field length
+      dos.write(fileName); // file name "blank.txt"
+      // (no file data — the file is empty)
+
+      // --- Data descriptor (EXT record) ---
+      dos.write(new byte[] {0x50, 0x4b, 0x07, 0x08}); // signature PK\x07\x08
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // CRC-32 (0 for empty file)
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // compressed size
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // uncompressed size
+
+      // --- Central directory header ---
+      dos.write(new byte[] {0x50, 0x4b, 0x01, 0x02}); // signature PK\x01\x02
+      dos.write(new byte[] {0x14, 0x00}); // version made by
+      dos.write(new byte[] {0x14, 0x00}); // version needed
+      dos.write(new byte[] {0x08, 0x00}); // flag (same as local header)
+      dos.write(new byte[] {0x00, 0x00}); // compression method: STORED
+      dos.write(new byte[] {0x00, 0x00}); // last mod time
+      dos.write(new byte[] {0x00, 0x00}); // last mod date
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // CRC-32
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // compressed size
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // uncompressed size
+      dos.write(new byte[] {(byte) fileNameLen, 0x00}); // file name length
+      dos.write(new byte[] {0x00, 0x00}); // extra field length
+      dos.write(new byte[] {0x00, 0x00}); // file comment length
+      dos.write(new byte[] {0x00, 0x00}); // disk number start
+      dos.write(new byte[] {0x00, 0x00}); // internal file attributes
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // external file attributes
+      dos.write(new byte[] {0x00, 0x00, 0x00, 0x00}); // local header relative offset (= 0)
+      dos.write(fileName); // file name "blank.txt"
+
+      // --- End of central directory record ---
+      dos.write(new byte[] {0x50, 0x4b, 0x05, 0x06}); // signature PK\x05\x06
+      dos.write(new byte[] {0x00, 0x00}); // disk number
+      dos.write(new byte[] {0x00, 0x00}); // disk with start of central directory
+      dos.write(new byte[] {0x01, 0x00}); // entries on this disk
+      dos.write(new byte[] {0x01, 0x00}); // total entries
+      // size of central directory
+      dos.write(
+          new byte[] {
+            (byte) (centralDirHeaderSize & 0xFF),
+            (byte) ((centralDirHeaderSize >> 8) & 0xFF),
+            (byte) ((centralDirHeaderSize >> 16) & 0xFF),
+            (byte) ((centralDirHeaderSize >> 24) & 0xFF)
+          });
+      // offset of central directory
+      dos.write(
+          new byte[] {
+            (byte) (centralDirOffset & 0xFF),
+            (byte) ((centralDirOffset >> 8) & 0xFF),
+            (byte) ((centralDirOffset >> 16) & 0xFF),
+            (byte) ((centralDirOffset >> 24) & 0xFF)
+          });
+      dos.write(new byte[] {0x00, 0x00}); // comment length
+    }
+    return zipFile;
+  }
+
   private static void zipWithForbiddenContent(Path directory, Path zipfile) throws IOException {
     OutputStream out = Files.newOutputStream(zipfile);
     assertTrue(Files.isDirectory(directory));
@@ -1504,8 +1635,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testDeleteErrors() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     // Ensure ConfigSet is immutable
@@ -1523,29 +1653,26 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     // ConfigSet is immutable
     delete.setConfigSetName("configSet");
     verifyException(solrClient, delete, "Requested delete of immutable ConfigSet");
-
-    solrClient.close();
   }
 
+  @SuppressWarnings("try")
   private void verifyException(
       SolrClient solrClient, ConfigSetAdminRequest<?, ?> request, String errorContains) {
-    ignoreException(errorContains);
-    Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
-    assertTrue(
-        "Expected exception message to contain: " + errorContains + " got: " + e.getMessage(),
-        e.getMessage().contains(errorContains));
-    unIgnoreException(errorContains);
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(errorContains)) {
+      Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
+      assertTrue(
+          "Expected exception message to contain: " + errorContains + " got: " + e.getMessage(),
+          e.getMessage().contains(errorContains));
+    }
   }
 
   @Test
   public void testDelete() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
     final String configSet = "testDelete";
     getConfigSetService().uploadConfig(configSet, configset("configset-2"));
     assertDelete(solrClient, configSet, true);
     assertDelete(solrClient, "configSetBogus", false);
-    solrClient.close();
   }
 
   private void assertDelete(SolrClient solrClient, String configSet, boolean assertExists)
@@ -1571,8 +1698,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testList() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -1601,8 +1727,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     } finally {
       zkClient.close();
     }
-
-    solrClient.close();
   }
 
   /**

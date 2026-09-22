@@ -57,7 +57,6 @@ import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,16 +122,10 @@ public class RepositoryManager {
     @SuppressWarnings({"unchecked"})
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(repoName, uri));
-    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH) == false) {
-      packageManager.zkClient.create(
-          PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT);
-    } else {
-      packageManager.zkClient.setData(
-          PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8));
-    }
+    packageManager.zkClient.makePath(
+        PackageUtils.REPOSITORIES_ZK_PATH,
+        getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
+        false);
 
     try (InputStream is = new URI(uri + "/publickey.der").toURL().openStream()) {
       addKey(is.readAllBytes(), repoName + ".der");

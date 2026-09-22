@@ -15,23 +15,9 @@
  * limitations under the License.
  */
 
-import org.apache.rat.Defaults
-import org.apache.rat.document.impl.FileDocument
-import org.apache.rat.api.MetaData
-
 import javax.inject.Inject;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.internal.logging.progress.ProgressLogger
-
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath libs.apache.rat.rat
-  }
-}
 
 def extensions = [
     'adoc',
@@ -171,8 +157,6 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
     def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
     def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
-    def lineSplitter = ~$/[\r\n]+/$;
-    def licenseMatcher = Defaults.createDefaultMatcher();
     def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
     def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
     def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
@@ -180,23 +164,26 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
-    def isLicense = {matcher, ratDocument ->
-      licenseMatcher.reset()
-      return lineSplitter.split(matcher.group(1)).any {licenseMatcher.match(ratDocument, it)}
+    // Detects whether a comment block contains Apache license header text.
+    def isLicense = { matcher ->
+      def content = matcher.group(1)
+      content.contains('Licensed to the Apache Software Foundation') ||
+          content.contains('Licensed under the Apache License') ||
+          content.contains('http://www.apache.org/licenses/LICENSE-2.0') ||
+          content.contains('https://www.apache.org/licenses/LICENSE-2.0')
     }
 
     def checkLicenseHeaderPrecedes = {f,
         description,
         contentPattern,
         commentPattern,
-        text,
-        ratDocument ->
+        text ->
       def contentMatcher = contentPattern.matcher(text);
       if (contentMatcher.find()) {
         def contentStartPos = contentMatcher.start();
         def commentMatcher = commentPattern.matcher(text);
         while (commentMatcher.find()) {
-          if (isLicense(commentMatcher, ratDocument)) {
+          if (isLicense(commentMatcher)) {
             if (commentMatcher.start() < contentStartPos) {
               break;
               // This file is all good, so break loop: license header precedes 'description' definition
@@ -228,11 +215,9 @@ class ValidateSourcePatternsTask extends DefaultTask {
         }
       }
       def javadocsMatcher = javadocsPattern.matcher(text);
-      def ratDocument = new FileDocument(f);
       while (javadocsMatcher.find()) {
-        if (isLicense(javadocsMatcher, ratDocument)) {
-          reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
-              ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
+        if (isLicense(javadocsMatcher)) {
+          reportViolation(f, 'javadoc-style license header');
         }
       }
       if (f.name.endsWith('.java')) {
@@ -269,8 +254,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
             'package',
             packagePattern,
             javaCommentPattern,
-            text,
-            ratDocument);
+            text);
         if (f.name.contains("Test")) {
           checkMockitoAssume(f, text);
         }
@@ -289,7 +273,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
         }
       }
       if (f.name.endsWith('.xml')) {
-        checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
+        checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text);
       }
     }
     progress.completed()

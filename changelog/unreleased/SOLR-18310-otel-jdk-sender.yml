@@ -1,0 +1,9 @@
+title: >
+  opentelemetry: the default OTLP sender is now http/protobuf port 4318 and with fewer/no JARs to do so.
+  JARs for others like gRPC have been removed but users can add as they need.
+type: dependency_update
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18310
+    url: https://issues.apache.org/jira/browse/SOLR-18310

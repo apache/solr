@@ -151,29 +151,29 @@ solrAdminApp.directive('explanationGraph', function(Constants) {
       var helper_node_class = function(d) {
         var classes = ['node'];
 
-        if (d.data && d.data.expressionType) {
-          classes.push(d.data.expressionType);
+        if (d.data.data && d.data.data.expressionType) {
+          classes.push(d.data.data.expressionType);
         }
 
         return classes.join(' ');
       };
 
       var helper_node_text = function(d) {
-        if (d.data && d.data.functionName) {
-          return d.data.functionName;
+        if (d.data.data && d.data.data.functionName) {
+          return d.data.data.functionName;
         }
 
-        return d.name
+        return d.data.name
       };
 
       var helper_tooltip = function(d) {
 
         return [
-          "Function: " + d.data.functionName,
-          "Type: " + d.data.expressionType,
-          "Class: " + d.data.implementingClass.replace("org.apache.solr.client.solrj.io", "o.a.s.c.s.i"),
+          "Function: " + d.data.data.functionName,
+          "Type: " + d.data.data.expressionType,
+          "Class: " + d.data.data.implementingClass.replace("org.apache.solr.client.solrj.io", "o.a.s.c.s.i"),
           "=============",
-          d.data.expression
+          d.data.data.expression
         ].join("\n");
       }
 
@@ -187,11 +187,12 @@ solrAdminApp.directive('explanationGraph', function(Constants) {
         var w = 100 + (depth * 100),
           h = leafCount * 40;
 
-        var tree = d3.layout.tree().size([h, w]);
+        var root = d3.hierarchy(graphData);
+        d3.tree().size([h, w])(root);
 
-        var diagonal = d3.svg.diagonal().projection(function(d) {
-          return [d.y * .7, d.x];
-        });
+        var diagonal = d3.linkHorizontal()
+          .x(function(d) { return d.y * .7; })
+          .y(function(d) { return d.x; });
 
         d3.select('#canvas', element).html('');
         var vis = d3.select('#canvas', element).append('svg')
@@ -200,10 +201,10 @@ solrAdminApp.directive('explanationGraph', function(Constants) {
           .append('g')
           .attr('transform', 'translate(25, 0)');
 
-        var nodes = tree.nodes(graphData);
+        var nodes = root.descendants();
 
         var link = vis.selectAll('path.link')
-          .data(tree.links(nodes))
+          .data(root.links())
           .enter().append('path')
           .attr('class', helper_path_class)
           .attr('d', diagonal);

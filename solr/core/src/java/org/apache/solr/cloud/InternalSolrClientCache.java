@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -27,12 +28,11 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.URLUtil;
 
 /**
- * A restricted {@link SolrClientCache} for internal Solr use. See {@link
- * #ALLOW_EXTERNAL_CLUSTERS_PROPERTY} to open it up.
+ * A restricted {@link SolrClientCache} for internal Solr use. Connections to clusters other than
+ * the local one must pass a validator; see {@link ZkController#validateSolrConnection}.
  */
 public class InternalSolrClientCache extends SolrClientCache {
 
@@ -41,15 +41,16 @@ public class InternalSolrClientCache extends SolrClientCache {
         : "Update SolrClientCache.INTERNAL_IMPL_CLASS to match the renamed class";
   }
 
-  public static final String ALLOW_EXTERNAL_CLUSTERS_PROPERTY = "solr.cloud.external.enabled";
-
   private final CloudSolrClient.CloudSolrClientConnection defaultConnection;
+  private final Consumer<CloudSolrClient.CloudSolrClientConnection> connectionValidator;
 
   public InternalSolrClientCache(
       HttpJettySolrClient httpSolrClient,
-      CloudSolrClient.CloudSolrClientConnection solrConnection) {
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      Consumer<CloudSolrClient.CloudSolrClientConnection> connectionValidator) {
     super(); // not passing httpSolrClient down ...
     this.defaultConnection = solrConnection;
+    this.connectionValidator = connectionValidator;
     // ... create one internal CloudSolrClient that is a bit special.
     var httpBuilder =
         new HttpJettySolrClient.Builder()
@@ -73,15 +74,8 @@ public class InternalSolrClientCache extends SolrClientCache {
     if (client != null) {
       return client;
     }
-    if (EnvUtils.getPropertyAsBool(ALLOW_EXTERNAL_CLUSTERS_PROPERTY, false)) {
-      return super.getCloudSolrClient(solrConnection);
-    }
-    throw new SolrException(
-        SolrException.ErrorCode.FORBIDDEN,
-        "External solr cluster is not allowed: "
-            + solrConnection
-            + ". To allow external clusters set -Dsolr.enable-external-clusters=true "
-            + "(WARNING: this may enable SSRF attacks)");
+    connectionValidator.accept(solrConnection); // throws if not allowed
+    return super.getCloudSolrClient(solrConnection);
   }
 
   @Override

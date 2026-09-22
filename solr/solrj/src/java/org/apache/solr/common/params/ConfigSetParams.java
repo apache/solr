@@ -20,12 +20,12 @@ import java.util.Locale;
 
 /** ConfigSets API related parameters and actions. */
 public interface ConfigSetParams {
-  public static final String ACTION = "action";
-  public static final String OVERWRITE = "overwrite";
-  public static final String CLEANUP = "cleanup";
-  public static final String FILE_PATH = "filePath";
+  String ACTION = "action";
+  String OVERWRITE = "overwrite";
+  String CLEANUP = "cleanup";
+  String FILE_PATH = "filePath";
 
-  public enum ConfigSetAction {
+  enum ConfigSetAction {
     CREATE,
     UPLOAD,
     DELETE,

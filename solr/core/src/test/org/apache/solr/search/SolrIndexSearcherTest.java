@@ -17,9 +17,14 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.List;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Rescorer;
@@ -27,13 +32,22 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.component.MergeStrategy;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TestInjection;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -231,6 +245,99 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
               assertNotEquals(Float.NaN, qr.getDocList().maxScore());
               return null;
             });
+  }
+
+  /**
+   * Regression test for SOLR-18305 / SOLR-18156: {@link SolrIndexSearcher#searchLeaf} substitutes a
+   * throwaway {@link IndexSearcher} for {@code SolrIndexSearcher.this} when {@link QueryLimits} are
+   * enabled. The substitute must not affect scoring: the {@code Weight} passed into {@code
+   * searchLeaf} was already built - with SolrIndexSearcher's own {@code Similarity} baked in -
+   * before the substitute searcher is ever created, and Lucene's default {@code searchLeaf} body
+   * only consults that {@code Weight}, never the searcher's own {@code Similarity} or query cache.
+   */
+  public void testSearchLeafVsQueryLimits() throws Exception {
+    TestInjection.queryTimeout = null;
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              // A mix of plain and MultiTermQuery-derived queries, the latter needing a
+              // rewrite (PrefixQuery/WildcardQuery/FuzzyQuery/TermRangeQuery -> BooleanQuery or
+              // ConstantScoreQuery) before a Weight can be created; the BooleanQuery additionally
+              // nests one such rewritten clause. Query#rewrite() happens on SolrIndexSearcher.this
+              // (via IndexSearcher#createWeight -> searcher.rewrite(query)), well before
+              // searchLeaf ever sees the substitute IndexSearcher, so it must not matter to the
+              // outcome checked here.
+              List<Query> testQueries =
+                  List.of(
+                      new TermQuery(new Term("field4_t", "5")),
+                      new PrefixQuery(new Term("field4_t", "1")),
+                      new WildcardQuery(new Term("field4_t", "2*")),
+                      new FuzzyQuery(new Term("field4_t", "5")),
+                      TermRangeQuery.newStringRange("field4_t", "10", "12", true, true),
+                      // Same shape of query ExpandComponent#getGroupQuery builds to re-expand a
+                      // collapsed group's members: a TermInSetQuery over the collapse field's
+                      // distinct values.
+                      new TermInSetQuery(
+                          "field4_t",
+                          List.of(new BytesRef("5"), new BytesRef("10"), new BytesRef("15"))),
+                      new BooleanQuery.Builder()
+                          .add(new TermQuery(new Term("field1_s", "foo")), BooleanClause.Occur.MUST)
+                          .add(
+                              new PrefixQuery(new Term("field4_t", "1")),
+                              BooleanClause.Occur.SHOULD)
+                          .build(),
+                      // search using ReRankCollector, same as a real {!rerank} query
+                      new FixedScoreReRankQuery(new TermQuery(new Term("field4_t", "5")), 7.5f));
+
+              for (Query q : testQueries) {
+                float scoreWithoutLimits = topScore(searcher, q);
+                float scoreWithLimits = topScoreWithQueryLimitsEnabled(searcher, q);
+
+                assertEquals(
+                    "score must be identical whether or not QueryLimits swaps in a substitute "
+                        + "IndexSearcher for searchLeaf: the Weight (and its baked-in Similarity) "
+                        + "predates that substitute and must be reused unchanged, for query: "
+                        + q,
+                    scoreWithoutLimits,
+                    scoreWithLimits,
+                    0.0f);
+              }
+              return null;
+            });
+  }
+
+  private static float topScoreWithQueryLimitsEnabled(SolrIndexSearcher searcher, Query q)
+      throws IOException {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    try (SolrQueryRequest req = req(CommonParams.TIME_ALLOWED, "1000000")) {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      assertTrue(
+          "QueryLimits must actually be enabled here, otherwise this test never exercises the "
+              + "substitute-IndexSearcher branch of SolrIndexSearcher#searchLeaf",
+          QueryLimits.getCurrentLimits().isLimitsEnabled());
+      return topScore(searcher, q);
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
+    }
+  }
+
+  // Goes through SolrIndexSearcher's own QueryCommand path (rather than raw
+  // IndexSearcher#search) so that a RankQuery is detected and routed through its
+  // getTopDocsCollector, same as production request handling. The qcache flags are cleared so
+  // each call actually re-executes the search instead of reusing the other call's cached result.
+  private static float topScore(SolrIndexSearcher searcher, Query q) throws IOException {
+    QueryCommand cmd = new QueryCommand();
+    cmd.setQuery(q);
+    cmd.setLen(10);
+    cmd.setFlags(
+        SolrIndexSearcher.GET_SCORES
+            | SolrIndexSearcher.NO_CHECK_QCACHE
+            | SolrIndexSearcher.NO_SET_QCACHE);
+    QueryResult qr = searcher.search(cmd);
+    assertTrue("expected at least one hit for query: " + q, qr.getDocList().matches() > 0);
+    DocIterator iter = qr.getDocList().iterator();
+    iter.next();
+    return iter.score();
   }
 
   public void testReranking() throws Exception {

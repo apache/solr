@@ -23,11 +23,12 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
-import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -45,9 +46,13 @@ import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +70,23 @@ public abstract class HttpSolrClient extends SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
+  /**
+   * See {@link #getUrlParamNames()}. Default set are interesting for routing or fundamental request
+   * purpose
+   */
+  public static final Set<String> DEFAULT_URL_PARAM_NAMES =
+      Set.of(
+          CoreAdminParams.ACTION,
+          CommonAdminParams.ASYNC,
+          CollectionAdminParams.COLLECTION,
+          "name", // core/collection name
+          "command", // e.g. for replication
+          ShardParams.IS_SHARD,
+          CommonParams.DISTRIB,
+          ShardParams._ROUTE_,
+          ShardParams.SHARDS_PREFERENCE,
+          ShardParams.SHARDS_PURPOSE);
+
   protected final String baseUrl;
   protected final long requestTimeoutMillis;
 
@@ -72,10 +94,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected RequestWriter requestWriter = new JavaBinRequestWriter();
 
-  // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
   protected ResponseParser parser = new JavaBinResponseParser();
-
-  protected Set<String> defaultParserMimeTypes;
 
   protected final String basicAuthAuthorizationStr;
 
@@ -90,11 +109,7 @@ public abstract class HttpSolrClient extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.urlParamNames != null) {
-      this.urlParamNames = builder.urlParamNames;
-    } else {
-      this.urlParamNames = Set.of();
-    }
+    this.urlParamNames = Objects.requireNonNullElse(builder.urlParamNames, DEFAULT_URL_PARAM_NAMES);
   }
 
   private static String extractBaseUrl(String serverBaseUrl) {
@@ -137,20 +152,19 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' param is used instead of the original params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    return wparams;
+
+    // The parser's own params take precedence over the request's, as wt does.
+    var params =
+        new ModifiableSolrParams(
+            SolrParams.wrapDefaults(
+                parserToUse.getAdditionalRequestParams(), solrRequest.getParams()));
+    // set() removes the param when the writer type is null, which is how a parser asks for no wt.
+    params.set(CommonParams.WT, parserToUse.getWriterType());
+    return params;
   }
 
-  protected boolean isMultipart(Collection<ContentStream> streams) {
-    boolean isMultipart = false;
-    if (streams != null) {
-      boolean hasNullStreamName = false;
-      hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
-      isMultipart = !hasNullStreamName && streams.size() > 1;
-    }
-    return isMultipart;
+  protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {
+    return contentWriter instanceof RequestWriter.MultipartContentWriter;
   }
 
   protected ModifiableSolrParams calculateQueryParams(
@@ -172,9 +186,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected void validateGetRequest(SolrRequest<?> solrRequest) throws IOException {
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-    Collection<ContentStream> streams =
-        contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-    if (contentWriter != null || streams != null) {
+    if (contentWriter != null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
     }
   }
@@ -188,11 +200,12 @@ public abstract class HttpSolrClient extends SolrClient {
       String responseMethod,
       final ResponseParser processor,
       InputStream is,
-      String mimeType,
+      String mimeType, // aka contentType
       String encoding,
       final boolean isV2Api,
       String urlExceptionMessage)
       throws SolrServerException {
+    Objects.requireNonNull(processor);
     boolean shouldClose = true;
     try {
       // handle some http level checks before trying to parse the response
@@ -209,7 +222,7 @@ public abstract class HttpSolrClient extends SolrClient {
           }
           break;
         default:
-          if (processor == null || mimeType == null) {
+          if (mimeType == null || mimeType.equals("text/html")) {
             throw new RemoteSolrException(
                 urlExceptionMessage,
                 httpStatus,
@@ -218,14 +231,14 @@ public abstract class HttpSolrClient extends SolrClient {
           }
       }
 
+      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
+
       if (wantStream(processor)) {
         // Only case where stream should not be closed
         shouldClose = false;
         // no processor specified, return raw stream
-        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, is);
+        return InputStreamResponseParser.createInputStreamNamedList(httpStatus, responseReason, is);
       }
-
-      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
 
       NamedList<Object> rsp;
       try {
@@ -240,14 +253,11 @@ public abstract class HttpSolrClient extends SolrClient {
       }
       if (httpStatus != 200 && !isV2Api) {
         if (error == null) {
-          StringBuilder msg =
-              new StringBuilder()
-                  .append(responseReason)
-                  .append("\n")
-                  .append("request: ")
-                  .append(responseMethod);
-          String reason = URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
-          throw new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
+          throw new RemoteSolrException(
+              urlExceptionMessage,
+              httpStatus,
+              "non ok status: " + httpStatus + ", message:" + responseReason,
+              null);
         } else {
           throw new RemoteSolrException(urlExceptionMessage, httpStatus, error);
         }
@@ -268,12 +278,6 @@ public abstract class HttpSolrClient extends SolrClient {
     return processor == null || processor instanceof InputStreamResponseParser;
   }
 
-  protected abstract boolean processorAcceptsMimeType(
-      Collection<String> processorSupportedContentTypes, String mimeType);
-
-  protected abstract String allProcessorSupportedContentTypesCommaDelimited(
-      Collection<String> processorSupportedContentTypes);
-
   /**
    * Validates that the content type in the response can be processed by the Response Parser. Throws
    * a {@code RemoteSolrException} if not.
@@ -285,28 +289,26 @@ public abstract class HttpSolrClient extends SolrClient {
       String encoding,
       int httpStatus,
       String urlExceptionMessage) {
-    if (mimeType == null
-        || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
-      // Shortcut the default scenario
+    if (mimeType == null) {
       return;
     }
     final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
     if (!processorSupportedContentTypes.isEmpty()) {
-      boolean processorAcceptsMimeType =
-          processorAcceptsMimeType(processorSupportedContentTypes, mimeType);
-      if (!processorAcceptsMimeType) {
+      final String normalizedMimeType = mimeType.toLowerCase(Locale.ROOT).trim();
+      if (!processorSupportedContentTypes.contains(normalizedMimeType)) {
         // unexpected mime type
-        final String allSupportedTypes =
-            allProcessorSupportedContentTypesCommaDelimited(processorSupportedContentTypes);
+        final String allSupportedTypes = String.join(", ", processorSupportedContentTypes);
         String prefix =
             "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
         String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
+          Charset charset = encoding != null ? Charset.forName(encoding) : FALLBACK_CHARSET;
           throw new RemoteSolrException(
-              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
-        } catch (IOException e) {
+              urlExceptionMessage, httpStatus, prefix + body.toString(charset), null);
+          // IllegalArgumentException covers an unsupported/invalid charset name from the response
+        } catch (IOException | IllegalArgumentException e) {
           throw new RemoteSolrException(
               urlExceptionMessage,
               httpStatus,
@@ -324,10 +326,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   protected void setParser(ResponseParser parser) {
     this.parser = parser;
-    updateDefaultMimeTypeForParser();
   }
-
-  protected abstract void updateDefaultMimeTypeForParser();
 
   /**
    * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently

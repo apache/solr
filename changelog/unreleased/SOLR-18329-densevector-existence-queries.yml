@@ -1,0 +1,8 @@
+title: DenseVectorField now supports existence queries (field:* / [* TO *])
+type: added
+authors:
+  - name: Li Enlai
+    nick: linslee75
+links:
+  - name: SOLR-18329
+    url: https://issues.apache.org/jira/browse/SOLR-18329

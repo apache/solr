@@ -24,8 +24,20 @@ import org.junit.Test;
 /**
  * Tests for {@link NumericRangeQParserPlugin} using {@link
  * org.apache.solr.schema.numericrange.LongRangeField} fields.
+ *
+ * <p>Each 1D scenario picks its field at random (via {@link #randomField}) from the equivalent
+ * indexed-only and indexed+docValues variants, so both the non-docValues and docValues code paths
+ * get incidental coverage across seeds while the assertions stay identical.
  */
 public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
+
+  /** 1D long range: indexed-only field and its indexed+docValues sibling (both stored). */
+  private static final String[] ONE_D = {"long_range", "long_range_dv"};
+
+  /** Randomly returns one of the given field variants so DV / non-DV both get covered. */
+  private static String randomField(String... variants) {
+    return variants[random().nextInt(variants.length)];
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -41,28 +53,29 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DIntersectsQuery() {
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "long_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "long_range", "[50 TO 80]"));
-    assertU(adoc("id", "4", "long_range", "[200 TO 300]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 80]"));
+    assertU(adoc("id", "4", f, "[200 TO 300]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[120 TO 180]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[120 TO 180]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
-        "//result/doc/str[@name='long_range'][.='[100 TO 200]']",
-        "//result/doc/str[@name='long_range'][.='[150 TO 250]']");
+        "//result/doc/str[@name='" + f + "'][.='[100 TO 200]']",
+        "//result/doc/str[@name='" + f + "'][.='[150 TO 250]']");
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[0 TO 100]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[175 TO 225]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[175 TO 225]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
@@ -71,46 +84,48 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DWithinQuery() {
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "long_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "long_range", "[50 TO 80]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 80]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=long_range}[0 TO 300]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0 TO 300]"),
         "//result[@numFound='3']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=long_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[100 TO 200]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=long_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='3']");
   }
 
   @Test
   public void test1DContainsQuery() {
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "long_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "long_range", "[50 TO 300]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 300]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=long_range}[160 TO 170]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[160 TO 170]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
         "//result/doc/str[@name='id'][.='3']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=long_range}[0 TO 400]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[0 TO 400]"),
         "//result[@numFound='0']");
 
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=long_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[100 TO 200]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
@@ -118,14 +133,15 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DCrossesQuery() {
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "long_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "long_range", "[50 TO 80]"));
-    assertU(adoc("id", "4", "long_range", "[120 TO 180]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 80]"));
+    assertU(adoc("id", "4", f, "[120 TO 180]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=\"crosses\" field=long_range}[150 TO 250]"),
+        req("q", "{!numericRange criteria=\"crosses\" field=" + f + "}[150 TO 250]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='4']");
@@ -269,56 +285,60 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNegativeValues() {
-    assertU(adoc("id", "1", "long_range", "[-100 TO -50]"));
-    assertU(adoc("id", "2", "long_range", "[-75 TO -25]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[-100 TO -50]"));
+    assertU(adoc("id", "2", f, "[-75 TO -25]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[-80 TO -60]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[-80 TO -60]"),
         "//result[@numFound='2']");
   }
 
   @Test
   public void testValuesOutsideIntRange() {
+    String f = randomField(ONE_D);
     // Values that cannot be stored in an int but are valid longs
     long min = 3_000_000_000L;
     long max = 4_000_000_000L;
 
-    assertU(adoc("id", "1", "long_range", "[" + min + " TO " + max + "]"));
+    assertU(adoc("id", "1", f, "[" + min + " TO " + max + "]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[3500000000 TO 3600000000]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[3500000000 TO 3600000000]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
 
   @Test
   public void testExtremeValues() {
+    String f = randomField(ONE_D);
     long min = Long.MIN_VALUE;
     long max = Long.MAX_VALUE;
 
-    assertU(adoc("id", "1", "long_range", "[" + min + " TO " + max + "]"));
+    assertU(adoc("id", "1", f, "[" + min + " TO " + max + "]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[0 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
 
   @Test
   public void testPointRange() {
-    assertU(adoc("id", "1", "long_range", "[100 TO 100]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 100]"));
     assertU(commit());
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[100 TO 100]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[100 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=long_range}[50 TO 150]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[50 TO 150]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
@@ -329,31 +349,33 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFullRange() {
+    String f = randomField(ONE_D);
     // doc 1: narrow range, fully inside the query range  → should NOT match (doc contains query)
     // doc 2: wide range that fully contains the query range → should match
     // doc 3: range that only partially overlaps            → should NOT match
-    assertU(adoc("id", "1", "long_range", "[130 TO 160]")); // No match
-    assertU(adoc("id", "2", "long_range", "[100 TO 200]")); // Match!
-    assertU(adoc("id", "3", "long_range", "[150 TO 250]")); // No match
+    assertU(adoc("id", "1", f, "[130 TO 160]")); // No match
+    assertU(adoc("id", "2", f, "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", f, "[150 TO 250]")); // No match
     assertU(commit());
 
     // Contains semantics: find indexed ranges that fully contain [120 TO 180]
     assertQ(
-        req("q", "long_range:[120 TO 180]"),
+        req("q", f + ":[120 TO 180]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='2']");
   }
 
   @Test
   public void testGetFieldQueryFullRangeMultipleMatches() {
-    assertU(adoc("id", "1", "long_range", "[0 TO 1000]")); // Match!
-    assertU(adoc("id", "2", "long_range", "[100 TO 200]")); // Match!
-    assertU(adoc("id", "3", "long_range", "[100 TO 199]")); // No match - max too low
-    assertU(adoc("id", "4", "long_range", "[101 TO 200]")); // No match - min too high
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[0 TO 1000]")); // Match!
+    assertU(adoc("id", "2", f, "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", f, "[100 TO 199]")); // No match - max too low
+    assertU(adoc("id", "4", f, "[101 TO 200]")); // No match - min too high
     assertU(commit());
 
     assertQ(
-        req("q", "long_range:[100 TO 200]"),
+        req("q", f + ":[100 TO 200]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -361,15 +383,16 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQuerySingleBound() {
-    // Single-bound syntax: long_range:150 is sugar for contains([150 TO 150])
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]")); // Match!
-    assertU(adoc("id", "2", "long_range", "[150 TO 150]")); // Match!
-    assertU(adoc("id", "3", "long_range", "[100 TO 149]")); // No match - max below 150
-    assertU(adoc("id", "4", "long_range", "[151 TO 300]")); // No match - min above 150
+    String f = randomField(ONE_D);
+    // Single-bound syntax: <field>:150 is sugar for contains([150 TO 150])
+    assertU(adoc("id", "1", f, "[100 TO 200]")); // Match!
+    assertU(adoc("id", "2", f, "[150 TO 150]")); // Match!
+    assertU(adoc("id", "3", f, "[100 TO 149]")); // No match - max below 150
+    assertU(adoc("id", "4", f, "[151 TO 300]")); // No match - min above 150
     assertU(commit());
 
     assertQ(
-        req("q", "long_range:150"),
+        req("q", f + ":150"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -377,7 +400,8 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQuerySingleBound2D() {
-    // 2D single-bound: bbox:5,5 is sugar for contains([5,5 TO 5,5])
+    // 2D single-bound: bbox:5,5 is sugar for contains([5,5 TO 5,5]). Uses the int bbox field (no
+    // long 2D docValues variant exists), so this is left on the indexed-only field.
     assertU(adoc("id", "1", "bbox", "[0,0 TO 10,10]")); // Match!
     assertU(adoc("id", "2", "bbox", "[5,5 TO 5,5]")); // Match!
     assertU(adoc("id", "3", "bbox", "[0,0 TO 4,10]")); // No match - X dimension ends too low
@@ -393,8 +417,9 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFieldFormatting() {
+    String f1 = randomField(ONE_D);
     // Test 1D field formatting
-    assertU(adoc("id", "1", "long_range", "[100 TO 200]"));
+    assertU(adoc("id", "1", f1, "[100 TO 200]"));
     // Test 2D field formatting
     assertU(adoc("id", "2", "bbox", "[10,20 TO 30,40]"));
     // Test 3D field formatting
@@ -418,7 +443,7 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
     assertQ(
         req("q", "id:1"),
         "//result[@numFound='1']",
-        "//result/doc/str[@name='long_range'][.='[100 TO 200]']");
+        "//result/doc/str[@name='" + f1 + "'][.='[100 TO 200]']");
 
     // Verify 2D field returns correctly formatted value
     assertQ(

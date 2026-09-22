@@ -18,20 +18,19 @@ package org.apache.solr.common.params;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 
 /**
@@ -193,21 +192,10 @@ public abstract class SolrParams
    * Returns the Boolean value of the field param, or the value for param, or null if neither is
    * set. Use this method only when you want to be explicit about absence of a value (<code>null
    * </code>) vs the default value <code>false</code>.
-   *
-   * @see #getFieldBool(String, String, boolean)
-   * @see #getPrimitiveFieldBool(String, String)
    */
   public Boolean getFieldBool(String field, String param) {
     String val = getFieldParam(field, param);
     return val == null ? null : StrUtils.parseBool(val);
-  }
-
-  /**
-   * Returns the boolean value of the field param, or the value for param or the default value of
-   * boolean - <code>false</code>
-   */
-  public boolean getPrimitiveFieldBool(String field, String param) {
-    return getFieldBool(field, param, false);
   }
 
   /**
@@ -360,7 +348,6 @@ public abstract class SolrParams
    * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0f</code>).
    *
    * @see #getFieldFloat(String, String, float)
-   * @see #getPrimitiveFieldFloat(String, String)
    */
   public Float getFieldFloat(String field, String param) {
     String val = getFieldParam(field, param);
@@ -369,14 +356,6 @@ public abstract class SolrParams
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
-  }
-
-  /**
-   * Returns the float value of the field param or the value for param or the default value for
-   * float - zero (<code>0.0f</code>)
-   */
-  public float getPrimitiveFieldFloat(String field, String param) {
-    return getFieldFloat(field, param, 0.0f);
   }
 
   /**
@@ -431,52 +410,22 @@ public abstract class SolrParams
   }
 
   /**
-   * Convert this to a NamedList of unique keys with either String or String[] values depending on
-   * how many values there are for the parameter.
-   *
-   * @deprecated see {@link SimpleOrderedMap#SimpleOrderedMap(MapWriter)}
-   */
-  @Deprecated
-  public NamedList<Object> toNamedList() {
-    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-
-    for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next();
-      final String[] values = getParams(name);
-      if (values.length == 1) {
-        result.add(name, values[0]);
-      } else {
-        // currently, no reason not to use the same array
-        result.add(name, values);
-      }
-    }
-    return result;
-  }
-
-  /**
    * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
   public String toQueryString() {
-    try {
-      final String charset = StandardCharsets.UTF_8.name();
-      final StringBuilder sb = new StringBuilder(128);
-      boolean first = true;
-      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-        final String name = it.next(), nameEnc = URLEncoder.encode(name, charset);
-        for (String val : getParams(name)) {
-          sb.append(first ? '?' : '&')
-              .append(nameEnc)
-              .append('=')
-              .append(URLEncoder.encode(val, charset));
-          first = false;
-        }
+    final Charset charset = StandardCharsets.UTF_8;
+
+    var output = new StringJoiner("&", "?", "");
+    output.setEmptyValue("");
+    for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
+      final String name = it.next();
+      final String nameEnc = URLEncoder.encode(name, charset);
+      for (String val : getParams(name)) {
+        output.add(nameEnc + "=" + URLEncoder.encode(val, charset));
       }
-      return sb.toString();
-    } catch (UnsupportedEncodingException e) {
-      // impossible!
-      throw new AssertionError(e);
     }
+    return output.toString();
   }
 
   /**
@@ -515,19 +464,14 @@ public abstract class SolrParams
    */
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
+    StringJoiner query = new StringJoiner("&");
     for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
       for (String val : getParams(name)) {
-        if (!first) sb.append('&');
-        first = false;
-        StrUtils.partialURLEncodeVal(sb, name);
-        sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val);
+        query.add(StrUtils.partialURLEncodeVal(name) + "=" + StrUtils.partialURLEncodeVal(val));
       }
     }
-    return sb.toString();
+    return query.toString();
   }
 
   /**

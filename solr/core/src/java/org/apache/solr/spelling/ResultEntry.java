@@ -19,11 +19,11 @@ package org.apache.solr.spelling;
 import java.util.Objects;
 
 public class ResultEntry {
-  public Token token;
+  public SpellCheckToken token;
   public String suggestion;
   public int freq;
 
-  ResultEntry(Token t, String s, int f) {
+  ResultEntry(SpellCheckToken t, String s, int f) {
     token = t;
     suggestion = s;
     freq = f;

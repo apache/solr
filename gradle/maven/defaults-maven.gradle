@@ -142,7 +142,7 @@ configure(subprojects.findAll {it.path in rootProject.published}) {prj ->
         jars(MavenPublication) {
           from components.java
           groupId = project.group
-          artifactId = project.archivesBaseName
+          artifactId = project.base.archivesName.get()
 
           artifact sourcesJar
           artifact javadocJar

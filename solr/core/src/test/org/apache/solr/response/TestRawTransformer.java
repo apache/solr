@@ -62,13 +62,13 @@ public class TestRawTransformer extends SolrCloudTestCase {
       initStandalone();
       JSR.start();
       if (random().nextBoolean()) {
-        CLIENT = JSR.newClient();
+        CLIENT = JSR.getSolrClient();
       } else {
         CLIENT = new EmbeddedSolrServer(JSR.getCoreContainer(), null);
       }
     } else {
       initCloud();
-      CLIENT = JSR.newClient();
+      CLIENT = JSR.getSolrClient();
       JSR = null;
     }
     initIndex();

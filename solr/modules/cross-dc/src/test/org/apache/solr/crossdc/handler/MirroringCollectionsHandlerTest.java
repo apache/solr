@@ -46,7 +46,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -141,7 +140,7 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
       SolrParams mirroredParams = solrRequest.getParams();
       params.forEach(
           entry -> {
-            assertEquals(entry.getValue(), mirroredParams.getParams(entry.getKey()));
+            assertArrayEquals(entry.getValue(), mirroredParams.getParams(entry.getKey()));
           });
     } else {
       assertEquals(initialMirroredCount, captor.getAllValues().size());

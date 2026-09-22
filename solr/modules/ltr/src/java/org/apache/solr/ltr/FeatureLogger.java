@@ -23,7 +23,7 @@ public abstract class FeatureLogger {
   public enum FeatureFormat {
     DENSE,
     SPARSE
-  };
+  }
 
   protected final FeatureFormat featureFormat;
 

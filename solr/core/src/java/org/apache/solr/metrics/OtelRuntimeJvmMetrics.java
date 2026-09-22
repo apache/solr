@@ -52,7 +52,10 @@ public class OtelRuntimeJvmMetrics {
               + " gauges; guarded by instanceof check so gracefully absent on non-HotSpot JVMs")
   public OtelRuntimeJvmMetrics initialize(
       SolrMetricManager solrMetricManager, String registryName) {
-    if (!isJvmMetricsEnabled()) return this;
+    if (!isJvmMetricsEnabled()) {
+      log.info("JVM metrics are disabled"); // log because this isn't a default
+      return this;
+    }
 
     // a dummy instance; we only care to provide the MeterProvider
     var otel =
@@ -93,16 +96,13 @@ public class OtelRuntimeJvmMetrics {
                 if (free >= 0) measurement.record(free, Attributes.of(STATE_KEY_ATTR, "free"));
               },
               OtelUnit.BYTES);
-      log.info("Physical memory metrics enabled");
+      log.debug("Physical memory metrics enabled");
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Physical memory metrics unavailable:"
-                + " com.sun.management.OperatingSystemMXBean not present on this JVM");
-      }
+      log.info(
+          "Physical memory metrics unavailable:"
+              + " com.sun.management.OperatingSystemMXBean not present on this JVM");
     }
     isInitialized = true;
-    log.info("JVM metrics collection successfully initialized");
     return this;
   }
 

@@ -137,13 +137,12 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
       String targetSliceName = null;
       for (Slice slice : docColl.getSlices()) {
         Replica leader = slice.getLeader();
-        try (SolrClient client = getHttpSolrClient(leader)) {
-          SolrQuery q = new SolrQuery("id:target");
-          q.set(DISTRIB, "false");
-          QueryResponse qr = client.query(q);
-          if (qr.getResults().getNumFound() > 0) {
-            targetSliceName = slice.getName();
-          }
+        SolrClient client = cluster.getSolrClient(leader);
+        SolrQuery q = new SolrQuery("id:target");
+        q.set(DISTRIB, "false");
+        QueryResponse qr = client.query(q);
+        if (qr.getResults().getNumFound() > 0) {
+          targetSliceName = slice.getName();
         }
       }
       assertNotNull("target doc should exist on a shard", targetSliceName);
@@ -153,14 +152,14 @@ public class LukeHandlerCloudTest extends SolrCloudTestCase {
       for (Slice slice : docColl.getSlices()) {
         if (!slice.getName().equals(targetSliceName)) {
           Replica leader = slice.getLeader();
-          try (SolrClient client = getHttpSolrClient(leader)) {
-            SolrQuery q = new SolrQuery("*:*");
-            q.setRows(1);
-            q.set(DISTRIB, "false");
-            QueryResponse qr = client.query(q);
-            assertTrue("other shard should have seed docs", qr.getResults().getNumFound() > 0);
-            otherDocId = (String) qr.getResults().getFirst().getFieldValue("id");
-          }
+          SolrClient client = cluster.getSolrClient(leader);
+          SolrQuery q = new SolrQuery("*:*");
+          q.setRows(1);
+          q.set(DISTRIB, "false");
+          QueryResponse qr = client.query(q);
+          assertTrue("other shard should have seed docs", qr.getResults().getNumFound() > 0);
+          otherDocId = (String) qr.getResults().getFirst().getFieldValue("id");
+
           break;
         }
       }

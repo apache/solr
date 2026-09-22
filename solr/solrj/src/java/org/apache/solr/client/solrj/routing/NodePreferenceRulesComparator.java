@@ -238,7 +238,7 @@ public class NodePreferenceRulesComparator {
   private Comparator<String> getPreferenceUrlComparator(PreferenceRule preferenceRule) {
     Comparator<String> comparator =
         switch (preferenceRule.name) {
-            // These preferences are not supported for URLs
+          // These preferences are not supported for URLs
           case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:

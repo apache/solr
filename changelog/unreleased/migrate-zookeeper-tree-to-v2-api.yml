@@ -1,0 +1,7 @@
+title: Admin UI's Cloud > Tree screen now uses the v2 Zookeeper read API. Fixed a bug in that API where the per-child stat map returned by GET /api/cluster/zookeeper/children was serialized twice.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: PR#4901
+    url: https://github.com/apache/solr/pull/4901

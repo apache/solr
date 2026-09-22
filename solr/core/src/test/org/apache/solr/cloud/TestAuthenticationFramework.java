@@ -43,9 +43,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";
 
-  static String requestUsername = MockAuthenticationPlugin.expectedUsername;
-  static String requestPassword = MockAuthenticationPlugin.expectedPassword;
-
   @Override
   public void setUp() throws Exception {
     setupAuthenticationPlugin();
@@ -72,7 +69,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     try {
       RemoteSolrException e =
           expectThrows(RemoteSolrException.class, this::collectionCreateSearchDeleteTwice);
-      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+      assertEquals(401, e.code()); // Authentication failed
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
       MockAuthenticationPlugin.expectedPassword = null;

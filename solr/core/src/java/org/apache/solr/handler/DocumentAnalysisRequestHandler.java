@@ -279,7 +279,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     while (true) {
       int event = reader.next();
       switch (event) {
-          // Add everything to the text
+        // Add everything to the text
         case XMLStreamConstants.SPACE:
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:

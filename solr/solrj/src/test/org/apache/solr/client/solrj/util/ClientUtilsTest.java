@@ -16,12 +16,14 @@
  */
 package org.apache.solr.client.solrj.util;
 
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.search.QueryParsing;
 import org.junit.Test;
 
 /**
@@ -35,6 +37,49 @@ public class ClientUtilsTest extends SolrTestCase {
     assertEquals("with\\ space", ClientUtils.escapeQueryChars("with space"));
     assertEquals("h\\:ello\\!", ClientUtils.escapeQueryChars("h:ello!"));
     assertEquals("h\\~\\!", ClientUtils.escapeQueryChars("h~!"));
+  }
+
+  // FYI also tested via org.apache.solr.common.params.SolrParamTest.testLocalParamRoundTripParsing
+  public void testEncodeLocalParamValRoundTrip() throws Exception {
+    // Values that require quoting (whitespace, '}', or a leading '$') must round-trip through
+    // Solr's own local-params reader, in particular values containing a literal backslash or
+    // single quote.
+    assertRoundTrips("");
+    assertRoundTrips("'leadingQuote");
+    assertRoundTrips("\"leadingDoubleQuote");
+    assertRoundTrips("plain");
+    assertRoundTrips("has space");
+    assertRoundTrips("trailing}brace");
+    assertRoundTrips("has'quote and space");
+    assertRoundTrips("has\\backslash and space");
+    assertRoundTrips("both\\'kinds together");
+    assertRoundTrips("$dollarPrefixed");
+    assertRoundTrips("$dollarPrefixed with space");
+    assertRoundTrips("$\\'mix of everything");
+
+    for (int i = 0; i < 100; i++) {
+      assertRoundTrips(TestUtil.randomUnicodeString(random()));
+    }
+  }
+
+  private void assertRoundTrips(String original) throws Exception {
+    String encoded = ClientUtils.encodeLocalParamVal(original);
+    String txt = "{!key=" + encoded + "}";
+    ModifiableSolrParams target = new ModifiableSolrParams();
+    QueryParsing.parseLocalParams(txt, 0, target, null);
+    assertEquals(
+        "encodeLocalParamVal(" + original + ") -> " + encoded + " did not round-trip",
+        original,
+        target.get("key"));
+
+    // Also confirm the encoded value doesn't swallow whatever follows it.
+    String txtFollowedByAnother = "{!key=" + encoded + " next=followed}";
+    ModifiableSolrParams targetFollowedByAnother = new ModifiableSolrParams();
+    QueryParsing.parseLocalParams(txtFollowedByAnother, 0, targetFollowedByAnother, null);
+    assertEquals(
+        "encodeLocalParamVal(" + original + ") -> " + encoded + " swallowed the next local param",
+        "followed",
+        targetFollowedByAnother.get("next"));
   }
 
   @Test
@@ -55,7 +100,6 @@ public class ClientUtilsTest extends SolrTestCase {
 
   @Test
   public void testUrlBuilding() throws Exception {
-    final var rw = new XMLRequestWriter();
     // Simple case, non-collection request
     {
       final var request = new HealthCheckRequest();

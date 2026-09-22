@@ -17,6 +17,7 @@
 package org.apache.solr.embedded;
 
 import jakarta.servlet.Filter;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -35,26 +36,27 @@ public class JettyConfig {
   public final Map<Class<? extends Filter>, String> extraFilters;
   public final SSLConfig sslConfig;
   public final boolean enableV2;
+  public final boolean enableGracefulShutdown;
 
-  private JettyConfig(
-      boolean onlyHttp1,
-      int port,
-      int portRetryTime,
-      boolean stopAtShutdown,
-      Long waitForLoadingCoresToFinishMs,
-      Map<ServletHolder, String> extraServlets,
-      Map<Class<? extends Filter>, String> extraFilters,
-      SSLConfig sslConfig,
-      boolean enableV2) {
-    this.onlyHttp1 = onlyHttp1;
-    this.port = port;
-    this.portRetryTime = portRetryTime;
-    this.stopAtShutdown = stopAtShutdown;
-    this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
-    this.extraServlets = extraServlets;
-    this.extraFilters = extraFilters;
-    this.sslConfig = sslConfig;
-    this.enableV2 = enableV2;
+  /** If true, serve the Admin UI static files and index.html like the production web.xml does. */
+  public final boolean enableAdminUi;
+
+  /** Snapshot of the builder that built this config; enables {@link #builder(JettyConfig)}. */
+  private final Builder builder;
+
+  private JettyConfig(Builder builder) {
+    this.builder = builder;
+    this.onlyHttp1 = builder.onlyHttp1;
+    this.port = builder.port;
+    this.portRetryTime = builder.portRetryTime;
+    this.stopAtShutdown = builder.stopAtShutdown;
+    this.waitForLoadingCoresToFinishMs = builder.waitForLoadingCoresToFinishMs;
+    this.extraServlets = Collections.unmodifiableMap(builder.extraServlets);
+    this.extraFilters = Collections.unmodifiableMap(builder.extraFilters);
+    this.sslConfig = builder.sslConfig;
+    this.enableV2 = builder.enableV2;
+    this.enableGracefulShutdown = builder.enableGracefulShutdown;
+    this.enableAdminUi = builder.enableAdminUi;
   }
 
   public static Builder builder() {
@@ -62,25 +64,16 @@ public class JettyConfig {
   }
 
   public static Builder builder(JettyConfig other) {
-    Builder builder = new Builder();
-
-    builder.onlyHttp1 = other.onlyHttp1;
-    builder.port = other.port;
-    builder.portRetryTime = other.portRetryTime;
-    builder.stopAtShutdown = other.stopAtShutdown;
-    builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
-    builder.extraServlets = other.extraServlets;
-    builder.extraFilters = other.extraFilters;
-    builder.sslConfig = other.sslConfig;
-    builder.enableV2 = other.enableV2;
-    return builder;
+    return other.builder.clone();
   }
 
-  public static class Builder {
+  public static class Builder implements Cloneable {
 
     boolean onlyHttp1 = false;
     int port = 0;
     boolean enableV2 = true;
+    boolean enableGracefulShutdown = false;
+    boolean enableAdminUi = false;
     boolean stopAtShutdown = true;
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -96,6 +89,16 @@ public class JettyConfig {
 
     public Builder enableV2(boolean flag) {
       this.enableV2 = flag;
+      return this;
+    }
+
+    public Builder enableGracefulShutdown(boolean flag) {
+      this.enableGracefulShutdown = flag;
+      return this;
+    }
+
+    public Builder enableAdminUi(boolean flag) {
+      this.enableAdminUi = flag;
       return this;
     }
 
@@ -144,17 +147,22 @@ public class JettyConfig {
       return this;
     }
 
+    /** Copies the maps too, so the clone is fully independent; the SSLConfig is shared. */
+    @Override
+    public Builder clone() {
+      try {
+        Builder clone = (Builder) super.clone();
+        clone.extraServlets = new TreeMap<>(extraServlets);
+        clone.extraFilters = new LinkedHashMap<>(extraFilters);
+        return clone;
+      } catch (CloneNotSupportedException e) {
+        throw new AssertionError(e);
+      }
+    }
+
     public JettyConfig build() {
-      return new JettyConfig(
-          onlyHttp1,
-          port,
-          portRetryTime,
-          stopAtShutdown,
-          waitForLoadingCoresToFinishMs,
-          extraServlets,
-          extraFilters,
-          sslConfig,
-          enableV2);
+      // clone so later mutations of this builder don't leak into the built config's snapshot
+      return new JettyConfig(clone());
     }
   }
 }
