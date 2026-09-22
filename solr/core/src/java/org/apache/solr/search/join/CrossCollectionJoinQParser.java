@@ -89,8 +89,12 @@ public class CrossCollectionJoinQParser extends QParser {
       throw new SyntaxError(
           "zkHost and solrUrl are mutually exclusive; specify at most one of them.");
     }
+    CoreContainer cc = req.getCoreContainer(); // null in some unit tests
     // Test if this is a valid solr url.
     if (solrUrl != null) {
+      if (cc != null && cc.getZkController() == null) {
+        throw new SyntaxError("solrUrl is not allowed when Solr is not in SolrCloud mode.");
+      }
       if (allowSolrUrls == null) {
         throw new SyntaxError("allowSolrUrls list must be configured to use solrUrl parameter.");
       }
@@ -126,7 +130,6 @@ public class CrossCollectionJoinQParser extends QParser {
     } else if (zkHost != null && !zkHost.isBlank()) {
       solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     }
-    CoreContainer cc = req.getCoreContainer();
     if (solrConnection != null && cc != null) { // no CoreContainer -- unit test
       ZkController zkController = cc.getZkController();
       if (zkController == null) {

@@ -27,12 +27,11 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
 
 /** The SolrClientCache caches SolrClients, so they can be reused by different TupleStreams. */
-// TODO restrict usage to block within Solr.  SOLR_TIP env? SOLR_SERVER_DIR? solr.solr.home?
-//    Check that there's a BATS test for CLI stream tool
 public class SolrClientCache implements Closeable {
 
   // Set the floor for timeouts to 60 seconds.
@@ -66,7 +65,7 @@ public class SolrClientCache implements Closeable {
   }
 
   private void checkNotRunningInSolr() {
-    if (System.getProperty("solr.solr.home") != null
+    if (ExecutorUtil.isSolrServerThread()
         && !INTERNAL_IMPL_CLASS.equals(this.getClass().getName())) {
       throw new IllegalStateException(
           "Inside Solr, use InternalSolrClientCache instead of " + this.getClass().getName());

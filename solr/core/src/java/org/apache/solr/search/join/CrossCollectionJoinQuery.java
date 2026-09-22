@@ -294,7 +294,12 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       params.set("expr", uniqueExpr.toString());
       params.set(CommonParams.WT, CommonParams.JAVABIN);
 
-      return new SolrStream(solrUrl, collection, "/stream", params);
+      var solrStream = new SolrStream(solrUrl, collection, "/stream", params);
+      StreamContext streamContext = new StreamContext();
+      streamContext.setSolrClientCache(
+          searcher.getCore().getCoreContainer().getZkController().getSolrClientCache());
+      solrStream.setStreamContext(streamContext);
+      return solrStream;
     }
 
     private DocSet getDocSet() throws IOException {
