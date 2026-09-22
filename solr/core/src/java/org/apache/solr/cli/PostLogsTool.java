@@ -45,6 +45,16 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.handler.component.ShardRequest;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "postlogs",
+    description = "Indexes Solr logs in the out-of-the-box log format.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Index all logs found under a directory",
+      "  bin/solr postlogs -c gettingstarted --rootdir /var/solr/logs --solr-url"
+          + " http://localhost:8983"
+    })
 public class PostLogsTool extends ToolBase {
 
   private static final Option COLLECTION_NAME_OPTION =
@@ -67,6 +77,33 @@ public class PostLogsTool extends ToolBase {
 
   /** Parameters for the postlogs command, independent of the command line parser. */
   record PostLogsParams(String url, String rootDir, String credentials) {}
+
+  // --- picocli fields ---
+  // The connection group is mandatory (multiplicity "1"), mirroring the commons-cli path's
+  // manual IllegalArgumentException when no connection target is given.
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--rootdir",
+      required = true,
+      paramLabel = "DIRECTORY",
+      description = "All files found at or below the root directory will be indexed.")
+  private String rootDirOpt;
+
+  public PostLogsTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public PostLogsTool(ToolRuntime runtime) {
     super(runtime);
@@ -639,6 +676,11 @@ public class PostLogsTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String resolvedSolrUrl =
+        CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials);
+    String url = resolvedSolrUrl + "/solr/" + nameOpt;
+    PostLogsParams params = new PostLogsParams(url, rootDirOpt, credentialsOptions.credentials);
+    runCommand(params);
+    return 0;
   }
 }
