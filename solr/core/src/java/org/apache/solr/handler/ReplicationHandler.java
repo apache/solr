@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -154,7 +155,23 @@ public class ReplicationHandler extends RequestHandlerBase
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    return Name.READ_PERM;
+    SolrParams params = request.getParams();
+    String command = params == null ? null : params.get(COMMAND);
+    if (command == null) {
+      return Name.READ_PERM;
+    }
+    switch (command.toLowerCase(Locale.ROOT)) {
+      case CMD_INDEX_VERSION:
+      case CMD_GET_FILE:
+      case CMD_GET_FILE_LIST:
+      case CMD_DETAILS:
+      case CMD_SHOW_COMMITS:
+      case CMD_RESTORE_STATUS:
+        return Name.READ_PERM;
+      default:
+        // State-changing and unknown commands require UPDATE_PERM.
+        return Name.UPDATE_PERM;
+    }
   }
 
   private static final class CommitVersionInfo {
