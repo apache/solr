@@ -55,14 +55,14 @@ Files are opened when a segment is opened, so this applies at startup and again 
 It avoids slow first queries against a cold index, at the cost of a blocking page-in each time a segment is opened.
 
 Preloading an entire large index is often undesirable.
-If the index does not fit in the memory available for the OS page cache, `preload` cannot make all of it resident: files compete for finite memory space, and preloading a file that contributes little to query latency can evict one that matters.
-`preloadExtensions` restricts preloading to the file extensions you name, so that the files most impactful to your search use case are prioritized:
+Such an index may not fit in the memory available for the OS page cache, in which case files compete for finite space and preloading one that contributes little to query latency evicts one that matters.
+`preloadExtensions` restricts preloading to the file extensions you name, prioritizing the files with the most impact on performance:
 
 [source,xml]
 ----
 <directoryFactory name="DirectoryFactory"
                   class="solr.MMapDirectoryFactory">
-  <str name="preloadExtensions">.vex,.veb</str>
+  <str name="preloadExtensions">vex,vec</str>
 </directoryFactory>
 ----
 
@@ -70,7 +70,8 @@ This is particularly useful for dense vector search, which depends on the HNSW g
 
 Extension matching is case insensitive, applies to the end of the file name, and the leading `.` is optional.
 `preloadExtensions` takes precedence over `preload`: if both are set, only the listed extensions are preloaded.
-Both parameters are honored only by `solr.MMapDirectoryFactory`; the default `solr.NRTCachingDirectoryFactory` ignores them.
+Both parameters are honored by `solr.MMapDirectoryFactory`, `solr.StandardDirectoryFactory`, and the default `solr.NRTCachingDirectoryFactory`.
+They have no effect when the underlying directory is not memory mapped, as with `solr.NIOFSDirectoryFactory`.
 
 The {solr-javadocs}/core/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAMDirectoryFactory`] is memory based, not persistent, and does not work with replication.
 Use this DirectoryFactory to store your index in RAM.

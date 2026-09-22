@@ -1,5 +1,5 @@
-title: MMapDirectoryFactory accepts a `preloadExtensions` parameter, restricting preload to index
-  files with the given extensions instead of preloading the whole index
+title: StandardDirectoryFactory and implementing classes honor `preload=true` and the new
+  `preloadExtensions`
 type: added
 authors:
 - name: Kevin Liang

@@ -25,7 +25,12 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-/** Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory} */
+/**
+ * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
+ *
+ * <p>The {@code preload} and {@code preloadExtensions} parameters of {@link
+ * StandardDirectoryFactory} are also honored, and apply to the wrapped {@link FSDirectory}.
+ */
 public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   public static final int DEFAULT_MAX_MERGE_SIZE_MB = 4;
   private double maxMergeSizeMB = DEFAULT_MAX_MERGE_SIZE_MB;
@@ -48,7 +53,8 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory) throws IOException {
-    return new NRTCachingDirectory(
-        FSDirectory.open(Path.of(path), lockFactory), maxMergeSizeMB, maxCachedMB);
+    FSDirectory fsDirectory = FSDirectory.open(Path.of(path), lockFactory);
+    applyPreload(fsDirectory);
+    return new NRTCachingDirectory(fsDirectory, maxMergeSizeMB, maxCachedMB);
   }
 }
