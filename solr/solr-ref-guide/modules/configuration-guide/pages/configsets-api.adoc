@@ -258,7 +258,7 @@ V2 API::
 +
 ====
 With the v2 API, the file path is part of the URL path.
-Use a `PUT` request to `/api/configsets/{configSetName}/files/{filePath}`:
+Use a `PUT` request to `/api/configsets/\{configSetName}/files/\{filePath}`:
 
 
 [source,bash]
@@ -327,7 +327,7 @@ V2 API::
 +
 ====
 With the v2 API, the file path is part of the URL path.
-Use a `GET` request to `/api/configsets/{configSetName}/files/{filePath}`:
+Use a `GET` request to `/api/configsets/\{configSetName}/files/\{filePath}`:
 
 [source,bash]
 ----
