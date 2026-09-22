@@ -24,7 +24,7 @@
 
 title: Support _route_ in the streaming expression function to prune shard fan-out
 
-type: Improvement
+type: added
 authors:
   - name: Mathew Skaria
 links:
