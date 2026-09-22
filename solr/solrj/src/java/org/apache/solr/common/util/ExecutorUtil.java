@@ -429,7 +429,8 @@ public class ExecutorUtil {
     }
   }
 
-  private static final InheritableThreadLocal<Boolean> isServerPool = new InheritableThreadLocal<>();
+  private static final InheritableThreadLocal<Boolean> isServerPool =
+      new InheritableThreadLocal<>();
 
   /**
    * Returns whether the current thread is doing work for this Solr node.

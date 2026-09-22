@@ -179,8 +179,7 @@ public class CoreContainerProvider implements ServletContextListener {
                 }
               });
 
-      Boolean previousServerThreadFlag =
-          ExecutorUtil.isSolrServerThread() ? Boolean.TRUE : null;
+      Boolean previousServerThreadFlag = ExecutorUtil.isSolrServerThread() ? Boolean.TRUE : null;
       ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
       try {
         coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);

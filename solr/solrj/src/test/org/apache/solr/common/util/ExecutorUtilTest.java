@@ -288,56 +288,60 @@ public class ExecutorUtilTest extends SolrTestCase {
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(service);
     }
+  }
 
-    @Test
-    public void testSolrServerThreadFlagFollowsSubmitterAndDoesNotLeak() throws Exception {
-      ExecutorService service = ExecutorUtil.newMDCAwareSingleThreadExecutor("server-thread-flag-test");
-      try {
-        ExecutorUtil.setServerThreadFlag(null);
-        assertFalse(service.submit(ExecutorUtil::isSolrServerThread).get());
+  @Test
+  public void testSolrServerThreadFlagFollowsSubmitterAndDoesNotLeak() throws Exception {
+    ExecutorService service =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("server-thread-flag-test"));
+    try {
+      ExecutorUtil.setServerThreadFlag(null);
+      assertFalse(service.submit(ExecutorUtil::isSolrServerThread).get());
 
-        ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
-        try {
-          assertTrue(service.submit(ExecutorUtil::isSolrServerThread).get());
-        } finally {
-          ExecutorUtil.setServerThreadFlag(null);
-        }
-
-        assertFalse(service.submit(ExecutorUtil::isSolrServerThread).get());
-      } finally {
-        ExecutorUtil.setServerThreadFlag(null);
-        ExecutorUtil.shutdownNowAndAwaitTermination(service);
-      }
-    }
-
-    @Test
-    public void testSolrServerThreadFlagDoesNotLeakFromInheritedPoolThread() throws Exception {
       ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
-      ExecutorUtil.MDCAwareThreadPoolExecutor service =
-          (ExecutorUtil.MDCAwareThreadPoolExecutor)
-              ExecutorUtil.newMDCAwareSingleThreadExecutor("server-thread-inherit-test");
       try {
-        assertTrue(service.prestartCoreThread());
-        ExecutorUtil.setServerThreadFlag(null);
-        assertFalse(service.submit(ExecutorUtil::isSolrServerThread).get());
+        assertTrue(service.submit(ExecutorUtil::isSolrServerThread).get());
       } finally {
         ExecutorUtil.setServerThreadFlag(null);
-        ExecutorUtil.shutdownNowAndAwaitTermination(service);
       }
-    }
 
-    @Test
-    public void testSolrServerThreadFlagIsInheritedByChildThreads() throws Exception {
-      ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
-      AtomicBoolean childSawServerFlag = new AtomicBoolean(false);
-      try {
-        Thread childThread = new Thread(() -> childSawServerFlag.set(ExecutorUtil.isSolrServerThread()));
-        childThread.start();
-        childThread.join();
-        assertTrue(childSawServerFlag.get());
-      } finally {
-        ExecutorUtil.setServerThreadFlag(null);
-      }
+      assertFalse(service.submit(ExecutorUtil::isSolrServerThread).get());
+    } finally {
+      ExecutorUtil.setServerThreadFlag(null);
+      ExecutorUtil.shutdownNowAndAwaitTermination(service);
+    }
+  }
+
+  @Test
+  public void testSolrServerThreadFlagDoesNotLeakFromInheritedPoolThread() throws Exception {
+    ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
+    ExecutorUtil.MDCAwareThreadPoolExecutor service =
+        (ExecutorUtil.MDCAwareThreadPoolExecutor)
+            ExecutorUtil.newMDCAwareSingleThreadExecutor(
+                new SolrNamedThreadFactory("server-thread-inherit-test"));
+    try {
+      assertTrue(service.prestartCoreThread());
+      ExecutorUtil.setServerThreadFlag(null);
+      assertFalse(service.submit(ExecutorUtil::isSolrServerThread).get());
+    } finally {
+      ExecutorUtil.setServerThreadFlag(null);
+      ExecutorUtil.shutdownNowAndAwaitTermination(service);
+    }
+  }
+
+  @Test
+  public void testSolrServerThreadFlagIsInheritedByChildThreads() throws Exception {
+    ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
+    AtomicBoolean childSawServerFlag = new AtomicBoolean(false);
+    try {
+      Thread childThread =
+          new Thread(() -> childSawServerFlag.set(ExecutorUtil.isSolrServerThread()));
+      childThread.start();
+      childThread.join();
+      assertTrue(childSawServerFlag.get());
+    } finally {
+      ExecutorUtil.setServerThreadFlag(null);
     }
   }
 }
