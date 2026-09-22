@@ -324,14 +324,31 @@ public final class AuxIndexManager implements Closeable {
    *       names.
    */
   synchronized void writeBatch(Map<String, JoinColumnModel> mappings) throws IOException {
+    long startNanos = System.nanoTime();
     this.writerDelegate.writeJoinColumns(writer, mappings);
+    long writtenNanos = System.nanoTime();
     if (this.commitPerBatch) {
       writer.commit();
     }
+    long committedNanos = System.nanoTime();
     if (this.blockingRefresh) {
       manager.maybeRefreshBlocking();
     } else {
       manager.maybeRefresh(); // perhaps it should be carried out the enclosing synchronize
+    }
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
+      long refreshedNanos = System.nanoTime();
+      // lock wait is not measured here: it is evt=build's persistMs minus this line's totalMs
+      JoinIndexUtils.logDiagnostic(
+          log,
+          "AUXIJOIN evt=writeBatch columns={} writer={} writeMs={} commitMs={} refreshMs={}"
+              + " totalMs={}",
+          mappings.size(),
+          writerDelegate.getClass().getSimpleName(),
+          (writtenNanos - startNanos) / 1_000_000L,
+          (committedNanos - writtenNanos) / 1_000_000L,
+          (refreshedNanos - committedNanos) / 1_000_000L,
+          (refreshedNanos - startNanos) / 1_000_000L);
     }
   }
 
