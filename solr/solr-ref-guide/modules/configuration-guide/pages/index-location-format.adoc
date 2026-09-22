@@ -50,6 +50,28 @@ You can force a particular implementation and/or configuration options by specif
 </directoryFactory>
 ----
 
+`preload` loads index files into the OS page cache as they are opened, instead of letting pages fault in on demand as queries touch them.
+Files are opened when a segment is opened, so this applies at startup and again for every newly flushed or merged segment.
+It avoids slow first queries against a cold index, at the cost of a blocking page-in each time a segment is opened.
+
+Preloading an entire large index is often undesirable.
+If the index does not fit in the memory available for the OS page cache, `preload` cannot make all of it resident: files compete for finite memory space, and preloading a file that contributes little to query latency can evict one that matters.
+`preloadExtensions` restricts preloading to the file extensions you name, so that the files most impactful to your search use case are prioritized:
+
+[source,xml]
+----
+<directoryFactory name="DirectoryFactory"
+                  class="solr.MMapDirectoryFactory">
+  <str name="preloadExtensions">.vex,.veb</str>
+</directoryFactory>
+----
+
+This is particularly useful for dense vector search, which depends on the HNSW graph and vector data being resident in memory for best performance.
+
+Extension matching is case insensitive, applies to the end of the file name, and the leading `.` is optional.
+`preloadExtensions` takes precedence over `preload`: if both are set, only the listed extensions are preloaded.
+Both parameters are honored only by `solr.MMapDirectoryFactory`; the default `solr.NRTCachingDirectoryFactory` ignores them.
+
 The {solr-javadocs}/core/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAMDirectoryFactory`] is memory based, not persistent, and does not work with replication.
 Use this DirectoryFactory to store your index in RAM.
 
