@@ -329,6 +329,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * `stream.file`, `stream.url`, and `stream.body` params are no longer supported.
 
+* `/update/extract` (`ExtractingRequestHandler` in the `extraction` module) requires the `update` permission rather than `read`, since it indexes documents. Deployments where `read`-only users submit documents through `/update/extract` must grant those users `update` as well.
+
 === Upgrade to Jetty 12.x and Jakarta namespace
 
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
