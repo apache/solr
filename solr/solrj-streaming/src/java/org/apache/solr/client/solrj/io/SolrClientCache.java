@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -59,6 +60,7 @@ public class SolrClientCache implements Closeable {
   private final Http2SolrClient http2SolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
+  private volatile Consumer<String> zkHostValidator;
 
   public SolrClientCache() {
     this.apacheHttpClient = null;
@@ -76,6 +78,35 @@ public class SolrClientCache implements Closeable {
     this.http2SolrClient = http2SolrClient;
   }
 
+  /**
+   * Installs a ZooKeeper host validator that {@link #getCloudSolrClient(String)} consults on every
+   * call, before any ZK contact. The validator rejects a zkHost by throwing, typically a {@code 403
+   * Forbidden} {@link org.apache.solr.common.SolrException}. A {@code null} validator disables
+   * validation.
+   *
+   * <p>The validator is invoked while holding the cache monitor, so it must be non-blocking and
+   * must not perform I/O.
+   */
+  public void setZkHostValidator(Consumer<String> zkHostValidator) {
+    this.zkHostValidator = zkHostValidator;
+  }
+
+  /** Throws if the installed validator rejects the zkHost. */
+  public void validateZkHost(String zkHost) {
+    var validator = zkHostValidator;
+    if (validator != null) {
+      validator.accept(zkHost);
+    }
+  }
+
+  /** Message for a rejected ZooKeeper connection string. */
+  public static String zkHostRejectionMessage(String connectionString) {
+    return "ZooKeeper host '"
+        + connectionString
+        + "' is not on the 'allowZkHosts' allow-list in solr.xml and does not match the local"
+        + " cluster's ZK ensemble.";
+  }
+
   public void setDefaultZKHost(String zkHost) {
     if (zkHost != null) {
       zkHost = zkHost.split("/")[0];
@@ -90,6 +121,8 @@ public class SolrClientCache implements Closeable {
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
     ensureOpen();
     Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
+    // before the cache lookup, so cached clients are also subject to the validator
+    validateZkHost(zkHost);
     if (solrClients.containsKey(zkHost)) {
       return (CloudSolrClient) solrClients.get(zkHost);
     }

@@ -853,6 +853,8 @@ public class CoreContainer {
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
     solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
+    // Validate caller-supplied zkHost (cross-collection join, streaming expressions).
+    solrClientCache.setZkHostValidator(this::validateZkHost);
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -1713,6 +1715,24 @@ public class CoreContainer {
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */
   public AllowListUrlChecker getAllowListUrlChecker() {
     return allowListUrlChecker;
+  }
+
+  /**
+   * Validates a caller-supplied ZooKeeper connection string via {@link
+   * ZkController#getAllowListZkHostChecker()}. Never allowed in standalone mode.
+   *
+   * @throws SolrException FORBIDDEN if not allowed
+   */
+  private void validateZkHost(String zkHost) {
+    ZkController zkController = getZkController();
+    if (zkController == null) {
+      throw new SolrException(
+          ErrorCode.FORBIDDEN,
+          "ZooKeeper host '" + zkHost + "' is not allowed when Solr is not in SolrCloud mode.");
+    }
+    if (!zkController.getAllowListZkHostChecker().isAllowed(zkHost)) {
+      throw new SolrException(ErrorCode.FORBIDDEN, SolrClientCache.zkHostRejectionMessage(zkHost));
+    }
   }
 
   /**

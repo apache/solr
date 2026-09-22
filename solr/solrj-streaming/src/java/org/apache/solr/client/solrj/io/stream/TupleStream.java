@@ -143,6 +143,8 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
         localSolrClientCache; // tracks any locally allocated cache that needs to be closed locally
     if (solrClientCache
         == null) { // streamContext was null OR streamContext.getSolrClientCache() returned null
+      // Note: this cache doesn't validate connections. Within Solr, callers (StreamHandler,
+      // CrossCollectionJoinQuery) supply CoreContainer's cache via the StreamContext.
       solrClientCache = localSolrClientCache = new SolrClientCache();
     } else {
       localSolrClientCache = null;
