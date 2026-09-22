@@ -1,4 +1,5 @@
-= Stream Command
+= Solr CLI Stream Command
+:page-aliases: stream-tool.adoc
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,11 +17,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Stream Command allows you to run a xref:streaming-expressions.adoc[] in Solr and see the results from the command line.
+The Stream command allows you to run a xref:streaming-expressions.adoc[] in Solr and see the results from the command line.
 It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
 Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well.
 
-NOTE: The Stream Command is classified as "experimental".
+NOTE: The Stream command is classified as "experimental".
 It may change in backwards-incompatible ways as it evolves to cover additional functionality.
 
 To run it, open a terminal and enter:
@@ -127,7 +128,7 @@ This section presents several examples.
 Streaming Expressions by default are executed in the Solr cluster.
 However there are use cases where you want to interact with data in your local environment, or even run a streaming expression independent of Solr.
 
-The Stream Command allows you to specify `--execution local` to process the expression in the Solr CLI's JVM.
+The Stream command allows you to specify `--execution local` to process the expression in the Solr CLI's JVM.
 
 However, "local" processing does not imply a networking sandbox.
 Many streaming expressions, such as `search` and `update`, will make network requests to remote Solr nodes if configured to do so, even in "local" execution mode.
@@ -156,7 +157,7 @@ $ bin/solr stream --execution local --header load_data.expr
 ----
 
 
-The Stream Command adds some Streaming Expressions specifically for local use:
+The Stream command adds some Streaming Expressions specifically for local use:
 
 * stdin() lets you pipe data directly into the streaming expression.
 * cat() that allows you to read ANY file on your local system.  This is different from the xref:stream-source-reference.adoc#cat[`cat`] operator that runs in Solr that only accesses `$SOLR_HOME/userfiles/`.
