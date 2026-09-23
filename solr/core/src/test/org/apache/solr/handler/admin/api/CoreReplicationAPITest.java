@@ -51,6 +51,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   private CoreReplication coreReplicationAPI;
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
+  private Path configPath;
+  private Path tlogDir;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -210,11 +212,9 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     // against those checks over-rejecting.
     // Also exercises the normalize() applied to the resolved path by
     // resolveWithinOrForbidden; the on-disk file must still be readable.
-    Path configPath = mockCore.getResourceLoader().getConfigPath();
     Files.createDirectories(configPath.resolve("lang"));
     Path cfFile = configPath.resolve("lang").resolve("en.txt");
     Files.writeString(cfFile, "hello");
-    Path tlogDir = Path.of(mockCore.getUpdateHandler().getUpdateLog().getTlogDir());
     Files.createDirectories(tlogDir.resolve("nested"));
     Path tlogFile = tlogDir.resolve("nested").resolve("tlog.0");
     Files.writeString(tlogFile, "hello");
@@ -286,12 +286,13 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     // Mocks for LocalFsTlogFileStream
     UpdateHandler mockUpdateHandler = mock(UpdateHandler.class);
     UpdateLog mockUpdateLog = mock(UpdateLog.class);
+    tlogDir = createTempDir("coreReplicationTlog");
     when(mockUpdateHandler.getUpdateLog()).thenReturn(mockUpdateLog);
-    when(mockUpdateLog.getTlogDir()).thenReturn(createTempDir("coreReplicationTlog").toString());
+    when(mockUpdateLog.getTlogDir()).thenReturn(tlogDir.toString());
 
     // Mocks for LocalFsConfFileStream
     SolrResourceLoader mockSolrResourceLoader = mock(SolrResourceLoader.class);
-    Path configPath = createTempDir("coreReplicationConf");
+    configPath = createTempDir("coreReplicationConf");
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
     when(mockCore.getUpdateHandler()).thenReturn(mockUpdateHandler);
     when(mockCore.getResourceLoader()).thenReturn(mockSolrResourceLoader);
