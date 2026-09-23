@@ -106,12 +106,9 @@ jobs:
             exit 0
           fi
 
-          # Re-adding a label that is already set emits no 'labeled' event, so an
-          # already-failing check would stay red. Remove it first to be sure the
-          # validation workflow gets re-triggered.
           if [ "$has_label" = "true" ]; then
-            echo "::notice::PR#${PR_NUMBER} already has '${LABEL}'; re-applying to re-trigger validation"
-            gh api -X DELETE "repos/${REPO}/issues/${PR_NUMBER}/labels/${LABEL}" --silent
+            echo "::notice::PR#${PR_NUMBER} already has '${LABEL}'; nothing to do"
+            exit 0
           fi
           gh api -X POST "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${LABEL}" --silent
           echo "::notice::Added '${LABEL}' to PR#${PR_NUMBER}"

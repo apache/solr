@@ -139,7 +139,8 @@ and so on), it is still possible to merge the PR. Mark it by carrying the
 * Comment `/no-changelog` on the pull request, alone on its own line. This works
   for the PR author as well as for committers, so a contributor without write
   access does not need to ask anyone to set the label. Comment `/needs-changelog`
-  to undo it.
+  to undo it. Use a regular comment in the "Conversation" tab; commands inside
+  code review comments are not picked up.
 * Add or remove the `no-changelog` label directly (committers only).
 
 Either way the check re-runs automatically on the label change, so an already
