@@ -127,7 +127,23 @@ The `validate-changelog` GitHub workflow automatically checks that:
 . **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
 . **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
 
-If your change does not require a changelog entry, it is still possible to merge the PR.
+Pull requests that only touch documentation, tests, build files or CI configuration
+are exempt and pass without an entry.
+
+=== 4.1 Opting out of the changelog requirement
+
+If your change does not require a changelog entry (refactoring, internal cleanup,
+and so on), it is still possible to merge the PR. Mark it by carrying the
+`no-changelog` label, which you can set in either of two ways:
+
+* Comment `/no-changelog` on the pull request, alone on its own line. This works
+  for the PR author as well as for committers, so a contributor without write
+  access does not need to ask anyone to set the label. Comment `/needs-changelog`
+  to undo it.
+* Add or remove the `no-changelog` label directly (committers only).
+
+Either way the check re-runs automatically on the label change, so an already
+failed "Check changelog entry" run turns green without pushing a new commit.
 
 == 5. For release managers
 
