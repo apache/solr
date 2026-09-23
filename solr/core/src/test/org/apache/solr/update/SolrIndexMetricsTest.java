@@ -25,7 +25,6 @@ import static org.apache.solr.update.SolrIndexWriter.RESULT_ATTR;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -228,7 +227,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       uh.commit(new CommitUpdateCommand(req, false));
     }
 
-    Throwable mergeFailure = null;
+    Throwable mergeFailure;
     RefCounted<IndexWriter> iw = uh.getSolrCoreState().getIndexWriter(req.getCore());
     try {
       assertTrue(
@@ -236,9 +235,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
               + iw.get().getConfig().getMergePolicy(),
           iw.get().getConfig().getMergePolicy()
               instanceof FailingMergePolicyFactory.FailingMergePolicy);
-      iw.get().forceMerge(1);
-    } catch (Throwable t) {
-      mergeFailure = t;
+      mergeFailure = expectThrows(Throwable.class, () -> iw.get().forceMerge(1));
     } finally {
       iw.decref();
     }
@@ -288,11 +285,6 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     while (t != null) {
       if (t instanceof IOException
           && FailingMergePolicyFactory.INJECTED_FAILURE.equals(t.getMessage())) {
-        return true;
-      }
-      if (t instanceof MergePolicy.MergeException
-          && t.getCause() instanceof IOException
-          && FailingMergePolicyFactory.INJECTED_FAILURE.equals(t.getCause().getMessage())) {
         return true;
       }
       t = t.getCause();
