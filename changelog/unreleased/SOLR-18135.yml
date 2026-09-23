@@ -1,4 +1,4 @@
-title: Preserve the original merge exception instead of double-stopping the merge timer.
+title: Fix merge timer double-stop when segment merging fails.
 type: fixed
 authors:
   - name: Nick Shanin
