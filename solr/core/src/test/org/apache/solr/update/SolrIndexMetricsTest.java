@@ -205,5 +205,4 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
           flushCounter.getValue() >= 10);
     }
   }
-
 }
