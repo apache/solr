@@ -133,7 +133,7 @@ are exempt and pass without an entry.
 === 4.1 Opting out of the changelog requirement
 
 If your change does not require a changelog entry (refactoring, internal cleanup,
-and so on), it is still possible to merge the PR. Mark it by carrying the
+and so on), it is still possible to merge the PR. Mark it by adding the
 `no-changelog` label, which you can set in either of two ways:
 
 * Comment `/no-changelog` on the pull request, alone on its own line. This works
