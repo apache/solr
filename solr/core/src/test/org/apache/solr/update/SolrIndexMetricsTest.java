@@ -23,11 +23,16 @@ import static org.apache.solr.update.SolrIndexWriter.MERGE_TYPE_ATTR;
 import static org.apache.solr.update.SolrIndexWriter.RESULT_ATTR;
 
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.io.IOException;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.Test;
@@ -204,5 +209,109 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
           "should be at greater than 10 flushes: " + flushCounter.getValue(),
           flushCounter.getValue() >= 10);
     }
+  }
+
+  @Test
+  public void testFailedMergePreservesCauseAndRecordsErrorMetrics() throws Exception {
+    initCore("solrconfig-indexmetrics-failingmerge.xml", "schema.xml");
+
+    SolrQueryRequest req = lrf.makeRequest();
+    UpdateHandler uh = req.getCore().getUpdateHandler();
+    AddUpdateCommand add = new AddUpdateCommand(req);
+    // One doc + commit per segment so forceMerge has something to merge.
+    for (int i = 0; i < 3; i++) {
+      add.clear();
+      add.solrDoc = new SolrInputDocument();
+      add.solrDoc.addField("id", "" + i);
+      add.solrDoc.addField("foo_s", "foo-" + i);
+      uh.addDoc(add);
+      uh.commit(new CommitUpdateCommand(req, false));
+    }
+
+    Throwable mergeFailure = null;
+    RefCounted<IndexWriter> iw = uh.getSolrCoreState().getIndexWriter(req.getCore());
+    try {
+      assertTrue(
+          "test config should install FailingMergePolicy, got: "
+              + iw.get().getConfig().getMergePolicy(),
+          iw.get().getConfig().getMergePolicy()
+              instanceof FailingMergePolicyFactory.FailingMergePolicy);
+      iw.get().forceMerge(1);
+    } catch (Throwable t) {
+      mergeFailure = t;
+    } finally {
+      iw.decref();
+    }
+
+    assertNotNull("expected the injected merge failure to escape", mergeFailure);
+    assertTrue(
+        "original merge cause should be preserved, got: " + mergeFailure,
+        causedByInjectedMergeFailure(mergeFailure));
+    assertFalse(
+        "RTimer double-stop must not replace the merge cause: " + mergeFailure,
+        causedByRTimerDoubleStop(mergeFailure));
+
+    try (SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      var errorMerges =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_indexwriter_merges",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
+                  .label(MERGE_STATE_ATTR.toString(), "completed")
+                  .label(RESULT_ATTR.toString(), "error")
+                  .build());
+      assertNotNull("failed merge should record result=error", errorMerges);
+      assertEquals(
+          "exactly one failed merge should complete, got: " + errorMerges.getValue(),
+          1,
+          (long) errorMerges.getValue());
+
+      var mergeTime =
+          SolrMetricTestUtils.getHistogramDatapoint(
+              core,
+              "solr_core_indexwriter_merge_time_milliseconds",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
+                  .label(MERGE_TYPE_ATTR.toString(), "minor")
+                  .build());
+      assertNotNull("failed merge should still record merge_time once", mergeTime);
+      assertEquals(
+          "merge_time should be recorded once, not double-stopped, got: " + mergeTime.getCount(),
+          1,
+          mergeTime.getCount());
+    }
+  }
+
+  private static boolean causedByInjectedMergeFailure(Throwable t) {
+    while (t != null) {
+      if (t instanceof IOException
+          && FailingMergePolicyFactory.INJECTED_FAILURE.equals(t.getMessage())) {
+        return true;
+      }
+      if (t instanceof MergePolicy.MergeException
+          && t.getCause() instanceof IOException
+          && FailingMergePolicyFactory.INJECTED_FAILURE.equals(t.getCause().getMessage())) {
+        return true;
+      }
+      t = t.getCause();
+    }
+    return false;
+  }
+
+  private static boolean causedByRTimerDoubleStop(Throwable t) {
+    while (t != null) {
+      if (t instanceof AssertionError) {
+        for (StackTraceElement frame : t.getStackTrace()) {
+          if (RTimer.class.getName().equals(frame.getClassName())
+              && "stop".equals(frame.getMethodName())) {
+            return true;
+          }
+        }
+      }
+      t = t.getCause();
+    }
+    return false;
   }
 }
