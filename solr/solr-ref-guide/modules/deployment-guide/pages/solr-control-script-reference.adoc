@@ -25,6 +25,15 @@ The SolrCLI makes Solr easier to work with by providing simple commands and opti
 
 More examples of SolrCLI in use are available throughout this Guide, particularly in the sections xref:installing-solr.adoc#starting-solr[Starting Solr] and xref:getting-started:tutorial-solrcloud.adoc[].
 
+[NOTE]
+====
+This page documents the `bin/solr` script as it behaves by default.
+
+An experimental re-implementation of the command line interface, built on picocli, is also included in this release.
+It is disabled by default, and the options it accepts differ in places from those documented here.
+See xref:cli/index.adoc[] if you would like to try it.
+====
+
 == Starting and Stopping
 
 === Start and Restart
