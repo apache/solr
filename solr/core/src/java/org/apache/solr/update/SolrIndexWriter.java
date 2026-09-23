@@ -218,7 +218,6 @@ public class SolrIndexWriter extends IndexWriter {
     try {
       super.merge(merge);
     } catch (Throwable t) {
-      // SOLR-18135: updateMergeMetrics is the only stop().
       updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, true, timer);
       throw t;
     } finally {

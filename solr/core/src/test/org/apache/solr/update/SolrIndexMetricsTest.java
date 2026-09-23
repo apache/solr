@@ -25,6 +25,7 @@ import static org.apache.solr.update.SolrIndexWriter.RESULT_ATTR;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -38,6 +39,8 @@ import org.junit.Test;
 
 /** Test proper registration and collection of index and directory metrics. */
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
+
+  private static final String MERGE_SCHEDULER_PROPERTY = "solr.tests.mergeScheduler";
 
   @After
   public void afterMethod() {
@@ -212,7 +215,18 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFailedMergePreservesCauseAndRecordsErrorMetrics() throws Exception {
-    initCore("solrconfig-indexmetrics-failingmerge.xml", "schema.xml");
+    String mergePolicyFactory =
+        System.getProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
+    String mergeScheduler = System.getProperty(MERGE_SCHEDULER_PROPERTY);
+    try {
+      systemSetPropertySolrTestsMergePolicyFactory(FailingMergePolicyFactory.class.getName());
+      System.setProperty(MERGE_SCHEDULER_PROPERTY, SerialMergeScheduler.class.getName());
+      initCore("solrconfig-indexmetrics.xml", "schema.xml");
+      h.getCore();
+    } finally {
+      restoreSystemProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, mergePolicyFactory);
+      restoreSystemProperty(MERGE_SCHEDULER_PROPERTY, mergeScheduler);
+    }
 
     SolrQueryRequest req = lrf.makeRequest();
     UpdateHandler uh = req.getCore().getUpdateHandler();
@@ -290,6 +304,14 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       t = t.getCause();
     }
     return false;
+  }
+
+  private static void restoreSystemProperty(String name, String value) {
+    if (value == null) {
+      System.clearProperty(name);
+    } else {
+      System.setProperty(name, value);
+    }
   }
 
   private static boolean causedByRTimerDoubleStop(Throwable t) {

@@ -38,12 +38,13 @@
          DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
     <maxBufferedDocs>100</maxBufferedDocs>
 
-    <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+    <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.index.TieredMergePolicyFactory}">
       <!-- intentionally set very low values here to trigger multiple flushes and merges.
            DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
       <int name="maxMergeAtOnce">3</int>
       <int name="segmentsPerTier">3</int>
     </mergePolicyFactory>
+    <mergeScheduler class="${solr.tests.mergeScheduler}"/>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
