@@ -44,7 +44,7 @@
       <int name="maxMergeAtOnce">3</int>
       <int name="segmentsPerTier">3</int>
     </mergePolicyFactory>
-    <mergeScheduler class="${solr.tests.mergeScheduler}"/>
+    <mergeScheduler class="${solr.tests.mergeScheduler:org.apache.lucene.index.ConcurrentMergeScheduler}"/>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
