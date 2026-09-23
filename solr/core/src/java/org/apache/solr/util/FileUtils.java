@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.FileExistsException;
@@ -126,5 +127,28 @@ public class FileUtils {
 
     return normalizedChild.startsWith(normalizedParent)
         && !normalizedChild.equals(normalizedParent);
+  }
+
+  /**
+   * Rewrites {@code path} so every path separator matches the current filesystem's separator.
+   *
+   * <p>Both {@code /} and {@code \} are replaced with {@link FileSystems#getDefault()}'s separator.
+   * This is useful before iterating {@link Path} components, since on POSIX a {@code \} is
+   * otherwise part of a name rather than a separator, so {@code \..\conf\x} would be a single
+   * component.
+   *
+   * <p>Caveat: on non-Windows platforms this reinterprets any filename that legitimately contains a
+   * backslash as a path with additional components. Callers that treat backslash as a valid
+   * filename character on POSIX must not use this method.
+   *
+   * @param path the path to normalize
+   * @return path normalized with the filesystem's default separator, or {@code null} if {@code
+   *     path} was {@code null}
+   */
+  public static String normalizeToOsPathSeparator(String path) {
+    if (path == null) return null;
+    path = path.replace("/", FileSystems.getDefault().getSeparator());
+    path = path.replace("\\", FileSystems.getDefault().getSeparator());
+    return path;
   }
 }
