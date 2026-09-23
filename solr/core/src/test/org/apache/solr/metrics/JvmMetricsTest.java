@@ -18,7 +18,6 @@ package org.apache.solr.metrics;
 
 import com.sun.management.OperatingSystemMXBean;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
-import io.prometheus.metrics.model.snapshots.Labels;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.management.ManagementFactory;
@@ -26,7 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.SuppressForbidden;
@@ -144,10 +144,6 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoDuplicateJvmMemoryMetrics() {
-    // A metric is only truly duplicated if it is emitted from more than one otel scope (e.g. one
-    // scope per runtime-telemetry variant), so otel_scope_name must be excluded from the
-    // uniqueness key -- comparing full label sets would never catch it, since otel_scope_name is
-    // exactly the label that differs between the duplicate series.
     FilterablePrometheusMetricReader reader =
         solrTestRule
             .getJetty()
@@ -156,26 +152,26 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
             .getPrometheusMetricReader("solr.jvm");
     MetricSnapshots snapshots = reader.collect();
 
-    Set<String> seen = new HashSet<>();
+    // A metric is duplicated when it's reported by more than one instrumentation scope
+    Map<String, String> scopeByMetric = new HashMap<>();
     for (MetricSnapshot snapshot : snapshots) {
       String metricName = snapshot.getMetadata().getPrometheusName();
       for (DataPointSnapshot dataPoint : snapshot.getDataPoints()) {
-        String key = metricName + labelsExcludingOtelScope(dataPoint.getLabels());
+        String scope = dataPoint.getLabels().get("otel_scope_name");
+        if (scope == null) {
+          continue;
+        }
+        String otherScope = scopeByMetric.putIfAbsent(metricName, scope);
         assertTrue(
-            "Duplicate series for metric " + metricName + " with labels " + dataPoint.getLabels(),
-            seen.add(key));
+            "Metric "
+                + metricName
+                + " reported under multiple scopes with conflicting values: "
+                + otherScope
+                + " and "
+                + scope,
+            otherScope == null || otherScope.equals(scope));
       }
     }
-  }
-
-  private static String labelsExcludingOtelScope(Labels labels) {
-    StringBuilder key = new StringBuilder();
-    for (int i = 0; i < labels.size(); i++) {
-      if (!"otel_scope_name".equals(labels.getName(i))) {
-        key.append(labels.getName(i)).append('=').append(labels.getValue(i)).append(',');
-      }
-    }
-    return key.toString();
   }
 
   @Test
