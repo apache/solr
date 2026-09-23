@@ -376,6 +376,9 @@ public class SolrXmlConfig {
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
                 break;
+              case "allowZkHosts":
+                builder.setAllowZkHosts(separateZkHosts(it.txt()));
+                break;
               default:
                 throw new SolrException(
                     SolrException.ErrorCode.SERVER_ERROR,
@@ -396,6 +399,20 @@ public class SolrXmlConfig {
       return List.of();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
+  }
+
+  /**
+   * Like {@link #separateStrings(String)} but drops blank entries so a stray comma or unset {@code
+   * ${prop:}} placeholder does not produce an empty allow-list entry. {@code allowUrls}/{@code
+   * allowPaths} keep their pre-existing behavior.
+   */
+  private static List<String> separateZkHosts(String commaSeparatedString) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
+      return List.of();
+    }
+    return Arrays.stream(COMMA_SEPARATED_PATTERN.split(commaSeparatedString))
+        .filter(s -> !s.isBlank())
+        .toList();
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
