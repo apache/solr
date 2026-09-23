@@ -1,0 +1,10 @@
+title: >
+  Faster intersection in {!auxIndexJoin} query; introduce NoStoredFieldsLucene104.
+type: changed
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhl
+links:
+  - name: SOLR-18477
+    url: https://issues.apache.org/jira/browse/SOLR-18477
+
