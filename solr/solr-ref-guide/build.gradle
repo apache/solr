@@ -486,7 +486,9 @@ task checkSiteLinks(type: NpxTask) {
   def outputFile = "${buildDir}/validation/link-check.json"
   execOverrides {
     // The it variable contains the `ExecSpec`
-    it.standardOutput = new TeeOutputStream(it.standardOutput, new FileOutputStream(outputFile))
+    // Gradle 9 leaves ExecSpec.standardOutput null until it applies its own defaults after this
+    // action runs, so tee into System.out rather than wrapping the (null) current value.
+    it.standardOutput = new TeeOutputStream(System.out, new FileOutputStream(outputFile))
   }
 
   inputs.files(fileTree(siteDir))
