@@ -188,7 +188,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
         expectThrows(
             SolrException.class,
             () -> {
-              schemaApi.deleteCopyField(null, List.of("someDestination"));
+              schemaApi.deleteCopyFields(null);
             });
     assertEquals(BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: sourceField"));

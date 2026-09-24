@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -81,15 +80,31 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
   }
 
   private static void deleteCopyFields(String source, String... destinations) throws Exception {
-    final var params = new ModifiableSolrParams();
-    for (String destination : destinations) {
-      params.add("destination", destination);
-    }
-    new V2Request.Builder(schemaPath("/copyfields/" + source))
+    final var suffix = destinations.length == 0 ? "" : "/" + String.join(",", destinations);
+    new V2Request.Builder(schemaPath("/copyfields/" + source + suffix))
         .DELETE()
-        .withParams(params)
         .build()
         .process(cluster.getSolrClient());
+  }
+
+  private static void postCopyFields(String source, Object payload) throws Exception {
+    new V2Request.Builder(schemaPath("/copyfields/" + source))
+        .POST()
+        .withPayload(payload)
+        .build()
+        .process(cluster.getSolrClient());
+  }
+
+  /** Destinations reported by the per-source GET endpoint. */
+  @SuppressWarnings("unchecked")
+  private static List<String> destinationsViaSourceEndpoint(String source) throws Exception {
+    final var response =
+        new V2Request.Builder(schemaPath("/copyfields/" + source))
+            .GET()
+            .build()
+            .process(cluster.getSolrClient());
+    final var copyFields = (List<Map<String, Object>>) response.getResponse().get("copyFields");
+    return copyFields.stream().map(rule -> (String) rule.get("dest")).sorted().toList();
   }
 
   /** Destinations of every copy-field rule currently declared with the given source. */
@@ -208,6 +223,62 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
     assertTrue(
         "unexpected message: " + thrown.getMessage(),
         thrown.getMessage().contains("No copy-field rules found"));
+  }
+
+  @Test
+  public void testGetBySourceReturnsOnlyThatSourcesDestinations() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
+
+    assertEquals(List.of(DEST_ONE, DEST_TWO), destinationsViaSourceEndpoint(SOURCE));
+    assertEquals(List.of("id_prefix"), destinationsViaSourceEndpoint("id"));
+  }
+
+  @Test
+  public void testGetBySourceIsEmptyForASourceWithNoRules() throws Exception {
+    assertEquals(List.of(), destinationsViaSourceEndpoint("no_such_source_field"));
+  }
+
+  @Test
+  public void testPostAppendsWithoutDisturbingExistingRules() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    postCopyFields(SOURCE, Map.of("destinations", List.of(DEST_TWO)));
+
+    assertEquals(List.of(DEST_ONE, DEST_TWO), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testPostSkipsDestinationsAlreadyPresent() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    postCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
+    postCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
+
+    // A repeated append must not leave the source copied twice over.
+    assertEquals(List.of(DEST_ONE, DEST_TWO), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testDeleteOfSeveralDestinationsInOnePathSegment() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
+
+    deleteCopyFields(SOURCE, DEST_ONE, DEST_TWO);
+
+    assertEquals(List.of(), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testDeleteToleratesWhitespaceAroundDestinations() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
+
+    // A raw space cannot appear in a path, so whitespace only ever arrives percent-encoded.
+    new V2Request.Builder(
+            schemaPath("/copyfields/" + SOURCE + "/" + DEST_ONE + "%20,%20" + DEST_TWO))
+        .DELETE()
+        .build()
+        .process(cluster.getSolrClient());
+
+    assertEquals(List.of(), destinationsOf(SOURCE));
   }
 
   @Test

@@ -28,7 +28,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import java.util.List;
 import org.apache.solr.client.api.model.AddCopyFieldOperation;
 import org.apache.solr.client.api.model.SchemaChange;
@@ -129,17 +128,38 @@ public interface UpdateSchemaApi {
       @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
       throws Exception;
 
-  @DELETE
+  @POST
   @Path("/copyfields/{sourceField}")
   @StoreApiParameters
   @Operation(
       summary =
-          "Remove copy-field rules copying from the specified source field.  Removes every rule "
-              + "with that source unless 'destination' query parameters narrow the selection.",
+          "Add the given destinations to the copy-field rules for the specified source field, "
+              + "leaving that source's existing rules in place.",
       tags = {"schema"})
-  SolrJerseyResponse deleteCopyField(
+  SolrJerseyResponse appendCopyFields(
+      @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
+      throws Exception;
+
+  @DELETE
+  @Path("/copyfields/{sourceField}")
+  @StoreApiParameters
+  @Operation(
+      summary = "Remove every copy-field rule copying from the specified source field.",
+      tags = {"schema"})
+  SolrJerseyResponse deleteCopyFields(@PathParam("sourceField") String sourceField)
+      throws Exception;
+
+  @DELETE
+  @Path("/copyfields/{sourceField}/{destinationFields}")
+  @StoreApiParameters
+  @Operation(
+      summary =
+          "Remove the copy-field rules from the specified source field to the specified "
+              + "destinations.  Several destinations may be given as a comma-separated list.",
+      tags = {"schema"})
+  SolrJerseyResponse deleteCopyFieldsByDestination(
       @PathParam("sourceField") String sourceField,
-      @QueryParam("destination") List<String> destinations)
+      @PathParam("destinationFields") String destinationFields)
       throws Exception;
 
   @POST
