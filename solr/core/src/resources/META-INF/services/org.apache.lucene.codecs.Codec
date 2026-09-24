@@ -13,4 +13,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.solr.search.join.auxindexjoin.AuxIndexJoinCodec
+org.apache.solr.search.join.auxindexjoin.NoStoredFieldsCodec

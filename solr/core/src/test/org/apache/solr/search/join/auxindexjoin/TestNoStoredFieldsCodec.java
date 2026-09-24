@@ -38,12 +38,12 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.Edges;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
 
 /** The sidecar codec keeps doc values intact while writing and merging no stored fields. */
-public class TestAuxIndexJoinCodec extends SolrTestCase {
+public class TestNoStoredFieldsCodec extends SolrTestCase {
 
   private static final String FIELD = "value";
 
   public void testResolvesByNameThroughSpi() {
-    assertTrue(Codec.forName(AuxIndexJoinCodec.NAME) instanceof AuxIndexJoinCodec);
+    assertTrue(Codec.forName(NoStoredFieldsCodec.NAME) instanceof NoStoredFieldsCodec);
   }
 
   public void testMergeKeepsDocValuesAndWritesNoStoredFields() throws IOException {
@@ -55,7 +55,7 @@ public class TestAuxIndexJoinCodec extends SolrTestCase {
       mergePolicy.setNoCFSRatio(0.0); // keep each format's files visible, not packed in a .cfs
       IndexWriterConfig config =
           new IndexWriterConfig()
-              .setCodec(new AuxIndexJoinCodec())
+              .setCodec(new NoStoredFieldsCodec())
               .setUseCompoundFile(false)
               .setMergePolicy(mergePolicy);
       try (IndexWriter writer = new IndexWriter(dir, config)) {
@@ -102,9 +102,9 @@ public class TestAuxIndexJoinCodec extends SolrTestCase {
   }
 
   public void testLiveDocCount() {
-    assertEquals(7, AuxIndexJoinCodec.liveDocCount(null, 7));
-    assertEquals(7, AuxIndexJoinCodec.liveDocCount(new Bits.MatchAllBits(7), 7));
-    assertEquals(0, AuxIndexJoinCodec.liveDocCount(new Bits.MatchNoBits(7), 7));
+    assertEquals(7, NoStoredFieldsCodec.liveDocCount(null, 7));
+    assertEquals(7, NoStoredFieldsCodec.liveDocCount(new Bits.MatchAllBits(7), 7));
+    assertEquals(0, NoStoredFieldsCodec.liveDocCount(new Bits.MatchNoBits(7), 7));
     Bits evens =
         new Bits() {
           @Override
@@ -117,7 +117,7 @@ public class TestAuxIndexJoinCodec extends SolrTestCase {
             return 7;
           }
         };
-    assertEquals(4, AuxIndexJoinCodec.liveDocCount(evens, 7));
+    assertEquals(4, NoStoredFieldsCodec.liveDocCount(evens, 7));
   }
 
   public void testSidecarSegmentsRecordTheCodec() throws IOException {
@@ -131,7 +131,7 @@ public class TestAuxIndexJoinCodec extends SolrTestCase {
   }
 
   public void testDefaultCodecNameIsTheNoStoredFieldsCodec() {
-    assertEquals(AuxIndexJoinCodec.NAME, new AuxIndexJoinConfig().getCodecName());
+    assertEquals(NoStoredFieldsCodec.NAME, new AuxIndexJoinConfig().getCodecName());
     expectThrows(IllegalArgumentException.class, () -> new AuxIndexJoinConfig().setCodecName(" "));
   }
 
@@ -162,7 +162,7 @@ public class TestAuxIndexJoinCodec extends SolrTestCase {
   }
 
   private static void assertEverySegmentUsesTheCodec(Directory dir) throws IOException {
-    assertEverySegmentUsesTheCodec(dir, AuxIndexJoinCodec.NAME);
+    assertEverySegmentUsesTheCodec(dir, NoStoredFieldsCodec.NAME);
   }
 
   private static void assertEverySegmentUsesTheCodec(Directory dir, String codecName)

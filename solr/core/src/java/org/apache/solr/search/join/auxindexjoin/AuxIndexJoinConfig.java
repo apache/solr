@@ -46,7 +46,7 @@ public final class AuxIndexJoinConfig {
   private long minReclaimableBytesToPurge =
       AuxIndexJoinMergePolicy.DEFAULT_MIN_RECLAIMABLE_BYTES_TO_PURGE;
   private long commitIntervalMs = TimeUnit.SECONDS.toMillis(30);
-  private String codecName = AuxIndexJoinCodec.NAME;
+  private String codecName = NoStoredFieldsCodec.NAME;
 
   /** Sole constructor, using the default settings documented on each setter. */
   public AuxIndexJoinConfig() {}
@@ -208,7 +208,7 @@ public final class AuxIndexJoinConfig {
 
   /**
    * Name of the Lucene {@link org.apache.lucene.codecs.Codec} the sidecar is written with, looked
-   * up through SPI. Default is {@link AuxIndexJoinCodec#NAME}, which writes no stored fields; the
+   * up through SPI. Default is {@link NoStoredFieldsCodec#NAME}, which writes no stored fields; the
    * sidecar holds doc values only.
    */
   public AuxIndexJoinConfig setCodecName(String codecName) {

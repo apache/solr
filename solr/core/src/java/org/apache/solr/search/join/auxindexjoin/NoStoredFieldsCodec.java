@@ -44,7 +44,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.experimental
  */
-public final class AuxIndexJoinCodec extends FilterCodec {
+public final class NoStoredFieldsCodec extends FilterCodec {
 
   /** Recorded in every sidecar segment; must change whenever the delegate does. */
   public static final String NAME = "NoStoredFieldsLucene104";
@@ -52,7 +52,7 @@ public final class AuxIndexJoinCodec extends FilterCodec {
   private final StoredFieldsFormat storedFieldsFormat = new NoStoredFieldsFormat();
 
   /** No-arg constructor, as SPI requires. */
-  public AuxIndexJoinCodec() {
+  public NoStoredFieldsCodec() {
     super(NAME, new Lucene104Codec());
   }
 
