@@ -57,14 +57,9 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
 
   @Before
   public void clearCopyFields() throws Exception {
-    // Leave each test a clean slate; the source may legitimately have no rules yet.
-    try {
-      deleteCopyFields(SOURCE);
-    } catch (RemoteSolrException e) {
-      if (e.code() != 404) {
-        throw e;
-      }
-    }
+    // A replace with no destinations clears the source whether or not it currently has rules,
+    // so unlike DELETE this needs no special case for the empty state.
+    putCopyFields(SOURCE, Map.of("destinations", List.of()));
   }
 
   private static String schemaPath(String suffix) {
@@ -268,17 +263,46 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDeleteToleratesWhitespaceAroundDestinations() throws Exception {
+  public void testPutWithNoDestinationsClearsTheSource() throws Exception {
     putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
 
-    // A raw space cannot appear in a path, so whitespace only ever arrives percent-encoded.
-    new V2Request.Builder(
-            schemaPath("/copyfields/" + SOURCE + "/" + DEST_ONE + "%20,%20" + DEST_TWO))
-        .DELETE()
-        .build()
-        .process(cluster.getSolrClient());
+    putCopyFields(SOURCE, Map.of("destinations", List.of()));
 
     assertEquals(List.of(), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testDeleteRejectsAPathSegmentNamingNoDestinations() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    final var thrown =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                new V2Request.Builder(schemaPath("/copyfields/" + SOURCE + "/,,,"))
+                    .DELETE()
+                    .build()
+                    .process(cluster.getSolrClient()));
+
+    // The source does have rules, so this is a malformed request rather than a missing resource.
+    assertEquals(400, thrown.code());
+    assertEquals(List.of(DEST_ONE), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testBodySourceContradictingThePathIsRejected() {
+    final var thrown =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                putCopyFields(
+                    SOURCE,
+                    Map.of("source", "some_other_source", "destinations", List.of(DEST_ONE))));
+
+    assertEquals(400, thrown.code());
+    assertTrue(
+        "unexpected message: " + thrown.getMessage(),
+        thrown.getMessage().contains("does not match the source in the path"));
   }
 
   @Test

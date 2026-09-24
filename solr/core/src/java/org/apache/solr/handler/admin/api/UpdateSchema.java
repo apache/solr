@@ -20,7 +20,7 @@ import static java.util.function.Predicate.not;
 import static org.apache.solr.common.util.CommandOperation.ERR_MSGS;
 
 import jakarta.inject.Inject;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +40,6 @@ import org.apache.solr.client.api.model.UpsertFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
 import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.jersey.PermissionName;
@@ -162,59 +161,34 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public SolrJerseyResponse upsertCopyFields(String sourceField, AddCopyFieldOperation requestBody)
       throws Exception {
-    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    ensureSchemaMutable();
-    ensureRequiredParameterProvided("sourceField", sourceField);
-    ensureRequiredRequestBodyProvided(requestBody);
-    ensureRequiredParameterProvided("destinations", requestBody.destinations);
-    requestBody.source = sourceField;
-    requestBody.operationType = "add-copy-field";
-
-    // 'add-copy-field' is purely additive: it appends a rule without checking whether an identical
-    // one is already present, so repeating it would silently copy the source twice over.  Clearing
-    // the source's existing rules first is what makes this PUT idempotent, and lets the body state
-    // the rules the caller wants rather than only the ones being added.
-    final var operations = new ArrayList<SchemaChange>();
-    final var existing = currentDestinationsOf(sourceField);
-    if (!existing.isEmpty()) {
-      final var replacedOp = new DeleteCopyFieldOperation();
-      replacedOp.operationType = "delete-copy-field";
-      replacedOp.source = sourceField;
-      replacedOp.destinations = existing;
-      operations.add(replacedOp);
-    }
-    operations.add(requestBody);
-
-    // SchemaManager applies the list as a unit, so a failure to add leaves the old rules in place.
-    runWithSchemaManager(operations);
-
-    return response;
+    return runCopyFieldOperation(sourceField, requestBody, "upsert-copy-field");
   }
 
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public SolrJerseyResponse appendCopyFields(String sourceField, AddCopyFieldOperation requestBody)
       throws Exception {
+    return runCopyFieldOperation(sourceField, requestBody, "append-copy-field");
+  }
+
+  /**
+   * Runs one of the copy-field operations that diff against the current schema.
+   *
+   * <p>Both leave the diffing to {@link SchemaManager}, which performs it against a schema
+   * refreshed under the update lock; doing it here would go stale whenever SchemaManager retries.
+   */
+  private SolrJerseyResponse runCopyFieldOperation(
+      String sourceField, AddCopyFieldOperation requestBody, String operationType)
+      throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureSchemaMutable();
     ensureRequiredParameterProvided("sourceField", sourceField);
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("destinations", requestBody.destinations);
-
-    // 'add-copy-field' would happily append a rule that already exists, leaving the source copied
-    // twice over, so skip the destinations already covered.  That also makes a retried append
-    // harmless, which matters to a caller that timed out without learning whether its first
-    // attempt landed.
-    final var existing = Set.copyOf(currentDestinationsOf(sourceField));
-    final var newDestinations =
-        requestBody.destinations.stream().distinct().filter(not(existing::contains)).toList();
-    if (newDestinations.isEmpty()) {
-      return response;
-    }
+    ensureBodySourceAgreesWithPath(sourceField, requestBody.source);
 
     requestBody.source = sourceField;
-    requestBody.destinations = newDestinations;
-    requestBody.operationType = "add-copy-field";
+    requestBody.operationType = operationType;
 
     runWithSchemaManager(List.of(requestBody));
 
@@ -224,38 +198,45 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public SolrJerseyResponse deleteCopyFields(String sourceField) throws Exception {
+    ensureSchemaMutable();
     ensureRequiredParameterProvided("sourceField", sourceField);
-    return removeCopyFields(sourceField, currentDestinationsOf(sourceField));
+
+    // Only to report a missing resource; the deletion itself re-reads under the schema update
+    // lock, so a rule added in the meantime is still removed.
+    if (currentDestinationsOf(sourceField).isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "No copy-field rules found with source '" + sourceField + "'");
+    }
+
+    // Replacing the source's rules with none removes all of them.
+    final var clearOp = new AddCopyFieldOperation();
+    clearOp.destinations = List.of();
+    return runCopyFieldOperation(sourceField, clearOp, "upsert-copy-field");
   }
 
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public SolrJerseyResponse deleteCopyFieldsByDestination(
       String sourceField, String destinationFields) throws Exception {
+    ensureSchemaMutable();
     ensureRequiredParameterProvided("sourceField", sourceField);
     ensureRequiredParameterProvided("destinationFields", destinationFields);
 
-    // Field names cannot contain a comma, so it is safe to read the segment as a list.  splitSmart
-    // keeps separators inside quotes or behind a backslash from splitting; it does not trim, so
-    // surrounding whitespace is dropped here.
+    // Field names cannot contain a comma, so it is safe to read the segment as a list.
     final var destinations =
-        StrUtils.splitSmart(destinationFields, ',').stream()
-            .map(String::trim)
-            .filter(not(String::isEmpty))
-            .toList();
+        Arrays.stream(destinationFields.split(",")).filter(not(String::isEmpty)).toList();
+    if (destinations.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "No destinations given in '" + destinationFields + "'");
+    }
     return removeCopyFields(sourceField, destinations);
   }
 
   private SolrJerseyResponse removeCopyFields(String sourceField, List<String> destinations)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    ensureSchemaMutable();
-
-    if (destinations.isEmpty()) {
-      throw new SolrException(
-          SolrException.ErrorCode.NOT_FOUND,
-          "No copy-field rules found with source '" + sourceField + "'");
-    }
 
     final var deleteCopyFieldOp = new DeleteCopyFieldOperation();
     deleteCopyFieldOp.operationType = "delete-copy-field";
@@ -265,6 +246,19 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     runWithSchemaManager(List.of(deleteCopyFieldOp));
 
     return response;
+  }
+
+  /** Rejects a request body whose 'source' contradicts the source named in the path. */
+  private void ensureBodySourceAgreesWithPath(String sourceField, String bodySource) {
+    if (bodySource != null && !bodySource.equals(sourceField)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Request body source '"
+              + bodySource
+              + "' does not match the source in the path, '"
+              + sourceField
+              + "'");
+    }
   }
 
   /**

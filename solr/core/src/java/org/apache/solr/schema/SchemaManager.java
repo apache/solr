@@ -226,6 +226,26 @@ public class SchemaManager {
     }
   }
 
+  /**
+   * Destinations of the copy-field rules that the in-progress schema declares for the given source.
+   *
+   * <p>Covers dynamic (i.e. glob) rules as well as explicit ones.
+   */
+  private List<String> destinationsOf(String source) {
+    return managedIndexSchema.getCopyFieldProperties(false, Set.of(source), null).stream()
+        .map(properties -> (String) properties.get(IndexSchema.DESTINATION))
+        .toList();
+  }
+
+  private static DeleteCopyFieldOperation deleteCopyFieldOp(
+      String source, List<String> destinations) {
+    final var op = new DeleteCopyFieldOperation();
+    op.operationType = "delete-copy-field";
+    op.source = source;
+    op.destinations = destinations;
+    return op;
+  }
+
   private static <T> T ensureNotNull(String name, T value) throws SchemaOperationException {
     if (value == null) {
       throw new SchemaOperationException("'" + name + "' is a required field");
@@ -273,6 +293,49 @@ public class SchemaManager {
           log.error("Could not add copy field", e);
           throw new SchemaOperationException(getErrorStr(e));
         }
+      }
+    },
+    UPSERT_COPY_FIELD("upsert-copy-field") { // Internal only, to support v2 API
+      @Override
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var upsertOp = (AddCopyFieldOperation) op;
+        String source = ensureNotNull("source", upsertOp.source);
+        ensureNotNull("dest", upsertOp.destinations);
+
+        // Runs against mgr.managedIndexSchema, which doOperations refreshes under the schema
+        // update lock, so the rules being replaced are the ones actually in effect.  Computing
+        // this outside would go stale whenever doOperations retries.
+        final var existing = mgr.destinationsOf(source);
+        if (!existing.isEmpty()) {
+          DELETE_COPY_FIELD.perform(deleteCopyFieldOp(source, existing), mgr);
+        }
+        return ADD_COPY_FIELD.perform(op, mgr);
+      }
+    },
+    APPEND_COPY_FIELD("append-copy-field") { // Internal only, to support v2 API
+      @Override
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        final var appendOp = (AddCopyFieldOperation) op;
+        String source = ensureNotNull("source", appendOp.source);
+        List<String> dests = ensureNotNull("dest", appendOp.destinations);
+
+        // 'add-copy-field' does not check for duplicates, so a destination the source already
+        // copies to would be registered twice and copied twice at index time.
+        final var existing = Set.copyOf(mgr.destinationsOf(source));
+        final var toAdd =
+            dests.stream().distinct().filter(dest -> !existing.contains(dest)).toList();
+        if (toAdd.isEmpty()) {
+          return true;
+        }
+
+        // A fresh op rather than mutating the caller's: doOperations replays the same op objects
+        // when it retries, and a narrowed list must not leak into the next attempt.
+        final var addOp = new AddCopyFieldOperation();
+        addOp.operationType = "add-copy-field";
+        addOp.source = source;
+        addOp.destinations = toAdd;
+        addOp.maxChars = appendOp.maxChars;
+        return ADD_COPY_FIELD.perform(addOp, mgr);
       }
     },
     UPSERT_FIELD("upsert-field") { // Internal only

@@ -541,6 +541,7 @@ The v2 request attribute is `destinations`, though `dest` is accepted as an alia
 `PUT` is a replace, not an append: the destinations you send become the complete set of copy-field
 rules for that source, and any rule left out is removed.
 Sending the same request twice is therefore safe.
+Sending an empty `destinations` list removes every rule with that source.
 ====
 +
 To add destinations while leaving the source's existing rules alone, `POST` to the same path:
@@ -1315,6 +1316,7 @@ curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfield
 
 The `source.fl` query parameter described below is an alternative, and is the only option when
 filtering by destination or by more than one source at a time.
+A source with no copy-field rules returns an empty list rather than a 404.
 
 ==== List Copy Field Parameters
 
