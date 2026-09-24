@@ -963,7 +963,7 @@ Increasing the `overrequest` can help improve the accuracy of the top buckets.
 .Sample Documents
 [source,bash,subs="verbatim,callouts"]
 ----
-curl -sS -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -d '[
+curl -sS 'http://localhost:8983/solr/gettingstarted/update?commit=true' -d '[
 {"id":"01",age:15,"state":"AZ","hobbies":["soccer","painting","cycling"]},
 {"id":"02",age:22,"state":"AZ","hobbies":["swimming","darts","cycling"]},
 {"id":"03",age:27,"state":"AZ","hobbies":["swimming","frisbee","painting"]},
@@ -986,7 +986,7 @@ curl -sS -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' 
 .Example Query
 [source,bash,subs="verbatim,callouts"]
 ----
-curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:*
+curl -sS http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:*
 &back=*:*                                  # <1>
 &fore=age:[35 TO *]                        # <2>
 &json.facet={

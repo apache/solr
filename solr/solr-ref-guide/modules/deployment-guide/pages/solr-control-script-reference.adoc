@@ -1919,7 +1919,7 @@ Notice the different endpoints used depending on the format.
 
 *Example: import `json` files*
 
-`curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json?commit=true`
+`curl http://localhost:8983/solr/gettingstarted/update/json?commit=true --header "Content-Type: application/json" -d @gettingstarted.json`
 
 *Example: import `json` files*
 
@@ -1941,12 +1941,12 @@ Now import the data with either of these methods:
 
 [,console]
 ----
-$ curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
+curl 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true' --header "Content-Type: application/json" -d @gettingstarted.json
 ----
 or
 [,console]
 ----
-$ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update?commit=true'
+curl 'http://localhost:8983/solr/test_collection/update?commit=true' -H 'Content-Type: application/json' -d @gettingstarted.json
 ----
 
 *Example: import `javabin` files*
@@ -1954,7 +1954,7 @@ $ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http
 [,console]
 ----
 $ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
-$ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
+curl 'http://localhost:8983/solr/test_collection/update?commit=true' --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin
 ----
 
 == Interacting with API

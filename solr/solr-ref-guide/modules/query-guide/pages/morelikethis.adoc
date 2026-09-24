@@ -211,13 +211,13 @@ Config API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/gettingstarted/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mlt",
     "class": "solr.MoreLikeThisHandler",
     "defaults": {"mlt.fl": "text"}
   }
-}' http://localhost:8983/solr/gettingstarted/config
+}'
 ----
 ====
 ======

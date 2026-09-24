@@ -215,7 +215,7 @@ Schema configuration:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json'  http://localhost:8983/solr/geonames/schema -d '{
+curl http://localhost:8983/solr/geonames/schema -H 'Content-type:application/json' -d '{
   "add-field-type":{
     "name":"tag",
     "class":"solr.TextField",
@@ -253,7 +253,7 @@ Configure a custom Solr Request Handler:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' http://localhost:8983/solr/geonames/config -d '{
+curl http://localhost:8983/solr/geonames/config -H 'Content-type:application/json' -d '{
   "add-requesthandler" : {
     "name": "/tag",
     "class":"solr.TaggerRequestHandler",
@@ -286,8 +286,8 @@ or using curl:
 
 [,console]
 ----
-$ curl -X POST --data-binary @/path/to/cities1000.txt -H 'Content-type:application/csv' \
-  'http://localhost:8983/solr/geonames/update?commit=true&optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate'
+curl 'http://localhost:8983/solr/geonames/update?commit=true&optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
+  --data-binary @/path/to/cities1000.txt -H 'Content-type:application/csv'
 ----
 
 That might take around 35 seconds; it depends.
@@ -308,7 +308,7 @@ options, see the earlier documentation.
 
 [,console]
 ----
-$ curl -X POST \
+curl \
   'http://localhost:8983/solr/geonames/tag?overlaps=NO_SUB&tagsLimit=5000&fl=id,name,countrycode&wt=json&indent=on' \
   -H 'Content-Type:text/plain' -d 'Hello New York City'
 ----

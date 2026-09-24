@@ -41,7 +41,7 @@ First we need to update our schema to add the vector field type, the field to ho
 
 [,console]
 ----
-$ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
+curl http://localhost:8983/solr/films/schema -H 'Content-type:application/json' --data-binary '{
   "add-field-type" : {
     "name":"knn_vector_10",
     "class":"solr.DenseVectorField",

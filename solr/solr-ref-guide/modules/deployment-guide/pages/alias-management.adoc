@@ -343,7 +343,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
   {
     "name":"testalias",
     "collections":["foo","bar"]
@@ -414,7 +414,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
   {
       "name": "somethingTemporalThisWayComes",
       "routers" : [
@@ -504,7 +504,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
   {
     "name":"dra_test1",
     "routers": [

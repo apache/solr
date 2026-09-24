@@ -117,7 +117,7 @@ V1 API::
 ====
 [,console]
 ----
-$ curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 ----
 ====
 
@@ -126,7 +126,7 @@ V2 API::
 ====
 [,console]
 ----
-$ curl http://host:8983/api/collections/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+curl http://host:8983/api/collections/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 ----
 ====
 ======
