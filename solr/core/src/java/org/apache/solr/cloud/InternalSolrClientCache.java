@@ -36,11 +36,6 @@ import org.apache.solr.common.util.URLUtil;
  */
 public class InternalSolrClientCache extends SolrClientCache {
 
-  static {
-    assert INTERNAL_IMPL_CLASS.equals(InternalSolrClientCache.class.getName())
-        : "Update SolrClientCache.INTERNAL_IMPL_CLASS to match the renamed class";
-  }
-
   private final CloudSolrClient.CloudSolrClientConnection defaultConnection;
   private final Consumer<CloudSolrClient.CloudSolrClientConnection> connectionValidator;
 
@@ -62,6 +57,11 @@ public class InternalSolrClientCache extends SolrClientCache {
             .canUseZkACLs(true)
             .withHttpClientBuilder(httpBuilder)
             .build());
+  }
+
+  @Override
+  protected boolean isInternal() {
+    return true;
   }
 
   @Override

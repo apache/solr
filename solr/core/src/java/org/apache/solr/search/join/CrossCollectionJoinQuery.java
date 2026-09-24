@@ -223,6 +223,9 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
     private TupleStream createCloudSolrStream() throws IOException {
       ZkController zkController = searcher.getCore().getCoreContainer().getZkController();
+      if (zkController == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SolrCloud is required");
+      }
 
       CloudSolrClient.CloudSolrClientConnection streamingSolrConnection;
       if (solrConnection != null) {

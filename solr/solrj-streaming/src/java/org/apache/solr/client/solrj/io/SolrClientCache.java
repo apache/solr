@@ -43,10 +43,6 @@ public class SolrClientCache implements Closeable {
   protected static final int minSocketTimeout =
       Math.max(Integer.getInteger(SolrHttpConstants.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
-  /** The only permitted subclass when running inside a Solr server (solr.solr.home is set). */
-  protected static final String INTERNAL_IMPL_CLASS =
-      "org.apache.solr.cloud.InternalSolrClientCache";
-
   private String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   protected final Map<String, SolrClient> httpSolrClients = new HashMap<>();
@@ -64,9 +60,16 @@ public class SolrClientCache implements Closeable {
     checkNotRunningInSolr();
   }
 
+  /**
+   * Whether this is Solr's own cache, the only kind permitted inside a Solr server. Only Solr's
+   * internal subclass returns true.
+   */
+  protected boolean isInternal() {
+    return false;
+  }
+
   private void checkNotRunningInSolr() {
-    if (ExecutorUtil.isSolrServerThread()
-        && !INTERNAL_IMPL_CLASS.equals(this.getClass().getName())) {
+    if (ExecutorUtil.isSolrServerThread() && !isInternal()) {
       throw new IllegalStateException(
           "Inside Solr, use InternalSolrClientCache instead of " + this.getClass().getName());
     }

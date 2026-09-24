@@ -19,6 +19,7 @@ package org.apache.solr.security;
 
 import java.util.Collection;
 import java.util.Set;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.NodeConfig;
 
 /**
@@ -72,5 +73,23 @@ public class AllowListZkHostChecker {
       return true;
     }
     return allowedZkHosts.contains(zkHost);
+  }
+
+  /**
+   * Like {@link #isAllowed(String)} but throws if not allowed, as {@link
+   * AllowListUrlChecker#checkAllowList} does.
+   *
+   * @throws SolrException FORBIDDEN if not allowed
+   */
+  public void checkAllowList(String zkHost) {
+    if (!isAllowed(zkHost)) {
+      throw new SolrException(
+          SolrException.ErrorCode.FORBIDDEN,
+          "ZooKeeper host '"
+              + zkHost
+              + "' is not on the '"
+              + ZK_HOST_ALLOW_LIST
+              + "' allow-list in solr.xml and does not match the local cluster's ZK ensemble.");
+    }
   }
 }

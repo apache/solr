@@ -1053,16 +1053,7 @@ public class ZkController implements Closeable {
    */
   public void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
     if (solrConnection.isZookeeper()) {
-      String zkHost = solrConnection.toString();
-      if (!allowListZkHostChecker.isAllowed(zkHost)) {
-        throw new SolrException(
-            ErrorCode.FORBIDDEN,
-            "ZooKeeper host '"
-                + zkHost
-                + "' is not on the '"
-                + AllowListZkHostChecker.ZK_HOST_ALLOW_LIST
-                + "' allow-list in solr.xml and does not match the local cluster's ZK ensemble.");
-      }
+      allowListZkHostChecker.checkAllowList(solrConnection.toString());
     } else {
       try {
         cc.getAllowListUrlChecker().checkAllowList(solrConnection.quorumItems(), getClusterState());
