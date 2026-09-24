@@ -160,8 +160,7 @@ public class TestAdapterModel extends TestRerankBase {
         int doc,
         float finalScore,
         List<Explanation> featureExplanations) {
-      return Explanation.match(
-          finalScore, toString() + " model, always returns " + Float.toString(answerValue) + ".");
+      return Explanation.match(finalScore, this + " model, always returns " + answerValue + ".");
     }
   }
 }

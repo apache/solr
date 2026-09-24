@@ -18,9 +18,9 @@
 // under the License.
 
 Update handlers are request handlers designed to add, delete and update documents to the index.
-In addition to having plugins for importing rich documents (see xref:indexing-with-tika.adoc[]), Solr natively supports indexing structured documents in XML, CSV, and JSON.
+In addition to having plugins for importing rich documents (see xref:indexing-with-tika.adoc[]), Solr natively supports indexing structured documents in JSON, XML, and CSV.
 
-A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the xref:content-streams.adoc[ContentStream].
+A single unified update request handler supports JSON, XML, CSV, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the xref:content-streams.adoc[ContentStream].
 
 If you need to pre-process documents after they are loaded but before they are indexed (or even checked against the schema),
 Solr has document preprocessing plugins for Update Request Handlers, called xref:configuration-guide:update-request-processors.adoc[], which allow for default and custom configuration chains.

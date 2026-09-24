@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -52,6 +53,7 @@ public class SolrClientCache implements Closeable {
   private final HttpSolrClient httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
+  private volatile Consumer<CloudSolrClient.CloudSolrClientConnection> connectionValidator;
 
   public SolrClientCache() {
     this.httpSolrClient = null;
@@ -63,6 +65,37 @@ public class SolrClientCache implements Closeable {
 
   public void setBasicAuthCredentials(String basicAuthCredentials) {
     this.basicAuthCredentials = basicAuthCredentials;
+  }
+
+  /**
+   * Installs a connection validator that {@link
+   * #getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection)} consults on every call, before
+   * any ZK or HTTP contact. The validator rejects a connection by throwing, typically a {@code 403
+   * Forbidden} {@link org.apache.solr.common.SolrException}. A {@code null} validator disables
+   * validation.
+   *
+   * <p>The validator is invoked while holding the cache monitor, so it must be non-blocking and
+   * must not perform I/O.
+   */
+  public void setConnectionValidator(
+      Consumer<CloudSolrClient.CloudSolrClientConnection> connectionValidator) {
+    this.connectionValidator = connectionValidator;
+  }
+
+  /** Throws if the installed validator rejects the connection. */
+  public void validateConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    var validator = connectionValidator;
+    if (validator != null) {
+      validator.accept(solrConnection);
+    }
+  }
+
+  /** Message for a rejected ZooKeeper connection string. */
+  public static String zkHostRejectionMessage(String connectionString) {
+    return "ZooKeeper host '"
+        + connectionString
+        + "' is not on the 'allowZkHosts' allow-list in solr.xml and does not match the local"
+        + " cluster's ZK ensemble.";
   }
 
   public void setDefaultZKHost(String zkHost) {
@@ -88,6 +121,8 @@ public class SolrClientCache implements Closeable {
   public synchronized CloudSolrClient getCloudSolrClient(
       CloudSolrClient.CloudSolrClientConnection solrConnection) {
     ensureOpen();
+    // before the cache lookup, so cached clients are also subject to the validator
+    validateConnection(solrConnection);
     return cloudSolClients.computeIfAbsent(
         solrConnection, sc -> newCloudSolrClient(sc, httpSolrClient, useAclForZookeeper(sc)));
   }

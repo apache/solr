@@ -40,6 +40,7 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -68,6 +69,7 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -407,7 +409,7 @@ public class CoreContainer {
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader);
+    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig().isEnabled());
     this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
@@ -798,6 +800,9 @@ public class CoreContainer {
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
     solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
+    // Validate caller-supplied zkHost/solrConnection (cross-collection join, streaming
+    // expressions).
+    solrClientCache.setConnectionValidator(this::validateSolrConnection);
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -1634,6 +1639,38 @@ public class CoreContainer {
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */
   public AllowListUrlChecker getAllowListUrlChecker() {
     return allowListUrlChecker;
+  }
+
+  /**
+   * Validates a connection to a SolrCloud cluster: ZooKeeper via {@link
+   * ZkController#getAllowListZkHostChecker()} (never allowed in standalone mode), HTTP via {@link
+   * AllowListUrlChecker} (live nodes of this cluster are allowed).
+   *
+   * @throws SolrException FORBIDDEN if not allowed
+   */
+  private void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    ZkController zkController = getZkController();
+    if (solrConnection.isZookeeper()) {
+      String zkHost = solrConnection.toString();
+      if (zkController == null) {
+        throw new SolrException(
+            ErrorCode.FORBIDDEN,
+            "ZooKeeper host '" + zkHost + "' is not allowed when Solr is not in SolrCloud mode.");
+      }
+      if (!zkController.getAllowListZkHostChecker().isAllowed(zkHost)) {
+        throw new SolrException(
+            ErrorCode.FORBIDDEN, SolrClientCache.zkHostRejectionMessage(zkHost));
+      }
+    } else {
+      try {
+        allowListUrlChecker.checkAllowList(
+            solrConnection.quorumItems(),
+            zkController == null ? null : zkController.getClusterState());
+      } catch (MalformedURLException e) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid URL in solrConnection: " + solrConnection, e);
+      }
+    }
   }
 
   /**
