@@ -45,11 +45,43 @@ Health:: Report the health of the node.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/health`
+a|
+[tabs#health-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/admin/info/health
+----
+====
 
-v2: `api/node/health` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler]
+V2 API::
++
+====
+[source,bash]
+----
+api/node/health
+----
+====
+======
+a|
+[tabs#health-class]
+======
+V1 API::
++
+====
+{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler]
+====
 
-v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth] |
+V2 API::
++
+====
+{solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]
+====
+======
+|
 |===
 +
 In SolrCloud mode the handler checks that the node is connected to ZooKeeper and is listed in live nodes.
@@ -64,9 +96,28 @@ Logging:: Retrieve and modify registered loggers.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/logging`
+a|
+[tabs#logging-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/admin/info/logging
+----
+====
 
-v2: `api/node/logging` |{solr-javadocs}/core/org/apache/solr/handler/admin/LoggingHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
+V2 API::
++
+====
+[source,bash]
+----
+api/node/logging
+----
+====
+======
+|{solr-javadocs}/core/org/apache/solr/handler/admin/LoggingHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
 |===
 
 Luke:: Expose the internal Lucene index.
@@ -101,11 +152,43 @@ Secret values are redacted.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/properties`
+a|
+[tabs#properties-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/admin/info/properties
+----
+====
 
-v2: `api/node/properties` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
+V2 API::
++
+====
+[source,bash]
+----
+api/node/properties
+----
+====
+======
+a|
+[tabs#properties-class]
+======
+V1 API::
++
+====
+{solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
+====
 
-v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties] |`_ADMIN_PROPERTIES`
+V2 API::
++
+====
+{solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties]
+====
+======
+|`_ADMIN_PROPERTIES`
 |===
 +
 To fetch a single property, v1 uses a `name` query parameter (`solr/admin/info/properties?name=java.version`) and v2 uses a path segment (`api/node/properties/java.version`).
@@ -133,9 +216,28 @@ Threads:: Return info on all JVM threads.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/threads`
+a|
+[tabs#threads-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/admin/info/threads
+----
+====
 
-v2: `api/node/threads` |{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
+V2 API::
++
+====
+[source,bash]
+----
+api/node/threads
+----
+====
+======
+|{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
 === Analysis Handlers
@@ -170,9 +272,28 @@ Config API:: Retrieve and modify Solr configuration.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|v1: `solr/<collection>/config`
+a|
+[tabs#config-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/config
+----
+====
 
-v2: `api/collections/<collection>/config` |{solr-javadocs}/core/org/apache/solr/handler/SolrConfigHandler.html[SolrConfigHandler] |`_CONFIG`
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/config
+----
+====
+======
+|{solr-javadocs}/core/org/apache/solr/handler/SolrConfigHandler.html[SolrConfigHandler] |`_CONFIG`
 |===
 
 Dump:: Echo the request contents back to the client.
@@ -199,9 +320,30 @@ Schema API:: Retrieve and modify the Solr schema.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|v1: `solr/<collection>/schema`, `solr/<core>/schema`
+a|
+[tabs#schema-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/schema
+solr/<core>/schema
+----
+====
 
-v2: `api/collections/<collection>/schema`, `api/cores/<core>/schema` |{solr-javadocs}/core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA`
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/schema
+api/cores/<core>/schema
+----
+====
+======
+|{solr-javadocs}/core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA`
 |===
 
 === Query Handlers
