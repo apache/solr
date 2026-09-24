@@ -12,3 +12,5 @@ authors:
 links:
   - name: SOLR-18224
     url: https://issues.apache.org/jira/browse/SOLR-18224
+  - name: SOLR-18229
+    url: https://issues.apache.org/jira/browse/SOLR-18229
