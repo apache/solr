@@ -1,5 +1,5 @@
 title: >
-  Faster intersection in {!auxIndexJoin} query; introduce NoStoredFieldsLucene104.
+  Faster intersection in {!auxIndexJoin} query; introduce NoStoredFieldsCodec.
 type: changed
 authors:
   - name: Mikhail Khludnev
