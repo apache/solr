@@ -523,14 +523,17 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "add-copy-field":{
-     "source":"shelf",
-     "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X PUT -H 'Content-type:application/json' --data-binary '
+{
+  "destinations":[ "location", "catchall" ]
+}' http://localhost:8983/api/collections/techproducts/schema/copyfields/shelf
 ----
 ====
 ======
++
+Copy-field rules have no name of their own, so v2 addresses them by their source field: the source
+is the final path segment, and the body carries the destinations.
+The v2 request attribute is `destinations`, though `dest` is accepted as an alias.
 
 === Delete a Copy Field Rule
 
@@ -559,12 +562,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/copyfields/shelf?destination=location"
 ----
 ====
 ======
++
+Repeat the `destination` parameter to remove several rules at once.
+Omitting it entirely removes *every* rule with that source.
+Deleting a source that has no copy-field rules returns a 404.
 
 === Multiple Commands in a Single POST
 

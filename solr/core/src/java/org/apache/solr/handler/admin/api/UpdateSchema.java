@@ -21,10 +21,13 @@ import static org.apache.solr.common.util.CommandOperation.ERR_MSGS;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateSchemaApi;
+import org.apache.solr.client.api.model.AddCopyFieldOperation;
+import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
 import org.apache.solr.client.api.model.DeleteDynamicFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldTypeOperation;
@@ -39,6 +42,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.PermissionNameProvider;
 
@@ -149,6 +153,68 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     runWithSchemaManager(List.of(deleteFieldTypeOp));
 
     return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
+  public SolrJerseyResponse addCopyField(String sourceField, AddCopyFieldOperation requestBody)
+      throws Exception {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    ensureSchemaMutable();
+    ensureRequiredParameterProvided("sourceField", sourceField);
+    ensureRequiredRequestBodyProvided(requestBody);
+    ensureRequiredParameterProvided("destinations", requestBody.destinations);
+    requestBody.source = sourceField;
+    requestBody.operationType = "add-copy-field";
+
+    runWithSchemaManager(List.of(requestBody));
+
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
+  public SolrJerseyResponse deleteCopyField(String sourceField, List<String> destinations)
+      throws Exception {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    ensureSchemaMutable();
+    ensureRequiredParameterProvided("sourceField", sourceField);
+
+    // An unqualified DELETE removes every rule with the given source; 'destination' params narrow
+    // that to specific rules.
+    final var toDelete =
+        (destinations == null || destinations.isEmpty())
+            ? currentDestinationsOf(sourceField)
+            : destinations;
+    if (toDelete.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "No copy-field rules found with source '" + sourceField + "'");
+    }
+
+    final var deleteCopyFieldOp = new DeleteCopyFieldOperation();
+    deleteCopyFieldOp.operationType = "delete-copy-field";
+    deleteCopyFieldOp.source = sourceField;
+    deleteCopyFieldOp.destinations = toDelete;
+
+    runWithSchemaManager(List.of(deleteCopyFieldOp));
+
+    return response;
+  }
+
+  /**
+   * Lists the destinations of every copy-field rule currently declared with the given source.
+   *
+   * <p>Covers dynamic (i.e. glob) rules as well as explicit ones, since either may be addressed by
+   * source.
+   */
+  private List<String> currentDestinationsOf(String sourceField) {
+    return solrCore
+        .getLatestSchema()
+        .getCopyFieldProperties(false, Set.of(sourceField), null)
+        .stream()
+        .map(properties -> (String) properties.get(IndexSchema.DESTINATION))
+        .collect(Collectors.toList());
   }
 
   @Override
