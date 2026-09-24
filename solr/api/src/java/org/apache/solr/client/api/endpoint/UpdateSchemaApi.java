@@ -121,9 +121,11 @@ public interface UpdateSchemaApi {
   @Path("/copyfields/{sourceField}")
   @StoreApiParameters
   @Operation(
-      summary = "Add copy-field rules copying from the specified source field.",
+      summary =
+          "Set the copy-field rules for the specified source field.  The given destinations "
+              + "replace any rules that source already has.",
       tags = {"schema"})
-  SolrJerseyResponse addCopyField(
+  SolrJerseyResponse upsertCopyFields(
       @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
       throws Exception;
 

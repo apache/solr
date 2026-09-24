@@ -1,9 +1,10 @@
 title: >
-  The v2 Schema API can now add and remove copy-field rules directly, via
-  `PUT` and `DELETE` on `/api/collections/<collection>/schema/copyfields/<sourceField>`.
+  The v2 Schema API can now manage copy-field rules directly, via `PUT` and `DELETE` on
+  `/api/collections/<collection>/schema/copyfields/<sourceField>`.
   Previously copy-fields were the one schema resource reachable only through the bulk endpoint.
-  Rules are addressed by their source field: the `PUT` body carries a `destinations` list, and
-  `DELETE` removes every rule with that source unless `destination` query parameters narrow it.
+  Rules are addressed by their source field: `PUT` sets the complete `destinations` list for that
+  source, replacing any rules it already had, and `DELETE` removes every rule with that source
+  unless `destination` query parameters narrow it.
 type: added
 authors:
   - name: Jan Høydahl

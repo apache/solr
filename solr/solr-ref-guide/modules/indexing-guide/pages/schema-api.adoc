@@ -534,6 +534,18 @@ curl -X PUT -H 'Content-type:application/json' --data-binary '
 Copy-field rules have no name of their own, so v2 addresses them by their source field: the source
 is the final path segment, and the body carries the destinations.
 The v2 request attribute is `destinations`, though `dest` is accepted as an alias.
++
+[IMPORTANT]
+====
+The v2 `PUT` is a replace, not an append: the destinations you send become the complete set of
+copy-field rules for that source, and any rule left out is removed.
+Sending the same request twice is therefore safe.
+
+To add a destination while keeping the existing ones, list them all, or use `add-copy-field`
+through the bulk endpoint, which only ever appends.
+Note that `add-copy-field` does not check for duplicates, so appending a rule that already exists
+will cause the source to be copied twice.
+====
 
 === Delete a Copy Field Rule
 

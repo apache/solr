@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.common.util.CommandOperation.ERR_MSGS;
 
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -157,7 +158,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
 
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
-  public SolrJerseyResponse addCopyField(String sourceField, AddCopyFieldOperation requestBody)
+  public SolrJerseyResponse upsertCopyFields(String sourceField, AddCopyFieldOperation requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureSchemaMutable();
@@ -167,7 +168,23 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     requestBody.source = sourceField;
     requestBody.operationType = "add-copy-field";
 
-    runWithSchemaManager(List.of(requestBody));
+    // 'add-copy-field' is purely additive: it appends a rule without checking whether an identical
+    // one is already present, so repeating it would silently copy the source twice over.  Clearing
+    // the source's existing rules first is what makes this PUT idempotent, and lets the body state
+    // the rules the caller wants rather than only the ones being added.
+    final var operations = new ArrayList<SchemaChange>();
+    final var existing = currentDestinationsOf(sourceField);
+    if (!existing.isEmpty()) {
+      final var replacedOp = new DeleteCopyFieldOperation();
+      replacedOp.operationType = "delete-copy-field";
+      replacedOp.source = sourceField;
+      replacedOp.destinations = existing;
+      operations.add(replacedOp);
+    }
+    operations.add(requestBody);
+
+    // SchemaManager applies the list as a unit, so a failure to add leaves the old rules in place.
+    runWithSchemaManager(operations);
 
     return response;
   }
