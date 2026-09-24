@@ -48,6 +48,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
@@ -156,6 +157,13 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    */
   private int rebindsAfterReap;
 
+  /**
+   * from-segments whose foreign-key column {@link #fromColumnsFor} had to read on the query path
+   * because the weight skipped it. Steady-state zero, like {@link #rebindsAfterReap}, but also
+   * counts pairs reaped before their cell was ever resolved, which that counter misses.
+   */
+  private int fkLateLoads;
+
   // how many cells handed their built model back for the column on disk, see adoptOnDiskColumn
   private int modelsReleasedToDisk;
 
@@ -204,19 +212,16 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
             this.shift = approximation.docID();
             falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
           }
-          int walked = joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
-          if (!joinTask.fromSegIterIsNotExausted()) {
-            JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
-            leafsDrained++;
+          DrainOutcome outcome =
+              joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
+          fromDocsWalked += joinTask.lastDrainWalked();
+          if (outcome == DrainOutcome.CONFIRMED) {
+            logDrain(joinTask, true);
+            return true;
           }
-          fromDocsWalked += walked;
-          if (!leafJoins.isEmpty()) {
-            if (falseNegToDocsBits.get(approximation.docID() - shift)) {
-              logDrain(joinTask, walked, true);
-              return true;
-            } // otherwise we don't know if 0 is real false
-          }
-          logDrain(joinTask, walked, false);
+          JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
+          leafsDrained++;
+          logDrain(joinTask, false);
         }
       } catch (ExecutionException e) {
         throw new RuntimeException(e);
@@ -243,7 +248,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
      * for: the doc under test was found before the remaining {@code cellsLeft} columns were
      * touched.
      */
-    private void logDrain(LeafJoin joinTask, int walked, boolean confirmed) {
+    private void logDrain(LeafJoin joinTask, boolean confirmed) {
       if (!JoinIndexUtils.diagnosticsEnabled(log)) {
         return;
       }
@@ -255,7 +260,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
           JoinIndexUtils.segmentName(toContext),
           joinTask.pairFieldName,
           confirmed,
-          walked,
+          joinTask.lastDrainWalked(),
           joinTask.toCount(),
           leafJoins.size(),
           falseNegToDocsBits == null ? 0 : falseNegToDocsBits.cardinality(),
@@ -276,6 +281,14 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    * #resolveFromCalculatedModel}: the pair's edges plus an in-memory {@link JoinColumnModel} that
    * needs no further indirection to read.
    */
+  /** How one {@link LeafJoin#dumpMatchesInto} call ended. */
+  enum DrainOutcome {
+    /** Found the doc under confirmation; the cell stays live and the next drain resumes there. */
+    CONFIRMED,
+    /** Nothing left in the cell's from-range or column, so it can be dropped. */
+    EXHAUSTED
+  }
+
   class LeafJoin implements DocEdges {
     final String pairFieldName;
     final DocIdSetIterator fromSegmentDocIdIter;
@@ -286,6 +299,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // set only when resolved from the indexer; null means real docvalues are opened through
     // joinSegmentRef instead
     private JoinColumnModel docMapping;
+    private int lastDrainWalked;
 
     LeafJoin(
         String pairFieldName,
@@ -320,8 +334,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
      *
      * <p>Rebinding mid-query is safe because a cell's iteration state lives in {@link
      * #fromSegmentDocIdIter}, never in the column: {@link #toDocsByFromDocsDV()} is re-opened on
-     * every {@link #dumpMatchesInto} call and read by {@code advanceExact(fromDoc)}, so swapping
-     * what backs it between calls is invisible to the walk. A rebuilt column maps the same
+     * every {@link #dumpMatchesInto} call and read forward from the from-iterator's position, so
+     * swapping what backs it between calls is invisible to the walk. A rebuilt column maps the same
      * from-docs to the same to-docs as the one it replaces -- pair field names pin both segments --
      * which the assertion below states.
      */
@@ -387,48 +401,117 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
 
     /**
-     * Walks this cell's from-iterator from its current (prepositioned) doc through its edges' last
-     * from-doc, setting every to-doc it maps to -- shifted by {@code shift} -- in {@code
-     * matchedToDocs}.
+     * Walks this cell's from-docs from the current (prepositioned) one through its edges' last
+     * from-doc, setting every to-doc they map to -- shifted by {@code shift} -- in {@code
+     * matchedToDocs}, until {@code earlyExitDoc} is set or the cell has nothing left.
      *
-     * @return how many from-docs were walked, i.e. the column-read work this drain cost
+     * <p>The from-docs and the column are intersected, and which side drives mirrors Lucene's
+     * {@code ConjunctionDISI}: when the from-side matches are a {@link FixedBitSet} and the column
+     * holds fewer values than there are from-matches, the column leads and each of its docs is
+     * tested against the bitset; otherwise the two leapfrog. Probing the column at every from-match
+     * instead costs one {@code advanceExact} per from-doc, wasted on those a sparse column has no
+     * value for. {@code ConjunctionUtils} itself can't be used: it wants every iterator on the same
+     * doc, while this cell's from-iterator resumes mid-stream across drains.
+     *
+     * @return {@link DrainOutcome#CONFIRMED} with the from-iterator left on the confirmed doc, so
+     *     the next drain resumes there; or {@link DrainOutcome#EXHAUSTED}, after which the cell is
+     *     never drained again. The work either cost is {@link #lastDrainWalked()}.
      */
-    int dumpMatchesInto(FixedBitSet matchedToDocs, int shift, int earlyExitDoc) throws IOException {
+    DrainOutcome dumpMatchesInto(FixedBitSet matchedToDocs, int shift, int earlyExitDoc)
+        throws IOException {
       SortedNumericDocValues toDocsByFromDoc = toDocsByFromDocsDV();
-      int walked = 0;
-      boolean confirmedCurrent = false;
-      for (int fromDoc = fromSegmentDocIdIter.docID(); // prepositioned to the first match
-          fromSegIterIsNotExausted();
-          fromDoc = fromSegmentDocIdIter.nextDoc()) {
-        walked++;
-        if (toDocsByFromDoc.advanceExact(
-            fromDoc)) { // TODO will it be faster to use advance() and leapfrog?
-          for (int i = 0; i < toDocsByFromDoc.docValueCount(); i++) {
-            int toDocMatch = (int) toDocsByFromDoc.nextValue();
-            assert toDocMatch <= toDocEdges()[1] && toDocMatch >= toDocEdges()[0]
-                : "to doc "
-                    + toDocMatch
-                    + " above edges union max "
-                    + Arrays.toString(toDocEdges());
-            // shift is wherever the approximation iterator first landed, which need not be
-            // the global firstToDoc (e.g. under a boolean conjunction); a match below shift
-            // is unreachable -- the iterator only moves forward -- so it's dropped rather
-            // than written at a negative offset
-            // Also. we don't need toDocs less than one we're confirming currently
-            if (toDocMatch >= shift && toDocMatch >= earlyExitDoc) {
-              matchedToDocs.set(toDocMatch - shift);
-              if (toDocMatch == earlyExitDoc) {
-                confirmedCurrent = true;
-              }
-            }
+      lastDrainWalked = 0;
+      if (fromSegmentDocIdIter instanceof BitSetIterator fromBits && toCount() < fromMatchCount) {
+        return columnLedDrain(fromBits, toDocsByFromDoc, matchedToDocs, shift, earlyExitDoc);
+      }
+      return leapfrogDrain(toDocsByFromDoc, matchedToDocs, shift, earlyExitDoc);
+    }
+
+    /**
+     * How many entries of the driving side -- column values or from-docs -- the last {@link
+     * #dumpMatchesInto} visited, i.e. the column-read work it cost.
+     */
+    int lastDrainWalked() {
+      return lastDrainWalked;
+    }
+
+    /** The column leads; each of its from-docs is checked against the from-side bitset. */
+    private DrainOutcome columnLedDrain(
+        BitSetIterator fromIter,
+        SortedNumericDocValues column,
+        FixedBitSet matchedToDocs,
+        int shift,
+        int earlyExitDoc)
+        throws IOException {
+      BitSet fromBits = fromIter.getBitSet();
+      int lastFromDoc = fromDocEdges()[1];
+      for (int fromDoc = column.advance(fromIter.docID());
+          fromDoc != DocIdSetIterator.NO_MORE_DOCS && fromDoc <= lastFromDoc;
+          fromDoc = column.nextDoc()) {
+        lastDrainWalked++;
+        if (fromDoc < fromBits.length()
+            && fromBits.get(fromDoc)
+            && collectToDocs(column, matchedToDocs, shift, earlyExitDoc)) {
+          if (fromDoc > fromIter.docID()) {
+            fromIter.advance(fromDoc); // a set bit, so it lands exactly here
           }
-          if (confirmedCurrent) {
-            // we've just confirmed the doc, which was matches() is called for
-            return walked; // giveup
+          return DrainOutcome.CONFIRMED;
+        }
+      }
+      return DrainOutcome.EXHAUSTED;
+    }
+
+    /** From-docs and column leapfrog, each advancing to the other's doc. */
+    private DrainOutcome leapfrogDrain(
+        SortedNumericDocValues column, FixedBitSet matchedToDocs, int shift, int earlyExitDoc)
+        throws IOException {
+      int lastFromDoc = fromDocEdges()[1];
+      int columnDoc = -1;
+      for (int fromDoc = fromSegmentDocIdIter.docID(); fromSegIterIsNotExausted(); ) {
+        lastDrainWalked++;
+        if (columnDoc < fromDoc) {
+          columnDoc = column.advance(fromDoc);
+        }
+        if (columnDoc == DocIdSetIterator.NO_MORE_DOCS || columnDoc > lastFromDoc) {
+          return DrainOutcome.EXHAUSTED;
+        }
+        if (columnDoc > fromDoc) {
+          fromDoc = fromSegmentDocIdIter.advance(columnDoc);
+          continue;
+        }
+        if (collectToDocs(column, matchedToDocs, shift, earlyExitDoc)) {
+          return DrainOutcome.CONFIRMED;
+        }
+        fromDoc = fromSegmentDocIdIter.nextDoc();
+      }
+      return DrainOutcome.EXHAUSTED;
+    }
+
+    /**
+     * Sets the to-docs the column maps its current from-doc to, and reports whether {@code
+     * earlyExitDoc} -- the doc {@code matches()} was asked about -- was among them.
+     */
+    private boolean collectToDocs(
+        SortedNumericDocValues column, FixedBitSet matchedToDocs, int shift, int earlyExitDoc)
+        throws IOException {
+      boolean confirmedCurrent = false;
+      for (int i = 0; i < column.docValueCount(); i++) {
+        int toDocMatch = (int) column.nextValue();
+        assert toDocMatch <= toDocEdges()[1] && toDocMatch >= toDocEdges()[0]
+            : "to doc " + toDocMatch + " above edges union max " + Arrays.toString(toDocEdges());
+        // shift is wherever the approximation iterator first landed, which need not be
+        // the global firstToDoc (e.g. under a boolean conjunction); a match below shift
+        // is unreachable -- the iterator only moves forward -- so it's dropped rather
+        // than written at a negative offset
+        // Also. we don't need toDocs less than one we're confirming currently
+        if (toDocMatch >= shift && toDocMatch >= earlyExitDoc) {
+          matchedToDocs.set(toDocMatch - shift);
+          if (toDocMatch == earlyExitDoc) {
+            confirmedCurrent = true;
           }
         }
       }
-      return walked;
+      return confirmedCurrent;
     }
 
     private boolean fromSegIterIsNotExausted() {
@@ -629,7 +712,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
-            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} modelsReleased={} buildMs={}",
+            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} fkLateLoads={} modelsReleased={}"
+            + " buildMs={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
         reason,
@@ -639,6 +723,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         leafJoins.size(),
         fromDocsWalked,
         rebindsAfterReap,
+        fkLateLoads,
         modelsReleasedToDisk,
         joinIndexBuildNanos / 1_000_000L);
   }
@@ -682,6 +767,15 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
     if (loaded == null) {
       return fromColumnFutures;
+    }
+    fkLateLoads += loaded.size();
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
+      JoinIndexUtils.logDiagnostic(
+          log,
+          "AUXIJOIN evt=fkLateLoad ctx={} toSeg={} fromOrds={}",
+          ctxId,
+          JoinIndexUtils.segmentName(toContext),
+          loaded.keySet());
     }
     Map<Integer, Future<FromLeafJoinContext>> augmented = new HashMap<>(fromColumnFutures);
     loaded.forEach(
