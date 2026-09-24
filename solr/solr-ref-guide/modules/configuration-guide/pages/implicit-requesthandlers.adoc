@@ -300,6 +300,16 @@ JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 |`solr/<collection>/update/json` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON`
 |===
 
+NDJSON Updates:: Add newline delimited JSON (ND-JSON / JSON Lines) documents.
++
+*Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc#newline-delimited-json[Newline Delimited JSON]
++
+[cols="3*.",frame=none,grid=cols,options="header"]
+|===
+|API Endpoint |Class & Javadocs |Paramset
+|`solr/<collection>/update/ndjson` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_NDJSON`
+|===
+
 Custom JSON Updates:: Add and update custom JSON-formatted documents.
 +
 *Documentation*: xref:indexing-guide:transforming-and-indexing-custom-json.adoc[]

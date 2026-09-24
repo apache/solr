@@ -355,6 +355,7 @@ NOTE: You can see the opposite export/import cycle using the `tr` parameter in t
 
 Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents.
 If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described in the section xref:transforming-and-indexing-custom-json.adoc[].
+A stream of documents may also be sent as <<Newline Delimited JSON>>.
 
 === Solr-Style JSON
 
@@ -478,6 +479,45 @@ You can also specify `\_version_` with each "delete":
 
 You can specify the version of deletes in the body of the update request as well.
 
+=== Newline Delimited JSON
+
+Solr also accepts https://jsonlines.org/[Newline Delimited JSON] (ND-JSON), also known as JSON Lines or JSONL: one document per line, as a JSON Object, with no enclosing array and no commas between lines.
+
+Send it to the `/update` handler with `Content-Type: application/x-ndjson`, or to the dedicated `/update/ndjson` path:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr/my_collection/update?commit=true' --data-binary '
+{"id":"1","title":"Doc 1"}
+{"id":"2","title":"Doc 2"}
+{"id":"3","title":"Doc 3"}
+'
+----
+
+`application/jsonl`, `application/jsonlines` and `application/x-jsonlines` are accepted as aliases, and the xref:post-tool.adoc[] sends `.jsonl` and `.ndjson` files automatically.
+The format is UTF-8 only: a request declaring any other `charset` is rejected with a `415 Unsupported Media Type`.
+
+Solr parses and indexes the request as it streams in, so peak memory is bounded by the largest single document rather than by the size of the request, which makes the format a good fit for large bulk loads.
+Blank lines are ignored. Comments are not supported.
+A line that is not a single JSON Object -- an enclosing array, a document spread over several lines, two documents on one line, or anything that is not an Object -- fails the request, reporting the line number.
+Documents from earlier lines have already been submitted when a later line fails, so a failed load may be partially applied.
+
+Every line is an implicit `add`; NDJSON has no way to express the other update commands, so `delete`, `commit`, `optimize`, and `rollback` are not available in the payload.
+Use the `commit` or `commitWithin` request parameters to control when the added documents are committed.
+
+Documents are mapped as on the `/update/json/docs` path, described in xref:transforming-and-indexing-custom-json.adoc[]: by default a nested JSON Object is *flattened* into dotted field names, so `{"id":"1","author":{"name":"Jan"}}` indexes `author.name`.
+Use the `split` parameter to declare the paths that should become xref:indexing-nested-documents.adoc[child documents] instead (`|` is URL encoded as `%7C`):
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/x-ndjson' 'http://localhost:8983/solr/my_collection/update?commit=true&split=/%7C/children' --data-binary '
+{"id":"1","title":"Parent","children":[{"id":"1a"},{"id":"1b"}]}
+'
+----
+
+The first `split` path must be the root `/`, since every line is already one document, and wildcards are not allowed in it.
+`f`, `echo` and `mapUniqueKeyOnly` work as on `/update/json/docs`; `srcField` is not supported, and neither are xref:partial-document-updates.adoc[atomic updates].
+
 === JSON Update Convenience Paths
 
 In addition to the `/update` handler, there are a few additional JSON specific request handler paths available by default in Solr, that implicitly override the behavior of some request parameters:
@@ -491,9 +531,11 @@ In addition to the `/update` handler, there are a few additional JSON specific r
 
 `json.command=false`
 
+|`/update/ndjson` |`update.contentType=application/x-ndjson`
 |===
 
 The `/update/json` path may be useful for clients sending in JSON formatted update commands from applications where setting the Content-Type proves difficult, while the `/update/json/docs` path can be particularly convenient for clients that always want to send in documents – either individually or as a list – without needing to worry about the full JSON command syntax.
+The `/update/ndjson` path serves the same purpose for newline delimited JSON.
 
 === Custom JSON Documents
 
