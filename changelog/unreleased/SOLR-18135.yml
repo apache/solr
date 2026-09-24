@@ -1,4 +1,4 @@
-title: Fix merge timer double-stop when segment merging fails.
+title: Fix double-stop of the merge timer when segment merging fails with assertions enabled.
 type: fixed
 authors:
   - name: Nick Shanin
