@@ -143,9 +143,18 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     // updateRequestHandler (see PluginBag.JaxrsResourceToHandlerMappings) -- handleRequest would
     // double-count both.
     SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
+    // UpdateRequestHandler.setDefaultWT() (called during the delegation below) mutates this same
+    // request's params to inject its own default 'wt' -- e.g. "xml" for the XML loader -- purely
+    // to pick a v1 response writer. That's a v1-internal implementation detail, but since it's
+    // the same SolrQueryRequest instance Jersey's MediaTypeOverridingFilter reads afterward, the
+    // injected value leaks out and hijacks this v2 response's actual Content-Type (which should
+    // stay JSON, or follow the client's real Accept header, regardless of which v1 loader ran).
+    // Restore the original params afterward so no such delegate-internal mutation survives.
+    final var originalParams = solrQueryRequest.getParams();
     try {
       updateRequestHandler.handleRequestWithoutMetrics(solrQueryRequest, solrQueryResponse);
     } finally {
+      solrQueryRequest.setParams(originalParams);
       copyToleratedUpdateMetadata(response);
       solrQueryResponse.getValues().remove("responseHeader");
     }
