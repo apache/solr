@@ -524,7 +524,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '[
+curl -H 'Content-type:application/json' -d '[
   {
     "operationType":"add-copy-field",
     "source":"shelf",
