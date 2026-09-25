@@ -34,4 +34,24 @@ public class UpdateResponse extends SolrJerseyResponse {
   @JsonProperty("deleteByQuery")
   @Schema(description = "Delete-by-query operations and the versions assigned to them.")
   public List<VersionedQuery> deleteByQuery;
+
+  @JsonProperty("errors")
+  @Schema(
+      description =
+          "Commands that failed but were tolerated because the request's maxErrors allowed it. "
+              + "Present only when the update chain includes a tolerant-update processor.")
+  public List<ToleratedUpdateError> errors;
+
+  @JsonProperty("maxErrors")
+  @Schema(
+      description =
+          "The effective maxErrors value used for this request; -1 means unlimited. Present only "
+              + "when the update chain includes a tolerant-update processor.")
+  public Integer maxErrors;
+
+  @JsonProperty("rf")
+  @Schema(
+      description =
+          "The replication factor actually achieved for this update. Present only in SolrCloud.")
+  public Integer rf;
 }

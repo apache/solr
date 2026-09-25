@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateApi;
+import org.apache.solr.client.api.model.ToleratedUpdateError;
 import org.apache.solr.client.api.model.UpdateResponse;
 import org.apache.solr.client.api.model.VersionedDocument;
 import org.apache.solr.client.api.model.VersionedQuery;
@@ -129,13 +130,15 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     if (pathOverride != null) {
       solrQueryRequest.getContext().put(PATH, pathOverride);
     }
-    // The distributed update processor writes replication metadata into the legacy response
-    // header while handling the request. Initialize it for the handler, then leave serialization
-    // to the typed Jersey response so only one responseHeader is returned to the client.
+    // TolerantUpdateProcessor (errors/maxErrors) and DistributedZkUpdateProcessor (rf) write
+    // their payload into the legacy response header while handling the request. Initialize it
+    // for the handler, copy that payload onto the typed response, then discard the header so
+    // only one responseHeader (the typed Jersey one) is returned to the client.
     SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
     try {
       updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
     } finally {
+      copyToleratedUpdateMetadata(response);
       solrQueryResponse.getValues().remove("responseHeader");
     }
     rethrowAnyException(solrQueryResponse);
@@ -143,6 +146,37 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     response.deletes = takeDocumentVersionResults("deletes");
     response.deleteByQuery = takeQueryVersionResults();
     return response;
+  }
+
+  /**
+   * Copies replication-factor and tolerant-update-error metadata off the legacy response header
+   * and onto the typed response, before that header is discarded.
+   *
+   * @see org.apache.solr.update.processor.TolerantUpdateProcessor
+   * @see org.apache.solr.update.processor.DistributedZkUpdateProcessor
+   */
+  @SuppressWarnings("unchecked")
+  private void copyToleratedUpdateMetadata(UpdateResponse response) {
+    final NamedList<Object> header = solrQueryResponse.getResponseHeader();
+    if (header == null) return;
+
+    final Object rf = header.get("rf");
+    if (rf != null) response.rf = ((Number) rf).intValue();
+
+    final Object maxErrors = header.get("maxErrors");
+    if (maxErrors != null) response.maxErrors = ((Number) maxErrors).intValue();
+
+    final var rawErrors = (List<? extends NamedList<String>>) header.get("errors");
+    if (rawErrors != null && !rawErrors.isEmpty()) {
+      response.errors = new ArrayList<>(rawErrors.size());
+      for (NamedList<String> rawError : rawErrors) {
+        final ToleratedUpdateError error = new ToleratedUpdateError();
+        error.type = rawError.get("type");
+        error.id = rawError.get("id");
+        error.message = rawError.get("message");
+        response.errors.add(error);
+      }
+    }
   }
 
   private List<VersionedDocument> takeDocumentVersionResults(String name) {
