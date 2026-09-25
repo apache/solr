@@ -3,4 +3,5 @@ title: SlowCompositeReaderWrapper no longer misreports the index sort and hasBlo
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: David Smiley
-links:
+issues:
+  - 4825
