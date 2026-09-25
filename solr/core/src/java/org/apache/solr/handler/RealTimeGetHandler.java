@@ -19,8 +19,8 @@ package org.apache.solr.handler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.api.RealTimeGetAPI;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.RealTimeGetComponent;
@@ -38,7 +38,7 @@ public class RealTimeGetHandler extends SearchHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    // Tell HttpShardHandlerthat this request should only be distributed to NRT replicas
+    // Tell HttpShardHandler that this request should only be distributed to NRT replicas
     req.getContext().put(HttpShardHandler.ONLY_NRT_REPLICAS, Boolean.TRUE);
     super.handleRequestBody(req, rsp);
   }
@@ -52,7 +52,12 @@ public class RealTimeGetHandler extends SearchHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return List.copyOf(AnnotatedApi.getApis(new RealTimeGetAPI(this)));
+    return List.of();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(RealTimeGetAPI.class);
   }
 
   @Override
