@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.SolrException;
@@ -118,6 +119,51 @@ public class JsonLoader extends ContentStreamLoader {
       return listVal.get(0) instanceof Map;
     }
     return val instanceof Map;
+  }
+
+  // Field-name keys recognized by AtomicUpdateDocumentMerger when it merges a doc containing
+  // atomic-update instructions (e.g. {"add": "foo"}) into an existing one.
+  private static final Set<String> ATOMIC_UPDATE_OPERATIONS =
+      Set.of("add", "set", "remove", "removeregex", "inc", "add-distinct");
+
+  /**
+   * Guards the literal-document (docs/split-mode) path against silently swallowing atomic-update
+   * syntax: that path always overwrites the document with exactly the literal fields it's given,
+   * so a value shaped like {@code {"add": "foo"}} would otherwise be indexed as a nested child
+   * document (or, under the default field mapping, flattened into a field literally named e.g.
+   * "cat.add"), discarding whatever the rest of the target document held, with no error to say
+   * so. Depending on the request's split/f params, by the time a record reaches here such a value
+   * has either survived as a nested {@code Map}/{@code List<Map>}, or already been flattened by
+   * {@link org.apache.solr.common.util.JsonRecordReader} into a dotted field name whose last
+   * segment is the operator name -- this checks for both shapes.
+   */
+  private static void rejectAtomicUpdateSyntax(Map<String, Object> doc) {
+    for (Map.Entry<String, Object> e : doc.entrySet()) {
+      String key = e.getKey();
+      int lastDot = key.lastIndexOf('.');
+      boolean flattenedOperation =
+          lastDot >= 0 && ATOMIC_UPDATE_OPERATIONS.contains(key.substring(lastDot + 1));
+      if (flattenedOperation || looksLikeAtomicUpdateOperation(e.getValue())) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Field '"
+                + (lastDot >= 0 ? key.substring(0, lastDot) : key)
+                + "' looks like an atomic update operation (e.g. '{\"add\": ...}'), but this "
+                + "endpoint indexes documents literally and does not support atomic updates; use "
+                + UpdateRequestHandler.JSON_PATH
+                + " instead.");
+      }
+    }
+  }
+
+  private static boolean looksLikeAtomicUpdateOperation(Object val) {
+    if (val instanceof Map<?, ?> map) {
+      return map.keySet().stream().anyMatch(ATOMIC_UPDATE_OPERATIONS::contains);
+    }
+    if (val instanceof List<?> list) {
+      return list.stream().anyMatch(JsonLoader::looksLikeAtomicUpdateOperation);
+    }
+    return false;
   }
 
   static class SingleThreadedJsonLoader extends ContentStreamLoader {
@@ -277,6 +323,7 @@ public class JsonLoader extends ContentStreamLoader {
                 changeChildDoc(copy);
                 docs.add(copy);
               } else {
+                rejectAtomicUpdateSyntax(copy);
                 AddUpdateCommand cmd = new AddUpdateCommand(req);
                 cmd.commitWithin = commitWithin;
                 cmd.overwrite = overwrite;

@@ -265,6 +265,10 @@ The V1 `/update/json/docs` path additionally forces document-only processing thr
 In V2, use the general `/api/collections/\{collection\}/update` or `/api/cores/\{core\}/update` endpoint with `Content-Type: application/json` for JSON update commands.
 Use `/api/collections/\{collection\}/update/json` or `/api/cores/\{core\}/update/json` for document-only JSON requests.
 
+WARNING: The document-only paths (`/update/json/docs` in V1, `/update/json` in V2) index every document literally and do not support xref:partial-document-updates.adoc#atomic-updates[atomic update] syntax -- use `/update` for that instead.
+A field value shaped like an atomic-update operator, e.g. `{"add": "foo"}`, is rejected with an error rather than applied.
+A document sent to these paths without atomic-update syntax, however, still fully replaces any existing document with the same `id`, the same as sending a plain document to `/update`.
+
 === Custom JSON Documents
 
 Solr can support custom JSON.
