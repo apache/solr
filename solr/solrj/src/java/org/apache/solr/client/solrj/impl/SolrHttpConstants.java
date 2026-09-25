@@ -21,6 +21,7 @@ package org.apache.solr.client.solrj.impl;
 public interface SolrHttpConstants {
   int DEFAULT_CONNECT_TIMEOUT = 60000;
   int DEFAULT_SO_TIMEOUT = 600000;
+  int DEFAULT_IDLE_TIMEOUT = 60000;
   int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
   int DEFAULT_MAXCONNECTIONS = 100000;
 
