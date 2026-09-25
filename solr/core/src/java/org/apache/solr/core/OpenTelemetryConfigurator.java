@@ -20,11 +20,9 @@ package org.apache.solr.core;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -35,10 +33,11 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Configures and loads/sets {@link GlobalOpenTelemetry} from a {@link OpenTelemetrySdk}. */
+/** Configures and sets {@link GlobalOpenTelemetry}. */
 public abstract class OpenTelemetryConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
@@ -53,67 +52,70 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   private static volatile boolean loaded = false;
 
   /**
-   * Initializes the {@link io.opentelemetry.api.GlobalOpenTelemetry} instance by configuring the
-   * {@link io.opentelemetry.sdk.OpenTelemetrySdk} through custom plugin, auto-configure or default
-   * SDK.
+   * Initializes {@link io.opentelemetry.api.GlobalOpenTelemetry} from a custom plugin,
+   * auto-configuration, or simple trace ID propagation. Does nothing if the OpenTelemetry Java
+   * agent is present, since it has already done this.
    */
   public static synchronized void initializeOpenTelemetrySdk(
       NodeConfig cfg, SolrResourceLoader loader) {
-    PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
-
-    if (info != null && info.isEnabled()) {
-      OpenTelemetryConfigurator.configureCustomOpenTelemetrySdk(
-          loader, cfg.getTracerConfiguratorPluginInfo());
-    } else if (OpenTelemetryConfigurator.shouldAutoConfigOTEL()) {
-      OpenTelemetryConfigurator.autoConfigureOpenTelemetrySdk(loader);
-    } else {
-      OpenTelemetryConfigurator.configureOpenTelemetrySdk();
-    }
-  }
-
-  private static void configureOpenTelemetrySdk() {
+    // synchronized & "loaded" to avoid races in tests starting Solr nodes concurrently
     if (loaded) return;
-
-    if (TRACE_ID_GEN_ENABLED) {
-      log.info("OpenTelemetry tracer enabled with simple propagation only.");
-      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-    }
-
-    OpenTelemetry otel =
-        OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
-    GlobalOpenTelemetry.set(otel);
     loaded = true;
+
+    if (TraceUtils.OTEL_AGENT_PRESENT) {
+      log.info("OpenTelemetry Java agent is installed; using the OpenTelemetry it registered.");
+    } else {
+      PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
+      OpenTelemetry otel = null;
+      if (info != null && info.isEnabled()) {
+        OpenTelemetryConfigurator configurator =
+            loader.newInstance(info.className, OpenTelemetryConfigurator.class);
+        configurator.init(info.initArgs);
+        otel = configurator.createOpenTelemetry();
+      } else if (shouldAutoConfigOTEL()) {
+        otel = autoConfigOTEL(loader); // null if it failed to load
+      }
+      if (otel == null && TRACE_ID_GEN_ENABLED) {
+        otel = OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
+        log.info("OpenTelemetry loaded with simple propagation only.");
+      }
+      boolean isNoop = otel == null;
+
+      try {
+        // throws IllegalStateException if already set
+        GlobalOpenTelemetry.set(isNoop ? OpenTelemetry.noop() : otel);
+        if (isNoop) {
+          return; // no point in the thread local provider below
+        }
+      } catch (IllegalStateException e) {
+        log.info("GlobalOpenTelemetry was already initialized by something else; using that.");
+      }
+    }
+
+    ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
   }
 
-  private static void autoConfigureOpenTelemetrySdk(SolrResourceLoader loader) {
-    if (loaded) return;
+  private static OpenTelemetry autoConfigOTEL(SolrResourceLoader loader) {
     try {
       OpenTelemetryConfigurator configurator =
           loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
       configurator.init(new NamedList<>());
-      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-      loaded = true;
+      log.info("OpenTelemetry loaded via auto configuration.");
+      return configurator.createOpenTelemetry();
     } catch (SolrException e) {
       log.error(
           "Unable to auto-config OpenTelemetry with class {}. Make sure you have enabled the 'opentelemetry' module",
           DEFAULT_CLASS_NAME,
           e);
+      return null;
     }
   }
 
-  private static void configureCustomOpenTelemetrySdk(SolrResourceLoader loader, PluginInfo info) {
-    if (loaded) return;
-
-    OpenTelemetryConfigurator configurator =
-        loader.newInstance(info.className, OpenTelemetryConfigurator.class);
-    configurator.init(info.initArgs);
-    ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-    loaded = true;
-  }
-
-  protected abstract Tracer getTracer();
-
-  protected abstract OpenTelemetrySdk getOpenTelemetrySdk();
+  /**
+   * Creates the {@link OpenTelemetry} to install as {@link GlobalOpenTelemetry}; called after
+   * {@link #init(NamedList)}. Implementations must not set {@link GlobalOpenTelemetry} themselves.
+   */
+  protected abstract OpenTelemetry createOpenTelemetry();
 
   private static class ContextThreadLocalProvider
       implements ExecutorUtil.InheritableThreadLocalProvider {

@@ -61,6 +61,21 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
+  /** Is the OpenTelemetry Java agent present? */
+  public static final boolean OTEL_AGENT_PRESENT;
+
+  static {
+    // https://github.com/open-telemetry/opentelemetry-java-instrumentation/discussions/9173
+    boolean b;
+    try {
+      Class.forName("io.opentelemetry.javaagent.OpenTelemetryAgent");
+      b = true;
+    } catch (ClassNotFoundException e) {
+      b = false;
+    }
+    OTEL_AGENT_PRESENT = b;
+  }
+
   public static final Predicate<Span> DEFAULT_IS_RECORDING = Span::isRecording;
 
   /**

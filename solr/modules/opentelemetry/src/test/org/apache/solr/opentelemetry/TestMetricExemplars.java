@@ -16,11 +16,12 @@
  */
 package org.apache.solr.opentelemetry;
 
-import static org.apache.solr.opentelemetry.TestDistributedTracing.getAndClearSpans;
-import static org.apache.solr.opentelemetry.TestDistributedTracing.getRootTraceId;
+import static org.apache.solr.opentelemetry.TracingTestUtil.getAndClearSpans;
+import static org.apache.solr.opentelemetry.TracingTestUtil.getRootTraceId;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -29,23 +30,20 @@ import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class TestMetricExemplars extends SolrCloudTestCase {
 
+  @ClassRule public static OpenTelemetryRule otelRule = OpenTelemetryRule.create();
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("otel.traces.sampler", "always_on");
-    // force early init
-    CustomTestOtelTracerConfigurator.prepareForTest();
-
     configureCluster(1)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
-        .withTraceIdGenerationDisabled()
         .configure();
 
     assertNotEquals(
@@ -58,14 +56,9 @@ public class TestMetricExemplars extends SolrCloudTestCase {
     cluster.waitForActiveCollection("collection1", 1, 1);
   }
 
-  @AfterClass
-  public static void afterClass() {
-    CustomTestOtelTracerConfigurator.resetForTest();
-  }
-
   @Before
   private void resetSpanData() {
-    getAndClearSpans();
+    getAndClearSpans(otelRule);
   }
 
   @Test
@@ -74,7 +67,7 @@ public class TestMetricExemplars extends SolrCloudTestCase {
 
     // Generate exemplars
     cloudClient.add("collection1", sdoc("id", "1"));
-    var spans = getAndClearSpans();
+    var spans = getAndClearSpans(otelRule);
     var expectedTrace = getRootTraceId(spans);
 
     var req = new MetricsRequest(new ModifiableSolrParams().set("wt", "openmetrics"));

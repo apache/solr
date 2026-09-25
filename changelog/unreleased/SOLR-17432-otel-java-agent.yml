@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >-
+  Solr now detects a loaded OpenTelemetry Java agent and uses the OpenTelemetry it registered,
+  with no need for a <tracerConfig> in solr.xml or the opentelemetry module.
+  OpenTelemetryConfigurator subclasses now implement createOpenTelemetry() instead of
+  getTracer()/getOpenTelemetrySdk(), and must not set GlobalOpenTelemetry themselves.
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-17432
+    url: https://issues.apache.org/jira/browse/SOLR-17432
