@@ -576,7 +576,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update?commit=true' -H 'Content-type:application/csv' -d @example/exampledocs/books.csv
+curl 'http://localhost:8983/solr/my_collection/update?commit=true' -H 'Content-type:application/csv' --data-binary @example/exampledocs/books.csv
 ----
 ====
 
@@ -585,7 +585,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update?commit=true' -H 'Content-type:application/csv' -d @example/exampledocs/books.csv
+curl 'http://localhost:8983/api/collections/my_collection/update?commit=true' -H 'Content-type:application/csv' --data-binary @example/exampledocs/books.csv
 ----
 ====
 ======
@@ -798,7 +798,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' -d @/tmp/result.txt
+curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
 ----
 ====
 
@@ -807,7 +807,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update/csv?commit=true&separator=%09&escape=%5c' -d @/tmp/result.txt
+curl 'http://localhost:8983/api/collections/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
 ----
 ====
 ======
