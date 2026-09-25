@@ -141,6 +141,11 @@ public class SolrStream extends TupleStream {
     this.clientCache = context.getSolrClientCache();
   }
 
+  /** Uses this cache instead of creating one; the caller closes it. */
+  void setClientCache(SolrClientCache clientCache) {
+    this.clientCache = clientCache;
+  }
+
   public void setCredentials(String user, String password) {
     this.user = user;
     this.password = password;

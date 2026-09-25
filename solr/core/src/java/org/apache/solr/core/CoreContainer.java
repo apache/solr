@@ -40,7 +40,6 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -69,7 +68,6 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -280,8 +278,6 @@ public class CoreContainer {
   protected volatile Tracer tracer;
 
   protected MetricsHandler metricsHandler;
-
-  private volatile SolrClientCache solrClientCache;
 
   private volatile Map<String, SolrCache<?, ?>> caches;
 
@@ -711,8 +707,8 @@ public class CoreContainer {
    */
   @Deprecated(since = "10.0")
   public SolrClientCache getSolrClientCache() {
-    // TODO put in the objectCache instead
-    return solrClientCache;
+    // TODO put in the objectCache instead?
+    return isZooKeeperAware() ? getZkController().getSolrClientCache() : null;
   }
 
   public ObjectCache getObjectCache() {
@@ -799,10 +795,6 @@ public class CoreContainer {
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
-    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
-    // Validate caller-supplied zkHost/solrConnection (cross-collection join, streaming
-    // expressions).
-    solrClientCache.setConnectionValidator(this::validateSolrConnection);
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -829,7 +821,6 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
       zkSys
           .getZkMetricsProducer()
@@ -1298,9 +1289,6 @@ public class CoreContainer {
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
       }
-      if (solrClientCache != null) {
-        solrClientCache.close();
-      }
       if (containerPluginsRegistry != null) {
         IOUtils.closeQuietly(containerPluginsRegistry);
       }
@@ -1639,38 +1627,6 @@ public class CoreContainer {
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */
   public AllowListUrlChecker getAllowListUrlChecker() {
     return allowListUrlChecker;
-  }
-
-  /**
-   * Validates a connection to a SolrCloud cluster: ZooKeeper via {@link
-   * ZkController#getAllowListZkHostChecker()} (never allowed in standalone mode), HTTP via {@link
-   * AllowListUrlChecker} (live nodes of this cluster are allowed).
-   *
-   * @throws SolrException FORBIDDEN if not allowed
-   */
-  private void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
-    ZkController zkController = getZkController();
-    if (solrConnection.isZookeeper()) {
-      String zkHost = solrConnection.toString();
-      if (zkController == null) {
-        throw new SolrException(
-            ErrorCode.FORBIDDEN,
-            "ZooKeeper host '" + zkHost + "' is not allowed when Solr is not in SolrCloud mode.");
-      }
-      if (!zkController.getAllowListZkHostChecker().isAllowed(zkHost)) {
-        throw new SolrException(
-            ErrorCode.FORBIDDEN, SolrClientCache.zkHostRejectionMessage(zkHost));
-      }
-    } else {
-      try {
-        allowListUrlChecker.checkAllowList(
-            solrConnection.quorumItems(),
-            zkController == null ? null : zkController.getClusterState());
-      } catch (MalformedURLException e) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST, "Invalid URL in solrConnection: " + solrConnection, e);
-      }
-    }
   }
 
   /**

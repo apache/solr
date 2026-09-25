@@ -32,6 +32,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
@@ -124,6 +126,7 @@ import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AllowListZkHostChecker;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.AddressUtils;
@@ -210,6 +213,8 @@ public class ZkController implements Closeable {
   private SolrCloudManager cloudManager;
 
   private CloudSolrClient cloudSolrClient;
+
+  private volatile InternalSolrClientCache internalSolrClientCache;
 
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
@@ -677,6 +682,22 @@ public class ZkController implements Closeable {
     return getSolrCloudManager().getSolrClient();
   }
 
+  public SolrClientCache getSolrClientCache() {
+    if (internalSolrClientCache == null) {
+      synchronized (this) {
+        if (internalSolrClientCache == null) {
+          var connection = CloudSolrClient.CloudSolrClientConnection.parse(zkServerAddress);
+          internalSolrClientCache =
+              new InternalSolrClientCache(
+                  (HttpJettySolrClient) cc.getDefaultHttpSolrClient(),
+                  connection,
+                  this::validateSolrConnection);
+        }
+      }
+    }
+    return internalSolrClientCache;
+  }
+
   public int getLeaderVoteWait() {
     return leaderVoteWait;
   }
@@ -876,6 +897,7 @@ public class ZkController implements Closeable {
 
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(internalSolrClientCache));
 
       try {
         try {
@@ -1020,6 +1042,26 @@ public class ZkController implements Closeable {
    */
   public AllowListZkHostChecker getAllowListZkHostChecker() {
     return allowListZkHostChecker;
+  }
+
+  /**
+   * Validates a connection to a SolrCloud cluster: ZooKeeper via {@link
+   * #getAllowListZkHostChecker()}, HTTP via {@link AllowListUrlChecker} (live nodes of this cluster
+   * are allowed).
+   *
+   * @throws SolrException FORBIDDEN if not allowed
+   */
+  public void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    if (solrConnection.isZookeeper()) {
+      allowListZkHostChecker.checkAllowList(solrConnection.toString());
+    } else {
+      try {
+        cc.getAllowListUrlChecker().checkAllowList(solrConnection.quorumItems(), getClusterState());
+      } catch (MalformedURLException e) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid URL in solrConnection: " + solrConnection, e);
+      }
+    }
   }
 
   boolean isClosed() {
