@@ -128,14 +128,14 @@ public class JsonLoader extends ContentStreamLoader {
 
   /**
    * Guards the literal-document (docs/split-mode) path against silently swallowing atomic-update
-   * syntax: that path always overwrites the document with exactly the literal fields it's given,
-   * so a value shaped like {@code {"add": "foo"}} would otherwise be indexed as a nested child
+   * syntax: that path always overwrites the document with exactly the literal fields it's given, so
+   * a value shaped like {@code {"add": "foo"}} would otherwise be indexed as a nested child
    * document (or, under the default field mapping, flattened into a field literally named e.g.
-   * "cat.add"), discarding whatever the rest of the target document held, with no error to say
-   * so. Depending on the request's split/f params, by the time a record reaches here such a value
-   * has either survived as a nested {@code Map}/{@code List<Map>}, or already been flattened by
-   * {@link org.apache.solr.common.util.JsonRecordReader} into a dotted field name whose last
-   * segment is the operator name -- this checks for both shapes.
+   * "cat.add"), discarding whatever the rest of the target document held, with no error to say so.
+   * Depending on the request's split/f params, by the time a record reaches here such a value has
+   * either survived as a nested {@code Map}/{@code List<Map>}, or already been flattened by {@link
+   * org.apache.solr.common.util.JsonRecordReader} into a dotted field name whose last segment is
+   * the operator name -- this checks for both shapes.
    */
   private static void rejectAtomicUpdateSyntax(Map<String, Object> doc) {
     for (Map.Entry<String, Object> e : doc.entrySet()) {

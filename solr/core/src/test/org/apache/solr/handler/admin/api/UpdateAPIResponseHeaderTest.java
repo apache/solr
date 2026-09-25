@@ -30,15 +30,15 @@ import org.junit.Test;
 /**
  * Covers a bug flagged in review of SOLR-18457 (PR #4177): {@link UpdateAPI#handleUpdate} used to
  * unconditionally remove the entire legacy {@code responseHeader} after delegating to {@link
- * UpdateRequestHandler}, rather than just the duplicate {@code status}/{@code QTime} it was
- * written to suppress. Two real processors write payload into that header while handling a
- * request -- {@code TolerantUpdateProcessor} ({@code errors}/{@code maxErrors}) and {@code
+ * UpdateRequestHandler}, rather than just the duplicate {@code status}/{@code QTime} it was written
+ * to suppress. Two real processors write payload into that header while handling a request --
+ * {@code TolerantUpdateProcessor} ({@code errors}/{@code maxErrors}) and {@code
  * DistributedZkUpdateProcessor} ({@code rf}, the achieved replication factor) -- so {@link
- * UpdateAPI#handleUpdate} now copies that payload onto {@link UpdateResponse} before discarding
- * the header.
+ * UpdateAPI#handleUpdate} now copies that payload onto {@link UpdateResponse} before discarding the
+ * header.
  *
- * <p>This test doesn't exercise the real processors (that's TolerantUpdateProcessorTest's job);
- * it fakes the handler to write exactly what they would, isolating the fix to {@code
+ * <p>This test doesn't exercise the real processors (that's TolerantUpdateProcessorTest's job); it
+ * fakes the handler to write exactly what they would, isolating the fix to {@code
  * UpdateAPI.handleUpdate} itself.
  */
 public class UpdateAPIResponseHeaderTest extends SolrTestCaseJ4 {
@@ -87,7 +87,7 @@ public class UpdateAPIResponseHeaderTest extends SolrTestCaseJ4 {
    */
   private static class HeaderStuffingUpdateRequestHandler extends UpdateRequestHandler {
     @Override
-    public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    public boolean handleRequestWithoutMetrics(SolrQueryRequest req, SolrQueryResponse rsp) {
       // TolerantUpdateProcessor.java:276,279
       final SimpleOrderedMap<String> toleratedError = new SimpleOrderedMap<>();
       toleratedError.add("type", "ADD");
@@ -98,6 +98,7 @@ public class UpdateAPIResponseHeaderTest extends SolrTestCaseJ4 {
 
       // DistributedZkUpdateProcessor.java:1391
       rsp.getResponseHeader().add("rf", 1);
+      return true;
     }
   }
 }

@@ -134,9 +134,14 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     // their payload into the legacy response header while handling the request. Initialize it
     // for the handler, copy that payload onto the typed response, then discard the header so
     // only one responseHeader (the typed Jersey one) is returned to the client.
+    //
+    // Uses handleRequestWithoutMetrics rather than handleRequest: this resource is wrapped by
+    // Jersey's RequestMetricHandling filters, which already record request/error metrics for
+    // updateRequestHandler (see PluginBag.JaxrsResourceToHandlerMappings) -- handleRequest would
+    // double-count both.
     SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
     try {
-      updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
+      updateRequestHandler.handleRequestWithoutMetrics(solrQueryRequest, solrQueryResponse);
     } finally {
       copyToleratedUpdateMetadata(response);
       solrQueryResponse.getValues().remove("responseHeader");
@@ -149,8 +154,8 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
   }
 
   /**
-   * Copies replication-factor and tolerant-update-error metadata off the legacy response header
-   * and onto the typed response, before that header is discarded.
+   * Copies replication-factor and tolerant-update-error metadata off the legacy response header and
+   * onto the typed response, before that header is discarded.
    *
    * @see org.apache.solr.update.processor.TolerantUpdateProcessor
    * @see org.apache.solr.update.processor.DistributedZkUpdateProcessor
