@@ -1,4 +1,11 @@
-title: Migrate v2 update endpoints to JAX-RS and rename the Javabin endpoint to /update/javabin.  Migrate Admin UI to using v2 endpoints, fixing UI issues in the document upload screen.  Document screen only works with /upload endpoint, no longer can specify a custom endpoint.
+title: >
+  Migrated the v2 update endpoints to JAX-RS. The v2 javabin endpoint is now /update/javabin,
+  where v1 uses the shorter /update/bin. Migrated the Admin UI's document-upload screen to use
+  these v2 endpoints. That screen now only supports the /update endpoint; it can no longer target
+  a custom endpoint. As part of updating the examples in the Ref Guide, the bundled techproducts
+  example schema also changed: "price" and "popularity" are now docValues-only (no longer indexed
+  or stored), the "price_c" copyField from "price" was removed, and nested/child-document support
+  ("_nest_path_"/"_nest_parent_") was added.
 type: changed
 authors:
   - name: Eric Pugh
