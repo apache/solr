@@ -35,8 +35,8 @@ import org.junit.Test;
  * call {@code updateRequestHandler.handleRequest(...)} -- the full v1 {@link
  * org.apache.solr.handler.RequestHandlerBase#handleRequest} wrapper, not just the inner
  * request-processing logic. That wrapper does its own metrics bookkeeping on the handler's {@link
- * RequestHandlerBase.HandlerMetrics}: it increments {@code requests}, times the call, and on
- * failure increments {@code numClientErrors}/{@code numServerErrors}.
+ * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics}: it increments {@code requests}, times
+ * the call, and on failure increments {@code numClientErrors}/{@code numServerErrors}.
  *
  * <p>But {@code updateRequestHandler} here is the very same {@link
  * org.apache.solr.handler.V2UpdateRequestHandler} instance that Jersey's {@code

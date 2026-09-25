@@ -146,6 +146,26 @@ public class UpdateAPITest extends SolrTestCase {
   }
 
   @Test
+  public void testGeneratedUpdateApiClientSetsAMatchingContentType() throws Exception {
+    // The generated SolrJ client used to hardcode Content-Type: application/octet-stream for
+    // this request body, which none of /update's @Consumes media types accept -- every call
+    // failed with a 415. It must now let the caller supply a content type the server accepts.
+    final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
+    final String json = "[{\"id\":\"v2-generated-client-update1\"}]";
+    final var request =
+        new org.apache.solr.client.solrj.request.UpdateApi.Update(
+            org.apache.solr.client.api.model.IndexType.CORE,
+            CORE_NAME,
+            new java.io.ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)),
+            "application/json");
+
+    request.process(client);
+    client.commit(CORE_NAME);
+
+    assertIndexed(client, "v2-generated-client-update1");
+  }
+
+  @Test
   public void testUpdateXmlViaV2Api() throws Exception {
     final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
 

@@ -42,9 +42,12 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 API implementation for indexing documents.
  *
- * <p>These APIs delegate to the v1 {@link UpdateRequestHandler}. The {@code /update} and {@code
- * /update/json} paths are rewritten to {@code /update/json/docs} so that JSON arrays of documents
- * are processed by the JSON loader rather than the update-command loader.
+ * <p>These APIs delegate to the v1 {@link UpdateRequestHandler}. Most are pure pass-throughs:
+ * {@code /update} (and {@code /update/xml}, {@code /update/csv}) select a loader by content-type,
+ * the same as v1's {@code /update}. The exceptions are {@code /update/json}, which is rewritten to
+ * {@code /update/json/docs} so a JSON body is processed as literal documents rather than
+ * update-command syntax, and {@code /update/javabin}, which is rewritten to {@code /update/bin} to
+ * select the javabin loader explicitly.
  */
 public class UpdateAPI extends JerseyResource implements UpdateApi {
 
