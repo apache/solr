@@ -221,3 +221,17 @@ Doing so will result in any leader election to cause a full sync in *ALL* replic
 
 Similarly, a replica recovery will also always fetch the complete index from the leader because a partial sync will not be possible in the absence of this handler.
 ====
+
+=== A More RESTful V2 Alternative
+
+In addition to the `/get`-based V2 API above (kept as an exact mirror of the v1 API), Solr also
+provides a path-identified `documents` resource for the same underlying real-time-get lookup:
+
+* `GET /api/collections/techproducts/documents/mydoc` returns the document directly, or a `404` if
+  no document with that id exists.
+* `GET /api/collections/techproducts/documents?ids=mydoc,IW-02` returns the found documents in the
+  same `{"numFound":...,"start":0,"docs":[...]}` shape used elsewhere in Solr, silently omitting
+  any requested id that doesn't exist.
+
+This alternative doesn't support `fq` or field-limiting (`fl`); use the `/get` API above, or the
+`/select` request handler, if you need those.
