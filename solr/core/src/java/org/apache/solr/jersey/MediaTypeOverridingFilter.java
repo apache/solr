@@ -20,8 +20,6 @@ package org.apache.solr.jersey;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -32,12 +30,14 @@ import java.io.IOException;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.ZookeeperRead;
-import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.request.SolrQueryRequest;
 
-// TODO Deprecate or remove support for the 'wt' parameter in the v2 APIs in favor of the more
-//  HTTP-compliant 'Accept' header
-/** Overrides the content-type of the response based on an optional user-provided 'wt' parameter */
+/**
+ * Defaults the response content-type to JSON, unless the client requested something else via the
+ * (HTTP-compliant) 'Accept' header.
+ *
+ * <p>v2 APIs do not honor the legacy 'wt' parameter for response-format selection -- 'Accept' is
+ * the only supported mechanism.
+ */
 public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
   private static final List<Class<? extends JerseyResource>> EXEMPTED_RESOURCES =
@@ -50,8 +50,8 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
       ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
 
-    // Solr has historically ignored 'wt' for client or server error responses, so maintain that
-    // behavior here for compatibility.
+    // Solr has historically ignored client/server error responses here, so maintain that
+    // behavior for compatibility.
     if (responseContext.getStatus() >= 400) {
       return;
     }
@@ -63,18 +63,8 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
       return;
     }
 
-    final SolrQueryRequest solrQueryRequest =
-        (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
-    // TODO Is it valid for SQRequest to be null?
-    final var params = (solrQueryRequest != null) ? solrQueryRequest.getParams() : null;
-    if (params != null && params.get(WT) != null) { // Override for 'wt'
-      final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, null);
-      if (mediaType != null) {
-        responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
-      }
-    } else if (!requestContext.getHeaders().containsKey(ACCEPT)
-        || "*/*"
-            .equals(requestContext.getHeaderString(ACCEPT))) { // Override default response to json
+    if (!requestContext.getHeaders().containsKey(ACCEPT)
+        || "*/*".equals(requestContext.getHeaderString(ACCEPT))) { // Default response to json
       responseContext.getHeaders().putSingle(CONTENT_TYPE, APPLICATION_JSON);
     }
     // Else, obey the user-provided 'Accept' header
