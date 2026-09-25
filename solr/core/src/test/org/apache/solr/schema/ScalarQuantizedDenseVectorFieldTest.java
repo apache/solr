@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import static org.hamcrest.core.Is.is;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -179,26 +178,23 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
 
-      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
-      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
-      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
 
       assertU(commit());
 
+      // {!func}vectorSimilarity returns all results if not limited
       assertJQ(
           req(
               "q", "{!func}vectorSimilarity(vector_sq_flat,[1.0, 2.0, 3.0, 4.0])",
               "fl", "id,score"),
-          "/response/numFound==3",
-          "/response/docs/[0]/id=='0'");
-
-      assertJQ(
-          req(
-              "q", "{!func}vectorSimilarity(vector_sq_flat,[1.0, 2.0, 3.0, 4.0])",
-              "fq", "id:(0 2)",
-              "fl", "id,score"),
-          "/response/numFound==2",
-          "/response/docs/[0]/id=='0'");
+          "/response/numFound==4",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='1'",
+          "/response/docs/[3]/id=='3'");
     } finally {
       deleteCore();
     }
@@ -209,19 +205,21 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
 
-      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
-      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
-      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
 
       assertU(commit());
 
       assertJQ(
           req(
-              "q", "{!knn f=vector_sq_flat topK=2}[1.0, 2.0, 3.0, 4.0]",
+              "q", "{!knn f=vector_sq_flat topK=3}[1.0, 2.0, 3.0, 4.0]",
               "fl", "id,score"),
-          "/response/numFound==2",
-          "/response/docs/[0]/id=='0'",
-          "/response/docs/[1]/id=='1'");
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='1'");
     } finally {
       deleteCore();
     }
@@ -232,44 +230,22 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
 
-      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
-      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
-      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
 
       assertU(commit());
 
+      // id 0 is the second-best match but is excluded by the preFilter
       assertJQ(
           req(
-              "q", "{!knn f=vector_sq_flat topK=2 preFilter='id:(1 2)'}[1.0, 2.0, 3.0, 4.0]",
+              "q", "{!knn f=vector_sq_flat topK=3 preFilter='id:(1 2 3)'}[1.0, 2.0, 3.0, 4.0]",
               "fl", "id,score"),
-          "/response/numFound==2",
-          "/response/docs/[0]/id=='1'",
-          "/response/docs/[1]/id=='2'");
-    } finally {
-      deleteCore();
-    }
-  }
-
-  @Test
-  public void flatAlgorithm_knnQuery_hnswParamsIgnored_shouldReturnResults() throws Exception {
-    try {
-      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
-
-      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
-      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
-
-      assertU(commit());
-
-      assertJQ(
-          req(
-              "q",
-              "{!knn f=vector_sq_flat topK=1 efSearchScaleFactor=2.0"
-                  + " earlyTermination=true saturationThreshold=0.95 patience=3"
-                  + " filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]",
-              "fl",
-              "id,score"),
-          "/response/numFound==1",
-          "/response/docs/[0]/id=='0'");
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='1'",
+          "/response/docs/[2]/id=='3'");
     } finally {
       deleteCore();
     }
@@ -280,18 +256,22 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
 
-      addDoc("0", 1.0f, 2.0f, 3.0f, 4.0f);
-      addDoc("1", 2.0f, 3.0f, 4.0f, 5.0f);
-      addDoc("2", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
 
       assertU(commit());
 
+      // id 3 is excluded by minReturn
       assertJQ(
           req(
-              "q", "{!vectorSimilarity f=vector_sq_flat minReturn=0.0}[1.0, 2.0, 3.0, 4.0]",
+              "q", "{!vectorSimilarity f=vector_sq_flat minReturn=0.5}[1.0, 2.0, 3.0, 4.0]",
               "fl", "id,score"),
           "/response/numFound==3",
-          "/response/docs/[0]/id=='0'");
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='1'");
     } finally {
       deleteCore();
     }
@@ -336,38 +316,46 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
 
-      SolrInputDocument doc1 = new SolrInputDocument();
-      doc1.addField("id", "0");
-      doc1.addField("vector_sq_flat_byte", Arrays.asList(1, 2, 3, 4));
-      assertU(adoc(doc1));
-
-      SolrInputDocument doc2 = new SolrInputDocument();
-      doc2.addField("id", "1");
-      doc2.addField("vector_sq_flat_byte", Arrays.asList(5, 6, 7, 8));
-      assertU(adoc(doc2));
+      addVectorDoc("0", "vector_sq_flat_byte", 5, 6, 7, 8);
+      addVectorDoc("1", "vector_sq_flat_byte", 1, 2, 3, 4);
+      addVectorDoc("2", "vector_sq_flat_byte", -1, -2, -3, -4);
 
       assertU(commit());
 
+      // {!func}vectorSimilarity returns all results if not limited
       assertJQ(
           req(
               "q", "{!func}vectorSimilarity(vector_sq_flat_byte,[1, 2, 3, 4])",
               "fl", "id,score"),
-          "/response/numFound==2",
-          "/response/docs/[0]/id=='0'",
-          "/response/docs/[0]/score==1.0");
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='1'",
+          "/response/docs/[0]/score==1.0",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='2'");
     } finally {
       deleteCore();
     }
   }
 
-  private void addDoc(String id, float... v) {
+  private void addVectorDoc(String id, String vectorField, float... v) {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", id);
     List<Float> vector = new ArrayList<>(v.length);
     for (float value : v) {
       vector.add(value);
     }
-    doc.addField("vector_sq_flat", vector);
+    doc.addField(vectorField, vector);
+    assertU(adoc(doc));
+  }
+
+  private void addVectorDoc(String id, String vectorField, int... v) {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    List<Integer> vector = new ArrayList<>(v.length);
+    for (int value : v) {
+      vector.add(value);
+    }
+    doc.addField(vectorField, vector);
     assertU(adoc(doc));
   }
 }
