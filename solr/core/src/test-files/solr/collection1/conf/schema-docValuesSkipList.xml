@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- The Solr schema file. This file should be named "schema.xml" and
+     should be located where the classloader for the Solr webapp can find it.
+
+     This schema is used for testing, and as such has everything and the
+     kitchen sink thrown in. See example/solr/conf/schema.xml for a
+     more concise example.
+
+  -->
+
+<schema name="schema-docValuesSkipList" version="1.8">
+
+  <!-- field type definitions... note that the "name" attribute is
+       just a label to be used by field definitions.  The "class"
+       attribute and any other attributes determine the real type and
+       behavior of the fieldType.
+    -->
+
+  <!-- numeric field types that store and index the text
+       value verbatim (and hence don't sort correctly or support range queries.)
+       These are provided more for backward compatability, allowing one
+       to create a schema that matches an existing lucene index.
+  -->
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+  <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
+       seconds part (.999) is optional.
+    -->
+  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" uninvertible="true"/>
+
+  <fieldType name="boolean" class="solr.BoolField"/>
+  <fieldType name="string" class="solr.StrField"/>
+
+  <fieldType name="uuid" class="solr.UUIDField"/>
+
+  <!-- For maximum coverage of doc values -->
+  <fieldType name="collated" class="solr.CollationField" language="root" strength="primary"/>
+  <fieldType name="sortableText" class="solr.SortableTextField"/>
+  <fieldType name="enum" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="trieInt" class="solr.TrieIntField" precisionStep="0"/>
+  <fieldType name="trieLong" class="solr.TrieLongField" precisionStep="0"/>
+  <fieldType name="trieFloat" class="solr.TrieFloatField" precisionStep="0"/>
+  <fieldType name="trieDouble" class="solr.TrieDoubleField" precisionStep="0"/>
+  <fieldType name="trieDate" class="solr.TrieDateField" precisionStep="0"/>
+
+  <field name="id" type="string" required="true"/>
+  <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+  <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+  <copyField source="id" dest="id_i" />
+  
+  <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="1"/>
+  <field name="intdv" type="int" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="2"/>
+  <field name="doubledv" type="double" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="3"/>
+  <field name="longdv" type="long" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="4"/>
+  <field name="datedv" type="date" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="1995-12-31T23:59:59.999Z"/>
+  <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="solr" />  
+  <field name="booldv" type="boolean" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="true" />
+  <field name="collateddv" type="collated" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="solr"/>
+  <field name="sortableTextdv" type="sortableText" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="solr"/>
+  <field name="enumdv" type="enum" indexed="true" stored="false" docValues="true" docValuesSkipList="true" default="Critical"/>
+  <field name="trieIntdv" type="trieInt" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="5"/>
+  <field name="trieLongdv" type="trieLong" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="6"/>
+  <field name="trieFloatdv" type="trieFloat" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="7.0"/>
+  <field name="trieDoubledv" type="trieDouble" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="8.0"/>
+  <field name="trieDatedv" type="trieDate" indexed="false" stored="false" docValues="true" docValuesSkipList="true" default="2000-01-01T00:00:00.000Z"/>
+
+  <field name="floatdvs" type="float" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="1"/>
+  <field name="intdvs" type="int" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="2"/>
+  <field name="doubledvs" type="double" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="3"/>
+  <field name="longdvs" type="long" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="4"/>
+  <field name="datedvs" type="date" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="1995-12-31T23:59:59.999Z"/>
+  <field name="stringdvs" type="string" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="solr"/>
+  <field name="booldvs" type="boolean" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="true"/>
+  <field name="collateddvs" type="collated" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="solr"/>
+  <field name="sortableTextdvs" type="sortableText" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="solr"/>
+  <field name="enumdvs" type="enum" indexed="true" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="Critical"/>
+  <field name="trieIntdvs" type="trieInt" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="5"/>
+  <field name="trieLongdvs" type="trieLong" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="6"/>
+  <field name="trieFloatdvs" type="trieFloat" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="7.0"/>
+  <field name="trieDoubledvs" type="trieDouble" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="8.0"/>
+  <field name="trieDatedvs" type="trieDate" indexed="false" stored="false" multiValued="true" docValues="true" docValuesSkipList="true" default="2000-01-01T00:00:00.000Z"/>
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>

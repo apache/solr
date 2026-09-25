@@ -1,0 +1,8 @@
+title: Added `docValuesSkipList` schema field option to enable Lucene DocValues skip lists for sorted DocValues fields (NUMERIC, SORTED_NUMERIC, SORTED, SORTED_SET), improving query efficiency
+type: added
+authors:
+  - name: Vadim Kirilchuk
+  - name: Sanjay Dutt
+links:
+  - name: SOLR-18251
+    url: https://issues.apache.org/jira/browse/SOLR-18251
