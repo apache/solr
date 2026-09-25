@@ -1,0 +1,150 @@
+name: Changelog Comment Commands
+
+# Lets a PR author (or any committer) toggle the 'no-changelog' label by
+# commenting on the PR, without needing the repo write access that setting a
+# label directly requires:
+#
+#   /no-changelog     - mark the PR as not needing a changelog entry
+#   /needs-changelog  - undo that
+#
+# The command applies/removes the label, and the label change re-triggers the
+# "Validate Changelog" workflow (which listens for labeled/unlabeled events),
+# so the red check turns green on its own.
+#
+# This workflow deliberately never checks out or executes PR code: it only
+# reads the comment payload and calls the labels API, so running with a
+# write-scoped token is safe.
+on:
+  issue_comment:
+    types:
+      - created
+
+concurrency:
+  group: changelog-comment-command-${{ github.event.issue.number }}
+
+permissions:
+  issues: write        # add/remove labels, add a reaction, post a reply
+  pull-requests: write
+
+jobs:
+  handle-command:
+    # Pull request comments only, from a human, that mention one of our commands.
+    # The exact (line-anchored) match happens in the parse step below.
+    if: |
+      github.event.issue.pull_request &&
+      github.event.comment.user.type != 'Bot' &&
+      (contains(github.event.comment.body, '/no-changelog') ||
+       contains(github.event.comment.body, '/needs-changelog'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Parse command
+        id: parse
+        env:
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # A command must be alone on its own line, so that quoted text ("> /no-changelog")
+          # or a mention inside a sentence does not trigger it.
+          command=none
+          if printf '%s\n' "$BODY" | grep -iE '^[[:space:]]*/no-changelog[[:space:]]*\r?$' > /dev/null; then
+            command=add
+          fi
+          if printf '%s\n' "$BODY" | grep -iE '^[[:space:]]*/needs-changelog[[:space:]]*\r?$' > /dev/null; then
+            if [ "$command" = "add" ]; then
+              command=conflict
+            else
+              command=remove
+            fi
+          fi
+          echo "command=${command}" >> "$GITHUB_OUTPUT"
+          echo "Parsed command: ${command}"
+
+      - name: Check who is asking
+        id: authz
+        if: steps.parse.outputs.command != 'none'
+        env:
+          COMMENTER: ${{ github.event.comment.user.login }}
+          PR_AUTHOR: ${{ github.event.issue.user.login }}
+          ASSOCIATION: ${{ github.event.comment.author_association }}
+        run: |
+          set -euo pipefail
+          # The PR author may always toggle it on their own PR; otherwise the
+          # commenter needs write access, which author_association reflects.
+          if [ "$COMMENTER" = "$PR_AUTHOR" ]; then
+            allowed=true
+          else
+            case "$ASSOCIATION" in
+              OWNER|MEMBER|COLLABORATOR) allowed=true ;;
+              *) allowed=false ;;
+            esac
+          fi
+          echo "allowed=${allowed}" >> "$GITHUB_OUTPUT"
+          echo "Commenter '${COMMENTER}' (${ASSOCIATION}) allowed: ${allowed}"
+
+      - name: Apply label change
+        if: steps.authz.outputs.allowed == 'true' && (steps.parse.outputs.command == 'add' || steps.parse.outputs.command == 'remove')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMAND: ${{ steps.parse.outputs.command }}
+        run: |
+          set -euo pipefail
+          LABEL=no-changelog
+
+          has_label=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" \
+            --jq "[.[].name] | index(\"${LABEL}\") != null")
+
+          if [ "$COMMAND" = "remove" ]; then
+            if [ "$has_label" = "true" ]; then
+              gh api -X DELETE "repos/${REPO}/issues/${PR_NUMBER}/labels/${LABEL}" --silent
+              echo "::notice::Removed '${LABEL}' from PR#${PR_NUMBER}"
+            else
+              echo "::notice::PR#${PR_NUMBER} does not have '${LABEL}'; nothing to do"
+            fi
+            exit 0
+          fi
+
+          if [ "$has_label" = "true" ]; then
+            echo "::notice::PR#${PR_NUMBER} already has '${LABEL}'; nothing to do"
+            exit 0
+          fi
+          gh api -X POST "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${LABEL}" --silent
+          echo "::notice::Added '${LABEL}' to PR#${PR_NUMBER}"
+
+      - name: Acknowledge with a reaction
+        if: steps.authz.outputs.allowed == 'true' && (steps.parse.outputs.command == 'add' || steps.parse.outputs.command == 'remove')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh api -X POST "repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content='+1' --silent
+
+      - name: Explain why the command was not applied
+        if: |
+          steps.parse.outputs.command != 'none' &&
+          (steps.authz.outputs.allowed != 'true' || steps.parse.outputs.command == 'conflict')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          ALLOWED: ${{ steps.authz.outputs.allowed }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          if [ "$ALLOWED" != "true" ]; then
+            printf '%s\n' \
+              "Sorry @${COMMENTER}, only the author of this pull request or a Solr committer" \
+              "can toggle the \`no-changelog\` label. Please ask a committer to do it for you." \
+              > reply.md
+          else
+            printf '%s\n' \
+              "That comment contains both changelog commands, so nothing was changed." \
+              "Please comment just one of them, alone on its own line." \
+              > reply.md
+          fi
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file reply.md
