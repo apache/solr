@@ -329,6 +329,54 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         p.addCommands.get(0).solrDoc.toString());
   }
 
+  @Test
+  public void testDocsPathRejectsFlattenedAtomicUpdateFieldName() throws Exception {
+    // This endpoint indexes documents literally; unlike testAtomicUpdateFieldValue's use of the
+    // regular /update/json add-command path, a value shaped like {"add": "foo"} here would
+    // otherwise silently flatten (under the default field mapping) into a field literally named
+    // "cat.add", fully overwriting the target document rather than adding to its "cat" field.
+    String doc = "{\"id\": \"1\", \"cat\": {\"add\": \"y\"}}";
+    SolrQueryRequest req = req();
+    req.getContext().put("path", "/update/json/docs");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+
+    SolrException ex =
+        expectThrows(
+            SolrException.class,
+            () -> loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("cat"));
+    assertTrue(ex.getMessage().contains("atomic update"));
+    assertEquals(0, p.addCommands.size());
+
+    req.close();
+  }
+
+  @Test
+  public void testDocsPathRejectsAtomicUpdateSyntaxPreservedByCustomSplit() throws Exception {
+    // With a split config that targets "cat" as its own record boundary, the atomic-update-shaped
+    // value survives as a literal Map (rather than being flattened, as in the test above) - this
+    // exercises that second shape of the same guard.
+    String doc = "{\"id\": \"1\", \"cat\": [{\"add\": \"y\"}]}";
+    SolrQueryRequest req = req("split", "/|/cat");
+    req.getContext().put("path", "/update/json/docs");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+
+    SolrException ex =
+        expectThrows(
+            SolrException.class,
+            () -> loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("cat"));
+    assertEquals(0, p.addCommands.size());
+
+    req.close();
+  }
+
   public void testSrcAndUniqueDocs() throws Exception {
     BufferingRequestProcessor p;
     JsonLoader loader;
