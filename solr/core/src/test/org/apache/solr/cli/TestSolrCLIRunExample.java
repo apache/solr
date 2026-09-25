@@ -522,11 +522,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test the --prompt-inputs option that allows providing all prompt values as a comma-separated
+   * Test the --session-inputs option that allows providing all prompt values as a comma-separated
    * string without requiring interactive input.
    */
   @Test
-  public void testSolrCloudExampleWithPrompts() throws Exception {
+  public void testSolrCloudExampleWithSessionInputs() throws Exception {
     Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
       fail(solrHomeDir + " not found and is required to run this test!");
@@ -539,11 +539,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       bindPort = socket.getLocalPort();
     }
 
-    String collectionName = "testCloudExampleWithPrompts";
+    String collectionName = "testCloudExampleWithSessionInputs";
 
-    // Provide all prompt values via --prompt-inputs option:
+    // Provide all session values via --session-inputs option:
     // numNodes, port1, collectionName, numShards, replicationFactor, configName
-    String promptsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
+    String sessionInputsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
 
     String[] toolArgs =
         new String[] {
@@ -553,8 +553,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           solrServerDir.toString(),
           "--example-dir",
           solrExampleDir.toString(),
-          "--prompt-inputs",
-          promptsValue
+          "--session-inputs",
+          sessionInputsValue
         };
 
     // capture tool output to stdout
@@ -581,7 +581,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String solrUrl = "http://localhost:" + bindPort + "/solr";
     if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
-          "After running Solr cloud example with --prompt-inputs, test collection '"
+          "After running Solr cloud example with --session-inputs, test collection '"
               + collectionName
               + "' not found in Solr at: "
               + solrUrl

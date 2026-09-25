@@ -343,7 +343,7 @@ goto err
 @echo.
 @echo   -y/--no-prompt Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
-@echo   --prompt-inputs values Don't prompt for input; comma delimited list of inputs read when running examples that accept user input.
+@echo   --session-inputs values Don't prompt for input; comma delimited list of inputs read when running examples that accept user input.
 @echo.
 @echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -404,7 +404,7 @@ IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="-y" goto set_noprompt
 IF "%1"=="--no-prompt" goto set_noprompt
-IF "%1"=="--prompt-inputs" goto set_prompt_inputs
+IF "%1"=="--session-inputs" goto set_prompt_inputs
 
 REM Skip stop arg parsing if not stop command
 IF NOT "%SCRIPT_CMD%"=="stop" goto parse_general_args
@@ -716,7 +716,7 @@ SHIFT
 goto parse_args
 
 :set_prompt_inputs
-set "PASS_TO_RUN_EXAMPLE=--prompt-inputs %~2 !PASS_TO_RUN_EXAMPLE!"
+set "PASS_TO_RUN_EXAMPLE=--session-inputs %~2 !PASS_TO_RUN_EXAMPLE!"
 
 SHIFT
 SHIFT

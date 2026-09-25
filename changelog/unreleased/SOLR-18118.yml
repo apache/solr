@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Script creating a cluster using bin/solr start -e cloud with --prompt-inputs option.
+title: Script creating a cluster using bin/solr start -e cloud with --session-inputs option.
 type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
