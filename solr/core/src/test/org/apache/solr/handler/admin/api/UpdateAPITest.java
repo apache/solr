@@ -135,7 +135,9 @@ public class UpdateAPITest extends SolrTestCase {
             "[{\"id\":\"v2updatejson1\",\"title\":\"V2 update/json test\"}]", "application/json"));
     client.request(addReq);
 
-    // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
+    // Commit via standard SolrJ commit: /update/json is rewritten to /update/json/docs (see
+    // UpdateAPI's javadoc), so unlike bare /update it doesn't support command syntax like
+    // {"commit":{}}.
     client.commit(CORE_NAME);
 
     // Verify
@@ -179,7 +181,9 @@ public class UpdateAPITest extends SolrTestCase {
             "application/xml"));
     client.request(addReq);
 
-    // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
+    // Commit via standard SolrJ commit: /update/xml negotiates on Content-Type like v1's /update
+    // and does support XML command syntax (e.g. <commit/>) -- kept separate here just for parity
+    // with the other format tests in this file.
     client.commit(CORE_NAME);
 
     // Verify
