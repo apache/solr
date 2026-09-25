@@ -213,6 +213,56 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void parentRetrievalFloat_knnChildrenWithRerankOversample_shouldReturnKnnParents() {
+    // 'vector' is not quantized, so the knn search already scores against the raw vectors and
+    // re-ranking cannot reorder anything: oversampling must not change the result
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q",
+                "{!knn f=vector topK=3 rerankOversample=4 childrenOf=$allParents}"
+                    + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[3]/str[@name='id'][.='8']");
+  }
+
+  @Test
+  public void childrenRetrievalFloat_knnChildrenWithRerankOversample_shouldStayDiversified() {
+    // Collecting topK * rerankOversample candidates and re-ranking down to topK only narrows an
+    // already diversified set, so at most one child per parent survives: the closest child of
+    // each of the three nearest parents, and never two children of the same parent
+    assertQ(
+        req(
+            "q",
+                "{!knn f=vector topK=3 rerankOversample=4 childrenOf=$allParents}"
+                    + FLOAT_QUERY_VECTOR,
+            "fl", "id",
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='102']",
+        "//result/doc[2]/str[@name='id'][.='92']",
+        "//result/doc[3]/str[@name='id'][.='82']");
+  }
+
+  @Test
+  public void parentRetrievalByte_knnChildrenWithRerankOversample_shouldThrowException() {
+    assertQEx(
+        "rerankOversample is only supported for FLOAT32 vector encoding",
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q",
+                "{!knn f=vector_byte topK=3 rerankOversample=2 childrenOf=$allParents}"
+                    + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        400);
+  }
+
+  @Test
   public void parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents() {
     assertQ(
         req(
