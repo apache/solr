@@ -109,8 +109,11 @@ public interface ExtractingParams {
   String RESOURCE_NAME = "resource.name";
 
   /**
-   * Optional. The password for this resource. Will be used instead of the rule based password
-   * lookup mechanisms
+   * The password for this resource, used instead of the rule based password lookup mechanisms.
+   *
+   * <p>Not currently supported by the {@code tikaserver} backend: TikaServer has no simple
+   * per-request way to accept a password, and setting this parameter is rejected with {@code
+   * BAD_REQUEST}. See {@link #PASSWORD_MAP_FILE}.
    */
   String RESOURCE_PASSWORD = "resource.password";
 
@@ -127,13 +130,14 @@ public interface ExtractingParams {
   String DEFAULT_FIELD = "defaultField";
 
   /**
-   * Optional. If specified, loads the file as a source for password lookups for Tika encrypted
-   * documents.
+   * If specified, loads the file as a source for password lookups for Tika encrypted documents.
    *
    * <p>File format is Java properties format with one key=value per line. The key is evaluated as a
    * regex against the file name, and the value is the password The rules are evaluated top-bottom,
    * i.e. the first match will be used If you want a fallback password to be always used, supply a
    * .*=&lt;defaultmypassword&gt; at the end
+   *
+   * <p>Not currently supported by the {@code tikaserver} backend: see {@link #RESOURCE_PASSWORD}.
    */
   String PASSWORD_MAP_FILE = "passwordsFile";
 
@@ -157,4 +161,12 @@ public interface ExtractingParams {
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
   String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
+
+  /**
+   * If true, migrate metadata key names emitted by Tika 4.x back to their Tika 3.x equivalents
+   * (e.g. {@code tk:parsed-by} becomes {@code X-TIKA:Parsed-By}), using Tika's own bundled {@code
+   * LegacyKeyMigrationFilter} migration table. Keys with no Tika 3.x equivalent are dropped;
+   * migrated keys replace their Tika 4.x originals rather than being added alongside them.
+   */
+  String TIKASERVER_LEGACY_FIELD_NAMES = "tikaserver.legacyFieldNames";
 }

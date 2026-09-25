@@ -21,13 +21,20 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -98,6 +105,39 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testLegacyFieldNamesMigratesTika4KeysToTika3Names() throws Exception {
+    byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
+
+    // First, extract without the flag to capture the Tika 4.x key names/values as a baseline.
+    ExtractionMetadata tika4Metadata;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        tika4Metadata =
+            backend.extract(in, newRequest("test.txt", "text/plain", "text")).getMetadata();
+      }
+    }
+    assertNotNull(tika4Metadata.getFirst("tk:parsed-by"));
+
+    NamedList<Object> initArgs = new NamedList<>();
+    initArgs.add(ExtractingParams.TIKASERVER_LEGACY_FIELD_NAMES, "true");
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(
+            tikaContainer.getBaseUrl(),
+            180,
+            initArgs,
+            TikaServerExtractionBackend.DEFAULT_MAXCHARS_LIMIT)) {
+      try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+        ExtractionMetadata md =
+            backend.extract(in, newRequest("test.txt", "text/plain", "text")).getMetadata();
+        // The Tika 4.x key is gone, replaced by its Tika 3.x equivalent with the same value.
+        assertNull(md.getFirst("tk:parsed-by"));
+        assertEquals(tika4Metadata.getFirst("tk:parsed-by"), md.getFirst("X-TIKA:Parsed-By"));
+      }
+    }
+  }
+
+  @Test
   public void testExtractWithSaxHandlerXml() throws Exception {
     try (TikaServerExtractionBackend backend =
         new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
@@ -124,14 +164,11 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     try (TikaServerExtractionBackend backend =
         new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
-      // Enable recursive extraction and set header to extract images from PDF
+      // TikaServer 4.x's /rmeta OCRs the PDF's embedded image directly into the page's content
+      // rather than exposing it as a separate "embedded:imageN.jpg" resource entry (unlike Tika
+      // 3.x); the X-Tika-PDFextractInlineImages header no longer changes this.
       ExtractionRequest request =
-          newRequest(
-              "pdf-with-image.pdf",
-              "application/pdf",
-              "xml",
-              true,
-              Map.of("X-Tika-PDFextractInlineImages", "true"));
+          newRequest("pdf-with-image.pdf", "application/pdf", "xml", true, Map.of());
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ToXMLContentHandler xmlHandler = new ToXMLContentHandler();
         ExtractionMetadata md = backend.buildMetadataFromRequest(request);
@@ -139,9 +176,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         String c = xmlHandler.toString();
         assertNotNull(c);
         assertTrue(c.contains("Puppet Apply"));
-        assertTrue(c.contains("embedded:image0.jpg"));
-        assertEquals(
-            "org.apache.tika.parser.DefaultParser", md.getFirst("X-TIKA:Parsed-By-Full-Set"));
+        // TikaServer 4.x uses a single lowercase tk: prefix for its metadata keys (TIKA-4816)
+        assertEquals("org.apache.tika.parser.DefaultParser", md.getFirst("tk:parsed-by-full-set"));
       }
     }
   }
@@ -192,6 +228,45 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
         assertTrue(
             "Expected message to mention max size exceeded",
             e.getMessage().contains("exceeded the configured maximum size"));
+      }
+    }
+  }
+
+  /**
+   * A single {@code TikaServerExtractionBackend} is constructed once by {@code
+   * ExtractingRequestHandler.inform()} and reused for every request it handles, including
+   * concurrently. {@code javax.xml.parsers.SAXParser} is not thread-safe, so parsing the response
+   * must not share one {@code SAXParser} instance across concurrent {@code extract()} calls.
+   */
+  @Test
+  public void testConcurrentExtractDoesNotShareSaxParser() throws Exception {
+    int numThreads = 8;
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
+      ExecutorService pool =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              numThreads, new SolrNamedThreadFactory("TikaServerConcurrentExtractTest"));
+      try {
+        List<Future<ExtractionResult>> futures = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+          futures.add(
+              pool.submit(
+                  () -> {
+                    byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
+                    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+                      return backend.extract(in, newRequest("test.txt", "text/plain", "text"));
+                    }
+                  }));
+        }
+        for (Future<ExtractionResult> future : futures) {
+          ExtractionResult res = future.get(60, TimeUnit.SECONDS);
+          assertNotNull(res);
+          assertNotNull(res.getContent());
+          assertTrue(res.getContent().contains("Hello TestContainers"));
+        }
+      } finally {
+        pool.shutdown();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
       }
     }
   }

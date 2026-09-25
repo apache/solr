@@ -49,7 +49,7 @@ asciidoc:
     dep-version-commons-codec: '1.19.0'
     dep-version-log4j: '2.21.0'
     dep-version-opennlp: '2.5.6'
-    dep-version-tika: '1.28.5'
+    dep-version-tika: '4.0.x'
     dep-version-zookeeper: '3.9.4'
     dep-version-lucene: '10.3.1'
     dep-version-opentelemetry: '1.53.0'

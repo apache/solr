@@ -17,9 +17,7 @@
 package org.apache.solr.handler.extraction;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /** Immutable request info needed by extraction backends. */
 public class ExtractionRequest {
@@ -30,14 +28,13 @@ public class ExtractionRequest {
   public final String streamName;
   public final String streamSourceInfo;
   public final Long streamSize;
-  public final String resourcePassword;
-  public final LinkedHashMap<Pattern, String> passwordsMap;
   public final String extractFormat;
 
   // Below variables are only used by TikaServerExtractionBackend
   public final boolean tikaServerRecursive;
   public final Integer tikaServerTimeoutSeconds; // optional per-request override
   public final Map<String, String> tikaServerRequestHeaders = new HashMap<>();
+  public final boolean ignoreTikaException;
 
   /**
    * Constructs an ExtractionRequest object containing metadata and configurations for extraction
@@ -50,8 +47,6 @@ public class ExtractionRequest {
    * @param streamName the name of the content stream
    * @param streamSourceInfo additional information about the stream source
    * @param streamSize the size of the stream in bytes
-   * @param resourcePassword an optional password used for encrypted documents
-   * @param passwordsMap an optional map of regex patterns to passwords for encrypted content
    * @param extractFormat the desired format for extraction output
    * @param tikaServerRecursive a flag indicating whether extraction should be recursive. TikaServer
    *     only
@@ -59,6 +54,9 @@ public class ExtractionRequest {
    *     only). If null or ≤ 0, the default timeout will be used
    * @param tikaServerRequestHeaders optional headers to be included in requests to the extraction
    *     service. TikaServer only
+   * @param ignoreTikaException if true, a backend that only partially extracted a document (e.g. a
+   *     TikaServer 422 caused by a writeLimit truncation) may return that partial content instead
+   *     of failing. TikaServer only
    */
   private ExtractionRequest(
       String streamType,
@@ -68,12 +66,11 @@ public class ExtractionRequest {
       String streamName,
       String streamSourceInfo,
       Long streamSize,
-      String resourcePassword,
-      LinkedHashMap<Pattern, String> passwordsMap,
       String extractFormat,
       boolean tikaServerRecursive,
       Integer tikaServerTimeoutSeconds,
-      Map<String, String> tikaServerRequestHeaders) {
+      Map<String, String> tikaServerRequestHeaders,
+      boolean ignoreTikaException) {
     this.streamType = streamType;
     this.resourceName = resourceName;
     this.contentType = contentType;
@@ -81,14 +78,13 @@ public class ExtractionRequest {
     this.streamName = streamName;
     this.streamSourceInfo = streamSourceInfo;
     this.streamSize = streamSize;
-    this.resourcePassword = resourcePassword;
-    this.passwordsMap = passwordsMap;
     this.extractFormat = extractFormat;
     this.tikaServerRecursive = tikaServerRecursive;
     this.tikaServerTimeoutSeconds = tikaServerTimeoutSeconds;
     if (tikaServerRequestHeaders != null) {
       this.tikaServerRequestHeaders.putAll(tikaServerRequestHeaders);
     }
+    this.ignoreTikaException = ignoreTikaException;
   }
 
   /** Creates a new Builder for constructing ExtractionRequest instances. */
@@ -105,12 +101,11 @@ public class ExtractionRequest {
     private String streamName;
     private String streamSourceInfo;
     private Long streamSize;
-    private String resourcePassword;
-    private LinkedHashMap<Pattern, String> passwordsMap;
     private String extractFormat;
     private boolean tikaServerRecursive = false;
     private Integer tikaServerTimeoutSeconds;
     private Map<String, String> tikaServerRequestHeaders;
+    private boolean ignoreTikaException = false;
 
     private Builder() {}
 
@@ -149,16 +144,6 @@ public class ExtractionRequest {
       return this;
     }
 
-    public Builder resourcePassword(String resourcePassword) {
-      this.resourcePassword = resourcePassword;
-      return this;
-    }
-
-    public Builder passwordsMap(LinkedHashMap<Pattern, String> passwordsMap) {
-      this.passwordsMap = passwordsMap;
-      return this;
-    }
-
     public Builder extractFormat(String extractFormat) {
       this.extractFormat = extractFormat;
       return this;
@@ -179,6 +164,11 @@ public class ExtractionRequest {
       return this;
     }
 
+    public Builder ignoreTikaException(boolean ignoreTikaException) {
+      this.ignoreTikaException = ignoreTikaException;
+      return this;
+    }
+
     public ExtractionRequest build() {
       return new ExtractionRequest(
           streamType,
@@ -188,12 +178,11 @@ public class ExtractionRequest {
           streamName,
           streamSourceInfo,
           streamSize,
-          resourcePassword,
-          passwordsMap,
           extractFormat,
           tikaServerRecursive,
           tikaServerTimeoutSeconds,
-          tikaServerRequestHeaders);
+          tikaServerRequestHeaders,
+          ignoreTikaException);
     }
   }
 }
