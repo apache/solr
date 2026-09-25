@@ -86,7 +86,7 @@ solr and solr.cmd::: This is xref:solr-control-script-reference.adoc[Solr's Cont
 This script is the preferred tool to start and stop Solr.
 You can also create collections or cores, configure authentication, and work with configuration files when running in SolrCloud mode.
 
-post::: The xref:indexing-guide:post-tool.adoc[], which provides a simple command line interface for POSTing content to Solr.
+post::: The xref:indexing-guide:post-command.adoc[], which provides a simple command line interface for POSTing content to Solr.
 
 solr.in.sh and solr.in.cmd:::
 These are property files for *nix and Windows systems, respectively.
@@ -147,7 +147,7 @@ Here are the examples included with Solr:
 
 exampledocs::
 This is a small set of simple CSV, XML, and JSON files that can be used with `bin/solr post` when first getting started with Solr.
-For more information about using `bin/solr post` with these files, see xref:indexing-guide:post-tool.adoc[].
+For more information about using `bin/solr post` with these files, see xref:indexing-guide:post-command.adoc[].
 
 files::
 The `files` directory provides a basic search UI for documents such as Word or PDF that you may have stored locally.
