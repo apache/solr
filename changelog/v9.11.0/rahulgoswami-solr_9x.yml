@@ -1,4 +1,7 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: Fixed --cloud option is not honored when running example (-e) on Windows in Solr CLI
 type: fixed
 authors:
   - name: Rahul Goswami
+issues:
+  - 4075
