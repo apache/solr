@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Tolerate JVM warning lines when detecting Java version
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Matthias Pigulla
+    nick: mpdude
+links:
+  - name: PR#4765
+    url: https://github.com/apache/solr/pull/4765
