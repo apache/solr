@@ -24,6 +24,8 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene104.Lucene104Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.DocValuesSkipIndexType;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.tests.util.TestUtil;
@@ -105,6 +107,26 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         format.getDocValuesFormatForField("bar_disk").getName());
     assertEquals("Asserting", format.getDocValuesFormatForField("foo_direct").getName());
     assertEquals("Asserting", format.getDocValuesFormatForField("bar_direct").getName());
+  }
+
+  public void testDocValuesSkipListPersistsFieldInfo() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+    assertU(add(doc("string_f", "id", "int_skip_f", "7", "long_skip_mv_f", "11")));
+    assertU(commit());
+
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              FieldInfos fieldInfos = FieldInfos.getMergedFieldInfos(searcher.getIndexReader());
+              assertEquals(
+                  DocValuesSkipIndexType.RANGE,
+                  fieldInfos.fieldInfo("int_skip_f").docValuesSkipIndexType());
+              assertEquals(
+                  DocValuesSkipIndexType.RANGE,
+                  fieldInfos.fieldInfo("long_skip_mv_f").docValuesSkipIndexType());
+              return null;
+            });
   }
 
   private void reloadCoreAndRecreateIndex() {
