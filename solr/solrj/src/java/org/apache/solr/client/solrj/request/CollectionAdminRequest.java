@@ -162,7 +162,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String asyncId = null;
-    protected boolean waitForFinalState = false;
 
     public AsyncCollectionAdminRequest(METHOD method, CollectionAction action) {
       super(method, action);
@@ -187,16 +186,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     public String getAsyncId() {
       return asyncId;
-    }
-
-    /**
-     * @deprecated Solr is moving toward always waiting for final state, with no option to opt out;
-     *     once that happens, this parameter will have no effect and will likely be removed. See
-     *     SOLR-17712.
-     */
-    @Deprecated(since = "9.10")
-    public void setWaitForFinalState(boolean waitForFinalState) {
-      this.waitForFinalState = waitForFinalState;
     }
 
     public void setAsyncId(String asyncId) {
@@ -265,9 +254,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       if (asyncId != null) {
         params.set(CommonAdminParams.ASYNC, asyncId);
-      }
-      if (waitForFinalState) {
-        params.set(CommonAdminParams.WAIT_FOR_FINAL_STATE, waitForFinalState);
       }
       return params;
     }
