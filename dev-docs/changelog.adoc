@@ -128,7 +128,7 @@ The `validate-changelog` GitHub workflow automatically checks that:
 . **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
 
 Pull requests that only touch documentation, tests, build files or CI configuration
-are exempt and pass without an entry.
+are exempt and pass without an entry.  Subjectively, some minor changes don't need one either.
 
 === 4.1 Opting out of the changelog requirement
 
