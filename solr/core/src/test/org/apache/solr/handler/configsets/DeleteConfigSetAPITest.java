@@ -50,7 +50,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testNullConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet(null));
+    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet(null, null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -61,7 +61,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testEmptyConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet(""));
+    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("", null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -72,7 +72,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testWhitespaceOnlyConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("   "));
+    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("   ", null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -83,7 +83,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testTabOnlyConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("\t"));
+    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("\t", null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
