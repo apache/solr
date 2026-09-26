@@ -17,59 +17,27 @@
 
 package org.apache.solr.ui.components.start
 
-import io.ktor.http.Url
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.domain.AuthMethod
-import org.jetbrains.compose.resources.StringResource
+import org.apache.solr.ui.components.start.domain.ConnectUseCase
+import org.apache.solr.ui.components.start.repository.StartRepository
+import org.apache.solr.ui.components.start.viewmodel.StartViewModel
 
 /**
  * Component interface that represents the start screen.
  */
 interface StartComponent {
 
-    val model: StateFlow<Model>
+    /**
+     * Dependencies provided by the application.
+     */
+    val startRepository: StartRepository
 
     /**
-     * Function for when the input value for the Solr URL changes.
-     *
-     * @param url The new URL value
+     * Use case responsible for connecting to a Solr instance.
      */
-    fun onSolrUrlChange(url: String)
+    val connectUseCase: ConnectUseCase
 
     /**
-     * Called when the user wants to connect with the current [Model.url].
+     * Factory method to create a [StartViewModel] instance.
      */
-    fun onConnect()
-
-    /**
-     * State class that holds values of the [StartComponent]'s sate.
-     */
-    data class Model(
-        val url: String = "",
-        val isConnecting: Boolean = false,
-        val error: StringResource? = null,
-    )
-
-    /**
-     * Possible component outputs that may be emitted to the parent component.
-     */
-    sealed interface Output {
-
-        /**
-         * Emitted when a connection to a Solr instance has been
-         * established and no authentication is required.
-         *
-         * @property url The URL the connection was established.
-         */
-        data class OnConnected(val url: Url) : Output
-
-        /**
-         * Emitted when a connection to a Solr instance has been established and authentication
-         * is needed.
-         *
-         * @property url The URL the connection was established but requires authentication.
-         * @property methods List of authentication methods that can be used for authenticating.
-         */
-        data class OnAuthRequired(val url: Url, val methods: List<AuthMethod>) : Output
-    }
+    fun createStartViewModel(): StartViewModel
 }

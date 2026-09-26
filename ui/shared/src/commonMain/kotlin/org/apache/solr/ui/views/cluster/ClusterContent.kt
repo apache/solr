@@ -20,10 +20,13 @@ package org.apache.solr.ui.views.cluster
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.solr.ui.components.cluster.ClusterComponent
-import org.apache.solr.ui.components.cluster.ClusterComponent.ClusterTab
+import org.apache.solr.ui.components.cluster.viewmodel.ClusterTab
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.cores
 import org.apache.solr.ui.shared.generated.resources.nodes
@@ -36,9 +39,13 @@ fun ClusterContent(
     component: ClusterComponent,
     modifier: Modifier = Modifier,
 ) = Column(modifier = modifier) {
+    val viewModel = viewModel { component.createClusterViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+
     NavigationTabs(
-        component = component,
-        entries = ClusterTab.entries,
+        tabs = ClusterTab.entries,
+        selectedTab = uiState.selectedTab,
+        onSelectTab = viewModel::selectTab,
         mapper = ::clusterTabsMapper,
         modifier = Modifier.padding(1.dp),
     )

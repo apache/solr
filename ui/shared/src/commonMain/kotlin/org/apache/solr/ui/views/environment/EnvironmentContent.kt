@@ -27,7 +27,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.solr.ui.components.environment.EnvironmentComponent
+import org.apache.solr.ui.components.environment.viewmodel.EnvironmentUiState
 
 /**
  * Composable for loading the environment section.
@@ -35,38 +37,56 @@ import org.apache.solr.ui.components.environment.EnvironmentComponent
  * This composable checks the window size and rearranges the content to achieve a better
  * representation.
  *
- * @param component The component that holds the state of this composable and handles interactions.
+ * @param component The component that provides the view model of this composable.
+ * @param modifier Modifier to apply to the root composable.
+ */
+@Composable
+fun EnvironmentContent(
+    component: EnvironmentComponent,
+    modifier: Modifier = Modifier,
+) {
+    val viewModel = viewModel { component.createEnvironmentViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+
+    EnvironmentContent(uiState = uiState, modifier = modifier)
+}
+
+/**
+ * Composable for rendering the environment section.
+ *
+ * This composable checks the window size and rearranges the content to achieve a better
+ * representation.
+ *
+ * @param uiState The state of the environment to render.
  * @param modifier Modifier to apply to the root composable.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EnvironmentContent(
-    component: EnvironmentComponent,
+    uiState: EnvironmentUiState,
     modifier: Modifier = Modifier,
 ) = FlowRow(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
-    val model by component.model.collectAsState()
-
     val minChildWidth: Dp = 400.dp
     val maxChildWidth: Dp = 800.dp
 
     VersionsCard(
         modifier = Modifier.weight(1f)
             .widthIn(min = minChildWidth, max = maxChildWidth),
-        versions = model.versions,
-        jvm = model.jvm,
+        versions = uiState.lucene,
+        jvm = uiState.jvm,
     )
     CommandLineArgumentsCard(
         modifier = Modifier.weight(1f)
             .widthIn(min = minChildWidth, max = maxChildWidth),
-        arguments = model.jvm.jmx.commandLineArgs,
+        arguments = uiState.jvm.jmx.commandLineArgs,
     )
     JavaPropertiesCard(
         modifier = Modifier.weight(1f)
             .widthIn(min = minChildWidth, max = maxChildWidth),
-        properties = model.javaProperties,
+        properties = uiState.javaProperties,
     )
 }

@@ -17,28 +17,45 @@
 
 package org.apache.solr.ui.components.root
 
-import com.arkivanov.decompose.router.stack.ChildStack
-import com.arkivanov.decompose.value.Value
+import io.ktor.http.Url
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.main.MainComponent
+import org.apache.solr.ui.components.root.viewmodel.RootViewModel
 import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.domain.AuthOption
 
 /**
  * Root component used by each target as an entry point to the application.
  *
- * This component checks the information available at start time and redirects the user accordingly.
- * Implementations may check user session, access level, destination and more.
+ * This component provides the components of the screens the user is redirected to, depending on
+ * the information available at start time. Implementations may check user session, access level,
+ * destination and more.
  */
 interface RootComponent {
 
-    val childStack: Value<ChildStack<*, Child>>
+    /**
+     * Factory method to create a [RootViewModel] instance.
+     */
+    fun createRootViewModel(): RootViewModel
 
-    sealed interface Child {
+    /**
+     * Factory method to create the component of the start screen.
+     */
+    fun createStartComponent(): StartComponent
 
-        data class Start(val component: StartComponent) : Child
+    /**
+     * Factory method to create the component of the authentication screen.
+     *
+     * @param url The URL of the Solr instance the user is authenticating against.
+     * @param methods The authentication methods that can be used to authenticate the user.
+     */
+    fun createAuthenticationComponent(url: Url, methods: List<AuthMethod>): AuthenticationComponent
 
-        data class Main(val component: MainComponent) : Child
-
-        data class Authentication(val component: AuthenticationComponent) : Child
-    }
+    /**
+     * Factory method to create the component of the main screen.
+     *
+     * @param authOption The option that was used to authenticate the user.
+     */
+    fun createMainComponent(authOption: AuthOption): MainComponent
 }
