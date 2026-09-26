@@ -162,10 +162,9 @@ solrAdminServices.factory('Metrics',
     })
 .factory('Collections',
   ['$resource', function ($resource) {
-    // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
-    // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
-    // generated solrApi client class exists for it (old-style @EndPoint API, predates the
-    // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
+    // GET /api/cluster returns {cluster: {collections: ...}}, the collections, shards, and
+    // replicas tree. Live nodes, the alias map, and cluster properties are not in this payload.
+    // This stays a plain $resource, like Threads/ParamSet.
     return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
       "status": {}
     });

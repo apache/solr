@@ -25,7 +25,11 @@ These API commands work with a SolrCloud cluster at the entire cluster level, or
 [[clusterstatus]]
 == CLUSTERSTATUS: Cluster Status
 
-Fetch the cluster status including collections, shards, replicas, configuration name as well as collection aliases and cluster properties.
+Fetch the collections, shards, and replicas in the cluster, including each collection's configuration name and health.
+
+The v1 command can also return the alias map, live nodes, and cluster properties.
+`GET /api/cluster` returns `cluster.collections` only.
+Live nodes, the alias map, and cluster properties are available from `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties`.
 
 Additionally, this command reports a `health` status of each collection and shard, in
 order to make it easier to monitor the operational state of the collections.
@@ -99,6 +103,10 @@ Multiple shard names can be specified as a comma-separated list.
 +
 This can be used if you need the details of the shard where a particular document belongs to and you don't know which shard it falls under.
 
+`aliases`, `liveNodes`, `clusterProperties`, and `includeAll` are v1 parameters.
+`GET /api/cluster` ignores them.
+With no parameters, `GET /api/cluster` returns every collection.
+
 `aliases`::
 +
 [%autowidth,frame=none]
@@ -106,6 +114,7 @@ This can be used if you need the details of the shard where a particular documen
 |Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
+If set to true, returns the cluster alias map.
 
 `liveNodes`::
 +
@@ -114,7 +123,7 @@ This can be used if you need the details of the shard where a particular documen
 |Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
-If set to true, returns the status of live nodes in the cluster.
+If set to true, returns the live nodes in the cluster.
 
 `clusterProperties`::
 +
@@ -139,6 +148,9 @@ If set to `false`, the information returned is based on the other specified para
 
 The response will include the status of the request and the status of the cluster.
 
+A v1 response can include `live_nodes`, `aliases`, and `properties` next to `collections`.
+A v2 response has `collections` only.
+
 === Examples using CLUSTERSTATUS
 
 *Input*
@@ -148,7 +160,7 @@ The response will include the status of the request and the status of the cluste
 http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ----
 
-*Output*
+*V1 output*
 
 [source,json]
 ----

@@ -49,7 +49,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/api/cores` |Create a core.
 |`/api/cores/_core-name_` |Reload, rename, delete, and unload a core.
 |`/api/node` |Perform overseer operation, rejoin leader election.
-|`/api/cluster` |List live nodes, add role, remove role, set cluster property.
+|`/api/cluster` |Fetch the collections, shards, and replicas tree. `POST` sets the cluster rate limiter.
 |===
 
 == Introspect
@@ -149,13 +149,14 @@ $ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/j
 {"responseHeader":{"status":0,"QTime":842}}
 ----
 
-See the state of the cluster:
+See the collections, shards, and replicas in the cluster.
+Live nodes, the alias map, and cluster properties are not included; see xref:deployment-guide:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS] for the response fields and the separate endpoints that serve them.
 
 [source,bash]
 ----
 $ curl http://localhost:8983/api/cluster
 
-{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted"]}
+{"responseHeader":{"status":0,"QTime":1},"cluster":{"collections":{"gettingstarted":{"health":"GREEN","shards":{"shard1":{"state":"active"}}}}}}
 ----
 
 Set a cluster property:

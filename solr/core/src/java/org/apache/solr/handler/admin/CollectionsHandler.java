@@ -182,6 +182,7 @@ import org.apache.solr.handler.admin.api.DeleteReplica;
 import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShard;
 import org.apache.solr.handler.admin.api.ForceLeader;
+import org.apache.solr.handler.admin.api.GetClusterStatus;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListClusterNodes;
@@ -1189,6 +1190,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteReplicaProperty.class,
         DeleteShard.class,
         ForceLeader.class,
+        GetClusterStatus.class,
         InstallShardData.class,
         ListClusterNodes.class,
         ListCollections.class,
