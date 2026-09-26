@@ -755,6 +755,7 @@ public class PeerSync implements SolrMetricProducer {
           throw e;
         } finally {
           IOUtils.closeQuietly(proc);
+          req.close();
         }
       }
     }
