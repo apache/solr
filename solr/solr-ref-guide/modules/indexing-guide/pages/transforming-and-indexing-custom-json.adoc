@@ -20,7 +20,7 @@
 If you have JSON documents that you would like to index without transforming them into Solr's structure, you can add them to Solr by including some parameters with the update request.
 
 These parameters provide information on how to split a single JSON file into multiple Solr documents and how to map fields to Solr's schema.
-One or more valid JSON documents can be sent to the `/update/json/docs` path with the configuration params.
+In V1, one or more valid JSON documents can be sent to `/update/json/docs` with the configuration parameters. In V2, use the document-only `/update/json` endpoint.
 
 == Mapping Parameters
 
@@ -115,7 +115,8 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '&f=subject:/exams/subject'\
 '&f=test:/exams/test'\
 '&f=marks:/exams/marks'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -134,12 +135,12 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
+curl 'http://localhost:8983/api/collections/techproducts/update/json'\
 '?split=/exams'\
 '&f=first:/first'\
 '&f=last:/last'\
@@ -147,39 +148,8 @@ curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
 '&f=subject:/exams/subject'\
 '&f=test:/exams/test'\
 '&f=marks:/exams/marks'\
- -H 'Content-type:application/json' -d '
-{
-  "first": "John",
-  "last": "Doe",
-  "grade": 8,
-  "exams": [
-    {
-      "subject": "Maths",
-      "test"   : "term1",
-      "marks"  : 90},
-    {
-      "subject": "Biology",
-      "test"   : "term1",
-      "marks"  : 86}
-  ]
-}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json/docs'\
-'?split=/exams'\
-'&f=first:/first'\
-'&f=last:/last'\
-'&f=grade:/grade'\
-'&f=subject:/exams/subject'\
-'&f=test:/exams/test'\
-'&f=marks:/exams/marks'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -242,7 +212,8 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '&f=/exams/subject'\
 '&f=/exams/test'\
 '&f=/exams/marks'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -261,12 +232,12 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
+curl 'http://localhost:8983/api/collections/techproducts/update/json'\
 '?split=/exams'\
 '&f=/first'\
 '&f=/last'\
@@ -274,39 +245,8 @@ curl 'http://localhost:8983/api/cores/techproducts/update/json/docs'\
 '&f=/exams/subject'\
 '&f=/exams/test'\
 '&f=/exams/marks'\
- -H 'Content-type:application/json' -d '
-{
-  "first": "John",
-  "last": "Doe",
-  "grade": 8,
-  "exams": [
-    {
-      "subject": "Maths",
-      "test"   : "term1",
-      "marks"  : 90},
-    {
-      "subject": "Biology",
-      "test"   : "term1",
-      "marks"  : 86}
-  ]
-}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json/docs'\
-'?split=/exams'\
-'&f=/first'\
-'&f=/last'\
-'&f=/grade'\
-'&f=/exams/subject'\
-'&f=/exams/test'\
-'&f=/exams/marks'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -350,7 +290,9 @@ V1 API::
 ====
 [source,bash]
 ----
- curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json' -d '{
+curl http://localhost:8983/solr/techproducts/config/params \
+  -H 'Content-Type: application/json' \
+  -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -359,26 +301,14 @@ V1 API::
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
- "set": {
-   "my_params": {
-     "split": "/exams",
-     "f": ["first:/first","last:/last","grade:/grade","subject:/exams/subject","test:/exams/test"]
- }}}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl http://localhost:8983/api/collections/techproducts/config/params -H 'Content-type:application/json' -d '{
+curl http://localhost:8983/api/collections/techproducts/config/params \
+  -H 'Content-Type: application/json' \
+  -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -397,7 +327,10 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs?useParams=my_params' -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
+'?useParams=my_params'\
+  -H 'Content-Type: application/json' \
+  -d '{
   "first": "John",
   "last": "Doe",
   "grade": 8,
@@ -416,36 +349,15 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs?useParams=my_para
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/cores/techproducts/update/json?useParams=my_params' -H 'Content-type:application/json' -d '{
-  "first": "John",
-  "last": "Doe",
-  "grade": 8,
-  "exams": [{
-      "subject": "Maths",
-      "test": "term1",
-      "marks": 90
-    },
-    {
-      "subject": "Biology",
-      "test": "term1",
-      "marks": 86
-    }
-  ]
-}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json?useParams=my_params' -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/update/json'\
+'?useParams=my_params'\
+  -H 'Content-Type: application/json' \
+  -d '{
   "first": "John",
   "last": "Doe",
   "grade": 8,
@@ -494,7 +406,8 @@ V1 API::
 curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '?split=/exams'\
 '&f=/**'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -513,34 +426,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/cores/techproducts/update/json'\
-'?split=/exams'\
-'&f=/**'\
- -H 'Content-type:application/json' -d '
-{
-  "first": "John",
-  "last": "Doe",
-  "grade": 8,
-  "exams": [
-    {
-      "subject": "Maths",
-      "test"   : "term1",
-      "marks"  : 90},
-    {
-      "subject": "Biology",
-      "test"   : "term1",
-      "marks"  : 86}
-  ]
-}'
-----
-====
-
-V2 API SolrCloud::
+V2 API::
 +
 ====
 [source,bash]
@@ -548,7 +434,8 @@ V2 API SolrCloud::
 curl 'http://localhost:8983/api/collections/techproducts/update/json'\
 '?split=/exams'\
 '&f=/**'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -583,7 +470,8 @@ V1 API::
 curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 '?split=/'\
 '&f=txt:/**'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -602,34 +490,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/cores/techproducts/update/json'\
-'?split=/'\
-'&f=txt:/**'\
- -H 'Content-type:application/json' -d '
-{
-  "first": "John",
-  "last": "Doe",
-  "grade": 8,
-  "exams": [
-    {
-      "subject": "Maths",
-      "test"   : "term1",
-      "marks"  : 90},
-    {
-      "subject": "Biology",
-      "test"   : "term1",
-      "marks"  : 86}
-  ]
-}'
-----
-====
-
-V2 API SolrCloud::
+V2 API::
 +
 ====
 [source,bash]
@@ -637,7 +498,8 @@ V2 API SolrCloud::
 curl 'http://localhost:8983/api/collections/techproducts/update/json'\
 '?split=/'\
 '&f=txt:/**'\
- -H 'Content-type:application/json' -d '
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -670,8 +532,10 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs?split=/exams'\
-    -H 'Content-type:application/json' -d '
+curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
+'?split=/exams'\
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -690,38 +554,15 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs?split=/exams'\
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/cores/techproducts/update/json?split=/exams'\
-    -H 'Content-type:application/json' -d '
-{
-  "first": "John",
-  "last": "Doe",
-  "grade": 8,
-  "exams": [
-    {
-      "subject": "Maths",
-      "test"   : "term1",
-      "marks"  : 90},
-    {
-      "subject": "Biology",
-      "test"   : "term1",
-      "marks"  : 86}
-  ]
-}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json?split=/exams'\
-    -H 'Content-type:application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/update/json'\
+'?split=/exams'\
+  -H 'Content-Type: application/json' \
+  -d '
 {
   "first": "John",
   "last": "Doe",
@@ -774,29 +615,22 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type:application/json' -d '
+curl 'http://localhost:8983/solr/techproducts/update/json/docs' \
+  -H 'Content-Type: application/json' \
+  -d '
 { "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
 { "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/update/json' \
+  -H 'Content-Type: application/json' \
+  -d '
 { "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
 { "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
 ----
@@ -812,29 +646,22 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type:application/json' -d '[
+curl 'http://localhost:8983/solr/techproducts/update/json/docs' \
+  -H 'Content-Type: application/json' \
+  -d '[
 {"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
 {"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/cores/techproducts/update/json' -H 'Content-type:application/json' -d '[
-{"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
-{"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update/json' \
+  -H 'Content-Type: application/json' \
+  -d '[
 {"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
 {"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
 ----
@@ -854,7 +681,8 @@ Set the configuration as given in the Setting JSON Defaults section.
 
 == Setting JSON Defaults
 
-It is possible to send any JSON to the `/update/json/docs` endpoint and the default configuration of the component is as follows:
+It is possible to send any JSON to the V1 `/update/json/docs` endpoint or the V2 `/update/json` endpoint.
+Both use the document loader configuration shown below:
 
 [source,xml]
 ----
@@ -884,7 +712,9 @@ V1 API::
 ====
 [source,bash]
 ----
- curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json' -d '{
+curl http://localhost:8983/solr/techproducts/config/params \
+  -H 'Content-Type: application/json' \
+  -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",
@@ -894,27 +724,14 @@ V1 API::
 ----
 ====
 
-V2 API User-Managed / Standalone Solr::
+V2 API::
 +
 ====
 [source,bash]
 ----
- curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
-"set": {
-  "full_txt": {
-    "srcField": "_src_",
-    "mapUniqueKeyOnly" : true,
-    "df": "text"
-}}}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
- curl http://localhost:8983/api/collections/techproducts/config/params -H 'Content-type:application/json' -d '{
+curl http://localhost:8983/api/collections/techproducts/config/params \
+  -H 'Content-Type: application/json' \
+  -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",

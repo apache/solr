@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.common.AttributeKey;
@@ -36,12 +37,18 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -179,9 +186,126 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     assertTrue(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
   }
 
+  @Test
+  public void testHandleRequestWithoutMetricsTouchesNoMetrics() {
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+    final TestHandler handler = new TestHandler(metrics, (req, rsp) -> {});
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+
+    final boolean completedNormally = handler.handleRequestWithoutMetrics(testRequest(), rsp);
+
+    assertTrue(completedNormally);
+    verifyNoInteractions(mockLongCounter, mockLongHistogram);
+  }
+
+  @Test
+  public void testHandleRequestCountsExactlyOneRequestOnSuccess() {
+    // A caller relying on handleRequest (rather than handleRequestWithoutMetrics, as UpdateAPI
+    // now does) should still see exactly the pre-existing metrics behavior: one counter touch
+    // (requests.inc()) for a request that completes normally with no timeout.
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+    final TestHandler handler = new TestHandler(metrics, (req, rsp) -> {});
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
+
+    handler.handleRequest(testRequest(), rsp);
+
+    verify(mockLongCounter, times(1)).add(eq(1L), any());
+  }
+
+  @Test
+  public void testHandleRequestDoesNotCountQueryLimitsExceededAsATimeout() {
+    // rsp.setPartialResults(req) (called for QueryLimitsExceededException) makes
+    // haveCompleteResults(...) false, same as an actual timeout would -- but this path must not
+    // also increment numTimeouts, matching pre-existing behavior of only doing so when
+    // handleRequestBody returns normally. If it were double-counted, this would see 2 calls
+    // instead of 1.
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+    final TestHandler handler =
+        new TestHandler(
+            metrics,
+            (req, rsp) -> {
+              throw new QueryLimitsExceededException("over limit");
+            });
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
+
+    handler.handleRequest(testRequest(), rsp);
+
+    verify(mockLongCounter, times(1)).add(eq(1L), any());
+  }
+
+  @Test
+  public void testHandleRequestCountsRequestAndErrorOnException() {
+    final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
+    final TestHandler handler =
+        new TestHandler(
+            metrics,
+            (req, rsp) -> {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boom");
+            });
+    final SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
+
+    handler.handleRequest(testRequest(), rsp);
+
+    // requests.inc() (top of handleRequest) + processErrorMetricsOnException's client-error
+    // increment: exactly 2 calls total, not 3 (which double-accounting would produce).
+    verify(mockLongCounter, times(2)).add(eq(1L), any());
+    verify(mockLongCounter, times(1))
+        .add(eq(1L), argThat(attrs -> "client".equals(attrs.get(SOURCE_ATTR))));
+  }
+
+  private SolrQueryRequest testRequest() {
+    return new SolrQueryRequestBase(solrCore, new ModifiableSolrParams()) {
+      @Override
+      public CoreContainer getCoreContainer() {
+        return coreContainer;
+      }
+    };
+  }
+
+  /** Minimal concrete {@link RequestHandlerBase} whose body and metrics are test-controlled. */
+  private static class TestHandler extends RequestHandlerBase {
+    @FunctionalInterface
+    interface Body {
+      void run(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception;
+    }
+
+    private final Body body;
+
+    TestHandler(RequestHandlerBase.HandlerMetrics metrics, Body body) {
+      this.metrics = metrics;
+      this.body = body;
+      // createHandlerMetrics() only mocks the 2-arg longHistogram(name, description) overload;
+      // AttributedInstrumentFactory.attributedLongTimer actually calls the 3-arg overload, so
+      // metrics.requestTimes ends up backed by a real (unmocked, null-histogram) instance. Swap
+      // it for a no-op stand-in so handleRequest()'s timer.start()/stop() don't NPE.
+      metrics.requestTimes =
+          new AttributedLongTimer(null, null) {
+            @Override
+            public void record(Long value) {}
+          };
+    }
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+      body.run(req, rsp);
+    }
+
+    @Override
+    public String getDescription() {
+      return "test";
+    }
+
+    @Override
+    public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+      return null;
+    }
+  }
+
   // Ideally we wouldn't need to use mocks here, but HandlerMetrics requires a SolrMetricsContext,
-  // which
-  //  requires a MetricsManager, which requires ...
+  // which requires a MetricsManager, which requires ...
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
 

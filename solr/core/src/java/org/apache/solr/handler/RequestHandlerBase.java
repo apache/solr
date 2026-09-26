@@ -229,6 +229,43 @@ public abstract class RequestHandlerBase
   public abstract void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
       throws Exception;
 
+  /**
+   * Applies this handler's configured {@code defaults}/{@code appends}/{@code invariants} and
+   * HTTP-caching settings, then delegates to {@link #handleRequestBody}, handling {@link
+   * QueryLimitsExceededException} and any other exception the same way {@link #handleRequest} does
+   * -- but without touching this handler's own {@link HandlerMetrics} or timer.
+   *
+   * <p>Exceptions are recorded onto {@code rsp} via {@link SolrQueryResponse#setException} rather
+   * than thrown, matching {@link #handleRequest}'s contract. This exists for callers whose
+   * surrounding framework already records equivalent metrics itself (e.g. a JAX-RS resource wrapped
+   * by Jersey request/response filters) and would otherwise double them by also going through
+   * {@link #handleRequest}.
+   *
+   * @return true if {@link #handleRequestBody} returned normally; false if a {@link
+   *     QueryLimitsExceededException} or other exception was caught and handled instead. {@link
+   *     #handleRequest} uses this to decide whether to count a timeout, matching its behavior of
+   *     only doing so on the normal path.
+   */
+  public boolean handleRequestWithoutMetrics(SolrQueryRequest req, SolrQueryResponse rsp) {
+    try {
+      TestInjection.injectLeaderTragedy(req.getCore());
+      if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
+        req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
+      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+      req.getContext().remove(USEPARAM);
+      rsp.setHttpCaching(httpCaching);
+      handleRequestBody(req, rsp);
+      return true;
+    } catch (QueryLimitsExceededException e) {
+      rsp.setPartialResults(req);
+      return false;
+    } catch (Exception e) {
+      Exception normalized = processReceivedException(req, e);
+      rsp.setException(normalized);
+      return false;
+    }
+  }
+
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     assert metrics != null
@@ -242,25 +279,15 @@ public abstract class RequestHandlerBase
 
     AttributedLongTimer.MetricTimer timer = metrics.requestTimes.start();
     try {
-      TestInjection.injectLeaderTragedy(req.getCore());
-      if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
-        req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
-      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
-      req.getContext().remove(USEPARAM);
-      rsp.setHttpCaching(httpCaching);
-      handleRequestBody(req, rsp);
-      // count timeouts
-
-      if (!haveCompleteResults(rsp.getResponseHeader())) {
-        metrics.numTimeouts.inc();
-        rsp.setHttpCaching(false);
+      if (handleRequestWithoutMetrics(req, rsp)) {
+        // count timeouts
+        if (!haveCompleteResults(rsp.getResponseHeader())) {
+          metrics.numTimeouts.inc();
+          rsp.setHttpCaching(false);
+        }
+      } else if (rsp.getException() != null) {
+        processErrorMetricsOnException(rsp.getException(), metrics);
       }
-    } catch (QueryLimitsExceededException e) {
-      rsp.setPartialResults(req);
-    } catch (Exception e) {
-      Exception normalized = processReceivedException(req, e);
-      processErrorMetricsOnException(normalized, metrics);
-      rsp.setException(normalized);
     } finally {
       try {
         timer.stop();

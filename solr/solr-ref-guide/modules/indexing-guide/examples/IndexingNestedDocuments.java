@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -71,6 +72,10 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
         .process(cluster.getSolrClient());
+
+    // This example demonstrates anonymous children, which require a root-only schema.
+    new SchemaRequest.DeleteField("_nest_path_").process(cluster.getSolrClient(), collection);
+    new SchemaRequest.DeleteField("_nest_parent_").process(cluster.getSolrClient(), collection);
 
     // configure the client with the default collection name, to simplify our example below.
     IndexingNestedDocuments.clientUsedInSolrJExample = cluster.newSolrClient(collection);

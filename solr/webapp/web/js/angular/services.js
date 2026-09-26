@@ -112,6 +112,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SystemApi();
     })
+.factory('UpdateV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.UpdateApi();
+    })
 .factory('AliasesV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
@@ -260,16 +266,6 @@ solrAdminServices.factory('Metrics',
 .factory('CoreInfo',
   ['$resource', function($resource) {
     return $resource(':core/admin/info', {wt:'json', core: "@core", _:Date.now()});
-  }])
-.factory('Update',
-  ['$resource', function($resource) {
-    return $resource(':core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'update'}, {
-      "commit": {params: {commit: "true"}},
-      "post": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
-      "postJson": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
-      "postXml": {headers: {'Content-type': 'text/xml'}, method: "POST", params: {handler: '@handler'}},
-      "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
-    });
   }])
 .factory('ParamSet',
   ['$resource', function($resource) {
