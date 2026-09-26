@@ -19,6 +19,9 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 import jakarta.inject.Inject;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ConfigApi;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
@@ -27,9 +30,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
@@ -59,12 +59,10 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     List<PluginInfo> plugins = solrQueryRequest.getCore().getImplicitHandlers();
     for (PluginInfo plugin : plugins) {
       if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlers.containsKey(plugin.name)) {
-          reqHandlers.put(plugin.name, plugin);
+        reqHandlers.put(plugin.name, plugin);
       }
     }
 
     return (Map<String, Object>) Utils.getDeepCopy(map, 20, true);
   }
-
-
 }

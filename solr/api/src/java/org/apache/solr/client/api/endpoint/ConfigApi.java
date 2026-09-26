@@ -24,9 +24,7 @@ import jakarta.ws.rs.Path;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
-/**
- * V2 API for reading and modifying a core/collection's config
- */
+/** V2 API for reading and modifying a core/collection's config */
 public interface ConfigApi {
 
   @Path(INDEX_PATH_PREFIX + "/config")
