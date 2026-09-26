@@ -14,28 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.endpoint;
+package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 
-import io.swagger.v3.oas.annotations.Operation;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import org.apache.solr.client.api.model.ConfigInfoResponse;
-import org.apache.solr.client.api.util.StoreApiParameters;
-
-/**
- * V2 API for reading and modifying a core/collection's config
- */
-public interface ConfigApi {
-
-  @Path(INDEX_PATH_PREFIX + "/config")
-  interface Get {
-    @GET
-    @StoreApiParameters
-    @Operation(
-        summary = "Fetch the entire config of the specified core or collection",
-        tags = {"config"})
-    ConfigInfoResponse getConfig();
-  }
+public class ConfigInfoResponse extends SolrJerseyResponse {
+  @JsonProperty("config")
+  public Map<String, Object> config;
 }

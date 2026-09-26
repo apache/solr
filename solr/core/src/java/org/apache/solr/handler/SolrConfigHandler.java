@@ -53,6 +53,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -86,9 +87,11 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.admin.api.GetConfig;
 import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.SolrQueryRequest;
@@ -195,7 +198,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     private void handleGET() {
       if (parts.size() == 1) {
         // this is the whole config. sent out the whole payload
-        resp.add("config", getConfigDetails(null, req));
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getConfig());
       } else {
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
           resp.add(ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay());
@@ -1064,6 +1067,11 @@ public class SolrConfigHandler extends RequestHandlerBase
     apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));
     return apis;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(GetConfig.class);
   }
 
   @Override
