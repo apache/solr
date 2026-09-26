@@ -70,6 +70,15 @@ public interface GetSchemaApi {
     SchemaListCopyFieldsResponse listCopyFields();
 
     @GET
+    @Path("/copyfields/{sourceField}")
+    @StoreApiParameters
+    @Operation(
+        summary = "List the copy-field rules copying from the specified source field",
+        tags = {"schema"})
+    SchemaListCopyFieldsResponse listCopyFieldsBySource(
+        @PathParam("sourceField") String sourceField);
+
+    @GET
     @Path("/dynamicfields")
     @StoreApiParameters
     @Operation(

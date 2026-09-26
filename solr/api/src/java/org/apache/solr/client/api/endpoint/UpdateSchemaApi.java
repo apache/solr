@@ -29,6 +29,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.util.List;
+import org.apache.solr.client.api.model.AddCopyFieldOperation;
 import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
@@ -112,25 +113,54 @@ public interface UpdateSchemaApi {
   SolrJerseyResponse deleteFieldType(@PathParam("fieldTypeName") String fieldTypeName)
       throws Exception;
 
-  // TODO Gah! Copyfields don't currently have names for us to create/delete by name in an API like
-  // /schema/copyfields/{copyFieldName}...figure out how to address this in a way consistent with
-  // all our other APIs.  (In the meantime, the functionality is exposed through the bulk API at
-  // least.
-  //    @POST
-  //    @Path("/copyfields/{copyFieldName}")
-  //    @StoreApiParameters
-  //    @Operation(
-  //            summary = "Add a new copy-field with the specified name.",
-  //            tags = {"schema"})
-  //    SolrJerseyResponse addCopyField(@PathParam("copyFieldName") String copyFieldName,
-  // @RequestBody SchemaChangeOperation.AddCopyField requestBody) throws Exception;
-  //
-  //    @DELETE
-  //    @Path("/copyfields/{copyFieldName}")
-  //    @StoreApiParameters
-  //    @Operation(summary = "Remove the copy-field with the specified name.", tags = {"schema"})
-  //    SolrJerseyResponse deleteCopyField(@PathParam("copyFieldName") String copyFieldName) throws
-  // Exception;
+  // Copy-field rules have no name of their own, so unlike the other schema resources they are
+  // addressed by their source field.  A single request therefore covers all of the rules that
+  // share that source.
+  @PUT
+  @Path("/copyfields/{sourceField}")
+  @StoreApiParameters
+  @Operation(
+      summary =
+          "Set the copy-field rules for the specified source field.  The given destinations "
+              + "replace any rules that source already has.",
+      tags = {"schema"})
+  SolrJerseyResponse upsertCopyFields(
+      @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
+      throws Exception;
+
+  @POST
+  @Path("/copyfields/{sourceField}")
+  @StoreApiParameters
+  @Operation(
+      summary =
+          "Add the given destinations to the copy-field rules for the specified source field, "
+              + "leaving that source's existing rules in place.",
+      tags = {"schema"})
+  SolrJerseyResponse appendCopyFields(
+      @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
+      throws Exception;
+
+  @DELETE
+  @Path("/copyfields/{sourceField}")
+  @StoreApiParameters
+  @Operation(
+      summary = "Remove every copy-field rule copying from the specified source field.",
+      tags = {"schema"})
+  SolrJerseyResponse deleteCopyFields(@PathParam("sourceField") String sourceField)
+      throws Exception;
+
+  @DELETE
+  @Path("/copyfields/{sourceField}/{destinationFields}")
+  @StoreApiParameters
+  @Operation(
+      summary =
+          "Remove the copy-field rules from the specified source field to the specified "
+              + "destinations.  Several destinations may be given as a comma-separated list.",
+      tags = {"schema"})
+  SolrJerseyResponse deleteCopyFieldsByDestination(
+      @PathParam("sourceField") String sourceField,
+      @PathParam("destinationFields") String destinationFields)
+      throws Exception;
 
   @POST
   @Path("/bulk")

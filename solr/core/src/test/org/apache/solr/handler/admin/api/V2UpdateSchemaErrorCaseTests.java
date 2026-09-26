@@ -21,7 +21,9 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.mock;
 
+import java.util.List;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.api.model.AddCopyFieldOperation;
 import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
@@ -154,5 +156,41 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
             });
     assertEquals(BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: fieldTypeName"));
+  }
+
+  @Test
+  public void testUpsertCopyFieldsOperationRequiresSourceAndDestinations() {
+    final var noSourceOp = new AddCopyFieldOperation();
+    noSourceOp.destinations = List.of("someDestination");
+    var thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              schemaApi.upsertCopyFields(null, noSourceOp);
+            });
+    assertEquals(BAD_REQUEST.code, thrown.code());
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: sourceField"));
+
+    final var noDestinationsOp = new AddCopyFieldOperation();
+    thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              schemaApi.upsertCopyFields("someSourceField", noDestinationsOp);
+            });
+    assertEquals(BAD_REQUEST.code, thrown.code());
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: destinations"));
+  }
+
+  @Test
+  public void testDeleteCopyFieldOperationRequiresSource() {
+    var thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              schemaApi.deleteCopyFields(null);
+            });
+    assertEquals(BAD_REQUEST.code, thrown.code());
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: sourceField"));
   }
 }
