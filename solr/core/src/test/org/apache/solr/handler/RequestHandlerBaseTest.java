@@ -37,14 +37,18 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -183,7 +187,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHandleRequestWithoutMetricsTouchesNoMetrics() throws Exception {
+  public void testHandleRequestWithoutMetricsTouchesNoMetrics() {
     final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
     final TestHandler handler = new TestHandler(metrics, (req, rsp) -> {});
     final SolrQueryResponse rsp = new SolrQueryResponse();
@@ -195,14 +199,14 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHandleRequestCountsExactlyOneRequestOnSuccess() throws Exception {
+  public void testHandleRequestCountsExactlyOneRequestOnSuccess() {
     // A caller relying on handleRequest (rather than handleRequestWithoutMetrics, as UpdateAPI
     // now does) should still see exactly the pre-existing metrics behavior: one counter touch
     // (requests.inc()) for a request that completes normally with no timeout.
     final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
     final TestHandler handler = new TestHandler(metrics, (req, rsp) -> {});
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.addResponseHeader(new org.apache.solr.common.util.SimpleOrderedMap<>());
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
 
     handler.handleRequest(testRequest(), rsp);
 
@@ -210,7 +214,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHandleRequestDoesNotCountQueryLimitsExceededAsATimeout() throws Exception {
+  public void testHandleRequestDoesNotCountQueryLimitsExceededAsATimeout() {
     // rsp.setPartialResults(req) (called for QueryLimitsExceededException) makes
     // haveCompleteResults(...) false, same as an actual timeout would -- but this path must not
     // also increment numTimeouts, matching pre-existing behavior of only doing so when
@@ -224,7 +228,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
               throw new QueryLimitsExceededException("over limit");
             });
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.addResponseHeader(new org.apache.solr.common.util.SimpleOrderedMap<>());
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
 
     handler.handleRequest(testRequest(), rsp);
 
@@ -232,7 +236,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHandleRequestCountsRequestAndErrorOnException() throws Exception {
+  public void testHandleRequestCountsRequestAndErrorOnException() {
     final RequestHandlerBase.HandlerMetrics metrics = createHandlerMetrics();
     final TestHandler handler =
         new TestHandler(
@@ -241,7 +245,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boom");
             });
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.addResponseHeader(new org.apache.solr.common.util.SimpleOrderedMap<>());
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
 
     handler.handleRequest(testRequest(), rsp);
 
@@ -278,7 +282,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
       // metrics.requestTimes ends up backed by a real (unmocked, null-histogram) instance. Swap
       // it for a no-op stand-in so handleRequest()'s timer.start()/stop() don't NPE.
       metrics.requestTimes =
-          new org.apache.solr.metrics.otel.instruments.AttributedLongTimer(null, null) {
+          new AttributedLongTimer(null, null) {
             @Override
             public void record(Long value) {}
           };
@@ -295,15 +299,13 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public org.apache.solr.security.PermissionNameProvider.Name getPermissionName(
-        org.apache.solr.security.AuthorizationContext ctx) {
+    public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
       return null;
     }
   }
 
   // Ideally we wouldn't need to use mocks here, but HandlerMetrics requires a SolrMetricsContext,
-  // which
-  //  requires a MetricsManager, which requires ...
+  // which requires a MetricsManager, which requires ...
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
 

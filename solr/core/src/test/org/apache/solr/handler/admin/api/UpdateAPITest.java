@@ -19,12 +19,14 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -32,6 +34,7 @@ import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateApi;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -48,8 +51,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * Integration tests for the v2 update API endpoints implemented via JAX-RS in {@link
- * org.apache.solr.handler.admin.api.UpdateAPI}.
+ * Integration tests for the v2 update API endpoints implemented via JAX-RS in {@link UpdateAPI}.
  */
 public class UpdateAPITest extends SolrTestCase {
 
@@ -155,10 +157,10 @@ public class UpdateAPITest extends SolrTestCase {
     final SolrClient client = solrTestRule.getSolrClient(CORE_NAME);
     final String json = "[{\"id\":\"v2-generated-client-update1\"}]";
     final var request =
-        new org.apache.solr.client.solrj.request.UpdateApi.Update(
-            org.apache.solr.client.api.model.IndexType.CORE,
+        new UpdateApi.Update(
+            IndexType.CORE,
             CORE_NAME,
-            new java.io.ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)),
+            new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)),
             "application/json");
 
     request.process(client);
