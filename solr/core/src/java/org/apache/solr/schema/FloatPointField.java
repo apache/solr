@@ -41,7 +41,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @see PointField
  * @see FloatPoint
  */
-public class FloatPointField extends PointField implements FloatValueFieldType {
+public class FloatPointField extends PointField
+    implements FloatValueFieldType, FieldType.ExternalizeStoredValuesAsObjects {
 
   public FloatPointField() {
     type = NumberType.FLOAT;
