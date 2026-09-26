@@ -242,14 +242,6 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.NodeApi();
     })
-.factory('Threads',
-  ['$resource', function($resource) {
-    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
-    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
-    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
-    // $resource, like Security and (partially) SchemaDesigner.
-    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
-  }])
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
