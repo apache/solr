@@ -490,6 +490,7 @@ s|Required |Default: none
 |===
 +
 A field or an array of fields to which the source field will be copied.
+In the v2 API this attribute is named `destinations`; `dest` is still accepted as an alias.
 
 `maxChars`::
 +
@@ -523,11 +524,13 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "add-copy-field":{
-     "source":"shelf",
-     "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -H 'Content-type:application/json' -d '[
+  {
+    "operationType":"add-copy-field",
+    "source":"shelf",
+    "destinations":[ "location", "catchall" ]
+  }
+]' http://localhost:8983/api/collections/techproducts/schema/bulk
 ----
 ====
 ======
@@ -559,9 +562,9 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
-  "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/api/collections/techproducts/schema
+curl -X POST -H 'Content-type:application/json' --data-binary '[
+  { "operationType":"delete-copy-field", "source":"shelf", "destinations":[ "location" ] }
+]' http://localhost:8983/api/collections/techproducts/schema/bulk
 ----
 ====
 ======
@@ -636,7 +639,8 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/techproducts/schema
 ----
 
-Bulk schema operations are also supported in Solr's v2 API, using a slightly different syntax.
+Bulk schema operations are also supported in Solr's v2 API, using a different endpoint and syntax.
+The v2 bulk endpoint is `POST /api/collections/_collection_/schema/bulk`; the `/schema` path itself only supports `GET` in v2.
 Individual operations are specified as elements within a list, with the operation name (e.g. `add-field`, `delete-field-type`) specified as a `"operationType"` property on each operation object:
 
 [source,bash]
@@ -644,23 +648,23 @@ Individual operations are specified as elements within a list, with the operatio
 curl -X POST -H 'Content-type:application/json' --data-binary '
   [
     {
-      "operationType": "add-field"
+      "operationType": "add-field",
       "name": "shelf",
       "type": "myNewTxtField",
-      "stored": true 
+      "stored": true
     },
     {
-      "operationType": "add-field"
+      "operationType": "add-field",
       "name": "location",
       "type": "myNewTxtField",
-      "stored": true 
+      "stored": true
     },
     {
-      "operationType": "add-copy-field"
+      "operationType": "add-copy-field",
       "source": "shelf",
       "destinations": ["location", "catchall"]
     }
-  ]' http://localhost:8983/solr/techproducts/schema/bulk
+  ]' http://localhost:8983/api/collections/techproducts/schema/bulk
 ----
 
 === Schema Changes Among Replicas
