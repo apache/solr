@@ -165,7 +165,7 @@ solrAdminServices.factory('Metrics',
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
     // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
     // generated solrApi client class exists for it (old-style @EndPoint API, predates the
-    // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
+    // OpenAPI-based v2 framework), so this stays a plain $resource, like ParamSet.
     return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
       "status": {}
     });
@@ -242,14 +242,6 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.NodeApi();
     })
-.factory('Threads',
-  ['$resource', function($resource) {
-    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
-    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
-    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
-    // $resource, like Security and (partially) SchemaDesigner.
-    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
-  }])
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
@@ -276,7 +268,7 @@ solrAdminServices.factory('Metrics',
     // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
     // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
     // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
-    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Threads.
+    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Collections.
     // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
     // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
     // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
@@ -401,7 +393,7 @@ solrAdminServices.factory('Metrics',
      // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
      // rather than a formal parameter) and query() takes no query params at all (the server
      // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
-     // Threads/Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
+     // Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
      return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},

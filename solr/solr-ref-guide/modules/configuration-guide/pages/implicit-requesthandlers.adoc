@@ -130,12 +130,55 @@ Core Info:: Return core information.
 
 Threads:: Return info on all JVM threads.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/threads`
+[tabs#thread-dump-api]
+======
+V1 API::
++
+====
+`solr/admin/info/threads`
 
-v2: `api/node/threads` |{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
+Abbreviated JSON response with the default `json.nl=flat` format.
+The thread dump alternates `"thread"` keys and thread objects:
+
+[source,json]
+----
+{
+  "system": {
+    "threadDump": [
+      "thread", {"id": 1, "name": "main", "state": "RUNNABLE"},
+      "thread", {"id": 2, "name": "worker", "state": "WAITING"}
+    ]
+  }
+}
+----
+====
+
+V2 API::
++
+====
+`api/node/threads`
+
+Abbreviated JSON response.
+The thread dump is an array of objects, each containing a `"thread"` property:
+
+[source,json]
+----
+{
+  "system": {
+    "threadDump": [
+      {"thread": {"id": 1, "name": "main", "state": "RUNNABLE"}},
+      {"thread": {"id": 2, "name": "worker", "state": "WAITING"}}
+    ]
+  }
+}
+----
+====
+======
++
+[cols="2*.",frame=none,grid=cols,options="header"]
+|===
+|Class & Javadocs |Paramset
+|{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
 === Analysis Handlers

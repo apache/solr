@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -45,8 +45,13 @@ public class ThreadDumpHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    rsp.add("system", getThreadDump());
+    rsp.setHttpCaching(false);
+  }
+
+  /** Collects thread information using the v1 response representation. */
+  public static SimpleOrderedMap<Object> getThreadDump() {
     SimpleOrderedMap<Object> system = new SimpleOrderedMap<>();
-    rsp.add("system", system);
 
     ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
 
@@ -81,7 +86,7 @@ public class ThreadDumpHandler extends RequestHandlerBase {
       }
     }
     system.add("threadDump", lst);
-    rsp.setHttpCaching(false);
+    return system;
   }
 
   // --------------------------------------------------------------------------------
@@ -177,12 +182,12 @@ public class ThreadDumpHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new NodeThreadsAPI(this));
+    return List.of();
   }
 
   @Override
-  public Boolean registerV2() {
-    return Boolean.TRUE;
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(NodeThreadsAPI.class);
   }
 
   @Override

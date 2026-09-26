@@ -33,6 +33,10 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.admin.api.NodeThreadsAPI;
+import org.apache.solr.jersey.SolrJacksonMapper;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +53,58 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  public void testV1ResponseStructure() throws Exception {
+    final var response = new SolrQueryResponse();
+    try (var handler = new ThreadDumpHandler()) {
+      handler.handleRequestBody(null, response);
+    }
+    assertFalse(response.isHttpCaching());
+    assertTrue(response.getValues().get("system") instanceof SimpleOrderedMap<?>);
+    final var system = (NamedList<?>) response.getValues().get("system");
+    assertTrue(system.get("threadCount") instanceof SimpleOrderedMap<?>);
+    final var counts = (NamedList<?>) system.get("threadCount");
+    assertTrue(counts.get("current") instanceof Integer);
+    final var threads = (NamedList<?>) system.get("threadDump");
+    assertTrue(threads.size() > 1);
+    for (var entry : threads) {
+      assertEquals("thread", entry.getKey());
+      assertTrue(entry.getValue() instanceof SimpleOrderedMap<?>);
+      final var thread = (NamedList<?>) entry.getValue();
+      assertTrue(thread.get("stackTrace") instanceof String[]);
+      if (thread.get("lock-waiting") != null) {
+        assertTrue(thread.get("lock-waiting") instanceof SimpleOrderedMap<?>);
+        final var lock = (NamedList<?>) thread.get("lock-waiting");
+        if (lock.get("owner") != null) {
+          assertTrue(lock.get("owner") instanceof SimpleOrderedMap<?>);
+        }
+      }
+    }
+  }
+
+  public void testV2ResponseStructure() throws Exception {
+    final var response = new NodeThreadsAPI().getThreadDump();
+    assertTrue(response.system.threadCount.current > 0);
+    assertTrue(response.system.threadDump.size() > 1);
+    final var currentThread =
+        response.system.threadDump.stream()
+            .map(entry -> entry.thread)
+            .filter(thread -> thread.id == Thread.currentThread().threadId())
+            .findFirst()
+            .orElseThrow();
+    assertEquals(Thread.currentThread().getName(), currentThread.name);
+    assertEquals("RUNNABLE", currentThread.state);
+    assertFalse(currentThread.stackTrace.isEmpty());
+    final var mapper = SolrJacksonMapper.getObjectMapper();
+    final var json = mapper.readTree(mapper.writeValueAsString(response));
+    final var threads = json.path("system").path("threadDump");
+    assertTrue(threads.isArray());
+    assertEquals(response.system.threadDump.size(), threads.size());
+    for (var entry : threads) {
+      assertTrue(entry.path("thread").isObject());
+      assertTrue(entry.path("thread").path("stackTrace").isArray());
+    }
   }
 
   public void testMonitor() throws Exception {

@@ -14,34 +14,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.security.PermissionNameProvider.Name.METRICS_READ_PERM;
 
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.NodeThreadsApi;
+import org.apache.solr.client.api.model.NodeThreadsResponse;
+import org.apache.solr.client.api.model.NodeThreadsResponse.SystemInfo;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadCount;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadEntry;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadInfo;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJacksonMapper;
 
-/**
- * V2 API for triggering a thread dump on the receiving node.
- *
- * <p>This API (GET /v2/node/threads) is analogous to the v1 /admin/info/threads.
- */
-public class NodeThreadsAPI {
-  private final ThreadDumpHandler handler;
+/** Implementation of {@link NodeThreadsApi}. */
+public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
 
-  public NodeThreadsAPI(ThreadDumpHandler handler) {
-    this.handler = handler;
+  @Inject
+  public NodeThreadsAPI() {}
+
+  @Override
+  @PermissionName(METRICS_READ_PERM)
+  public NodeThreadsResponse getThreadDump() {
+    final var response = instantiateJerseyResponse(NodeThreadsResponse.class);
+    final var system = ThreadDumpHandler.getThreadDump();
+    response.system = new SystemInfo();
+    response.system.threadCount =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(((NamedList<?>) system.get("threadCount")).asMap(1), ThreadCount.class);
+    response.system.threadDump = toThreadEntries((NamedList<?>) system.get("threadDump"));
+    if (system.get("deadlocks") instanceof NamedList<?> deadlocks) {
+      response.system.deadlocks = toThreadEntries(deadlocks);
+    }
+    return response;
   }
 
-  @EndPoint(
-      path = {"/node/threads"},
-      method = GET,
-      permission = METRICS_READ_PERM)
-  public void triggerThreadDump(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    handler.handleRequestBody(req, rsp);
+  private static List<ThreadEntry> toThreadEntries(NamedList<?> threads) {
+    final List<ThreadEntry> entries = new ArrayList<>(threads.size());
+    for (var thread : threads) {
+      final var entry = new ThreadEntry();
+      entry.thread =
+          SolrJacksonMapper.getObjectMapper()
+              .convertValue(((NamedList<?>) thread.getValue()).asMap(3), ThreadInfo.class);
+      entries.add(entry);
+    }
+    return entries;
   }
 }

@@ -16,25 +16,32 @@
 */
 
 solrAdminApp.controller('ThreadsController',
-  function($scope, Threads, Constants){
+  function($scope, $timeout, SystemV2, Constants, ApiErrorHandler){
     $scope.resetMenu("threads", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
-      Threads.get(function(data) {
-        var threadDump = data.system.threadDump;
-        var threads = [];
-        for (var i=1; i<threadDump.length; i+=2) {
-          var thread = threadDump[i];
-          if (!!thread.stackTrace) {
-            var stackTrace = [];
-            for (var j=0; j<thread.stackTrace.length; j++) {
-              var trace = thread.stackTrace[j].replace("(", "\u200B("); // allow wrapping to happen, \u200B is a zero-width space
-              stackTrace.push({id:thread.id + ":" + j, trace: trace});
-            }
-            thread.stackTrace = stackTrace;
+      SystemV2.getThreadDump(function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); return; }
+          if (!data || !data.system) {
+            $scope.threads = [];
+            return;
           }
-          threads.push(thread);
-        }
-        $scope.threads = threads;
+          var threadDump = data.system.threadDump;
+          var threads = [];
+          for (var i=0; i<threadDump.length; i++) {
+            var thread = threadDump[i].thread;
+            if (!!thread.stackTrace) {
+              var stackTrace = [];
+              for (var j=0; j<thread.stackTrace.length; j++) {
+                var trace = thread.stackTrace[j].replace("(", "\u200B("); // allow wrapping to happen, \u200B is a zero-width space
+                stackTrace.push({id:thread.id + ":" + j, trace: trace});
+              }
+              thread.stackTrace = stackTrace;
+            }
+            threads.push(thread);
+          }
+          $scope.threads = threads;
+        });
       });
     };
     $scope.toggleStacktrace = function(thread) {
