@@ -94,6 +94,9 @@ Users upgrading from 10.0 who relied on the pass-through behavior must explicitl
 PKI Authentication v1 support has been removed.
 Solr 10.1 nodes only send and accept the `SolrAuthV2` (v2) header for inter-node communication.
 
+`ExecutorUtil.isSolrServerThread()` now tracks work that originated from Solr node startup or request handling (and work spawned from those), instead of any task running on an MDC-aware pool.
+Plugin code that starts independent threads outside startup/request context and then makes inter-node requests may need to explicitly set server identity (for example with `PKIAuthenticationPlugin.withServerIdentity(true)` around that work).
+
 Before performing a rolling upgrade to 10.1, ensure no node in the cluster has `solr.pki.sendVersion=v1` set, as those nodes would send the legacy `SolrAuth` header that 10.1 nodes will reject.
 The `solr.pki.sendVersion` and `solr.pki.acceptVersions` system properties are no longer recognized in 10.1 and can be removed from your configuration.
 
