@@ -28,22 +28,15 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
  *
- * <p>This class covers a handful of distinct paths under GET /v2/c/collectionName/config: /,
- * /overlay, /params, /znodeVersion, etc.
+ * <p>GET /config (full config) has been migrated to JAX-RS ({@link GetConfig}). This class still
+ * covers legacy AnnotatedApi paths under GET /config: /params, /params{paramset}, /overlay,
+ * /znodeVersion, etc.
  */
 public class GetConfigAPI {
   private final SolrConfigHandler configHandler;
 
   public GetConfigAPI(SolrConfigHandler configHandler) {
     this.configHandler = configHandler;
-  }
-
-  @EndPoint(
-      path = {"/config"},
-      method = GET,
-      permission = CONFIG_READ_PERM)
-  public void getAllConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
-    configHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(
