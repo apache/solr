@@ -17,19 +17,19 @@
 
 package org.apache.solr.metrics;
 
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SolrMetricsContextTest extends SolrTestCaseJ4 {
+public class SolrMetricsContextTest extends SolrTestCase {
   private static final String REGISTRY = "test_context_registry";
   private SolrMetricManager metricManager;
-  private PrometheusMetricReader reader;
+  private FilterablePrometheusMetricReader reader;
 
   @Before
   @Override

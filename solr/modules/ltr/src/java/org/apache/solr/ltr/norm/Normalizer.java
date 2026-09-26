@@ -35,7 +35,7 @@ public abstract class Normalizer {
 
   public Explanation explain(Explanation explain) {
     final float normalized = normalize(explain.getValue().floatValue());
-    final String explainDesc = "normalized using " + toString();
+    final String explainDesc = "normalized using " + this;
 
     return Explanation.match(normalized, explainDesc, explain);
   }

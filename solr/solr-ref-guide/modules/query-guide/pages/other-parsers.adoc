@@ -733,6 +733,12 @@ Invoked with the syntax `{!intervals df=<field>}{"phrase":{"terms":["hash","map"
 
 Details of this query parser are in the section xref:intervals-query-parser.adoc[].
 
+== Global Ordinals Join Query Parser
+
+The Global Ordinals Join Query Parser joins documents within an index using Lucene's global ordinals (`OrdinalMap`) over a shared single-valued docValues string field.
+
+Details of this query parser are in the section xref:global-ordinals-join-query-parser.adoc[].
+
 == Join Query Parser
 
 The Join Query Parser allows users to run queries that normalize relationships between documents, similar to SQL-style joins.
