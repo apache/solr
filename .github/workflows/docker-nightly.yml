@@ -120,8 +120,17 @@ jobs:
           production=true
           EOF
 
+      # qemu-user mis-maps some emulated arm64 allocations when the host randomizes them,
+      # segfaulting ldconfig during the linux/arm64 leg (tonistiigi/binfmt#298).
+      - name: Disable ASLR to work around QEMU arm64 segfaults
+        run: sudo sysctl -w kernel.randomize_va_space=0
+
       - name: Set up QEMU for multi-platform builds
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          # Pinned; the action otherwise pulls a floating :latest, and qemu version changes
+          # have caused intermittent segfaults in the emulated linux/arm64 build.
+          image: tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0 # qemu-v10.2.3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0

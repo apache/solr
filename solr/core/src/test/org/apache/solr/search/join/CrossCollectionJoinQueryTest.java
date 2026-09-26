@@ -40,6 +40,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrJMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -161,6 +162,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       String url = runner.getBaseUrl().toString();
       System.setProperty("test.ccjoin.solr.url." + i, url);
     }
+    String quorumHosts = cluster.getSolrClient().getClusterStateProvider().getQuorumHosts();
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
@@ -200,11 +202,12 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
               "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
               getSolrUrl()),
           true);
+      // The local cluster's ZK ensemble is always allowed; no allowZkHosts entry needed.
       testCcJoinQuery(
           String.format(
               Locale.ROOT,
               "{!join method=crossCollection zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
-              client.getClusterStateProvider().getQuorumHosts()),
+              quorumHosts),
           true);
       testCcJoinQuery(
           String.format(
@@ -323,6 +326,146 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
         i++;
         System.getProperties().remove("test.ccjoin.solr.url." + i);
       }
+    }
+  }
+
+  @Test
+  public void testAllowZkHostsList() throws Exception {
+    setupIndexes(false);
+
+    int i = 0;
+    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+      i++;
+      System.setProperty("test.ccjoin.solr.url." + i, runner.getBaseUrl().toString());
+    }
+    String quorumHosts = cluster.getSolrClient().getClusterStateProvider().getQuorumHosts();
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      cluster.uploadConfigSet(configset("ccjoin"), "ccjoin");
+      CollectionAdminRequest.Reload.reloadCollection("products").process(client);
+      CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
+
+      Exception unlisted =
+          expectThrows(
+              Exception.class,
+              () ->
+                  testCcJoinQuery(
+                      "{!join method=crossCollection zkHost=\"other-zk.example.com:2181/solr\""
+                          + " fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+                      true));
+      assertTrue(
+          "Unexpected message: " + unlisted.getMessage(),
+          unlisted.getMessage().contains("other-zk.example.com:2181/solr"));
+
+      // The local cluster's ZK ensemble is always allowed, so the local quorum string must
+      // succeed. product_id_i (not _s) so the join does not default to routed-by-join-key --
+      // setupIndexes(false) does not shard-route by that field.
+      testCcJoinQuery(
+          String.format(
+              Locale.ROOT,
+              "{!join method=crossCollection zkHost=\"%s\""
+                  + " fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+              quorumHosts),
+          true);
+
+      Exception unlistedHttp =
+          expectThrows(
+              Exception.class,
+              () ->
+                  testCcJoinQuery(
+                      "{!join method=crossCollection"
+                          + " solrConnection=\"http://other-solr.example.com:8983/solr\""
+                          + " fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+                      true));
+      assertTrue(
+          "Unexpected message: " + unlistedHttp.getMessage(),
+          unlistedHttp.getMessage().contains("other-solr.example.com")
+              && unlistedHttp.getMessage().contains("allowUrls"));
+
+      Exception both =
+          expectThrows(
+              Exception.class,
+              () ->
+                  testCcJoinQuery(
+                      String.format(
+                          Locale.ROOT,
+                          "{!join method=crossCollection zkHost=\"%s\" solrUrl=\"%s\""
+                              + " fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+                          quorumHosts,
+                          getSolrUrl()),
+                      true));
+      assertTrue(
+          "Unexpected message: " + both.getMessage(),
+          both.getMessage().contains("mutually exclusive"));
+
+      // Mutual exclusion is checked before either allow-list.
+      Exception bothUnlistedZk =
+          expectThrows(
+              Exception.class,
+              () ->
+                  testCcJoinQuery(
+                      String.format(
+                          Locale.ROOT,
+                          "{!join method=crossCollection"
+                              + " zkHost=\"other-zk.example.com:2181/solr\" solrUrl=\"%s\""
+                              + " fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+                          getSolrUrl()),
+                      true));
+      assertTrue(
+          "Unexpected message: " + bothUnlistedZk.getMessage(),
+          bothUnlistedZk.getMessage().contains("mutually exclusive"));
+
+      Exception bothUnlistedUrl =
+          expectThrows(
+              Exception.class,
+              () ->
+                  testCcJoinQuery(
+                      String.format(
+                          Locale.ROOT,
+                          "{!join method=crossCollection zkHost=\"%s\""
+                              + " solrUrl=\"http://other-solr.example.com:18080/solr\""
+                              + " fromIndex=products from=product_id_i to=product_id_i}size_s:M",
+                          quorumHosts),
+                      true));
+      assertTrue(
+          "Unexpected message: " + bothUnlistedUrl.getMessage(),
+          bothUnlistedUrl.getMessage().contains("mutually exclusive"));
+
+    } finally {
+      int j = 0;
+      for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+        j++;
+        System.getProperties().remove("test.ccjoin.solr.url." + j);
+      }
+    }
+  }
+
+  @Test
+  public void testZkHostAndSolrUrlMutualExclusionAtParser() throws SyntaxError {
+    ModifiableSolrParams localParams = new ModifiableSolrParams();
+    localParams.set(QueryParsing.V, "*:*");
+    localParams.set(CrossCollectionJoinQParser.ZK_HOST, "trusted-zk:2181/chroot");
+    localParams.set(CrossCollectionJoinQParser.SOLR_URL, "http://trusted-solr:8983/solr");
+    localParams.set(CrossCollectionJoinQParser.FROM_INDEX, "products");
+    localParams.set(CrossCollectionJoinQParser.FROM, "product_id_s");
+    localParams.set(CrossCollectionJoinQParser.TO, "product_id_s");
+    localParams.set(CrossCollectionJoinQParser.ROUTED_BY_JOIN_KEY, "false");
+
+    ModifiableSolrParams requestParams = new ModifiableSolrParams();
+    try (SolrQueryRequest req = new SolrQueryRequestBase(null, requestParams) {}) {
+      CrossCollectionJoinQParser parser =
+          new CrossCollectionJoinQParser(
+              null, localParams, requestParams, req, "product_id_s", null);
+      SyntaxError e =
+          expectThrows(
+              SyntaxError.class,
+              "Expected SyntaxError when both zkHost and solrUrl are specified",
+              parser::parse);
+      assertTrue(
+          "Unexpected message: " + e.getMessage(),
+          e.getMessage().contains("mutually exclusive")
+              && e.getMessage().contains("zkHost")
+              && e.getMessage().contains("solrUrl"));
     }
   }
 
