@@ -131,7 +131,7 @@ s|Exactly one of these parameters is required |Default: none
 +
 Two different ways to define a prompt are available: one directly in the solrconfig and one through a dedicated file.
 Either way, the content of the prompt _must_ contain a special token for each `inputField` declared, that are the
-`fieldName` surrounded by curly brackets (e.g., `{string_field}`, in the example below). Solr will throw an error if
+`fieldName` surrounded by curly brackets (e.g., `\{string_field}`, in the example below). Solr will throw an error if
 the parameters are not properly defined.
 +
 These parameters can be defined in one of the following ways:
@@ -144,7 +144,7 @@ These parameters can be defined in one of the following ways:
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="prompt">Summarize this content: \{string_field}</str>
    <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
@@ -441,7 +441,7 @@ excluding the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment'
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="prompt">Summarize this content: \{string_field}</str>
    <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
@@ -485,7 +485,7 @@ You still define two chains, but this time the 'enrichment' one only includes th
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: {string_field}</str>
+   <str name="prompt">Summarize this content: \{string_field}</str>
    <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>

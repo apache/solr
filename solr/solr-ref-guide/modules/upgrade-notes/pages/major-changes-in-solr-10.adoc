@@ -66,6 +66,16 @@ The universal connection string is now supported in the following components and
 * Updated Solr CLI `-s` short option to invoke `--solr-connection` instead of `--solr-url`, which is a backwards compatible change.
 * Added `solrConnection` parameter to the Join Query Parser.
 
+=== Connecting to Other Clusters
+
+Streaming expressions and the cross-collection join query parser now restrict which SolrCloud clusters a `zkHost` or `solrConnection` parameter may refer to:
+
+* A ZooKeeper connection string must match the local cluster's exactly (including any chroot), or be listed in the new xref:configuration-guide:configuring-solr-xml.adoc#allow-zk-hosts[`allowZkHosts`] setting in `solr.xml` (or the `solr.security.allow.zk.hosts` system property).
+* An HTTP(S) connection string must refer to live nodes of the local cluster, or to hosts listed in xref:configuration-guide:configuring-solr-xml.adoc#allow-urls[`allowUrls`].
+* The cross-collection join query parser no longer accepts both `zkHost` and `solrUrl`; specify at most one.
+
+If you use these features to query another cluster, add its connection details to the corresponding setting before upgrading.
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
@@ -318,6 +328,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
 * `stream.file`, `stream.url`, and `stream.body` params are no longer supported.
+
+* `/update/extract` (`ExtractingRequestHandler` in the `extraction` module) requires the `update` permission rather than `read`, since it indexes documents. Deployments where `read`-only users submit documents through `/update/extract` must grant those users `update` as well.
 
 === Upgrade to Jetty 12.x and Jakarta namespace
 
