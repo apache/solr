@@ -66,12 +66,15 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
     assertTrue(system.get("threadCount") instanceof SimpleOrderedMap<?>);
     final var counts = (NamedList<?>) system.get("threadCount");
     assertTrue(counts.get("current") instanceof Integer);
+    assertTrue(counts.get("peak") instanceof Integer);
+    assertTrue(counts.get("daemon") instanceof Integer);
     final var threads = (NamedList<?>) system.get("threadDump");
     assertTrue(threads.size() > 1);
     for (var entry : threads) {
       assertEquals("thread", entry.getKey());
       assertTrue(entry.getValue() instanceof SimpleOrderedMap<?>);
       final var thread = (NamedList<?>) entry.getValue();
+      assertTrue(thread.get("id") instanceof Long);
       assertTrue(thread.get("stackTrace") instanceof String[]);
       if (thread.get("lock-waiting") != null) {
         assertTrue(thread.get("lock-waiting") instanceof SimpleOrderedMap<?>);
