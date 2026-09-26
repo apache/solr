@@ -75,9 +75,11 @@ import org.slf4j.LoggerFactory;
  *       lazy one never fires, so a log with no {@code cause=lazy-to-segment} line is the expected
  *       shape.
  *   <li>{@code evt=ctx} -- this context finished setting up: how many (from, to) pairs contributed,
- *       how many the a-priori from-edge check dropped before any column was opened, and how loose
- *       the resulting approximation is. Emitted from {@link #get}, with {@code mode=eager} when
- *       every column is drained up front instead of confirmed lazily.
+ *       how many the a-priori from-edge check dropped before any column was opened ({@code
+ *       cellsEmpty} of them because the pair maps no from doc at all, the rest because the query's
+ *       from matches miss the pair's from-range), and how loose the resulting approximation is.
+ *       Emitted from {@link #get}, with {@code mode=eager} when every column is drained up front
+ *       instead of confirmed lazily.
  *   <li>{@code evt=drain} -- one join column was read through during confirmation, and whether that
  *       read confirmed the doc under test (an early exit) or not.
  *   <li>{@code evt=done} -- confirmation reached a terminal state for this context: every column
@@ -138,6 +140,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   /** pairs the a-priori from-edge check dropped, i.e. columns never opened at all */
   private int leafsDroppedApriori;
+
+  /**
+   * those of {@link #leafsDroppedApriori} whose pair maps no from doc to this to segment at all: a
+   * property of the index layout, not of the query
+   */
+  private int leafsEmpty;
 
   /** calls to {@link LazyConfirmationIterator#matches()} */
   private int confirmCalls;
@@ -719,7 +727,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=ctx ctx={} toSeg={} mode={} toMaxDoc={} cellsCreated={}"
-            + " cellsDroppedApriori={} cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
+            + " cellsDroppedApriori={} cellsEmpty={} cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
             + " colToCountSum={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
@@ -727,6 +735,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         toContext.reader().maxDoc(),
         joinLeafsCreated,
         leafsDroppedApriori,
+        leafsEmpty,
         leafJoins.size(),
         joinIndexBuildNanos / 1_000_000L,
         falsePositiveToDocsBits == null ? 0 : falsePositiveToDocsBits.cardinality(),
@@ -988,6 +997,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     if (minFromDoc < 0) {
       // {-1, -1} sentinel: this pair maps no from doc to any to doc at all
       leafsDroppedApriori++;
+      leafsEmpty++;
       dropJoinLeaf(cell);
       return false;
     }
