@@ -409,7 +409,7 @@ groups:
       commands_text: Run these commands to create a release branch
       commands:
       - !Command
-        cmd: git checkout {{ stable_branch }}
+        cmd: git checkout {{ base_branch }}
         tee: true
       - !Command
         cmd: git pull --ff-only
@@ -524,7 +524,7 @@ groups:
       commands_text: Run these commands to add the new minor version {{ next_version }} to the stable and unstable branches
       commands:
       - !Command
-        cmd: git checkout {{ stable_branch }}
+        cmd: git checkout {{ base_branch }}
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
