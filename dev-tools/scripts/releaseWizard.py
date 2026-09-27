@@ -135,6 +135,7 @@ def expand_jinja(text, vars=None):
         'docker_version_to_remove': state.get_docker_version_to_remove(),
         'editor': get_editor(),
         'rename_cmd': 'ren' if is_windows() else 'mv',
+        'open_cmd': 'start' if is_windows() else ('open' if is_mac() else 'xdg-open'),
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
