@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.SolrException;
@@ -27,6 +28,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SyntheticSolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.join.CrossCollectionJoinQParser;
@@ -216,6 +218,9 @@ public class JoinQParserPlugin extends QParserPlugin {
 
       @Override
       public Query parse() throws SyntaxError {
+        if (req.getCore() instanceof SyntheticSolrCore) {
+          return new MatchNoDocsQuery("never search it anyway");
+        }
         if (localParams != null && localParams.get(METHOD) != null) {
           // TODO Make sure 'method' is valid value here and give users a nice error
           final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
