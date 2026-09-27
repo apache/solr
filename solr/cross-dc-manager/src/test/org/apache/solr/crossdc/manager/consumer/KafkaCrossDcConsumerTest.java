@@ -92,7 +92,7 @@ public class KafkaCrossDcConsumerTest {
   @Before
   public void setUp() {
     kafkaConsumerMock = mock(KafkaConsumer.class);
-    solrClientMock = CrossDcMockUtils.mockConnectedCloudSolrClient();
+    solrClientMock = CrossDcMockUtils.mockCloudSolrClientWithClusterStateProvider();
     clusterStateProviderMock = solrClientMock.getClusterStateProvider();
     doAnswer(inv -> clusterStateProviderIsClosed).when(clusterStateProviderMock).isClosed();
     kafkaMirroringSinkMock = mock(KafkaMirroringSink.class);

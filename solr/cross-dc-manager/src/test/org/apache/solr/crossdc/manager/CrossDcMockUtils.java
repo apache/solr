@@ -23,29 +23,18 @@ import static org.mockito.Mockito.when;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 
-/** Shared Mockito fixtures for tests that mock a {@link CloudSolrClient}. */
+/** Shared Mockito helper for tests that mock a {@link CloudSolrClient}. */
 public final class CrossDcMockUtils {
 
   private CrossDcMockUtils() {}
 
   /**
-   * Mocks a {@link CloudSolrClient} wired with a mocked {@link ClusterStateProvider}.
-   *
-   * <p>{@code SolrMessageProcessor.connectToSolrIfNeeded()} calls {@code
-   * getClusterStateProvider().getLiveNodes()} before processing any request, so any mocked {@link
-   * CloudSolrClient} used with it must supply a state provider or the call spins forever retrying a
-   * {@link NullPointerException}. Fetch the same provider mock back later via {@link
-   * CloudSolrClient#getClusterStateProvider()} if a test needs to verify against it.
+   * Mocks a client with a mocked cluster-state provider. {@code SolrMessageProcessor} reads the
+   * live-node list from this provider before processing a request. Tests can retrieve the provider
+   * with {@link CloudSolrClient#getClusterStateProvider()} to stub or verify it.
    */
-  public static CloudSolrClient mockConnectedCloudSolrClient() {
-    return configureConnected(mock(CloudSolrClient.class));
-  }
-
-  /**
-   * Wires an existing {@link CloudSolrClient} mock (e.g. one injected via {@code @Mock}) with a
-   * mocked {@link ClusterStateProvider}. See {@link #mockConnectedCloudSolrClient()}.
-   */
-  public static CloudSolrClient configureConnected(CloudSolrClient client) {
+  public static CloudSolrClient mockCloudSolrClientWithClusterStateProvider() {
+    CloudSolrClient client = mock(CloudSolrClient.class);
     when(client.getClusterStateProvider()).thenReturn(mock(ClusterStateProvider.class));
     return client;
   }

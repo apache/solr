@@ -57,7 +57,7 @@ public class SolrMessageProcessorTest {
 
   @Before
   public void setUp() {
-    client = CrossDcMockUtils.mockConnectedCloudSolrClient();
+    client = CrossDcMockUtils.mockCloudSolrClientWithClusterStateProvider();
     clusterStateProvider = client.getClusterStateProvider();
     resubmitBackoffPolicy = mock(ResubmitBackoffPolicy.class);
     solrMessageProcessor =
