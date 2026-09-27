@@ -244,6 +244,42 @@ public class PostTool extends ToolBase {
     mimeMap.put("log", "text/plain");
   }
 
+  /**
+   * Options controlling how posted content and the update request are shaped.
+   *
+   * @param type content type given by the user, or null to auto-detect from file endings
+   * @param format {@link #FORMAT_SOLR} when the input is Solr-formatted JSON commands, else ""
+   * @param params raw URL-encoded {@code key=value} pairs to pass through to the update request
+   */
+  record ContentOptions(String type, String format, String params) {}
+
+  /**
+   * Options controlling traversal of directories (files mode) and links (web mode).
+   *
+   * @param fileTypes comma-separated file endings to consider
+   * @param delay seconds to pause between posts
+   * @param recursive max recursion depth, 0 to disable
+   */
+  record CrawlOptions(String fileTypes, int delay, int recursive) {}
+
+  /** Index maintenance actions to run after posting completes. */
+  record UpdateOptions(boolean commit, boolean optimize) {}
+
+  /**
+   * Parameters for the post command, independent of the command line parser.
+   *
+   * @param args positional arguments; files, directories, urls or literal data depending on mode
+   */
+  record PostToolParams(
+      URI solrUpdateUrl,
+      String mode,
+      boolean dryRun,
+      String credentials,
+      String[] args,
+      ContentOptions content,
+      CrawlOptions crawl,
+      UpdateOptions update) {}
+
   public PostTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -273,51 +309,61 @@ public class PostTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    solrUpdateUrl = null;
-    if (CLIUtils.hasConnectionOption(cli)) {
-      String url =
-          CLIUtils.normalizeSolrUrl(cli)
-              + "/solr/"
-              + cli.getOptionValue(COLLECTION_NAME_OPTION)
-              + "/update";
-      solrUpdateUrl = new URI(url);
-
-    } else {
-      String url =
-          CLIUtils.getDefaultSolrUrl()
-              + "/solr/"
-              + cli.getOptionValue(COLLECTION_NAME_OPTION)
-              + "/update";
-      solrUpdateUrl = new URI(url);
-    }
+    String baseUrl =
+        CLIUtils.hasConnectionOption(cli)
+            ? CLIUtils.normalizeSolrUrl(cli)
+            : CLIUtils.getDefaultSolrUrl();
+    URI updateUrl =
+        new URI(baseUrl + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION) + "/update");
 
     String mode = cli.getOptionValue(MODE_OPTION, DATA_MODE_FILES);
+    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
 
-    dryRun = cli.hasOption(DRY_RUN_OPTION);
+    PostToolParams postParams =
+        new PostToolParams(
+            updateUrl,
+            mode,
+            cli.hasOption(DRY_RUN_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getArgs(),
+            new ContentOptions(
+                cli.getOptionValue(TYPE_OPTION),
+                cli.hasOption(FORMAT_OPTION)
+                    ? FORMAT_SOLR
+                    : "", // i.e not solr formatted json commands
+                cli.getOptionValue(PARAMS_OPTION, "")),
+            new CrawlOptions(
+                cli.getOptionValue(FILE_TYPES_OPTION, PostTool.DEFAULT_FILE_TYPES),
+                cli.getParsedOptionValue(DELAY_OPTION, defaultDelay),
+                cli.getParsedOptionValue(RECURSIVE_OPTION, 1)),
+            new UpdateOptions(!cli.hasOption(SKIP_COMMIT_OPTION), cli.hasOption(OPTIMIZE_OPTION)));
+    postDocuments(postParams);
+  }
 
-    if (cli.hasOption(TYPE_OPTION)) {
-      type = cli.getOptionValue(TYPE_OPTION);
+  /** Seeds the tool state from the given parameters and runs the post job. */
+  void postDocuments(PostToolParams postParams) throws Exception {
+    solrUpdateUrl = postParams.solrUpdateUrl();
+    dryRun = postParams.dryRun();
+
+    if (postParams.content().type() != null) {
+      type = postParams.content().type();
       // Turn off automatically looking up the mimetype in favour of what is passed in.
       auto = false;
     }
-    format =
-        cli.hasOption(FORMAT_OPTION) ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
-    fileTypes = cli.getOptionValue(FILE_TYPES_OPTION, PostTool.DEFAULT_FILE_TYPES);
-
-    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = cli.getParsedOptionValue(DELAY_OPTION, defaultDelay);
-    recursive = cli.getParsedOptionValue(RECURSIVE_OPTION, 1);
+    format = postParams.content().format();
+    params = postParams.content().params();
+    fileTypes = postParams.crawl().fileTypes();
+    delay = postParams.crawl().delay();
+    recursive = postParams.crawl().recursive();
 
     out = isVerbose() ? CLIO.getOutStream() : null;
-    commit = !cli.hasOption(SKIP_COMMIT_OPTION);
-    optimize = cli.hasOption(OPTIMIZE_OPTION);
+    commit = postParams.update().commit();
+    optimize = postParams.update().optimize();
 
-    credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    args = cli.getArgs();
+    credentials = postParams.credentials();
+    args = postParams.args();
 
-    params = cli.getOptionValue(PARAMS_OPTION, "");
-
-    execute(mode);
+    execute(postParams.mode());
   }
 
   /**

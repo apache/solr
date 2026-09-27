@@ -16,6 +16,7 @@
  */
 package org.apache.solr.crossdc.common;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -202,7 +203,7 @@ public class MirroredSolrRequestSerializer
 
     try (JavaBinCodec codec = new JavaBinCodec(null)) {
 
-      ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+      ExposedByteArrayOutputStream baos = newExposedByteArrayOutputStream();
       Map<String, Object> map = CollectionUtil.newHashMap(8);
       map.put("attempt", request.getAttempt());
       map.put("submitTimeNanos", request.getSubmitTimeNanos());
@@ -219,7 +220,9 @@ public class MirroredSolrRequestSerializer
           map.put("deletes", deletes.keySet());
           map.put("deletesParams", deletes.values());
         }
-        map.put("deleteQuery", update.getDeleteQuery());
+        if (update.getDeleteQuery() != null && !update.getDeleteQuery().isEmpty()) {
+          map.put("deleteQuery", update.getDeleteQuery());
+        }
       } else if (solrRequest instanceof MirroredSolrRequest.MirroredConfigSetRequest config) {
         map.put("method", config.getMethod().toString());
         if (config.getRawContentStreams() != null) {
@@ -248,6 +251,11 @@ public class MirroredSolrRequestSerializer
     }
   }
 
+  @VisibleForTesting
+  ExposedByteArrayOutputStream newExposedByteArrayOutputStream() {
+    return new ExposedByteArrayOutputStream();
+  }
+
   /**
    * Close this serializer.
    *
@@ -258,12 +266,25 @@ public class MirroredSolrRequestSerializer
     Serializer.super.close();
   }
 
-  private static final class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
+  @VisibleForTesting
+  static final class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
     ExposedByteArrayOutputStream() {
       super();
     }
 
     byte[] byteArray() {
+      // padding exceeds 1/10th of the buffer size
+      // it's worth it to do an extra array copy to avoid sending
+      // the padding bytes over the wire
+      if (buf.length - count > buf.length / 10) {
+        return toByteArray();
+      } else {
+        return buf;
+      }
+    }
+
+    @VisibleForTesting
+    byte[] getBuffer() {
       return buf;
     }
   }

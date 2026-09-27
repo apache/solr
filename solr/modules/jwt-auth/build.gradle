@@ -47,8 +47,9 @@ dependencies {
   testImplementation(libs.navsecurity.mockoauth2server, {
     exclude group: "io.netty", module: "netty-all"
   })
-  // required by mock-oauth2-server
-  testImplementation libs.fasterxml.jackson.core.databind
+  // required by mock-oauth2-server, which uses Jackson 3 (tools.jackson) internally
+  testImplementation platform(libs.toolsjackson.jackson.bom)
+  testImplementation libs.toolsjackson.jackson.core.databind
 
   testImplementation libs.bouncycastle.bcpkix
   testImplementation libs.bouncycastle.bcprov

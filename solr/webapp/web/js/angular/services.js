@@ -154,12 +154,18 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SchemaDesignerApi();
     })
+.factory('SchemaV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaApi();
+    })
 .factory('Collections',
   ['$resource', function ($resource) {
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
     // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
     // generated solrApi client class exists for it (old-style @EndPoint API, predates the
-    // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
+    // OpenAPI-based v2 framework), so this stays a plain $resource, like ParamSet.
     return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
       "status": {}
     });
@@ -192,11 +198,10 @@ solrAdminServices.factory('Metrics',
   }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
+    // Tree browsing (formerly "simple"/"detail") moved to ZookeeperReadV2; this factory now only
+    // covers the graph view's cluster state read, which has no v2 equivalent.
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
-      "simple": {},
-      "liveNodes": {params: {path: '/live_nodes'}},
-      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
-      "detail": {params: {detail: "true", path: "@path"}}
+      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}}
     });
   }])
 .factory('ZookeeperStatus',
@@ -205,18 +210,38 @@ solrAdminServices.factory('Metrics',
       "monitor": {}
     });
   }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
+.factory('ZookeeperReadV2',
+  ['$http', function($http) {
+    // Hand-rolled rather than the generated solrApi.ZookeeperReadApi client: the generated
+    // ApiClient.buildUrl() runs encodeURIComponent() on the whole zkPath value, turning its '/'
+    // separators into %2F, which Jetty's URI-ambiguity checks reject for any path beyond a
+    // single segment (even the root path "/" itself). SolrJ's generated Java client avoids this
+    // by not encoding path params at all; we do the same here by building the URL ourselves.
+    return {
+      listNodes: function(zkPath, opts) {
+        opts = opts || {};
+        var params = {};
+        if (opts.children !== undefined) {
+          params.children = opts.children;
+        }
+        return $http.get('/api/cluster/zookeeper/children' + zkPath, {params: params});
+      },
+      readNode: function(zkPath) {
+        // Content is raw znode bytes, not JSON -- skip Angular's default JSON-parsing attempt
+        // (the server's Content-Type is negotiated and may say application/json even when the
+        // body itself is plain text or XML).
+        return $http.get('/api/cluster/zookeeper/data' + zkPath, {
+          transformResponse: [function(data) { return data; }]
+        });
+      }
+    };
   }])
-.factory('Threads',
-  ['$resource', function($resource) {
-    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
-    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
-    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
-    // $resource, like Security and (partially) SchemaDesigner.
-    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
-  }])
+.factory('NodeV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.NodeApi();
+    })
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
@@ -243,7 +268,7 @@ solrAdminServices.factory('Metrics',
     // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
     // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
     // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
-    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Threads.
+    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Collections.
     // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
     // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
     // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
@@ -354,14 +379,6 @@ solrAdminServices.factory('Metrics',
        }
        return resource;
 }])
-.factory('Schema',
-   ['$resource', function($resource) {
-     return $resource(':core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"},
-       check: {method: "GET", headers: {doNotIntercept: "true"}},
-       post: {method: "POST"}
-     });
-}])
 .factory('Config',
    ['$resource', function($resource) {
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
@@ -376,7 +393,7 @@ solrAdminServices.factory('Metrics',
      // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
      // rather than a formal parameter) and query() takes no query params at all (the server
      // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
-     // Threads/Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
+     // Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
      return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},

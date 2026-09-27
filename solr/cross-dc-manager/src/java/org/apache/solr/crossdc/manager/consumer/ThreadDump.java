@@ -117,7 +117,7 @@ public class ThreadDump {
       for (int i = 0; i < elements.length; i++) {
         final StackTraceElement element = elements[i];
         writer.printf(Locale.ROOT, "    at %s%n", element);
-        for (int j = 1; j < monitors.length; j++) {
+        for (int j = 0; j < monitors.length; j++) {
           final MonitorInfo monitor = monitors[j];
           if (monitor.getLockedStackDepth() == i) {
             writer.printf(Locale.ROOT, "      - locked %s%n", monitor);

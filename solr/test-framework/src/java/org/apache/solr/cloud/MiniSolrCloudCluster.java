@@ -53,8 +53,10 @@ import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -738,12 +740,46 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   /** Return the jetty that a particular replica resides on */
   public JettySolrRunner getReplicaJetty(Replica replica) {
-    for (JettySolrRunner jetty : jettys) {
+    return findReplicaJetty(jettys, replica);
+  }
+
+  /** Returns the runner among {@code runners} that hosts {@code replica}. */
+  static JettySolrRunner findReplicaJetty(Collection<JettySolrRunner> runners, Replica replica) {
+    for (JettySolrRunner jetty : runners) {
       if (jetty.isStopped()) continue;
       if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString())) return jetty;
+      // a proxied jetty registers its replicas under the proxy's port
+      if (replica.getCoreUrl().startsWith(jetty.getProxyBaseUrl().toString())) return jetty;
     }
     throw new IllegalArgumentException(
         "Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
+  }
+
+  /** Return the jetty for a node, identified by either its node name or its base URL. */
+  public JettySolrRunner getJetty(String nodeNameOrUrl) {
+    return findJetty(jettys, nodeNameOrUrl);
+  }
+
+  /** Returns the runner among {@code runners} identified by node name or base URL. */
+  static JettySolrRunner findJetty(Collection<JettySolrRunner> runners, String nodeNameOrUrl) {
+    for (JettySolrRunner jetty : runners) {
+      if (jetty.isStopped()) continue;
+      if (nodeNameOrUrl.equals(jetty.getNodeName())
+          || nodeNameOrUrl.equals(jetty.getBaseUrl().toString())) {
+        return jetty;
+      }
+    }
+    throw new IllegalArgumentException("Cannot find Jetty for node " + nodeNameOrUrl);
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close the returned client -- it delegates to the jetty's own shared
+   * client, which the jetty itself owns.
+   */
+  public SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        getReplicaJetty(replica).getSolrClient(), replica.getCoreName());
   }
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
@@ -859,16 +895,23 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
   }
 
+  /**
+   * Matches when the collection has exactly {@code expectedShards} {@link
+   * org.apache.solr.common.cloud.Slice.State#ACTIVE} slices, and exactly {@code expectedReplicas}
+   * active replicas across them. Slices in any other state (e.g. a split parent, or a slice under
+   * construction during a restore) and their replicas are not counted.
+   */
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(
       int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
-      if (collectionState.getSlices().size() != expectedShards) {
+      Collection<Slice> activeSlices = collectionState.getActiveSlices();
+      if (activeSlices.size() != expectedShards) {
         return false;
       }
 
       int activeReplicas = 0;
-      for (Slice slice : collectionState) {
+      for (Slice slice : activeSlices) {
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes)) {
             activeReplicas++;
@@ -879,11 +922,24 @@ public class MiniSolrCloudCluster implements SolrBackend {
     };
   }
 
+  /**
+   * Matches when every slice is either {@link org.apache.solr.common.cloud.Slice.State#ACTIVE} or
+   * {@link org.apache.solr.common.cloud.Slice.State#INACTIVE} (none are mid-split or mid-restore),
+   * and every replica of the active slices is active.
+   */
   public static CollectionStatePredicate expectedActive() {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
 
       for (Slice slice : collectionState) {
+        switch (slice.getState()) {
+          case INACTIVE:
+            continue;
+          case ACTIVE:
+            break;
+          default:
+            return false;
+        }
         for (Replica replica : slice) {
           if (!replica.isActive(liveNodes)) {
             return false;

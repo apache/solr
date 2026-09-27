@@ -560,9 +560,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
           CoreStatusResponse.SingleCoreData coreStatus;
-          try (SolrClient server = getHttpSolrClient(replica.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
-          }
+          SolrClient server = cluster.getSolrClient(replica);
+          coreStatus = CoreAdminRequest.getCoreStatus(replica.getCoreName(), false, server);
           long before = coreStatus.startTime.getTime();
           urlToTime.put(replica.getCoreUrl(), before);
         }
@@ -640,12 +639,10 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     assertNotNull(newReplica);
     cluster.waitForActiveCollection(collectionName, 2, 6);
 
-    try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
-      final var coreStatus = status.getCoreStatus(newReplica.getStr("core"));
-      String instanceDirStr = coreStatus.instanceDir;
-      assertEquals(instanceDirStr, instancePath.toString());
-    }
+    SolrClient coreclient = cluster.getSolrClient(newReplica);
+    CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
+    final var coreStatus = status.getCoreStatus(newReplica.getStr("core"));
+    assertEquals(coreStatus.instanceDir, instancePath.toString());
 
     // Test to make sure we can't create another replica with an existing core_name of that
     // collection

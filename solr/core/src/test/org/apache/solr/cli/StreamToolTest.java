@@ -78,7 +78,8 @@ public class StreamToolTest extends SolrCloudTestCase {
     ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     StreamTool streamTool = new StreamTool(runtime);
     CommandLine cli = SolrCLI.processCommandLineArgs(streamTool, args);
-    String[] outputFields = StreamTool.getOutputFields(cli);
+    String[] outputFields =
+        StreamTool.getOutputFields(cli.getOptionValue(StreamTool.FIELDS_OPTION));
     assert outputFields != null;
     assertEquals(outputFields.length, 4);
     assertEquals(outputFields[0], "field9");
