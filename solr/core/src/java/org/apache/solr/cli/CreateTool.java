@@ -119,18 +119,20 @@ public class CreateTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       if (CLIUtils.isCloudMode(solrClient)) {
-        createCollection(cli, solrClient);
+        createCollection(cli, solrClient, solrUrl);
       } else {
-        createCore(cli, solrClient);
+        createCore(cli, solrClient, solrUrl);
       }
     }
   }
 
-  protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
+  protected void createCore(CommandLine cli, SolrClient solrClient, String solrUrl)
+      throws Exception {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
 
     final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
     final String confDirName =
@@ -189,7 +191,8 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  protected void createCollection(CommandLine cli, SolrClient solrClient) throws Exception {
+  protected void createCollection(CommandLine cli, SolrClient solrClient, String solrUrl)
+      throws Exception {
 
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     final String solrInstallDir = EnvUtils.getProperty("solr.install.dir");
@@ -199,8 +202,6 @@ public class CreateTool extends ToolBase {
     Path confDirPath = Path.of(confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
     printDefaultConfigsetWarningIfNecessary(cli);
-
-    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
 
     // build a URL to create the collection
     int numShards = cli.getParsedOptionValue(SHARDS_OPTION, 1);
@@ -213,7 +214,7 @@ public class CreateTool extends ToolBase {
 
     if (configExists) {
       echo("Re-using existing configuration directory " + confName);
-    } else { // if (confdir != null && !confdir.trim().isEmpty()) {
+    } else {
       if (confName == null || confName.trim().isEmpty()) {
         confName = collectionName;
       }
@@ -275,9 +276,8 @@ public class CreateTool extends ToolBase {
   /**
    * Zips the contents of a configset directory for upload.
    *
-   * <p>Delegates to {@link ConfigSetService#zipDirectory}, which is shared with {@link
-   * org.apache.solr.handler.configsets.DownloadConfigSet#zipConfigSet} and {@link
-   * org.apache.solr.handler.designer.SchemaDesignerConfigSetHelper#downloadAndZipConfigSet}.
+   * <p>Delegates to {@link ConfigSetService#zipDirectory}, which is also used to zip a configset
+   * for download.
    */
   static byte[] zipConfigSet(Path confPath) throws IOException {
     return ConfigSetService.zipDirectory(confPath, true);
