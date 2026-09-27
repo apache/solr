@@ -18,7 +18,6 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -114,7 +113,8 @@ public class CreateToolTest extends SolrCloudTestCase {
     Path confDir = createTempDir("zipConfigSetForbiddenTest");
     Files.writeString(confDir.resolve("evil.jar"), "not really a jar");
 
-    IOException thrown = expectThrows(IOException.class, () -> CreateTool.zipConfigSet(confDir));
+    IllegalArgumentException thrown =
+        expectThrows(IllegalArgumentException.class, () -> CreateTool.zipConfigSet(confDir));
     assertTrue(thrown.getMessage().contains("forbidden"));
   }
 }

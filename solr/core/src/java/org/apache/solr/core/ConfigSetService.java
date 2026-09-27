@@ -89,7 +89,7 @@ public abstract class ConfigSetService {
    *
    * @param rootPath the directory to zip
    * @param validateFileTypes if true, a file with a forbidden extension (see {@link
-   *     #isFileForbiddenInConfigSets}) causes an {@link IOException} instead of being silently
+   *     #isFileForbiddenInConfigSets}) causes an {@link IllegalArgumentException} instead of being
    *     included
    * @return the zipped bytes
    */
@@ -124,7 +124,7 @@ public abstract class ConfigSetService {
               }
               String filename = file.getFileName().toString();
               if (validateFileTypes && isFileForbiddenInConfigSets(filename)) {
-                throw new IOException(
+                throw new IllegalArgumentException(
                     "The file type provided for upload, '"
                         + filename
                         + "', is forbidden for use in uploading configsets.");
