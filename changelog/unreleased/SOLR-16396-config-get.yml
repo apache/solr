@@ -1,6 +1,6 @@
 title:
   Migration of Get Config V2 API to JAX-RS construct
-type:
+type: changed
 authors:
   - name: Jalaz Kumar
 links:

@@ -19,8 +19,11 @@ package org.apache.solr.client.api.endpoint;
 import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
@@ -34,6 +37,10 @@ public interface ConfigApi {
     @Operation(
         summary = "Fetch the entire config of the specified core or collection",
         tags = {"config"})
-    ConfigInfoResponse getConfig();
+    ConfigInfoResponse getConfig(
+        @QueryParam("expandParams")
+            @DefaultValue("false")
+            @Parameter(description = "Expand request handler useParams and effective parameters")
+            boolean expandParams);
   }
 }
