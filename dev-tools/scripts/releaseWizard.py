@@ -1873,7 +1873,8 @@ class Command(SecretYamlObject):
         return self.jinjaify(self.redirect)
 
     def get_cmd(self):
-        return self.jinjaify(self.cmd, join=True)
+        # Run python scripts with this interpreter (e.g. a venv), not whatever python3 is on PATH
+        return re.sub(r'^python3(?=\s)', lambda _: shlex.quote(sys.executable), self.jinjaify(self.cmd, join=True))
 
     def get_vars(self):
         myvars = {}
