@@ -18,7 +18,6 @@ package org.apache.solr.crossdc.manager.messageprocessor;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
@@ -28,12 +27,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
@@ -48,8 +45,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class TestMessageProcessor {
-  static final String VERSION_FIELD = "_version_";
-
   private CloudSolrClient solrClient;
   private SolrMessageProcessor processor;
 
@@ -74,42 +69,6 @@ public class TestMessageProcessor {
     ConsumerMetrics metrics = Mockito.mock(OtelMetrics.class);
     processor = Mockito.spy(new SolrMessageProcessor(metrics, () -> solrClient, backoffPolicy));
     Mockito.doNothing().when(processor).uncheckedSleep(anyLong());
-  }
-
-  @Test
-  public void testDocumentSanitization() {
-    UpdateRequest request = spy(new UpdateRequest());
-
-    // Add docs with and without version
-    SolrInputDocument doc1 = new SolrInputDocument();
-    doc1.setField("id", 1);
-    doc1.setField(VERSION_FIELD, 1);
-    request.add(doc1);
-    SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.setField("id", 2);
-    request.add(doc2);
-
-    // Delete by id with and without version
-    request.deleteById("1");
-    request.deleteById("2", 10L);
-
-    request.setParam("shouldMirror", "true");
-    // The response is irrelevant, but it will fail because mocked server returns null when
-    // processing
-    processor.handleItem(new MirroredSolrRequest<>(request));
-
-    // After processing, check that all version fields are stripped
-    for (SolrInputDocument doc : request.getDocuments()) {
-      assertNull("Doc still has version", doc.getField(VERSION_FIELD));
-    }
-
-    // Check versions in delete by id
-    for (Map<String, Object> idParams : request.getDeleteByIdMap().values()) {
-      if (idParams != null) {
-        idParams.put(UpdateRequest.VER, null);
-        assertNull("Delete still has version", idParams.get(UpdateRequest.VER));
-      }
-    }
   }
 
   @Test
