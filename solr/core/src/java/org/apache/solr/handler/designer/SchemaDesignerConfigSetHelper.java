@@ -32,8 +32,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,8 +45,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -73,7 +69,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -1067,17 +1062,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   List<String> listConfigsInZk() throws IOException {
     return cc.getConfigSetService().listConfigs();
-  }
-
-  byte[] downloadAndZipConfigSet(String configId) throws IOException {
-    Path tmpDirectory =
-        Files.createTempDirectory("schema-designer-" + FilenameUtils.getName(configId));
-    try {
-      cc.getConfigSetService().downloadConfig(configId, tmpDirectory);
-      return ConfigSetService.zipDirectory(tmpDirectory, false);
-    } finally {
-      PathUtils.deleteDirectory(tmpDirectory);
-    }
   }
 
   protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
