@@ -53,7 +53,7 @@ It is designed to be cheap enough to poll frequently from a load balancer or an 
 ====
 None of these checks touch the index.
 A node with a collection that has zero documents, or a collection whose query results are wrong, will still report a healthy `200 OK` here.
-If you need to confirm a collection actually has data, see <<Collection Data Healthcheck>> below.
+If you need to confirm a collection actually has data, see <<Collection Healthcheck>> below.
 ====
 
 What the endpoint checks -- and how it fails -- depends on whether the node is running in SolrCloud mode or user-managed (leader-follower) mode.
