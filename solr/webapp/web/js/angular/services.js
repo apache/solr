@@ -160,6 +160,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SchemaApi();
     })
+.factory('ConfigV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigApi();
+    })
 .factory('Collections',
   ['$resource', function ($resource) {
     // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
@@ -386,12 +392,6 @@ solrAdminServices.factory('Metrics',
            return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
-}])
-.factory('Config',
-   ['$resource', function($resource) {
-     return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"}
-     })
 }])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {
