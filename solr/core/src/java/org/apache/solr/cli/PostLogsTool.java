@@ -119,6 +119,8 @@ public class PostLogsTool extends ToolBase {
     var builder =
         new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
             .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(baseUrl))
+            .withIdleTimeout(CLIUtils.CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withConnectionTimeout(CLIUtils.CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
     try (SolrClient client = builder.build()) {

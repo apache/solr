@@ -63,6 +63,16 @@ public final class CLIUtils {
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
+  /**
+   * Connect and idle timeouts used for CLI-initiated Solr connections. These are much shorter than
+   * {@link org.apache.solr.client.solrj.impl.SolrHttpConstants}' defaults, which are sized for
+   * long-running requests like bulk indexing or replica recovery; a CLI command run by a human at a
+   * terminal should fail fast instead of hanging for minutes against an unresponsive node.
+   */
+  public static final int CLI_CONNECTION_TIMEOUT_SECONDS = 15;
+
+  public static final int CLI_IDLE_TIMEOUT_SECONDS = 30;
+
   private static CloudSolrClient.CloudSolrClientConnection resolveSolrConnectionFromCli(
       CommandLine cli) throws IOException {
     String solrConnection =
@@ -146,6 +156,8 @@ public final class CLIUtils {
     var builder =
         new HttpJettySolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
+            .withIdleTimeout(CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withConnectionTimeout(CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
 
@@ -254,7 +266,11 @@ public final class CLIUtils {
     if (!solrConnection.isZookeeper()) {
       return normalizeSolrUrl(solrConnection.quorumItems().get(0), false);
     }
-    var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+    var builder =
+        new HttpJettySolrClient.Builder()
+            .withIdleTimeout(CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withConnectionTimeout(CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(credentials);
     try (CloudSolrClient cloudSolrClient = getCloudSolrClient(solrConnection, builder)) {
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())

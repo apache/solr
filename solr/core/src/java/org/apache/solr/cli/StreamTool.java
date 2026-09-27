@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -303,7 +304,10 @@ public class StreamTool extends ToolBase {
   private StreamContext createStreamContext(
       CloudSolrClient.CloudSolrClientConnection solrConnection, String credentials) {
     var jettyClientBuilder = new HttpJettySolrClient.Builder();
-    jettyClientBuilder.withOptionalBasicAuthCredentials(credentials);
+    jettyClientBuilder
+        .withIdleTimeout(CLIUtils.CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .withConnectionTimeout(CLIUtils.CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .withOptionalBasicAuthCredentials(credentials);
     HttpJettySolrClient client = jettyClientBuilder.build();
 
     // subclass so we can ensure our client is closed when the cache is closed
