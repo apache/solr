@@ -102,9 +102,9 @@ import org.slf4j.LoggerFactory;
  *   <li><code>http://.../ping?action=enable</code> - creates the health check file if it does not
  *       already exist
  *   <li><code>http://.../ping?action=disable</code> - deletes the health check file if it exists
- *   <li><code>http://.../ping?action=status</code> - returns the healthcheck state as
- *       <code>enabled</code> (configured file exists), <code>disabled</code> (configured file does
- *       not exist), or <code>not_configured</code> (no healthcheck file is configured)
+ *   <li><code>http://.../ping?action=status</code> - returns the healthcheck state as <code>enabled
+ *       </code> (configured file exists), <code>disabled</code> (configured file does not exist),
+ *       or <code>not_configured</code> (no healthcheck file is configured)
  * </ul>
  *
  * @since solr 1.3
