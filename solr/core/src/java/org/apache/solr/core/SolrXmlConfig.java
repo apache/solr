@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -126,12 +127,11 @@ public class SolrXmlConfig {
 
     // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
-    Map<String, String> coreAdminHandlerActions =
-        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
-            .asShallowMap()
-            .entrySet()
-            .stream()
-            .collect(Collectors.toMap(Entry::getKey, item -> item.getValue().toString()));
+    Map<String, String> coreAdminHandlerActions = new LinkedHashMap<>();
+    for (Entry<String, Object> entry :
+        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")) {
+      coreAdminHandlerActions.put(entry.getKey(), entry.getValue().toString());
+    }
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
@@ -376,6 +376,9 @@ public class SolrXmlConfig {
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
                 break;
+              case "allowZkHosts":
+                builder.setAllowZkHosts(separateZkHosts(it.txt()));
+                break;
               default:
                 throw new SolrException(
                     SolrException.ErrorCode.SERVER_ERROR,
@@ -396,6 +399,20 @@ public class SolrXmlConfig {
       return List.of();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
+  }
+
+  /**
+   * Like {@link #separateStrings(String)} but drops blank entries so a stray comma or unset {@code
+   * ${prop:}} placeholder does not produce an empty allow-list entry. {@code allowUrls}/{@code
+   * allowPaths} keep their pre-existing behavior.
+   */
+  private static List<String> separateZkHosts(String commaSeparatedString) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
+      return List.of();
+    }
+    return Arrays.stream(COMMA_SEPARATED_PATTERN.split(commaSeparatedString))
+        .filter(s -> !s.isBlank())
+        .toList();
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {

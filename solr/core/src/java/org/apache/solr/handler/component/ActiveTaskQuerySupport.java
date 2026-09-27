@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.QT;
+import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 import java.util.ArrayList;
@@ -29,39 +30,51 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.CancelTask;
 import org.apache.solr.handler.admin.api.ListActiveTasks;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 public class ActiveTaskQuerySupport {
   private static final String ACTIVE_TASK_LIST_HANDLER_PATH = "/tasks/list";
+  private static final String CANCEL_TASK_HANDLER_PATH = "/tasks/cancel";
 
   private ActiveTaskQuerySupport() {}
 
   public static List<ActiveTaskDetails> listActiveTasks(SolrQueryRequest req) throws Exception {
-    return execute(req, null).taskList;
+    return execute(req, null, false).taskList;
   }
 
   public static boolean isTaskActive(SolrQueryRequest req, String taskId) throws Exception {
-    return execute(req, taskId).taskActive;
+    return execute(req, taskId, false).taskActive;
   }
 
-  private static TaskQueryResult execute(SolrQueryRequest req, String taskId) throws Exception {
+  public static boolean cancelTask(SolrQueryRequest req, String taskId) throws Exception {
+    return execute(req, taskId, true).taskCancelled;
+  }
+
+  private static TaskQueryResult execute(
+      SolrQueryRequest req, String taskId, boolean isCancellationRequest) throws Exception {
     if (!shouldDistributed(req)) {
-      return localResult(req, taskId);
+      return localResult(req, taskId, isCancellationRequest);
     }
-    return distributedResult(req, taskId);
+    return distributedResult(req, taskId, isCancellationRequest);
   }
 
-  private static TaskQueryResult localResult(SolrQueryRequest req, String taskId) {
+  private static TaskQueryResult localResult(
+      SolrQueryRequest req, String taskId, boolean isCancellationRequest) {
     if (taskId != null) {
-      return new TaskQueryResult(List.of(), ListActiveTasks.isTaskActiveOnThisShard(req, taskId));
+      return (isCancellationRequest)
+          ? new TaskQueryResult(
+              List.of(), false, CancelTask.cancelTaskActiveOnThisShard(req, taskId))
+          : new TaskQueryResult(
+              List.of(), ListActiveTasks.isTaskActiveOnThisShard(req, taskId), false);
     }
-    return new TaskQueryResult(ListActiveTasks.getActiveTasksOnThisShard(req), false);
+    return new TaskQueryResult(ListActiveTasks.getActiveTasksOnThisShard(req), false, false);
   }
 
-  private static TaskQueryResult distributedResult(SolrQueryRequest req, String taskId)
-      throws Exception {
+  private static TaskQueryResult distributedResult(
+      SolrQueryRequest req, String taskId, boolean isCancellationRequest) {
     final ShardHandler shardHandler =
         req.getCoreContainer().getShardHandlerFactory().getShardHandler();
     final ResponseBuilder responseBuilder =
@@ -71,7 +84,7 @@ public class ActiveTaskQuerySupport {
     if (!responseBuilder.isDistrib
         || responseBuilder.shards == null
         || responseBuilder.shards.length == 0) {
-      return localResult(req, taskId);
+      return localResult(req, taskId, isCancellationRequest);
     }
 
     final ShardRequest shardRequest = new ShardRequest();
@@ -81,9 +94,17 @@ public class ActiveTaskQuerySupport {
 
     for (String shard : shardRequest.actualShards) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(QT, ACTIVE_TASK_LIST_HANDLER_PATH);
+      if (isCancellationRequest) {
+        params.set(QT, CANCEL_TASK_HANDLER_PATH);
+      } else {
+        params.set(QT, ACTIVE_TASK_LIST_HANDLER_PATH);
+      }
       if (taskId != null) {
-        params.set(TASK_CHECK_UUID, taskId);
+        if (isCancellationRequest) {
+          params.set(QUERY_UUID, taskId);
+        } else {
+          params.set(TASK_CHECK_UUID, taskId);
+        }
       }
       ShardHandler.setShardAttributesToParams(params, shardRequest.purpose);
       shardHandler.submit(shardRequest, shard, params);
@@ -101,9 +122,11 @@ public class ActiveTaskQuerySupport {
     }
 
     if (taskId != null) {
-      return new TaskQueryResult(List.of(), mergeTaskStatus(shardRequest.responses));
+      return (isCancellationRequest)
+          ? new TaskQueryResult(List.of(), false, mergeCancellationStatus(shardRequest.responses))
+          : new TaskQueryResult(List.of(), mergeTaskStatus(shardRequest.responses), false);
     }
-    return new TaskQueryResult(mergeTaskList(shardRequest.responses), false);
+    return new TaskQueryResult(mergeTaskList(shardRequest.responses), false, false);
   }
 
   private static boolean shouldDistributed(SolrQueryRequest req) {
@@ -122,6 +145,25 @@ public class ActiveTaskQuerySupport {
       }
 
       if (taskStatus instanceof String && ((String) taskStatus).contains("active")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // FRAGILE: matches TaskCancellationHandler's human-readable "status" message by substring, for
+  // both V1 and V2 (CancelTask calls this same method). Kept as-is since changing the V1 wire
+  // format is out of scope; see the matching FRAGILE note in
+  // TaskCancellationHandler.handleRequestBody().
+  private static boolean mergeCancellationStatus(List<ShardResponse> responses) {
+    for (ShardResponse shardResponse : responses) {
+      Object cancellationStatus = shardResponse.getSolrResponse().getResponse().get("status");
+      if (cancellationStatus instanceof Boolean && (Boolean) cancellationStatus) {
+        return true;
+      }
+
+      if (cancellationStatus instanceof String
+          && ((String) cancellationStatus).contains("cancelled successfully")) {
         return true;
       }
     }
@@ -156,10 +198,13 @@ public class ActiveTaskQuerySupport {
   private static final class TaskQueryResult {
     private final List<ActiveTaskDetails> taskList;
     private final boolean taskActive;
+    private final boolean taskCancelled;
 
-    private TaskQueryResult(List<ActiveTaskDetails> taskList, boolean taskActive) {
+    private TaskQueryResult(
+        List<ActiveTaskDetails> taskList, boolean taskActive, boolean taskCancelled) {
       this.taskList = taskList;
       this.taskActive = taskActive;
+      this.taskCancelled = taskCancelled;
     }
   }
 }

@@ -190,7 +190,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
               .setLocation(backupLocation)
-              .setIncremental(false)
               .setRepositoryName(getBackupRepoName());
       assertEquals(0, backup.process(solrClient).getStatus());
     }
@@ -239,7 +238,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     // Do not specify the backup location.
     CollectionAdminRequest.Backup backup =
         CollectionAdminRequest.backupCollection(collectionName, backupName)
-            .setIncremental(false)
             .setRepositoryName(getBackupRepoName());
     try {
       backup.process(solrClient);
@@ -313,7 +311,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(collectionName, backupName)
-              .setIncremental(false)
               .setLocation(backupLocation)
               .setRepositoryName(getBackupRepoName());
       if (random().nextBoolean()) {

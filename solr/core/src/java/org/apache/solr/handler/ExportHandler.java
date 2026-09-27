@@ -99,10 +99,10 @@ public class ExportHandler extends SearchHandler {
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
-    this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
 
     if (coreContainer.isZooKeeperAware()) {
+      this.solrClientCache = coreContainer.getZkController().getSolrClientCache();
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);

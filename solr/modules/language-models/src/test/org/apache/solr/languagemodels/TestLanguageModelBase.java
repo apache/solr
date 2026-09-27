@@ -150,7 +150,7 @@ public class TestLanguageModelBase extends RestTestBase {
     assertJPut(LargeLanguageModelStore.REST_END_POINT, model, "/responseHeader/status==0");
   }
 
-  protected static void prepareIndex() throws Exception {
+  protected static void prepareIndex() {
     List<SolrInputDocument> docsToIndex = prepareDocs();
     for (SolrInputDocument doc : docsToIndex) {
       assertU(adoc(doc));

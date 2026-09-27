@@ -67,7 +67,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
-  public static final S3MockContainerRule S3_MOCK_RULE = new S3MockContainerRule(BUCKET_NAME);
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -82,7 +82,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)
                 .replace("REGION", Region.US_EAST_1.id())
-                .replace("ENDPOINT", S3_MOCK_RULE.getHttpEndpoint()))
+                .replace("ENDPOINT", s3MockContainer.getHttpEndpoint()))
         .configure();
 
     bootstrapBackupRepositoryData("/");

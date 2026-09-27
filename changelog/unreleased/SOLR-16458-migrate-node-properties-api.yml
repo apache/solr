@@ -1,0 +1,8 @@
+title: "A single node system property can be fetched at GET /api/node/properties/{propertyName} (v1 still uses ?name=). SolrJ now provides NodeApi.GetNodeProperties and NodeApi.GetNodeProperty."
+type: added
+authors:
+  - name: Prithvi S
+    nick: iprithv
+links:
+  - name: SOLR-16458
+    url: https://issues.apache.org/jira/browse/SOLR-16458

@@ -661,6 +661,32 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryGlobalOrdinalsJoin() throws Exception {
+    SolrQueryRequest req =
+        req(
+            "myVar",
+            "5",
+            "df",
+            "text",
+            "jf",
+            "foo_s_dvo",
+            "which",
+            "type_s:parent",
+            "scoreavg",
+            "avg");
+
+    try {
+      assertQueryEquals(
+          "globalOrdinalsJoin",
+          req,
+          "{!globalOrdinalsJoin joinField=foo_s_dvo which='type_s:parent' score=avg}asdf",
+          "{!globalOrdinalsJoin joinField=$jf which='type_s:parent' score=Avg}asdf",
+          "{!globalOrdinalsJoin joinField=$jf which=$which score=$scoreavg}text:asdf");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testTerms() throws Exception {
     assertQueryEquals(
         "terms", "{!terms f=foo_i}10,20,30,-10,-20,-30", "{!terms f=foo_i}10,20,30,-10,-20,-30");

@@ -883,6 +883,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     NamedList<Object> resp =
         httpClient.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req, null);
+    InputStreamResponseParser.checkHttpStatus(resp);
 
     var indexSizeRef = new AtomicReference<Double>(-1.0);
     var freeSizeRef = new AtomicReference<Double>(-1.0);

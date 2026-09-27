@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     // leader with Basic auth enabled via security.json
     leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance"), "leader", null);
     leader.setUp();

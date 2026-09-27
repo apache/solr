@@ -102,15 +102,6 @@ public class BackupManager {
         lastBackupId.map(BackupId::nextBackupId).orElse(BackupId.zero()));
   }
 
-  public static BackupManager forBackup(
-      BackupRepository repository, ZkStateReader stateReader, URI backupPath) {
-    Objects.requireNonNull(repository);
-    Objects.requireNonNull(stateReader);
-
-    return new BackupManager(
-        repository, backupPath, stateReader, null, BackupId.traditionalBackup());
-  }
-
   public static BackupManager forRestore(
       BackupRepository repository, ZkStateReader stateReader, URI backupPath, int bid)
       throws IOException {
@@ -226,9 +217,9 @@ public class BackupManager {
       // collection will have a new creation date when persisted in zookeeper.
       @SuppressWarnings("unchecked")
       Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(arr, 0, arr.length);
-      ClusterState c_state =
+      ClusterState clusterState =
           ClusterState.createFromCollectionMap(-1, stateMap, Set.of(), Instant.EPOCH, null);
-      return c_state.getCollection(collectionName);
+      return clusterState.getCollection(collectionName);
     }
   }
 

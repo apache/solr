@@ -18,21 +18,30 @@
 package org.apache.solr.core;
 
 import java.util.Arrays;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestCustomStream extends AbstractFullDistribZkTestBase {
+public class TestCustomStream extends SolrCloudTestCase {
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2).addConfig("conf1", configset("cloud-minimal")).configure();
+    CollectionAdminRequest.createCollection("collection1", "conf1", 1, 2)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("collection1", 1, 2);
+  }
 
   @Test
   public void testDynamicLoadingCustomStream() throws Exception {
-    setupRestTestHarnesses();
     String payload =
         "{\n"
             + "'create-expressible' : { 'name' : 'hello', 'class': 'org.apache.solr.core.HelloStream' }\n"
             + "}";
 
-    RestTestHarness client = randomRestTestHarness();
+    RestTestHarness client = cluster.getRandomJetty(random()).getRestClient("collection1");
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(
         client,

@@ -1,0 +1,10 @@
+title: >
+  Upgraded the bundled d3.js library (used for the Admin UI's Cloud graph,
+  Stream explain-tree, and Nodes disk-usage bar chart) from the decade-old
+  2.8.1 to 7.9.0.
+type: dependency_update
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-8885
+    url: https://issues.apache.org/jira/browse/SOLR-8885

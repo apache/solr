@@ -215,6 +215,7 @@ class CollectionTester {
     return match();
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   boolean match() {
     if (expected == val) {
       return true;

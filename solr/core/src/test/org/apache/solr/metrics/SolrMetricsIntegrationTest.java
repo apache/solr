@@ -17,7 +17,6 @@
 
 package org.apache.solr.metrics;
 
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +32,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestHarness;
 import org.eclipse.jetty.client.HttpClient;
@@ -83,7 +83,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   }
 
   private static GaugeDataPointSnapshot getGaugeOpt(
-      PrometheusMetricReader reader, String metricName, String type) {
+      FilterablePrometheusMetricReader reader, String metricName, String type) {
     return SolrMetricTestUtils.getGaugeDatapoint(
         reader,
         metricName,
@@ -123,31 +123,30 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
               reader, "solr_zk_ops", baseLabels.merge(Labels.of("ops", type))));
     }
 
-    try (SolrClient solrClient = j.newClient()) {
-      assertNotNull(solrClient);
-      HttpClient httpClient = j.getSolrClient().getHttpClient();
-      var initialChildFetches =
-          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_get_children_ops", baseLabels)
-              .getValue();
-      var initialExistsOp =
-          SolrMetricTestUtils.getCounterDatapoint(
-                  reader, "solr_zk_ops", baseLabels.merge(Labels.of("ops", "exists")))
-              .getValue();
+    SolrClient solrClient = j.getSolrClient();
+    assertNotNull(solrClient);
+    HttpClient httpClient = j.getSolrClient().getHttpClient();
+    var initialChildFetches =
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_get_children_ops", baseLabels)
+            .getValue();
+    var initialExistsOp =
+        SolrMetricTestUtils.getCounterDatapoint(
+                reader, "solr_zk_ops", baseLabels.merge(Labels.of("ops", "exists")))
+            .getValue();
 
-      // Send GET request to trigger some metrics
-      httpClient.GET(j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes");
+    // Send GET request to trigger some metrics
+    httpClient.GET(j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes");
 
-      var childFetches =
-          SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_get_children_ops", baseLabels)
-              .getValue();
-      var existsOp =
-          SolrMetricTestUtils.getCounterDatapoint(
-                  reader, "solr_zk_ops", builder.label("ops", "exists").build())
-              .getValue();
+    var childFetches =
+        SolrMetricTestUtils.getCounterDatapoint(reader, "solr_zk_get_children_ops", baseLabels)
+            .getValue();
+    var existsOp =
+        SolrMetricTestUtils.getCounterDatapoint(
+                reader, "solr_zk_ops", builder.label("ops", "exists").build())
+            .getValue();
 
-      assertTrue(childFetches - initialChildFetches >= 1.0);
-      assertTrue(existsOp - initialExistsOp >= 4.0);
-    }
+    assertTrue(childFetches - initialChildFetches >= 1.0);
+    assertTrue(existsOp - initialExistsOp >= 4.0);
 
     cluster.shutdown();
   }

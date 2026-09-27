@@ -88,7 +88,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -118,7 +117,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -474,6 +472,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     randomizeNumericTypesProperties();
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting a self-referencing exception cause loop, by identity
   public static Throwable getWrappedException(Throwable e) {
     while (e != null && e.getCause() != e && e.getCause() != null) {
       e = e.getCause();
@@ -2255,7 +2255,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // and copies the stock files in there.
 
   /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
-  @Deprecated // Instead use a basic config + whatever is needed or default config
+  /**
+   * @deprecated Use a basic config plus whatever is needed, or the default config, instead of
+   *     copying the full collection1 test config.
+   */
+  @Deprecated(since = "10.0") // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(Path dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2283,6 +2287,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument solrDocument1)
@@ -2333,6 +2338,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrDocumentList(Object expected, Object actual) {
     if (!(expected instanceof SolrDocumentList list1)
         || !(actual instanceof SolrDocumentList list2)) {
@@ -2364,6 +2370,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrInputDocument sdoc1)
@@ -2438,6 +2445,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
     if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
@@ -2522,38 +2530,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
-   * directly
-   *
-   * @param url the base URL for a Solr node. Should not contain a core or collection name.
-   */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(String url) {
-    return new HttpJettySolrClient.Builder(url).build();
-  }
-
-  /** Create a basic HttpSolrClient pointed at the specified replica */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(Replica replica) {
-    return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
-   * directly
-   *
-   * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
-   * @param defaultCoreName the name of a core that the created client should default to when making
-   *     core-aware requests
-   */
-  @Deprecated // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpJettySolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
-  }
-
-  /**
    * Returns a randomly generated Date in the appropriate Solr external (input) format
    *
    * @see #randomSkewedDate
@@ -2587,6 +2563,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // SolrIndexSearcher identity, not equality, is what matters here
   protected static void waitForWarming(SolrCore core) throws InterruptedException {
     RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
     RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
@@ -2685,14 +2663,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
-
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
-    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
-  }
-
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrEnableUrlAllowList() {}
 
   @SafeVarargs
   protected static <T> T pickRandom(T... options) {

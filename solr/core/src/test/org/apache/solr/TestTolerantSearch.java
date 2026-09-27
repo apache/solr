@@ -33,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
@@ -70,7 +71,7 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     solrTestRule.startSolr(createSolrHome());
 
     collection1 = solrTestRule.getSolrClient("collection1");
@@ -114,7 +115,6 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
   public static void destroyThings() throws Exception {
     collection1 = null;
     collection2 = null;
-    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @SuppressWarnings({"unchecked", "try"})

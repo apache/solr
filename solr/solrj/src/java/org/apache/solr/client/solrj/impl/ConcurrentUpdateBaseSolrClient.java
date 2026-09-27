@@ -141,6 +141,8 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
       return size() == 0;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // backdoorE is a unique sentinel; identity check is intentional
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
       E e = queue.poll(timeout, unit);
       if (e == null) {
@@ -340,8 +342,14 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
           } catch (OutOfMemoryError | InterruptedException e) {
             throw e;
-          } catch (Throwable e) {
+          } catch (RemoteSolrException e) {
             handleError(e, docIds, collection);
+          } catch (Throwable e) {
+            handleError(
+                new SolrServerException(
+                    "Error from server at " + basePath + ": " + e.getMessage(), e),
+                docIds,
+                collection);
           } finally {
             try {
               consumeFully(rspBody);

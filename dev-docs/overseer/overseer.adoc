@@ -662,12 +662,12 @@ This class is a collection of methods allowing whole cluster level Zookeeper ope
 === org.apache.solr.cloud.OverseerNodePrioritizer
 
 |===
-|Javadoc: _Responsible for prioritization of Overseer nodes, for example with the ADDROLE collection command_
+|Javadoc: _Responsible for prioritization of Overseer nodes: a node declared as `overseer:preferred` through node roles (`-Dsolr.node.roles`) is moved to the front of the Overseer election queue._
 |===
 
-This class was introduced in https://issues.apache.org/jira/browse/SOLR-5476[SOLR-5476]. It allows listing in Zookeeper’s `/roles.json` nodes that are preferred for becoming Overseer (for example nodes with more powerful hardware).
+This class was introduced in https://issues.apache.org/jira/browse/SOLR-5476[SOLR-5476]. It reads which nodes are preferred for becoming Overseer (for example nodes with more powerful hardware) from Node Roles, declared at startup with `-Dsolr.node.roles`; the legacy `roles.json`-based ADDROLE/REMOVEROLE API was removed in https://issues.apache.org/jira/browse/SOLR-18370[SOLR-18370].
 
-Method `prioritizeOverseerNodes()` can be called independently on any thread and works by its side effects. Apparently it is only called by the elected overseer as it starts (from `OverseerTaskProcessor.run()`). It checks if another node is better suited to become overseer. When `/roles.json` is not empty, a preferred (designate) node explicitly configured is strongly encouraged to take over the Overseer role if that’s not already the case. +
+Method `prioritizeOverseerNodes()` can be called independently on any thread and works by its side effects. Apparently it is only called by the elected overseer as it starts (from `OverseerTaskProcessor.run()`). It checks if another node is better suited to become overseer. When a preferred (designate) node is explicitly configured, it is strongly encouraged to take over the Overseer role if that’s not already the case. +
 This is done by sending the designate node a `CoreAdminOperation.OVERSEEROP_OP` with the actual operation `"op"` param equal to `"rejoinAtHead"`. The old first in line node (in the overseer election) is asked to rejoin (by passing `"rejoin"` in `"op"` but any string different than `rejoinAtHead` would do), then the actual leader (Overseer node) is asked to submit its resignation to new elections take place.
 
 Processing of `OVERSEEROP_OP` calls into `ZkController.rejoinOverseerElection()` that essentially delegates to `LeaderElector.retryElection()`.
