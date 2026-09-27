@@ -8,5 +8,3 @@ authors:
 links:
   - name: SOLR-18226
     url: https://issues.apache.org/jira/browse/SOLR-18226
-important_notes:
-  - "A `filecontent` request to `/solr/{core}/replication` with `dirType=cf` or `dirType=tlogFile` must name a file that resolves inside the core's config or tlog directory; otherwise it is rejected."
