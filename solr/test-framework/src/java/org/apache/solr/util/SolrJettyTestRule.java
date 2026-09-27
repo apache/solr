@@ -18,14 +18,15 @@ package org.apache.solr.util;
 
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.slf4j.Logger;
@@ -38,34 +39,26 @@ import org.slf4j.LoggerFactory;
 public class SolrJettyTestRule extends SolrClientTestRule {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private JettySolrRunner jetty;
-
-  private final ConcurrentHashMap<String, SolrClient> clients = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, HttpSolrClient> clients = new ConcurrentHashMap<>();
   private boolean enableProxy;
 
   @Override
   protected void after() {
-    for (SolrClient solrClient : clients.values()) {
+    for (var solrClient : clients.values()) {
       IOUtils.closeQuietly(solrClient);
     }
     clients.clear();
+    enableProxy = false;
 
-    if (jetty != null) {
-      try {
-        jetty.stop();
-      } catch (RuntimeException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      } finally {
-        jetty = null;
-        enableProxy = false;
-      }
-    }
+    super.after(); // closes the backend (JettySolrRunner)
   }
 
-  /** Resets the state. DEPRECATED; please don't call! */
-  @Deprecated
+  /**
+   * Resets the state.
+   *
+   * @deprecated Please don't call! There is no replacement API.
+   */
+  @Deprecated(since = "10.0")
   public void reset() {
     after();
   }
@@ -82,14 +75,15 @@ public class SolrJettyTestRule extends SolrClientTestRule {
    * @see JettySolrRunner#getProxy()
    */
   public void enableProxy() {
-    assert jetty == null;
+    assert backend == null;
     this.enableProxy = true;
   }
 
   public void startSolr(Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) {
-    if (jetty != null) throw new IllegalStateException("Jetty is already running");
+    if (backend != null) throw new IllegalStateException("Jetty is already running");
 
-    jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig, enableProxy);
+    var jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig, enableProxy);
+    backend = jetty;
     try {
       jetty.start();
     } catch (RuntimeException e) {
@@ -102,19 +96,25 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   public JettySolrRunner getJetty() {
-    if (jetty == null) throw new IllegalStateException("Jetty has not started");
-    return jetty;
+    if (backend == null) throw new IllegalStateException("Jetty has not started");
+    return (JettySolrRunner) backend;
   }
 
   @Override
-  public SolrClient getSolrClient(String collection) {
+  public HttpSolrClient getSolrClient(String collection) {
     if (collection == null) {
       collection = "";
     }
     return clients.computeIfAbsent(collection, this::newSolrClient);
   }
 
-  protected SolrClient newSolrClient(String collection) {
+  @Override
+  public HttpSolrClient getAdminClient() {
+    // Use an HTTP client so requests route through Jetty, not the embedded shortcut.
+    return getSolrClient(null);
+  }
+
+  protected HttpSolrClient newSolrClient(String collection) {
     return newSolrClientBuilder()
         .withDefaultCollection(collection) // Properly handles when collection is 'null'
         .build();
@@ -126,7 +126,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
    */
   public HttpJettySolrClient.Builder newSolrClientBuilder() {
     return new HttpJettySolrClient.Builder(getBaseUrl())
-        .withHttpClient(jetty.getSolrClient())
+        .withHttpClient((HttpJettySolrClient) backend.getSolrClient())
         .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
   }
 
@@ -135,7 +135,8 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     return getJetty().getBaseUrl().toString();
   }
 
-  public CoreContainer getCoreContainer() {
-    return getJetty().getCoreContainer();
+  @Override
+  protected void createColl(NewCollectionBuilder b) throws SolrServerException, IOException {
+    createCollStandalone(b);
   }
 }

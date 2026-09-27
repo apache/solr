@@ -1,0 +1,10 @@
+title: >
+  Removed the deprecated `geohash(lat,lon)` and `ghhsin(geohash1,geohash2,radius)` function queries
+  (`GeohashFunction`/`GeohashHaversineFunction`), deprecated without a replacement since 9.0. Use `hsin`/`geodist`
+  with raw latitude/longitude value sources instead of encoding to a geohash string first.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18355
+    url: https://issues.apache.org/jira/browse/SOLR-18355

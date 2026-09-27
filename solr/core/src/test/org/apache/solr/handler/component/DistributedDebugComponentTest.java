@@ -38,6 +38,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
@@ -56,7 +58,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr();
@@ -93,8 +95,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   public static void destroyThings() {
     collection1 = null;
     collection2 = null;
-    resetExceptionIgnores();
-    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
@@ -392,6 +392,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
         (NamedList<?>) distribResponse.getDebugMap().get("timing"));
   }
 
+  @SuppressWarnings("try")
   public void testTolerantSearch() throws SolrServerException, IOException {
     String badShard = DEAD_HOST_1 + "/solr/collection1";
     SolrQuery query = new SolrQuery();
@@ -406,27 +407,27 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
     for (int i = 0; i < (TEST_NIGHTLY ? 500 : 200); i++) {
       // verify that the request would fail if shards.tolerant=false
       query.set(ShardParams.SHARDS_TOLERANT, "false");
-      ignoreException("Server refused connection");
-      expectThrows(SolrException.class, () -> collection1.query(query));
+      try (ErrorLogMuter ignored = ErrorLogMuter.regex("Server refused connection")) {
+        expectThrows(SolrException.class, () -> collection1.query(query));
 
-      // verify that the request would succeed if shards.tolerant=true
-      query.set(ShardParams.SHARDS_TOLERANT, "true");
-      QueryResponse response = collection1.query(query);
-      assertTrue(
-          (Boolean)
-              response
-                  .getResponseHeader()
-                  .get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-      @SuppressWarnings("unchecked")
-      NamedList<String> badShardTrack =
-          (((NamedList<NamedList<NamedList<String>>>) response.getDebugMap().get("track"))
-                  .get("EXECUTE_QUERY"))
-              .get(badShard);
-      assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
-      Entry<String, String> exception = badShardTrack.iterator().next();
-      assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
-      assertNotNull("Exception message should not be null", exception.getValue());
-      unIgnoreException("Server refused connection");
+        // verify that the request would succeed if shards.tolerant=true
+        query.set(ShardParams.SHARDS_TOLERANT, "true");
+        QueryResponse response = collection1.query(query);
+        assertTrue(
+            (Boolean)
+                response
+                    .getResponseHeader()
+                    .get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+        @SuppressWarnings("unchecked")
+        NamedList<String> badShardTrack =
+            (((NamedList<NamedList<NamedList<String>>>) response.getDebugMap().get("track"))
+                    .get("EXECUTE_QUERY"))
+                .get(badShard);
+        assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
+        Entry<String, String> exception = badShardTrack.iterator().next();
+        assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
+        assertNotNull("Exception message should not be null", exception.getValue());
+      }
     }
   }
 

@@ -25,12 +25,6 @@ public class ConfigProperty {
 
   private boolean required = false;
 
-  public ConfigProperty(String key, String defaultValue, boolean required) {
-    this.key = key;
-    this.defaultValue = defaultValue;
-    this.required = required;
-  }
-
   public ConfigProperty(String key, String defaultValue) {
     this.key = key;
     this.defaultValue = defaultValue;
@@ -47,10 +41,6 @@ public class ConfigProperty {
 
   public boolean isRequired() {
     return required;
-  }
-
-  public String getDefaultValue() {
-    return defaultValue;
   }
 
   public String getValue(Map<?, ?> properties) {

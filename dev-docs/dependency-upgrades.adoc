@@ -71,8 +71,11 @@ it will be re-used and auto updated whenever a newer patch- or minor version get
 churn from frequently-updated dependencies by delaying merge until a few weeks before a new release. One can also
 choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`.
 
+Renovate PRs against `main` are put in the `10.x` milestone, via the `milestone` option which takes the numeric
+milestone id (see https://api.github.com/repos/apache/solr/milestones). Bump it when `main` moves to a new major.
+
 The `branch_9x` branch has its own `renovate.json` that layers on top of (and inherits from) this one, overriding only
-the schedule and the lockfile/license commands. Grouping rules defined here therefore apply to `branch_9x` too.
+the schedule, the milestone and the lockfile/license commands. Grouping rules defined here therefore apply to `branch_9x` too.
 
 Please note that Solr version prior to 10.X use a versions resolution plugin that uses `versions.lock` instead of
 `libs.version.toml`. Therefore, changes cannot be backported via cherry-pick.

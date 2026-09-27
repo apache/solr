@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -78,8 +79,9 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return SolrTestCaseJ4.getHttpSolrClient(
-        solrTestRule.getBaseUrl(), DEFAULT_TEST_COLLECTION_NAME);
+    return new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .build();
   }
 
   /** query the example */

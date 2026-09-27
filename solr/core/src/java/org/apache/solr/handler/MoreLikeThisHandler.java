@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.api.MoreLikeThisAPI;
+import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SimpleFacets;
@@ -246,12 +247,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         dbgQuery = true;
         dbgResults = true;
       }
-      // TODO resolve duplicated code with DebugComponent.  Perhaps it should be added to
-      // doStandardDebug?
       if (dbg == true) {
         try {
           NamedList<Object> dbgInfo =
-              SolrPluginUtils.doStandardDebug(
+              DebugComponent.doStandardDebug(
                   req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
           if (null != filters) {
             dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));
@@ -415,13 +414,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           BooleanClause.Occur.MUST_NOT);
       this.realMLTQuery = realMLTQuery.build();
 
-      DocListAndSet results = new DocListAndSet();
-      if (this.needDocSet) {
-        results = searcher.getDocListAndSet(this.realMLTQuery, filters, null, start, rows, flags);
-      } else {
-        results.docList = searcher.getDocList(this.realMLTQuery, filters, null, start, rows, flags);
-      }
-      return results;
+      // setNeedDocSet must follow setFlags: it sets or clears GET_DOCSET within the flags
+      QueryCommand qc =
+          new QueryCommand()
+              .setQuery(this.realMLTQuery)
+              .setFilterList(filters)
+              .setOffset(start)
+              .setLen(rows)
+              .setFlags(flags)
+              .setNeedDocSet(this.needDocSet);
+      return qc.search(searcher).getDocListAndSet();
     }
 
     /** Sets {@link #boostedMLTQuery} and returns it */
@@ -455,13 +457,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         rawMLTQuery = mlt.like(multifieldDoc);
       }
       boostedMLTQuery = getBoostedQuery(rawMLTQuery);
-      DocListAndSet results = new DocListAndSet();
-      if (this.needDocSet) {
-        results = searcher.getDocListAndSet(boostedMLTQuery, filters, null, start, rows, flags);
-      } else {
-        results.docList = searcher.getDocList(boostedMLTQuery, filters, null, start, rows, flags);
-      }
-      return results;
+      // setNeedDocSet must follow setFlags: it sets or clears GET_DOCSET within the flags
+      QueryCommand qc =
+          new QueryCommand()
+              .setQuery(boostedMLTQuery)
+              .setFilterList(filters)
+              .setOffset(start)
+              .setLen(rows)
+              .setFlags(flags)
+              .setNeedDocSet(this.needDocSet);
+      return qc.search(searcher).getDocListAndSet();
     }
 
     /**

@@ -196,6 +196,9 @@ public class SolrIndexConfig implements MapWriter {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // InfoStream.NO_OUTPUT is a Lucene sentinel; identity check is
+  // intentional
   public void writeMap(EntryWriter ew) throws IOException {
     ew.put("useCompoundFile", useCompoundFile)
         .put("maxBufferedDocs", maxBufferedDocs)

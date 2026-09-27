@@ -278,7 +278,7 @@ public class PackageManager implements Closeable {
     Map<String, String> packageVersions = new HashMap<>();
     // map of package name to multiple values of pluginMeta(Map<String, String>)
     Map<String, Set<PluginMeta>> packagePlugins = new HashMap<>();
-    Map<String, Object> result;
+    Object pluginsValue;
     try {
       NamedList<Object> response =
           solrClient.request(
@@ -286,16 +286,16 @@ public class PackageManager implements Closeable {
       Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
-        result = Map.of();
+        pluginsValue = null;
       } else {
-        result = response.asShallowMap();
+        pluginsValue = response.get(ContainerPluginsApi.PLUGIN);
       }
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> clusterPlugins =
-        (Map<String, Object>) result.getOrDefault(ContainerPluginsApi.PLUGIN, Map.of());
+        pluginsValue != null ? (Map<String, Object>) pluginsValue : Map.of();
     for (Map.Entry<String, Object> entry : clusterPlugins.entrySet()) {
       PluginMeta pluginMeta;
       try {
@@ -421,16 +421,14 @@ public class PackageManager implements Closeable {
 
       // Get package params
       try {
-        boolean packageParamsExist =
-            solrClient
-                .request(
-                    new GenericV2SolrRequest(
-                            SolrRequest.METHOD.GET,
-                            PackageUtils.getCollectionParamsPath(collection) + "/packages")
-                        .setRequiresCollection(
-                            false) /* Making a collection-request, but already baked into path */)
-                .asShallowMap()
-                .containsKey("params");
+        NamedList<Object> collectionParams =
+            solrClient.request(
+                new GenericV2SolrRequest(
+                        SolrRequest.METHOD.GET,
+                        PackageUtils.getCollectionParamsPath(collection) + "/packages")
+                    .setRequiresCollection(
+                        false) /* Making a collection-request, but already baked into path */);
+        boolean packageParamsExist = collectionParams.get("params") != null;
         SolrCLI.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),

@@ -20,10 +20,10 @@ package org.apache.solr.handler.extraction;
 public interface ExtractingParams {
 
   /** Map all generated attribute names to field names with lowercase and underscores. */
-  public static final String LOWERNAMES = "lowernames";
+  String LOWERNAMES = "lowernames";
 
-  /** if true, ignore TikaException (give up to extract text but index meta data) */
-  public static final String IGNORE_TIKA_EXCEPTION = "ignoreTikaException";
+  /** if true, ignore TikaException (give up to extract text but index metadata) */
+  String IGNORE_TIKA_EXCEPTION = "ignoreTikaException";
 
   /**
    * The param prefix for mapping Tika metadata to Solr fields.
@@ -35,7 +35,7 @@ public interface ExtractingParams {
    * In this example, the tika "title" metadata value will be added to a Solr field named
    * "solr.title"
    */
-  public static final String MAP_PREFIX = "fmap.";
+  String MAP_PREFIX = "fmap.";
 
   /**
    * Pass in literal values to be added to the document, as in
@@ -44,7 +44,7 @@ public interface ExtractingParams {
    *  literal.myField=Foo
    * </pre>
    */
-  public static final String LITERALS_PREFIX = "literal.";
+  String LITERALS_PREFIX = "literal.";
 
   /**
    * Restrict the extracted parts of a document to be indexed by passing in an XPath expression. All
@@ -54,29 +54,29 @@ public interface ExtractingParams {
    *
    * @see #CAPTURE_ELEMENTS
    */
-  public static final String XPATH_EXPRESSION = "xpath";
+  String XPATH_EXPRESSION = "xpath";
 
   /** Only extract and return the content, do not index it. */
-  public static final String EXTRACT_ONLY = "extractOnly";
+  String EXTRACT_ONLY = "extractOnly";
 
   /** Content output format if extractOnly is true. Default is "xml", alternative is "text". */
-  public static final String EXTRACT_FORMAT = "extractFormat";
+  String EXTRACT_FORMAT = "extractFormat";
 
   /**
    * Capture attributes separately according to the name of the element, instead of just adding them
    * to the string buffer
    */
-  public static final String CAPTURE_ATTRIBUTES = "captureAttr";
+  String CAPTURE_ATTRIBUTES = "captureAttr";
 
   /**
    * Literal field values will by default override other values such as metadata and content. Set
-   * this to false to revert to pre-4.0 behaviour
+   * this to "false" to revert to pre-4.0 behaviour
    */
-  public static final String LITERALS_OVERRIDE = "literalsOverride";
+  String LITERALS_OVERRIDE = "literalsOverride";
 
   /**
    * Capture the specified fields (and everything included below it that isn't capture by some other
-   * capture field) separately from the default. This is different then the case of passing in an
+   * capture field) separately from the default. This is different from the case of passing in an
    * XPath expression.
    *
    * <p>The Capture field is based on the localName returned to the {@link SolrContentHandler} by
@@ -97,34 +97,34 @@ public interface ExtractingParams {
    * By passing in the p tag, you could capture all P tags separately from the rest of the t Thus,
    * in the example, the capture of the P tag would be: "some text here. more text"
    */
-  public static final String CAPTURE_ELEMENTS = "capture";
+  String CAPTURE_ELEMENTS = "capture";
 
   /** The type of the stream. If not specified, Tika will use mime type detection. */
-  public static final String STREAM_TYPE = "stream.type";
+  String STREAM_TYPE = "stream.type";
 
   /**
    * Optional. The file name. If specified, Tika can take this into account while guessing the MIME
    * type.
    */
-  public static final String RESOURCE_NAME = "resource.name";
+  String RESOURCE_NAME = "resource.name";
 
   /**
    * Optional. The password for this resource. Will be used instead of the rule based password
    * lookup mechanisms
    */
-  public static final String RESOURCE_PASSWORD = "resource.password";
+  String RESOURCE_PASSWORD = "resource.password";
 
   /**
    * Optional. If specified, the prefix will be prepended to all Metadata, such that it would be
-   * possible to setup a dynamic field to automatically capture it
+   * possible to set up a dynamic field to automatically capture it
    */
-  public static final String UNKNOWN_FIELD_PREFIX = "uprefix";
+  String UNKNOWN_FIELD_PREFIX = "uprefix";
 
   /**
    * Optional. If specified and the name of a potential field cannot be determined, the default
    * Field specified will be used instead.
    */
-  public static final String DEFAULT_FIELD = "defaultField";
+  String DEFAULT_FIELD = "defaultField";
 
   /**
    * Optional. If specified, loads the file as a source for password lookups for Tika encrypted
@@ -135,27 +135,26 @@ public interface ExtractingParams {
    * i.e. the first match will be used If you want a fallback password to be always used, supply a
    * .*=&lt;defaultmypassword&gt; at the end
    */
-  public static final String PASSWORD_MAP_FILE = "passwordsFile";
+  String PASSWORD_MAP_FILE = "passwordsFile";
 
   /** Backend selection */
-  public static final String EXTRACTION_BACKEND = "extraction.backend";
+  String EXTRACTION_BACKEND = "extraction.backend";
 
   /** Preferred: Fix/normalize metadata naming for Tika Server compatibility */
-  public static final String TIKASERVER_METADATA_COMPATIBILITY =
-      "tikaserver.metadata.compatibility";
+  String TIKASERVER_METADATA_COMPATIBILITY = "tikaserver.metadata.compatibility";
 
   /** URL of Tika Server instance. */
-  public static final String TIKASERVER_URL = "tikaserver.url";
+  String TIKASERVER_URL = "tikaserver.url";
 
   /** Max characters allowed in parsed content */
-  public static final String TIKASERVER_MAX_CHARS = "tikaserver.maxChars";
+  String TIKASERVER_MAX_CHARS = "tikaserver.maxChars";
 
   /**
    * Enable recursive parsing of embedded documents when using TikaServer. This is experimental,
    * uses /rmeta endpoint, uses more RAM and is disabled by default.
    */
-  public static final String TIKASERVER_RECURSIVE = "tikaserver.recursive";
+  String TIKASERVER_RECURSIVE = "tikaserver.recursive";
 
   /** Default or per-request timeout in seconds for TikaServer HTTP calls. */
-  public static final String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
+  String TIKASERVER_TIMEOUT_SECS = "tikaserver.timeoutSeconds";
 }

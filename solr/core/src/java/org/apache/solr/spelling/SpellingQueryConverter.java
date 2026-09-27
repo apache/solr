@@ -16,31 +16,24 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
- * Converts the query string to a Collection of Lucene tokens using a regular expression. Boolean
- * operators AND, OR, NOT are skipped.
+ * Converts the query string to a TokenStream using a regular expression. Boolean operators AND, OR,
+ * NOT are skipped.
  *
  * <p>Each term is checked to determine if it is optional, required or prohibited. Required terms
- * output a {@link Token} with the {@link QueryConverter#REQUIRED_TERM_FLAG} set. Prohibited terms
- * output a {@link Token} with the {@link QueryConverter#PROHIBITED_TERM_FLAG} set. If the query
- * uses the plus (+) and minus (-) to denote required and prohibited, this determination will be
- * accurate. In the case boolean AND/OR/NOTs are used, this converter makes an uninformed guess as
- * to whether the term would likely behave as if it is Required or Prohibited and sets the flags
- * accordingly. These flags are used downstream to generate collations for {@link
- * WordBreakSolrSpellChecker}, in cases where an original term is split up into multiple Tokens.
+ * output a token with the {@link QueryConverter#REQUIRED_TERM_FLAG} set. Prohibited terms output a
+ * token with the {@link QueryConverter#PROHIBITED_TERM_FLAG} set. If the query uses the plus (+)
+ * and minus (-) to denote required and prohibited, this determination will be accurate. In the case
+ * boolean AND/OR/NOTs are used, this converter makes an uninformed guess as to whether the term
+ * would likely behave as if it is Required or Prohibited and sets the flags accordingly. These
+ * flags are used downstream to generate collations for {@link WordBreakSolrSpellChecker}, in cases
+ * where an original term is split up into multiple tokens.
  *
  * @since solr 1.3
  */
@@ -95,20 +88,22 @@ public class SpellingQueryConverter extends QueryConverter {
   protected Pattern QUERY_REGEX = Pattern.compile(PATTERN);
 
   /**
-   * Converts the original query string to a collection of Lucene Tokens.
+   * Parses the original query string into a {@link TokenStream}; each matched query word is
+   * analyzed lazily as the stream is consumed.
    *
    * @param original the original query string
-   * @return a Collection of Lucene Tokens
+   * @return a TokenStream over the query's terms, with {@code FlagsAttribute} set per word from the
+   *     query-syntax parse below
    */
   @Override
-  public Collection<Token> convert(String original) {
+  public TokenStream convert(String original) {
     if (original == null) { // this can happen with q.alt = and no query
-      return List.of();
+      return new QueryWordsTokenStream(List.of(), analyzer);
     }
     boolean mightContainRangeQuery =
         (original.indexOf('[') != -1 || original.indexOf('{') != -1)
             && (original.indexOf(']') != -1 || original.indexOf('}') != -1);
-    Collection<Token> result = new ArrayList<>();
+    List<QueryWordsTokenStream.ParsedWord> words = new ArrayList<>();
     Matcher matcher = QUERY_REGEX.matcher(original);
     String nextWord = null;
     int nextStartIndex = 0;
@@ -161,42 +156,17 @@ public class SpellingQueryConverter extends QueryConverter {
           && ("NOT".equals(nextWord))) {
         flagValue = TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
       }
-      try {
-        analyze(result, word, startIndex, flagValue);
-      } catch (IOException e) {
-        // TODO: shouldn't we log something?
-      }
+      words.add(new QueryWordsTokenStream.ParsedWord(word, startIndex, flagValue));
     }
     if (lastBooleanOp != null) {
-      for (Token t : result) {
-        int f = t.getFlags();
-        t.setFlags(f |= QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG);
+      for (int i = 0; i < words.size(); i++) {
+        QueryWordsTokenStream.ParsedWord w = words.get(i);
+        words.set(
+            i,
+            new QueryWordsTokenStream.ParsedWord(
+                w.text(), w.startIndex(), w.flags() | QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG));
       }
     }
-    return result;
-  }
-
-  protected void analyze(Collection<Token> result, String text, int offset, int flagsAttValue)
-      throws IOException {
-    TokenStream stream = analyzer.tokenStream("", text);
-    // TODO: support custom attributes
-    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
-    TypeAttribute typeAtt = stream.addAttribute(TypeAttribute.class);
-    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
-    OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-    stream.reset();
-    while (stream.incrementToken()) {
-      Token token = new Token();
-      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-      token.setOffset(offset + offsetAtt.startOffset(), offset + offsetAtt.endOffset());
-      token.setFlags(flagsAttValue); // overwriting any flags already set...
-      token.setType(typeAtt.type());
-      token.setPayload(payloadAtt.getPayload());
-      token.setPositionIncrement(posIncAtt.getPositionIncrement());
-      result.add(token);
-    }
-    stream.end();
-    stream.close();
+    return new QueryWordsTokenStream(words, analyzer);
   }
 }

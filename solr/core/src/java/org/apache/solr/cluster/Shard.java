@@ -29,6 +29,15 @@ public interface Shard {
   SolrCollection getCollection();
 
   /**
+   * @return an id for this shard that is unique across the cluster, combining the collection name
+   *     and the shard name. Useful e.g. as a map key when grouping replicas of the same shard,
+   *     possibly from different collections.
+   */
+  default String getUniqueShardId() {
+    return getCollection().getName() + "%" + getShardName();
+  }
+
+  /**
    * Returns the {@link Replica} of the given name for that shard, if such a replica exists.
    *
    * @return {@code null} if the replica does not (or does not yet) exist for the shard.

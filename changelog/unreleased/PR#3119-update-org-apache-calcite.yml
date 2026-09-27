@@ -1,0 +1,8 @@
+title: Update org.apache.calcite to 1.42.0 and Avatica to 1.28.0
+type: dependency_update
+authors:
+  - name: Eric Pugh
+    nick: epugh
+links:
+- name: PR#3119
+  url: https://github.com/apache/solr/pull/3119

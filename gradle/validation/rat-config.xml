@@ -24,6 +24,7 @@
     <family id="MIT"      name="The MIT License"/>
     <family id="BSD4"     name="Original BSD License (with advertising clause)"/>
     <family id="BSD-modi" name="Modified BSD License"/>
+    <family id="ISC"      name="ISC License"/>
     <family id="GEN"      name="Generated"/>
   </families>
 
@@ -36,7 +37,6 @@
     <!-- Various BSD-like third-party libraries with non-standard copyright headers -->
     <license family="BSD-modi" id="BSD-modi" name="Modified BSD License">
       <any>
-        <text>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</text> <!-- d3.js -->
         <text>THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS</text>          <!-- highlight.js -->
       </any>
     </license>
@@ -44,6 +44,17 @@
     <!-- Inline MIT comment used by ui-grid bundled assets -->
     <license family="MIT" id="MIT-uigrid" name="MIT (ui-grid)">
       <text> ; License: MIT</text>
+    </license>
+
+    <!-- Single-line copyright banner used by the d3.js bundled asset; the full
+         ISC license text isn't embedded in the bundle itself. -->
+    <license family="ISC" id="ISC-d3" name="ISC (d3.js)">
+      <text>d3js.org</text>
+    </license>
+
+    <!-- Inline MIT comment used by jQuery UI bundled assets -->
+    <license family="MIT" id="MIT-jqueryui" name="MIT (jQuery UI)">
+      <text>Released under the MIT license.</text>
     </license>
 
     <!-- Machine-generated source files that carry no license header -->
@@ -56,6 +67,7 @@
 
   <approved>
     <family license_ref="BSD-modi"/>
+    <family license_ref="ISC"/>
     <family license_ref="GEN"/>
     <!-- MIT is already approved by the default config; MIT-uigrid inherits that. -->
     <!-- BSD4 is intentionally absent: matching files are policy violations. -->

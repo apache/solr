@@ -66,7 +66,8 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     configureCluster(1).configure();
 
     CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.connect(); // force connection even though we aren't sending any requests
+    // force the connection now, even though we aren't sending any requests
+    CLOUD_CLIENT.getClusterStateProvider().getLiveNodes();
 
     ZK_SERVER_ADDR = cluster.getZkServer().getZkAddress();
   }

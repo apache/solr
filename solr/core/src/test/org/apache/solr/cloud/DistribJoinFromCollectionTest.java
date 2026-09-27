@@ -53,7 +53,6 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
 
   private static final String[] scoreModes = {"avg", "max", "min", "total"};
 
-  //    resetExceptionIgnores();
   private static String toColl = "to_2x2";
   private static String fromColl = "from_1x4";
 

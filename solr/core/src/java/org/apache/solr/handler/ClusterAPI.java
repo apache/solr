@@ -17,16 +17,9 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
-import static org.apache.solr.common.params.CollectionParams.ACTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
 import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
@@ -43,15 +36,12 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ReflectMapWriter;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
@@ -199,18 +189,6 @@ public class ClusterAPI {
     collectionsHandler.handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.lowerName), rsp);
   }
 
-  @EndPoint(method = DELETE, path = "/cluster/command-status/{id}", permission = COLL_EDIT_PERM)
-  public void deleteCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params =
-        Map.of(ACTION, DELETESTATUS.lowerName, REQUESTID, req.getPathTemplateValues().get("id"));
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
-  }
-
-  @EndPoint(method = DELETE, path = "/cluster/command-status", permission = COLL_EDIT_PERM)
-  public void flushCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, collectionsHandler);
-  }
-
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
     Map<String, Object> m = Utils.makeMap(def);
     return wrapParams(req, m);
@@ -232,18 +210,6 @@ public class ClusterAPI {
     return req;
   }
 
-  @EndPoint(method = GET, path = "/cluster/command-status/{id}", permission = COLL_READ_PERM)
-  public void getCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params =
-        Map.of(ACTION, REQUESTSTATUS.lowerName, REQUESTID, req.getPathTemplateValues().get("id"));
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
-  }
-
-  @EndPoint(method = GET, path = "/cluster/nodes", permission = COLL_READ_PERM)
-  public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
-    rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
-  }
-
   @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
   public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, Object> v1Params =
@@ -257,24 +223,6 @@ public class ClusterAPI {
 
   @EndPoint(method = POST, path = "/cluster", permission = COLL_EDIT_PERM)
   public class Commands {
-    @Command(name = "add-role")
-    @Deprecated(since = "10.1")
-    public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
-      RoleInfo info = obj.get();
-      Map<String, Object> m = new SimpleOrderedMap<>(info);
-      m.put("action", ADDROLE.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
-    }
-
-    @Command(name = "remove-role")
-    @Deprecated(since = "10.1")
-    public void removeRole(PayloadObj<RoleInfo> obj) throws Exception {
-      RoleInfo info = obj.get();
-      Map<String, Object> m = new SimpleOrderedMap<>(info);
-      m.put("action", REMOVEROLE.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
-    }
-
     @Command(name = "set-ratelimiter")
     public void setRateLimiters(PayloadObj<RateLimiterPayload> payLoad) {
       RateLimiterPayload rateLimiterConfig = payLoad.get();
@@ -287,13 +235,5 @@ public class ClusterAPI {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
     }
-  }
-
-  public static class RoleInfo implements ReflectMapWriter {
-    @JsonProperty(required = true)
-    public String node;
-
-    @JsonProperty(required = true)
-    public String role;
   }
 }

@@ -456,7 +456,7 @@ allprojects {prj ->
             '-Xep:NonCanonicalType:WARN',
             '-Xep:NonOverridingEquals:WARN',
             //'-Xep:NonFinalStaticField:WARN', // todo there are problems that should be fixed
-            '-Xep:NotJavadoc:WARN',
+            // '-Xep:NotJavadoc:OFF', // we disagree; javadocs aren't purely for publishing
             '-Xep:NullOptional:WARN',
             // '-Xep:NullableConstructor:OFF', // we don't use this annotation
             '-Xep:NullableOptional:WARN',
@@ -589,11 +589,12 @@ allprojects {prj ->
   }
 }
 
-// Exclude generated OpenAPI sources in solrj from Error Prone checks.
+// Exclude generated OpenAPI sources and the vendored noggit JSON parser (org.noggit, not our
+// code/conventions) in solrj from Error Prone checks.
 configure(project(":solr:solrj")) {
   plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
     tasks.withType(JavaCompile) {
-      options.errorprone.excludedPaths = ".*/build/generated/.*"
+      options.errorprone.excludedPaths = ".*/build/generated/.*|.*/org/noggit/.*"
     }
   }
 }
@@ -603,6 +604,16 @@ configure(project(":solr:core")) {
   plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
     tasks.withType(JavaCompile) {
       options.errorprone.excludedPaths = ".*/org/apache/solr/parser/.*"
+    }
+  }
+}
+
+// Exclude vendored Tika sources (copied in to eliminate the Tika dependency) in
+// solr:modules:extraction from Error Prone checks.
+configure(project(":solr:modules:extraction")) {
+  plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+    tasks.withType(JavaCompile) {
+      options.errorprone.excludedPaths = ".*/org/apache/solr/handler/extraction/fromtika/.*"
     }
   }
 }

@@ -55,13 +55,14 @@ public class PossibilityIterator implements Iterator<PossibilityIterator.RankedS
    * Possible Correction".
    */
   public PossibilityIterator(
-      Map<Token, LinkedHashMap<String, Integer>> suggestions,
+      Map<SpellCheckToken, LinkedHashMap<String, Integer>> suggestions,
       int maximumRequiredSuggestions,
       int maxEvaluations,
       boolean overlap) {
     this.suggestionsMayOverlap = overlap;
-    for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
-      Token token = entry.getKey();
+    for (Map.Entry<SpellCheckToken, LinkedHashMap<String, Integer>> entry :
+        suggestions.entrySet()) {
+      SpellCheckToken token = entry.getKey();
       if (entry.getValue().size() == 0) {
         continue;
       }

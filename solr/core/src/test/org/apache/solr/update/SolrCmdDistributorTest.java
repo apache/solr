@@ -54,6 +54,7 @@ import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -674,13 +675,14 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     }
   }
 
+  @SuppressWarnings("try")
   private void testNodeWontRetryBadRequest(NodeType nodeType) throws Exception {
-    ignoreException("Bad Request");
     final var solrclient = clients.getFirst();
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
-    try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
+    try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0);
+        ErrorLogMuter ignored = ErrorLogMuter.regex("Bad Request")) {
       streamingClients.setExp(Exp.BAD_REQUEST);
       ArrayList<Node> nodes = new ArrayList<>();
       ZkNodeProps nodeProps =
@@ -732,7 +734,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       // we will get java.net.SocketException: Network is unreachable, which we don't retry on
       assertEquals(numFoundBefore, numFoundAfter);
       assertEquals(1, cmdDistrib.getErrors().size());
-      unIgnoreException("Bad Request");
     }
   }
 

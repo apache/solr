@@ -29,21 +29,16 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // TODO Deprecate or remove support for the 'wt' parameter in the v2 APIs in favor of the more
 //  HTTP-compliant 'Accept' header
 /** Overrides the content-type of the response based on an optional user-provided 'wt' parameter */
 public class MediaTypeOverridingFilter implements ContainerResponseFilter {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final List<Class<? extends JerseyResource>> EXEMPTED_RESOURCES =
       List.of(ZookeeperRead.class);

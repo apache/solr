@@ -217,6 +217,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // MissedUpdatesRequest constants are singletons; identity check is
+  // intentional
   private boolean doSync(List<Long> ourUpdates, long ourLowThreshold, long ourHighThreshold) {
     // get leader's recent versions and fingerprint
     // note: by getting leader's versions later, we guarantee that leader's versions always super
@@ -246,6 +249,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     return false;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // MissedUpdatesRequest constants are singletons; identity check is
+  // intentional
   private MissedUpdatesRequest buildMissedUpdatesRequest(NamedList<Object> rsp) {
     // we retrieved the last N updates from the replica
     @SuppressWarnings({"unchecked"})
@@ -430,6 +436,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       this.nUpdates = nUpdates;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // MissedUpdatesRequest constants are singletons; identity check is
+    // intentional
     public MissedUpdatesRequest find(List<Long> leaderVersions, Object updateFrom) {
       leaderVersions.sort(absComparator);
       log.debug("{} sorted versions from {} = {}", logPrefix, updateFrom, leaderVersions);

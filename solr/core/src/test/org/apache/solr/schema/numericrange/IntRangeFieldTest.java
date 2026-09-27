@@ -22,9 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.IntRange;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
@@ -326,6 +329,31 @@ public class IntRangeFieldTest extends SolrTestCase {
         fieldType.parseRangeValue("[" + Integer.MIN_VALUE + " TO " + Integer.MAX_VALUE + "]");
     assertEquals(Integer.MIN_VALUE, range.mins[0]);
     assertEquals(Integer.MAX_VALUE, range.maxs[0]);
+  }
+
+  public void testMultiValuedDocValuesEncodingIsSortedAndCanonical() {
+    IntRangeField fieldType = createFieldType(1);
+    String field = "price_range_mv_dv";
+
+    // The same set of ranges supplied in two different insertion orders (including a negative, to
+    // exercise the sign-aware sortable-byte ordering).
+    List<Object> order1 = List.of("[7 TO 8]", "[-100 TO -50]", "[3 TO 4]", "[11 TO 12]");
+    List<Object> order2 = List.of("[11 TO 12]", "[3 TO 4]", "[7 TO 8]", "[-100 TO -50]");
+
+    BytesRef packed1 = fieldType.encodePackedValues(field, order1);
+    BytesRef packed2 = fieldType.encodePackedValues(field, order2);
+
+    // Canonical: insertion order must not change the packed docValues blob.
+    assertEquals(packed1, packed2);
+
+    // And the ranges are packed ascending by their (sortable-encoded) min.
+    final int stride = 2 * Integer.BYTES;
+    final int[] expectedMins = {-100, 3, 7, 11};
+    assertEquals(expectedMins.length, packed1.length / stride);
+    for (int i = 0; i < expectedMins.length; i++) {
+      int min = NumericUtils.sortableBytesToInt(packed1.bytes, packed1.offset + i * stride);
+      assertEquals("min at position " + i, expectedMins[i], min);
+    }
   }
 
   private IndexSchema createMockSchema() {

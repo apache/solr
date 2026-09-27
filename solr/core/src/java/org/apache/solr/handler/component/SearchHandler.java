@@ -513,6 +513,9 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   /** Distributed request processing (AKA coordinator). */
+  @SuppressWarnings(
+      "ReferenceEquality") // ShardRequest.ALL_SHARDS is a unique sentinel; identity check is
+  // intentional
   protected void processComponentsDistrib(
       SolrQueryRequest req,
       SolrQueryResponse rsp,

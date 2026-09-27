@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -47,7 +46,6 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
       cluster.startJettySolrRunner();
       cluster.waitForAllNodes(30);
-      client.connect(20, TimeUnit.SECONDS);
 
       // should work now!
       client.request(listReq);
@@ -65,7 +63,6 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(0, createTempDir(), JettyConfig.builder().build());
     try {
-      CloudSolrClient client = cluster.getSolrClient();
       SolrException e =
           expectThrows(
               SolrException.class,
@@ -78,7 +75,6 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
       cluster.startJettySolrRunner();
       cluster.waitForAllNodes(30);
-      client.connect(20, TimeUnit.SECONDS);
 
       cluster.getZkClient().upConfig(configPath, "testconfig");
 
@@ -125,21 +121,10 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
   /** NOTE: will close the provider and assert it starts throwing AlreadyClosedException */
   private void checkAndCloseProvider(final ZkClientClusterStateProvider provider) throws Exception {
-    if (random().nextBoolean()) {
-      // calling connect should be purely optional and affect nothing
-      provider.connect();
-    }
     assertNotNull(provider.getClusterState());
 
     provider.close();
 
-    if (random().nextBoolean()) {
-      expectThrows(
-          AlreadyClosedException.class,
-          () -> {
-            provider.connect();
-          });
-    }
     expectThrows(
         AlreadyClosedException.class,
         () -> {

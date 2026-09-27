@@ -42,6 +42,10 @@ public class CloudJettySolrClient extends CloudHttp2SolrClient {
       super(stateProvider);
     }
 
+    public Builder(CloudSolrClient.CloudSolrClientConnection connection) {
+      super(connection);
+    }
+
     @Override
     public CloudJettySolrClient build() {
       return new CloudJettySolrClient(this);

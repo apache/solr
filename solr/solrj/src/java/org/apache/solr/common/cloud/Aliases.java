@@ -355,7 +355,7 @@ public class Aliases {
    *
    * @param before previous alias name, must not be null
    * @param after new alias name. If this is null then it's equivalent to calling {@link
-   *     #cloneWithCollectionAlias(String, String)} with the second argument set to null, ie.
+   *     #cloneWithCollectionAlias(String, String)} with the second argument set to null, i.e.
    *     removing an alias.
    * @return new instance with the renamed alias
    * @throws SolrException when either <code>before</code> or <code>after</code> is empty, or the

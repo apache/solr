@@ -96,8 +96,8 @@ public class ContentHashVersionProcessorTest extends UpdateProcessorTestBase {
     final IndexSchema indexSchema = mock(IndexSchema.class);
     when(indexSchema.getField("_hash_")).thenReturn(new SchemaField("_hash_", new BinaryField()));
 
-    when(solrCore.getLatestSchema()).thenReturn(indexSchema);
     when(req.getCore()).thenReturn(solrCore);
+    when(req.getSchema()).thenReturn(indexSchema);
     return new ContentHashVersionProcessor(
         ContentHashVersionProcessorFactory.buildFieldMatcher(includedFields),
         ContentHashVersionProcessorFactory.buildFieldMatcher(excludedFields),
