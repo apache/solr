@@ -457,6 +457,8 @@ class ReleaseState:
         if v.is_major_release():
             return 'main'
         elif v.is_minor_release():
+            if self.is_lts_release():
+                return self.get_lts_stable_branch_name()
             return self.get_stable_branch_name()
         elif v.major == Version.parse(self.latest_version).major:
             return self.get_minor_branch_name()
