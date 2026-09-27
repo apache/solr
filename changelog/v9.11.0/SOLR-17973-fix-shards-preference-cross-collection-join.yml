@@ -1,4 +1,4 @@
-title: "SOLR-17973: Fix `shards.preference` not respected for cross-collection join queries"
+title: "Fix `shards.preference` not respected for cross-collection join queries"
 type: fixed
 authors:
   - name: khushjain
