@@ -86,8 +86,9 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>If the health check file exists, the handler will execute the delegated query and return
  *       status as described above.
- *   <li>If the health check file does not exist, the handler will return an HTTP error even if the
- *       server is working fine and the delegated query would have succeeded
+ *   <li>For a ping request, if a configured health check file does not exist, the handler will
+ *       return an HTTP error even if the server is working fine and the delegated query would have
+ *       succeeded. The <code>action=status</code> request instead reports the file state.
  * </ul>
  *
  * <p>This health check file feature can be used as a way to indicate to some Load Balancers that
@@ -101,8 +102,9 @@ import org.slf4j.LoggerFactory;
  *   <li><code>http://.../ping?action=enable</code> - creates the health check file if it does not
  *       already exist
  *   <li><code>http://.../ping?action=disable</code> - deletes the health check file if it exists
- *   <li><code>http://.../ping?action=status</code> - returns a status code indicating if the
- *       healthcheck file exists ("<code>enabled</code>") or not ("<code>disabled</code>")
+ *   <li><code>http://.../ping?action=status</code> - returns the healthcheck state as
+ *       <code>enabled</code> (configured file exists), <code>disabled</code> (configured file does
+ *       not exist), or <code>not_configured</code> (no healthcheck file is configured)
  * </ul>
  *
  * @since solr 1.3
