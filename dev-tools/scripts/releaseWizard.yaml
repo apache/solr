@@ -755,25 +755,76 @@ groups:
     description: |
       This step first validates all changelogs in `changelog/unreleased/`.
       If there are any errors, they must be fixed before proceeding.
-      
+
       It then moves changelog entries into `changelog/v{{ release_version }}/` and
       regenerates `CHANGELOG.md` without a release date. The date is updated later,
       in the `publish` phase.
 
-      The result is committed to `{{ release_branch }}` only. Cherry-picking to
-      `{{ stable_branch }}` and `main` is done in `publish` phase.
+      This step is deliberately run without `--commit`, leaving the result
+      uncommitted in the working tree so it can be spot-checked in the next
+      step before anything is committed or pushed.
 
       Can be run standalone, see `dev-tools/scripts/logchange.py prepare --help`.
     depends: dependency_updates_changes
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Prepare changelog folder and regenerate CHANGELOG.md for RC{{ rc_number }}
+      commands_text: Prepare changelog folder and regenerate CHANGELOG.md for RC{{ rc_number }} (uncommitted)
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: python3 -u dev-tools/scripts/logchange.py prepare --version {{ release_version }}  --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --rc-number {{ rc_number }}
+        comment: Move unreleased entries to version folder and regenerate CHANGELOG.md, left uncommitted
+        logfile: changelog-update-rc.log
+        tee: true
+  - !Todo
+    id: review_changelog_rc
+    title: Spot-check the changelog for RC{{ rc_number }}
+    description: |
+      Before committing, spot-check the changelog that was just regenerated.
+      This is the last easy chance to catch mistakes -- once RC{{ rc_number }} is
+      built and staged, fixing the changelog means a new RC and restarting the vote.
+
+      Look at `git diff changelog/ CHANGELOG.md` and the rendered
+      `solr/documentation/build/site/changes/Changes.html` (opened below) for
+      things like: entries in the wrong section, an "Important notes" entry
+      that shouldn't be called out, duplicate/missing issues, and typos.
+
+      If something needs fixing, edit the relevant file(s) under
+      `changelog/v{{ release_version }}/` and re-run this step's commands.
+    depends: changelog_update_rc
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Show the changelog diff and open the rendered Changes.html for review
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: git diff --stat changelog CHANGELOG.md
+        stdout: true
+      - !Command
+        cmd: "{{ gradle_cmd }} :solr:documentation:changesToHtml"
+        logfile: changes-to-html.log
+        tee: true
+      - !Command
+        cmd: "{{ open_cmd }} solr/documentation/build/site/changes/Changes.html"
+        stdout: true
+    post_description: |
+      Once the changelog looks right, proceed to the next step to commit and push it.
+  - !Todo
+    id: commit_changelog_rc
+    title: Commit and push changelog for RC{{ rc_number }}
+    description: |
+      Commits the reviewed changelog to `{{ release_branch }}` only. Cherry-picking to
+      `{{ stable_branch }}` and `main` is done in the `publish` phase.
+    depends: review_changelog_rc
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Commit the reviewed changelog and push it to {{ release_branch }}
       confirm_each_command: false
       commands:
       - !Command
         cmd: python3 -u dev-tools/scripts/logchange.py prepare --version {{ release_version }}  --release-branch {{ release_branch }} --gradle-cmd {{ gradle_cmd }} --rc-number {{ rc_number }} --commit
-        comment: Move unreleased entries to version folder and commit; then regenerate CHANGELOG.md and commit (two commits total)
-        logfile: changelog-update-rc.log
+        comment: Commit the (already reviewed) changelog entries and regenerated CHANGELOG.md
+        logfile: commit-changelog-update-rc.log
         tee: true
       - !Command
         cmd: git push origin {{ release_branch }}
