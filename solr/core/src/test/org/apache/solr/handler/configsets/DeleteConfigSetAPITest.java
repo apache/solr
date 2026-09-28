@@ -56,7 +56,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testNullConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet(null, null));
+    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet(null, null, null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -67,7 +67,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testEmptyConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("", null));
+    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("", null, null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -78,7 +78,8 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testWhitespaceOnlyConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("   ", null));
+    final var ex =
+        assertThrows(SolrException.class, () -> api.deleteConfigSet("   ", null, null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -89,7 +90,8 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
   @Test
   public void testTabOnlyConfigSetNameThrowsBadRequest() {
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var ex = assertThrows(SolrException.class, () -> api.deleteConfigSet("\t", null));
+    final var ex =
+        assertThrows(SolrException.class, () -> api.deleteConfigSet("\t", null, null));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(
@@ -106,7 +108,7 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
     mockClusterStateWithCollections(Stream.of(usingCollection));
 
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var response = api.deleteConfigSet(configSetName, true);
+    final var response = api.deleteConfigSet(configSetName, true, null);
 
     assertFalse("Configset should not have been deleted while still in use", response.deleted);
     assertEquals(List.of("collectionUsingConfig"), response.collectionsUsingConfigSet);
@@ -126,10 +128,50 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
     mockClusterStateWithCollections(Stream.of(collectionA, unrelatedCollection, collectionB));
 
     final var api = new DeleteConfigSet(mockCoreContainer, null, null);
-    final var response = api.deleteConfigSet(configSetName, true);
+    final var response = api.deleteConfigSet(configSetName, true, null);
 
     assertFalse(response.deleted);
     assertEquals(List.of("collectionA", "collectionB"), response.collectionsUsingConfigSet);
+  }
+
+  @Test
+  public void testExcludeCollectionIgnoresStaleClusterStateEntry() {
+    String configSetName = "myConfigSet";
+    String justDeletedCollection = "justDeletedCollection";
+    DocCollection staleCollection = mock(DocCollection.class);
+    when(staleCollection.getConfigName()).thenReturn(configSetName);
+    when(staleCollection.getName()).thenReturn(justDeletedCollection);
+    mockClusterStateWithCollections(Stream.of(staleCollection));
+
+    final var api = new DeleteConfigSet(mockCoreContainer, null, null);
+
+    // The only "user" of the configset in cluster state is the one being excluded, so this must
+    // NOT take the early "still in use" return (which returns a deleted=false response cleanly,
+    // no exception) -- it must fall through to actually attempting deletion. Bare mocks don't
+    // support that deeper ZooKeeper-dependent path (see the class javadoc), so reaching it here
+    // surfaces as an exception; that exception is exactly the proof exclusion worked.
+    assertThrows(
+        Exception.class, () -> api.deleteConfigSet(configSetName, true, justDeletedCollection));
+  }
+
+  @Test
+  public void testExcludeCollectionDoesNotHideOtherUsers() throws Exception {
+    String configSetName = "sharedConfigSet";
+    DocCollection justDeleted = mock(DocCollection.class);
+    when(justDeleted.getConfigName()).thenReturn(configSetName);
+    when(justDeleted.getName()).thenReturn("justDeletedCollection");
+    DocCollection stillLive = mock(DocCollection.class);
+    when(stillLive.getConfigName()).thenReturn(configSetName);
+    when(stillLive.getName()).thenReturn("stillLiveCollection");
+    mockClusterStateWithCollections(Stream.of(justDeleted, stillLive));
+
+    final var api = new DeleteConfigSet(mockCoreContainer, null, null);
+    final var response = api.deleteConfigSet(configSetName, true, "justDeletedCollection");
+
+    assertFalse(
+        "Configset should still be considered in use by the non-excluded collection",
+        response.deleted);
+    assertEquals(List.of("stillLiveCollection"), response.collectionsUsingConfigSet);
   }
 
   private void mockClusterStateWithCollections(Stream<DocCollection> collections) {

@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: DELETE /api/configsets/{configSetName} gained an "excludeCollection" param, so a caller
+  that just deleted (or is about to delete) a collection can get a correct "is this configset
+  still in use" answer without depending on whether that deletion has propagated to cluster
+  state yet.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18321
+    url: https://issues.apache.org/jira/browse/SOLR-18321

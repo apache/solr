@@ -86,7 +86,16 @@ public interface ConfigsetsApi {
                         + "when it's still in use by one or more collections; if false or omitted, "
                         + "delete unconditionally.")
             @QueryParam("ifUnused")
-            Boolean ifUnused)
+            Boolean ifUnused,
+        @Parameter(
+                description =
+                    "A collection name to ignore when checking whether the configset is still in "
+                        + "use (only relevant when ifUnused is true). Useful when the caller has "
+                        + "already deleted, or is about to delete, that collection and doesn't want "
+                        + "the check's result to depend on whether that deletion has been reflected "
+                        + "in cluster state yet.")
+            @QueryParam("excludeCollection")
+            String excludeCollection)
         throws Exception;
   }
 

@@ -52,8 +52,8 @@ public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.D
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public DeleteConfigSetResponse deleteConfigSet(String configSetName, Boolean ifUnused)
-      throws Exception {
+  public DeleteConfigSetResponse deleteConfigSet(
+      String configSetName, Boolean ifUnused, String excludeCollection) throws Exception {
     final var response = instantiateJerseyResponse(DeleteConfigSetResponse.class);
     if (StrUtils.isNullOrEmpty(configSetName) || StrUtils.isBlank(configSetName)) {
       throw new SolrException(
@@ -68,6 +68,10 @@ public class DeleteConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.D
               .collectionStream()
               .filter(collection -> configSetName.equals(collection.getConfigName()))
               .map(DocCollection::getName)
+              // excludeCollection lets a caller that just deleted (or is about to delete) a
+              // collection get a correct answer regardless of whether that deletion has
+              // propagated to this node's cached cluster state yet.
+              .filter(name -> !name.equals(excludeCollection))
               .collect(Collectors.toList());
       if (!collectionsUsingConfigSet.isEmpty()) {
         response.deleted = false;

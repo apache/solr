@@ -154,9 +154,11 @@ public class DeleteTool extends ToolBase {
     if (deleteConfig && configName != null) {
       try {
         var req = new ConfigsetsApi.DeleteConfigSet(configName);
-        // With the collection already deleted above, the server only needs to check whether any
-        // *other* collection still uses this config.
         req.setIfUnused(true);
+        // The collection was already deleted above, but that deletion may not have propagated to
+        // whichever node services this request yet; excludeCollection makes the "still in use"
+        // check correct regardless of that timing instead of depending on it.
+        req.setExcludeCollection(collectionName);
         var response = req.process(solrClient);
         if (!response.deleted) {
           log.warn(
