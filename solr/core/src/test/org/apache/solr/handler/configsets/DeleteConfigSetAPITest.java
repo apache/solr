@@ -19,9 +19,15 @@ package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.stream.Stream;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -89,5 +95,49 @@ public class DeleteConfigSetAPITest extends SolrTestCase {
     assertTrue(
         "Error message should mention missing configset name",
         ex.getMessage().contains("No configset name"));
+  }
+
+  @Test
+  public void testIfUnusedSkipsDeleteWhenConfigSetInUse() throws Exception {
+    String configSetName = "myConfigSet";
+    DocCollection usingCollection = mock(DocCollection.class);
+    when(usingCollection.getConfigName()).thenReturn(configSetName);
+    when(usingCollection.getName()).thenReturn("collectionUsingConfig");
+    mockClusterStateWithCollections(Stream.of(usingCollection));
+
+    final var api = new DeleteConfigSet(mockCoreContainer, null, null);
+    final var response = api.deleteConfigSet(configSetName, true);
+
+    assertFalse("Configset should not have been deleted while still in use", response.deleted);
+    assertEquals(List.of("collectionUsingConfig"), response.collectionsUsingConfigSet);
+  }
+
+  @Test
+  public void testIfUnusedReportsAllCollectionsStillUsingConfigSet() throws Exception {
+    String configSetName = "sharedConfigSet";
+    DocCollection collectionA = mock(DocCollection.class);
+    when(collectionA.getConfigName()).thenReturn(configSetName);
+    when(collectionA.getName()).thenReturn("collectionA");
+    DocCollection collectionB = mock(DocCollection.class);
+    when(collectionB.getConfigName()).thenReturn(configSetName);
+    when(collectionB.getName()).thenReturn("collectionB");
+    DocCollection unrelatedCollection = mock(DocCollection.class);
+    when(unrelatedCollection.getConfigName()).thenReturn("someOtherConfigSet");
+    mockClusterStateWithCollections(Stream.of(collectionA, unrelatedCollection, collectionB));
+
+    final var api = new DeleteConfigSet(mockCoreContainer, null, null);
+    final var response = api.deleteConfigSet(configSetName, true);
+
+    assertFalse(response.deleted);
+    assertEquals(List.of("collectionA", "collectionB"), response.collectionsUsingConfigSet);
+  }
+
+  private void mockClusterStateWithCollections(Stream<DocCollection> collections) {
+    ClusterState mockClusterState = mock(ClusterState.class);
+    when(mockClusterState.collectionStream()).thenReturn(collections);
+    ZkController mockZkController = mock(ZkController.class);
+    when(mockZkController.getClusterState()).thenReturn(mockClusterState);
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+    when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
   }
 }
