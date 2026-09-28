@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,24 +100,30 @@ public class DeleteTool extends ToolBase {
 
   protected void deleteCollection(CommandLine cli, SolrClient solrClient) throws Exception {
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
-
-    if (!CLIUtils.safeCheckCollectionExists(
-        solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
-      throw new IllegalArgumentException("Collection " + collectionName + " not found!");
-    }
 
     // Uses the V1 CLUSTERSTATUS request rather than the V2 CollectionsApi.GetCollectionStatus:
     // the latter goes through a Jersey code path that currently throws under basic-auth-secured
-    // clusters. Still a plain HTTP admin call, not a direct ZK connection.
-    var statusReq = new CollectionAdminRequest.ClusterStatus().setCollectionName(collectionName);
-    var statusResponse = statusReq.process(solrClient);
-    @SuppressWarnings("unchecked")
-    Map<String, Object> cluster = (Map<String, Object>) statusResponse.getResponse().get("cluster");
-    @SuppressWarnings("unchecked")
-    Map<String, Object> collections = (Map<String, Object>) cluster.get("collections");
-    @SuppressWarnings("unchecked")
-    Map<String, Object> collectionInfo = (Map<String, Object>) collections.get(collectionName);
+    // clusters. Still a plain HTTP admin call, not a direct ZK connection. Scoping the request to
+    // this one collection also serves as the existence check below, instead of a separate
+    // ListCollections call that would have to scan every collection in the cluster.
+    Map<String, Object> collectionInfo;
+    try {
+      var statusReq = new CollectionAdminRequest.ClusterStatus().setCollectionName(collectionName);
+      var statusResponse = statusReq.process(solrClient);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> cluster =
+          (Map<String, Object>) statusResponse.getResponse().get("cluster");
+      @SuppressWarnings("unchecked")
+      Map<String, Object> collections = (Map<String, Object>) cluster.get("collections");
+      @SuppressWarnings("unchecked")
+      Map<String, Object> info = (Map<String, Object>) collections.get(collectionName);
+      collectionInfo = info;
+    } catch (SolrException e) {
+      if (e.code() == SolrException.ErrorCode.BAD_REQUEST.code) {
+        throw new IllegalArgumentException("Collection " + collectionName + " not found!");
+      }
+      throw e;
+    }
     String configName = collectionInfo != null ? (String) collectionInfo.get("configName") : null;
     boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
     boolean force = cli.hasOption(FORCE_OPTION);

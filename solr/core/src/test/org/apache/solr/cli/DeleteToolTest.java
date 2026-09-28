@@ -118,6 +118,21 @@ public class DeleteToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFailsToDeleteNonexistentCollection() throws Exception {
+    String[] args = {
+      "delete",
+      "-c",
+      "testFailsToDeleteNonexistentCollection-does-not-exist",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(1, CLITestHelper.runTool(args, DeleteTool.class));
+  }
+
+  @Test
   public void testDeleteCollectionSkipsConfigDeleteWhileStillInUse() throws Exception {
     String sharedConfigName = "testDeleteCollectionSkipsConfigDeleteWhileStillInUse-config";
     cluster.uploadConfigSet(configset("cloud-minimal"), sharedConfigName);
