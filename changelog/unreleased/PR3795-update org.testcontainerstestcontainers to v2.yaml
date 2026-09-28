@@ -1,0 +1,7 @@
+title: Update org.testcontainers:testcontainers to v2
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3795
+  url: https://github.com/apache/solr/pull/3795

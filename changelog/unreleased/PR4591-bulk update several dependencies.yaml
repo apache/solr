@@ -1,0 +1,7 @@
+title: Bulk update several dependencies
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4591
+  url: https://github.com/apache/solr/pull/4591

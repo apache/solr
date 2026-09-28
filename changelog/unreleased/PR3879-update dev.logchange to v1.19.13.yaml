@@ -1,0 +1,7 @@
+title: Update dev.logchange to v1.19.13
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3879
+  url: https://github.com/apache/solr/pull/3879

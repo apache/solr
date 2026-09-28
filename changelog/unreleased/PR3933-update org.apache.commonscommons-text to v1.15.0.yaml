@@ -1,0 +1,7 @@
+title: Update org.apache.commons:commons-text to v1.15.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3933
+  url: https://github.com/apache/solr/pull/3933
