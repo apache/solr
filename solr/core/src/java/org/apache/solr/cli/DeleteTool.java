@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
@@ -52,11 +53,21 @@ public class DeleteTool extends ToolBase {
               "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
           .get();
 
+  // No longer has any effect: the Overseer's configset-delete command unconditionally refuses to
+  // delete a configset that's still in use by another collection, so this flag was never actually
+  // able to bypass that safety check. Configset deletion now always requests the safe ("only if
+  // unused") behavior. Kept, as a no-op, for backward compatibility with existing scripts.
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
-          .desc(
-              "Skip safety checks when deleting the configuration directory used by a collection.")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setDescription(
+                      "no longer has any effect; configset deletion is always safely skipped if"
+                          + " the configset is still in use by another collection")
+                  .setForRemoval(true)
+                  .get())
+          .desc("No longer has any effect; retained for backward compatibility.")
           .get();
 
   public DeleteTool(ToolRuntime runtime) {
@@ -114,9 +125,11 @@ public class DeleteTool extends ToolBase {
       Map<String, Object> cluster =
           (Map<String, Object>) statusResponse.getResponse().get("cluster");
       @SuppressWarnings("unchecked")
-      Map<String, Object> collections = (Map<String, Object>) cluster.get("collections");
+      Map<String, Object> collections =
+          cluster != null ? (Map<String, Object>) cluster.get("collections") : null;
       @SuppressWarnings("unchecked")
-      Map<String, Object> info = (Map<String, Object>) collections.get(collectionName);
+      Map<String, Object> info =
+          collections != null ? (Map<String, Object>) collections.get(collectionName) : null;
       collectionInfo = info;
     } catch (SolrException e) {
       if (e.code() == SolrException.ErrorCode.BAD_REQUEST.code) {
@@ -126,13 +139,6 @@ public class DeleteTool extends ToolBase {
     }
     String configName = collectionInfo != null ? (String) collectionInfo.get("configName") : null;
     boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
-    boolean force = cli.hasOption(FORCE_OPTION);
-
-    if (deleteConfig && configName != null && force) {
-      log.warn(
-          "Skipping safety checks, configuration directory {} will be deleted with impunity.",
-          configName);
-    }
 
     echoIfVerbose("\nDeleting collection '" + collectionName + "' using V2 Collections API");
 
@@ -150,12 +156,12 @@ public class DeleteTool extends ToolBase {
         var req = new ConfigsetsApi.DeleteConfigSet(configName);
         // With the collection already deleted above, the server only needs to check whether any
         // *other* collection still uses this config.
-        req.setIfUnused(!force);
+        req.setIfUnused(true);
         var response = req.process(solrClient);
         if (!response.deleted) {
           log.warn(
               "Configuration directory {} is also being used by {}; configuration will not be"
-                  + " deleted. You can pass the --force flag to force delete.",
+                  + " deleted.",
               configName,
               response.collectionsUsingConfigSet);
         }
