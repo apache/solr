@@ -1,0 +1,7 @@
+title: Update de.undercouch.download to v5.7.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4118
+  url: https://github.com/apache/solr/pull/4118

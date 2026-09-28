@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Bump dependencies of New UI
+type: dependency_update
+authors:
+  - name: malliaridis
+links:
+  - name: PR#4283
+    url: https://github.com/apache/solr/pull/4283
