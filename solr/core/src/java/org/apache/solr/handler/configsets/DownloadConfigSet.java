@@ -28,6 +28,7 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
@@ -82,7 +83,7 @@ public class DownloadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi
     Path tmpDirectory = Files.createTempDirectory("configset-download-");
     try {
       configSetService.downloadConfig(configSetName, tmpDirectory);
-      return ConfigSetService.zipDirectory(tmpDirectory, false);
+      return Utils.zipDirectory(tmpDirectory);
     } finally {
       PathUtils.deleteDirectory(tmpDirectory);
     }

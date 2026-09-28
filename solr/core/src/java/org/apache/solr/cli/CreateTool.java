@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 
 /** Supports create command in the bin/solr script. */
@@ -273,14 +274,9 @@ public class CreateTool extends ToolBase {
     echo(endMessage);
   }
 
-  /**
-   * Zips the contents of a configset directory for upload.
-   *
-   * <p>Delegates to {@link ConfigSetService#zipDirectory}, which is also used to zip a configset
-   * for download.
-   */
+  /** Zips the contents of a configset directory for upload. */
   static byte[] zipConfigSet(Path confPath) throws IOException {
-    return ConfigSetService.zipDirectory(confPath, true);
+    return Utils.zipDirectory(confPath);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {

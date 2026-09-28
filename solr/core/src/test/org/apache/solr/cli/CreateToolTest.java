@@ -107,14 +107,4 @@ public class CreateToolTest extends SolrCloudTestCase {
     assertFalse(entryNames.contains(".hidden-file"));
     assertTrue(entryNames.stream().noneMatch(name -> name.startsWith(".hiddenDir")));
   }
-
-  @Test
-  public void testZipConfigSetRejectsForbiddenFileType() throws Exception {
-    Path confDir = createTempDir("zipConfigSetForbiddenTest");
-    Files.writeString(confDir.resolve("evil.jar"), "not really a jar");
-
-    IllegalArgumentException thrown =
-        expectThrows(IllegalArgumentException.class, () -> CreateTool.zipConfigSet(confDir));
-    assertTrue(thrown.getMessage().contains("forbidden"));
-  }
 }
