@@ -66,7 +66,7 @@ public class SplitShardCmdCleanupTest extends SolrTestCaseJ4 {
             slice(CHILD_1, Slice.State.RECOVERY));
 
     Map<String, Object> updates =
-        SplitShardCmd.buildCleanupShardStateUpdates(coll, PARENT, CHILDREN, Set.of());
+        SplitShardCmd.buildCleanupShardStateUpdates(coll, PARENT, CHILDREN);
 
     assertNotNull(updates);
     assertEquals(Slice.State.ACTIVE.toString(), updates.get(PARENT));
@@ -83,7 +83,7 @@ public class SplitShardCmdCleanupTest extends SolrTestCaseJ4 {
             slice(CHILD_1, Slice.State.CONSTRUCTION));
 
     Map<String, Object> updates =
-        SplitShardCmd.buildCleanupShardStateUpdates(coll, PARENT, CHILDREN, Set.of());
+        SplitShardCmd.buildCleanupShardStateUpdates(coll, PARENT, CHILDREN);
 
     assertNotNull(updates);
     assertEquals(Slice.State.ACTIVE.toString(), updates.get(PARENT));
@@ -99,7 +99,7 @@ public class SplitShardCmdCleanupTest extends SolrTestCaseJ4 {
             slice(CHILD_0, Slice.State.ACTIVE),
             slice(CHILD_1, Slice.State.ACTIVE));
 
-    assertNull(SplitShardCmd.buildCleanupShardStateUpdates(coll, PARENT, CHILDREN, Set.of()));
+    assertNull(SplitShardCmd.buildCleanupShardStateUpdates(coll, PARENT, CHILDREN));
   }
 
   @Test
@@ -124,7 +124,7 @@ public class SplitShardCmdCleanupTest extends SolrTestCaseJ4 {
   public void testFixedCleanupRestoresParentAfterQueuedSuccessSwitch() {
     DocCollection staleSnapshot = initialState().getCollection(COLLECTION);
     Map<String, Object> cleanup =
-        SplitShardCmd.buildCleanupShardStateUpdates(staleSnapshot, PARENT, CHILDREN, Set.of());
+        SplitShardCmd.buildCleanupShardStateUpdates(staleSnapshot, PARENT, CHILDREN);
     assertNotNull(cleanup);
     assertEquals(Slice.State.ACTIVE.toString(), cleanup.get(PARENT));
 

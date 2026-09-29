@@ -33,11 +33,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -164,7 +162,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     zkStateReader.forceUpdateCollection(collectionName);
     AtomicReference<String> slice = new AtomicReference<>();
     slice.set(message.getStr(ZkStateReader.SHARD_ID_PROP));
-    Set<String> offlineSlices = new HashSet<>();
     RTimerTree timings = new RTimerTree();
     ClusterState clusterState = zkStateReader.getClusterState();
 
@@ -830,12 +827,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
       if (!success) {
         cleanupAfterFailure(
-            adminCmdContext,
-            zkStateReader,
-            collectionName,
-            parentSlice.getName(),
-            subSlices,
-            offlineSlices);
+            adminCmdContext, zkStateReader, collectionName, parentSlice.getName(), subSlices);
         unlockForSplit(ccc.getSolrCloudManager(), collectionName, parentSlice.getName());
       }
     }
@@ -939,8 +931,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       ZkStateReader zkStateReader,
       String collectionName,
       String parentShard,
-      List<String> subSlices,
-      Set<String> offlineSlices) {
+      List<String> subSlices) {
     log.info("Cleaning up after a failed split of {}/{}", collectionName, parentShard);
     // get the latest state
     try {
@@ -960,8 +951,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       return;
     }
 
-    Map<String, Object> propMap =
-        buildCleanupShardStateUpdates(coll, parentShard, subSlices, offlineSlices);
+    Map<String, Object> propMap = buildCleanupShardStateUpdates(coll, parentShard, subSlices);
     if (propMap != null) {
       try {
         ZkNodeProps m = new ZkNodeProps(propMap);
@@ -1019,7 +1009,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
    * be undone. Always includes parent=ACTIVE so a stale snapshot cannot skip the restore.
    */
   static Map<String, Object> buildCleanupShardStateUpdates(
-      DocCollection coll, String parentShard, List<String> subSlices, Set<String> offlineSlices) {
+      DocCollection coll, String parentShard, List<String> subSlices) {
     // If parent is inactive and all sub shards are active, then rolling back
     // to make the parent active again will cause data loss.
     if (coll.getSlice(parentShard).getState() == Slice.State.INACTIVE) {
@@ -1048,9 +1038,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     }
     // Always pin parent ACTIVE; a stale snapshot can miss an in-flight INACTIVE switch.
     propMap.put(parentShard, Slice.State.ACTIVE.toString());
-    for (String sliceName : offlineSlices) {
-      propMap.put(sliceName, Slice.State.ACTIVE.toString());
-    }
     return propMap;
   }
 
