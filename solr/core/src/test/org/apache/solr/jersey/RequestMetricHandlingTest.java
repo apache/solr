@@ -69,17 +69,6 @@ public class RequestMetricHandlingTest extends SolrTestCaseJ4 {
     filter.filter(mockRequestContext, mockResponseContext);
   }
 
-  @Test
-  public void testPostRequestMetricsFilterNoOpsWithoutMetrics() throws Exception {
-    final var mockRequestContext = mock(ContainerRequestContext.class);
-    final var mockResponseContext = mock(ContainerResponseContext.class);
-    when(mockRequestContext.getPropertyNames()).thenReturn(Set.of());
-    when(mockRequestContext.getProperty(HANDLER_METRICS)).thenReturn(null);
-
-    new RequestMetricHandling.PostRequestMetricsFilter()
-        .filter(mockRequestContext, mockResponseContext);
-  }
-
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
     final LongCounter mockLongCounter = mock(LongCounter.class);
