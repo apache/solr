@@ -157,7 +157,11 @@ public class DeleteTool extends ToolBase {
       } catch (Exception exc) {
         // Most commonly, this configset is still in use by another collection -- the
         // configset-delete command unconditionally refuses to delete it in that case.
-        echo("\nWARNING: configSet " + configName + " was not deleted: " + exc.getMessage());
+        echo(
+            "\nWARNING: configSet "
+                + configName
+                + " was not deleted.  Most commonly it is still useed by another collection.  Error: "
+                + exc.getMessage());
       }
     }
 
