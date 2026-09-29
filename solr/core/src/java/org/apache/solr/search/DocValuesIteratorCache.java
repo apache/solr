@@ -66,6 +66,7 @@ public class DocValuesIteratorCache {
 
   private final SolrIndexSearcher searcher;
   private final int nLeaves;
+  private final boolean cache;
   private final Function<String, FieldDocValuesSupplier> getSupplier;
 
   /**
@@ -86,12 +87,18 @@ public class DocValuesIteratorCache {
   public DocValuesIteratorCache(SolrIndexSearcher searcher, boolean cache) {
     this.searcher = searcher;
     this.nLeaves = searcher.getTopReaderContext().leaves().size();
+    this.cache = cache;
     if (cache) {
       HashMap<String, FieldDocValuesSupplier> map = new HashMap<>();
       getSupplier = (f) -> map.computeIfAbsent(f, this::newEntry);
     } else {
       getSupplier = this::newEntry;
     }
+  }
+
+  /** Whether this instance retains per-field suppliers across calls to {@link #getSupplier}. */
+  public boolean isCaching() {
+    return cache;
   }
 
   @SuppressWarnings("ReferenceEquality") // NONE is a unique sentinel; identity check is intentional

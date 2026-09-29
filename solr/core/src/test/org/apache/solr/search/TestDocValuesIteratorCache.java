@@ -28,6 +28,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
@@ -88,27 +89,83 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
         SolrIndexSearcher s = sref.get();
         assertEquals(DOC_COUNT, s.maxDoc());
         SolrDocumentFetcher docFetcher = s.getDocFetcher();
-        DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(s);
-        final Set<String> getFields = Set.of(SINGLE, MULTI);
-        final SolrDocument doc = new SolrDocument();
-        for (int i = DOC_COUNT * 10; i >= 0; i--) {
-          int checkId = r.nextInt(DOC_COUNT);
-          doc.clear();
-          docFetcher.decorateDocValueFields(doc, checkId, getFields, dvIterCache);
-          String[] expected = expectVals[checkId];
-          if (expected == null) {
-            assertTrue(doc.isEmpty());
-          } else {
-            assertEquals(2, doc.size());
-            Object singleValue = doc.getFieldValue(SINGLE);
-            Collection<Object> actualVals = doc.getFieldValues(MULTI);
-            assertEquals(expected.length, actualVals.size() + 1); // +1 for single-valued field
-            assertEquals(expected[0], singleValue);
-            int j = 1;
-            for (Object o : actualVals) {
-              assertEquals(expected[j++], o);
-            }
-          }
+        assertTrue(
+            "DocValuesIteratorCache should be on by default",
+            docFetcher.isDocValuesIteratorCacheEnabled());
+        assertTrue(docFetcher.createDocValuesIteratorCache().isCaching());
+
+        DocValuesIteratorCache cached = new DocValuesIteratorCache(s, true);
+        DocValuesIteratorCache uncached = new DocValuesIteratorCache(s, false);
+        assertTrue(cached.isCaching());
+        assertFalse(uncached.isCaching());
+        assertSame(cached.getSupplier(SINGLE), cached.getSupplier(SINGLE));
+        assertNotSame(uncached.getSupplier(SINGLE), uncached.getSupplier(SINGLE));
+
+        assertDocValuesMatch(docFetcher, cached, expectVals, r);
+        assertDocValuesMatch(docFetcher, uncached, expectVals, r);
+      }
+    }
+  }
+
+  @SuppressWarnings("try")
+  public void testDisabledViaSolrConfig() throws Exception {
+    Path configSet = LuceneTestCase.createTempDir();
+    SolrTestCaseJ4.copyMinConf(configSet);
+    Path schemaXml = configSet.resolve("conf/schema.xml");
+    Files.writeString(
+        schemaXml,
+        Files.readString(schemaXml)
+            .replace(
+                "</schema>", fieldConfig(SINGLE, false) + fieldConfig(MULTI, true) + "</schema>"));
+    Path solrConfig = configSet.resolve("conf/solrconfig.xml");
+    Files.writeString(
+        solrConfig,
+        Files.readString(solrConfig)
+            .replace(
+                "</config>",
+                "  <query>\n"
+                    + "    <enableDocValuesIteratorCache>false</enableDocValuesIteratorCache>\n"
+                    + "  </query>\n"
+                    + "</config>"));
+
+    final String collection = "dvcacheoff";
+    solrTestRule.newCollection(collection).withConfigSet(configSet).create();
+    SolrClient client = solrTestRule.getSolrClient(collection);
+
+    try (SolrCore core = ((EmbeddedSolrServer) client).getCoreContainer().getCore(collection)) {
+      RefCounted<SolrIndexSearcher> sref = core.getSearcher();
+      try (Closeable c = sref::decref) {
+        SolrDocumentFetcher docFetcher = sref.get().getDocFetcher();
+        assertFalse(docFetcher.isDocValuesIteratorCacheEnabled());
+        assertFalse(docFetcher.createDocValuesIteratorCache().isCaching());
+      }
+    }
+  }
+
+  private void assertDocValuesMatch(
+      SolrDocumentFetcher docFetcher,
+      DocValuesIteratorCache dvIterCache,
+      String[][] expectVals,
+      Random r)
+      throws IOException {
+    final Set<String> getFields = Set.of(SINGLE, MULTI);
+    final SolrDocument doc = new SolrDocument();
+    for (int i = DOC_COUNT * 10; i >= 0; i--) {
+      int checkId = r.nextInt(DOC_COUNT);
+      doc.clear();
+      docFetcher.decorateDocValueFields(doc, checkId, getFields, dvIterCache);
+      String[] expected = expectVals[checkId];
+      if (expected == null) {
+        assertTrue(doc.isEmpty());
+      } else {
+        assertEquals(2, doc.size());
+        Object singleValue = doc.getFieldValue(SINGLE);
+        Collection<Object> actualVals = doc.getFieldValues(MULTI);
+        assertEquals(expected.length, actualVals.size() + 1); // +1 for single-valued field
+        assertEquals(expected[0], singleValue);
+        int j = 1;
+        for (Object o : actualVals) {
+          assertEquals(expected[j++], o);
         }
       }
     }
