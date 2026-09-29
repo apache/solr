@@ -49,7 +49,7 @@ public class TestExportWriterUseFilterForSortedQuery extends SolrTestCase {
     solrTestRule
         .newCollection()
         .withConfigSet(
-            ExternalPaths.SOURCE_HOME.resolve("solr/core/src/test-files/solr/collection1/conf"))
+            ExternalPaths.SOURCE_HOME.resolve("core/src/test-files/solr/collection1/conf"))
         .withConfigFile("solrconfig-export-usefilter.xml")
         .withSchemaFile("schema-export-usefilter.xml")
         .create();
