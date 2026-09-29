@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.solr.SolrTestCase;
@@ -303,5 +304,40 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     byte[] uploadedData =
         configSetService.downloadFileFromConfig(configSetName, "conf/solrconfig.xml");
     assertEquals("<config/>", new String(uploadedData, StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testZipUploadNormalizesBackslashEntryNames() throws Exception {
+    final String configSetName = "backslashpaths";
+    createExistingConfigSet(configSetName, "lang/stopwords/old.txt", "old", "stale.txt", "stale");
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+      zos.putNextEntry(new ZipEntry("lang\\"));
+      zos.closeEntry();
+      zos.putNextEntry(new ZipEntry("lang\\stopwords\\"));
+      zos.closeEntry();
+      zos.putNextEntry(new ZipEntry("lang\\stopwords\\en.txt"));
+      zos.write("a\nthe".getBytes(StandardCharsets.UTF_8));
+      zos.closeEntry();
+    }
+    InputStream zipStream = new ByteArrayInputStream(baos.toByteArray());
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    api.uploadConfigSet(configSetName, true, true, zipStream);
+
+    byte[] uploadedData =
+        configSetService.downloadFileFromConfig(configSetName, "lang/stopwords/en.txt");
+    assertEquals("a\nthe", new String(uploadedData, StandardCharsets.UTF_8));
+    assertEquals(
+        "lang/stopwords/en.txt", UploadConfigSet.normalizeZipEntryName("lang\\stopwords\\en.txt"));
+    List<String> configFiles = configSetService.getAllConfigFiles(configSetName);
+    assertTrue(configFiles.contains("lang/"));
+    assertTrue(configFiles.contains("lang/stopwords/"));
+    assertTrue(configFiles.contains("lang/stopwords/en.txt"));
+    assertTrue(configFiles.stream().noneMatch(path -> path.contains("\\")));
+
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "lang/stopwords/old.txt"));
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "stale.txt"));
   }
 }

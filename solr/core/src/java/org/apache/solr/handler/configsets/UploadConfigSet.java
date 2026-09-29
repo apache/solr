@@ -102,9 +102,11 @@ public class UploadConfigSet extends ConfigSetAPIBase
         while (entries.hasMoreElements()) {
           ZipEntry zipEntry = entries.nextElement();
           hasEntry = true;
-          String filePath = zipEntry.getName();
+          String filePath = normalizeZipEntryName(zipEntry.getName());
           filesToDelete.remove(filePath);
-          if (!zipEntry.isDirectory()) {
+          // Backslashes are invalid as ZIP separators, but older Windows-produced archives may
+          // contain them. Normalize before handing the path to either config-set implementation.
+          if (!zipEntry.isDirectory() && !filePath.endsWith("/")) {
             try (InputStream entryStream = zipFile.getInputStream(zipEntry)) {
               configSetService.uploadFileToConfig(
                   configSetName, filePath, entryStream.readAllBytes(), true);
@@ -128,6 +130,10 @@ public class UploadConfigSet extends ConfigSetAPIBase
     deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 
     return response;
+  }
+
+  static String normalizeZipEntryName(String entryName) {
+    return entryName.replace('\\', '/');
   }
 
   @Override
