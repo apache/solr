@@ -16,11 +16,19 @@
  */
 package org.apache.solr.handler.export;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.index.LogDocMergePolicyFactory;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
@@ -29,55 +37,77 @@ import org.junit.Test;
  * writer must treat those null bitsets as empty leaves instead of constructing a {@code
  * BitSetIterator}.
  */
-public class TestExportWriterUseFilterForSortedQuery extends SolrTestCaseJ4 {
+public class TestExportWriterUseFilterForSortedQuery extends SolrTestCase {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
-    initCore("solrconfig-export-usefilter.xml", "schema-sortingresponse.xml");
+    System.setProperty("solr.tests.mergePolicyFactory", LogDocMergePolicyFactory.class.getName());
+    SolrTestCaseJ4.newRandomConfig();
+    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    solrTestRule
+        .newCollection()
+        .withConfigSet(SolrTestCaseJ4.TEST_COLL1_CONF())
+        .withConfigFile("solrconfig-export-usefilter.xml")
+        .withSchemaFile("schema-sortingresponse.xml")
+        .create();
   }
 
   @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    assertU(delQ("*:*"));
-    assertU(commit());
+  public void clearIndex() throws Exception {
+    SolrClient client = solrTestRule.getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
   }
 
   @Test
   public void testZeroHitsDoesNotNpe() throws Exception {
-    assertU(adoc("id", "1"));
-    assertU(commit());
+    SolrClient client = solrTestRule.getSolrClient();
+    client.add(doc("1"));
+    client.commit();
 
-    String resp =
-        h.query(req("q", "id:does-not-exist", "qt", "/export", "fl", "id", "sort", "id asc"));
-    assertJsonEquals(
-        resp, "{\"responseHeader\":{\"status\":0},\"response\":{\"numFound\":0,\"docs\":[]}}");
+    QueryResponse response = query(client, "id:does-not-exist");
+    assertEquals(0, response.getResults().getNumFound());
   }
 
   @Test
   public void testHitsOnlyInEarlierSegment() throws Exception {
-    assertU(adoc("id", "1"));
-    assertU(commit());
-    assertU(adoc("id", "2"));
-    assertU(commit());
+    SolrClient client = solrTestRule.getSolrClient();
+    client.add(doc("1"));
+    client.commit();
+    client.add(doc("2"));
+    client.commit();
 
-    String resp = h.query(req("q", "id:1", "qt", "/export", "fl", "id", "sort", "id asc"));
-    assertJsonEquals(
-        resp,
-        "{\"responseHeader\":{\"status\":0},\"response\":{\"numFound\":1,\"docs\":[{\"id\":\"1\"}]}}");
+    QueryResponse response = query(client, "id:1");
+    assertEquals(1, response.getResults().getNumFound());
+    assertEquals("1", response.getResults().get(0).getFieldValue("id"));
 
     // Null must mean "this leaf is empty", not "skip the rest of the index".
-    resp = h.query(req("q", "*:*", "qt", "/export", "fl", "id", "sort", "id asc"));
-    assertJsonEquals(
-        resp,
-        "{\"responseHeader\":{\"status\":0},\"response\":{\"numFound\":2,\"docs\":[{\"id\":\"1\"},{\"id\":\"2\"}]}}");
+    response = query(client, "*:*");
+    assertEquals(2, response.getResults().getNumFound());
+    assertEquals("1", response.getResults().get(0).getFieldValue("id"));
+    assertEquals("2", response.getResults().get(1).getFieldValue("id"));
   }
 
-  private void assertJsonEquals(String actual, String expected) {
-    assertEquals(
-        Utils.toJSONString(Utils.fromJSONString(expected)),
-        Utils.toJSONString(Utils.fromJSONString(actual)));
+  private static SolrQuery exportQuery(String queryString) {
+    SolrQuery query = new SolrQuery(queryString);
+    query.setRequestHandler("/export");
+    query.setFields("id");
+    query.setSort("id", SolrQuery.ORDER.asc);
+    return query;
+  }
+
+  private static QueryResponse query(SolrClient client, String queryString) throws Exception {
+    QueryRequest request = new QueryRequest(exportQuery(queryString));
+    request.setResponseParser(new CanonicalJsonResponseParser());
+    return request.process(client);
+  }
+
+  private static SolrInputDocument doc(String id) {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    return doc;
   }
 }
