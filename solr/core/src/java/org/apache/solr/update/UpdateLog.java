@@ -24,7 +24,6 @@ import com.carrotsearch.hppc.LongSet;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.context.Scope;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -2133,67 +2132,60 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
-      final int initialLogCount = translogs.size();
-      int logsReplayed = 0;
-      long replayedOps = 0;
-      final int replayErrorsStart = recoveryInfo.errors.get();
-      final Span replaySpan =
-          TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay").startSpan();
+      final Span span = TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay").startSpan();
       TraceUtils.ifNotNoop(
-          replaySpan,
-          span -> {
-            span.setAttribute("updatelog.replay.state", state.toString());
-            span.setAttribute("updatelog.replay.active_log", activeLog);
-            span.setAttribute("updatelog.replay.in_sorted_order", inSortedOrder);
-            span.setAttribute("updatelog.replay.logs_total", initialLogCount);
-            TraceUtils.setDbInstance(span, req.getCore().getName());
+          span,
+          s -> {
+            TraceUtils.setDbInstance(s, req.getCore().getName());
+            s.setAttribute("updatelog.replay.state", state.toString());
+            s.setAttribute("updatelog.replay.logs", translogs.size());
           });
-
-      try (Scope scope = replaySpan.makeCurrent()) {
-        assert scope != null;
-        try {
-          for (; ; ) {
-            TransactionLog translog = translogs.pollFirst();
-            if (translog == null) break;
-            replayedOps += doReplay(translog);
-            logsReplayed++;
-          }
-        } catch (SolrException e) {
-          if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-            log.error("Replay failed service unavailable", e);
-            recoveryInfo.failed = true;
-          } else {
-            recoveryInfo.errors.incrementAndGet();
-            log.error("Replay failed due to exception", e);
-          }
-          replaySpan.recordException(e);
-          replaySpan.setStatus(StatusCode.ERROR);
-        } catch (Exception e) {
+      try (var scope = span.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
+        for (; ; ) {
+          TransactionLog translog = translogs.pollFirst();
+          if (translog == null) break;
+          doReplay(translog);
+        }
+      } catch (SolrException e) {
+        if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+          log.error("Replay failed service unavailable", e);
+          recoveryInfo.failed = true;
+        } else {
           recoveryInfo.errors.incrementAndGet();
           log.error("Replay failed due to exception", e);
-          replaySpan.recordException(e);
-          replaySpan.setStatus(StatusCode.ERROR);
-        } finally {
-          // change the state while updates are still blocked to prevent races
-          state = State.ACTIVE;
-          if (finishing) {
-            updateLocks.unblockUpdates();
-          }
-
-          // clean up in case we hit some unexpected exception and didn't get
-          // to more transaction logs
-          for (TransactionLog translog : translogs) {
-            log.error("ERROR: didn't get to recover from tlog {}", translog);
-            translog.decref();
-          }
-          if (replaySpan.isRecording()) {
-            replaySpan.setAttribute("updatelog.replay.logs_replayed", logsReplayed);
-            replaySpan.setAttribute("updatelog.replay.ops_replayed", replayedOps);
-            replaySpan.setAttribute(
-                "updatelog.replay.errors", recoveryInfo.errors.get() - replayErrorsStart);
-          }
-          replaySpan.end();
         }
+        span.recordException(e);
+      } catch (Exception e) {
+        recoveryInfo.errors.incrementAndGet();
+        log.error("Replay failed due to exception", e);
+        span.recordException(e);
+      } finally {
+        // change the state while updates are still blocked to prevent races
+        state = State.ACTIVE;
+        if (finishing) {
+          updateLocks.unblockUpdates();
+        }
+
+        // clean up in case we hit some unexpected exception and didn't get
+        // to more transaction logs
+        for (TransactionLog translog : translogs) {
+          log.error("ERROR: didn't get to recover from tlog {}", translog);
+          translog.decref();
+        }
+
+        TraceUtils.ifNotNoop(
+            span,
+            s -> {
+              s.setAttribute("updatelog.replay.adds", recoveryInfo.adds);
+              s.setAttribute("updatelog.replay.deletes", recoveryInfo.deletes);
+              s.setAttribute("updatelog.replay.deleteByQuery", recoveryInfo.deleteByQuery);
+              s.setAttribute("updatelog.replay.errors", recoveryInfo.errors.get());
+            });
+        if (recoveryInfo.failed || recoveryInfo.errors.get() > 0) {
+          span.setStatus(StatusCode.ERROR);
+        }
+        span.end();
       }
 
       loglog.warn("Log replay finished. recoveryInfo={}", recoveryInfo);
@@ -2203,25 +2195,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       SolrRequestInfo.clearRequestInfo();
     }
 
-    public long doReplay(TransactionLog translog) {
-      long replayedOps = 0L;
-      final int replayErrorsStart = recoveryInfo.errors.get();
-      final Span replayLogSpan =
+    public void doReplay(TransactionLog translog) {
+      final Span span =
           TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay.log").startSpan();
       TraceUtils.ifNotNoop(
-          replayLogSpan,
-          span -> {
+          span,
+          s -> {
             if (translog.tlog != null) {
-              span.setAttribute(
-                  "updatelog.replay.log_file", translog.tlog.getFileName().toString());
+              s.setAttribute("updatelog.replay.logFile", translog.tlog.getFileName().toString());
             }
-            span.setAttribute("updatelog.replay.log_size_bytes", translog.getLogSize());
-            span.setAttribute("updatelog.replay.active_log", activeLog);
-            span.setAttribute("updatelog.replay.in_sorted_order", inSortedOrder);
+            s.setAttribute("updatelog.replay.logSizeBytes", translog.getLogSize());
           });
-      boolean replayLogSucceeded = false;
-      try (Scope scope = replayLogSpan.makeCurrent()) {
-        assert scope != null;
+      try (var scope = span.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
         loglog.warn(
             "Starting log replay {}  active={} starting pos={} inSortedOrder={}",
             translog,
@@ -2244,9 +2230,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
         // Use a pool of URPs using a ThreadLocal to have them per-thread.  URPs aren't threadsafe.
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
-        TraceUtils.ifNotNoop(
-            replayLogSpan,
-            span -> span.setAttribute("updatelog.replay.urp_chain", processorChain.toString()));
         Collection<UpdateRequestProcessor> procPool =
             Collections.synchronizedList(new ArrayList<>());
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
@@ -2342,7 +2325,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               case UpdateLog.ADD:
                 {
                   recoveryInfo.adds++;
-                  replayedOps++;
                   AddUpdateCommand cmd =
                       convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                   cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
@@ -2353,7 +2335,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               case UpdateLog.DELETE:
                 {
                   recoveryInfo.deletes++;
-                  replayedOps++;
                   byte[] idBytes = (byte[]) entry.get(2);
                   DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
                   cmd.setIndexedId(new BytesRef(idBytes));
@@ -2367,7 +2348,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               case UpdateLog.DELETE_BY_QUERY:
                 {
                   recoveryInfo.deleteByQuery++;
-                  replayedOps++;
                   String query = (String) entry.get(2);
                   DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
                   cmd.query = query;
@@ -2404,12 +2384,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           } catch (ClassCastException cl) {
             recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry={}", o, cl);
-            replayLogSpan.recordException(cl);
+            span.recordException(cl);
             // would be caused by a corrupt transaction log
           } catch (Exception ex) {
             recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
-            replayLogSpan.recordException(ex);
+            span.recordException(ex);
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
@@ -2449,23 +2429,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             IOUtils.closeQuietly(proc);
           }
         }
-        replayLogSucceeded = true;
 
       } finally {
         if (tlogReader != null) tlogReader.close();
         translog.decref();
-        final int replayErrors = recoveryInfo.errors.get() - replayErrorsStart;
-        if (replayLogSpan.isRecording()) {
-          replayLogSpan.setAttribute("updatelog.replay.log_ops", replayedOps);
-          replayLogSpan.setAttribute("updatelog.replay.log_errors", replayErrors);
-          replayLogSpan.setAttribute("updatelog.replay.log_success", replayLogSucceeded);
-        }
-        if (!replayLogSucceeded || replayErrors > 0) {
-          replayLogSpan.setStatus(StatusCode.ERROR);
-        }
-        replayLogSpan.end();
+        span.end();
       }
-      return replayedOps;
     }
 
     private void waitForAllUpdatesGetExecuted(AtomicInteger pendingTasks) {
