@@ -28,9 +28,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -161,6 +163,39 @@ public abstract class HttpSolrClient extends SolrClient {
     // set() removes the param when the writer type is null, which is how a parser asks for no wt.
     params.set(CommonParams.WT, parserToUse.getWriterType());
     return params;
+  }
+
+  // ResponseParser#getContentTypes() is contractually stable per parser (same Set instance every
+  // call), so the 'Accept' header derived from it is cacheable; this avoids rebuilding the same
+  // joined string on every request. Bounded in size by the number of distinct ResponseParser
+  // content-type sets in the JVM, which is small and fixed.
+  private static final Map<Collection<String>, String> ACCEPT_HEADER_CACHE =
+      new ConcurrentHashMap<>();
+
+  /**
+   * The 'Accept' header value that requests the response format {@code parserToUse} can read, or
+   * {@code null} if the parser doesn't care (in which case no 'Accept' header is added, and the
+   * server picks its own default -- currently JSON for v2 APIs).
+   */
+  protected static String acceptHeaderFor(ResponseParser parserToUse) {
+    final Collection<String> contentTypes = parserToUse.getContentTypes();
+    if (contentTypes.isEmpty()) {
+      return null;
+    }
+    return ACCEPT_HEADER_CACHE.computeIfAbsent(contentTypes, ct -> String.join(", ", ct));
+  }
+
+  /** Case-insensitive check for whether {@code headers} already specifies {@code name}. */
+  protected static boolean hasHeader(Map<String, String> headers, String name) {
+    if (headers == null) {
+      return false;
+    }
+    for (String key : headers.keySet()) {
+      if (name.equalsIgnoreCase(key)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {

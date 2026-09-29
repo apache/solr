@@ -637,6 +637,12 @@ public class HttpJettySolrClient extends HttpSolrClient {
     if (customHeaders != null) {
       req.headers(h -> customHeaders.forEach(h::add));
     }
+    if (!hasHeader(customHeaders, "Accept")) {
+      final String acceptHeader = acceptHeaderFor(responseParser(solrRequest));
+      if (acceptHeader != null) {
+        req.headers(h -> h.add(HttpHeader.ACCEPT, acceptHeader));
+      }
+    }
     // note: if subsequent headers already added, the existing values win (first value considered)
     req.headers(
         h -> {
