@@ -147,6 +147,21 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    */
   OutputStream createOutput(URI path) throws IOException;
 
+  /**
+   * Write {@code data} to {@code path}, replacing any existing object only after the new bytes are
+   * ready to publish.
+   *
+   * <p>The default implementation writes through {@link #createOutput(URI)}. Object-store
+   * repositories that finalize on close inherit atomic replace as long as callers do not delete the
+   * destination first. Local filesystems should override this to write a sibling temp file and move
+   * it into place.
+   */
+  default void writeAtomically(URI path, byte[] data) throws IOException {
+    try (OutputStream os = createOutput(path)) {
+      os.write(data);
+    }
+  }
+
   // TODO define whether this should also create any nonexistent parent directories. (i.e. is this
   // 'mkdir', or 'mkdir -p')
   /**

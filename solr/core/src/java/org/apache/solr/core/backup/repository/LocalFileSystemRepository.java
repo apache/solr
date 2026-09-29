@@ -21,12 +21,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.UUID;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -113,6 +117,24 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
   @Override
   public OutputStream createOutput(URI path) throws IOException {
     return Files.newOutputStream(Path.of(path));
+  }
+
+  @Override
+  public void writeAtomically(URI path, byte[] data) throws IOException {
+    // Write a sibling temp file and move so a crash cannot truncate the destination.
+    Path dest = Path.of(path);
+    Path temp = dest.resolveSibling(dest.getFileName().toString() + ".tmp." + UUID.randomUUID());
+    try {
+      Files.write(temp, data, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+      try {
+        Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(temp, dest, StandardCopyOption.REPLACE_EXISTING);
+      }
+    } catch (IOException e) {
+      Files.deleteIfExists(temp);
+      throw e;
+    }
   }
 
   @Override

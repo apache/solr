@@ -17,6 +17,7 @@
 
 package org.apache.solr.core.backup;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.util.Utils;
@@ -104,20 +104,15 @@ public class ShardBackupMetadata {
   }
 
   /**
-   * Storing ShardBackupMetadata at {@code folderURI} with name {@code filename}. If a file already
-   * existed there, overwrite it.
+   * Store this metadata at {@code folderURI} under the shard backup id's filename. An existing file
+   * is replaced only after the new JSON is fully serialized.
    */
   public void store(BackupRepository repository, URI folderURI, ShardBackupId shardBackupId)
       throws IOException {
     final String filename = shardBackupId.getBackupMetadataFilename();
-    URI fileURI = repository.resolve(folderURI, filename);
-    if (repository.exists(fileURI)) {
-      repository.delete(folderURI, Set.of(filename));
-    }
-
-    try (OutputStream os = repository.createOutput(repository.resolve(folderURI, filename))) {
-      store(os);
-    }
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    store(buffer);
+    repository.writeAtomically(repository.resolve(folderURI, filename), buffer.toByteArray());
   }
 
   public Collection<String> listOriginalFileNames() {
