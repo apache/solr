@@ -764,7 +764,87 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
   os.chdir(old_cwd)
 
 
-def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
+def _linkOrCopy(src, dst):
+  """Hard-link src to dst, falling back to a copy when they're on different filesystems."""
+  try:
+    os.link(src, dst)
+  except OSError:
+    shutil.copy2(src, dst)
+
+
+def prepareExternalClientProject(workDir):
+  """
+  Assembles an isolated copy of the test-external-client project under workDir so its build
+  runs with no Solr source tree in any parent directory -- exactly what a third-party consumer
+  sees, i.e. ExternalPaths.SOURCE_HOME == null.
+
+  Brings in the repo-root Gradle wrapper and a minimal configSet (the isolated project has no
+  Solr source tree to borrow one from).  Returns (projectDir, configSetDir).
+  """
+  repoRoot = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+  projectSrc = os.path.join(repoRoot, 'test-external-client')
+  if not os.path.isdir(projectSrc):
+    raise RuntimeError('test-external-client directory not found at: %s' % projectSrc)
+
+  projectDir = os.path.join(workDir, 'test-external-client')
+  shutil.copytree(projectSrc, projectDir, ignore=shutil.ignore_patterns('build', '.gradle'))
+
+  os.makedirs(os.path.join(projectDir, 'gradle', 'wrapper'))
+  for rel in ('gradlew', 'gradlew.bat',
+              'gradle/wrapper/gradle-wrapper.jar', 'gradle/wrapper/gradle-wrapper.properties'):
+    _linkOrCopy(os.path.join(repoRoot, rel), os.path.join(projectDir, *rel.split('/')))
+  # Present so the Solr gradlew wrapper skips its gradle.properties generator (which needs
+  # build-infra sources we don't copy).
+  with open(os.path.join(projectDir, 'gradle.properties'), 'w') as f:
+    f.write('org.gradle.java.installations.auto-download=false\n')
+
+  configSetDir = os.path.join(projectDir, 'build', 'configset')
+  shutil.copytree(os.path.join(repoRoot, 'solr', 'test-framework', 'src', 'test-files',
+                               'solr', 'configsets', 'minimal'),
+                  configSetDir)
+
+  return projectDir, configSetDir
+
+
+def testMavenBuild(repoDir, tmpDir, version, skipExternalClient=False):
+  """
+  Builds the test-external-client project against the published Solr artifacts in repoDir,
+  with both Maven and Gradle, to verify that the solr-solrj and solr-test-framework POMs
+  are consumable by a third-party build.
+
+  repoDir: root of the local Maven repository (contains org/apache/solr/...)
+  tmpDir: temp directory for the isolated project copy and log files
+  version: Solr version string (e.g. "10.0.0")
+  """
+  if skipExternalClient:
+    print('    skipping external client test (--skip-external-client specified).')
+    return
+
+  mvnCmd = shutil.which('mvn')
+  if mvnCmd is None:
+    raise RuntimeError('mvn not found on PATH; install Maven or pass --skip-external-client.')
+
+  print('    test external client project (verify POMs are consumable)...')
+  workDir = os.path.join(tmpDir, 'external-client')
+  if os.path.exists(workDir):
+    shutil.rmtree(workDir)
+  os.makedirs(workDir)
+  projectDir, configSetDir = prepareExternalClientProject(workDir)
+
+  print('      Maven build...')
+  run('"%s" -B -f "%s/pom.xml" -Dsolr.version="%s" -Dlocal.solr.repo="%s" -Dsmoke.configset.dir="%s" test'
+      % (mvnCmd, projectDir, version, repoDir, configSetDir),
+      os.path.join(tmpDir, 'external-client-maven.log'))
+
+  print('      Gradle build...')
+  run('"%s/gradlew" --no-daemon -p "%s" -Psolr.version="%s" -Plocal.solr.repo="%s" -Dsmoke.configset.dir="%s" test'
+      % (projectDir, projectDir, version, repoDir, configSetDir),
+      os.path.join(tmpDir, 'external-client-gradle.log'))
+
+  print('    external client project: SUCCESS')
+
+
+def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile, skipExternalClient=False):
   print('    download artifacts')
   artifacts = []
   artifactsURL = '%s/maven/org/apache/solr/' % baseURL
@@ -784,6 +864,8 @@ def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   checkIdenticalMavenArtifacts(distFiles, artifacts, version)
 
   checkAllJARs('%s/maven/org/apache/solr' % tmpDir, gitRevision, version)
+
+  testMavenBuild('%s/maven' % tmpDir, tmpDir, version, skipExternalClient=skipExternalClient)
 
 
 def getBinaryDistFiles(tmpDir, version, baseURL):
@@ -1032,6 +1114,8 @@ def parse_config():
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
                       help='Enable dev mode, will not check branch compatibility')
+  parser.add_argument('--skip-external-client', action='store_true', default=False,
+                      help='Skip the external client smoke test (requires Maven or Docker by default)')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1087,7 +1171,7 @@ def main():
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
-            downloadOnly=c.download_only)
+            downloadOnly=c.download_only, skipExternalClient=c.skip_external_client)
 
 
 def printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
@@ -1105,7 +1189,7 @@ def printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, 
   print('  JAVA_HOME=/path/to/java %s' % ' '.join(cmd))
 
 
-def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False, skipExternalClient=False):
   startTime = datetime.datetime.now()
   origTestArgs = testArgs
 
@@ -1171,7 +1255,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     verifySrcUnpacked(java, artifact, unpack(tmpDir, artifact), version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile, skipExternalClient=skipExternalClient)
   else:
     print("Solr test done (--download-only specified)")
 
