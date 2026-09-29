@@ -428,6 +428,18 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="edge_ngram_text" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.EdgeNGramFilterFactory" minGramSize="1" maxGramSize="20"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
   <fieldType name="uuid" class="solr.UUIDField"/>
 
   <!-- Try out some point types -->
@@ -471,16 +483,17 @@
     </analyzer>
   </fieldType>
   <!-- 
-    Example of using PathHierarchyTokenizerFactory for ancestor queries.
-    Since Lucene 10 produces sequential tokens, we need to store paths at index time
-    to match against sequential query tokens properly.
+    Example of using PathHierarchyTokenizerFactory at query time, so
+    queries for paths match documents at that path, or in ancestor paths.
+    Query-time ZeroPositionIncrementFilter keeps prefixes as synonyms.
   -->
   <fieldType name="ancestor_path" class="solr.TextField">
     <analyzer type="index">
-      <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
+      <tokenizer class="solr.KeywordTokenizerFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
+      <filter class="solr.ZeroPositionIncrementFilterFactory"/>
     </analyzer>
   </fieldType>
 
@@ -641,6 +654,7 @@
   <field name="sku2" type="skutype2" indexed="true" stored="true"/>
 
   <field name="textgap" type="textgap" indexed="true" stored="true"/>
+  <field name="edge_ngram_text" type="edge_ngram_text" indexed="true" stored="true"/>
 
   <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
   <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>

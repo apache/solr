@@ -113,6 +113,12 @@ Its builder will dynamically detect if solr-jetty is available and use that, oth
 CommonParams.QT has been un-deprecated.
 Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
 
+=== PathHierarchy ancestor matching
+
+Solr 10.0 `ancestor_path` queries stopped matching after Lucene 10 changed `PathHierarchyTokenizer` to sequential tokens.
+Solr 10.1 restores the documented Keyword-index / PathHierarchy-query contract by adding `solr.ZeroPositionIncrementFilterFactory` on the query analyzer of the shipped `ancestor_path` field types.
+See the Solr 10.0 PathHierarchyTokenizer note if you already reindexed with PathHierarchy on both sides.
+
 === Jetty Configuration
 
 Solr 10.1 upgrades the server to Eclipse Jetty 12.1, which removed Jetty's directory-scanning deployer (the `DeploymentManager` and `ContextProvider` classes).
@@ -367,31 +373,34 @@ Solr logs no longer include `webapp=/solr` and there's no longer a `webapp` key-
 
 ==== PathHierarchyTokenizer Behavior Change
 
-Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHierarchyTokenizer` now produces sequential tokens (position increment = 1) instead of overlapping tokens (position increment = 0). This affects ancestor queries that relied on overlapping token matching. Users should test existing queries and update configurations if needed.
+Lucene 10 (https://github.com/apache/lucene/pull/12875) changed `PathHierarchyTokenizer` to emit sequential tokens (`positionIncrement = 1`) instead of overlapping synonyms (`positionIncrement = 0` after the first token).
 
-*Example configuration change:*
+The documented `ancestor_path` configuration is Keyword at index time and PathHierarchy at query time.
+The field query parser and other parsers then build a phrase from those query tokens.
+On Lucene 10 that phrase cannot match a single keyword-indexed path, so ancestor matching stopped working.
+
+Do not put PathHierarchy on both the index and query analyzers.
+That configuration produces descendant matching, not ancestor matching.
+Solr 10.0 upgrade notes briefly recommended that change; it is incorrect.
+Collections that already reindexed with PathHierarchy on both sides now have a descendant index under an ancestor field name and must reindex with Keyword at index time to restore ancestors.
+
+Keep the original Keyword-index / PathHierarchy-query pair, and add `solr.ZeroPositionIncrementFilterFactory` on the query analyzer so prefixes are synonyms again:
+
 [source,xml]
 ----
-<!-- Before: Query-time tokenization for ancestors -->
 <fieldType name="ancestor_path" class="solr.TextField">
   <analyzer type="index">
     <tokenizer class="solr.KeywordTokenizerFactory"/>
   </analyzer>
   <analyzer type="query">
     <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
-  </analyzer>
-</fieldType>
-
-<!-- After: Index-time tokenization for modern behavior -->
-<fieldType name="ancestor_path" class="solr.TextField">
-  <analyzer type="index">
-    <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
-  </analyzer>
-  <analyzer type="query">
-    <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/"/>
+    <filter class="solr.ZeroPositionIncrementFilterFactory"/>
   </analyzer>
 </fieldType>
 ----
+
+`descendent_path` (PathHierarchy at index, Keyword at query) is unaffected.
+If Lucene restores overlapping tokens (https://github.com/apache/lucene/issues/15769), the filter becomes a no-op and can be removed.
 
 === Learning To Rank (LTR)
 

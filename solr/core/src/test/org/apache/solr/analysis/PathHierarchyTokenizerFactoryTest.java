@@ -88,26 +88,30 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
   }
 
   public void testAncestors() {
-    // NOTE: In Lucene 10+, PathHierarchyTokenizer produces sequential tokens instead of overlapping
-    // tokens.
-    // This changes the behavior of ancestor queries - they now match based on sequential token
-    // positions
-    // rather than overlapping positions, so ancestor matching behavior has changed.
 
     assertQ(
         req("{!field f=cat_ancestor}Books/NonFic/Science"),
         "//*[@numFound='2']",
-        "//str[@name='id' and .='42']",
-        "//str[@name='id' and .='43']");
+        "//str[@name='id' and .='40']",
+        "//str[@name='id' and .='42']");
     assertQ(
         req("{!field f=cat_ancestor}Books/NonFic/Law"),
-        "//*[@numFound='2']",
+        "//*[@numFound='3']",
+        "//str[@name='id' and .='40']",
         "//str[@name='id' and .='41']",
         "//str[@name='id' and .='42']");
 
     assertQ(
         req("{!field f=cat_ancestor}Books/NonFic/Science/Physics"),
-        "//*[@numFound='1']",
+        "//*[@numFound='3']",
+        "//str[@name='id' and .='40']",
+        "//str[@name='id' and .='42']",
         "//str[@name='id' and .='43']");
+
+    // A short path must not match longer descendants (the both-sides Lucene 10 config would).
+    assertQ(
+        req("{!field f=cat_ancestor}Books/NonFic"),
+        "//*[@numFound='1']",
+        "//str[@name='id' and .='40']");
   }
 }

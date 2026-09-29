@@ -14,5 +14,6 @@
 #  limitations under the License.
 
 org.apache.solr.analysis.ReversedWildcardFilterFactory
+org.apache.solr.analysis.ZeroPositionIncrementFilterFactory
 org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory
 org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory

@@ -1,0 +1,7 @@
+title: Restore ancestor_path matching after Lucene 10 sequential PathHierarchy tokens.
+type: fixed
+authors:
+  - name: ICLA pending
+links:
+  - name: SOLR-18134
+    url: https://issues.apache.org/jira/browse/SOLR-18134

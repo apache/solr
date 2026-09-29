@@ -516,6 +516,7 @@
       </analyzer>
       <analyzer type="query">
         <tokenizer name="pathHierarchy" delimiter="/" />
+        <filter name="zeroPositionIncrement" />
       </analyzer>
     </fieldType>
 
