@@ -20,9 +20,11 @@ package org.apache.solr.core;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -31,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -88,6 +91,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
           return; // no point in the thread local provider below
         }
       } catch (IllegalStateException e) {
+        // e.g. a legacy configurator that set it in init()
         log.info("GlobalOpenTelemetry was already initialized by something else; using that.");
       }
     }
@@ -114,8 +118,30 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   /**
    * Creates the {@link OpenTelemetry} to install as {@link GlobalOpenTelemetry}; called after
    * {@link #init(NamedList)}. Implementations must not set {@link GlobalOpenTelemetry} themselves.
+   * Subclasses should override this; the default returns {@link #getOpenTelemetrySdk()} for
+   * backwards compatibility.
    */
-  protected abstract OpenTelemetry createOpenTelemetry();
+  protected OpenTelemetry createOpenTelemetry() {
+    DeprecationLog.log(
+        "createOpenTelemetry", getClass() + " should implement createOpenTelemetry()");
+    return getOpenTelemetrySdk();
+  }
+
+  /**
+   * @deprecated Not used by Solr; override {@link #createOpenTelemetry()} instead.
+   */
+  @Deprecated(since = "10.2")
+  protected Tracer getTracer() {
+    return null;
+  }
+
+  /**
+   * @deprecated override {@link #createOpenTelemetry()} instead.
+   */
+  @Deprecated(since = "10.2")
+  protected OpenTelemetrySdk getOpenTelemetrySdk() {
+    return null;
+  }
 
   private static class ContextThreadLocalProvider
       implements ExecutorUtil.InheritableThreadLocalProvider {
