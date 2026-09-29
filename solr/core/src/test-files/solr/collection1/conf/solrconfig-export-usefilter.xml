@@ -23,7 +23,9 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
-  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <indexConfig>
+    <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.index.LogDocMergePolicyFactory}" />
+  </indexConfig>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="/select" class="solr.SearchHandler" />

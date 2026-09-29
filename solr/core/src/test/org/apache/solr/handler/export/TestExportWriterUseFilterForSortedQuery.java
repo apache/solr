@@ -17,7 +17,6 @@
 package org.apache.solr.handler.export;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -26,6 +25,7 @@ import org.apache.solr.client.solrj.response.json.CanonicalJsonResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -45,13 +45,13 @@ public class TestExportWriterUseFilterForSortedQuery extends SolrTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("solr.tests.mergePolicyFactory", LogDocMergePolicyFactory.class.getName());
-    SolrTestCaseJ4.newRandomConfig();
-    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    solrTestRule.startSolr();
     solrTestRule
         .newCollection()
-        .withConfigSet(SolrTestCaseJ4.TEST_COLL1_CONF())
+        .withConfigSet(
+            ExternalPaths.SOURCE_HOME.resolve("solr/core/src/test-files/solr/collection1/conf"))
         .withConfigFile("solrconfig-export-usefilter.xml")
-        .withSchemaFile("schema-sortingresponse.xml")
+        .withSchemaFile("schema-export-usefilter.xml")
         .create();
   }
 
