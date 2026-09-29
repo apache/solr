@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Add V2 "System Info" API and SolrJ request 'SystemApi.GetNodeSystemInfo'
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Isabelle Giguère
+links:
+  - name: PR#4078
+    url: https://github.com/apache/solr/pull/4078

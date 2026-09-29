@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +42,7 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
     Set<String> nodes;
     Object nodesRaw = message.get(CollectionParams.NODES);
     if (nodesRaw == null) {
-      nodes = Collections.emptySet();
+      nodes = Set.of();
     } else if (nodesRaw instanceof Set) {
       nodes = (Set<String>) nodesRaw;
     } else if (nodesRaw instanceof Collection) {

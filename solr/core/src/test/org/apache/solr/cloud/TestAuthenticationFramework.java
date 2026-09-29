@@ -21,9 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -44,9 +42,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   private static final int nodeCount = numShards * numReplicas;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";
-
-  static String requestUsername = MockAuthenticationPlugin.expectedUsername;
-  static String requestPassword = MockAuthenticationPlugin.expectedPassword;
 
   @Override
   public void setUp() throws Exception {
@@ -74,7 +69,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     try {
       RemoteSolrException e =
           expectThrows(RemoteSolrException.class, this::collectionCreateSearchDeleteTwice);
-      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
+      assertEquals(401, e.code()); // Authentication failed
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
       MockAuthenticationPlugin.expectedPassword = null;
@@ -126,7 +121,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       implements HttpClientBuilderPlugin {
     public static String expectedUsername;
     public static String expectedPassword;
-    private HttpRequestInterceptor interceptor;
 
     @Override
     public void init(Map<String, Object> pluginConfig) {}
@@ -151,11 +145,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         response.sendError(401, "Unauthorized request");
         return false;
       }
-    }
-
-    @Override
-    public void close() {
-      HttpClientUtil.removeRequestInterceptor(interceptor);
     }
   }
 }

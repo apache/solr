@@ -488,7 +488,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "8",
@@ -579,8 +579,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
-                sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
+            List.of(sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
             params));
     assertUpdateResponse(solrClient.commit(alias));
     waitColAndAlias(alias, TRA, "2017-10-30", numShards);
@@ -619,7 +618,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "14",
@@ -631,7 +630,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "15",
@@ -643,7 +642,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "16",
@@ -655,7 +654,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "17",
@@ -670,7 +669,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "18",
@@ -724,7 +723,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertUpdateResponse(
         add(
             alias,
-            Collections.singletonList(
+            List.of(
                 sdoc(
                     "id",
                     "6",
@@ -1275,13 +1274,13 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // some tidbits for handling zk data here are swiped from Aliases.json
     Map<String, Map> aliasMap;
     if (data == null || data.length == 0) {
-      aliasMap = Collections.emptyMap();
+      aliasMap = Map.of();
     } else {
       aliasMap = (Map<String, Map>) Utils.fromJSON(data);
     }
     assertNotEquals(0, aliasMap.size());
 
-    Map colAliases = aliasMap.getOrDefault("collection", Collections.emptyMap());
+    Map colAliases = aliasMap.getOrDefault("collection", Map.of());
     assertNotEquals(0, colAliases.size());
 
     String singleInitialCollection = (String) colAliases.get(alias);

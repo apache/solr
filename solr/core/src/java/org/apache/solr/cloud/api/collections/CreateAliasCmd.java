@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -179,8 +178,7 @@ public class CreateAliasCmd extends AliasCmd {
     // Create the collection
     createCollectionAndWait(
         adminCmdContext, aliasName, aliasProperties, initialCollectionName, ccc);
-    validateAllCollectionsExistAndNoDuplicates(
-        Collections.singletonList(initialCollectionName), zkStateReader);
+    validateAllCollectionsExistAndNoDuplicates(List.of(initialCollectionName), zkStateReader);
   }
 
   private void validateAllCollectionsExistAndNoDuplicates(

@@ -112,6 +112,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   @VisibleForTesting static final String FIELD_TYPE = "queryFieldType";
   @VisibleForTesting static final String CONFIG_FILE = "config-file";
   private static final String EXCLUDE = "exclude";
+  private static final String DEBUG_QUERY_BOOSTING = "queryBoosting";
 
   /**
    * @see #getBoostDocs(SolrIndexSearcher, Set, Map)
@@ -444,11 +445,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {
           if (Boolean.valueOf(e)) {
-            elevationBuilder.addExcludedIds(Collections.singleton(id));
+            elevationBuilder.addExcludedIds(Set.of(id));
             continue;
           }
         }
-        elevationBuilder.addElevatedIds(Collections.singletonList(id));
+        elevationBuilder.addElevatedIds(List.of(id));
       }
 
       // It is allowed to define multiple times different elevations for the same query. In this
@@ -488,6 +489,45 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return;
     }
 
+    if (rb instanceof CombinedQueryResponseBuilder crb) {
+      prepareCombined(crb);
+    } else {
+      prepareElevationComponent(rb);
+    }
+  }
+
+  /**
+   * Elevates each subquery and mirrors the resulting SortSpec/filters onto the parent crb so {@link
+   * CombinedQueryComponent#mergeIds} can read {@code _elevate_} from each shard's {@code
+   * sort_values_i} during distributed merge.
+   */
+  private void prepareCombined(CombinedQueryResponseBuilder crb) throws IOException {
+    if (crb.responseBuilders.isEmpty()) {
+      return;
+    }
+    for (ResponseBuilder thisRb : crb.responseBuilders) {
+      prepareElevationComponent(thisRb);
+    }
+    // Subqueries get identical elevation treatment, so any one is representative.
+    ResponseBuilder representative = crb.responseBuilders.getFirst();
+    crb.setSortSpec(representative.getSortSpec());
+    crb.setFilters(representative.getFilters());
+
+    if (crb.isDebug() && crb.isDebugQuery()) {
+      List<Object> debugPerSubquery = new ArrayList<>(crb.responseBuilders.size());
+      for (ResponseBuilder thisRb : crb.responseBuilders) {
+        Object queryBoosting = thisRb.getDebugInfo().get(DEBUG_QUERY_BOOSTING);
+        if (queryBoosting != null) {
+          debugPerSubquery.add(queryBoosting);
+        }
+      }
+      if (!debugPerSubquery.isEmpty()) {
+        crb.addDebugInfo(DEBUG_QUERY_BOOSTING, debugPerSubquery);
+      }
+    }
+  }
+
+  private void prepareElevationComponent(ResponseBuilder rb) throws IOException {
     Elevation elevation = getElevation(rb);
     if (elevation != null) {
       setQuery(rb, elevation);
@@ -518,13 +558,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     String paramExcludedIds = params.get(QueryElevationParams.EXCLUDE);
     if (paramElevatedIds != null || paramExcludedIds != null) {
       List<String> elevatedIds =
-          paramElevatedIds != null
-              ? StrUtils.splitSmart(paramElevatedIds, ",", true)
-              : Collections.emptyList();
+          paramElevatedIds != null ? StrUtils.splitSmart(paramElevatedIds, ",", true) : List.of();
       List<String> excludedIds =
-          paramExcludedIds != null
-              ? StrUtils.splitSmart(paramExcludedIds, ",", true)
-              : Collections.emptyList();
+          paramExcludedIds != null ? StrUtils.splitSmart(paramExcludedIds, ",", true) : List.of();
       return new ElevationBuilder().addElevatedIds(elevatedIds).addExcludedIds(excludedIds).build();
     } else {
       IndexReader reader = rb.req.getSearcher().getIndexReader();
@@ -771,7 +807,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
     dbg.add("q", rb.getQueryString());
     dbg.add("match", match);
-    rb.addDebugInfo("queryBoosting", dbg);
+    rb.addDebugInfo(DEBUG_QUERY_BOOSTING, dbg);
   }
 
   // ---------------------------------------------------------------------------------
@@ -916,10 +952,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     clearElevationProviderCache();
     ElevatingQuery elevatingQuery = new ElevatingQuery(queryString, subsetMatch);
     ElevationBuilder elevationBuilder = new ElevationBuilder();
-    elevationBuilder.addElevatedIds(
-        elevatedIds == null ? Collections.emptyList() : Arrays.asList(elevatedIds));
-    elevationBuilder.addExcludedIds(
-        excludedIds == null ? Collections.emptyList() : Arrays.asList(excludedIds));
+    elevationBuilder.addElevatedIds(elevatedIds == null ? List.of() : Arrays.asList(elevatedIds));
+    elevationBuilder.addExcludedIds(excludedIds == null ? List.of() : Arrays.asList(excludedIds));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap =
         Map.of(elevatingQuery, elevationBuilder);
     synchronized (LOCK) {
@@ -1221,7 +1255,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     public Elevation(Set<BytesRef> elevatedIds, Set<BytesRef> excludedIds, String queryFieldName) {
       if (elevatedIds == null || elevatedIds.isEmpty()) {
         includeQuery = EMPTY_QUERY;
-        this.elevatedIds = Collections.emptySet();
+        this.elevatedIds = Set.of();
       } else {
         this.elevatedIds = Collections.unmodifiableSet(new LinkedHashSet<>(elevatedIds));
         BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
@@ -1233,7 +1267,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       if (excludedIds == null || excludedIds.isEmpty()) {
-        this.excludedIds = Collections.emptySet();
+        this.excludedIds = Set.of();
         excludeQueries = null;
       } else {
         this.excludedIds = Collections.unmodifiableSet(new LinkedHashSet<>(excludedIds));
@@ -1647,7 +1681,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       /** Gets the match values decorating this node. */
       List<M> getMatchValues() {
-        return (matchValues == null ? Collections.emptyList() : matchValues);
+        return (matchValues == null ? List.of() : matchValues);
       }
 
       /**

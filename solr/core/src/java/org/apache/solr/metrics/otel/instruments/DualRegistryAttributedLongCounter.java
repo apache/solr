@@ -27,6 +27,8 @@ public class DualRegistryAttributedLongCounter extends AttributedLongCounter {
 
   private final AttributedLongCounter nodeCounter;
 
+  @SuppressWarnings(
+      "ReferenceEquality") // sanity check that two distinct counter instances were passed in
   public DualRegistryAttributedLongCounter(
       LongCounter coreCounter,
       Attributes coreAttributes,

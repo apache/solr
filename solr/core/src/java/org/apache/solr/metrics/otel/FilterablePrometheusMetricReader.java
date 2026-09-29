@@ -19,6 +19,12 @@ package org.apache.solr.metrics.otel;
 import static java.util.stream.Collectors.toList;
 
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.metrics.InstrumentType;
+import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
+import io.opentelemetry.sdk.metrics.export.CollectionRegistration;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
+import io.prometheus.metrics.model.registry.MultiCollector;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
@@ -37,16 +43,47 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
+public class FilterablePrometheusMetricReader implements MetricReader, MultiCollector {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<String> PROM_SUFFIXES =
       Set.of("_total", "_sum", "_bucket", "_created", "_info");
 
+  private final PrometheusMetricReader delegate;
+
   public FilterablePrometheusMetricReader(
       boolean otelScopeEnabled, Predicate<String> allowedResourceAttributesFilter) {
-    super(otelScopeEnabled, allowedResourceAttributesFilter);
+    this.delegate =
+        PrometheusMetricReader.builder()
+            .setOtelScopeLabelsEnabled(otelScopeEnabled)
+            .setAllowedResourceAttributesFilter(allowedResourceAttributesFilter)
+            .build();
+  }
+
+  @Override
+  public AggregationTemporality getAggregationTemporality(InstrumentType instrumentType) {
+    return delegate.getAggregationTemporality(instrumentType);
+  }
+
+  @Override
+  public void register(CollectionRegistration registration) {
+    delegate.register(registration);
+  }
+
+  @Override
+  public CompletableResultCode forceFlush() {
+    return delegate.forceFlush();
+  }
+
+  @Override
+  public CompletableResultCode shutdown() {
+    return delegate.shutdown();
+  }
+
+  @Override
+  public MetricSnapshots collect() {
+    return delegate.collect();
   }
 
   /**
@@ -62,11 +99,12 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
 
     // If no filtering is requested then return all metrics
     if (includedNames.isEmpty() && requiredLabels.isEmpty()) {
-      return super.collect();
+      return delegate.collect();
     }
 
-    // Prometheus appends a suffix to the metrics depending on the metric type. We need to sanitize
-    // the suffix off if they filter by Prometheus name instead of OTEL name.
+    // Users may filter by Prometheus-format names (e.g. "solr_core_requests") or with a
+    // Prometheus type suffix (e.g. "solr_core_requests_total"). Strip any such suffix so we can
+    // compare against the Prometheus base name returned by getMetadata().getPrometheusName().
     Set<String> sanitizedNames =
         includedNames.stream()
             .map(
@@ -82,9 +120,20 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
 
     MetricSnapshots snapshotsToFilter;
     if (sanitizedNames.isEmpty()) {
-      snapshotsToFilter = super.collect();
+      snapshotsToFilter = delegate.collect();
     } else {
-      snapshotsToFilter = super.collect(sanitizedNames::contains);
+      // We collect all metrics and filter by Prometheus name rather than using
+      // delegate.collect(Predicate) which matches on OTel internal names. This avoids a mismatch
+      // when OTel names use dot-separators (e.g. "solr.core.requests") but users filter by the
+      // Prometheus underscore-format name they see in the output (e.g. "solr_core_requests").
+      MetricSnapshots all = delegate.collect();
+      MetricSnapshots.Builder nameFiltered = MetricSnapshots.builder();
+      for (MetricSnapshot snapshot : all) {
+        if (sanitizedNames.contains(snapshot.getMetadata().getPrometheusName())) {
+          nameFiltered.metricSnapshot(snapshot);
+        }
+      }
+      snapshotsToFilter = nameFiltered.build();
     }
 
     // Return named filtered snapshots if not label filters provided
@@ -122,9 +171,7 @@ public class FilterablePrometheusMetricReader extends PrometheusMetricReader {
         case InfoSnapshot ignored -> {
           // Do nothing for InfoSnapshots. Always filter it out
         }
-        default -> {
-          log.error("Unknown metric snapshot type {}", metricSnapshot.getClass());
-        }
+        default -> log.error("Unknown metric snapshot type {}", metricSnapshot.getClass());
       }
     }
     return filteredSnapshots.build();

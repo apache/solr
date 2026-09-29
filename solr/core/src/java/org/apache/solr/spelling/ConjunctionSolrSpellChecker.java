@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -46,6 +45,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   private List<SolrSpellChecker> checkers = new ArrayList<>();
   private boolean initialized = false;
 
+  @SuppressWarnings("ReferenceEquality") // Analyzer identity, not equality, is what matters here
   public void addChecker(SolrSpellChecker checker) {
     if (initialized) {
       throw new IllegalStateException("Need to add checkers before calling init()");
@@ -131,13 +131,14 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
   // TODO: This just interleaves the results.  In the future, we might want to let users give each
   // checker its own weight and use that in combination to score & frequency to sort the results ?
   private SpellingResult mergeCheckers(SpellingResult[] results, int numSug) {
-    Map<Token, Integer> combinedTokenFrequency = new HashMap<>();
-    Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<>();
+    Map<SpellCheckToken, Integer> combinedTokenFrequency = new HashMap<>();
+    Map<SpellCheckToken, List<LinkedHashMap<String, Integer>>> allSuggestions =
+        new LinkedHashMap<>();
     for (SpellingResult result : results) {
       if (result.getTokenFrequency() != null) {
         combinedTokenFrequency.putAll(result.getTokenFrequency());
       }
-      for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry :
+      for (Map.Entry<SpellCheckToken, LinkedHashMap<String, Integer>> entry :
           result.getSuggestions().entrySet()) {
         List<LinkedHashMap<String, Integer>> allForThisToken = allSuggestions.get(entry.getKey());
         if (allForThisToken == null) {
@@ -148,8 +149,9 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
       }
     }
     SpellingResult combinedResult = new SpellingResult();
-    for (Map.Entry<Token, List<LinkedHashMap<String, Integer>>> entry : allSuggestions.entrySet()) {
-      Token original = entry.getKey();
+    for (Map.Entry<SpellCheckToken, List<LinkedHashMap<String, Integer>>> entry :
+        allSuggestions.entrySet()) {
+      SpellCheckToken original = entry.getKey();
       List<Iterator<Map.Entry<String, Integer>>> corrIters =
           new ArrayList<>(entry.getValue().size());
       for (LinkedHashMap<String, Integer> corrections : entry.getValue()) {
@@ -172,7 +174,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
         }
         if (!anyData) {
           if (numberAdded == 0) {
-            combinedResult.add(original, Collections.<String>emptyList());
+            combinedResult.add(original, List.of());
             Integer tokenFrequency = combinedTokenFrequency.get(original);
             combinedResult.addFrequency(original, tokenFrequency == null ? 0 : tokenFrequency);
           }

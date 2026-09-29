@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -191,7 +190,7 @@ public abstract class DocRouter {
     } else if (fuzz < 0.0f) {
       fuzz = 0.0f;
     }
-    if (partitions == 0) return Collections.emptyList();
+    if (partitions == 0) return List.of();
     long rangeSize = (long) max - (long) min;
     long rangeStep = Math.max(1, rangeSize / partitions);
     long fuzzStep = Math.round(rangeStep * (double) fuzz / 2.0);

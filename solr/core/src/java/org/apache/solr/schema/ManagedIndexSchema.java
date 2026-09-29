@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -435,7 +434,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       boolean success = false;
       if (copyFieldNames == null) {
-        copyFieldNames = Collections.emptyMap();
+        copyFieldNames = Map.of();
       }
       newSchema = shallowCopy(true);
 
@@ -639,7 +638,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (isMutable) {
       boolean success = false;
       if (copyFieldNames == null) {
-        copyFieldNames = Collections.emptyMap();
+        copyFieldNames = Map.of();
       }
       newSchema = shallowCopy(true);
 

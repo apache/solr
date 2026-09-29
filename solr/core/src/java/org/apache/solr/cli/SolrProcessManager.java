@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
+import static org.apache.solr.servlet.CoreContainerProvider.SOLR_INSTALL_DIR;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -76,7 +76,7 @@ public class SolrProcessManager {
                             ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
-    String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE);
+    String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
     pidDir =
         Path.of(
             EnvUtils.getProperty(

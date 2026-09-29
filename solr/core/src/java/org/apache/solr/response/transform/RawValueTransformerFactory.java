@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrDocument;
@@ -63,6 +62,8 @@ public class RawValueTransformerFactory extends TransformerFactory
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // QueryResponseWriter identity, not equality, is what matters here
   public DocTransformer create(
       String display,
       SolrParams params,
@@ -123,7 +124,7 @@ public class RawValueTransformerFactory extends TransformerFactory
 
     @Override
     public Collection<String> getRawFields() {
-      return Collections.singleton(display);
+      return Set.of(display);
     }
 
     @Override

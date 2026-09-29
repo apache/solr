@@ -19,9 +19,7 @@ package org.apache.solr.handler.export;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -39,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,9 +70,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
         ((IteratorWriter) v).toList(lst);
         v = lst;
       } else if (v instanceof MapWriter) {
-        Map<String, Object> map = new HashMap<>();
-        ((MapWriter) v).toMap(map);
-        v = map;
+        v = new SimpleOrderedMap<>((MapWriter) v);
       }
       tuple.put(k.toString(), v);
       return this;

@@ -138,7 +138,7 @@ public abstract class AdminAPIBase extends JerseyResource {
       ZkNodeProps remoteMessage)
       throws Exception {
     return submitRemoteMessageAndHandleException(
-        response, new AdminCmdContext(action, null), remoteMessage);
+        response, new AdminCmdContext(action, null, solrQueryRequest), remoteMessage);
   }
 
   protected SolrResponse submitRemoteMessageAndHandleAsync(
@@ -149,7 +149,7 @@ public abstract class AdminAPIBase extends JerseyResource {
       throws Exception {
     var remoteResponse =
         submitRemoteMessageAndHandleException(
-            response, new AdminCmdContext(action, asyncId), remoteMessage);
+            response, new AdminCmdContext(action, asyncId, solrQueryRequest), remoteMessage);
 
     if (asyncId != null) {
       response.requestId = asyncId;

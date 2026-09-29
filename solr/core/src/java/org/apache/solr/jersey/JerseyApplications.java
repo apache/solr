@@ -43,14 +43,14 @@ public class JerseyApplications {
 
       // Request and response serialization/deserialization
       // TODO: could these be singletons to save per-request object creations?
-      register(JacksonJsonProvider.class, 1);
+      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 1);
+      register(JacksonJsonProvider.class, 2);
       register(MessageBodyWriters.JavabinMessageBodyWriter.class, 5);
       register(MessageBodyWriters.XmlMessageBodyWriter.class, 5);
       register(MessageBodyWriters.CsvMessageBodyWriter.class, 5);
       register(MessageBodyWriters.RawMessageBodyWriter.class, 5);
       register(MessageBodyWriters.PrometheusMessageBodyWriter.class, 5);
       register(MessageBodyWriters.OpenmetricsMessageBodyWriter.class, 5);
-      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 2);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic

@@ -22,11 +22,15 @@ import org.junit.Test;
 
 public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
     extends LanguageIdentifierUpdateProcessorFactoryTestCase {
+
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters)
       throws Exception {
     return new LangDetectLanguageIdentifierUpdateProcessor(
-        _parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
+        _parser.buildRequestFrom(h.getCore(), parameters, null),
+        resp,
+        null,
+        LangDetectLanguageIdentifierUpdateProcessorFactory.ORCHESTRATOR);
   }
 
   // this one actually works better it seems with short docs
@@ -37,8 +41,9 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
     return doc;
   }
 
-  /* we don't return 'un' for the super-short one (this detector things hungarian?).
-   * replace this with japanese
+  /**
+   * Language detection using library-specific text samples. Japanese replaces the base class "too
+   * short" case, and the Russian sample uses pure Cyrillic to avoid ambiguity with Serbian.
    */
   @Test
   @Override
@@ -97,14 +102,15 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
         "บทความคัดสรรเดือนนี้",
         "subject",
         "อันเนอลีส มารี อันเนอ ฟรังค์ หรือมักรู้จักในภาษาไทยว่า แอนน์ แฟรงค์ เป็นเด็กหญิงชาวยิว เกิดที่เมืองแฟรงก์เฟิร์ต ประเทศเยอรมนี เธอมีชื่อเสียงโด่งดังในฐานะผู้เขียนบันทึกประจำวันซึ่งต่อมาได้รับการตีพิมพ์เป็นหนังสือ บรรยายเหตุการณ์ขณะหลบซ่อนตัวจากการล่าชาวยิวในประเทศเนเธอร์แลนด์ ระหว่างที่ถูกเยอรมนีเข้าครอบครองในช่วงสงครามโลกครั้งที่สอง");
+    // Pure Cyrillic text; mixed Latin+Cyrillic text risks ambiguity with Serbian.
     assertLang(
         "ru",
         "id",
         "7ru",
         "name",
-        "Lucene",
+        "Russian",
         "subject",
-        "The Apache Lucene — это свободная библиотека для высокоскоростного полнотекстового поиска, написанная на Java. Может быть использована для поиска в интернете и других областях компьютерной лингвистики (аналитическая философия).");
+        "Русский язык принадлежит к группе восточнославянских языков индоевропейской семьи и является официальным языком в Российской Федерации. По числу носителей русский язык занимает восьмое место в мире и первое место среди славянских языков.");
     assertLang(
         "de",
         "id",
@@ -145,5 +151,54 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest
         "Lucene",
         "subject",
         "Apache Lucene, ou simplesmente Lucene, é um software de busca e uma API de indexação de documentos, escrito na linguagem de programação Java. É um software de código aberto da Apache Software Foundation licenciado através da licença Apache.");
+  }
+
+  /**
+   * Multi-value language detection: Norwegian is the first field value, but English dominates by
+   * volume across all values and wins. The pre-existing language field must not be overwritten.
+   */
+  @Test
+  @Override
+  public void testPreExistingMultiValueMixedLang() throws Exception {
+    SolrInputDocument doc;
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "text_multivalue");
+    parameters.add("langid.langField", "language");
+    parameters.add("langid.langsField", "languages");
+    parameters.add("langid.enforceSchema", "false");
+    parameters.add("langid.map", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    // First value: Norwegian (detected as "no" when isolated).
+    // Second + third values: English (dominant by volume across all values).
+    // If only the first value were used, "no" would be detected; reading all values gives "en".
+    doc = new SolrInputDocument();
+    doc.addField(
+        "text_multivalue",
+        new String[] {
+          "Lucene er et fri/åpen kildekode programvarebibliotek for informasjonsgjenfinning, opprinnelig utviklet i programmeringsspråket Java av Doug Cutting.",
+          "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.",
+          "Solr (pronounced \"solar\") is an open source enterprise search platform from the Apache Lucene project. Its major features include full-text search, hit highlighting, faceted search, dynamic clustering, database integration, and rich document handling."
+        });
+    SolrInputDocument result = doc.deepCopy();
+    liProcessor.process(result);
+    assertEquals("en", result.getFieldValue("language"));
+    assertEquals("en", result.getFieldValue("languages"));
+
+    // Pre-existing language field must not be overwritten.
+    doc = new SolrInputDocument();
+    doc.addField(
+        "text_multivalue",
+        new String[] {
+          "Lucene er et fri/åpen kildekode programvarebibliotek for informasjonsgjenfinning, opprinnelig utviklet i programmeringsspråket Java av Doug Cutting.",
+          "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.",
+          "Solr (pronounced \"solar\") is an open source enterprise search platform from the Apache Lucene project. Its major features include full-text search, hit highlighting, faceted search, dynamic clustering, database integration, and rich document handling."
+        });
+    doc.setField("language", "no");
+    result = doc.deepCopy();
+    liProcessor.process(result);
+    assertEquals("no", result.getFieldValue("language"));
+    assertEquals("no", result.getFieldValue("languages"));
+    assertNotNull(result.getFieldValue("text_multivalue_no"));
   }
 }

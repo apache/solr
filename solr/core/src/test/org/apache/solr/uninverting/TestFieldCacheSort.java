@@ -17,7 +17,6 @@
 package org.apache.solr.uninverting;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.document.Document;
@@ -80,8 +79,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -119,8 +117,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -156,8 +153,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -194,8 +190,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -234,8 +229,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -274,8 +268,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -315,8 +308,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     Type type = sortType == SortField.Type.STRING ? Type.SORTED : Type.BINARY;
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", type));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", type));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -465,8 +457,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.INTEGER_POINT));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.INTEGER_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -498,8 +489,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.INTEGER_POINT));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.INTEGER_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -533,8 +523,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.INTEGER_POINT));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.INTEGER_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -570,8 +559,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.INTEGER_POINT));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.INTEGER_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -602,8 +590,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_INTEGER));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_INTEGER));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -633,8 +620,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_INTEGER));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_INTEGER));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -667,8 +653,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_INTEGER));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_INTEGER));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -701,8 +686,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_INTEGER));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_INTEGER));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -735,9 +719,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LongPoint("value", 4));
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LONG_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LONG_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -768,9 +750,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LongPoint("value", 4));
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LONG_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LONG_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -803,9 +783,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LongPoint("value", 4));
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LONG_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LONG_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -840,9 +818,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LongPoint("value", 4));
     doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LONG_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LONG_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -872,9 +848,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_LONG));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_LONG));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -903,9 +877,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_LONG));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_LONG));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -937,9 +909,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_LONG));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_LONG));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -971,9 +941,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_LONG));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_LONG));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1006,9 +974,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new FloatPoint("value", 4.2f));
     doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.FLOAT_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.FLOAT_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1039,9 +1005,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new FloatPoint("value", 4.2f));
     doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.FLOAT_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.FLOAT_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1074,9 +1038,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new FloatPoint("value", 4.2f));
     doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.FLOAT_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.FLOAT_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1111,9 +1073,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new FloatPoint("value", 4.2f));
     doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.FLOAT_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.FLOAT_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1143,9 +1103,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_FLOAT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1174,9 +1132,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_FLOAT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1208,9 +1164,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_FLOAT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1242,9 +1196,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc = new Document();
     doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_FLOAT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1281,9 +1233,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new DoublePoint("value", 4.2333333333332));
     doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.DOUBLE_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.DOUBLE_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1316,9 +1266,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new StoredField("value", -0d));
     writer.addDocument(doc);
     doc = new Document();
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.DOUBLE_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.DOUBLE_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1369,9 +1317,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new DoublePoint("value", 4.2333333333332));
     doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.DOUBLE_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.DOUBLE_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1412,9 +1358,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new DoublePoint("value", 4.2333333333332));
     doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.DOUBLE_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.DOUBLE_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1456,9 +1400,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new DoublePoint("value", 4.2333333333332));
     doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.DOUBLE_POINT));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.DOUBLE_POINT));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir, false);
@@ -1495,8 +1437,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_DOUBLE));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1528,8 +1469,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     writer.addDocument(doc);
     doc = new Document();
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_DOUBLE));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1578,8 +1518,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_DOUBLE));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1618,8 +1557,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_DOUBLE));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1658,8 +1596,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir =
-        UninvertingReader.wrap(
-            writer.getReader(), Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+        UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.LEGACY_DOUBLE));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1695,8 +1632,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     doc.add(newStringField("t", "1", Field.Store.NO));
     w.addDocument(doc);
 
-    IndexReader r =
-        UninvertingReader.wrap(DirectoryReader.open(w), Collections.singletonMap("f", Type.SORTED));
+    IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w), Map.of("f", Type.SORTED));
     w.close();
     IndexSearcher s = newSearcher(r);
     TopDocs hits =
@@ -1731,8 +1667,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     writer.close();
     Sort sort = new Sort(new SortField("string", SortField.Type.STRING), SortField.FIELD_DOC);
     IndexReader reader =
-        UninvertingReader.wrap(
-            DirectoryReader.open(indexStore), Collections.singletonMap("string", Type.SORTED));
+        UninvertingReader.wrap(DirectoryReader.open(indexStore), Map.of("string", Type.SORTED));
     IndexSearcher searcher = new IndexSearcher(reader);
     expectThrows(
         IllegalStateException.class,
@@ -1765,8 +1700,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     }
 
     IndexReader r =
-        UninvertingReader.wrap(
-            DirectoryReader.open(w), Collections.singletonMap("id", Type.LEGACY_INTEGER));
+        UninvertingReader.wrap(DirectoryReader.open(w), Map.of("id", Type.LEGACY_INTEGER));
     w.close();
     Query q = new TermQuery(new Term("body", "text"));
     TestUtil.checkReader(r);
@@ -1815,8 +1749,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     Document doc = new Document();
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", Type.SORTED));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.SORTED));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -1837,8 +1770,7 @@ public class TestFieldCacheSort extends SolrTestCase {
     Document doc = new Document();
     doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
-    IndexReader ir =
-        UninvertingReader.wrap(writer.getReader(), Collections.singletonMap("value", Type.SORTED));
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), Map.of("value", Type.SORTED));
     writer.close();
 
     IndexSearcher searcher = newSearcher(ir);

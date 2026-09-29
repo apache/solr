@@ -71,7 +71,6 @@ public class ZkToolHelp extends ToolBase {
       print(new ConfigSetUploadTool(runtime).getUsage());
       print(new ConfigSetDownloadTool(runtime).getUsage());
       print(new ZkMkrootTool(runtime).getUsage());
-      print(new LinkConfigTool(runtime).getUsage());
       print(new UpdateACLTool(runtime).getUsage());
       print("");
       print(

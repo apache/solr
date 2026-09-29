@@ -17,9 +17,6 @@
 
 package org.apache.solr.handler.export;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -180,14 +177,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       throws IOException {
     w.writeMap(
         mw -> {
-          mw.put("responseHeader", singletonMap("status", 400))
+          mw.put("responseHeader", Map.of("status", 400))
               .put(
                   "response",
                   Map.of(
                       "numFound",
                       0,
                       "docs",
-                      singletonList(singletonMap("EXCEPTION", e.getMessage()))));
+                      List.of(Map.of("EXCEPTION", String.valueOf(e.getMessage())))));
         });
     if (logException) {
       log.error("Exception", e);
@@ -339,7 +336,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     try {
       writer.writeMap(
           m -> {
-            m.put("responseHeader", singletonMap("status", 0));
+            m.put("responseHeader", Map.of("status", 0));
             m.put(
                 "response",
                 (MapWriter)

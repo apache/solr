@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.response;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.Set;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
@@ -52,8 +51,11 @@ public class JavaBinResponseParser extends ResponseParser {
     return new JavaBinCodec(null, stringCache);
   }
 
+  private static final Set<String> CONTENT_TYPES =
+      Set.of(JAVABIN_CONTENT_TYPE, JAVABIN_CONTENT_TYPE_V2);
+
   @Override
-  public Collection<String> getContentTypes() {
-    return Set.of(JAVABIN_CONTENT_TYPE, JAVABIN_CONTENT_TYPE_V2);
+  public Set<String> getContentTypes() {
+    return CONTENT_TYPES;
   }
 }

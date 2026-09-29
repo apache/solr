@@ -1,0 +1,8 @@
+title: CrossDC Consumer off-by-one error in the ThreadDump handler.
+  
+type: fixed
+authors:
+  - name: Andrzej Bialecki
+links:
+  - name: SOLR-18423
+    url: https://issues.apache.org/jira/browse/SOLR-18423

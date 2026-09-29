@@ -22,6 +22,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
@@ -46,7 +47,8 @@ import org.junit.Test;
 /** Test for {@link CaffeineCache}. */
 public class TestCaffeineCache extends SolrTestCase {
 
-  SolrMetricManager metricManager = new SolrMetricManager(null);
+  MetricExporter me = null;
+  SolrMetricManager metricManager = new SolrMetricManager(me);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
@@ -58,6 +60,8 @@ public class TestCaffeineCache extends SolrTestCase {
     String newLfuCacheName = scope + "-2";
 
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
+    solrMetricsContext.registerCloseable(lfuCache);
+    solrMetricsContext.registerCloseable(newLFUCache);
 
     lfuCache.initializeMetrics(
         solrMetricsContext, Attributes.of(NAME_ATTR, lfuCacheName), "solr_cache");
@@ -118,6 +122,8 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(7.0, cumHitDatapoint + cumMissDatapoint, 0.001); // total cumulative lookups
     assertEquals(4.0, cumHitDatapoint, 0.001);
     assertEquals(102.0, cumInsertDatapoint, 0.001);
+
+    solrMetricsContext.close();
   }
 
   @Test

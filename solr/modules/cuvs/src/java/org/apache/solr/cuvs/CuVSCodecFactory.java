@@ -17,7 +17,7 @@
 package org.apache.solr.cuvs;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene103.Lucene103Codec;
+import org.apache.lucene.codecs.lucene104.Lucene104Codec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CodecFactory;
 import org.apache.solr.core.SchemaCodecFactory;
@@ -29,7 +29,7 @@ public class CuVSCodecFactory extends CodecFactory implements SolrCoreAware {
   private final SchemaCodecFactory fallback;
   private SolrCore core;
   NamedList<?> args;
-  Lucene103Codec fallbackCodec;
+  Lucene104Codec fallbackCodec;
   CuVSCodec codec;
 
   public CuVSCodecFactory() {
@@ -39,7 +39,7 @@ public class CuVSCodecFactory extends CodecFactory implements SolrCoreAware {
   @Override
   public Codec getCodec() {
     if (codec == null) {
-      fallbackCodec = (Lucene103Codec) fallback.getCodec();
+      fallbackCodec = (Lucene104Codec) fallback.getCodec();
       codec = new CuVSCodec(core, fallbackCodec, args);
     }
     return codec;

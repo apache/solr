@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,9 +28,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -41,12 +42,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -56,9 +58,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected Map<String, String> params;
+  protected SolrParams params;
   protected Iterator<Tuple> tupleIterator;
   protected String field;
   protected int numTerms;
@@ -71,9 +73,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   private transient StreamContext streamContext;
 
   public SignificantTermsStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      Map<String, String> params,
+      SolrParams params,
       String field,
       float minDocFreq,
       float maxDocFreq,
@@ -81,7 +83,15 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       int numTerms)
       throws IOException {
 
-    init(collectionName, zkHost, params, field, minDocFreq, maxDocFreq, minTermLength, numTerms);
+    init(
+        solrConnection,
+        collectionName,
+        params,
+        field,
+        minDocFreq,
+        maxDocFreq,
+        minTermLength,
+        numTerms);
   }
 
   public SignificantTermsStream(StreamExpression expression, StreamFactory factory)
@@ -89,10 +99,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are
+    // namedParameter, so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -116,12 +125,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = new HashMap<>();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("zkHost", "solrConnection"));
 
     String fieldParam = params.get("field");
     if (fieldParam != null) {
@@ -158,22 +163,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       params.remove("maxDocFreq");
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    if (zkHost == null) {
-      zkHost = factory.getDefaultZkHost();
-    }
-
-    // We've got all the required items
     init(
+        solrConnection,
         collectionName,
-        zkHost,
         params,
         fieldParam,
         minDocFreq,
@@ -186,45 +180,29 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp",
     // [aliases="field=alias,..."])
-
-    // function name
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    // collection
-    expression.addParameter(collection);
-
-    // parameters
-    for (Map.Entry<String, String> param : params.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
-    }
-
-    expression.addParameter(new StreamExpressionNamedParameter("field", field));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("maxDocFreq", Float.toString(maxDocFreq)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)));
-    expression.addParameter(
-        new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)));
-
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-
-    return expression;
+    return new StreamExpression(factory.getFunctionName(this.getClass()))
+        .withParameter(collection)
+        .withMoreParameters(params)
+        .withParameter(new StreamExpressionNamedParameter("field", field))
+        .withParameter(new StreamExpressionNamedParameter("minDocFreq", Float.toString(minDocFreq)))
+        .withParameter(new StreamExpressionNamedParameter("numTerms", String.valueOf(numTerms)))
+        .withParameter(
+            new StreamExpressionNamedParameter("minTermLength", String.valueOf(minTermLength)))
+        .withParameter(
+            new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      String zkHost,
-      Map<String, String> params,
+      SolrParams params,
       String field,
       float minDocFreq,
       float maxDocFreq,
       int minTermLength,
       int numTerms)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.field = field;
@@ -303,7 +281,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (NamedList<?> fullResp : callShards(getShards(zkHost, collection, streamContext))) {
+        for (NamedList<?> fullResp :
+            callShards(getShards(solrConnection, collection, streamContext))) {
           Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})
@@ -382,13 +361,13 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     private final float maxDocFreq;
     private final int numTerms;
     private final int minTermLength;
-    private final Map<String, String> paramsMap;
+    private final SolrParams params;
     private final boolean isLocal;
     private final SolrClientCache clientCache;
 
     public SignificantTermsCall(
         String baseUrl,
-        Map<String, String> paramsMap,
+        SolrParams params,
         String field,
         float minDocFreq,
         float maxDocFreq,
@@ -401,7 +380,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       this.field = field;
       this.minDocFreq = minDocFreq;
       this.maxDocFreq = maxDocFreq;
-      this.paramsMap = paramsMap;
+      this.params = params;
       this.numTerms = numTerms;
       this.minTermLength = minTermLength;
       this.isLocal = isLocal;
@@ -410,29 +389,27 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
     @Override
     public NamedList<?> call() throws Exception {
-      ModifiableSolrParams params = new ModifiableSolrParams();
+      SolrQuery queryRequestParams = new SolrQuery();
       SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
-      params.add(DISTRIB, "false");
-      params.add("fq", "{!significantTerms}");
+      queryRequestParams.setDistrib(false);
+      queryRequestParams.setFilterQueries("{!significantTerms}");
 
-      for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
-        params.add(entry.getKey(), entry.getValue());
-      }
+      queryRequestParams.add(params);
 
-      params.add("minDocFreq", Float.toString(minDocFreq));
-      params.add("maxDocFreq", Float.toString(maxDocFreq));
-      params.add("minTermLength", Integer.toString(minTermLength));
-      params.add("field", field);
-      params.add("numTerms", String.valueOf(numTerms * 5));
+      queryRequestParams.add("minDocFreq", Float.toString(minDocFreq));
+      queryRequestParams.add("maxDocFreq", Float.toString(maxDocFreq));
+      queryRequestParams.add("minTermLength", Integer.toString(minTermLength));
+      queryRequestParams.add("field", field);
+      queryRequestParams.add("numTerms", String.valueOf(numTerms * 5));
       if (isLocal) {
-        params.add("distrib", "false");
+        // TODO: 'distrib' is never true. 'isLocal' doesn't matter. It is correctly?
+        queryRequestParams.setDistrib(false);
       }
 
-      QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
+      QueryRequest request = new QueryRequest(queryRequestParams, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
-      NamedList<?> res = response.getResponse();
-      return res;
+      return response.getResponse();
     }
   }
 }

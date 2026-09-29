@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -139,6 +138,17 @@ public class ExportTool extends ToolBase {
           .desc("Comma separated list of fields to export. By default all fields are fetched.")
           .get();
 
+  /** Parameters for the export command, independent of the command line parser. */
+  record ExportParams(
+      String url,
+      String credentials,
+      String query,
+      String output,
+      String format,
+      boolean compress,
+      String fields,
+      String limit) {}
+
   public ExportTool(ToolRuntime runtime) {
     super(runtime);
   }
@@ -158,8 +168,8 @@ public class ExportTool extends ToolBase {
         .addOption(LIMIT_OPTION)
         .addOption(QUERY_OPTION)
         .addOption(FIELDS_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   public abstract static class Info {
@@ -247,9 +257,7 @@ public class ExportTool extends ToolBase {
       var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
-              .withHttpClientBuilder(builder)
-              .build();
+          new CloudSolrClient.Builder(List.of(baseurl)).withHttpClientBuilder(builder).build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
@@ -284,27 +292,36 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+    if (CLIUtils.hasConnectionOption(cli)) {
       if (!cli.hasOption(COLLECTION_NAME_OPTION)) {
         throw new IllegalArgumentException(
-            "Must specify -c / --name parameter with --solr-url to post documents.");
+            "Must specify -c / --name parameter with a connection target to export documents.");
       }
       url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
-      // think about support --zk-host someday.
-      throw new IllegalArgumentException("Must specify --solr-url.");
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    Info info = new MultiThreadedRunner(runtime, url, credentials);
-    info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
+    ExportParams params =
+        new ExportParams(
+            url,
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(QUERY_OPTION, "*:*"),
+            cli.getOptionValue(OUTPUT_OPTION),
+            cli.getOptionValue(FORMAT_OPTION),
+            cli.hasOption(COMPRESS_OPTION),
+            cli.getOptionValue(FIELDS_OPTION),
+            cli.getOptionValue(LIMIT_OPTION, "100"));
+    export(params);
+  }
 
-    info.setOutFormat(
-        cli.getOptionValue(OUTPUT_OPTION),
-        cli.getOptionValue(FORMAT_OPTION),
-        cli.hasOption(COMPRESS_OPTION));
-    info.fields = cli.getOptionValue(FIELDS_OPTION);
-    info.setLimit(cli.getOptionValue(LIMIT_OPTION, "100"));
+  void export(ExportParams params) throws Exception {
+    Info info = new MultiThreadedRunner(runtime, params.url(), params.credentials());
+    info.query = params.query();
+    info.setOutFormat(params.output(), params.format(), params.compress());
+    info.fields = params.fields();
+    info.setLimit(params.limit());
     info.exportDocs();
   }
 
@@ -597,6 +614,8 @@ public class ExportTool extends ToolBase {
       }
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // EOFDOC is a unique sentinel; identity check is intentional
     private void addConsumer(CountDownLatch consumerlatch) {
       consumerThreadpool.execute(
           () -> {

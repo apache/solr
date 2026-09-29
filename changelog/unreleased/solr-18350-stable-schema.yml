@@ -1,0 +1,8 @@
+title: Keep request processing and searches on a stable schema snapshot when the schema changes concurrently
+type: fixed
+authors:
+  - name: Shrey Narayan
+    nick: NextbrickInc
+links:
+  - name: SOLR-18350
+    url: https://issues.apache.org/jira/browse/SOLR-18350

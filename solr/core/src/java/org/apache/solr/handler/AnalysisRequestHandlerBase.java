@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -63,7 +62,7 @@ import org.apache.solr.schema.FieldType;
  */
 public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
-  public static final Set<BytesRef> EMPTY_BYTES_SET = Collections.emptySet();
+  public static final Set<BytesRef> EMPTY_BYTES_SET = Set.of();
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {

@@ -108,7 +108,7 @@ public class FileStoreUtils {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Filestore does not have any public keys");
     }
-    CryptoKeys cryptoKeys = null;
+    CryptoKeys cryptoKeys;
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {

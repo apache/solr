@@ -44,7 +44,8 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
       CollectionParams.LockLevel level,
       String collName,
       String shardId,
-      String replicaName) {
+      String replicaName,
+      String lockIdToMirror) {
     Objects.requireNonNull(collName, "collName can't be null");
     if (level != CollectionParams.LockLevel.COLLECTION) {
       Objects.requireNonNull(
@@ -56,7 +57,8 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
     }
 
     String lockPath = getLockPath(level, collName, shardId, replicaName);
-    return doCreateLock(isWriteLock, lockPath);
+
+    return doCreateLock(isWriteLock, lockPath, lockIdToMirror);
   }
 
   /**

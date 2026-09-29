@@ -580,7 +580,7 @@ s|Required |Default: none
 |===
 +
 Specifies the shards in your distributed indexing configuration.
-For more information about distributed indexing, see xref:deployment-guide:cluster-types.adoc[].
+For more information about distributed indexing, see xref:getting-started:cluster-types.adoc[].
 
 `shards.qt`::
 +

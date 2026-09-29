@@ -142,21 +142,22 @@ class HTMLGenerator:
         """Format a single issue reference as an HTML anchor tag"""
         return f'<a href="{url_prefix}{issue_id}">{label}</a>'
 
-    def _extract_markdown_issue(self, text):
+    def _find_markdown_issue_matches(self, text):
         """
-        Extract markdown-formatted JIRA/GitHub issues like [SOLR-123](url) or [PR#123](url).
-        Returns (issue_link_html, text_without_issue) or (None, text) if not found.
+        Find every markdown-formatted JIRA/GitHub issue reference in text,
+        e.g. [SOLR-123](url) or [PR#123](url) -- an item can reference more
+        than one issue. Returns a list of (start, end, issue_link_html)
+        tuples in the order they appear.
         """
+        matches = []
         for pattern, url_prefix, label_fmt in self.issue_patterns:
-            match = re.search(pattern, text)
-            if match:
+            for match in re.finditer(pattern, text):
                 issue_id = match.group(1)
                 label = label_fmt.format(issue_id)
                 issue_html = self._format_issue_link(url_prefix, issue_id, label)
-                text_without = (text[:match.start()] + text[match.end():]).strip()
-                return issue_html, text_without
-
-        return None, text
+                matches.append((match.start(), match.end(), issue_html))
+        matches.sort(key=lambda m: m[0])
+        return matches
 
     def _extract_plain_pr_references(self, text):
         """
@@ -187,17 +188,39 @@ class HTMLGenerator:
 
     def extract_issue_from_text(self, text):
         """
-        Extract the first issue reference from text.
-        Tries in order: markdown JIRA/GitHub issues, plain GitHub PR references.
-        Returns (issue_link_html, text_without_issue) or (None, text) if not found.
+        Extract issue reference(s) from text.
+        Tries markdown-formatted JIRA/GitHub issues first -- there may be
+        more than one, e.g. two related JIRA issues on the same change --
+        falling back to a plain GitHub PR reference like "#123" if none
+        are found.
+
+        Returns (issue_link_html_or_None, description_or_None, tail).
+        When markdown issues were found, `description` is the text before
+        the first issue reference and `tail` is everything from there on
+        with the issue reference(s) removed (normally just the trailing
+        author "(...)" groups). Author extraction must be bounded to
+        `tail`, never `description`, so a parenthetical at the end of the
+        description (e.g. an acronym expansion) is never mistaken for an
+        author group. When `description` is None, no markdown issue was
+        found and `tail` is just `text` with any plain PR reference
+        removed, if present.
         """
-        # Try markdown-formatted issues first
-        issue_html, text_without = self._extract_markdown_issue(text)
-        if issue_html:
-            return issue_html, text_without
+        matches = self._find_markdown_issue_matches(text)
+        if matches:
+            first_start = matches[0][0]
+            parts = []
+            pieces = []
+            last_end = first_start
+            for start, end, issue_html in matches:
+                pieces.append(text[last_end:start])
+                parts.append(issue_html)
+                last_end = end
+            pieces.append(text[last_end:])
+            return ' '.join(parts), text[:first_start], ''.join(pieces)
 
         # Fall back to plain GitHub PR references
-        return self._extract_plain_pr_references(text)
+        issue_html, text_without = self._extract_plain_pr_references(text)
+        return issue_html, None, text_without
 
     def _format_single_author(self, author_text):
         """
@@ -213,7 +236,7 @@ class HTMLGenerator:
         # Extract markdown link: [text](url)
         markdown_link_match = re.search(r'\[([^\]]+)\]\(([^)]+)\)', author_text)
         # Extract GitHub handle: @username
-        github_match = re.search(r'@(\w+)', author_text)
+        github_match = re.search(r'@([\w-]+)', author_text)
 
         if markdown_link_match:
             # Has markdown link
@@ -372,11 +395,21 @@ class HTMLGenerator:
         Format: [ISSUE](url) description (author1) (author2)
         Output: <a href>ISSUE</a>: description<br><span class="attrib">(authors)</span>
         """
-        # Extract the issue
-        issue_html, text_after_issue = self.extract_issue_from_text(item_text)
+        # Extract the issue(s)
+        issue_html, description_head, tail = self.extract_issue_from_text(item_text)
 
-        # Always try to extract authors, whether or not we found an issue
-        authors_list, description = self.extract_authors(text_after_issue if issue_html else item_text)
+        if description_head is not None:
+            # Markdown issue(s) found: bound author extraction to the tail
+            # so it can't reach back into the description.
+            authors_list, tail_remainder = self.extract_authors(tail)
+            description = description_head.strip()
+            tail_remainder = tail_remainder.strip()
+            if tail_remainder:
+                description = f'{description} {tail_remainder}'.strip()
+        else:
+            # No markdown issue (plain PR reference, or no issue at all):
+            # extract authors from the whole remaining text, as before.
+            authors_list, description = self.extract_authors(tail if issue_html else item_text)
 
         if issue_html:
             # We have an issue link

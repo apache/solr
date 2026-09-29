@@ -19,7 +19,6 @@ package org.apache.solr.security;
 import static org.apache.solr.security.MultiAuthPlugin.applyEditCommandToSchemePlugin;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -123,7 +122,7 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
 
       // just let the base class handle permission commands
       if (c.name.endsWith("-permission")) {
-        Map<String, Object> updated = super.edit(latestConf, Collections.singletonList(c));
+        Map<String, Object> updated = super.edit(latestConf, List.of(c));
         if (updated != null) {
           madeChanges = true;
           latestConf = updated;

@@ -20,7 +20,6 @@ import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SA
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -187,7 +186,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     private final List<String> externalVals;
 
     public RawQuery(SchemaField sfield, String externalVal) {
-      this(sfield, Collections.singletonList(externalVal));
+      this(sfield, List.of(externalVal));
     }
 
     public RawQuery(SchemaField sfield, List<String> externalVals) {
@@ -1297,14 +1296,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           WildcardQuery.toAutomaton(term, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       // TODO: we should likely use the automaton to calculate shouldReverse, too.
       if (factory.shouldReverse(termStr)) {
-        automaton = Operations.concatenate(automaton, Automata.makeChar(factory.getMarkerChar()));
+        automaton =
+            Operations.concatenate(List.of(automaton, Automata.makeChar(factory.getMarkerChar())));
         automaton = Operations.reverse(automaton);
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
         Automaton falsePositives =
             Operations.concatenate(
-                Automata.makeChar(factory.getMarkerChar()), Automata.makeAnyString());
+                List.of(Automata.makeChar(factory.getMarkerChar()), Automata.makeAnyString()));
         // subtract these away
         automaton =
             Operations.minus(automaton, falsePositives, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);

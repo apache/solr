@@ -39,7 +39,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -66,11 +65,8 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP,
         ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
-    solrTestRule.startSolr(createTempDir());
-    solrTestRule
-        .newCollection("collection1")
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.startSolr();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Override
@@ -117,10 +113,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new XMLRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new XMLRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -129,10 +122,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
-            .withRequestWriter(new JavaBinRequestWriter())
-            .build()) {
+        solrTestRule.newSolrClientBuilder().withRequestWriter(new JavaBinRequestWriter()).build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }

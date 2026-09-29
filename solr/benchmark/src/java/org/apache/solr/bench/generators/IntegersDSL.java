@@ -116,7 +116,7 @@ public class IntegersDSL {
     private final Gen<Integer> integers;
 
     /** The Cardinality start. */
-    Integer cardinalityStart;
+    volatile Integer cardinalityStart;
 
     /**
      * Instantiates a new Integer max cardinality solr gen.
@@ -132,13 +132,18 @@ public class IntegersDSL {
 
     @Override
     public Integer generate(SolrRandomnessSource in) {
-      if (cardinalityStart == null) {
-        cardinalityStart =
-            SolrGenerate.range(0, Integer.MAX_VALUE - maxCardinality - 1).generate(in);
+      Integer localStart = cardinalityStart;
+      if (localStart == null) {
+        synchronized (this) {
+          localStart = cardinalityStart;
+          if (localStart == null) {
+            localStart = SolrGenerate.range(0, Integer.MAX_VALUE - maxCardinality - 1).generate(in);
+            cardinalityStart = localStart;
+          }
+        }
       }
 
-      long seed =
-          SolrGenerate.range(cardinalityStart, cardinalityStart + maxCardinality - 1).generate(in);
+      long seed = SolrGenerate.range(localStart, localStart + maxCardinality - 1).generate(in);
       return integers.generate(new SplittableRandomSource(new SplittableRandom(seed)));
     }
   }

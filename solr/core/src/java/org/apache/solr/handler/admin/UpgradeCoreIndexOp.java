@@ -54,7 +54,7 @@ class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
     if (it.handler.coreContainer.isZooKeeperAware()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "action=UPGRADECOREINDEX is not supported in SolrCloud mode. As an alternative, in order to upgrade index, configure LatestVersionMergePolicyFactory in solrconfig.xml and reindex the data in your collection.");
+          "action=UPGRADEINDEX is not supported in SolrCloud mode. As an alternative, in order to upgrade index, configure LatestVersionMergePolicyFactory in solrconfig.xml and reindex the data in your collection.");
     }
 
     SolrParams params = it.req.getParams();

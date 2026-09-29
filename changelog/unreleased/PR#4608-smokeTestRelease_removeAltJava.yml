@@ -1,0 +1,8 @@
+title: >
+  smokeTestRelease.py: Remove --test-alt-java support
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4608
+    url: https://github.com/apache/solr/pull/4608

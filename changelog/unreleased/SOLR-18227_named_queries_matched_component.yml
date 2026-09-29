@@ -1,0 +1,7 @@
+title: "Add `name` local parameter support and `MatchedQueriesComponent` to identify which named sub-queries matched each document."
+type: added
+authors:
+  - name: Dmitrii Tikhonov
+links:
+  - name: SOLR-18227
+    url: https://issues.apache.org/jira/browse/SOLR-18227

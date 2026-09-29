@@ -17,8 +17,6 @@
 
 package org.apache.solr.api;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -30,6 +28,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,8 +89,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
         apiInfo.getInfo().klass);
     MapWriter config = apiInfo.getInfo().config;
     assertNotNull("config should be set for " + SingletonWithConfig.NAME, config);
-    Map<String, Object> configMap = new HashMap<>();
-    config.toMap(configMap);
+    Map<String, Object> configMap = new SimpleOrderedMap<>(config);
     assertEquals("incorrect config val for cfgInt parameter", CFG_VAL, configMap.get("cfgInt"));
   }
 
@@ -118,10 +116,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
   public void testClusterPluginsEditApi() throws Exception {
     PluginMeta meta = SingletonNoConfig.pluginMeta();
     V2Request req =
-        new V2Request.Builder("/cluster/plugin")
-            .POST()
-            .withPayload(Collections.singletonMap("add", meta))
-            .build();
+        new V2Request.Builder("/cluster/plugin").POST().withPayload(Map.of("add", meta)).build();
     try {
       req.process(cluster.getSolrClient());
       fail("Expected a 404 response code because the Edit Apis are not registered");

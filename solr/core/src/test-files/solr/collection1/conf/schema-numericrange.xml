@@ -25,16 +25,28 @@
   <fieldType name="long" class="solr.LongPointField"/>
 
   <!-- IntRangeField types with different dimensions -->
-  <fieldType name="intrange" class="solr.numericrange.IntRangeField" numDimensions="1"/>
-  <fieldType name="intrange2d" class="solr.numericrange.IntRangeField" numDimensions="2"/>
-  <fieldType name="intrange3d" class="solr.numericrange.IntRangeField" numDimensions="3"/>
-  <fieldType name="intrange4d" class="solr.numericrange.IntRangeField" numDimensions="4"/>
+  <fieldType name="intrange" class="solr.IntRangeField" numDimensions="1"/>
+  <fieldType name="intrange2d" class="solr.IntRangeField" numDimensions="2"/>
+  <fieldType name="intrange3d" class="solr.IntRangeField" numDimensions="3"/>
+  <fieldType name="intrange4d" class="solr.IntRangeField" numDimensions="4"/>
 
   <!-- LongRangeField types with different dimensions -->
-  <fieldType name="longrange" class="solr.numericrange.LongRangeField" numDimensions="1"/>
-  <fieldType name="longrange2d" class="solr.numericrange.LongRangeField" numDimensions="2"/>
-  <fieldType name="longrange3d" class="solr.numericrange.LongRangeField" numDimensions="3"/>
-  <fieldType name="longrange4d" class="solr.numericrange.LongRangeField" numDimensions="4"/>
+  <fieldType name="longrange" class="solr.LongRangeField" numDimensions="1"/>
+  <fieldType name="longrange2d" class="solr.LongRangeField" numDimensions="2"/>
+  <fieldType name="longrange3d" class="solr.LongRangeField" numDimensions="3"/>
+  <fieldType name="longrange4d" class="solr.LongRangeField" numDimensions="4"/>
+
+  <!-- FloatRangeField types with different dimensions -->
+  <fieldType name="floatrange" class="solr.FloatRangeField" numDimensions="1"/>
+  <fieldType name="floatrange2d" class="solr.FloatRangeField" numDimensions="2"/>
+  <fieldType name="floatrange3d" class="solr.FloatRangeField" numDimensions="3"/>
+  <fieldType name="floatrange4d" class="solr.FloatRangeField" numDimensions="4"/>
+
+  <!-- DoubleRangeField types with different dimensions -->
+  <fieldType name="doublerange" class="solr.DoubleRangeField" numDimensions="1"/>
+  <fieldType name="doublerange2d" class="solr.DoubleRangeField" numDimensions="2"/>
+  <fieldType name="doublerange3d" class="solr.DoubleRangeField" numDimensions="3"/>
+  <fieldType name="doublerange4d" class="solr.DoubleRangeField" numDimensions="4"/>
 
   <!-- Field definitions -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
@@ -66,6 +78,50 @@
 
   <!-- 4D LongRangeField (tesseract) -->
   <field name="long_range_4d" type="longrange4d" indexed="true" stored="true"/>
+
+  <!-- 1D FloatRangeField -->
+  <field name="float_range" type="floatrange" indexed="true" stored="true"/>
+  <field name="float_range_multi" type="floatrange" indexed="true" stored="true" multiValued="true"/>
+
+  <!-- 2D FloatRangeField (bounding box) -->
+  <field name="float_range_2d" type="floatrange2d" indexed="true" stored="true"/>
+
+  <!-- 3D FloatRangeField (bounding cube) -->
+  <field name="float_range_3d" type="floatrange3d" indexed="true" stored="true"/>
+
+  <!-- 4D FloatRangeField (tesseract) -->
+  <field name="float_range_4d" type="floatrange4d" indexed="true" stored="true"/>
+
+  <!-- 1D DoubleRangeField -->
+  <field name="double_range" type="doublerange" indexed="true" stored="true"/>
+  <field name="double_range_multi" type="doublerange" indexed="true" stored="true" multiValued="true"/>
+
+  <!-- 2D DoubleRangeField (bounding box) -->
+  <field name="double_range_2d" type="doublerange2d" indexed="true" stored="true"/>
+
+  <!-- 3D DoubleRangeField (bounding cube) -->
+  <field name="double_range_3d" type="doublerange3d" indexed="true" stored="true"/>
+
+  <!-- 4D DoubleRangeField (tesseract) -->
+  <field name="double_range_4d" type="doublerange4d" indexed="true" stored="true"/>
+
+  <!-- docValues-enabled variants (single-valued) exercising the IndexOrDocValuesQuery optimization -->
+  <field name="price_range_dv" type="intrange" indexed="true" stored="true" docValues="true"/>
+  <field name="bbox_dv" type="intrange2d" indexed="true" stored="true" docValues="true"/>
+  <field name="long_range_dv" type="longrange" indexed="true" stored="true" docValues="true"/>
+  <field name="float_range_dv" type="floatrange" indexed="true" stored="true" docValues="true"/>
+  <field name="double_range_dv" type="doublerange" indexed="true" stored="true" docValues="true"/>
+
+  <!-- non-indexed intrange: exercises the DV-only query path (no BKD to fall back on). -->
+  <field name="price_range_dvonly" type="intrange" indexed="false" stored="true" docValues="true"/>
+
+  <!-- multiValued docValues variants: exercise multiple ranges per document -->
+  <field name="price_range_mv_dv" type="intrange" indexed="true" multiValued="true" docValues="true"/>
+  <field name="float_range_mv_dv" type="floatrange" indexed="true" multiValued="true" docValues="true"/>
+  <field name="long_range_mv_dv_2d" type="longrange2d" indexed="true" multiValued="true" docValues="true"/>
+  <field name="double_range_mv_dv_2d" type="doublerange2d" indexed="true" multiValued="true" docValues="true"/>
+  <field name="long_range_multi_2d" type="longrange2d" indexed="true" stored="true" multiValued="true" docValues="false"/>
+  <field name="double_range_multi_2d" type="doublerange2d" indexed="true" stored="true" multiValued="true" docValues="false"/>
 
   <!-- Required by Solr -->
   <uniqueKey>id</uniqueKey>

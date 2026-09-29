@@ -31,7 +31,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -424,7 +423,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
       Map<String, Object> config =
-          (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
+          (Map<String, Object>) holder.original.getOrDefault("config", Map.of());
       configure(instance, config, holder.meta);
       if (instance instanceof ResourceLoaderAware) {
         try {

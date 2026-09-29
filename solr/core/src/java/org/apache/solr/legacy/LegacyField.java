@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexOptions;
  *
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public class LegacyField extends Field {
 
   /**

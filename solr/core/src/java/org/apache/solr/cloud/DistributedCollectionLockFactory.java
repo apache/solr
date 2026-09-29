@@ -54,6 +54,7 @@ public interface DistributedCollectionLockFactory {
    * @param replicaName is ignored and can be {@code null} if {@code level} is {@link
    *     org.apache.solr.common.params.CollectionParams.LockLevel#COLLECTION} or {@link
    *     org.apache.solr.common.params.CollectionParams.LockLevel#SHARD}
+   * @param callingLockId the lockId from the caller that should be mirrored by this lock
    * @return a lock instance that must be {@link DistributedLock#release()}'ed in a {@code finally},
    *     regardless of the lock having been acquired or not.
    */
@@ -62,5 +63,6 @@ public interface DistributedCollectionLockFactory {
       CollectionParams.LockLevel level,
       String collName,
       String shardId,
-      String replicaName);
+      String replicaName,
+      String callingLockId);
 }

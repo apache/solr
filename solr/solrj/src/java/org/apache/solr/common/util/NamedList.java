@@ -18,7 +18,6 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -135,7 +133,7 @@ public class NamedList<T>
 
   /**
    * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even indexed elements
-   * (0,2,4, etc.) are Strings and odd elements (1,3,5,) are of the type "T".
+   * (0,2,4, etc.) are Strings and odd elements (1,3,5) are of the type "T".
    *
    * <p>NOTE: This a temporary placeholder method until the guts of the class are actually replaced
    * by List&lt;String, ?&gt;.
@@ -251,41 +249,16 @@ public class NamedList<T>
    *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
-   * @see #get(String,int)
    */
   public T get(String name) {
-    return get(name, 0);
+    final int idx = indexOf(name);
+    return idx == -1 ? null : getVal(idx);
   }
 
   /** Like {@link #get(String)} but returns a default value if it would be null. */
   public T getOrDefault(String name, T def) {
     T val = get(name);
     return val == null ? def : val;
-  }
-
-  /**
-   * Gets the value for the first instance of the specified name found starting at the specified
-   * index.
-   *
-   * <p>NOTE: this runs in linear time (it scans starting at the specified position until it finds
-   * the first pair with the specified name).
-   *
-   * @return null if not found or if the value stored was null.
-   * @see #indexOf
-   * @deprecated Use {@link #indexOf(String, int)} then {@link #getVal(int)}.
-   */
-  @Deprecated
-  public T get(String name, int start) {
-    int sz = size();
-    for (int i = start; i < sz; i++) {
-      String n = getName(i);
-      if (name == null) {
-        if (n == null) return getVal(i);
-      } else if (name.equals(n)) {
-        return getVal(i);
-      }
-    }
-    return null;
   }
 
   /**
@@ -343,112 +316,6 @@ public class NamedList<T>
     return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
   }
 
-  /**
-   * @deprecated Use {@link SimpleOrderedMap} instead.
-   */
-  @Deprecated
-  public Map<String, T> asShallowMap() {
-    return asShallowMap(false);
-  }
-
-  /**
-   * @deprecated use {@link SimpleOrderedMap} instead of NamedList when a Map is required.
-   */
-  @Deprecated
-  public Map<String, T> asShallowMap(boolean allowDps) {
-    return new Map<>() {
-      @Override
-      public int size() {
-        return NamedList.this.size();
-      }
-
-      @Override
-      public boolean isEmpty() {
-        return size() == 0;
-      }
-
-      @Override
-      public boolean containsKey(Object key) {
-        return NamedList.this.get((String) key) != null;
-      }
-
-      @Override
-      public boolean containsValue(Object value) {
-        return false;
-      }
-
-      @Override
-      public T get(Object key) {
-        return NamedList.this.get((String) key);
-      }
-
-      @Override
-      public T put(String key, T value) {
-        if (allowDps) {
-          NamedList.this.add(key, value);
-          return null;
-        }
-        int idx = NamedList.this.indexOf(key, 0);
-        if (idx == -1) {
-          NamedList.this.add(key, value);
-        } else {
-          NamedList.this.setVal(idx, value);
-        }
-        return null;
-      }
-
-      @Override
-      public T remove(Object key) {
-        return NamedList.this.remove((String) key);
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked"})
-      public void putAll(Map m) {
-        boolean isEmpty = isEmpty();
-        for (Object o : m.entrySet()) {
-          @SuppressWarnings({"rawtypes"})
-          Map.Entry e = (Entry) o;
-          if (isEmpty) { // we know that there are no duplicates
-            add((String) e.getKey(), (T) e.getValue());
-          } else {
-            put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
-          }
-        }
-      }
-
-      @Override
-      public void clear() {
-        NamedList.this.clear();
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked"})
-      public Set<String> keySet() {
-        // TODO implement more efficiently
-        return NamedList.this.asMap(1).keySet();
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      public Collection values() {
-        // TODO implement more efficiently
-        return NamedList.this.asMap(1).values();
-      }
-
-      @Override
-      public Set<Entry<String, T>> entrySet() {
-        // TODO implement more efficiently
-        return NamedList.this.asMap(1).entrySet();
-      }
-
-      @Override
-      public void forEach(BiConsumer action) {
-        NamedList.this.forEach(action);
-      }
-    };
-  }
-
   @SuppressWarnings("rawtypes")
   public Map asMap(int maxDepth) {
     LinkedHashMap result = new LinkedHashMap<>();
@@ -499,17 +366,6 @@ public class NamedList<T>
     }
     // always use MultiMap for easier processing further down the chain
     return new MultiMapSolrParams(map);
-  }
-
-  /**
-   * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value relationship in
-   * NamedList (the keys of which are String-s)
-   */
-  @Deprecated // use AbstractMap.SimpleEntry or Map.entry() (albeit no nulls)
-  public static final class NamedListEntry<T> extends AbstractMap.SimpleEntry<String, T> {
-    public NamedListEntry(String _key, T _value) {
-      super(_key, _value);
-    }
   }
 
   /** Iterates over the Map and sequentially adds its key/value pairs */

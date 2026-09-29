@@ -18,7 +18,6 @@ package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,7 +91,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
         fieldBuilders.put(captureFields[i], new StringBuilder());
       }
     } else {
-      fieldBuilders = Collections.emptyMap();
+      fieldBuilders = Map.of();
     }
     bldrStack.add(catchAllBuilder);
   }
@@ -143,7 +142,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   }
 
   /**
-   * Add in the catch all content to the field. Default impl. uses the {@link #contentFieldName} and
+   * Add in the catch-all content to the field. Default impl. uses the {@link #contentFieldName} and
    * the {@link #catchAllBuilder}
    */
   protected void addContent() {
@@ -205,9 +204,10 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       name = unknownFieldPrefix + name;
       sf = schema.getFieldOrNull(name);
     } else if (sf == null
-        && defaultField.length() > 0
-        && name.equals(ExtractingMetadataConstants.RESOURCE_NAME_KEY)
-            == false /*let the fall through below handle this*/) {
+        && !defaultField.isEmpty()
+        && !name.equals(
+            ExtractingMetadataConstants
+                .RESOURCE_NAME_KEY) /*let the fall through below handle this*/) {
       name = defaultField;
       sf = schema.getFieldOrNull(name);
     }
@@ -267,7 +267,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       // we need to switch the currentBuilder
       bldrStack.add(theBldr);
     }
-    if (captureAttribs == true) {
+    if (captureAttribs) {
       for (int i = 0; i < attributes.getLength(); i++) {
         addField(localName, attributes.getValue(i), null);
       }

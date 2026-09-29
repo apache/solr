@@ -27,7 +27,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.util.AddressUtils;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
@@ -104,12 +104,12 @@ public class SolrZkServer {
     var zooCfgPath = Path.of(confHome).resolve("zoo.cfg");
     if (!Files.exists(zooCfgPath)) {
       log.info("Zookeeper configuration not found in {}, using built-in default", confHome);
-      String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      String solrInstallDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
       if (solrInstallDir == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Could not find default zoo.cfg file due to missing "
-                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+                + CoreContainerProvider.SOLR_INSTALL_DIR);
       }
       zooCfgPath = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("zoo.cfg");
     }
@@ -142,7 +142,7 @@ public class SolrZkServer {
     }
 
     ensureZkMaxCnxnsConfigured();
-    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
+    if (EnvUtils.getProperty(ZK_WHITELIST_PROPERTY) == null) {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
     }
     AtomicReference<Exception> zkException = new AtomicReference<>();
@@ -167,20 +167,11 @@ public class SolrZkServer {
             },
             "embeddedZkServer");
 
-    if (zkProps.getServers().size() > 1) {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
-    } else {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(),
-            zkProps.getClientPortAddress().getAddress().getHostAddress());
-      }
+    if (log.isInfoEnabled()) {
+      log.info(
+          "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at {}:{}",
+          zkProps.getClientPortAddress().getAddress().getHostAddress(),
+          zkProps.getClientPortAddress().getPort());
     }
 
     zkThread.setDaemon(true);

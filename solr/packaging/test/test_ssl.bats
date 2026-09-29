@@ -572,26 +572,26 @@ teardown() {
     # Replace server1 keystore with client's
     cp cert2.keystore.p12 server1.keystore.p12
   )
-  # Give some time for the server reload
-  sleep 6
+  # Wait for Jetty keystore-reload scan to pick up the new certificate
+  wait_for 30 1 solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/info/system"
 
-  run solr healthcheck --solr-url https://localhost:${SOLR_PORT}
+  run solr healthcheck -c test --solr-url https://localhost:${SOLR_PORT}
 
   # Server 2 still uses the cert1, so this request should fail
   run ! solr api --solr-url "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
 
-  run ! solr healthcheck --solr-url https://localhost:${SOLR2_PORT}
+  run ! solr healthcheck -c test --solr-url https://localhost:${SOLR2_PORT}
 
   (
     cd "$ssl_dir"
     # Replace server2 keystore with client's
     cp cert2.keystore.p12 server2.keystore.p12
   )
-  # Give some time for the server reload
-  sleep 6
+  # Wait for Jetty keystore-reload scan to pick up the new certificate
+  wait_for 30 1 solr api --solr-url "https://localhost:${SOLR2_PORT}/solr/admin/info/system"
 
-  run solr healthcheck --solr-url https://localhost:${SOLR_PORT}
-  run solr healthcheck --solr-url https://localhost:${SOLR2_PORT}
+  run solr healthcheck -c test --solr-url https://localhost:${SOLR_PORT}
+  run solr healthcheck -c test --solr-url https://localhost:${SOLR2_PORT}
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=query3"
   assert_output --partial '"numFound":0'

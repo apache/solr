@@ -66,6 +66,12 @@ public class SnapShooter {
   private BackupRepository backupRepo = null;
   private String commitName; // can be null
 
+  /**
+   * Receives in-progress status while the snapshot is being created, so that it can be reported
+   * before the snapshot completes. A no-op unless set by {@link #createSnapAsync}.
+   */
+  private volatile Consumer<NamedList<?>> progressListener = nl -> {};
+
   public SnapShooter(
       BackupRepository backupRepo,
       SolrCore core,
@@ -228,7 +234,42 @@ public class SnapShooter {
             + solrCore.getName());
   }
 
+  /**
+   * The status of a snapshot that has been requested but has not finished yet. A null {@link
+   * #snapshotName} is omitted rather than reported, matching how {@link CoreSnapshotResponse}
+   * reports the same snapshot once it has completed.
+   */
+  private NamedList<Object> inProgressDetails(String startTime, String status) {
+    NamedList<Object> details = new SimpleOrderedMap<>();
+    details.add("startTime", startTime);
+    details.add("status", status);
+    if (snapshotName != null) {
+      details.add("snapshotName", snapshotName);
+    }
+    details.add("directoryName", directoryName);
+    return details;
+  }
+
+  /**
+   * The status of a snapshot whose files are being copied. Only reported once the index commit has
+   * been resolved, since until then there is no file list to count.
+   *
+   * @param fileCount the total number of files this snapshot will copy
+   * @param finishedFileCount how many of them have been copied so far
+   */
+  private NamedList<Object> runningDetails(String startTime, int fileCount, int finishedFileCount) {
+    NamedList<Object> details = inProgressDetails(startTime, RUNNING_STATUS);
+    details.add("fileCount", fileCount);
+    details.add("finishedFileCount", finishedFileCount);
+    return details;
+  }
+
   public void createSnapAsync(final int numberToKeep, Consumer<NamedList<?>> result) {
+    this.progressListener = result;
+    // Report before the thread starts, otherwise the previously reported status (possibly a
+    // "success" from an earlier snapshot) stays visible until the index commit has been resolved.
+    // The file list isn't known until then, so this status carries no file counts.
+    result.accept(inProgressDetails(Instant.now().toString(), WAITING_FOR_COMMIT_STATUS));
     // TODO should use Solr's ExecutorUtil
     new Thread(
             () -> {
@@ -277,6 +318,7 @@ public class SnapShooter {
       details.startTime = Instant.now().toString();
 
       Collection<String> files = indexCommit.getFileNames();
+      progressListener.accept(runningDetails(details.startTime, files.size(), 0));
       Directory dir =
           solrCore
               .getDirectoryFactory()
@@ -285,10 +327,13 @@ public class SnapShooter {
                   DirContext.DEFAULT,
                   solrCore.getSolrConfig().indexConfig.lockType);
       try {
+        int finishedFileCount = 0;
         for (String fileName : files) {
           log.debug(
               "Copying fileName={} from dir={} to snapshot={}", fileName, dir, snapshotDirPath);
           backupRepo.copyFileFrom(dir, fileName, snapshotDirPath);
+          progressListener.accept(
+              runningDetails(details.startTime, files.size(), ++finishedFileCount));
         }
       } finally {
         solrCore.getDirectoryFactory().release(dir);
@@ -375,6 +420,15 @@ public class SnapShooter {
   }
 
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
+
+  /**
+   * Status reported after a snapshot has been requested but before its index commit -- and with it
+   * the list of files to copy -- has been resolved.
+   */
+  public static final String WAITING_FOR_COMMIT_STATUS = "waiting for commit";
+
+  /** Status reported while a snapshot's files are being copied. */
+  public static final String RUNNING_STATUS = "running";
 
   public static class CoreSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The time at which snapshot started at.")

@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -99,7 +98,7 @@ public class SortableTextField extends TextField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     IndexableField f = createField(field, value);
     if (!field.hasDocValues()) {
-      return Collections.singletonList(f);
+      return List.of(f);
     }
     if (value instanceof ByteArrayUtf8CharSequence utf8) {
       if (utf8.size() < maxCharsForDocValues) {
@@ -138,7 +137,7 @@ public class SortableTextField extends TextField {
             : new SortedDocValuesField(field.getName(), bytes);
 
     if (null == f) {
-      return Collections.singletonList(docval);
+      return List.of(docval);
     }
     return Arrays.asList(f, docval);
   }

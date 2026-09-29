@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
+
 def resources = scriptResources(buildscript)
 
 configure(project(':solr:documentation')) {
@@ -37,7 +40,10 @@ configure(project(':solr:documentation')) {
 }
 
 // compile CHANGELOG.md into an html file
-class ChangesToHtmlTask extends DefaultTask {
+abstract class ChangesToHtmlTask extends DefaultTask {
+
+  @Inject
+  abstract ExecOperations getExecOperations()
 
   @Internal
   Project productProject = project.parent
@@ -67,7 +73,7 @@ class ChangesToHtmlTask extends DefaultTask {
       return
     }
 
-    def result = project.exec {
+    def result = execOperations.exec {
       executable "python3"
       standardOutput project.file("${targetDir.get().getAsFile()}/Changes.html").newOutputStream()
       errorOutput = output

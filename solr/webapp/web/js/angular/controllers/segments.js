@@ -17,41 +17,47 @@
 
 var MB_FACTOR = 1024*1024;
 
-solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $interval, Segments, Constants) {
+solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $interval, $timeout, SegmentsV2, Constants, ApiErrorHandler) {
     $scope.resetMenu("segments", Constants.IS_CORE_PAGE);
 
     $scope.refresh = function() {
 
-        Segments.get({core: $routeParams.core}, function(data) {
-            var segments = data.segments;
-
-            var segmentSizeInBytesMax = getLargestSegmentSize(segments);
-            $scope.segmentMB = Math.floor(segmentSizeInBytesMax / MB_FACTOR);
-            $scope.xaxis = calculateXAxis(segmentSizeInBytesMax);
-
-            $scope.documentCount = 0;
-            $scope.deletionCount = 0;
-
-            $scope.segments = [];
-            for (var name in segments) {
-                var segment = segments[name];
-
-                var segmentSizeInBytesLog = Math.log(segment.sizeInBytes);
-                var segmentSizeInBytesMaxLog = Math.log(segmentSizeInBytesMax);
-
-                segment.totalSize = Math.floor((segmentSizeInBytesLog / segmentSizeInBytesMaxLog ) * 100);
-
-                segment.deletedDocSize = Math.floor((segment.delCount / segment.size) * segment.totalSize);
-                if (segment.delDocSize <= 0.001) delete segment.deletedDocSize;
-
-                segment.aliveDocSize = segment.totalSize - segment.deletedDocSize;
-
-                $scope.segments.push(segment);
-
-                $scope.documentCount += segment.size;
-                $scope.deletionCount += segment.delCount;
+        SegmentsV2.getSegmentData($routeParams.core, {}, function(error, data, response) {
+            if (error) {
+              console.error('Failed to fetch segment data:', error);
+              ApiErrorHandler.handle(response);
+              return;
             }
-            $scope.deletionsPercentage = calculateDeletionsPercentage($scope.documentCount, $scope.deletionCount);
+            $timeout(function() {
+              var segments = data.segments;
+
+              var segmentSizeInBytesMax = getLargestSegmentSize(segments);
+              $scope.segmentMB = Math.floor(segmentSizeInBytesMax / MB_FACTOR);
+              $scope.xaxis = calculateXAxis(segmentSizeInBytesMax);
+
+              $scope.documentCount = 0;
+              $scope.deletionCount = 0;
+
+              $scope.segments = [];
+              for (var name in segments) {
+                  var segment = segments[name];
+
+                  var segmentSizeInBytesLog = Math.log(segment.sizeInBytes);
+                  var segmentSizeInBytesMaxLog = Math.log(segmentSizeInBytesMax);
+
+                  segment.totalSize = Math.floor((segmentSizeInBytesLog / segmentSizeInBytesMaxLog ) * 100);
+
+                  segment.deletedDocSize = Math.floor((segment.delCount / segment.size) * segment.totalSize);
+                  segment.aliveDocSize = segment.totalSize - segment.deletedDocSize;
+                  if (segment.deletedDocSize <= 0.001) delete segment.deletedDocSize;
+
+                  $scope.segments.push(segment);
+
+                  $scope.documentCount += segment.size;
+                  $scope.deletionCount += segment.delCount;
+              }
+              $scope.deletionsPercentage = calculateDeletionsPercentage($scope.documentCount, $scope.deletionCount);
+            });
         });
     };
 

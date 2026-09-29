@@ -33,6 +33,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -75,16 +76,37 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     assertEquals(400, connection.getResponseCode());
   }
 
+  @Test
+  public void test404() throws Exception {
+    // once upon a time, Jetty (not Solr) handled 404.  Now Solr does.
+    try (LogListener log = LogListener.info(HttpSolrCall.class)) {
+      var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+      final var collection = "nonExistentColl";
+      final var handler = random().nextBoolean() ? "/select" : "/update"; // doesn't matter
+      final var queryKeyVal = "q=myQuery";
+      var request =
+          new URI(baseUrl.toString() + "/" + collection + handler + "?" + queryKeyVal).toURL();
+      var connection = (HttpURLConnection) request.openConnection();
+      assertEquals(404, connection.getResponseCode());
+      assertEquals(1, log.getCount());
+      final var msg = log.pollMessage();
+      // super basic test that merely shows Solr logs contain some basic info
+      //      assertTrue(msg, msg.contains("status"));
+      //      assertTrue(msg, msg.contains("404"));
+      assertTrue(msg, msg.contains(collection));
+      assertTrue(msg, msg.contains(handler));
+      //      assertTrue(msg, msg.contains(queryKeyVal));
+    }
+  }
+
   private void assertCoreChosen(int numCores, HttpServletRequest testRequest)
       throws UnavailableException {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
-    SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
       HttpSolrCall httpSolrCall =
-          new HttpSolrCall(
-              dispatchFilter, dispatchFilter.getCores(), testRequest, newResponse(), false);
+          new HttpSolrCall(jettySolrRunner.getCoreContainer(), testRequest, newResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {

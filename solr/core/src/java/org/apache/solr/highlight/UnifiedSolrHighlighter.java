@@ -19,7 +19,7 @@ package org.apache.solr.highlight;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
+import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
@@ -162,7 +163,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     UnifiedHighlighter highlighter = getHighlighter(req);
     Map<String, String[]> snippets =
         fieldNames.length == 0
-            ? Collections.emptyMap()
+            ? Map.of()
             : highlighter.highlightFields(fieldNames, query, docIDs, maxPassages);
     return encodeSnippets(keys, fieldNames, snippets);
   }
@@ -312,6 +313,26 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
           params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, SNIPPET_SEPARATOR);
       String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
       return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
+    }
+
+    @Override
+    protected Comparator<Passage> getPassageSortComparator(String fieldName) {
+      String passageSort = params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT);
+      if (passageSort == null) {
+        return super.getPassageSortComparator(fieldName);
+      }
+      switch (passageSort) {
+        case "startOffset":
+          return Comparator.comparingInt(Passage::getStartOffset);
+        case "endOffset":
+          return Comparator.comparingInt(Passage::getEndOffset);
+        case "score":
+          return Comparator.comparingDouble(Passage::getScore).reversed();
+        default:
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid " + HighlightParams.PASSAGE_SORT + " value: '" + passageSort + "'");
+      }
     }
 
     @Override

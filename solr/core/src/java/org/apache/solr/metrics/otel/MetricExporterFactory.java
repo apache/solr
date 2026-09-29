@@ -21,19 +21,18 @@ import org.apache.solr.common.util.EnvUtils;
 
 public interface MetricExporterFactory {
 
-  public static final Boolean OTLP_EXPORTER_ENABLED =
+  Boolean OTLP_EXPORTER_ENABLED =
       Boolean.parseBoolean(EnvUtils.getProperty("solr.metrics.otlpExporterEnabled", "false"));
 
-  public static final String OTLP_EXPORTER_PROTOCOL =
-      EnvUtils.getProperty("solr.metrics.otlpExporterProtocol", "grpc");
+  String OTLP_EXPORTER_PROTOCOL = EnvUtils.getProperty("solr.metrics.otlpExporterProtocol", "http");
 
-  public static final int OTLP_EXPORTER_INTERVAL =
+  int OTLP_EXPORTER_INTERVAL =
       Integer.parseInt(EnvUtils.getProperty("solr.metrics.otlpExporterInterval", "60000"));
 
-  public static final String OTLP_EXPORTER_GRPC_ENDPOINT =
+  String OTLP_EXPORTER_GRPC_ENDPOINT =
       EnvUtils.getProperty("solr.metrics.otlpGrpcExporterEndpoint", "http://localhost:4317");
 
-  public static final String OTLP_EXPORTER_HTTP_ENDPOINT =
+  String OTLP_EXPORTER_HTTP_ENDPOINT =
       EnvUtils.getProperty(
           "solr.metrics.otlpHttpExporterEndpoint", "http://localhost:4318/v1/metrics");
 

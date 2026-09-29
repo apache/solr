@@ -1,0 +1,9 @@
+title: >
+  Faster {!auxIndexJoin} when there's no filter.
+type: changed
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhl
+links:
+  - name: SOLR-18484
+    url: https://issues.apache.org/jira/browse/SOLR-18484

@@ -24,7 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -38,7 +38,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
 
   protected volatile ExecutorService executorService;
 
-  protected volatile HttpJettySolrClient httpSolrClient;
+  protected volatile HttpSolrClient httpSolrClient;
 
   @Override
   public void merge(ResponseBuilder rb, ShardRequest sreq) {

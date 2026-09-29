@@ -24,7 +24,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Added new ConcurrentUpdateJdkSolrClient that works with HttpJdkSolrClient [SOLR-18065](https://issues.apache.org/jira/browse/SOLR-18065) (James Dyer)
 - Support including stored fields in Export Writer output. [SOLR-18071](https://issues.apache.org/jira/browse/SOLR-18071) (Luke Kot-Zaniewski)
 - Introducing support for multi valued dense vector representation in documents through nested vectors [SOLR-18074](https://issues.apache.org/jira/browse/SOLR-18074) (Alessandro Benedetti)
-- CoreAdmin API (/admin/cores?action=UPGRADECOREINDEX) to upgrade an index in-place [SOLR-18096](https://issues.apache.org/jira/browse/SOLR-18096) (Rahul Goswami)
+- CoreAdmin API (/admin/cores?action=UPGRADEINDEX) to upgrade an index in-place [SOLR-18096](https://issues.apache.org/jira/browse/SOLR-18096) (Rahul Goswami)
 - CrossDC Consumer - add Prometheus metrics [SOLR-18060](https://issues.apache.org/jira/browse/SOLR-18060) (Andrzej Bialecki @ab)
 - CrossDC - support arbitrary Kafka properties [SOLR-18062](https://issues.apache.org/jira/browse/SOLR-18062) (Andrzej Bialecki @ab)
 

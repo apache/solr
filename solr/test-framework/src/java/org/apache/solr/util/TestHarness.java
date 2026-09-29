@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.SolrTestCaseJ4.withPath;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -24,12 +26,11 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -48,6 +49,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
@@ -113,16 +115,16 @@ public class TestHarness extends BaseTestHarness {
   }
 
   /**
-   * Helper method to let us do some home sys prop check in delegated constructor. in "real" code
-   * SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
+   * Helper method to let us do a solr-home sys prop check in a delegated constructor. in "real"
+   * code {@link CoreContainerProvider} takes care of checking this sys prop when building
+   * NodeConfig/CoreContainer
    */
   private static Path checkAndReturnSolrHomeSysProp() {
-    final String SOLR_HOME = "solr.solr.home";
-    final String home = System.getProperty(SOLR_HOME);
+    final String home = System.getProperty(CoreContainerProvider.SOLR_SOLR_HOME);
     if (null == home) {
       throw new IllegalStateException(
           "This TestHarness constructor requires "
-              + SOLR_HOME
+              + CoreContainerProvider.SOLR_SOLR_HOME
               + " sys prop to be set by test first");
     }
     return Path.of(home).toAbsolutePath().normalize();
@@ -262,8 +264,8 @@ public class TestHarness extends BaseTestHarness {
       assert null != mdcSnap; // prevent compiler warning of unused var
 
       EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
-      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
-      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
+      ContentWriterUpdateRequest xmlRequest = new ContentWriterUpdateRequest("/update");
+      xmlRequest.addContentWithType(xml, "text/xml");
 
       // Request XML response format and use InputStreamResponseParser
       xmlRequest.getParams().add("wt", "xml");
@@ -306,7 +308,9 @@ public class TestHarness extends BaseTestHarness {
    * @see SolrQueryRequestBase
    */
   public String query(SolrQueryRequest req) throws Exception {
-    return query(req.getParams().get(CommonParams.QT), req);
+    String path = req.getPath();
+    String handler = path != null ? path : req.getParams().get(CommonParams.QT);
+    return query(handler, req);
   }
 
   /**
@@ -340,13 +344,25 @@ public class TestHarness extends BaseTestHarness {
   /**
    * It is the users responsibility to close the request object when done with it. This method does
    * not set/clear SolrRequestInfo
+   *
+   * @deprecated use {@link #queryAndResponse(SolrQueryRequest)} instead, ensuring that
+   *     SolrQueryRequest has a valid path
    */
+  @Deprecated
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
+    return queryAndResponse(withPath(handler, req));
+  }
+
+  /**
+   * It is the users responsibility to close the request object when done with it. This method does
+   * not set/clear SolrRequestInfo
+   */
+  public SolrQueryResponse queryAndResponse(SolrQueryRequest req) throws Exception {
     try (var mdcSnap = MDCSnapshot.create();
         SolrCore core = getCoreInc()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
       SolrQueryResponse rsp = new SolrQueryResponse();
-      core.execute(core.getRequestHandler(handler), req, rsp);
+      core.execute(core.getRequestHandler(req.getPath()), req, rsp);
       if (rsp.getException() != null) {
         throw rsp.getException();
       }

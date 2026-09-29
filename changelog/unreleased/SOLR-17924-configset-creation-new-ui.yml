@@ -1,0 +1,10 @@
+title: SOLR 17845 - Implement Configset Creation and Importing in New UI
+type: added
+authors:
+  - name: Christos Malliaridis
+    nick: malliaridis
+links:
+  - name: SOLR-17924
+    url: https://issues.apache.org/jira/browse/SOLR-17924
+  - name: PR#4166
+    url: https://github.com/apache/solr/pull/4166

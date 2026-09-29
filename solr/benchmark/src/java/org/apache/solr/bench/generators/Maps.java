@@ -16,7 +16,6 @@
  */
 package org.apache.solr.bench.generators;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -105,6 +104,6 @@ public class Maps {
    * @return the map . entry
    */
   static <K, V> Map.Entry<K, V> mapEntry(K k, V v) {
-    return Collections.singletonMap(k, v).entrySet().iterator().next();
+    return Map.of(k, v).entrySet().iterator().next();
   }
 }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -299,7 +298,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
           pe);
     }
     srcInclusions = new SelectorParams();
-    srcInclusions.fieldRegex = Collections.singletonList(this.pattern);
+    srcInclusions.fieldRegex = List.of(this.pattern);
   }
 
   /**

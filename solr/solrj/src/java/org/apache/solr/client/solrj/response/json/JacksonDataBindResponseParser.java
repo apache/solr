@@ -20,12 +20,12 @@ package org.apache.solr.client.solrj.response.json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -47,14 +47,19 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     return "json";
   }
 
+  private static final Set<String> CONTENT_TYPES = Set.of("application/json");
+
   @Override
-  public Collection<String> getContentTypes() {
-    return List.of("application/json");
+  public Set<String> getContentTypes() {
+    return CONTENT_TYPES;
   }
 
   // TODO it'd be nice if the ResponseParser could receive the mime type so it can parse
   //  accordingly, maybe json, cbor, smile
 
+  /**
+   * Parse the Json {@code stream} to the expected Java type, then, converts to a {@link NamedList}.
+   */
   @Override
   public NamedList<Object> processResponse(InputStream stream, String encoding) throws IOException {
     // TODO generalize to CBOR, Smile, ...
@@ -64,7 +69,9 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     if (encoding == null) {
       parsedVal = mapper.readValue(stream, typeParam);
     } else {
-      parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
+      parsedVal =
+          mapper.readValue(
+              new InputStreamReader(stream, IOUtils.charsetForName(encoding)), typeParam);
     }
 
     final var result = new SimpleOrderedMap<Object>();

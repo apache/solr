@@ -19,7 +19,6 @@ package org.apache.solr.handler.loader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -142,6 +141,8 @@ public class JavabinLoader extends ContentStreamLoader {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // END_OBJ is a unique sentinel; identity check is intentional
   private void handleMultiStream(
       SolrQueryRequest req,
       SolrQueryResponse rsp,
@@ -179,7 +180,7 @@ public class JavabinLoader extends ContentStreamLoader {
                 }
               }
             }
-            return Collections.emptyList();
+            return List.of();
           }
         }) {
       jbc.unmarshal(in);

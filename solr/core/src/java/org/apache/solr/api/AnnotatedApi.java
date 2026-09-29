@@ -29,7 +29,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -130,15 +129,15 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         throw new RuntimeException("No method with @Command in class: " + klas.getName());
       }
       SpecProvider specProvider = readSpec(endPoint, methods);
-      return Collections.singletonList(new AnnotatedApi(specProvider, endPoint, commands, null));
+      return List.of(new AnnotatedApi(specProvider, endPoint, commands, null));
     } else {
       List<Api> apis = new ArrayList<>();
       for (Method m : klas.getMethods()) {
         EndPoint endPoint = m.getAnnotation(EndPoint.class);
         if (endPoint == null) continue;
         Cmd cmd = new Cmd("", obj, m);
-        SpecProvider specProvider = readSpec(endPoint, Collections.singletonList(m));
-        apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
+        SpecProvider specProvider = readSpec(endPoint, List.of(m));
+        apis.add(new AnnotatedApi(specProvider, endPoint, Map.of("", cmd), null));
       }
       if (!allowEmpty && apis.isEmpty()) {
         throw new RuntimeException("Invalid Class : " + klas.getName() + " No @EndPoints");
@@ -170,9 +169,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         methods.add(method.name());
       }
       map.put("methods", methods);
-      map.put(
-          "url",
-          new ValidatingJsonMap(Collections.singletonMap("paths", Arrays.asList(endPoint.path()))));
+      map.put("url", new ValidatingJsonMap(Map.of("paths", Arrays.asList(endPoint.path()))));
       Map<String, Object> cmds = new HashMap<>();
 
       for (Method method : m) {
@@ -359,7 +356,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Error executing command",
-            CommandOperation.captureErrors(Collections.singletonList(cmd)));
+            CommandOperation.captureErrors(List.of(cmd)));
       }
     }
   }

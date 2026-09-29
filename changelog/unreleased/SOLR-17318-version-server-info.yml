@@ -1,0 +1,8 @@
+title: VersionTool (bin/solr version) now reports remote server version when `--solr-url` is provided
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-17318
+    url: https://issues.apache.org/jira/browse/SOLR-17318

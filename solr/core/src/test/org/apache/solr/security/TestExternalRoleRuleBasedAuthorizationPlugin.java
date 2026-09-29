@@ -19,11 +19,10 @@ package org.apache.solr.security;
 
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import org.apache.http.auth.BasicUserPrincipal;
+import java.util.Set;
 
 /**
  * Tests {@link ExternalRoleRuleBasedAuthorizationPlugin} through simulating principals with roles
@@ -50,7 +49,7 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin
 
   @Override
   protected void setUserRole(String user, String role) {
-    principals.put(user, new PrincipalWithUserRoles(user, Collections.singleton(role)));
+    principals.put(user, new PrincipalWithUserRoles(user, Set.of(role)));
   }
 
   @Override
@@ -63,7 +62,7 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin
             ? null
             : principals.get(userPrincipal) != null
                 ? principals.get(userPrincipal)
-                : new BasicUserPrincipal(userPrincipal);
+                : new SimplePrincipal(userPrincipal);
       }
     };
   }

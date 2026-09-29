@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -117,6 +118,17 @@ public class SolrIndexWriter extends IndexWriter {
       w = new SolrIndexWriter(core, name, path, d, create, schema, config, delPolicy, codec);
       w.setDirectoryFactory(directoryFactory);
       return w;
+    } catch (LockObtainFailedException e) {
+      throw new LockObtainFailedException(
+          "Index dir '"
+              + path
+              + "' of core '"
+              + core.getName()
+              + "' is already locked. "
+              + "The most likely cause is another Solr server (or another solr core in this server) "
+              + "also configured to use this directory; other possible causes may be specific to lockType: "
+              + config.lockType,
+          e);
     } finally {
       if (null == w && null != d) {
         directoryFactory.doneWithDirectory(d);
@@ -217,16 +229,13 @@ public class SolrIndexWriter extends IndexWriter {
         updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, false, false, null);
     try {
       super.merge(merge);
-      updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, false, timer);
     } catch (Throwable t) {
-      if (timer != null) {
-        timer.stop();
-      }
       updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, true, timer);
       throw t;
     } finally {
       runningMerges.remove(segString);
     }
+    updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, false, timer);
   }
 
   public Map<String, Object> getRunningMerges() {
@@ -258,22 +267,22 @@ public class SolrIndexWriter extends IndexWriter {
 
     mergesCounter =
         solrMetricsContext.longCounter(
-            "solr_core_indexwriter_merges", "Number of total merge operations, " + descSuffix);
+            "solr.core.indexwriter.merges", "Number of total merge operations, " + descSuffix);
     mergeDocsCounter =
         solrMetricsContext.longCounter(
-            "solr_core_indexwriter_merge_docs",
+            "solr.core.indexwriter.merge.docs",
             "Number of documents involved in merge, " + descSuffix);
     mergeSegmentsCounter =
         solrMetricsContext.longCounter(
-            "solr_core_indexwriter_merge_segments",
+            "solr.core.indexwriter.merge.segments",
             "Number of segments involved in merge, " + descSuffix);
     flushesCounter =
         solrMetricsContext.longCounter(
-            "solr_core_indexwriter_flushes", "Number of flush to disk operations triggered");
+            "solr.core.indexwriter.flushes", "Number of flush to disk operations triggered");
 
     var mergesTimerBase =
         solrMetricsContext.longHistogram(
-            "solr_core_indexwriter_merge_time",
+            "solr.core.indexwriter.merge.time",
             "Time spent merging segments, " + descSuffix,
             OtelUnit.MILLISECONDS);
     majorMergeTimer =
@@ -419,7 +428,7 @@ public class SolrIndexWriter extends IndexWriter {
       }
 
       if (solrMetricsContext != null) {
-        solrMetricsContext.unregister();
+        solrMetricsContext.close();
       }
     }
   }

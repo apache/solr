@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -335,7 +333,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
             continue;
           }
         }
-        return new VersionedCollectionProps(-1, emptyMap());
+        return new VersionedCollectionProps(-1, Map.of());
       }
     }
   }

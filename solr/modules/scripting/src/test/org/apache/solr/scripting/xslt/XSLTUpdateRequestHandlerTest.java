@@ -116,7 +116,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     ContentStreamLoader loader = new XSLTUpdateRequestHandler.XsltXMLLoader().init(null);
     loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
 
-    AddUpdateCommand add = p.addCommands.get(0);
+    AddUpdateCommand add = p.addCommands.getFirst();
     assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
     assertEquals("zzz", add.solrDoc.getField("foo_s").getFirstValue());
     req.close();

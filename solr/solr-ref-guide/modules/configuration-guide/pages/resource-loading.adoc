@@ -31,7 +31,7 @@ xref:managed-resources.adoc[] can be manipulated via APIs and do not need an exp
 
 xref:config-sets.adoc[] are the directories containing `solrconfig.xml`, the schema, and resources referenced by them.
 In SolrCloud they are stored in ZooKeeper.
-In a user-managed cluster and a single-node installation they are stored on the file system.
+In a user-managed cluster or standalone installation they are stored on the file system.
 In any mode, resources may be shared or may be dedicated to a configSet.
 Prefer to put resources here.
 

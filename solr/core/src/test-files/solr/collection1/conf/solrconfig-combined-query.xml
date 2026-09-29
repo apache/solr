@@ -98,7 +98,18 @@
   <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
   </requestHandler>
 
-    <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
+  <requestHandler name="/search-elevate" class="solr.CombinedQuerySearchHandler">
+    <arr name="last-components">
+      <str>elevator</str>
+    </arr>
+  </requestHandler>
+
+  <searchComponent name="elevator" class="solr.QueryElevationComponent">>
+    <str name="queryFieldType">string</str>
+    <str name="config-file">elevate.xml</str>
+  </searchComponent>
+
+  <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
         <int name="maxCombinerQueries">2</int>
         <lst name="combiners">
             <lst name="test">
@@ -159,7 +170,7 @@
   </highlighting>
   </searchComponent>
 
-    <initParams path="/select,/search">
+    <initParams path="/select,/search,/search-elevate">
         <lst name="defaults">
             <str name="df">text</str>
         </lst>

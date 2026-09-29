@@ -179,7 +179,7 @@ public class SimpleFacets {
     DocSet docs = docsOrig;
     String facetValue = param;
     String key = param;
-    List<String> tags = Collections.emptyList();
+    List<String> tags = List.of();
     int threads = -1;
 
     if (localParams == null) {
@@ -203,7 +203,7 @@ public class SimpleFacets {
     key = localParams.get(CommonParams.OUTPUT_KEY, key);
 
     String tagStr = localParams.get(CommonParams.TAG);
-    tags = tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+    tags = tagStr == null ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
     String threadStr = localParams.get(CommonParams.THREADS);
     if (threadStr != null) {
@@ -1318,7 +1318,7 @@ public class SimpleFacets {
       final ParsedParams parsed = parseParams(FacetParams.FACET_INTERVAL, field);
       String[] intervalStrs =
           parsed.required.getFieldParams(parsed.facetValue, FacetParams.FACET_INTERVAL_SET);
-      SchemaField schemaField = searcher.getCore().getLatestSchema().getField(parsed.facetValue);
+      SchemaField schemaField = searcher.getSchema().getField(parsed.facetValue);
       if (parsed.params.getBool(GroupParams.GROUP_FACET, false)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,

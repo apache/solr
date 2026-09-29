@@ -34,6 +34,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -58,7 +59,7 @@ public class SplitCoreAPI {
   @Command(name = V2_SPLIT_CORE_CMD)
   public void splitCore(PayloadObj<SplitCorePayload> obj) throws Exception {
     final SplitCorePayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(
         CoreAdminParams.ACTION,
         CoreAdminParams.CoreAdminAction.SPLIT.name().toLowerCase(Locale.ROOT));

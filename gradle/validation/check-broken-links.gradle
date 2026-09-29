@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
+
 configure(rootProject) {
   task checkBrokenLinks {
     group 'Verification'
@@ -30,7 +33,10 @@ configure(project(':solr:documentation')) {
 }
 
 @CacheableTask
-class CheckBrokenLinksTask extends DefaultTask {
+abstract class CheckBrokenLinksTask extends DefaultTask {
+
+  @Inject
+  abstract ExecOperations getExecOperations()
 
   // wraps input directory location in DirectoryProperty so as to lazily evaluate 'docroot' property
   // (see gradle/documentation/documentation.gradle)
@@ -51,7 +57,7 @@ class CheckBrokenLinksTask extends DefaultTask {
   def check() {
     def result
     outputFile.get().asFile.withOutputStream {output ->
-      result = project.exec {
+      result = execOperations.exec {
         executable project.externalTool("python3")
         ignoreExitValue = true
         standardOutput = output

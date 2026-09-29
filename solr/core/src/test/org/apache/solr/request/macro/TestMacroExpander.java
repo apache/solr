@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request.macro;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
@@ -154,7 +153,7 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testUnbalanced() { // SOLR-13181
-    final Map<String, String[]> request = Collections.singletonMap("answer", new String[] {"42"});
+    final Map<String, String[]> request = Map.of("answer", new String[] {"42"});
     final MacroExpander meSkipOnMissingParams = new MacroExpander(request);
     final MacroExpander meFailOnMissingParams = new MacroExpander(request, true);
     assertEquals("${noClose", meSkipOnMissingParams.expand("${noClose"));

@@ -23,25 +23,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Answers;
@@ -54,35 +46,17 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @After
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
   /*
    Test the monitoring endpoint, used in the Cloud => ZkStatus Admin UI screen
    NOTE: We do not currently test with multiple zookeepers, but the only difference is that there are multiple "details" objects and mode is "ensemble"...
   */
   @Test
-  public void monitorZookeeper()
-      throws IOException,
-          SolrServerException,
-          InterruptedException,
-          ExecutionException,
-          TimeoutException {
-    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
+  public void monitorZookeeper() throws IOException, SolrServerException {
+    var solr = cluster.getJettySolrRunner(0).getSolrClient();
     GenericSolrRequest mntrReq =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status");
     mntrReq.setResponseParser(new JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
+    NamedList<Object> nl = solr.request(mntrReq);
 
     assertEquals("zkStatus", nl.getName(1));
     @SuppressWarnings({"unchecked"})
@@ -97,7 +71,6 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     Map<String, Object> details = (Map<String, Object>) detailsList.get(0);
     assertEquals(true, details.get("ok"));
     assertTrue(Integer.parseInt((String) details.get("zk_znode_count")) > 50);
-    solr.close();
   }
 
   @Test
@@ -170,9 +143,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void validateNotWhitelisted() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(
-          Collections.singletonList("mntr is not executed because it is not in the whitelist."),
-          "zoo1:2181",
-          "mntr");
+          List.of("mntr is not executed because it is not in the whitelist."), "zoo1:2181", "mntr");
     } catch (IOException e) {
       fail("Error closing ZookeeperStatusHandler");
     }
@@ -181,7 +152,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @Test(expected = SolrException.class)
   public void validateEmptyResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
-      zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
+      zsh.validateZkRawResponse(List.of(), "zoo1:2181", "mntr");
     } catch (IOException e) {
       fail("Error closing ZookeeperStatusHandler");
     }
@@ -191,7 +162,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public void validateNotServingRequestsResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(
-          Collections.singletonList("This ZooKeeper instance is not currently serving requests"),
+          List.of("This ZooKeeper instance is not currently serving requests"),
           "zoo1:2181",
           "mntr");
     } catch (IOException e) {

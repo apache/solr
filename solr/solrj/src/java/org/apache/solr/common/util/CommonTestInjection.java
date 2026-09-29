@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -36,21 +35,11 @@ import org.slf4j.LoggerFactory;
 public class CommonTestInjection {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static volatile Map<String, String> additionalSystemProps = null;
   private static volatile Integer delay = null;
   private static final ConcurrentMap<String, Breakpoint> breakpoints = new ConcurrentHashMap<>();
 
   public static void reset() {
-    additionalSystemProps = null;
     delay = null;
-  }
-
-  public static void setAdditionalProps(Map<String, String> additionalSystemProps) {
-    CommonTestInjection.additionalSystemProps = additionalSystemProps;
-  }
-
-  public static Map<String, String> injectAdditionalProps() {
-    return additionalSystemProps;
   }
 
   /**

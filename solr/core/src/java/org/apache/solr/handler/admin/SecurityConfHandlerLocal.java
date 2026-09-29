@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
@@ -69,7 +69,7 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
     SecurityConfig props = getSecurityConfig(false);
     Object o = props.getData().get(key);
     if (o == null) {
-      rsp.add(CommandOperation.ERR_MSGS, Collections.singletonList("No " + key + " configured"));
+      rsp.add(CommandOperation.ERR_MSGS, List.of("No " + key + " configured"));
     } else {
       rsp.add(key + ".enabled", getPlugin(key) != null);
       rsp.add(key, o);

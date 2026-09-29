@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Modernize String-based charset APIs to java.nio.charset.Charset; invalid client-supplied charset names are still handled as I/O errors
+type: other
+authors:
+  - name: Jan Høydahl
+links:
+- name: PR#4606
+  url: https://github.com/apache/solr/pull/4606

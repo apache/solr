@@ -16,16 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.commons.io.IOUtils;
+import io.github.azagniotov.language.LanguageDetectionOrchestrator;
+import io.github.azagniotov.language.LanguageDetectionSettings;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -36,7 +28,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Identifies the language of a set of input fields using
- * http://code.google.com/p/language-detection
+ * https://github.com/azagniotov/language-detection
  *
  * <p>The UpdateProcessorChain config entry can take a number of parameters which may also be passed
  * as HTTP parameters on the update request and override the defaults. Here is the simplest
@@ -61,6 +53,12 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory
   protected SolrParams appends;
   protected SolrParams invariants;
 
+  // Built once for the JVM lifetime; LanguageDetectionOrchestrator is thread-safe and
+  // stateless after construction, so sharing it across all factory instances is safe.
+  static final LanguageDetectionOrchestrator ORCHESTRATOR =
+      LanguageDetectionOrchestrator.fromSettings(
+          LanguageDetectionSettings.fromAllIsoCodes639_1().build());
+
   @Override
   public void inform(SolrCore core) {}
 
@@ -72,12 +70,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory
    */
   @Override
   public void init(NamedList<?> args) {
-    try {
-      loadData();
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Couldn't load profile data, will return empty languages always!", e);
-    }
+
     if (args != null) {
       Object o;
       o = args.get("defaults");
@@ -100,40 +93,9 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    // Process defaults, appends and invariants if we got a request
     if (req != null) {
       SolrPluginUtils.setDefaults(req, defaults, appends, invariants);
     }
-    return new LangDetectLanguageIdentifierUpdateProcessor(req, rsp, next);
-  }
-
-  // DetectorFactory is totally global, so we only want to do this once... ever!!!
-  static boolean loaded;
-
-  // profiles we will load from classpath
-  static final String languages[] = {
-    "af", "ar", "bg", "bn", "cs", "da", "de", "el", "en", "es", "et", "fa", "fi", "fr", "gu",
-    "he", "hi", "hr", "hu", "id", "it", "ja", "kn", "ko", "lt", "lv", "mk", "ml", "mr", "ne",
-    "nl", "no", "pa", "pl", "pt", "ro", "ru", "sk", "sl", "so", "sq", "sv", "sw", "ta", "te",
-    "th", "tl", "tr", "uk", "ur", "vi", "zh-cn", "zh-tw"
-  };
-
-  public static synchronized void loadData() throws IOException, LangDetectException {
-    if (loaded) {
-      return;
-    }
-    loaded = true;
-    List<String> profileData = new ArrayList<>();
-    for (String language : languages) {
-      InputStream stream =
-          LangDetectLanguageIdentifierUpdateProcessor.class.getResourceAsStream(
-              "langdetect-profiles/" + language);
-      BufferedReader reader =
-          new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-      profileData.add(new String(IOUtils.toCharArray(reader)));
-      reader.close();
-    }
-    DetectorFactory.loadProfile(profileData);
-    DetectorFactory.setSeed(0);
+    return new LangDetectLanguageIdentifierUpdateProcessor(req, rsp, next, ORCHESTRATOR);
   }
 }

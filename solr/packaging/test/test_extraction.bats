@@ -41,7 +41,13 @@ setup_file() {
   if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     export TIKA_PORT=$((SOLR_PORT+5))
     docker run --rm -p ${TIKA_PORT}:9998 --name bats_tika -d apache/tika:3.2.3.0-full >/dev/null 2>&1 || true
-    echo "Tika Server started on port ${TIKA_PORT}" >&3
+    echo "Waiting for Tika Server to be ready on port ${TIKA_PORT}" >&3
+    if ! wait_for 120 3 curl -s -f "http://localhost:${TIKA_PORT}/tika" -o /dev/null; then
+      export DOCKER_UNAVAILABLE=1
+      echo "WARNING: Tika Server did not become ready in time; Tika-dependent tests will be bypassed." >&3
+    else
+      echo "Tika Server is ready on port ${TIKA_PORT}" >&3
+    fi
   else
     export DOCKER_UNAVAILABLE=1
     echo "WARNING: Docker not available (CLI missing or daemon not running); Tika-dependent tests will be bypassed." >&3

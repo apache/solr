@@ -59,7 +59,7 @@ A very good blog post that discusses the issues to consider is https://lucidwork
 
 One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact).
 In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number.
-If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with xref:cluster-types.adoc#solrcloud-mode[SolrCloud] as part of your design from the start.
+If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] as part of your design from the start.
 
 == Package Installation
 
@@ -197,7 +197,7 @@ Currently, the available examples you can run are: techproducts, schemaless, and
 See the section xref:solr-control-script-reference.adoc#running-with-example-configurations[Running with Example Configurations] for details on each example.
 
 .Going deeper with SolrCloud
-NOTE: Running the `cloud` example demonstrates running multiple nodes of Solr using xref:cluster-types.adoc#solrcloud-mode[SolrCloud] mode.
+NOTE: Running the `cloud` example demonstrates running multiple nodes of Solr using xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] mode.
 For more information on starting Solr in SolrCloud mode, see the section xref:getting-started:tutorial-solrcloud.adoc[].
 
 === Check if Solr is Running

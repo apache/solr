@@ -1,0 +1,7 @@
+title: add percentage and threshold based minimum match functionality, as we know it from ExtendedDismaxQParser, to BoolQParserPlugin
+type: changed
+authors:
+- name: Renato Haeberli
+links:
+- name: PR#4406
+  url: https://github.com/apache/solr/pull/4406

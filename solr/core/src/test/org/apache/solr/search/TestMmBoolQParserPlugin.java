@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.NamedMatches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -29,6 +30,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
+
+  private static BooleanQuery.Builder shouldBuilder(String... terms) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (String term : terms) {
+      builder.add(new TermQuery(new Term("name", term)), BooleanClause.Occur.SHOULD);
+    }
+    return builder;
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -61,12 +70,55 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
         parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name:qux mm=2}"));
 
     BooleanQuery expected =
-        new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("name", "bar")), BooleanClause.Occur.SHOULD)
-            .add(new TermQuery(new Term("name", "qux")), BooleanClause.Occur.SHOULD)
-            .setMinimumNumberShouldMatch(2)
-            .build();
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(2).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchPercentage75() throws Exception {
+    Query actual =
+        parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name:qux mm=75%}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(2).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchPercentage50() throws Exception {
+    Query actual =
+        parseQuery(req("q", "{!bool should=name:foo should=name:bar should=name:qux mm=50%}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(1).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchThresholdsLower() throws Exception {
+    Query actual =
+        parseQuery(
+            req("q", "{!bool should=name:foo should=name:bar should=name:qux mm='2<-1 5<-2'}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux").setMinimumNumberShouldMatch(2).build();
+
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testMinShouldMatchThresholdsUpper() throws Exception {
+    Query actual =
+        parseQuery(
+            req(
+                "q",
+                "{!bool should=name:foo should=name:bar should=name:qux should=name:n1 should=name:n2 should=name:n3 mm='2<-1 5<-2'}"));
+
+    BooleanQuery expected =
+        shouldBuilder("foo", "bar", "qux", "n1", "n2", "n3").setMinimumNumberShouldMatch(4).build();
 
     assertEquals(expected, actual);
   }
@@ -105,11 +157,27 @@ public class TestMmBoolQParserPlugin extends SolrTestCaseJ4 {
     expectThrows(
         SolrException.class,
         NumberFormatException.class,
-        () -> parseQuery(req("q", "{!bool should=name:foo mm=20%}")));
-
-    expectThrows(
-        SolrException.class,
-        NumberFormatException.class,
         () -> parseQuery(req("q", "{!bool should=name:foo mm=2.9}")));
+  }
+
+  /** cache and cost local params must survive alongside name: WrappedQuery wraps NamedMatches. */
+  @Test
+  public void testNameWithCacheAndCostPreserved() throws Exception {
+    Query actual = parseQuery(req("q", "{!bool name=my_bool cache=false cost=200 must=name:foo}"));
+
+    assertTrue("expected WrappedQuery", actual instanceof WrappedQuery);
+    WrappedQuery wrapped = (WrappedQuery) actual;
+    assertFalse("cache=false must be preserved", wrapped.getCache());
+    assertEquals("cost=200 must be preserved", 200, wrapped.getCost());
+
+    BooleanQuery inner =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("name", "foo")), BooleanClause.Occur.MUST)
+            .setMinimumNumberShouldMatch(0)
+            .build();
+    assertEquals(
+        "WrappedQuery must wrap NamedMatches",
+        NamedMatches.wrapQuery("my_bool", inner),
+        wrapped.getWrappedQuery());
   }
 }

@@ -20,7 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -103,7 +103,7 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
   public PathBasedCertPrincipalResolver(Map<String, Object> params) {
     this.pattern = createCertResolverPattern(params, CertUtil.SUBJECT_DN_PREFIX);
     Map<String, String> extractConfig =
-        (Map<String, String>) params.getOrDefault(PARAM_EXTRACT, Collections.emptyMap());
+        (Map<String, String>) params.getOrDefault(PARAM_EXTRACT, Map.of());
     this.startPattern = extractConfig.getOrDefault(PARAM_AFTER, "");
     this.endPattern = extractConfig.getOrDefault(PARAM_BEFORE, "");
   }
@@ -120,11 +120,10 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
   @Override
   public Principal resolvePrincipal(X509Certificate certificate)
       throws SSLPeerUnverifiedException, CertificateParsingException {
-    Map<String, Set<String>> matches =
-        getValuesFromPaths(certificate, Collections.singletonList(pattern));
+    Map<String, Set<String>> matches = getValuesFromPaths(certificate, List.of(pattern));
     String basePrincipal = null;
     if (matches != null && !matches.isEmpty()) {
-      Set<String> fieldValues = matches.getOrDefault(pattern.getName(), Collections.emptySet());
+      Set<String> fieldValues = matches.getOrDefault(pattern.getName(), Set.of());
       basePrincipal = fieldValues.stream().findFirst().orElse(null);
     }
 

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
@@ -49,7 +50,7 @@ import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
  * <p>Additionally it's used for registering and reporting metrics specific to the components that
  * use the same instance of context.
  */
-public class SolrMetricsContext {
+public class SolrMetricsContext implements AutoCloseable {
   private final String registryName;
   private final SolrMetricManager metricManager;
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -57,6 +58,13 @@ public class SolrMetricsContext {
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName) {
     this.registryName = registryName;
     this.metricManager = metricManager;
+    assert ObjectReleaseTracker.track(this);
+  }
+
+  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, Object child) {
+    this.registryName = registryName;
+    this.metricManager = metricManager;
+    assert ObjectReleaseTracker.track(this, child.toString() + "@" + child.hashCode());
   }
 
   /** Return metric registry name used in this context. */
@@ -77,8 +85,12 @@ public class SolrMetricsContext {
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
   public SolrMetricsContext getChildContext(Object child) {
-    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName);
-    return childContext;
+    return new SolrMetricsContext(metricManager, registryName, child);
+  }
+
+  /** Register a closeable to be closed when this context is closed. */
+  public void registerCloseable(AutoCloseable closeable) {
+    closeables.add(closeable);
   }
 
   public LongCounter longCounter(String metricName, String description) {
@@ -148,9 +160,7 @@ public class SolrMetricsContext {
 
   public ObservableLongGauge observableLongGauge(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    var observableLongGauge = observableLongGauge(metricName, description, callback, null);
-    closeables.add(observableLongGauge);
-    return observableLongGauge;
+    return observableLongGauge(metricName, description, callback, null);
   }
 
   public ObservableLongGauge observableLongGauge(
@@ -158,14 +168,15 @@ public class SolrMetricsContext {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+    var observableLongGauge =
+        metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+    closeables.add(observableLongGauge);
+    return observableLongGauge;
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
       String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    var observableDoubleGauge = observableDoubleGauge(metricName, description, callback, null);
-    closeables.add(observableDoubleGauge);
-    return observableDoubleGauge;
+    return observableDoubleGauge(metricName, description, callback, null);
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -173,15 +184,15 @@ public class SolrMetricsContext {
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableDoubleGauge(
-        registryName, metricName, description, callback, unit);
+    var observableDoubleGauge =
+        metricManager.observableDoubleGauge(registryName, metricName, description, callback, unit);
+    closeables.add(observableDoubleGauge);
+    return observableDoubleGauge;
   }
 
   public ObservableLongCounter observableLongCounter(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    var observableLongCounter = observableLongCounter(metricName, description, callback, null);
-    closeables.add(observableLongCounter);
-    return observableLongCounter;
+    return observableLongCounter(metricName, description, callback, null);
   }
 
   public ObservableLongCounter observableLongCounter(
@@ -189,15 +200,15 @@ public class SolrMetricsContext {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableLongCounter(
-        registryName, metricName, description, callback, unit);
+    var observableLongCounter =
+        metricManager.observableLongCounter(registryName, metricName, description, callback, unit);
+    closeables.add(observableLongCounter);
+    return observableLongCounter;
   }
 
   public ObservableDoubleCounter observableDoubleCounter(
       String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    var observableDoubleCounter = observableDoubleCounter(metricName, description, callback, null);
-    closeables.add(observableDoubleCounter);
-    return observableDoubleCounter;
+    return observableDoubleCounter(metricName, description, callback, null);
   }
 
   public ObservableDoubleCounter observableDoubleCounter(
@@ -205,8 +216,11 @@ public class SolrMetricsContext {
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableDoubleCounter(
-        registryName, metricName, description, callback, unit);
+    var observableDoubleCounter =
+        metricManager.observableDoubleCounter(
+            registryName, metricName, description, callback, unit);
+    closeables.add(observableDoubleCounter);
+    return observableDoubleCounter;
   }
 
   public ObservableLongMeasurement longGaugeMeasurement(String metricName, String description) {
@@ -266,7 +280,9 @@ public class SolrMetricsContext {
         delegate, this, metricNamePrefix, executorName, category);
   }
 
-  public void unregister() {
+  @Override
+  public void close() {
+    assert ObjectReleaseTracker.release(this);
     IOUtils.closeQuietly(closeables);
     closeables.clear();
   }

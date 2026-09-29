@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -80,7 +79,7 @@ public class LTRScoringQuery extends Query implements Accountable {
   private Feature.FeatureWeight[] extractedFeatureWeights;
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), null);
+    this(ltrScoringModel, Map.of(), null);
   }
 
   public LTRScoringQuery(
@@ -233,7 +232,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         extractedFeatureWeights[i++] = fw;
       }
       for (final Feature f : modelFeatures) {
-        // we can lookup by featureid because all features will be extracted
+        // we can look up by featureid because all features will be extracted
         modelFeaturesWeights[j++] = extractedFeatureWeights[f.getIndex()];
       }
     } else {
@@ -249,10 +248,9 @@ public class LTRScoringQuery extends Query implements Accountable {
       IndexSearcher searcher,
       boolean needsScores,
       List<Feature.FeatureWeight> featureWeights,
-      Collection<Feature> features)
-      throws IOException {
+      Collection<Feature> features) {
     final SolrQueryRequest req = getRequest();
-    // since the feature store is a linkedhashmap order is preserved
+    // since the feature store is a linked hashmap order is preserved
     for (final Feature f : features) {
       try {
         Feature.FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
@@ -466,7 +464,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     public ModelScorer modelScorer(LeafReaderContext context) throws IOException {
 
       final List<Feature.FeatureWeight.FeatureScorer> featureScorers =
-          new ArrayList<Feature.FeatureWeight.FeatureScorer>(extractedFeatureWeights.length);
+          new ArrayList<>(extractedFeatureWeights.length);
       for (final Feature.FeatureWeight featureWeight : extractedFeatureWeights) {
         final Feature.FeatureWeight.FeatureScorer scorer = featureWeight.featureScorer(context);
         if (scorer != null) {

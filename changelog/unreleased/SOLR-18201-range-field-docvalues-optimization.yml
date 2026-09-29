@@ -1,0 +1,10 @@
+title: >
+  Range field types (Int/Long/Float/DoubleRangeField) now support docValues="true"
+  as a query-time filter optimization.
+type: added
+authors:
+  - name: Sonu Sharma
+    nick: ercsonusharma
+links:
+  - name: SOLR-18201
+    url: https://issues.apache.org/jira/browse/SOLR-18201

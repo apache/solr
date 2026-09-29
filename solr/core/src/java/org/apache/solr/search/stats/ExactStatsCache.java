@@ -19,7 +19,6 @@ package org.apache.solr.search.stats;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,11 +71,10 @@ public class ExactStatsCache extends StatsCache {
     @SuppressWarnings({"unchecked"})
     Map<String, CollectionStats> currentGlobalColStats =
         (Map<String, CollectionStats>)
-            req.getContext().getOrDefault(CURRENT_GLOBAL_COL_STATS, Collections.emptyMap());
+            req.getContext().getOrDefault(CURRENT_GLOBAL_COL_STATS, Map.of());
     @SuppressWarnings({"unchecked"})
     Map<String, TermStats> currentGlobalTermStats =
-        (Map<String, TermStats>)
-            req.getContext().getOrDefault(CURRENT_GLOBAL_TERM_STATS, Collections.emptyMap());
+        (Map<String, TermStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_TERM_STATS, Map.of());
     if (log.isDebugEnabled()) {
       log.debug(
           "Returning StatsSource. Collection stats={}, Term stats size= {}",
@@ -156,11 +154,11 @@ public class ExactStatsCache extends StatsCache {
     @SuppressWarnings({"unchecked"})
     Map<String, Map<String, TermStats>> perShardTermStats =
         (Map<String, Map<String, TermStats>>)
-            req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
+            req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Map.of());
     @SuppressWarnings({"unchecked"})
     Map<String, Map<String, CollectionStats>> perShardColStats =
         (Map<String, Map<String, CollectionStats>>)
-            req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
+            req.getContext().getOrDefault(PER_SHARD_COL_STATS, Map.of());
     log.debug("perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
   }
 
@@ -318,7 +316,7 @@ public class ExactStatsCache extends StatsCache {
     @SuppressWarnings({"unchecked"})
     Map<String, Map<String, CollectionStats>> perShardColStats =
         (Map<String, Map<String, CollectionStats>>)
-            rb.req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
+            rb.req.getContext().getOrDefault(PER_SHARD_COL_STATS, Map.of());
     return perShardColStats.get(shard);
   }
 
@@ -326,7 +324,7 @@ public class ExactStatsCache extends StatsCache {
     @SuppressWarnings({"unchecked"})
     Map<String, Map<String, TermStats>> perShardTermStats =
         (Map<String, Map<String, TermStats>>)
-            req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
+            req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Map.of());
     Map<String, TermStats> cache = perShardTermStats.get(shard);
     return (cache != null) ? cache.get(t) : null; // Term doesn't exist in shard
   }
@@ -390,7 +388,7 @@ public class ExactStatsCache extends StatsCache {
       TermStats termStats = termStatsCache.get(term.toString());
       // TermStats == null is also true if term has no docFreq anyway,
       // see returnLocalStats, if docFreq == 0, they are not added anyway
-      // Not sure we need a warning here
+      // Not sure if we need a warning here
       if (termStats == null) {
         log.debug("Missing global termStats info for term={}, using local stats", term);
         metrics.missingGlobalTermStats.increment();

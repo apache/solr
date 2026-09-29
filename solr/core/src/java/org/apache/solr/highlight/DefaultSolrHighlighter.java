@@ -816,7 +816,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // Collect the Fields we will examine (could be more than one if multi-valued)
     Collection<Object> fieldValues = doc.getFieldValues(fieldName);
     if (fieldValues == null) {
-      return Collections.emptyList();
+      return List.of();
     }
     FieldType fieldType = req.getSchema().getFieldType(fieldName);
     List<String> result = new ArrayList<>();

@@ -28,19 +28,6 @@ import org.junit.Test;
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testReadsEnableV2ApiSysprop() {
-    System.clearProperty("solr.api.v2.enabled");
-    assertTrue("v2 API should be enabled if sysprop not specified", V2ApiUtils.isEnabled());
-
-    System.setProperty("solr.api.v2.enabled", "true");
-    assertTrue("v2 API should be enabled if sysprop explicitly enables it", V2ApiUtils.isEnabled());
-
-    System.setProperty("solr.api.v2.enabled", "false");
-    assertFalse(
-        "v2 API should be disabled if sysprop explicitly disables it", V2ApiUtils.isEnabled());
-  }
-
-  @Test
   public void testConvertsWtToMediaTypeString() {
     assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(SolrParams.of(), "someDefault"));
 

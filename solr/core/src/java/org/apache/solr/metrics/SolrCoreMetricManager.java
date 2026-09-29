@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 
@@ -86,6 +87,11 @@ public class SolrCoreMetricManager implements Closeable {
    * resetting its state and recreating its attributes for all tracked registered producers.
    */
   public void reregisterCoreMetrics() {
+    // Close old contexts before re-creating
+    IOUtils.closeQuietly(solrMetricsContext);
+    registeredProducers.forEach(
+        metricProducer -> IOUtils.closeQuietly(metricProducer.producer.getSolrMetricsContext()));
+
     this.solrMetricsContext =
         new SolrMetricsContext(
             metricManager,
@@ -139,7 +145,7 @@ public class SolrCoreMetricManager implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    solrMetricsContext.unregister();
+    solrMetricsContext.close();
   }
 
   public SolrMetricsContext getSolrMetricsContext() {
@@ -157,7 +163,7 @@ public class SolrCoreMetricManager implements Closeable {
    * that logically belong to a single collection we convert the core name into a dot-separated
    * hierarchy of: collection name, shard name (with optional split) and replica name.
    *
-   * <p>For example, when the core name looks like this but it's NOT a SolrCloud collection: <code>
+   * <p>For example, when the core name looks like this, but it's NOT a SolrCloud collection: <code>
    * my_collection_shard1_1_replica1</code> then this will be used as the registry name (plus the
    * required <code>solr.core</code> prefix). However, if this is a SolrCloud collection <code>
    * my_collection</code> then the registry name will become <code>
@@ -177,26 +183,5 @@ public class SolrCoreMetricManager implements Closeable {
     } else {
       return SolrMetricManager.enforcePrefix("core." + coreName);
     }
-  }
-
-  /**
-   * This method is used by {@link org.apache.solr.core.CoreContainer#rename(String, String)}.
-   *
-   * @param aCore existing core with old name
-   * @param coreName new name
-   * @return new registry name
-   */
-  public static String createRegistryName(SolrCore aCore, String coreName) {
-    CloudDescriptor cd = aCore.getCoreDescriptor().getCloudDescriptor();
-    String replicaName = null;
-    if (cd != null) {
-      replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), coreName);
-    }
-    return createRegistryName(
-        cd != null,
-        cd != null ? cd.getCollectionName() : null,
-        cd != null ? cd.getShardId() : null,
-        replicaName,
-        coreName);
   }
 }

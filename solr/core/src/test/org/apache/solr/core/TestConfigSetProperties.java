@@ -20,7 +20,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -65,7 +64,7 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyMap() throws Exception {
-    NamedList<?> list = createConfigSetProps(Utils.toJSONString(Collections.emptyMap()));
+    NamedList<?> list = createConfigSetProps(Utils.toJSONString(Map.of()));
     assertEquals(0, list.size());
   }
 

@@ -229,7 +229,7 @@ limitations under the License.
                     <textarea rows="20" cols="50" type="text" id="manipulate_field_type" ng-model="fieldTypeObj" focus-when="showManipulateFieldType" placeholder="specify field type operation(add, delete, replace) with field type patterns"></textarea>
                 </p>
 
-                <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="addFieldTypeErrors" class="clearfix note error">
+                <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="manipulateFieldTypeErrors" class="clearfix note error">
                     <span>{{error}}</span></div>
                 <p class="clearfix buttons">
                     <button type="submit" class="submit" ng-class="{success: added}" ng-click="manipulateFieldType()"><span>{{fieldTypeManipulationOption.label}}</span></button>
@@ -390,6 +390,7 @@ limitations under the License.
              ng-model="fieldOrType"
              chosen
              data-placeholder="Please select ..."
+             search-contains="true"
              ng-change="selectFieldOrType()"
              ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
 
@@ -445,7 +446,7 @@ limitations under the License.
                 </form>
             </div>
         </dd>
-        
+
         <dt class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-show="leftbar.dynamicFields">Dynamic Field</dt>
         <dd class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-repeat="field in leftbar.dynamicFields"><a href="#/{{core}}/schema?dynamic-field={{field}}">{{field}}</a></dd>
 

@@ -32,7 +32,6 @@
   <int name="indexSearcherExecutorThreads">4</int>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
-    <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:15000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
   </shardHandlerFactory>

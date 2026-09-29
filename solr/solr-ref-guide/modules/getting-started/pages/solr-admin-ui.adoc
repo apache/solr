@@ -33,7 +33,7 @@ The left-side of the screen is a menu under the Solr logo that provides the navi
 The first set of links are for system-level information and configuration and provide access to xref:deployment-guide:configuring-logging.adoc#logging-screen[Logging Screen], xref:deployment-guide:collections-core-admin.adoc[], and xref:deployment-guide:jvm-settings.adoc#java-properties-screen[Java Properties Screen], among other things.
 
 At the end of this information is at least one pulldown listing Solr cores configured for this instance.
-On xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud] nodes, an additional pulldown list shows all collections in this cluster.
+On xref:cluster-types.adoc#solrcloud-clusters[SolrCloud] nodes, an additional pulldown list shows all collections in this cluster.
 Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a xref:indexing-guide:schema-browser-screen.adoc[], xref:configuration-guide:configuration-files.adoc#files-screen[Files Screen], xref:deployment-guide:plugins-stats-screen.adoc[], and a xref:query-guide:query-screen.adoc[] on indexed data.
 
 The left-side navigation appears on every screen, while the center changes to  the detail of the option selected.
@@ -98,7 +98,7 @@ image::solr-admin-ui/schema-designer.png[image]
 .Only Visible When Using SolrCloud
 [NOTE]
 ====
-The Schema Designer is only available on Solr instances running xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud].
+The Schema Designer is only available on Solr instances running xref:cluster-types.adoc#solrcloud-clusters[SolrCloud].
 ====
 
 == Collection-Specific Tools
@@ -108,9 +108,9 @@ In the left-hand navigation bar, you will see a pull-down menu titled Collection
 .Only Visible When Using SolrCloud
 [NOTE]
 ====
-The Collection Selector pull-down menu is only available on Solr instances running xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud].
+The Collection Selector pull-down menu is only available on Solr instances running xref:cluster-types.adoc#solrcloud-clusters[SolrCloud].
 
-User-managed clusters or single-node installations will not display this menu, instead the Collection specific UI pages described in this section will be available in the <<Core-Specific Tools,Core Selector pull-down menu>>.
+User-managed clusters or standalone installations will not display this menu, instead the Collection specific UI pages described in this section will be available in the <<Core-Specific Tools,Core Selector pull-down menu>>.
 ====
 
 Clicking on the Collection Selector pull-down menu will show a list of the collections in your Solr cluster, with a search box that can be used to find a specific collection by name.

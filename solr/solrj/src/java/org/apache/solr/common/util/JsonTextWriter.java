@@ -123,7 +123,7 @@ public interface JsonTextWriter extends TextWriter {
           case '\u2029':
             unicodeEscape(getWriter(), ch);
             break;
-            // case '/':
+          // case '/':
           default:
             {
               if (ch <= 0x1F) {
@@ -314,15 +314,15 @@ public interface JsonTextWriter extends TextWriter {
   default void writeNamedList(String name, NamedList<?> val) throws IOException {
     String namedListStyle = getNamedListStyle();
     if (val instanceof SimpleOrderedMap) {
-      writeNamedListAsMapWithDups(name, val);
+      writeNamedListAsMapWithDups(val);
     } else if (Objects.equals(namedListStyle, JSON_NL_FLAT)) {
-      writeNamedListAsFlat(name, val);
+      writeNamedListAsFlat(val);
     } else if (Objects.equals(namedListStyle, JSON_NL_MAP)) {
-      writeNamedListAsMapWithDups(name, val);
+      writeNamedListAsMapWithDups(val);
     } else if (Objects.equals(namedListStyle, JSON_NL_ARROFARR)) {
-      writeNamedListAsArrArr(name, val);
+      writeNamedListAsArrArr(val);
     } else if (Objects.equals(namedListStyle, JSON_NL_ARROFMAP)) {
-      writeNamedListAsArrMap(name, val);
+      writeNamedListAsArrMap(val);
     } else if (Objects.equals(namedListStyle, JSON_NL_ARROFNTV)) {
       throw new UnsupportedOperationException(
           namedListStyle + " namedListStyle must only be used with ArrayOfNameTypeValueJSONWriter");
@@ -330,69 +330,11 @@ public interface JsonTextWriter extends TextWriter {
   }
 
   /**
-   * Represents a NamedList directly as a JSON Object (essentially a Map) Map null to "" and name
-   * mangle any repeated keys to avoid repeats in the output.
-   */
-  default void writeNamedListAsMapMangled(String name, NamedList<?> val) throws IOException {
-    int sz = val.size();
-    writeMapOpener(sz);
-    incLevel();
-
-    // In JSON objects (maps) we can't have null keys or duplicates...
-    // map null to "" and append a qualifier to duplicates.
-    //
-    // a=123,a=456 will be mapped to {a=1,a__1=456}
-    // Disad: this is ambiguous since a real key could be called a__1
-    //
-    // Another possible mapping could aggregate multiple keys to an array:
-    // a=123,a=456 maps to a=[123,456]
-    // Disad: this is ambiguous with a real single value that happens to be an array
-    //
-    // Both of these mappings have ambiguities.
-    Map<String, Integer> repeats = CollectionUtil.newHashMap(4);
-
-    boolean first = true;
-    for (int i = 0; i < sz; i++) {
-      String key = val.getName(i);
-      if (key == null) key = "";
-
-      if (first) {
-        first = false;
-        repeats.put(key, 0);
-      } else {
-        writeMapSeparator();
-
-        Integer repeatCount = repeats.get(key);
-        if (repeatCount == null) {
-          repeats.put(key, 0);
-        } else {
-          String newKey = key;
-          int newCount = repeatCount;
-          do { // avoid generated key clashing with a real key
-            newKey = key + ' ' + (++newCount);
-            repeatCount = repeats.get(newKey);
-          } while (repeatCount != null);
-
-          repeats.put(key, newCount);
-          key = newKey;
-        }
-      }
-
-      indent();
-      writeKey(key, true);
-      writeVal(key, val.getVal(i));
-    }
-
-    decLevel();
-    writeMapCloser();
-  }
-
-  /**
    * Represents a NamedList directly as a JSON Object (essentially a Map) repeating any keys if they
    * are repeated in the NamedList. null key is mapped to "".
    */
   // NamedList("a"=1,"bar"="foo",null=3,null=null) => {"a":1,"bar":"foo","":3,"":null}
-  default void writeNamedListAsMapWithDups(String name, NamedList<?> val) throws IOException {
+  default void writeNamedListAsMapWithDups(NamedList<?> val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
     incLevel();
@@ -415,7 +357,7 @@ public interface JsonTextWriter extends TextWriter {
 
   // Represents a NamedList directly as an array of JSON objects...
   // NamedList("a"=1,"b"=2,null=3,null=null) => [{"a":1},{"b":2},3,null]
-  default void writeNamedListAsArrMap(String name, NamedList<?> val) throws IOException {
+  default void writeNamedListAsArrMap(NamedList<?> val) throws IOException {
     int sz = val.size();
     indent();
     writeArrayOpener(sz);
@@ -449,7 +391,7 @@ public interface JsonTextWriter extends TextWriter {
 
   // Represents a NamedList directly as an array of JSON objects...
   // NamedList("a"=1,"b"=2,null=3,null=null) => [["a",1],["b",2],[null,3],[null,null]]
-  default void writeNamedListAsArrArr(String name, NamedList<?> val) throws IOException {
+  default void writeNamedListAsArrArr(NamedList<?> val) throws IOException {
     int sz = val.size();
     indent();
     writeArrayOpener(sz);
@@ -493,7 +435,7 @@ public interface JsonTextWriter extends TextWriter {
   // Represents a NamedList directly as an array with keys/values
   // interleaved.
   // NamedList("a"=1,"b"=2,null=3,null=null) => ["a",1,"b",2,null,3,null,null]
-  default void writeNamedListAsFlat(String name, NamedList<?> val) throws IOException {
+  default void writeNamedListAsFlat(NamedList<?> val) throws IOException {
     int sz = val.size();
     writeArrayOpener(sz * 2);
     incLevel();

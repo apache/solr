@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.params.CommonParams;
@@ -116,8 +116,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops =
-        CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
+    List<CommandOperation> ops = ApiBag.readCommands(req.getContentStreams(), rsp.getValues());
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
@@ -136,8 +135,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       if (out == null) {
         List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
         if (!errs.isEmpty()) {
-          rsp.add(CommandOperation.ERR_MSGS, errs);
-          return;
+          throw new SolrErrorWrappingException(
+              SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
         }
         log.debug("No edits made");
         return;
@@ -214,7 +213,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
    * object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
-    private Map<String, Object> data = Collections.emptyMap();
+    private Map<String, Object> data = Map.of();
     private int version = -1;
 
     public SecurityConfig() {}
@@ -316,6 +315,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
                 @Override
+                @SuppressWarnings(
+                    "ReferenceEquality") // detecting whether the plugin instance was reloaded
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authentication plugin is modified since the last call.
                   // invalidate the cached commandSchema
@@ -336,6 +337,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           apis.add(
               new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
                 @Override
+                @SuppressWarnings(
+                    "ReferenceEquality") // detecting whether the plugin instance was reloaded
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authorization plugin is modified since the last call.
                   // invalidate cached commandSchema

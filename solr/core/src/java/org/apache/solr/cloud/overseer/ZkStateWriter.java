@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import static java.util.Collections.singletonMap;
-
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.HashMap;
@@ -132,6 +129,8 @@ public class ZkStateWriter {
    *     a {@link org.apache.zookeeper.KeeperException.BadVersionException} this instance becomes
    *     unusable and must be discarded
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // NO_OP is a unique sentinel; identity check is intentional
   public ClusterState enqueueUpdate(
       ClusterState prevState, List<ZkWriteCommand> cmds, ZkWriteCallback callback)
       throws IllegalStateException, Exception {
@@ -192,6 +191,8 @@ public class ZkStateWriter {
     return clusterState;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // NO_OP is a unique sentinel; identity check is intentional
   private boolean isNoOps(List<ZkWriteCommand> cmds) {
     for (ZkWriteCommand cmd : cmds) {
       if (cmd != NO_OP) return false;
@@ -232,6 +233,8 @@ public class ZkStateWriter {
    * @throws KeeperException if any ZooKeeper operation results in an error
    * @throws InterruptedException if the current thread is interrupted
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting "same map instance passed back in" means "flush all"
   public ClusterState writePendingUpdates(
       Map<String, ZkWriteCommand> updates, boolean resetPendingUpdateCounters)
       throws IllegalStateException, KeeperException, InterruptedException {
@@ -257,7 +260,6 @@ public class ZkStateWriter {
       }
       return clusterState;
     }
-    Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {
@@ -287,7 +289,7 @@ public class ZkStateWriter {
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
           } else {
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+            byte[] data = Utils.toJSON(Map.of(c.getName(), c));
             if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
               // When compressing state.json, we expect at least a 10:1 compression ratio.
               data = compressor.compressBytes(data, data.length / 10);
@@ -349,7 +351,6 @@ public class ZkStateWriter {
       invalidState = true;
       throw bve;
     } finally {
-      timerContext.stop();
       if (success) {
         stats.success("update_state");
       } else {

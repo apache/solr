@@ -33,10 +33,16 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
   private int numTerms = -1;
   private boolean showSchema = false;
   private Boolean includeIndexFieldFlags = null;
+  private SolrParams extraParams;
 
   public LukeRequest() {
     // this request is not processed as an ADMIN request
     super(METHOD.GET, "/admin/luke", SolrRequestType.ADMIN);
+  }
+
+  public LukeRequest(SolrParams params) {
+    this();
+    this.extraParams = params;
   }
 
   public LukeRequest(String path) {
@@ -121,6 +127,9 @@ public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
     }
     if (includeIndexFieldFlags != null) {
       params.add("includeIndexFieldFlags", includeIndexFieldFlags.toString());
+    }
+    if (extraParams != null) {
+      params.add(extraParams);
     }
 
     return params;

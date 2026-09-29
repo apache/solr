@@ -112,7 +112,7 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
     return this.cc
         .getMetricManager()
         .getPrometheusMetricReader("solr.jvm")
-        .collect(name -> name.contains("jvm_system_cpu_utilization_ratio"))
+        .collect(name -> name.contains("jvm_system_cpu_utilization"))
         .stream()
         .filter(GaugeSnapshot.class::isInstance)
         .map(GaugeSnapshot.class::cast)

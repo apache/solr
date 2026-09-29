@@ -1,0 +1,7 @@
+title: CLI configSet upload no longer blocks certain file types.  The user of the CLI tool must already have permissions to touch ZooKeeper.  Enforcement of such remains at Solr's ConfigSet HTTP endpoint.
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4193
+    url: https://github.com/apache/solr/pull/4193

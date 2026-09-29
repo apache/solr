@@ -17,8 +17,6 @@
 
 package org.apache.solr.response;
 
-import static java.util.Collections.singletonMap;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -102,7 +100,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
   protected void writeData(PushWriter pw) throws IOException {
     pw.writeMap(
         m -> {
-          m.put("responseHeader", singletonMap("status", 0))
+          m.put("responseHeader", Map.of("status", 0))
               .put(
                   "response",
                   (MapWriter)
@@ -113,8 +111,8 @@ public class TestPushWriter extends SolrTestCaseJ4 {
                                 (IteratorWriter)
                                     w -> {
                                       w.add((MapWriter) m3 -> m3.put("id", 1))
-                                          .add(singletonMap("id", 2))
-                                          .add(singletonMap("id", 3));
+                                          .add(Map.of("id", 2))
+                                          .add(Map.of("id", 3));
                                     });
                       });
         });
@@ -125,7 +123,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     pw.writeMap(
         name,
         m -> {
-          m.put("responseHeader", singletonMap("status", 0))
+          m.put("responseHeader", Map.of("status", 0))
               .put(
                   "response",
                   (MapWriter)
@@ -136,8 +134,8 @@ public class TestPushWriter extends SolrTestCaseJ4 {
                                 (IteratorWriter)
                                     w -> {
                                       w.add((MapWriter) m3 -> m3.put("id", 1))
-                                          .add(singletonMap("id", 2))
-                                          .add(singletonMap("id", 3));
+                                          .add(Map.of("id", 2))
+                                          .add(Map.of("id", 3));
                                     });
                       });
         });

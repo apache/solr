@@ -19,6 +19,9 @@ package org.apache.solr.client.solrj.response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Locale;
+import java.util.Set;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -28,17 +31,55 @@ import org.apache.solr.common.util.NamedList;
  */
 public abstract class ResponseParser {
 
+  protected ResponseParser() {
+    assert validateContentTypes();
+  }
+
+  @SuppressWarnings("ReferenceEquality") // Use of == is intentional here
+  private boolean validateContentTypes() {
+    Collection<String> contentTypes = getContentTypes();
+    assert contentTypes == getContentTypes()
+        : getClass().getName() + ".getContentTypes() must return the same instance on every call";
+    for (String ct : contentTypes) {
+      assert !ct.contains(";") && ct.equals(ct.toLowerCase(Locale.ROOT))
+          : getClass().getName()
+              + ".getContentTypes() must return lowercase MIME types without semicolons, got: "
+              + ct;
+    }
+    return true;
+  }
+
   /** The writer type placed onto the request as the {@code wt} param. */
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
+
+  /**
+   * Params this parser requires on the request in order to read the response, applied alongside
+   * {@code wt}.
+   *
+   * <p>These take precedence over the request's own params, as {@code wt} does: a parser that
+   * cannot read the form the caller asked for would fail rather than honour it. The JSON map parser
+   * requires {@code json.nl=map}, since a NamedList written any other way cannot be reconstructed.
+   *
+   * @return the params to apply, or null if the parser needs nothing beyond {@code wt}
+   */
+  public SolrParams getAdditionalRequestParams() {
+    return null;
+  }
 
   public abstract NamedList<Object> processResponse(InputStream body, String encoding)
       throws IOException;
 
   /**
-   * A well-behaved ResponseParser will return the content-types it supports.
+   * Returns the MIME types this parser supports. Return an empty set to disable. Implementations
+   * must:
    *
-   * @return the content-type values that this parser is capable of parsing. Never null. Empty means
-   *     no enforcement.
+   * <ul>
+   *   <li>Returns the same instance (same reference on every call).
+   *   <li>Use only lowercase MIME types without charset or other parameters (no semicolons)
+   *   <li>
+   * </ul>
+   *
+   * @return the MIME types that this parser is capable of parsing. Never null.
    */
-  public abstract Collection<String> getContentTypes();
+  public abstract Set<String> getContentTypes();
 }

@@ -88,7 +88,7 @@ class StatsInfo {
   public List<StatsField> getStatsFieldsByTag(String tag) {
     List<StatsField> raw = tagToStatsFields.get(tag);
     if (null == raw) {
-      return Collections.emptyList();
+      return List.of();
     } else {
       return Collections.unmodifiableList(raw);
     }

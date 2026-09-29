@@ -46,11 +46,6 @@ public class BalanceRequestImpl implements BalanceRequest {
   }
 
   @Override
-  public int getMaximumBalanceSkew() {
-    return maximumBalanceSkew;
-  }
-
-  @Override
   public SolrCollection getCollection() {
     return solrCollection;
   }

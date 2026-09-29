@@ -143,20 +143,6 @@ class SolrCores implements SolrInfoBean {
   }
 
   /**
-   * @return A list of "permanent" cores, i.e. cores that may not be swapped out and are currently
-   *     loaded.
-   *     <p>A core may be non-transient but still lazily loaded. If it is "permanent" and lazy-load
-   *     _and_ not yet loaded it will _not_ be returned by this call.
-   *     <p>This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
-   */
-  @Deprecated
-  public List<SolrCore> getCores() {
-    synchronized (modifyLock) {
-      return new ArrayList<>(cores.values());
-    }
-  }
-
-  /**
    * Gets the cores that are currently loaded, i.e. cores that have 1: loadOnStartup=true and are
    * either not-transient or, if transient, have been loaded and have not been aged out 2:
    * loadOnStartup=false and have been loaded but either non-transient or have not been aged out.
@@ -189,7 +175,7 @@ class SolrCores implements SolrInfoBean {
 
   /**
    * Gets the number of currently loaded permanent (non transient) cores. Faster equivalent for
-   * {@link #getCores()}.size().
+   * {@link #getLoadedCoreNames()}.size().
    */
   public int getNumLoadedPermanentCores() {
     synchronized (modifyLock) {

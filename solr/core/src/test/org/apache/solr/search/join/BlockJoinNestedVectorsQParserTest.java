@@ -295,6 +295,23 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void parentRetrievalByte_knnChildrenWithMultipleParentFilters_shouldReturnKnnParents() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q",
+                "{!knn f=vector_byte topK=3 parents.preFilter=$parentFilter1 parents.preFilter=$parentFilter2 childrenOf=$allParents}"
+                    + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "parentFilter1", "parent_s:(a c)",
+            "parentFilter2", "parent_s:(c e)"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='2']");
+  }
+
+  @Test
   public void
       parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
     assertQ(
@@ -306,6 +323,24 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
                     + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(a c)"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='2']");
+  }
+
+  @Test
+  public void
+      parentRetrievalByte_knnChildrenWithMultipleParentFiltersAndChildrenFilter_shouldReturnKnnParents() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q",
+                "{!knn f=vector_byte topK=3 preFilter=child_s:m parents.preFilter=$parentFilter1 parents.preFilter=$parentFilter2 childrenOf=$allParents}"
+                    + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "parentFilter1", "parent_s:(a c)",
+            "parentFilter2", "parent_s:(c e)"),
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='2']");

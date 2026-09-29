@@ -21,7 +21,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,6 +80,8 @@ public class CategoryRoutedAlias extends RoutedAlias {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // Aliases is replaced wholesale, so identity means "possibly changed"
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
     final Aliases aliases =
         zkStateReader.getAliases(); // note: might be different from last request
@@ -260,7 +261,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
       }
       return actionList;
     } else {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 }

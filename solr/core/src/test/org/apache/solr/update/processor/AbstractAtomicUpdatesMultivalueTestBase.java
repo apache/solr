@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.SolrTestCaseJ4.TEST_COLL1_CONF;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
@@ -55,7 +56,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
     System.setProperty("solr.index.updatelog.enabled", "true");
     SolrTestCaseJ4.newRandomConfig();
 
-    solrTestRule.newCollection().withConfigSet("../collection1").create();
+    solrTestRule.newCollection().withConfigSet(TEST_COLL1_CONF()).create();
   }
 
   @Before

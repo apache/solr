@@ -32,7 +32,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryLimits;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public class SolrRequestInfo {
   private TimeZone tz;
   private ResponseBuilder rb;
   private List<AutoCloseable> closeHooks;
-  private SolrDispatchFilter.Action action;
+  private HttpSolrCall.Action action;
   private boolean useServerToken = false;
   private Principal principal;
 
@@ -154,8 +154,7 @@ public class SolrRequestInfo {
     this.principal = req != null ? req.getUserPrincipal() : null;
   }
 
-  public SolrRequestInfo(
-      SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+  public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp, HttpSolrCall.Action action) {
     this(req, rsp);
     this.setAction(action);
   }
@@ -166,7 +165,7 @@ public class SolrRequestInfo {
   }
 
   public SolrRequestInfo(
-      HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+      HttpServletRequest httpReq, SolrQueryResponse rsp, HttpSolrCall.Action action) {
     this(httpReq, rsp);
     this.action = action;
   }
@@ -259,11 +258,11 @@ public class SolrRequestInfo {
         request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
-  public SolrDispatchFilter.Action getAction() {
+  public HttpSolrCall.Action getAction() {
     return action;
   }
 
-  public void setAction(SolrDispatchFilter.Action action) {
+  public void setAction(HttpSolrCall.Action action) {
     this.action = action;
   }
 

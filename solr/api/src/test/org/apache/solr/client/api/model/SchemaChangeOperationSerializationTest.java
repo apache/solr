@@ -58,7 +58,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     assertThat(parsedGeneric, instanceOf(UpsertFieldTypeOperation.class));
     final var parsedSpecific = (UpsertFieldTypeOperation) parsedGeneric;
     assertEquals("my-new-field-type", parsedSpecific.name);
-    assertEquals("org.apache.my.ClassName", parsedSpecific.className);
+    assertEquals("org.apache.my.ClassName", parsedSpecific.propertyClass);
     // Arbitrary properties are put in a map, and can contain nesting
     assertEquals(100, parsedSpecific.getAdditionalProperties().get("positionIncrementGap"));
     assertThat(parsedSpecific.getAdditionalProperties().get("analyzer"), instanceOf(Map.class));
@@ -272,7 +272,7 @@ public class SchemaChangeOperationSerializationTest extends SolrTestCase {
     assertThat(parsedGeneric, instanceOf(UpsertFieldTypeOperation.class));
     final var parsedSpecific = (UpsertFieldTypeOperation) parsedGeneric;
     assertEquals("my-new-field-type", parsedSpecific.name);
-    assertEquals("org.apache.my.ClassName", parsedSpecific.className);
+    assertEquals("org.apache.my.ClassName", parsedSpecific.propertyClass);
     // Arbitrary properties are put in a map, and can contain nesting
     assertEquals(100, parsedSpecific.getAdditionalProperties().get("positionIncrementGap"));
     assertThat(parsedSpecific.getAdditionalProperties().get("analyzer"), instanceOf(Map.class));

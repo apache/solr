@@ -29,7 +29,6 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
@@ -47,9 +46,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
@@ -66,6 +65,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuditEvent.RequestType;
 import org.apache.solr.security.AuditLoggerPlugin.JSONAuditEventFormatter;
@@ -87,7 +87,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   // Use a harness per thread to be able to beast this test
   private ThreadLocal<AuditTestHarness> testHarness = new ThreadLocal<>();
 
-  private PrometheusMetricReader metricsReader;
+  private FilterablePrometheusMetricReader metricsReader;
 
   @Override
   @Before
@@ -277,7 +277,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
                   .get()
                   .cluster
                   .getSolrClient()
-                  .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
+                  .query("test", new MapSolrParams(Map.of("q", "a(bc")));
             });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(3);
     assertAuditEvent(events.get(0), COMPLETED, "/admin/cores");

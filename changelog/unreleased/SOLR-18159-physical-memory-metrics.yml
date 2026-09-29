@@ -1,0 +1,9 @@
+title: Add new metric jvm_system_memory_bytes
+type: added
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+  - name: Matthew Biscocho
+links:
+  - name: SOLR-18159
+    url: https://issues.apache.org/jira/browse/SOLR-18159

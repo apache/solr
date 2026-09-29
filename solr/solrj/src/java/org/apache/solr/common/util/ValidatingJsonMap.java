@@ -360,7 +360,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return Objects.hash(delegate);
   }
 
-  public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Collections.emptyMap());
+  public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Map.of());
 
   public interface PredicateWithErrMsg<T> {
 

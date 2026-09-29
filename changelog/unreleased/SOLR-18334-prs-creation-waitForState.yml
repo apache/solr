@@ -1,0 +1,8 @@
+title: >
+  PRS based collection creation returns too early; can cause restore failure.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18334
+    url: https://issues.apache.org/jira/browse/SOLR-18334

@@ -73,44 +73,6 @@ public class CSVPrinter {
     println();
   }
 
-  /**
-   * Put a comment among the comma separated values. Comments will always begin on a new line and
-   * occupy a least one full line. The character specified to star comments and a space will be
-   * inserted at the beginning of each new line in the comment.
-   *
-   * @param comment the comment to output
-   */
-  @SuppressWarnings({"fallthrough"})
-  public void printlnComment(String comment) throws IOException {
-    if (this.strategy.isCommentingDisabled()) {
-      return;
-    }
-    if (!newLine) {
-      println();
-    }
-    out.write(this.strategy.getCommentStart());
-    out.write(' ');
-    for (int i = 0; i < comment.length(); i++) {
-      char c = comment.charAt(i);
-      switch (c) {
-        case '\r':
-          if (i + 1 < comment.length() && comment.charAt(i + 1) == '\n') {
-            i++;
-          }
-          // break intentionally excluded.
-        case '\n':
-          println();
-          out.write(this.strategy.getCommentStart());
-          out.write(' ');
-          break;
-        default:
-          out.write(c);
-          break;
-      }
-    }
-    println();
-  }
-
   public void print(char[] value, int offset, int len, boolean checkForEscape) throws IOException {
     if (!checkForEscape) {
       printSep();

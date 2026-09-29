@@ -37,7 +37,7 @@ public class CloudHttp2SolrClientBadInputTest extends SolrCloudTestCase {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = new RandomizingCloudHttp2SolrClientBuilder(cluster).build()) {
+    try (SolrClient client = new RandomizingCloudSolrClientBuilder(cluster).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

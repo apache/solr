@@ -1,0 +1,7 @@
+title: Update Telemetry (OpenTelemetry & Prometheus)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4594
+  url: https://github.com/apache/solr/pull/4594

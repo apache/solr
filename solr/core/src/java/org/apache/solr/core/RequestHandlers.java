@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,7 @@ public final class RequestHandlers {
     for (PluginInfo info : infos) {
       modifiedInfos.add(applyInitParams(config, info));
     }
-    handlers.init(Collections.emptyMap(), core, modifiedInfos);
+    handlers.init(Map.of(), core, modifiedInfos);
 
     if (log.isDebugEnabled()) {
       log.debug("Registered paths: {}", StrUtils.join(new ArrayList<>(handlers.keySet()), ','));

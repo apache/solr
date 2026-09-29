@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * Parent class for all APIs that manipulate configsets
  *
  * <p>Contains utilities for tasks common in configset manipulation, including running configset
- * "commands" and checking configset "trusted-ness".
+ * "commands".
  */
 public class ConfigSetAPIBase extends JerseyResource {
 
@@ -110,20 +110,6 @@ public class ConfigSetAPIBase extends JerseyResource {
     }
 
     return contentStreamsIterator.next().getStream();
-  }
-
-  protected void createBaseNode(
-      ConfigSetService configSetService,
-      boolean overwritesExisting,
-      boolean requestIsTrusted,
-      String configName)
-      throws IOException {
-    if (overwritesExisting) {
-      if (!requestIsTrusted) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Trying to make an untrusted ConfigSet update");
-      }
-    }
   }
 
   private void sendToOverseer(

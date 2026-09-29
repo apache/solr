@@ -19,8 +19,8 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -142,7 +142,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               .extractFormat(extractFormat)
               .tikaServerRecursive(tikaserverRecursive)
               .tikaServerTimeoutSeconds(tikaTimeoutSecs)
-              .tikaServerRequestHeaders(Collections.emptyMap())
+              .tikaServerRequestHeaders(Map.of())
               .build();
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);

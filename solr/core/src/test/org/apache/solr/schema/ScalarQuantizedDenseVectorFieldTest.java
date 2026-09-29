@@ -18,47 +18,22 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
-import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.junit.Before;
 import org.junit.Test;
 
 public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBase {
-  @Before
-  public void init() {}
-
   @Test
   public void fieldTypeDefinition_invalidBitSize_shouldThrowException() throws Exception {
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-quantized-bits.xml",
-        "ScalarQuantizedDenseVectorField bits must be one of: 4, 7; bits=6: v_scalar_bits");
-  }
-
-  @Test
-  public void fieldTypeDefinition_improperCompressionUse_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-compress.xml",
-        "ScalarQuantizedDenseVectorField compress=true only applies when bits=4: v_scalar_compressed");
-  }
-
-  @Test
-  public void fieldTypeDefinition_confidenceIntervalTooLow_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-confidence-interval-low.xml",
-        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=0.8: v_scalar_ci");
-  }
-
-  @Test
-  public void fieldTypeDefinition_confidenceIntervalTooHigh_shouldThrowException()
-      throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-confidence-interval-high.xml",
-        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=1.5: v_scalar_ci");
+        "ScalarQuantizedDenseVectorField No encoding for 6 bits: v_scalar_bits");
   }
 
   @Test
@@ -77,10 +52,6 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
       assertThat(defaultVectorType.getDimension(), is(4));
       assertThat(defaultVectorType.getKnnAlgorithm(), is("hnsw"));
       assertThat(defaultVectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
-      assertThat(
-          defaultVectorType.getConfidenceInterval(),
-          is(ScalarQuantizedDenseVectorField.DEFAULT_CONFIDENCE_INTERVAL));
-      assertThat(defaultVectorType.useCompression(), is(false));
     } finally {
       deleteCore();
     }
@@ -105,7 +76,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void fieldDefinition_compressed_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_deprecatedCompress_shouldStillLoadSchemaField() throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
@@ -117,14 +88,14 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
       assertThat(vectorType.getBits(), is(4));
-      assertThat(vectorType.useCompression(), is(true));
     } finally {
       deleteCore();
     }
   }
 
   @Test
-  public void fieldDefinition_customConfidenceInterval_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_deprecatedConfidenceInterval_shouldStillLoadSchemaField()
+      throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
@@ -135,14 +106,16 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
 
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
-      assertThat(vectorType.getConfidenceInterval(), is(0.91F));
+      assertThat(vectorType.getDimension(), is(4));
+      assertThat(vectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
     } finally {
       deleteCore();
     }
   }
 
   @Test
-  public void fieldDefinition_dynamicConfidenceInterval_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_deprecatedDynamicConfidenceInterval_shouldStillLoadSchemaField()
+      throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
@@ -153,11 +126,235 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
 
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
-      assertThat(
-          vectorType.getConfidenceInterval(),
-          is(Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL));
+      assertThat(vectorType.getDimension(), is(4));
+      assertThat(vectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
     } finally {
       deleteCore();
     }
+  }
+
+  @Test
+  public void fieldDefinition_flatAlgorithm_shouldLoadSchemaField() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+
+      SchemaField vector = schema.getField("vector_sq_flat");
+      assertNotNull(vector);
+
+      ScalarQuantizedDenseVectorField type = (ScalarQuantizedDenseVectorField) vector.getType();
+      assertThat(type.getKnnAlgorithm(), is("flat"));
+      assertThat(type.getDimension(), is(4));
+      assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(type.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
+
+      assertTrue(vector.indexed());
+      assertTrue(vector.stored());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_buildKnnVectorsFormat_shouldReturnScalarQuantizedFormat()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+
+      SchemaField vector = schema.getField("vector_sq_flat");
+      ScalarQuantizedDenseVectorField type = (ScalarQuantizedDenseVectorField) vector.getType();
+
+      assertThat(
+          type.buildKnnVectorsFormat() instanceof Lucene104ScalarQuantizedVectorsFormat, is(true));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityFunction_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
+
+      assertU(commit());
+
+      // {!func}vectorSimilarity returns all results if not limited
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_sq_flat,[1.0, 2.0, 3.0, 4.0])",
+              "fl", "id,score"),
+          "/response/numFound==4",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='1'",
+          "/response/docs/[3]/id=='3'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_knnQuery_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
+
+      assertU(commit());
+
+      assertJQ(
+          req(
+              "q", "{!knn f=vector_sq_flat topK=3}[1.0, 2.0, 3.0, 4.0]",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='1'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_knnQuery_preFilter_shouldReturnFilteredResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
+
+      assertU(commit());
+
+      // id 0 is the second-best match but is excluded by the preFilter
+      assertJQ(
+          req(
+              "q", "{!knn f=vector_sq_flat topK=3 preFilter='id:(1 2 3)'}[1.0, 2.0, 3.0, 4.0]",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='1'",
+          "/response/docs/[2]/id=='3'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_vectorSimilarityQParser_shouldReturnResults() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addVectorDoc("0", "vector_sq_flat", 2.0f, 3.0f, 4.0f, 5.0f);
+      addVectorDoc("1", "vector_sq_flat", 100.0f, 200.0f, 50.0f, 25.0f);
+      addVectorDoc("2", "vector_sq_flat", 1.0f, 2.0f, 3.0f, 4.0f);
+      addVectorDoc("3", "vector_sq_flat", -1.0f, -2.0f, -3.0f, -4.0f);
+
+      assertU(commit());
+
+      // id 3 is excluded by minReturn
+      assertJQ(
+          req(
+              "q", "{!vectorSimilarity f=vector_sq_flat minReturn=0.5}[1.0, 2.0, 3.0, 4.0]",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='2'",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='1'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_knnQuery_shouldThrowException() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      assertQEx(
+          "Running {!knn} on a flat scalar quantized BYTE vector field should raise an Exception",
+          "vectorEncoding=\"BYTE\"",
+          req("q", "{!knn f=vector_sq_flat_byte topK=2}[1, 2, 3, 4]", "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_vectorSimilarityQParser_shouldThrowException()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      assertQEx(
+          "Running {!vectorSimilarity} on a flat scalar quantized BYTE vector field should raise an Exception",
+          "vectorEncoding=\"BYTE\"",
+          req(
+              "q", "{!vectorSimilarity f=vector_sq_flat_byte minReturn=0.99}[1, 2, 3, 4]",
+              "fl", "id"),
+          SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void flatAlgorithm_byteEncoding_vectorSimilarityFunction_shouldReturnResults()
+      throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
+
+      addVectorDoc("0", "vector_sq_flat_byte", 5, 6, 7, 8);
+      addVectorDoc("1", "vector_sq_flat_byte", 1, 2, 3, 4);
+      addVectorDoc("2", "vector_sq_flat_byte", -1, -2, -3, -4);
+
+      assertU(commit());
+
+      // {!func}vectorSimilarity returns all results if not limited
+      assertJQ(
+          req(
+              "q", "{!func}vectorSimilarity(vector_sq_flat_byte,[1, 2, 3, 4])",
+              "fl", "id,score"),
+          "/response/numFound==3",
+          "/response/docs/[0]/id=='1'",
+          "/response/docs/[0]/score==1.0",
+          "/response/docs/[1]/id=='0'",
+          "/response/docs/[2]/id=='2'");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  private void addVectorDoc(String id, String vectorField, float... v) {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    List<Float> vector = new ArrayList<>(v.length);
+    for (float value : v) {
+      vector.add(value);
+    }
+    doc.addField(vectorField, vector);
+    assertU(adoc(doc));
+  }
+
+  private void addVectorDoc(String id, String vectorField, int... v) {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    List<Integer> vector = new ArrayList<>(v.length);
+    for (int value : v) {
+      vector.add(value);
+    }
+    doc.addField(vectorField, vector);
+    assertU(adoc(doc));
   }
 }

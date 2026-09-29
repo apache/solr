@@ -19,10 +19,9 @@ package org.apache.solr.handler.sql;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -35,6 +34,7 @@ import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
@@ -67,12 +67,10 @@ class SolrRules {
 
   /** Translator from {@link RexNode} to strings in Solr's expression language. */
   static class RexToSolrTranslator extends RexVisitorImpl<String> {
-    private final JavaTypeFactory typeFactory;
     private final List<String> inFields;
 
-    RexToSolrTranslator(JavaTypeFactory typeFactory, List<String> inFields) {
+    RexToSolrTranslator(List<String> inFields) {
       super(true);
-      this.typeFactory = typeFactory;
       this.inFields = inFields;
     }
 
@@ -104,13 +102,8 @@ class SolrRules {
    * Base class for planner rules that convert a relational expression to Solr calling convention.
    */
   abstract static class SolrConverterRule extends ConverterRule {
-    SolrConverterRule(Class<? extends RelNode> clazz, String description) {
-      this(clazz, relNode -> true, description);
-    }
-
-    <R extends RelNode> SolrConverterRule(
-        Class<R> clazz, Predicate<RelNode> predicate, String description) {
-      super(clazz, Convention.NONE, SolrRel.CONVENTION, description);
+    protected SolrConverterRule(ConverterRule.Config config) {
+      super(config);
     }
   }
 
@@ -118,7 +111,7 @@ class SolrRules {
   private static class SolrFilterRule extends SolrConverterRule {
     private static boolean isNotFilterByExpr(List<RexNode> rexNodes, List<String> fieldNames) {
 
-      // We dont have a way to filter by result of aggregator now
+      // We don't have a way to filter by result of aggregator now
       boolean result = true;
 
       for (RexNode rexNode : rexNodes) {
@@ -138,10 +131,24 @@ class SolrRules {
       return isNotFilterByExpr(filterOperands, SolrRules.solrFieldNames(relNode.getRowType()));
     }
 
-    private static final SolrFilterRule FILTER_RULE = new SolrFilterRule();
+    static final SolrFilterRule FILTER_RULE =
+        new SolrFilterRule(
+            ConverterRule.Config.INSTANCE
+                .withConversion(
+                    LogicalFilter.class,
+                    SolrFilterRule::filter,
+                    Convention.NONE,
+                    SolrRel.CONVENTION,
+                    "SolrFilterRule")
+                .withRuleFactory(SolrFilterRule::new));
 
-    private SolrFilterRule() {
-      super(LogicalFilter.class, SolrFilterRule::filter, "SolrFilterRule");
+    private SolrFilterRule(ConverterRule.Config config) {
+      super(config);
+    }
+
+    @Override
+    public boolean matches(RelOptRuleCall call) {
+      return filter(call.rel(0));
     }
 
     @Override
@@ -155,10 +162,46 @@ class SolrRules {
 
   /** Rule to convert a {@link LogicalProject} to a {@link SolrProject}. */
   private static class SolrProjectRule extends SolrConverterRule {
-    private static final SolrProjectRule PROJECT_RULE = new SolrProjectRule();
+    static final SolrProjectRule PROJECT_RULE =
+        new SolrProjectRule(
+            ConverterRule.Config.INSTANCE
+                .withConversion(
+                    LogicalProject.class,
+                    SolrProjectRule::isSupported,
+                    Convention.NONE,
+                    SolrRel.CONVENTION,
+                    "SolrProjectRule")
+                .withRuleFactory(SolrProjectRule::new));
 
-    private SolrProjectRule() {
-      super(LogicalProject.class, "SolrProjectRule");
+    private SolrProjectRule(ConverterRule.Config config) {
+      super(config);
+    }
+
+    /**
+     * Reject projects where any expression is a bare literal (possibly wrapped in CASTs). This
+     * prevents SolrProject from being created for Calcite 1.42+ plans where constant-folding
+     * replaces a grouped field with a literal constant (e.g. WHERE str_s='a' causes Calcite to
+     * substitute str_s with the literal 'a' in a DISTINCT output project). Such projects must
+     * remain as {@link LogicalProject} so Calcite's enumerable layer handles the substitution.
+     */
+    private static boolean isSupported(RelNode relNode) {
+      for (RexNode expr : ((LogicalProject) relNode).getProjects()) {
+        if (isLiteralExpr(expr)) return false;
+      }
+      return true;
+    }
+
+    /** Returns true if the expression is a literal, possibly wrapped in one or more CASTs. */
+    private static boolean isLiteralExpr(RexNode node) {
+      while (node instanceof RexCall && node.getKind() == SqlKind.CAST) {
+        node = ((RexCall) node).getOperands().get(0);
+      }
+      return node instanceof RexLiteral;
+    }
+
+    @Override
+    public boolean matches(RelOptRuleCall call) {
+      return isSupported(call.rel(0));
     }
 
     @Override
@@ -173,10 +216,15 @@ class SolrRules {
 
   /** Rule to convert a {@link LogicalSort} to a {@link SolrSort}. */
   private static class SolrSortRule extends SolrConverterRule {
-    static final SolrSortRule SORT_RULE = new SolrSortRule(LogicalSort.class, "SolrSortRule");
+    static final SolrSortRule SORT_RULE =
+        new SolrSortRule(
+            ConverterRule.Config.INSTANCE
+                .withConversion(
+                    LogicalSort.class, Convention.NONE, SolrRel.CONVENTION, "SolrSortRule")
+                .withRuleFactory(SolrSortRule::new));
 
-    SolrSortRule(Class<? extends RelNode> clazz, String description) {
-      super(clazz, description);
+    private SolrSortRule(ConverterRule.Config config) {
+      super(config);
     }
 
     @Override
@@ -195,14 +243,18 @@ class SolrRules {
 
   /** Rule to convert an {@link LogicalAggregate} to an {@link SolrAggregate}. */
   private static class SolrAggregateRule extends SolrConverterRule {
-    //    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
-    //        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
-    //        !((LogicalAggregate)relNode).containsDistinctCall();
+    static final SolrAggregateRule AGGREGATE_RULE =
+        new SolrAggregateRule(
+            ConverterRule.Config.INSTANCE
+                .withConversion(
+                    LogicalAggregate.class,
+                    Convention.NONE,
+                    SolrRel.CONVENTION,
+                    "SolrAggregateRule")
+                .withRuleFactory(SolrAggregateRule::new));
 
-    private static final RelOptRule AGGREGATE_RULE = new SolrAggregateRule();
-
-    private SolrAggregateRule() {
-      super(LogicalAggregate.class, "SolrAggregateRule");
+    private SolrAggregateRule(ConverterRule.Config config) {
+      super(config);
     }
 
     @Override

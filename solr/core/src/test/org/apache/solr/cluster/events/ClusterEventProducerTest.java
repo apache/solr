@@ -17,14 +17,12 @@
 
 package org.apache.solr.cluster.events;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -103,7 +101,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
       V2Request req =
           new V2Request.Builder("/cluster/plugin")
               .withMethod(POST)
-              .withPayload(Collections.singletonMap("remove", ClusterEventProducer.PLUGIN_NAME))
+              .withPayload(Map.of("remove", ClusterEventProducer.PLUGIN_NAME))
               .build();
       req.process(cluster.getSolrClient());
     }
@@ -119,7 +117,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
             .withMethod(POST)
-            .withPayload(Collections.singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
@@ -341,7 +339,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
             .withMethod(POST)
-            .withPayload(Collections.singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
@@ -354,7 +352,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .withMethod(POST)
-            .withPayload(singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     rsp = req.process(cluster.getSolrClient());
     // just check if the plugin is indeed registered
@@ -419,7 +417,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     req =
         new V2Request.Builder("/cluster/plugin")
             .withMethod(POST)
-            .withPayload(Collections.singletonMap("remove", ClusterEventProducer.PLUGIN_NAME))
+            .withPayload(Map.of("remove", ClusterEventProducer.PLUGIN_NAME))
             .build();
     req.process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
@@ -440,7 +438,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     req =
         new V2Request.Builder("/cluster/plugin")
             .withMethod(POST)
-            .withPayload(Collections.singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());

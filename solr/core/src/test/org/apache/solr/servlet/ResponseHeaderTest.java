@@ -16,17 +16,10 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -57,26 +50,17 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHttpResponse() throws IOException {
-    URI uri = URI.create(solrTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*");
-    HttpGet httpGet = new HttpGet(uri);
-    CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
-    try {
-      HttpResponse response = httpClient.execute(httpGet);
-      Header[] headers = response.getAllHeaders();
-      boolean containsWarningHeader = false;
-      for (Header header : headers) {
-        if ("Warning".equals(header.getName())) {
-          containsWarningHeader = true;
-          assertEquals("This is a test warning", header.getValue());
-          break;
-        }
-      }
-      assertTrue("Expected header not found", containsWarningHeader);
-
-    } finally {
-      HttpClientUtil.close(httpClient);
+  public void testHttpResponse() throws Exception {
+    String url = solrTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*";
+    var httpClient = solrTestRule.getJetty().getSolrClient().getHttpClient();
+    var response = httpClient.GET(url);
+    var headers = response.getHeaders();
+    boolean containsWarningHeader = false;
+    if (headers.contains("Warning")) {
+      containsWarningHeader = true;
+      assertEquals("This is a test warning", headers.get("Warning"));
     }
+    assertTrue("Expected header not found", containsWarningHeader);
   }
 
   public static class ComponentThatAddsHeader extends SearchComponent {

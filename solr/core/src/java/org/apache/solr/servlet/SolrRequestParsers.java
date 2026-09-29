@@ -270,7 +270,11 @@ public class SolrRequestParsers {
    * @param charset to be used to decode resulting bytes after %-decoding
    * @param map place all parameters in this map
    */
-  @SuppressWarnings({"fallthrough", "resource"})
+  @SuppressWarnings({
+    "fallthrough",
+    "resource",
+    "ReferenceEquality" // currentStream points at keyStream or valueStream; identity is the flag
+  })
   static long parseFormDataContent(
       final InputStream postContent,
       final long maxLen,
@@ -352,7 +356,7 @@ public class SolrRequestParsers {
             currentStream = valueStream;
             break;
           }
-          // fall-through
+        // fall-through
         default:
           currentStream.write(b);
       }
@@ -466,10 +470,9 @@ public class SolrRequestParsers {
 
     @Override
     public InputStream getStream() throws IOException {
-      // we explicitly protect this servlet stream from being closed
-      // so that it does not trip our test assert in our close shield
-      // in SolrDispatchFilter - we must allow closes from getStream
-      // due to the other impls of ContentStream
+      // We explicitly protect this servlet stream from being closed so it does not trip our test
+      // assert in ServletUtils.closeShield; we must allow closes from getStream due to other
+      // ContentStream impls.
       return new CloseShieldInputStream(inputStream);
     }
   }
@@ -668,10 +671,11 @@ public class SolrRequestParsers {
     public static SolrException getParameterIncompatibilityException() {
       return new SolrException(
           ErrorCode.SERVER_ERROR,
-          "Solr requires that request parameters sent using application/x-www-form-urlencoded "
-              + "content-type can be read through the request input stream. Unfortunately, the "
-              + "stream was empty / not available. This may be caused by another servlet filter calling "
-              + "ServletRequest.getParameter*() before SolrDispatchFilter, please remove it.");
+          """
+              Solr requires that request parameters sent using application/x-www-form-urlencoded \
+              content-type can be read through the request input stream. Unfortunately, the \
+              stream was empty / not available. This may be caused by a servlet filter calling \
+              ServletRequest.getParameter*(). Please remove it.""");
     }
 
     public boolean isFormData(HttpServletRequest req) {
