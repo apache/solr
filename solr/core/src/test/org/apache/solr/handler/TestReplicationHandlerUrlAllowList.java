@@ -1,0 +1,88 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.handler;
+
+import static org.hamcrest.CoreMatchers.containsString;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
+import org.apache.solr.security.AllowListUrlChecker;
+import org.junit.After;
+import org.junit.Test;
+
+/**
+ * Non-nightly coverage for SOLR-18280. {@link TestReplicationHandler} is {@code @Nightly}; the
+ * allow-list wiring lives in {@link ReplicationTestHelper#createAndStartJetty} and must be proven
+ * without that annotation.
+ */
+@SuppressSSL
+public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
+
+  @After
+  public void clearAllowListProperties() {
+    System.clearProperty(TEST_URL_ALLOW_LIST);
+    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
+  }
+
+  @Test
+  public void testReplicationHelperHonorsTestUrlAllowList() throws Exception {
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "true");
+    System.setProperty(TEST_URL_ALLOW_LIST, "http://leader.example:8983,http://127.0.0.1:7574");
+
+    SolrInstance instance = new SolrInstance(createTempDir("solr-instance"), "leader", null);
+    instance.setUp();
+    JettySolrRunner jetty = ReplicationTestHelper.createAndStartJetty(instance);
+    try {
+      assertTrue(
+          "helper must copy test-files solr.xml so allowUrls reads " + TEST_URL_ALLOW_LIST,
+          Files.exists(Path.of(instance.getHomeDir()).resolve("solr.xml")));
+      assertEquals(
+          Set.of("leader.example:8983", "127.0.0.1:7574"),
+          jetty.getCoreContainer().getAllowListUrlChecker().getHostAllowList());
+    } finally {
+      jetty.stop();
+    }
+  }
+
+  @Test
+  public void testEmptyAllowListRejectsLeaderUrl() throws Exception {
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "true");
+    System.clearProperty(TEST_URL_ALLOW_LIST);
+
+    SolrInstance instance = new SolrInstance(createTempDir("solr-instance"), "leader", null);
+    instance.setUp();
+    JettySolrRunner jetty = ReplicationTestHelper.createAndStartJetty(instance);
+    try {
+      AllowListUrlChecker checker = jetty.getCoreContainer().getAllowListUrlChecker();
+      assertTrue(checker.isEnabled());
+      SolrException denied =
+          expectThrows(
+              SolrException.class,
+              () -> checker.checkAllowList(List.of("http://127.0.0.1:8983/solr/collection1")));
+      assertThat(denied.getMessage(), containsString(AllowListUrlChecker.URL_ALLOW_LIST));
+    } finally {
+      jetty.stop();
+    }
+  }
+}
