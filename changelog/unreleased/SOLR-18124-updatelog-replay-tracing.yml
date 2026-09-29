@@ -1,5 +1,5 @@
 title: Tracing: transaction log replay (e.g. during recovery or startup) now has spans, one per log.
-type: added
+type: changed
 authors:
   - name: Gaurav Singh
     nick: gsingh-code
