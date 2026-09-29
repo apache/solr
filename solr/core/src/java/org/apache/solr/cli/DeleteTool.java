@@ -49,10 +49,13 @@ public class DeleteTool extends ToolBase {
               "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
           .get();
 
-  // No longer has any effect: the Overseer's configset-delete command unconditionally refuses to
-  // delete a configset that's still in use by another collection, so this flag was never actually
-  // able to bypass that safety check. Kept, as a no-op, for backward compatibility with existing
-  // scripts.
+  /**
+   * @deprecated Since Solr 11.0. No longer has any effect: the Overseer's configset-delete command
+   *     unconditionally refuses to delete a configset that's still in use by another collection, so
+   *     this flag was never actually able to bypass that safety check. Kept, as a no-op, for
+   *     backward compatibility with existing scripts.
+   */
+  @Deprecated(since = "11.0")
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
@@ -154,11 +157,7 @@ public class DeleteTool extends ToolBase {
       } catch (Exception exc) {
         // Most commonly, this configset is still in use by another collection -- the
         // configset-delete command unconditionally refuses to delete it in that case.
-        echo(
-            "\nWARNING: configSet "
-                + configName
-                + " was not deleted: "
-                + exc.getMessage());
+        echo("\nWARNING: configSet " + configName + " was not deleted: " + exc.getMessage());
       }
     }
 
