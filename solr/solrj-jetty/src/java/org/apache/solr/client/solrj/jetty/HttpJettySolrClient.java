@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
+import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -401,6 +402,13 @@ public class HttpJettySolrClient extends HttpSolrClient {
             executor.execute(
                 () -> {
                   InputStream is = listener.getInputStream();
+                  ResponseParser parser =
+                      solrRequest.getResponseParser() == null
+                          ? HttpJettySolrClient.this.parser
+                          : solrRequest.getResponseParser();
+                  if (wantStream(parser)) {
+                    is = abortOnEarlyClose(is, mrrv.request);
+                  }
                   try {
                     NamedList<Object> body =
                         processErrorsAndResponse(solrRequest, response, is, url);
@@ -441,12 +449,14 @@ public class HttpJettySolrClient extends HttpSolrClient {
           }
         });
 
-    // SOLR-17916: Disable request aborting
-    // future.exceptionally(
-    //    (error) -> {
-    //     mrrv.request.abort(error);
-    //      return null;
-    //   });
+    // Abort on cancellation so the exchange completes now, releasing the connection's stream, the
+    // server's resources and the asyncTracker, instead of lingering until the idle timeout.
+    future.whenComplete(
+        (result, error) -> {
+          if (error instanceof CancellationException) {
+            mrrv.request.abort(error);
+          }
+        });
 
     if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
@@ -823,6 +833,43 @@ public class HttpJettySolrClient extends HttpSolrClient {
   @Override
   protected boolean isFollowRedirects() {
     return httpClient.isFollowRedirects();
+  }
+
+  /**
+   * Wraps a streamed response body so that closing it before end of stream aborts the exchange.
+   * Against an unresponsive server, closing the listener alone aborts nothing when no content is
+   * buffered, leaving the exchange (and its asyncTracker party) alive until the idle timeout.
+   * Reading to end of stream and then closing sends nothing extra.
+   */
+  private static InputStream abortOnEarlyClose(InputStream is, Request request) {
+    return new FilterInputStream(is) {
+      private volatile boolean endOfStream;
+
+      @Override
+      public int read() throws IOException {
+        int b = super.read();
+        if (b == -1) endOfStream = true;
+        return b;
+      }
+
+      @Override
+      public int read(byte[] b, int off, int len) throws IOException {
+        int n = super.read(b, off, len);
+        if (n == -1) endOfStream = true;
+        return n;
+      }
+
+      @Override
+      public void close() throws IOException {
+        try {
+          super.close();
+        } finally {
+          if (!endOfStream) {
+            request.abort(new AsynchronousCloseException());
+          }
+        }
+      }
+    };
   }
 
   /**

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -696,6 +697,43 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         assertEquals(expected3, clone3.basicAuthAuthorizationStr());
       }
     }
+  }
+
+  @Test
+  public void testCancelledAsyncRequestIsAborted() throws Exception {
+    var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH).build();
+    CompletableFuture<NamedList<Object>> future = client.requestAsync(new QueryRequest());
+    // Let the request reach the servlet, which then sends nothing for 5s.
+    Thread.sleep(500);
+    assertTrue(future.cancel(true));
+    // close() waits for outstanding async requests; unless the cancel aborted the exchange, it
+    // stays open until the servlet answers.
+    assertClosesPromptly(client);
+  }
+
+  @Test
+  public void testEarlyCloseOfStreamedAsyncResponseIsAborted() throws Exception {
+    var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + STALL_STREAM_SERVLET_PATH)
+            .build();
+    QueryRequest req = new QueryRequest();
+    req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+    NamedList<Object> response = client.requestAsync(req).get(10, TimeUnit.SECONDS);
+    InputStream is = (InputStream) response.get("stream");
+    assertEquals('0', is.read());
+    // The servlet now sends nothing, so closing the listener alone leaves nothing to abort on.
+    is.close();
+    assertClosesPromptly(client);
+  }
+
+  private static void assertClosesPromptly(HttpJettySolrClient client) {
+    long start = System.nanoTime();
+    client.close();
+    long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+    assertTrue(
+        "close() took " + elapsedMs + "ms waiting on an exchange that should have been aborted",
+        elapsedMs < ServletFixtures.StallStreamServlet.STALL_MS / 2);
   }
 
   @Test

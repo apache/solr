@@ -152,6 +152,25 @@ public class ServletFixtures {
     }
   }
 
+  /** Sends the first byte of its body, then nothing for {@link #STALL_MS}: a server gone quiet. */
+  public static class StallStreamServlet extends HttpServlet {
+
+    public static final int STALL_MS = 5000;
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      resp.getOutputStream().write('0');
+      resp.getOutputStream().flush();
+      try {
+        Thread.sleep(STALL_MS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+      resp.getOutputStream().write('1');
+    }
+  }
+
   public static class DebugServlet extends HttpServlet {
     public static void clear() {
       lastMethod = null;
