@@ -960,48 +960,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       return;
     }
 
-    // If parent is inactive and all sub shards are active, then rolling back
-    // to make the parent active again will cause data loss.
-    if (coll.getSlice(parentShard).getState() == Slice.State.INACTIVE) {
-      boolean allSubSlicesActive = true;
-      for (String sub : subSlices) {
-        if (coll.getSlice(sub).getState() != Slice.State.ACTIVE) {
-          allSubSlicesActive = false;
-          break;
-        }
-      }
-      if (allSubSlicesActive) {
-        return;
-      }
-    }
-
-    // set already created sub shards states to CONSTRUCTION - this prevents them
-    // from entering into RECOVERY or ACTIVE (SOLR-9455)
-    final Map<String, Object> propMap = new HashMap<>();
-    boolean sendUpdateState = false;
-    propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-    propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
-    for (Slice s : coll.getSlices()) {
-      if (!subSlices.contains(s.getName())) {
-        continue;
-      }
-      propMap.put(s.getName(), Slice.State.CONSTRUCTION.toString());
-      sendUpdateState = true;
-    }
-
-    // if parent is inactive activate it again
-    Slice parentSlice = coll.getSlice(parentShard);
-    if (parentSlice.getState() == Slice.State.INACTIVE) {
-      sendUpdateState = true;
-      propMap.put(parentShard, Slice.State.ACTIVE.toString());
-    }
-    // plus any other previously deactivated slices
-    for (String sliceName : offlineSlices) {
-      propMap.put(sliceName, Slice.State.ACTIVE.toString());
-      sendUpdateState = true;
-    }
-
-    if (sendUpdateState) {
+    Map<String, Object> propMap =
+        buildCleanupShardStateUpdates(coll, parentShard, subSlices, offlineSlices);
+    if (propMap != null) {
       try {
         ZkNodeProps m = new ZkNodeProps(propMap);
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
@@ -1051,6 +1012,46 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             e);
       }
     }
+  }
+
+  /**
+   * Slice-state rollback for a failed split, or {@code null} if the committed switch-over must not
+   * be undone. Always includes parent=ACTIVE so a stale snapshot cannot skip the restore.
+   */
+  static Map<String, Object> buildCleanupShardStateUpdates(
+      DocCollection coll, String parentShard, List<String> subSlices, Set<String> offlineSlices) {
+    // If parent is inactive and all sub shards are active, then rolling back
+    // to make the parent active again will cause data loss.
+    if (coll.getSlice(parentShard).getState() == Slice.State.INACTIVE) {
+      boolean allSubSlicesActive = true;
+      for (String sub : subSlices) {
+        if (coll.getSlice(sub).getState() != Slice.State.ACTIVE) {
+          allSubSlicesActive = false;
+          break;
+        }
+      }
+      if (allSubSlicesActive) {
+        return null;
+      }
+    }
+
+    // set already created sub shards states to CONSTRUCTION - this prevents them
+    // from entering into RECOVERY or ACTIVE (SOLR-9455)
+    final Map<String, Object> propMap = new HashMap<>();
+    propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+    propMap.put(ZkStateReader.COLLECTION_PROP, coll.getName());
+    for (Slice s : coll.getSlices()) {
+      if (!subSlices.contains(s.getName())) {
+        continue;
+      }
+      propMap.put(s.getName(), Slice.State.CONSTRUCTION.toString());
+    }
+    // Always pin parent ACTIVE; a stale snapshot can miss an in-flight INACTIVE switch.
+    propMap.put(parentShard, Slice.State.ACTIVE.toString());
+    for (String sliceName : offlineSlices) {
+      propMap.put(sliceName, Slice.State.ACTIVE.toString());
+    }
+    return propMap;
   }
 
   public static Slice getParentSlice(

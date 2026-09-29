@@ -1,0 +1,7 @@
+title: Restore the parent shard to ACTIVE after a failed split even if cluster state is stale.
+type: fixed
+authors:
+  - name: ICLA pending
+links:
+  - name: SOLR-18277
+    url: https://issues.apache.org/jira/browse/SOLR-18277
