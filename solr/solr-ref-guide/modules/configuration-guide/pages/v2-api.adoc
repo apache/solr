@@ -149,8 +149,7 @@ $ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/j
 {"responseHeader":{"status":0,"QTime":842}}
 ----
 
-See the collections, shards, and replicas in the cluster.
-Live nodes, the alias map, and cluster properties are not included; see xref:deployment-guide:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS] for the response fields and the separate endpoints that serve them.
+See the collections, shards, and replicas in the cluster:
 
 [source,bash]
 ----

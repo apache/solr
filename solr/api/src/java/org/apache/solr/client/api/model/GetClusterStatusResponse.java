@@ -29,15 +29,12 @@ import java.util.Map;
  *
  * <p>Shards, replicas, health, and the other stable collection-state fields are typed. A collection
  * state document is otherwise open: router settings, replica placement counts, user properties, and
- * per-replica state are preserved on the object rather than dropped. Live nodes, the alias map, and
- * cluster properties are not part of this response. Each collection still lists the aliases that
- * point at it.
+ * per-replica state are preserved on the object rather than dropped. Each collection still lists the
+ * aliases that point at it.
  */
 public class GetClusterStatusResponse extends SolrJerseyResponse {
 
-  @Schema(
-      description =
-          "Cluster geometry. Does not include live nodes, the alias map, or cluster properties.")
+  @Schema(description = "Cluster geometry: collections, shards, and replicas.")
   @JsonProperty("cluster")
   public Cluster cluster;
 

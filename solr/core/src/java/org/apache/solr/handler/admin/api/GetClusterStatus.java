@@ -59,8 +59,7 @@ public class GetClusterStatus extends AdminAPIBase implements GetClusterStatusAp
       recordCollectionForLogAndTracing(collection, solrQueryRequest);
     }
 
-    // Only the parameters this API documents. includeAll, liveNodes, aliases, and
-    // clusterProperties are v1 CLUSTERSTATUS knobs and are not honored here.
+    // Bind only the documented query params; anything else on the request is ignored.
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.setNonNull("collection", collection);
     params.setNonNull("shard", shard);

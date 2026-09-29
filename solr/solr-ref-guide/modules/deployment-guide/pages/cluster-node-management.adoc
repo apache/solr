@@ -160,7 +160,7 @@ A v2 response has `collections` only.
 http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ----
 
-*V1 output*
+*Output*
 
 [source,json]
 ----
