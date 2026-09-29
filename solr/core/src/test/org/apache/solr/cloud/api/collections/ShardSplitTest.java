@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -328,6 +329,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * <p>See SOLR-9439
    */
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
