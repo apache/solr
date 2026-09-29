@@ -19,9 +19,7 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -67,6 +65,18 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   protected SolrContentHandlerFactory factory;
   protected ExtractionBackend backend;
 
+  /**
+   * Rethrows {@code e} as-is if it's already a {@link SolrException} (preserving its error code,
+   * e.g. a {@code BAD_REQUEST} from invalid extraction parameters), otherwise wraps it in a {@code
+   * SERVER_ERROR}.
+   */
+  private static SolrException wrapExtractionException(Exception e) {
+    if (e instanceof SolrException se) {
+      return se;
+    }
+    return new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+  }
+
   public ExtractingDocumentLoader(
       SolrQueryRequest req,
       UpdateRequestProcessor processor,
@@ -108,6 +118,21 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     String streamType = params.get(ExtractingParams.STREAM_TYPE, null);
     String resourceName = params.get(ExtractingParams.RESOURCE_NAME, null);
 
+    if (params.get(ExtractingParams.RESOURCE_PASSWORD) != null
+        || params.get(ExtractingParams.PASSWORD_MAP_FILE) != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Encrypted-document extraction ("
+              + ExtractingParams.RESOURCE_PASSWORD
+              + " / "
+              + ExtractingParams.PASSWORD_MAP_FILE
+              + ") is not currently supported by the 'tikaserver' extraction backend: TikaServer"
+              + " has no simple per-request way to accept a password outside of its own JSON"
+              + " parser-configuration mechanism, which Solr does not use (see"
+              + " https://tika.apache.org/ for configuring TikaServer directly). Configure"
+              + " a password on TikaServer itself if you need to handle encrypted documents.");
+    }
+
     try (InputStream inputStream = stream.getStream()) {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
 
@@ -117,15 +142,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       boolean tikaserverRecursive = params.getBool(ExtractingParams.TIKASERVER_RECURSIVE, false);
       String extractFormat =
           params.get(ExtractingParams.EXTRACT_FORMAT, extractOnly ? XML_FORMAT : TEXT_FORMAT);
-
-      // Parse optional passwords file into a map
-      LinkedHashMap<Pattern, String> pwMap = null;
-      String passwordsFile = params.get(ExtractingParams.PASSWORD_MAP_FILE);
-      if (passwordsFile != null) {
-        try (InputStream is = core.getResourceLoader().openResource(passwordsFile)) {
-          pwMap = RegexRulesPasswordProvider.parseRulesFile(is);
-        }
-      }
 
       Integer tikaTimeoutSecs = params.getInt(ExtractingParams.TIKASERVER_TIMEOUT_SECS);
       ExtractionRequest extractionRequest =
@@ -137,12 +153,11 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               .streamName(stream.getName())
               .streamSourceInfo(stream.getSourceInfo())
               .streamSize(stream.getSize())
-              .resourcePassword(params.get(ExtractingParams.RESOURCE_PASSWORD, null))
-              .passwordsMap(pwMap)
               .extractFormat(extractFormat)
               .tikaServerRecursive(tikaserverRecursive)
               .tikaServerTimeoutSeconds(tikaTimeoutSecs)
               .tikaServerRequestHeaders(Map.of())
+              .ignoreTikaException(ignoreTikaException)
               .build();
 
       boolean captureAttr = params.getBool(ExtractingParams.CAPTURE_ATTRIBUTES, false);
@@ -151,9 +166,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           extractOnly
               || xpathExpr != null
               || captureAttr
-              || (captureElems != null && captureElems.length > 0)
-              || (params.get(ExtractingParams.RESOURCE_PASSWORD) != null)
-              || (passwordsFile != null);
+              || (captureElems != null && captureElems.length > 0);
 
       if (extractOnly) {
         try {
@@ -185,7 +198,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
             return;
           }
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          throw wrapExtractionException(e);
         }
         return;
       }
@@ -203,7 +216,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
               return;
             }
           }
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          throw wrapExtractionException(e);
         }
 
         addDoc(handler);
@@ -219,7 +232,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
             log.warn("skip extracting text due to {}.", e.getLocalizedMessage(), e);
           return;
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        throw wrapExtractionException(e);
       }
 
       ExtractionMetadata metadata = result.getMetadata();

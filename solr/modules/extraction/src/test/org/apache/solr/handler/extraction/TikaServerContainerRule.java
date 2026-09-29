@@ -38,7 +38,7 @@ public class TikaServerContainerRule extends ExternalResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String TIKA_DOCKER_IMAGE = "apache/tika:3.2.3.0-full";
+  public static final String TIKA_DOCKER_IMAGE = "apache/tika:4.0.0-full";
 
   private GenericContainer<?> tika;
   private String baseUrl;
