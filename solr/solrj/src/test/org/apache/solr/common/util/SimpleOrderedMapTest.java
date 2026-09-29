@@ -16,6 +16,10 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,6 +41,37 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertEquals(1, map.nvPairs.get(1));
     assertEquals("two", map.nvPairs.get(2));
     assertEquals(2, map.nvPairs.get(3));
+  }
+
+  @Test
+  public void testJavaSerializationRoundTrip() throws Exception {
+    SimpleOrderedMap<Object> original = new SimpleOrderedMap<>();
+    original.put("one", 1);
+    original.put("two", "two");
+    original.put("aNull", null);
+    original.put(null, 4);
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
+      out.writeObject(original);
+    }
+
+    SimpleOrderedMap<?> deserialized;
+    try (ObjectInputStream in =
+        new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+      deserialized = (SimpleOrderedMap<?>) in.readObject();
+    }
+
+    assertEquals(original.size(), deserialized.size());
+    assertEquals(original, deserialized);
+    assertEquals("one", deserialized.getName(0));
+    assertEquals(1, deserialized.getVal(0));
+    assertEquals("two", deserialized.getName(1));
+    assertEquals("two", deserialized.getVal(1));
+    assertEquals("aNull", deserialized.getName(2));
+    assertNull(deserialized.getVal(2));
+    assertNull(deserialized.getName(3));
+    assertEquals(4, deserialized.getVal(3));
   }
 
   @Test

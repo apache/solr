@@ -16,9 +16,13 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -319,5 +323,50 @@ public class QueryResponseTest extends SolrTestCase {
     Object[] values = explainMap.values().toArray();
     assertTrue(values[0] instanceof SimpleOrderedMap);
     assertTrue(values[1] instanceof SimpleOrderedMap);
+  }
+
+  @Test
+  public void testQueryResponseSerialization() throws Exception {
+    XMLResponseParser parser = new XMLResponseParser();
+    NamedList<Object> response;
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
+        InputStream is = loader.openResource("solrj/sampleDebugResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
+
+    QueryResponse qr = new QueryResponse(response);
+    assertNotNull(qr);
+    assertNotNull(qr.getResults());
+    assertEquals(2, qr.getResults().getNumFound());
+    assertNotNull(qr.getExplainMap());
+    for (Object value : qr.getExplainMap().values()) {
+      assertTrue(value instanceof SimpleOrderedMap);
+    }
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
+      out.writeObject(qr);
+    }
+
+    QueryResponse deserialized;
+    try (ObjectInputStream ois =
+        new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+      deserialized = (QueryResponse) ois.readObject();
+    }
+
+    assertNotNull(deserialized);
+    assertNotNull(deserialized.getResults());
+    assertEquals(qr.getResults().getNumFound(), deserialized.getResults().getNumFound());
+    assertEquals(qr.getResults().size(), deserialized.getResults().size());
+    assertNotNull(deserialized.getExplainMap());
+    assertEquals(qr.getExplainMap().size(), deserialized.getExplainMap().size());
+    for (Object value : deserialized.getExplainMap().values()) {
+      assertTrue(
+          "explain values must stay SimpleOrderedMap after Java serialization",
+          value instanceof SimpleOrderedMap);
+    }
   }
 }
