@@ -142,8 +142,8 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
   @Test
   public void testReloadCollectionViaUi() throws Exception {
-    // reloading resets the core's start time; that proves the action end-to-end,
-    // unlike the UI success indicator which only flashes for a second
+    // Reloading resets the core's start time, and the success state remains visible long enough
+    // for a user to notice instead of disappearing after one second.
     String coreName = coreNameOnNode0(COLLECTION);
     Object startTimeBefore = coreStartTime(coreName);
 
@@ -152,6 +152,12 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
     waitUntil(
         "core start time should change after reload",
         () -> !startTimeBefore.equals(coreStartTime(coreName)));
+    WebElement reload = waitFor(By.cssSelector("#reload.success"));
+    assertEquals("Reloaded", reload.getText());
+    Thread.sleep(1500);
+    assertTrue(
+        "reload success should remain visible", reload.getAttribute("class").contains("success"));
+    assertEquals("Reloaded", reload.getText());
     assertNoSevereConsoleErrors();
   }
 

@@ -119,11 +119,13 @@ allprojects {
         exclude "dev-docs"
         exclude "**/AGENTS.md"
         exclude "**/.*" // e.g. .gradle, .github, .gitignore, etc.
+        exclude "**/.*/**" // contents nested inside dot-directories, e.g. .gradle/**
       } else {
         // Source release (no git): scan everything, exclude generated/ignored paths manually.
         include "**"
 
-        exclude ".gradle" // gradle will create this dir
+        exclude "**/.gradle" // gradle will create this dir (possibly nested, e.g. in included builds)
+        exclude "**/.gradle/**"
       }
 
       exclude project.layout.buildDirectory.get().asFile.name
