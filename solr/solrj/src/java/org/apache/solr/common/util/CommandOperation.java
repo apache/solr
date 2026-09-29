@@ -245,7 +245,7 @@ public class CommandOperation {
       throws IOException {
     JSONParser parser = Utils.getJSONParser(rdr);
 
-    ObjectBuilder ob = new ObjectBuilder(parser);
+    ObjectBuilder ob = new AccumulatingObjectBuilder(parser);
 
     if (parser.lastEvent() != JSONParser.OBJECT_START) {
       throw new RuntimeException("The JSON must be an Object of the form {\"command\": {...},...");
@@ -321,5 +321,40 @@ public class CommandOperation {
     Object o = getVal(name);
     if (o == null) return null;
     return getInt(name, null);
+  }
+
+  /**
+   * Folds repeated nested JSON keys into a {@link List} instead of last-wins {@code Map.put}.
+   * Top-level command names are still parsed as separate operations by {@link #parse(Reader, Set)};
+   * this only applies to nested objects such as request-handler {@code defaults}.
+   */
+  private static final class AccumulatingObjectBuilder extends ObjectBuilder {
+    AccumulatingObjectBuilder(JSONParser parser) throws IOException {
+      super(parser);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void addKeyVal(Object map, Object key, Object val) throws IOException {
+      Map<Object, Object> m = (Map<Object, Object>) map;
+      if (!m.containsKey(key)) {
+        m.put(key, val);
+        return;
+      }
+      Object prev = m.get(key);
+      List<Object> list;
+      if (prev instanceof List) {
+        list = (List<Object>) prev;
+      } else {
+        list = new ArrayList<>();
+        list.add(prev);
+        m.put(key, list);
+      }
+      if (val instanceof List) {
+        list.addAll((List<?>) val);
+      } else {
+        list.add(val);
+      }
+    }
   }
 }

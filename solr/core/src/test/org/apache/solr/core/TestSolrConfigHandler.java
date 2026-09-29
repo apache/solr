@@ -158,6 +158,54 @@ public class TestSolrConfigHandler extends RestTestBase {
     reqhandlertests(restTestHarness);
   }
 
+  public void testRequestHandlerMultiValuedDefaults() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    String payload =
+        "{\n"
+            + "'create-requesthandler' : { 'name' : '/x-mv', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/solr,/v2'}\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+
+    payload =
+        "{\n"
+            + "'update-requesthandler' : { 'name' : '/x-mv', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/solr,/v2',"
+            + " 'defaults': {'def_a':'def A val', 'facet.field':['subject','country']}}\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+    assertMultiValuedFacetFieldDefaults(harness);
+
+    payload =
+        "{\n"
+            + "'update-requesthandler' : { 'name' : '/x-mv', 'class': 'org.apache.solr.handler.DumpRequestHandler' ,registerPath :'/solr,/v2',"
+            + " 'defaults': {'def_a':'def A val', 'facet.field':'subject', 'facet.field':'country'}}\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+    assertMultiValuedFacetFieldDefaults(harness);
+  }
+
+  private static void assertMultiValuedFacetFieldDefaults(RestTestHarness harness)
+      throws Exception {
+    List<String> expected = asList("subject", "country");
+    testForResponseElement(
+        harness,
+        "/config/overlay",
+        asList("overlay", "requestHandler", "/x-mv", "defaults", "facet.field"),
+        expected,
+        TIMEOUT_S);
+    testForResponseElement(
+        harness,
+        "/config",
+        asList("config", "requestHandler", "/x-mv", "defaults", "facet.field"),
+        expected,
+        TIMEOUT_S);
+    testForResponseElement(
+        harness,
+        "/x-mv?param=facet.field&json.nl=map",
+        asList("params", "facet.field"),
+        expected,
+        TIMEOUT_S);
+  }
+
   public static void runConfigCommand(RestTestHarness harness, String uri, String payload)
       throws IOException {
     String json = SolrTestCaseJ4.json(payload);
