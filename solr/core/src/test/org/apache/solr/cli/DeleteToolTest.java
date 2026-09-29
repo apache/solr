@@ -138,12 +138,10 @@ public class DeleteToolTest extends SolrCloudTestCase {
     cluster.uploadConfigSet(configset("cloud-minimal"), sharedConfigName);
 
     withBasicAuth(
-            CollectionAdminRequest.createCollection(
-                "testForceFlagInUseA", sharedConfigName, 1, 1))
+            CollectionAdminRequest.createCollection("testForceFlagInUseA", sharedConfigName, 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
     withBasicAuth(
-            CollectionAdminRequest.createCollection(
-                "testForceFlagInUseB", sharedConfigName, 1, 1))
+            CollectionAdminRequest.createCollection("testForceFlagInUseB", sharedConfigName, 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
     waitForState(
         "Expected collection to be created with 1 shard and 1 replicas",

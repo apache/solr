@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
@@ -30,12 +29,9 @@ import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.SolrException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Supports delete command in the bin/solr script. */
 public class DeleteTool extends ToolBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
@@ -55,8 +51,8 @@ public class DeleteTool extends ToolBase {
 
   // No longer has any effect: the Overseer's configset-delete command unconditionally refuses to
   // delete a configset that's still in use by another collection, so this flag was never actually
-  // able to bypass that safety check. Configset deletion now always requests the safe ("only if
-  // unused") behavior. Kept, as a no-op, for backward compatibility with existing scripts.
+  // able to bypass that safety check. Kept, as a no-op, for backward compatibility with existing
+  // scripts.
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
@@ -154,26 +150,15 @@ public class DeleteTool extends ToolBase {
     if (deleteConfig && configName != null) {
       try {
         var req = new ConfigsetsApi.DeleteConfigSet(configName);
-        req.setIfUnused(true);
-        // The collection was already deleted above, but that deletion may not have propagated to
-        // whichever node services this request yet; excludeCollection makes the "still in use"
-        // check correct regardless of that timing instead of depending on it.
-        req.setExcludeCollection(collectionName);
-        var response = req.process(solrClient);
-        if (!response.deleted) {
-          log.warn(
-              "Configuration directory {} is also being used by {}; configuration will not be"
-                  + " deleted.",
-              configName,
-              response.collectionsUsingConfigSet);
-        }
+        req.process(solrClient);
       } catch (Exception exc) {
+        // Most commonly, this configset is still in use by another collection -- the
+        // configset-delete command unconditionally refuses to delete it in that case.
         echo(
-            "\nWARNING: Failed to delete configSet "
+            "\nWARNING: configSet "
                 + configName
-                + " in solr due to: "
-                + exc.getMessage()
-                + "\nYou'll need to manually delete this znode using the bin/solr zk rm command.");
+                + " was not deleted: "
+                + exc.getMessage());
       }
     }
 

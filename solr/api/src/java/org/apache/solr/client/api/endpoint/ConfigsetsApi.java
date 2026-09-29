@@ -20,7 +20,6 @@ import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
 import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -38,7 +37,6 @@ import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
-import org.apache.solr.client.api.model.DeleteConfigSetResponse;
 import org.apache.solr.client.api.model.ListConfigsetsResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
@@ -78,24 +76,7 @@ public interface ConfigsetsApi {
   interface Delete {
     @DELETE
     @Operation(summary = "Delete an existing configset.", tags = "configsets")
-    DeleteConfigSetResponse deleteConfigSet(
-        @PathParam("configSetName") String configSetName,
-        @Parameter(
-                description =
-                    "If true, don't delete the configset (and report the collections using it) "
-                        + "when it's still in use by one or more collections; if false or omitted, "
-                        + "delete unconditionally.")
-            @QueryParam("ifUnused")
-            Boolean ifUnused,
-        @Parameter(
-                description =
-                    "A collection name to ignore when checking whether the configset is still in "
-                        + "use (only relevant when ifUnused is true). Useful when the caller has "
-                        + "already deleted, or is about to delete, that collection and doesn't want "
-                        + "the check's result to depend on whether that deletion has been reflected "
-                        + "in cluster state yet.")
-            @QueryParam("excludeCollection")
-            String excludeCollection)
+    SolrJerseyResponse deleteConfigSet(@PathParam("configSetName") String configSetName)
         throws Exception;
   }
 
