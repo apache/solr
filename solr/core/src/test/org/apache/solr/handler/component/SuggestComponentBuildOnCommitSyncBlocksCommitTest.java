@@ -23,15 +23,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Backward-compatibility counterpart to {@link SuggestComponentBuildOnCommitDoesNotBlockCommitTest}:
- * {@code buildOnCommitAsync} defaults to {@code false}, so a suggester configured with just {@code
- * buildOnCommit=true} (no opt-in) keeps the original, pre-fix behavior - commit() blocks for the
- * full duration of the rebuild.
+ * Backward-compatibility counterpart to {@link
+ * SuggestComponentBuildOnCommitDoesNotBlockCommitTest}: {@code buildOnCommitAsync} defaults to
+ * {@code false}, so a suggester configured with just {@code buildOnCommit=true} (no opt-in) keeps
+ * the original, pre-fix behavior - commit() blocks for the full duration of the rebuild.
  *
  * <p>This is intentional, not a bug: {@code buildOnCommitAsync} is opt-in so existing {@code
  * buildOnCommit} users - including tests elsewhere in this suite (e.g. {@code
- * SuggestComponentTest}) that query a suggester immediately after commit() and expect it to
- * already be built - keep that guarantee unless they explicitly ask for the new, non-blocking,
+ * SuggestComponentTest}) that query a suggester immediately after commit() and expect it to already
+ * be built - keep that guarantee unless they explicitly ask for the new, non-blocking,
  * eventually-consistent behavior.
  */
 public class SuggestComponentBuildOnCommitSyncBlocksCommitTest extends SolrTestCaseJ4 {

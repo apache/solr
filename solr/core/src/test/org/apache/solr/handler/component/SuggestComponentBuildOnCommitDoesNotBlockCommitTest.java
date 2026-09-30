@@ -36,16 +36,16 @@ import org.junit.Test;
  * newSearcherListener} callback, so {@code SolrCore}'s single-threaded {@code searcherExecutor} -
  * and therefore {@code DirectUpdateHandler2.commit()}'s {@code waitSearcher[0].get()} - is no
  * longer blocked by a slow rebuild. This test asserts both halves of that fix: {@code commit()}
- * returns quickly, and the suggester rebuild still actually happens (just a little after
- * commit(), instead of blocking it).
+ * returns quickly, and the suggester rebuild still actually happens (just a little after commit(),
+ * instead of blocking it).
  *
  * @see SuggestComponentBuildOnCommitSyncBlocksCommitTest the counterpart showing that without
  *     opting in (buildOnCommitAsync=false, the default), the old blocking behavior is unchanged -
- *     this fix is opt-in specifically so existing buildOnCommit users aren't silently switched
- *     from "suggestions guaranteed fresh immediately after commit" to eventually-consistent.
+ *     this fix is opt-in specifically so existing buildOnCommit users aren't silently switched from
+ *     "suggestions guaranteed fresh immediately after commit" to eventually-consistent.
  * @see SuggestComponentBuildOnCommitDisabledCommitStaysFastTest the control/baseline counterpart,
- *     which uses the exact same slow dictionary but with buildOnCommit=false, and shows
- *     commit() stays fast there too - because no rebuild is triggered at all in that case.
+ *     which uses the exact same slow dictionary but with buildOnCommit=false, and shows commit()
+ *     stays fast there too - because no rebuild is triggered at all in that case.
  */
 public class SuggestComponentBuildOnCommitDoesNotBlockCommitTest extends SolrTestCaseJ4 {
 
@@ -105,7 +105,11 @@ public class SuggestComponentBuildOnCommitDoesNotBlockCommitTest extends SolrTes
     String staleResponse =
         h.query(
             req(
-                "qt", "/suggest_slow", "suggest.q", "slowterm", "suggest.dictionary",
+                "qt",
+                "/suggest_slow",
+                "suggest.q",
+                "slowterm",
+                "suggest.dictionary",
                 "slowSuggester"));
     long staleBuiltFrom = extractLongField(staleResponse, "builtFromIndexVersion");
     long indexVersionAtCommit = extractLongField(staleResponse, "currentIndexVersion");
@@ -137,7 +141,11 @@ public class SuggestComponentBuildOnCommitDoesNotBlockCommitTest extends SolrTes
       String freshResponse =
           h.query(
               req(
-                  "qt", "/suggest_slow", "suggest.q", "slowterm", "suggest.dictionary",
+                  "qt",
+                  "/suggest_slow",
+                  "suggest.q",
+                  "slowterm",
+                  "suggest.dictionary",
                   "slowSuggester"));
       freshBuiltFrom = extractLongField(freshResponse, "builtFromIndexVersion");
       freshCurrent = extractLongField(freshResponse, "currentIndexVersion");
@@ -145,7 +153,8 @@ public class SuggestComponentBuildOnCommitDoesNotBlockCommitTest extends SolrTes
     assertEquals(
         "expected builtFromIndexVersion to catch up to currentIndexVersion once the async "
             + "rebuild finished, so a caller can tell the suggestions are now fresh",
-        freshCurrent, freshBuiltFrom);
+        freshCurrent,
+        freshBuiltFrom);
   }
 
   private static long extractLongField(String xml, String fieldName) {
