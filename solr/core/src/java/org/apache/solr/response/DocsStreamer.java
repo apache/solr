@@ -189,9 +189,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   /**
    * Replace Lucene {@link IndexableField} values on a {@link SolrDocument} (and nested / child
-   * documents) with the SolrJ-native objects that HTTP clients already see after javabin
-   * deserialization. Used by the EmbeddedSolrServer streaming path so {@code
-   * queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
+   * documents) with the SolrJ-native objects that clients see after JavaBin deserialization. Used
+   * by JavaBin response writing generally, including the EmbeddedSolrServer streaming path, so
+   * {@code queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
    *
    * <p>Do not call this from {@link #convertLuceneDocToSolrDoc}; JSON/XML writers and some
    * transformers still expect stored fields as {@link IndexableField}.

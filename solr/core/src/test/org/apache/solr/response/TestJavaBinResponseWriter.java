@@ -18,6 +18,7 @@ package org.apache.solr.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -90,6 +91,36 @@ public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
     }
 
     req.close();
+  }
+
+  public void testStoredFieldTypesInResponse() throws Exception {
+    assertU(adoc("id", "javabintypes1", "foo_i", "42", "foo_is", "7", "foo_is", "11"));
+    assertU(commit());
+
+    SolrQueryRequest req = req("q", "id:javabintypes1", "fl", "foo_i,foo_is");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, req);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      h.getCore().getQueryResponseWriter("javabin").write(baos, req, rsp);
+
+      NamedList<?> response;
+      try (JavaBinCodec codec = new JavaBinCodec()) {
+        response = (NamedList<?>) codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+      }
+      SolrDocumentList docs = (SolrDocumentList) response.get("response");
+      assertEquals(1, docs.size());
+
+      SolrDocument doc = docs.get(0);
+      Object singleValued = doc.getFieldValue("foo_i");
+      assertEquals(Integer.valueOf(42), singleValued);
+      assertEquals(Integer.class, singleValued.getClass());
+
+      Object multiValued = doc.getFieldValue("foo_is");
+      assertTrue(multiValued instanceof List<?>);
+      assertEquals(List.of(7, 11), multiValued);
+    } finally {
+      req.close();
+    }
   }
 
   public void testOmitHeader() throws Exception {
