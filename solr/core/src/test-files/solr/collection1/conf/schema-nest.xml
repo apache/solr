@@ -41,7 +41,8 @@
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  <fieldType name="_nest_path_" class="solr.NestPathField" />
+  <!-- Legacy attributes: as persisted by the Schema API in Solr 9.10 and earlier -->
+  <fieldType name="_nest_path_" class="solr.NestPathField" omitTermFreqAndPositions="true" omitNorms="true" maxCharsForDocValues="-1" multiValued="false" stored="false"/>
 
   <!-- Point Fields -->
   <fieldType name="int" class="solr.IntPointField"/>
