@@ -49,6 +49,8 @@ public class NestPathField extends StrField {
     args.putIfAbsent("docValues", "true"); // flip a default; necessary for old schemas
     args.putIfAbsent("multiValued", "false"); // flip a default; necessary for old schemas
     args.putIfAbsent("uninvertible", "false"); // flip a default; necessary for old schemas
+    // Schema API persisted this when NestPathField extended SortableTextField (Solr <= 9.10)
+    args.remove("maxCharsForDocValues");
     super.setArgs(schema, args);
     // Doesn't support these flags; perhaps others too.
     // note: we could support STORED if truly useful but why bother given docValues.
