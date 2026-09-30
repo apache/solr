@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.document.Document;
@@ -212,13 +213,14 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     if (doc == null || schema == null) {
       return doc;
     }
-    for (String name : new ArrayList<>(doc.getFieldNames())) {
-      Object val = doc.getFieldValue(name);
+    for (Iterator<Map.Entry<String, Object>> it = doc.iterator(); it.hasNext(); ) {
+      Map.Entry<String, Object> entry = it.next();
+      Object val = entry.getValue();
       Object converted = externalizeValue(val, schema);
       if (FAILED_STORED_VALUE.equals(converted)) {
-        doc.remove(name);
+        it.remove();
       } else if (!Objects.equals(converted, val)) {
-        doc.setField(name, converted);
+        entry.setValue(converted);
       }
     }
     List<SolrDocument> children = doc.getChildDocuments();
