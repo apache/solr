@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -62,7 +61,6 @@ import org.slf4j.LoggerFactory;
  * the election parks for the 60s executor wait before {@code shutdownNow()} finally interrupts the
  * poll thread.
  */
-@ThreadLeakLingering(linger = 10)
 public class TlogLeaderElectionFrozenLeaderTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -71,10 +69,14 @@ public class TlogLeaderElectionFrozenLeaderTest extends SolrCloudTestCase {
   private static final String SHARD = "shard1";
 
   /**
-   * An election that only has to replay a tiny tlog should finish well inside this. The bug parks
-   * it for the 60s {@code ExecutorUtil.awaitTermination} wait instead.
+   * A replacement election sleeps a fixed 2.5s for in-flight updates to settle
+   * (ShardLeaderElectionContext), then syncs, replays its tlog and publishes in well under a
+   * second. The bug parks it for the 60s {@code ExecutorUtil.awaitTermination} wait instead.
    */
-  private static final long MAX_ACCEPTABLE_ELECTION_MS = 20_000;
+  private static final long MAX_ACCEPTABLE_ELECTION_MS = 10_000;
+
+  /** How long to wait for the follower's next poll to reach the stalled leader. */
+  private static final long STALL_ARRIVAL_TIMEOUT_MS = 30_000;
 
   /** Where a follower's fetch can park against a frozen leader. */
   public enum TestStallPoint {
@@ -169,7 +171,7 @@ public class TlogLeaderElectionFrozenLeaderTest extends SolrCloudTestCase {
     // early (LEADER_IS_NOT_ACTIVE) without making an HTTP call. Only a fetch that is *already* in
     // the network phase reproduces the bug.
     try {
-      channel.arrived().get(MAX_ACCEPTABLE_ELECTION_MS, TimeUnit.MILLISECONDS);
+      channel.arrived().get(STALL_ARRIVAL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
       fail("the follower never issued a " + stallPoint.command + " request to the leader");
     }
