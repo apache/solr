@@ -167,6 +167,7 @@ public class V2HttpCall extends HttpSolrCall {
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
               normalizeAndSetPath(path.substring(prefix.length() + collectionName.length() + 2));
               path = this.path;
+              initAdminRequest(path);
               return;
             }
           }
