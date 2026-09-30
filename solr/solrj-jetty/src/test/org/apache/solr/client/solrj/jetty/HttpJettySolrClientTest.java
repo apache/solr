@@ -35,8 +35,10 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
@@ -86,6 +88,35 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       fail("No exception thrown.");
     } catch (SolrServerException e) {
       assertIsTimeout(e);
+    }
+  }
+
+  @Test
+  public void testMultipartUpload() throws Exception {
+    ContentWriterUpdateRequest req = new ContentWriterUpdateRequest("/update");
+    req.addPart(
+        "firstPart", new RequestWriter.StringPayloadContentWriter("first content", "text/plain"));
+    req.addPart(
+        "secondPart", new RequestWriter.StringPayloadContentWriter("second content", "text/plain"));
+    req.setParam("someParam", "someValue");
+
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (var client =
+        new HttpJettySolrClient.Builder(url).withDefaultCollection(DEFAULT_COLLECTION).build()) {
+      try {
+        client.request(req);
+      } catch (RemoteSolrException ignored) {
+      }
+
+      String contentType = DebugServlet.headers.get("content-type");
+      assertTrue(contentType, contentType != null && contentType.startsWith("multipart/form-data"));
+      String body = new String(DebugServlet.requestBody, StandardCharsets.UTF_8);
+      assertTrue(body, body.contains("firstPart"));
+      assertTrue(body, body.contains("first content"));
+      assertTrue(body, body.contains("secondPart"));
+      assertTrue(body, body.contains("second content"));
+    } finally {
+      DebugServlet.clear();
     }
   }
 

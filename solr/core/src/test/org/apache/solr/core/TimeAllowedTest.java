@@ -81,8 +81,8 @@ public class TimeAllowedTest extends SolrTestCaseJ4 {
     // be doing something along the lines of this (but we lack api for it)
     //
     //    SolrCores solrCores = ExitableDirectoryReaderTest.h.getCoreContainer().solrCores;
-    //    List<SolrCore> cores = solrCores.getCores();
-    //    for (SolrCore core : cores) {
+    //    for (String coreName : solrCores.getLoadedCoreNames()) {
+    //      try (SolrCore core = ... .getCore(coreName)) {
     //      if (<<< find the right core >>> ) {
     //        ((SolrCache)core.getSearcher().get().<<<check cache for a key like name:a* >>>
     //      }

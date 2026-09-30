@@ -136,7 +136,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1"]}
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     assertEquals(1, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "2");
   }
@@ -160,7 +160,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3");
   }
@@ -185,7 +185,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "2", "8", "7", "10");
   }
@@ -208,7 +208,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQueryAll, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQueryAll));
     // ideal ordering
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3", "10", "8");
     String jsonQueryLimit2 =
@@ -222,7 +222,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
         }""";
-    rsp = query(CommonParams.JSON, jsonQueryLimit2, CommonParams.QT, "/search");
+    rsp = query("/search", params(CommonParams.JSON, jsonQueryLimit2));
     // assert proper ordering due to presence of shards.rows
     assertFieldValues(rsp.getResults(), id, "7", "2");
     String jsonQueryWithShardRows =
@@ -236,7 +236,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"], "shards.rows": 10}
         }""";
-    rsp = query(CommonParams.JSON, jsonQueryWithShardRows, CommonParams.QT, "/search");
+    rsp = query("/search", params(CommonParams.JSON, jsonQueryWithShardRows));
     assertFieldValues(rsp.getResults(), id, "5", "7");
     // assert improper ordering due to lack of shards.rows
     String jsonQueryPage =
@@ -251,7 +251,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
           "fields": ["id", "score", "title"],
           "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
         }""";
-    rsp = query(CommonParams.JSON, jsonQueryPage, CommonParams.QT, "/search");
+    rsp = query("/search", params(CommonParams.JSON, jsonQueryPage));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "6", "3", "10", "8");
   }
@@ -281,7 +281,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             "combiner.query": ["lexical"]
           }
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     assertEquals(3, rsp.getResults().size());
     assertEquals(4, rsp.getResults().getNumFound());
     assertEquals("[0 (2), 2 (2)]", rsp.getFacetFields().getFirst().getValues().toString());
@@ -314,7 +314,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             "hl.q": "test doc"
           }
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
@@ -356,7 +356,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             "hl.q": "test doc"
           }
         }""";
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search-elevate");
+    QueryResponse rsp = query("/search-elevate", params(CommonParams.JSON, jsonQuery));
     assertEquals(4, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "6", "10", "5", "7");
     assertEquals("mod3_idv", rsp.getFacetFields().getFirst().getName());
@@ -419,7 +419,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
             }
         }""";
     handle.put("expanded", UNORDERED);
-    QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
+    QueryResponse rsp = query("/search", params(CommonParams.JSON, jsonQuery));
     assertEquals(3, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "CO!2", "CO!10", "CO!3");
     assertEquals("id", rsp.getFacetFields().getFirst().getName());
@@ -462,7 +462,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   /** Tests {@link ResponseBuilder#setForcedDistrib(boolean)} had the desired effect. */
   @Test
   public void testForcedDistrib() throws Exception {
-    QueryResponse rsp = query("qt", "/forcedDistribTest", "q", "*:*", "rows", "0");
+    QueryResponse rsp = query("/forcedDistribTest", params("q", "*:*", "rows", "0"));
     // ForcedDistribSearchHandler would trigger a failure if this didn't work
   }
 }

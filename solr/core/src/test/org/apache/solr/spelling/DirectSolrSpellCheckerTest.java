@@ -16,9 +16,10 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
@@ -51,6 +52,11 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     queryConverter.init(new NamedList<>());
   }
 
+  /** A stream that emits exactly one token whose term text is empty. */
+  private static TokenStream singleEmptyTermTokenStream() {
+    return new KeywordAnalyzer().tokenStream("", "");
+  }
+
   @Test
   public void test() throws Exception {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
@@ -67,11 +73,11 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
             searcher -> {
 
               // check that 'fob' is corrected to 'foo'
-              Collection<Token> tokens = queryConverter.convert("fob");
+              List<SpellCheckToken> tokens = SpellCheckToken.drain(queryConverter.convert("fob"));
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.get(0));
               assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals("foo", entry.getKey());
@@ -81,18 +87,18 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
                   (int) entry.getValue());
 
               // check that 'super' is *not* corrected
-              spellOpts.tokens = queryConverter.convert("super");
+              spellOpts.tokens = SpellCheckToken.drain(queryConverter.convert("super"));
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(spellOpts.tokens.get(0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
 
               // Check empty token due to spellcheck.q = ""
-              spellOpts.tokens = List.of(new Token("", 0, 0));
+              spellOpts.tokens = SpellCheckToken.drain(singleEmptyTermTokenStream());
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(new SpellCheckToken("", 0, 0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
@@ -102,11 +108,10 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testOnlyMorePopularWithExtendedResults() {
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckCompRH",
             "q",
             "teststop:fox",
-            "qt",
-            "/spellCheckCompRH",
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             SpellingParams.SPELLCHECK_DICT,
@@ -144,11 +149,12 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     h.getCore()
         .withSearcher(
             searcher -> {
-              Collection<Token> tokens = queryConverter.convert("anothar");
+              List<SpellCheckToken> tokens =
+                  SpellCheckToken.drain(queryConverter.convert("anothar"));
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.get(0));
               assertNotNull("suggestions shouldn't be null", suggestions);
 
               if (limitQueryLength) {

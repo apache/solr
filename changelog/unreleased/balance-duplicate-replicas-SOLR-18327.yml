@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: Balance replicas API now enforces the rule of at most one replica per shard on the same node
+type: fixed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18327
+    url: https://issues.apache.org/jira/browse/SOLR-18327

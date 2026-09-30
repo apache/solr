@@ -84,6 +84,9 @@ public class JulWatcher extends LogWatcher<LogRecord> {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // java.util.logging.Logger has no equals() override; identity check is
+  // intentional
   public Collection<LoggerInfo> getAllLoggers() {
     LogManager manager = LogManager.getLogManager();
 
@@ -150,7 +153,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
     doc.setField("time", new Date(event.getMillis()));
     doc.setField("level", event.getLevel().toString());
     doc.setField("logger", event.getLoggerName());
-    doc.setField("message", event.getMessage().toString());
+    doc.setField("message", event.getMessage());
     Throwable t = event.getThrown();
     if (t != null) {
       StringWriter trace = new StringWriter();

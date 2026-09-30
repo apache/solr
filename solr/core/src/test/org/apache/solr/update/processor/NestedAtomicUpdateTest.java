@@ -508,7 +508,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, child2, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, child2, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child2:[{\"id\":\"3\", \"cat_ss\": [\"child\"]}],"
             + "child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]"
@@ -521,7 +521,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // this requires ChildDocTransformer to get the whole block, since the document is retrieved
     // using an index lookup
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, child2, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, child2, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child2:[{\"id\":\"3\", \"cat_ss\": [\"child\"]}],"
             + "child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]"
@@ -538,14 +538,14 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, child2, child3, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, child2, child3, [child]"),
         "=={'doc':{'id':'1'"
             + ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:[{\"id\":\"4\",\"cat_ss\":[\"grandChild\"]}]}],"
             + "child2:[{\"id\":\"3\", \"cat_ss\": [\"child\"]}]"
             + "       }}");
 
     assertJQ(
-        req("qt", "/get", "id", "2", "fl", "id, cat_ss, child, child3, [child]"),
+        reqWithPath("/get", "id", "2", "fl", "id, cat_ss, child, child3, [child]"),
         "=={'doc':{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:[{\"id\":\"4\",\"cat_ss\":[\"grandChild\"]}]}"
             + "       }}");
 
@@ -563,14 +563,14 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, child2, child3, child4, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, child2, child3, child4, [child]"),
         "=={'doc':{'id':'1'"
             + ", cat_ss:[\"aaa\",\"ccc\",\"bbb\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"], child3:[{\"id\":\"4\",\"cat_ss\":[\"grandChild\"],"
             + " child4:[{\"id\":\"5\",\"cat_ss\":[\"greatGrandChild\"]}]}]}], child2:[{\"id\":\"3\", \"cat_ss\": [\"child\"]}]"
             + "       }}");
 
     assertJQ(
-        req("qt", "/get", "id", "4", "fl", "id, cat_ss, child4, [child]"),
+        reqWithPath("/get", "id", "4", "fl", "id, cat_ss, child4, [child]"),
         "=={'doc':{\"id\":\"4\",\"cat_ss\":[\"grandChild\"], child4:[{\"id\":\"5\",\"cat_ss\":[\"greatGrandChild\"]}]}"
             + "       }}");
 
@@ -590,7 +590,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(
-        req("qt", "/get", "id", "4", "fl", "id, cat_ss, child4, [child]"),
+        reqWithPath("/get", "id", "4", "fl", "id, cat_ss, child4, [child]"),
         "=={'doc':{\"id\":\"4\",\"cat_ss\":[\"grandChild\"], child4:[{\"id\":\"5\",\"cat_ss\":[\"greatGrandChild\"]},"
             + "{\"id\":\"6\", \"cat_ss\":[\"greatGrandChild\"]}]}"
             + "       }}");
@@ -668,7 +668,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertJQ(req("q", "id:1"), "/response/numFound==1");
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]"
             + "       }}");
@@ -676,7 +676,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]"
             + "       }}");
@@ -694,7 +694,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"bbb\"], child1:{\"id\":\"3\",\"cat_ss\":[\"child\"]}"
             + "       }}");
@@ -705,7 +705,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // rather than the transaction log. this requires ChildDocTransformer to get the whole block,
     // since the document is retrieved using an index lookup
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={'doc':{'id':'1'"
             + ", cat_ss:[\"aaa\",\"bbb\"], child1:{\"id\":\"3\",\"cat_ss\":[\"child\"]}"
             + "       }}");
@@ -715,13 +715,13 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, child2, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, child2, [child]"),
         "=={'doc':{'id':'1'"
             + ", cat_ss:[\"aaa\",\"bbb\"], child1:{\"id\":\"3\",\"cat_ss\":[\"child\"], child2:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}"
             + "       }}");
 
     assertJQ(
-        req("qt", "/get", "id", "3", "fl", "id, cat_ss, child, child2, [child]"),
+        reqWithPath("/get", "id", "3", "fl", "id, cat_ss, child, child2, [child]"),
         "=={'doc':{\"id\":\"3\",\"cat_ss\":[\"child\"], child2:{\"id\":\"4\",\"cat_ss\":[\"child\"]}}"
             + "       }}");
 
@@ -811,7 +811,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertJQ(req("q", "id:1"), "/response/numFound==1");
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]"
             + "       }}");
@@ -819,7 +819,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]"
             + "       }}");
@@ -828,7 +828,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]"
             + "       }}");
@@ -839,7 +839,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // rather than the transaction log. this requires ChildDocTransformer to get the whole block,
     // since the document is retrieved using an index lookup
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={'doc':{'id':'1'"
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}]"
             + "       }}");
@@ -905,14 +905,14 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertJQ(req("q", "id:1"), "/response/numFound==1");
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\", \"latlon\":\"0,0\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]}}");
 
     assertU(commit());
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\", \"latlon\":\"0,0\""
             + ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]}}");
 
@@ -922,7 +922,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     addAndGetVersion(doc, null);
 
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\", \"latlon\":\"0,0\", cat_ss:[\"aaa\",\"ccc\"]}}");
 
     assertU(commit());
@@ -931,7 +931,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // rather than the transaction log. this requires ChildDocTransformer to get the whole block,
     // since the document is retrieved using an index lookup
     assertJQ(
-        req("qt", "/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
+        reqWithPath("/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\", \"latlon\":\"0,0\", cat_ss:[\"aaa\",\"ccc\"]}}");
 
     // ensure the whole block has been committed correctly to the index.

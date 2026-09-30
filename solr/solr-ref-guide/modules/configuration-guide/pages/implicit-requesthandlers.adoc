@@ -40,24 +40,8 @@ This handler must have a collection name in the path to the endpoint.
 |`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
-Health:: Report the health of the node.
-+
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/health`
-
-v2: `api/node/health` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler]
-
-v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth] |
-|===
-+
-In SolrCloud mode the handler checks that the node is connected to ZooKeeper and is listed in live nodes.
-The optional `requireHealthyCores=true` parameter additionally requires that all local replicas be in an active state, which is useful for rolling-restart probes.
-+
-In user-managed (leader-follower) mode the handler checks replication lag.
-The optional `maxGenerationLag=<n>` parameter specifies the maximum number of Lucene commit generations by which a follower is allowed to trail its leader; the endpoint returns HTTP 503 if any core exceeds this threshold.
-See xref:deployment-guide:user-managed-index-replication.adoc#monitoring-follower-replication-lag[Monitoring Follower Replication Lag] for details and examples.
+Health:: Report the health of the node, via the `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]).
+See xref:deployment-guide:healthcheck.adoc[] for details, parameters, and examples.
 
 Logging:: Retrieve and modify registered loggers.
 +
@@ -83,6 +67,8 @@ This handler must have a collection name in the path to the endpoint.
 Ping:: Health check.
 This handler must have a collection name in the path to the endpoint.
 +
+CAUTION: `PingRequestHandler` is deprecated and will be removed in a future release. Use the `Health` endpoint below instead.
++
 *Documentation*: xref:deployment-guide:ping.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
@@ -92,14 +78,21 @@ This handler must have a collection name in the path to the endpoint.
 |===
 
 System Properties:: Return JRE system properties.
+Secret values are redacted.
++
+*Documentation*: xref:deployment-guide:jvm-settings.adoc#java-properties-screen[Java Properties Screen]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/properties`
 
-v2: `api/node/properties` |{solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler] |`_ADMIN_PROPERTIES`
+v2: `api/node/properties` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
+
+v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties] |`_ADMIN_PROPERTIES`
 |===
++
+To fetch a single property, v1 uses a `name` query parameter (`solr/admin/info/properties?name=java.version`) and v2 uses a path segment (`api/node/properties/java.version`).
 
 Segments:: Return info on last commit generation Lucene index segments.
 +
@@ -121,12 +114,55 @@ Core Info:: Return core information.
 
 Threads:: Return info on all JVM threads.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/threads`
+[tabs#thread-dump-api]
+======
+V1 API::
++
+====
+`solr/admin/info/threads`
 
-v2: `api/node/threads` |{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
+Abbreviated JSON response with the default `json.nl=flat` format.
+The thread dump alternates `"thread"` keys and thread objects:
+
+[source,json]
+----
+{
+  "system": {
+    "threadDump": [
+      "thread", {"id": 1, "name": "main", "state": "RUNNABLE"},
+      "thread", {"id": 2, "name": "worker", "state": "WAITING"}
+    ]
+  }
+}
+----
+====
+
+V2 API::
++
+====
+`api/node/threads`
+
+Abbreviated JSON response.
+The thread dump is an array of objects, each containing a `"thread"` property:
+
+[source,json]
+----
+{
+  "system": {
+    "threadDump": [
+      {"thread": {"id": 1, "name": "main", "state": "RUNNABLE"}},
+      {"thread": {"id": 2, "name": "worker", "state": "WAITING"}}
+    ]
+  }
+}
+----
+====
+======
++
+[cols="2*.",frame=none,grid=cols,options="header"]
+|===
+|Class & Javadocs |Paramset
+|{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
 === Analysis Handlers

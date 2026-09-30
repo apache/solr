@@ -18,9 +18,10 @@ package org.apache.solr.spelling;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -59,6 +60,11 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     queryConverter = null;
   }
 
+  /** A stream that emits exactly one token whose term text is empty. */
+  private static TokenStream singleEmptyTermTokenStream() {
+    return new KeywordAnalyzer().tokenStream("", "");
+  }
+
   @Test
   public void test() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
@@ -79,11 +85,11 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     h.getCore()
         .withSearcher(
             searcher -> {
-              Collection<Token> tokens = queryConverter.convert("fob");
+              List<SpellCheckToken> tokens = SpellCheckToken.drain(queryConverter.convert("fob"));
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.get(0));
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals(entry.getKey() + " is not equal to " + "foo", "foo", entry.getKey());
               assertEquals(
@@ -91,18 +97,18 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   SpellingResult.NO_FREQUENCY_INFO,
                   (int) entry.getValue());
 
-              spellOpts.tokens = queryConverter.convert("super");
+              spellOpts.tokens = SpellCheckToken.drain(queryConverter.convert("super"));
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(spellOpts.tokens.get(0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
 
               // Check empty token due to spellcheck.q = ""
-              spellOpts.tokens = List.of(new Token("", 0, 0));
+              spellOpts.tokens = SpellCheckToken.drain(singleEmptyTermTokenStream());
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(new SpellCheckToken("", 0, 0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
@@ -127,7 +133,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertEquals(dictName + " is not equal to " + "external", "external", dictName);
     checker.build(core, null);
 
-    Collection<Token> tokens = queryConverter.convert("Solar");
+    List<SpellCheckToken> tokens = SpellCheckToken.drain(queryConverter.convert("Solar"));
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -135,7 +141,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result is null and it shouldn't be", result);
               // should be lowercased, b/c we are using a lowercasing analyzer
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.get(0));
               assertEquals(
                   "suggestions Size: " + suggestions.size() + " is not: " + 1,
                   1,
@@ -148,10 +154,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   (int) entry.getValue());
 
               // test something not in the spell checker
-              spellOpts.tokens = queryConverter.convert("super");
+              spellOpts.tokens = SpellCheckToken.drain(queryConverter.convert("super"));
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(spellOpts.tokens.get(0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
@@ -180,12 +186,12 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     h.getCore()
         .withSearcher(
             searcher -> {
-              Collection<Token> tokens = queryConverter.convert("solar");
+              List<SpellCheckToken> tokens = SpellCheckToken.drain(queryConverter.convert("solar"));
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
               // should be lowercased, b/c we are using a lowercasing analyzer
-              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.get(0));
               assertEquals(
                   "suggestions Size: " + suggestions.size() + " is not: " + 1,
                   1,
@@ -197,10 +203,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   SpellingResult.NO_FREQUENCY_INFO,
                   (int) entry.getValue());
 
-              spellOpts.tokens = queryConverter.convert("super");
+              spellOpts.tokens = SpellCheckToken.drain(queryConverter.convert("super"));
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              suggestions = result.get(spellOpts.tokens.iterator().next());
+              suggestions = result.get(spellOpts.tokens.get(0));
               assertNotNull("suggestions shouldn't be null", suggestions);
               assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;

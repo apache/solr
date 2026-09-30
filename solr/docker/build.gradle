@@ -17,9 +17,8 @@
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import org.apache.commons.codec.digest.DigestUtils
-import org.gradle.process.ExecOperations
 import javax.inject.Inject
+import org.apache.commons.codec.digest.DigestUtils
 
 description = 'Solr Docker image'
 
@@ -140,9 +139,8 @@ dependencies {
 
 // We're using commons-codec for computing checksums.
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
+
   dependencies {
     classpath libs.commonscodec.commonscodec
   }

@@ -46,8 +46,7 @@ public class TestLTRReRankCutoffOnSolrCloud extends AbstractLTRSolrCloudTestBase
     final SolrQuery query = newBaseRerankQuery();
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=3 echoReRankCutoff=true}");
 
-    final QueryRequest queryRequest = new QueryRequest(query);
-    queryRequest.setPath("/query");
+    final QueryRequest queryRequest = new QueryRequest("/query", query);
     final QueryResponse queryResponse =
         queryRequest.process(solrCluster.getSolrClient(), COLLECTION);
 
@@ -72,8 +71,7 @@ public class TestLTRReRankCutoffOnSolrCloud extends AbstractLTRSolrCloudTestBase
     final SolrQuery query = newBaseRerankQuery();
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=3}");
 
-    final QueryRequest queryRequest = new QueryRequest(query);
-    queryRequest.setPath("/query");
+    final QueryRequest queryRequest = new QueryRequest("/query", query);
     final QueryResponse queryResponse =
         queryRequest.process(solrCluster.getSolrClient(), COLLECTION);
     assertNull(
@@ -87,8 +85,7 @@ public class TestLTRReRankCutoffOnSolrCloud extends AbstractLTRSolrCloudTestBase
     final SolrQuery query = newBaseRerankQuery();
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=3 echoReRankCutoff=false}");
 
-    final QueryRequest queryRequest = new QueryRequest(query);
-    queryRequest.setPath("/query");
+    final QueryRequest queryRequest = new QueryRequest("/query", query);
     final QueryResponse queryResponse =
         queryRequest.process(solrCluster.getSolrClient(), COLLECTION);
     assertNull(

@@ -1,0 +1,8 @@
+title: >
+  Centralize Maven repository declarations for the build.  Can customize with SOLR_MAVEN_REPO_URL.
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4677
+    url: https://github.com/apache/solr/pull/4677

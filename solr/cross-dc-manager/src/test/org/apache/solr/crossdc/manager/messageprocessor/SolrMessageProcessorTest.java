@@ -29,6 +29,7 @@ import java.io.IOException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -36,6 +37,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
+import org.apache.solr.crossdc.manager.CrossDcMockUtils;
 import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -45,6 +47,7 @@ import org.junit.Test;
 public class SolrMessageProcessorTest {
   private SolrMessageProcessor solrMessageProcessor;
   private CloudSolrClient client;
+  private ClusterStateProvider clusterStateProvider;
   private ResubmitBackoffPolicy resubmitBackoffPolicy;
 
   @BeforeClass
@@ -54,7 +57,8 @@ public class SolrMessageProcessorTest {
 
   @Before
   public void setUp() {
-    client = mock(CloudSolrClient.class);
+    client = CrossDcMockUtils.mockCloudSolrClientWithClusterStateProvider();
+    clusterStateProvider = client.getClusterStateProvider();
     resubmitBackoffPolicy = mock(ResubmitBackoffPolicy.class);
     solrMessageProcessor =
         new SolrMessageProcessor(mock(OtelMetrics.class), () -> client, resubmitBackoffPolicy);
@@ -134,7 +138,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.HANDLED, result.status());
-    verify(client, times(1)).connect();
+    verify(clusterStateProvider, times(1)).getLiveNodes();
     verify(solrRequest, times(1)).process(client);
   }
 }

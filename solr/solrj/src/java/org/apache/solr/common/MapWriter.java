@@ -18,7 +18,6 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -145,7 +144,4 @@ public interface MapWriter extends NavigableObject, JSONWriter.Writable {
       return this::putNoEx;
     }
   }
-
-  @Deprecated // use SimpleOrderedMap.of()
-  MapWriter EMPTY = new MapWriterMap(Map.of());
 }

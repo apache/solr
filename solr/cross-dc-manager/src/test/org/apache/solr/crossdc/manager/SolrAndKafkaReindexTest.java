@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -43,11 +45,11 @@ import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
-    defaultFilters = true,
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
@@ -58,10 +60,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static final String VERSION_FIELD = "_version_";
-
-  private static final int NUM_BROKERS = 1;
-  public static EmbeddedKafkaCluster kafkaCluster;
+  @ClassRule public static final KafkaContainerRule kafkaContainer = new KafkaContainerRule();
 
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
@@ -83,19 +82,16 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     config.put("unclean.leader.election.enable", "true");
     config.put("enable.partition.eof", "false");
 
-    kafkaCluster =
-        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-          @Override
-          public String bootstrapServers() {
-            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-          }
-        };
-    kafkaCluster.start();
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    // Replaced legacy in-JVM topic provisioner with official AdminClient configurations
+    config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    try (AdminClient adminClient = AdminClient.create(config)) {
+      adminClient.createTopics(List.of(new NewTopic(TOPIC, 3, (short) 1))).all().get();
+    }
 
     System.setProperty("solr.crossdc.topicName", TOPIC);
-    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, kafkaContainer.getBootstrapServers());
 
     solrCluster1 =
         configureCluster(3).addConfig("conf", getFile("configs/cloud-minimal/conf")).configure();
@@ -113,7 +109,6 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     solrCluster2.getSolrClient().request(create2);
     solrCluster2.waitForActiveCollection(COLLECTION, 2, 6);
 
-    String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
     Map<String, Object> properties = new HashMap<>();
@@ -126,7 +121,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterSolrAndKafkaIntegrationTest() throws Exception {
+  public static void afterSolrAndKafkaIntegrationTest() {
     ObjectReleaseTracker.clear();
 
     if (solrCluster1 != null) {
@@ -148,17 +143,8 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
       consumer.shutdown();
     }
 
-    try {
-      if (kafkaCluster != null) {
-        kafkaCluster.stop();
-      }
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster, ignoring", e);
-    }
-
     solrCluster1 = null;
     solrCluster2 = null;
-    kafkaCluster = null;
     consumer = null;
   }
 
@@ -267,7 +253,7 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
     doc2.addField("id", id2);
     doc2.addField("text", "some test two " + tag);
 
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(2);
+    List<SolrInputDocument> docs = new ArrayList<>(2);
     docs.add(doc1);
     docs.add(doc2);
 

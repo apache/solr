@@ -279,7 +279,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   public void testResponseHeader() {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertNull("responseHeader initially present", response.getResponseHeader());
-    final NamedList<Object> newValue = new SimpleOrderedMap<>();
+    final SimpleOrderedMap<Object> newValue = new SimpleOrderedMap<>();
     newValue.add("key1", "value1");
     response.add("key2", "value2");
     response.addResponseHeader(newValue);
@@ -300,7 +300,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testConvertToHEADStyleResponse() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    final NamedList<Object> newValue = new SimpleOrderedMap<>();
+    final SimpleOrderedMap<Object> newValue = new SimpleOrderedMap<>();
     newValue.add("responseHeaderKey1", "value1");
     response.add("responseHeaderKey2", "value2");
     response.addResponseHeader(newValue);

@@ -129,7 +129,8 @@ public abstract class SolrSpellChecker {
 
       // create token
       SpellCheckResponse.Suggestion suggestion = mergeData.origVsSuggestion.get(original);
-      Token token = new Token(original, suggestion.getStartOffset(), suggestion.getEndOffset());
+      SpellCheckToken token =
+          new SpellCheckToken(original, suggestion.getStartOffset(), suggestion.getEndOffset());
 
       // get top 'count' suggestions out of 'sugQueue.size()' candidates
       SuggestWord[] suggestions = new SuggestWord[Math.min(count, sugQueue.size())];

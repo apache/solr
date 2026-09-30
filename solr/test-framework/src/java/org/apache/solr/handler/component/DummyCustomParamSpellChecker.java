@@ -24,9 +24,9 @@ import java.util.List;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
+import org.apache.solr.spelling.SpellCheckToken;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
-import org.apache.solr.spelling.Token;
 
 /** A Dummy SpellChecker for testing purposes */
 public class DummyCustomParamSpellChecker extends SolrSpellChecker {
@@ -54,7 +54,7 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
     int i = 0;
     for (String name : lst) {
       String value = options.customParams.get(name);
-      result.add(new Token(name, i, i + 1), List.of(value));
+      result.add(new SpellCheckToken(name, i, i + 1), List.of(value));
       i += 2;
     }
     return result;

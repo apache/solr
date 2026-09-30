@@ -734,6 +734,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /* Takes over ownership of the log, keeping it until no longer needed
     and then decrementing its reference and dropping it.
   */
+  @SuppressWarnings(
+      "ReferenceEquality") // TransactionLog identity, not equality, is what matters here
   protected synchronized void addOldLog(TransactionLog oldLog, boolean removeOld) {
     if (oldLog == null) return;
 
@@ -1546,6 +1548,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param commitVersion any updates that have version larger than the commitVersion will be copied
    *     over
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // TransactionLog identity, not equality, is what matters here
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
     copyOverOldUpdatesCounter.inc();
 
@@ -1701,7 +1705,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     close(committed, false);
   }
 
-  @SuppressWarnings("try")
+  @SuppressWarnings({
+    "try",
+    "ReferenceEquality" // TransactionLog identity, not equality, is what matters here
+  })
   public void close(boolean committed, boolean deleteOnClose) {
     try (Closeable c = releaseTlogDir) {
       recoveryExecutor.shutdown(); // no new tasks

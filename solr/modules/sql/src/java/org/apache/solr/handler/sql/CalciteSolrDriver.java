@@ -75,8 +75,8 @@ public class CalciteSolrDriver extends Driver {
     Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.addThread(CalciteSolrDriver::subQueryThreshold);
 
     // disable Calcite's simplify (see SOLR-16009) as it erases some query
-    // constructs that are still meaningful to Solr (such as AND'd filters on the same field,
-    // which works for multi-valued fields in Solr but looks like nonsense to Calcite.
+    // constructs that are still meaningful to Solr (such as AND'd filters on the same field),
+    // which works for multivalued fields in Solr but looks like nonsense to Calcite.
     Hook.REL_BUILDER_SIMPLIFY.addThread(CalciteSolrDriver::relBuilderSimplify);
 
     Connection connection = super.connect(url, info);
@@ -99,7 +99,14 @@ public class CalciteSolrDriver extends Driver {
     return calciteConnection;
   }
 
+  @SuppressWarnings("deprecation")
   private void registerUDFs() {
+    // register() is deprecated in favour of SqlOperatorTables.of/chain, but Calcite's JDBC stack
+    // builds the validator's operator table via CalcitePrepareImpl.createSqlValidator (private
+    // static), leaving no protected hook to chain a custom SqlOperatorTable without subclassing
+    // private inner classes. Mutating the global SqlStdOperatorTable singleton is the only viable
+    // injection point available through the public API today.
+    // See https://issues.apache.org/jira/browse/CALCITE-7730
     final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
     stdOpTab.register(new ArrayContainsAll());
     stdOpTab.register(new ArrayContainsAny());
