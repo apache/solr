@@ -17,6 +17,7 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,14 +31,14 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import java.util.Set;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for {@link RequestMetricHandling} */
-public class RequestMetricHandlingTest extends SolrTestCaseJ4 {
+public class RequestMetricHandlingTest extends SolrTestCase {
 
   @BeforeClass
   public static void ensureWorkingMockito() {
