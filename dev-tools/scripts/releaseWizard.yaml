@@ -675,14 +675,14 @@ groups:
     id: dependency_updates_changes
     title: Add dependency updates to changelog
     description: |
-      Add a single changelog entry summarizing third-party dependency changes since the previous release,
-      derived from the jar checksum files in `solr/licenses/`.
-      Re-running it overwrites the entry, e.g. if dependencies changed before a respin.
+      Add changelog entries summarizing third-party dependencies added, upgraded, and removed since the
+      previous release, derived from the jar checksum files in `solr/licenses/`.
+      Re-running it overwrites the entries, e.g. if dependencies changed before a respin.
       Run the script without `--write` to just print the summary.
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: We call out to a helper script that writes `changelog/unreleased/dependency-changes.yml`
+      commands_text: We call out to a helper script that writes `changelog/unreleased/dependency-changes-*.yml`
       confirm_each_command: true
       commands:
       - !Command
