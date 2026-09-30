@@ -18,15 +18,17 @@ package org.apache.solr.analysis;
 
 import static org.apache.lucene.tests.analysis.BaseTokenStreamTestCase.assertTokenStreamContents;
 
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.tests.analysis.CannedTokenStream;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.tests.analysis.Token;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 
-public class TestZeroPositionIncrementFilterFactory extends SolrTestCaseJ4 {
+public class TestZeroPositionIncrementFilterFactory extends SolrTestCase {
 
   public void testSubsequentTokensShareFirstPosition() throws Exception {
     ZeroPositionIncrementFilterFactory factory =
@@ -80,5 +82,11 @@ public class TestZeroPositionIncrementFilterFactory extends SolrTestCaseJ4 {
     Token token = new Token(text, 0, text.length());
     token.setPositionIncrement(posInc);
     return token;
+  }
+
+  private static MockTokenizer whitespaceMockTokenizer(String input) {
+    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    mockTokenizer.setReader(new StringReader(input));
+    return mockTokenizer;
   }
 }
