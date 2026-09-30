@@ -36,7 +36,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.util.Accountable;
@@ -64,6 +63,7 @@ import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.apache.solr.spelling.suggest.SuggesterResult;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -100,8 +100,8 @@ public class SuggestComponent extends SearchComponent
    * SolrConfig label to identify boolean value to build suggesters on commit in the background
    * instead of blocking the commit. Defaults to false: buildOnCommit is synchronous unless a
    * suggester opts into the async behavior explicitly, to preserve buildOnCommit's existing
-   * "suggestions are guaranteed fresh immediately after commit" contract for anyone not asking
-   * for the new behavior.
+   * "suggestions are guaranteed fresh immediately after commit" contract for anyone not asking for
+   * the new behavior.
    */
   private static final String BUILD_ON_COMMIT_ASYNC_LABEL = "buildOnCommitAsync";
 
@@ -712,16 +712,40 @@ public class SuggestComponent extends SearchComponent
      * inline, so a slow build doesn't block SolrCore's searcherExecutor (and therefore doesn't
      * block a commit waiting on it). Skips this rebuild entirely if one is already running, so a
      * burst of commits can't queue up an unbounded backlog of stale builds.
+     *
+     * <p>Pins the specific searcher instance open for the duration of the async build by taking a
+     * real reference through SolrCore's own searcher-lifecycle bookkeeping ({@link
+     * SolrCore#getNewestSearcher}) - the same mechanism request handlers use via {@code
+     * core.getSearcher()} - rather than just the searcher's raw {@code IndexReader}. {@code
+     * SolrCore.registerSearcher} decrefs (and, once that hits zero, closes - including the
+     * searcher's caches and its directory reference) the previously-current searcher as soon as a
+     * newer one is registered, regardless of anything else independently holding the old searcher's
+     * {@code IndexReader} open; an extra {@code IndexReader.incRef()} does not prevent that; only a
+     * genuine extra reference through the {@code RefCounted} wrapper does.
      */
     private void buildSuggesterIndexAsync(SolrIndexSearcher newSearcher) {
       if (!buildOnCommitInProgress.compareAndSet(false, true)) {
         log.info(
-            "Skipping buildOnCommit for {}: a rebuild is already in progress",
-            suggester.getName());
+            "Skipping buildOnCommit for {}: a rebuild is already in progress", suggester.getName());
         return;
       }
-      final IndexReader reader = newSearcher.getIndexReader();
-      reader.incRef(); // pin the reader open until the async build is done with it
+      RefCounted<SolrIndexSearcher> searcherRef = core.getNewestSearcher(false);
+      if (searcherRef == null || searcherRef.get() != newSearcher) {
+        // Either the core is closing, or a later commit's newSearcher() event already ran (on
+        // SolrCore's single-threaded searcherExecutor) and registered an even newer searcher
+        // before we got here - in which case newSearcher is already stale and building from it
+        // now would be wasted work anyway; the next commit (or this core closing) takes it from
+        // here.
+        if (searcherRef != null) {
+          searcherRef.decref();
+        }
+        log.info(
+            "Skipping buildOnCommit for {}: newSearcher was already superseded before the async"
+                + " build could start",
+            suggester.getName());
+        buildOnCommitInProgress.set(false);
+        return;
+      }
       final long startNanos = System.nanoTime();
       log.info("Starting async buildOnCommit for {}", suggester.getName());
       try {
@@ -733,7 +757,7 @@ public class SuggestComponent extends SearchComponent
                 lastBuildOnCommitDurationMs =
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
                 buildOnCommitInProgress.set(false);
-                releaseReader(reader);
+                searcherRef.decref();
                 log.info(
                     "Finished async buildOnCommit for {} in {}ms",
                     suggester.getName(),
@@ -743,15 +767,7 @@ public class SuggestComponent extends SearchComponent
       } catch (RejectedExecutionException e) {
         // core is closing concurrently with this commit; safe to drop the rebuild.
         buildOnCommitInProgress.set(false);
-        releaseReader(reader);
-      }
-    }
-
-    private void releaseReader(IndexReader reader) {
-      try {
-        reader.decRef();
-      } catch (IOException e) {
-        log.error("Error releasing searcher reference for {}: ", suggester.getName(), e);
+        searcherRef.decref();
       }
     }
 
