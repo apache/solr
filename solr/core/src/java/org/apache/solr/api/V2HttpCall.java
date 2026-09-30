@@ -167,7 +167,6 @@ public class V2HttpCall extends HttpSolrCall {
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
               normalizeAndSetPath(path.substring(prefix.length() + collectionName.length() + 2));
               path = this.path;
-              initAdminRequest(path);
               return;
             }
           }
@@ -325,7 +324,11 @@ public class V2HttpCall extends HttpSolrCall {
       PluginBag<SolrRequestHandler> requestHandlers,
       SolrQueryResponse rsp,
       Map<String, String> additionalProperties) {
-    if (solrReq == null) {}
+    try {
+      ensureRequest();
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
 
     final ContainerRequest containerRequest =
         ContainerRequestUtils.createContainerRequest(
