@@ -20,16 +20,21 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
@@ -131,6 +136,8 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
     final String collection = "dvcacheoff";
     solrTestRule.newCollection(collection).withConfigSet(configSet).create();
     SolrClient client = solrTestRule.getSolrClient(collection);
+    client.add(sdoc("id", "dvcacheoff", SINGLE, "single", MULTI, "first", MULTI, "second"));
+    client.commit();
 
     try (SolrCore core = ((EmbeddedSolrServer) client).getCoreContainer().getCore(collection)) {
       RefCounted<SolrIndexSearcher> sref = core.getSearcher();
@@ -140,6 +147,26 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
         assertFalse(docFetcher.createDocValuesIteratorCache().isCaching());
       }
     }
+
+    SolrDocument selected =
+        client.query(new SolrQuery("*:*").setFields("id", "s*", "m*")).getResults().getFirst();
+    assertReturnedDocValues(selected);
+
+    QueryRequest realtimeGet =
+        new QueryRequest(
+            "/get",
+            new ModifiableSolrParams()
+                .set("id", "dvcacheoff")
+                .set("fl", "id,s*,m*"));
+    SolrDocument realtimeDocument =
+        (SolrDocument) realtimeGet.process(client).getResponse().get("doc");
+    assertReturnedDocValues(realtimeDocument);
+  }
+
+  private void assertReturnedDocValues(SolrDocument doc) {
+    assertEquals("dvcacheoff", doc.getFieldValue("id"));
+    assertEquals("single", doc.getFieldValue(SINGLE));
+    assertEquals(List.of("first", "second"), new ArrayList<>(doc.getFieldValues(MULTI)));
   }
 
   private void assertDocValuesMatch(
