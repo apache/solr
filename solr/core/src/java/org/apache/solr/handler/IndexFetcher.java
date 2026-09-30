@@ -381,8 +381,7 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response =
-          fetch.client().requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
+      NamedList<?> response = fetch.client().requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
