@@ -1,10 +1,11 @@
-title: The suggest search component's "suggester" config gained a "buildOnCommitAsync" flag; when
-  true, a buildOnCommit rebuild runs on a dedicated background thread instead of blocking the
-  commit itself, so a slow rebuild (a large index, or storage with throttled I/O) no longer blocks
-  every commit until it finishes. Defaults to false (unchanged, synchronous behavior). Every
+title: The suggest and spellcheck search components' config gained a "buildOnCommitAsync" flag;
+  when true, a buildOnCommit rebuild runs on a dedicated background thread instead of blocking the
+  commit itself, so a slow rebuild (a large dictionary, or storage with throttled I/O) no longer
+  blocks every commit until it finishes. Defaults to false (unchanged, synchronous behavior). Every
   /suggest response now also includes version information ("suggesterIndexVersions" on a direct
   request, "suggesterStale" on a distributed one) so callers can tell whether the suggestions
   returned reflect the current index or one a still-running rebuild hasn't caught up to yet.
+  Cache autowarming is not part of this change -- it still always runs synchronously.
 type: added
 authors:
   - name: Eric Pugh
