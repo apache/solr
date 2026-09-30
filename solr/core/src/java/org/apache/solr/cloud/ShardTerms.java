@@ -264,6 +264,18 @@ public class ShardTerms implements MapWriter {
     return new ShardTerms(newValues, version);
   }
 
+  /** Clear recovery state after the recovery attempt fails. */
+  public ShardTerms recoveryFailed(String coreNodeName) {
+    if (!values.containsKey(recoveringTerm(coreNodeName))) {
+      return null;
+    }
+
+    HashMap<String, Long> newValues = new HashMap<>(values);
+    newValues.remove(recoveringTerm(coreNodeName));
+    newValues.put(coreNodeName, 0L);
+    return new ShardTerms(newValues, version);
+  }
+
   public static String recoveringTerm(String coreNodeName) {
     return coreNodeName + RECOVERING_TERM_SUFFIX;
   }
