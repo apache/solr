@@ -375,20 +375,20 @@ public class IndexFetcher {
    * download.
    */
   @SuppressWarnings({"unchecked"})
-  private void fetchFileList(FetchAttempt attempt) throws IOException {
+  private void fetchFileList(Fetch fetch) throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_GET_FILE_LIST);
-    params.set(GENERATION, String.valueOf(attempt.generation()));
+    params.set(GENERATION, String.valueOf(fetch.generation()));
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response = request(req, attempt.fetchClient());
+      NamedList<?> response = request(req, fetch.fetchClient());
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
       else {
         filesToDownload = List.of();
-        log.error("No files to download for index generation: {}", attempt.generation());
+        log.error("No files to download for index generation: {}", fetch.generation());
       }
 
       files = (List<Map<String, Object>>) response.get(CONF_FILES);
@@ -542,7 +542,7 @@ public class IndexFetcher {
       long latestGeneration = (Long) response.get(GENERATION);
 
       log.info("Leader's generation: {}", latestGeneration);
-      FetchAttempt attempt = new FetchAttempt(fetchClient, latestGeneration);
+      Fetch fetch = new Fetch(fetchClient, latestGeneration);
       log.info("Leader's version: {}", latestVersion);
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no
@@ -612,7 +612,7 @@ public class IndexFetcher {
       }
       log.info("Starting replication process");
       // get the list of files first
-      fetchFileList(attempt);
+      fetchFileList(fetch);
       assert testWait.getAsBoolean();
       // this can happen if the commit point is deleted before we fetch the file list.
       if (filesToDownload.isEmpty()) {
@@ -716,7 +716,7 @@ public class IndexFetcher {
 
           long bytesDownloaded =
               downloadIndexFiles(
-                  isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, attempt);
+                  isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, fetch);
           final long timeTakenSeconds = getReplicationTimeElapsed();
           final Long bytesDownloadedPerSecond =
               (timeTakenSeconds != 0 ? bytesDownloaded / timeTakenSeconds : null);
@@ -732,7 +732,7 @@ public class IndexFetcher {
               getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
-            downloadConfFiles(confFilesToDownload, attempt);
+            downloadConfFiles(confFilesToDownload, fetch);
             if (isFullCopyNeeded) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (successfulInstall) deleteTmpIdxDir = false;
@@ -1111,8 +1111,7 @@ public class IndexFetcher {
     }
   }
 
-  private void downloadConfFiles(
-      List<Map<String, Object>> confFilesToDownload, FetchAttempt attempt) {
+  private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, Fetch fetch) {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
     Path tmpConfDir =
@@ -1127,8 +1126,7 @@ public class IndexFetcher {
       }
       for (Map<String, Object> file : confFilesToDownload) {
         String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-        localFileFetcher =
-            new LocalFsFileFetcher(tmpConfDir, file, saveAs, CONF_FILE_SHORT, attempt);
+        localFileFetcher = new LocalFsFileFetcher(tmpConfDir, file, saveAs, CONF_FILE_SHORT, fetch);
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
@@ -1153,7 +1151,7 @@ public class IndexFetcher {
    * @param indexDir the indexDir to be merged to
    * @param tmpIndexDir the directory to which files need to be downloaded to
    * @param indexDirPath the path of indexDir
-   * @param attempt the fetch attempt, including the generation being fetched
+   * @param fetch the fetch, including the generation being fetched
    * @return number of bytes downloaded
    */
   private long downloadIndexFiles(
@@ -1162,7 +1160,7 @@ public class IndexFetcher {
       Directory tmpIndexDir,
       String indexDirPath,
       String tmpIndexDirPath,
-      FetchAttempt attempt)
+      Fetch fetch)
       throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("Download files to dir: {}", Arrays.asList(indexDir.listAll()));
@@ -1217,7 +1215,7 @@ public class IndexFetcher {
           bytesSkippedCopying += Files.size(localFile);
         } else {
           dirFileFetcher =
-              new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, attempt);
+              new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, fetch);
           currentFile = file;
           dirFileFetcher.fetchFile();
           bytesDownloaded += dirFileFetcher.getBytesDownloaded();
@@ -1654,15 +1652,15 @@ public class IndexFetcher {
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        FetchAttempt attempt) {
+        Fetch fetch) {
       this.file = file;
-      this.fetchClient = attempt.fetchClient();
+      this.fetchClient = fetch.fetchClient();
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
       buf = new byte[(int) Math.min(this.size, ReplicationAPIBase.PACKET_SZ)];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
-      indexGen = attempt.generation();
+      indexGen = fetch.generation();
       if (includeChecksum) {
         checksum = new Adler32();
       } else {
@@ -1952,11 +1950,11 @@ public class IndexFetcher {
   }
 
   /**
-   * One attempt within a fetch: the fetch's client plus the leader generation this attempt is
-   * fetching. A fetch can make several attempts with the same client (the retry when the leader
-   * discards a generation, and the full-copy retry), each reading a fresh generation.
+   * A fetch of one leader generation: the fetch's client plus the generation being fetched. A retry
+   * (when the leader discards the generation, or the full-copy retry) reads a fresh generation and
+   * starts a new {@code Fetch} with the same client.
    */
-  private record FetchAttempt(HttpJettySolrClient fetchClient, long generation) {}
+  private record Fetch(HttpJettySolrClient fetchClient, long generation) {}
 
   private static class InvalidIndexGenerationException extends IOException {
     private final long generation;
@@ -2005,9 +2003,9 @@ public class IndexFetcher {
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        FetchAttempt attempt)
+        Fetch fetch)
         throws IOException {
-      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, attempt);
+      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, fetch);
     }
   }
 
@@ -2063,9 +2061,9 @@ public class IndexFetcher {
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        FetchAttempt attempt)
+        Fetch fetch)
         throws IOException {
-      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, attempt);
+      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, fetch);
     }
   }
 
