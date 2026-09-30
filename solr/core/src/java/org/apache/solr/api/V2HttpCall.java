@@ -209,7 +209,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   private void initAdminRequest(String path) throws Exception {
-    ensureRequest();
+    ensureRequest(path);
     requestType = AuthorizationContext.RequestType.ADMIN;
     action = ADMIN;
   }
@@ -224,7 +224,7 @@ public class V2HttpCall extends HttpSolrCall {
     if (solrReq == null) solrReq = parser.parse(core, path, req);
   }
 
-  private void ensureRequest() throws Exception {
+  private void ensureRequest(String path) throws Exception {
     if (solrReq == null) {
       solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
     }
@@ -325,7 +325,7 @@ public class V2HttpCall extends HttpSolrCall {
       SolrQueryResponse rsp,
       Map<String, String> additionalProperties) {
     try {
-      ensureRequest();
+      ensureRequest(this.path);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
