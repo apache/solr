@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -189,6 +190,55 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
       assertEquals(Level.DEBUG, aLogger.getLevel());
       assertEquals(Level.DEBUG, bLogger.getLevel());
       assertEquals(Level.DEBUG, bxLogger.getLevel());
+    }
+  }
+
+  @Test
+  public void testSetLevelWithNodesAllDoesNotNpeInStandalone() throws Exception {
+    assumeTrue("Test only works when log4j is in use", LogManager.getContext(false) != null);
+    Logger bLogger = LogManager.getLogger(B_LOGGER_NAME);
+
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
+    mparams.set("set", B_LOGGER_NAME + ":TRACE");
+    mparams.set("nodes", "all");
+
+    NamedList<Object> rsp =
+        client.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+
+    @SuppressWarnings({"unchecked"})
+    List<Map<String, Object>> updatedLoggerLevel = (List<Map<String, Object>>) rsp._get("loggers");
+    assertLoggerLevel(updatedLoggerLevel, B_LOGGER_NAME, "TRACE", true);
+    assertEquals(Level.TRACE, bLogger.getLevel());
+
+    mparams.set("set", B_LOGGER_NAME + ":unset");
+    client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+    assertEquals(Level.DEBUG, bLogger.getLevel());
+  }
+
+  @Test
+  public void testSetLevelWithExplicitNodesIsBadRequestInStandalone() throws Exception {
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
+    mparams.set("set", B_LOGGER_NAME + ":TRACE");
+    mparams.set("nodes", "example.com:8983_solr");
+
+    try {
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  client.request(
+                      new GenericSolrRequest(
+                          SolrRequest.METHOD.GET, "/admin/info/logging", mparams)));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage().contains("SolrCloud"));
+    } finally {
+      mparams.set("set", B_LOGGER_NAME + ":unset");
+      mparams.remove("nodes");
+      client.request(
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
     }
   }
 

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin.proxy;
 
 import java.util.Collection;
+import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -43,16 +44,18 @@ public class GenericV1RequestProxy extends RemoteRequestProxy {
 
   @Override
   public boolean shouldProxy() {
-    String nodeNames = params.get(getDestinationNodeParamName());
-    if (nodeNames == null || nodeNames.isEmpty()) {
-      return false; // No nodes parameter, handle locally
-    }
-    return true;
+    String paramName = getDestinationNodeParamName();
+    return shouldProxyTo(params.get(paramName), paramName);
   }
 
   @Override
   public Collection<String> getDestinationNodes() {
     return validateNodeNames(params.get(getDestinationNodeParamName()));
+  }
+
+  @Override
+  protected Set<String> validateNodeNames(String nodeNames) {
+    return validateNodeNames(nodeNames, getDestinationNodeParamName());
   }
 
   @Override

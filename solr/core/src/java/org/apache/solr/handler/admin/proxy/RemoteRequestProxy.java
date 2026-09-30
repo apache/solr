@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -117,11 +117,32 @@ public abstract class RemoteRequestProxy {
     return responses;
   }
 
+  /**
+   * Whether this request should be forwarded to other nodes.
+   *
+   * <p>Missing or empty {@code nodeNames} is always local. In user-managed (standalone) mode,
+   * {@code all} also means this node only. Any other standalone value still returns true so {@link
+   * #validateNodeNames(String, String)} can reject it with 400.
+   */
+  protected boolean shouldProxyTo(String nodeNames) {
+    return shouldProxyTo(nodeNames, PARAM_NODES);
+  }
+
+  protected boolean shouldProxyTo(String nodeNames, String paramName) {
+    if (nodeNames == null || nodeNames.isEmpty()) {
+      return false;
+    }
+    if (coreContainer == null || !coreContainer.isZooKeeperAware()) {
+      return !"all".equals(nodeNames);
+    }
+    return true;
+  }
+
   /** Makes a remote request asynchronously. */
   private CompletableFuture<NamedList<Object>> callRemoteNode(
       String nodeName, SolrRequest<?> solrRequest) {
 
-    final var zkController = coreContainer.getZkController();
+    final var zkController = requireZkController(PARAM_NODES);
     // Validate that the node exists in the cluster
     if (!zkController.zkStateReader.getClusterState().getLiveNodes().contains(nodeName)) {
       throw new SolrException(
@@ -133,7 +154,9 @@ public abstract class RemoteRequestProxy {
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
 
     try {
-      return ((HttpJettySolrClient) zkController.getCoreContainer().getDefaultHttpSolrClient())
+      return zkController
+          .getCoreContainer()
+          .getDefaultHttpSolrClient()
           .requestWithBaseUrl(baseUri.toString(), c -> c.requestAsync(solrRequest));
     } catch (SolrServerException | IOException e) {
       // requestWithBaseUrl declares it throws these but it actually depends on the lambda
@@ -150,8 +173,12 @@ public abstract class RemoteRequestProxy {
    * @throws SolrException if node format is invalid
    */
   protected Set<String> validateNodeNames(String nodeNames) {
-    Set<String> liveNodes =
-        coreContainer.getZkController().zkStateReader.getClusterState().getLiveNodes();
+    return validateNodeNames(nodeNames, PARAM_NODES);
+  }
+
+  protected Set<String> validateNodeNames(String nodeNames, String paramName) {
+    ZkController zkController = requireZkController(paramName);
+    Set<String> liveNodes = zkController.zkStateReader.getClusterState().getLiveNodes();
 
     if (nodeNames.equals("all")) {
       log.debug("All live nodes requested");
@@ -162,10 +189,26 @@ public abstract class RemoteRequestProxy {
     for (String nodeName : nodes) {
       if (!nodeName.matches("^[^/:]+:\\d+_[\\w/]+$")) {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " has wrong format");
+            SolrException.ErrorCode.BAD_REQUEST, "Parameter " + paramName + " has wrong format");
       }
     }
     log.debug("Nodes requested: {}", nodes);
     return nodes;
+  }
+
+  private ZkController requireZkController(String paramName) {
+    ZkController zkController = coreContainer == null ? null : coreContainer.getZkController();
+    if (zkController == null) {
+      throw requireSolrCloud(paramName);
+    }
+    return zkController;
+  }
+
+  private static SolrException requireSolrCloud(String paramName) {
+    return new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        "Parameter '"
+            + paramName
+            + "' requires SolrCloud except for the value 'all', which is treated as this node");
   }
 }
