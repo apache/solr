@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -52,7 +54,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
@@ -764,6 +768,54 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       NamedList<Object> response = base.requestAsync(req).get(10, TimeUnit.SECONDS);
+      try (InputStream is = (InputStream) response.get("stream")) {
+        assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+      }
+    }
+  }
+
+  @Test
+  public void testAbortFailsSyncRequestInFlightWhenOptedIn() throws Exception {
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("syncRequest"));
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
+            .withAbortableSyncRequests(true)
+            .build()) {
+      Future<NamedList<Object>> call = executor.submit(() -> client.request(new QueryRequest()));
+      // Let the request reach the servlet, which then sends nothing for 5s.
+      Thread.sleep(500);
+      client.abort(new IOException("test abort"));
+      ExecutionException e =
+          expectThrows(ExecutionException.class, () -> call.get(2, TimeUnit.SECONDS));
+      assertTrue(e.getCause().toString(), e.getCause() instanceof SolrServerException);
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+  }
+
+  @Test
+  public void testAbortFailsLaterSyncRequestsWhenOptedIn() {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .withAbortableSyncRequests(true)
+            .build()) {
+      client.abort(new IOException("test abort"));
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      expectThrows(SolrServerException.class, () -> client.request(req));
+    }
+  }
+
+  @Test
+  public void testAbortSkipsSyncRequestsByDefault() throws Exception {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .build()) {
+      client.abort(new IOException("test abort"));
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      NamedList<Object> response = client.request(req);
       try (InputStream is = (InputStream) response.get("stream")) {
         assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
       }
