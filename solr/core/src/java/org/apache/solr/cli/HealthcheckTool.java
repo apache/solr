@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -93,7 +94,10 @@ public class HealthcheckTool extends ToolBase {
             cli.getOptionValue(COLLECTION_NAME_OPTION),
             cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     var builder =
-        new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(params.credentials());
+        new HttpJettySolrClient.Builder()
+            .withIdleTimeout(CLIUtils.CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withConnectionTimeout(CLIUtils.CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(params.credentials());
     try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
       echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
       runCloudTool(cloudSolrClient, params);

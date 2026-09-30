@@ -254,7 +254,11 @@ public class ExportTool extends ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+      var builder =
+          new HttpJettySolrClient.Builder()
+              .withIdleTimeout(CLIUtils.CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+              .withConnectionTimeout(CLIUtils.CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+              .withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
           new CloudSolrClient.Builder(List.of(baseurl)).withHttpClientBuilder(builder).build();

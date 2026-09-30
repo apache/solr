@@ -104,8 +104,8 @@ public class DeleteTool extends ToolBase {
   protected void deleteCollection(CommandLine cli) throws Exception {
     var builder =
         new HttpJettySolrClient.Builder()
-            .withIdleTimeout(30, TimeUnit.SECONDS)
-            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withIdleTimeout(CLIUtils.CLI_IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .withConnectionTimeout(CLIUtils.CLI_CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
