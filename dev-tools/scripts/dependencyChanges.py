@@ -186,8 +186,8 @@ def main():
       print(f'{category.capitalize()}: ' + ('; '.join(changes[category]) or '(none)'))
     return
 
-  for category in CATEGORIES:
-    path = os.path.join(args.write, f'dependency-changes-{category}.yml')
+  for i, category in enumerate(CATEGORIES, 1):  # numbered so the changelog lists them in this order
+    path = os.path.join(args.write, f'dependency-changes-{i}-{category}.yml')
     if changes[category]:
       title = f'Third-party dependencies {category} since {since}: ' + '; '.join(changes[category])
       with open(path, 'w', encoding='utf-8') as f:
