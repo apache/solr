@@ -214,8 +214,7 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals(1, ops.size());
     assertEquals("second.Class", ops.get(0).getDataMap().get("class"));
     @SuppressWarnings("unchecked")
-    Map<String, Object> defaults =
-        (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    Map<String, Object> defaults = (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
     assertEquals(asList("subject", "country"), defaults.get("facet.field"));
   }
 
