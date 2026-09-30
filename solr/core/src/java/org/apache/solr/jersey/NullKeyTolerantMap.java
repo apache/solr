@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A {@link Map} that renders identically to a plain {@link LinkedHashMap} everywhere except
- * through Jackson.
+ * A {@link Map} that renders identically to a plain {@link LinkedHashMap} everywhere except through
+ * Jackson.
  *
  * <p>{@code org.apache.solr.core.PluginInfo#writeMap} groups a plugin's unnamed children (e.g.
  * anonymous {@code <processor>} entries under an {@code updateRequestProcessorChain}) under a
@@ -36,8 +36,8 @@ import java.util.Map;
  * omits null-valued entries entirely.
  *
  * <p>Wrap a config/plugin-derived map in this class to let the v2/JAX-RS (Jackson) response path
- * render a self-describing key in place of the null key and keep null values, without changing
- * what any non-Jackson consumer (e.g. a v1 handler reading the same map instance) sees.
+ * render a self-describing key in place of the null key and keep null values, without changing what
+ * any non-Jackson consumer (e.g. a v1 handler reading the same map instance) sees.
  */
 public class NullKeyTolerantMap extends LinkedHashMap<String, Object> implements JsonSerializable {
 
