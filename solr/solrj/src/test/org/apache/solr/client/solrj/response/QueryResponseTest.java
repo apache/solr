@@ -327,7 +327,8 @@ public class QueryResponseTest extends SolrTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = "testing a same-version Java serialization round-trip on locally generated data")
+  @SuppressForbidden(
+      reason = "testing a same-version Java serialization round-trip on locally generated data")
   public void testQueryResponseSerialization() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response;
