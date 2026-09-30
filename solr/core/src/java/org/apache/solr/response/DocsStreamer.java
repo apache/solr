@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -214,9 +215,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     for (String name : new ArrayList<>(doc.getFieldNames())) {
       Object val = doc.getFieldValue(name);
       Object converted = externalizeValue(val, schema);
-      if (converted == FAILED_STORED_VALUE) {
+      if (FAILED_STORED_VALUE.equals(converted)) {
         doc.remove(name);
-      } else if (converted != val) {
+      } else if (!Objects.equals(converted, val)) {
         doc.setField(name, converted);
       }
     }
@@ -246,11 +247,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       boolean changed = false;
       for (Object item : coll) {
         Object converted = externalizeValue(item, schema);
-        if (converted == FAILED_STORED_VALUE) {
+        if (FAILED_STORED_VALUE.equals(converted)) {
           changed = true;
           continue;
         }
-        changed |= converted != item;
+        changed |= !Objects.equals(converted, item);
         out.add(converted);
       }
       return changed ? (out.isEmpty() ? FAILED_STORED_VALUE : out) : val;
