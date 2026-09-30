@@ -28,11 +28,11 @@ import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -154,10 +154,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
 
     QueryRequest realtimeGet =
         new QueryRequest(
-            "/get",
-            new ModifiableSolrParams()
-                .set("id", "dvcacheoff")
-                .set("fl", "id,s*,m*"));
+            "/get", new ModifiableSolrParams().set("id", "dvcacheoff").set("fl", "id,s*,m*"));
     SolrDocument realtimeDocument =
         (SolrDocument) realtimeGet.process(client).getResponse().get("doc");
     assertReturnedDocValues(realtimeDocument);
