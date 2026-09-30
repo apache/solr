@@ -204,7 +204,6 @@ _Query Sizing and Warming_
 
 * `query.maxBooleanClauses`
 * `query.enableLazyFieldLoading`
-* `query.enableDocValuesIteratorCache`
 * `query.useFilterForSortedQuery`
 * `query.queryResultWindowSize`
 * `query.queryResultMaxDocCached`
@@ -727,7 +726,7 @@ Multi-valued request-handler parameters such as `facet.field` should be sent as 
 }
 ----
 
-Repeated keys in the same nested object are accepted and folded into that same list.
+Repeated parameter names in `defaults`, `appends`, and `invariants` are accepted and folded into that same list.
 Strict JSON clients cannot emit duplicate keys, so arrays are the portable encoding.
 
 The QueryElevationComponent searchComponent in `solrconfig.xml` looks like this:

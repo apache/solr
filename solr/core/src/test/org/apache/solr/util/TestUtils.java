@@ -183,6 +183,42 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals(asList("subject", "country"), defaults.get("facet.field"));
   }
 
+  public void testCommandOperationOtherNestedDuplicateKeysRemainLastWins() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'set-property':{"
+                    + "  'updateHandler.autoCommit.maxDocs':10,"
+                    + "  'updateHandler.autoCommit.maxDocs':20"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    assertEquals(
+        20, ((Number) ops.get(0).getDataMap().get("updateHandler.autoCommit.maxDocs")).intValue());
+  }
+
+  public void testCommandOperationOnlyAccumulatesRequestHandlerParameters() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'class':'first.Class',"
+                    + "  'class':'second.Class',"
+                    + "  'defaults':{'facet.field':'subject','facet.field':'country'}"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    assertEquals("second.Class", ops.get(0).getDataMap().get("class"));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaults =
+        (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    assertEquals(asList("subject", "country"), defaults.get("facet.field"));
+  }
+
   public void testCommandOperationTopLevelRepeatsStaySeparate() throws IOException {
     List<CommandOperation> ops =
         CommandOperation.parse(
