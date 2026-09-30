@@ -428,18 +428,6 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="edge_ngram_text" class="solr.TextField">
-    <analyzer type="index">
-      <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.EdgeNGramFilterFactory" minGramSize="1" maxGramSize="20"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
   <fieldType name="uuid" class="solr.UUIDField"/>
 
   <!-- Try out some point types -->
@@ -654,7 +642,6 @@
   <field name="sku2" type="skutype2" indexed="true" stored="true"/>
 
   <field name="textgap" type="textgap" indexed="true" stored="true"/>
-  <field name="edge_ngram_text" type="edge_ngram_text" indexed="true" stored="true"/>
 
   <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
   <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
