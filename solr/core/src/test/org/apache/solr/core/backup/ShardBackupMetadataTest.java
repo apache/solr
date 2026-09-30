@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.DelegatingBackupRepository;
@@ -37,7 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ShardBackupMetadata} overwrite behavior. */
-public class ShardBackupMetadataTest extends SolrTestCaseJ4 {
+public class ShardBackupMetadataTest extends SolrTestCase {
 
   private LocalFileSystemRepository repository;
   private URI folder;
