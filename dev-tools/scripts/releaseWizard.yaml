@@ -672,6 +672,29 @@ groups:
     types:
     - bugfix
   - !Todo
+    id: dependency_updates_changes
+    title: Add dependency updates to changelog
+    description: |
+      Add a single changelog entry summarizing third-party dependency changes since the previous release,
+      derived from the jar checksum files in `solr/licenses/`.
+      Re-running it overwrites the entry, e.g. if dependencies changed before a respin.
+      Run the script without `--write` to just print the summary.
+    depends: clean_git_checkout
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: We call out to a helper script that writes `changelog/unreleased/dependency-changes.yml`
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        stdout: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/dependencyChanges.py --write
+        tee: true
+      - !Command
+        cmd: git add changelog  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
+        logfile: dependency-changes.log
+  - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
     description: |-
@@ -742,7 +765,7 @@ groups:
       step before anything is committed or pushed.
 
       Can be run standalone, see `dev-tools/scripts/logchange.py prepare --help`.
-    depends: clean_git_checkout
+    depends: dependency_updates_changes
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Prepare changelog folder and regenerate CHANGELOG.md for RC{{ rc_number }} (uncommitted)
