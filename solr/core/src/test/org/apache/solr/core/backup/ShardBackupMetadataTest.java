@@ -18,7 +18,13 @@ package org.apache.solr.core.backup;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -96,11 +102,35 @@ public class ShardBackupMetadataTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDefaultWriteAtomicallyUsesCreateOutputAndSkipsDelete() throws Exception {
+  public void testUnsupportedAtomicMovePreservesExistingMetadataAndCleansTempFile()
+      throws Exception {
+    metadata("uniq1", "orig1", new Checksum(1L, 10)).store(repository, folder, shardBackupId);
+    URI dest = repository.resolve(folder, shardBackupId.getBackupMetadataFilename());
+    byte[] previousMetadata = Files.readAllBytes(Path.of(dest));
+
+    UnsupportedAtomicMoveRepository unsupported = new UnsupportedAtomicMoveRepository();
+    unsupported.init(new NamedList<>());
+    expectThrows(
+        AtomicMoveNotSupportedException.class,
+        () ->
+            metadata("uniq2", "orig2", new Checksum(2L, 20))
+                .store(unsupported, folder, shardBackupId));
+
+    assertArrayEquals(previousMetadata, Files.readAllBytes(Path.of(dest)));
+    String[] files = repository.listAll(folder);
+    assertEquals("the failed publication must not leave its sibling temp file", 1, files.length);
+    assertEquals(shardBackupId.getBackupMetadataFilename(), files[0]);
+    ShardBackupMetadata loaded = ShardBackupMetadata.from(repository, folder, shardBackupId);
+    assertEquals(List.of("uniq1"), loaded.listUniqueFileNames());
+  }
+
+  @Test
+  public void testInterfaceDefaultWriteAtomicallyUsesCreateOutput() throws Exception {
     metadata("uniq1", "orig1", new Checksum(1L, 10)).store(repository, folder, shardBackupId);
 
-    DefaultWriteRecordingRepository recording = new DefaultWriteRecordingRepository(repository);
-    metadata("uniq2", "orig2", new Checksum(2L, 20)).store(recording, folder, shardBackupId);
+    RecordingBackupRepository recording = new RecordingBackupRepository(repository);
+    BackupRepository interfaceDefault = usingInterfaceDefaultWriteAtomically(recording);
+    metadata("uniq2", "orig2", new Checksum(2L, 20)).store(interfaceDefault, folder, shardBackupId);
 
     assertTrue(recording.deleted.isEmpty());
     assertEquals(1, recording.created.size());
@@ -110,6 +140,24 @@ public class ShardBackupMetadataTest extends SolrTestCaseJ4 {
 
     ShardBackupMetadata loaded = ShardBackupMetadata.from(repository, folder, shardBackupId);
     assertEquals(List.of("uniq2"), loaded.listUniqueFileNames());
+  }
+
+  private static BackupRepository usingInterfaceDefaultWriteAtomically(
+      RecordingBackupRepository recording) {
+    return (BackupRepository)
+        Proxy.newProxyInstance(
+            BackupRepository.class.getClassLoader(),
+            new Class<?>[] {BackupRepository.class},
+            (proxy, method, args) -> {
+              if (method.isDefault()) {
+                return InvocationHandler.invokeDefault(proxy, method, args);
+              }
+              try {
+                return method.invoke(recording, args);
+              } catch (InvocationTargetException e) {
+                throw e.getCause();
+              }
+            });
   }
 
   private static ShardBackupMetadata metadata(
@@ -153,20 +201,11 @@ public class ShardBackupMetadataTest extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * Uses the interface default {@code writeAtomically} so the test can observe {@code createOutput}
-   * instead of the LocalFS temp-file override.
-   */
-  private static class DefaultWriteRecordingRepository extends RecordingBackupRepository {
-    DefaultWriteRecordingRepository(BackupRepository delegate) {
-      super(delegate);
-    }
-
+  private static class UnsupportedAtomicMoveRepository extends LocalFileSystemRepository {
     @Override
-    public void writeAtomically(URI path, byte[] data) throws IOException {
-      try (OutputStream os = createOutput(path)) {
-        os.write(data);
-      }
+    protected void moveAtomically(Path temp, Path dest) throws IOException {
+      throw new AtomicMoveNotSupportedException(
+          temp.toString(), dest.toString(), "injected unsupported atomic move");
     }
   }
 }

@@ -104,8 +104,9 @@ public class ShardBackupMetadata {
   }
 
   /**
-   * Store this metadata at {@code folderURI} under the shard backup id's filename. An existing file
-   * is replaced only after the new JSON is fully serialized.
+   * Store this metadata at {@code folderURI} under the shard backup id's filename. The JSON is
+   * serialized completely before publication is attempted; atomicity and failure behavior depend on
+   * the repository's {@link BackupRepository#writeAtomically(URI, byte[])} implementation.
    */
   public void store(BackupRepository repository, URI folderURI, ShardBackupId shardBackupId)
       throws IOException {

@@ -1,4 +1,4 @@
-title: Replace shard backup metadata atomically so a failed overwrite cannot destroy the previous file.
+title: Stage shard backup metadata before publication and fail rather than fall back to a non-atomic local move.
 type: fixed
 authors:
   - name: Nick Shanin
