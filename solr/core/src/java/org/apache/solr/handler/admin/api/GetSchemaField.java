@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin.api;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaGetDynamicFieldInfoResponse;
@@ -48,6 +49,7 @@ import org.apache.solr.security.PermissionNameProvider;
  *   <li>/fields
  *   <li>/fields/{fieldName}
  *   <li>/copyfields
+ *   <li>/copyfields/{sourceField}
  *   <li>/dynamicfields
  *   <li>/dynamicfields/{fieldName}
  *   <li>/fieldtypes
@@ -104,6 +106,18 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
     final String realName = "copyfields";
 
     response.copyFields = listAllFieldsOfType(realName, params);
+
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaListCopyFieldsResponse listCopyFieldsBySource(String sourceField) {
+    SchemaListCopyFieldsResponse response =
+        instantiateJerseyResponse(SchemaListCopyFieldsResponse.class);
+
+    response.copyFields =
+        List.copyOf(indexSchema.getCopyFieldProperties(false, Set.of(sourceField), null));
 
     return response;
   }
