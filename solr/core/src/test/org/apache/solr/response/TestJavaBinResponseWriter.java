@@ -18,10 +18,14 @@ package org.apache.solr.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -32,6 +36,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.JavaBinResponseWriter.Resolver;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 
@@ -120,6 +127,88 @@ public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
       assertEquals(List.of(7, 11), multiValued);
     } finally {
       req.close();
+      clearIndex();
+      assertU(commit());
+    }
+  }
+
+  public void testInvalidStoredValueDoesNotAbortJavaBinResponse() throws Exception {
+    assertU(adoc("id", "javabin-invalid-stored-value"));
+    assertU(commit());
+
+    SolrQueryRequest req = req("q", "id:javabin-invalid-stored-value", "fl", "bad_s,good_i,good_s");
+    try {
+      SolrQueryResponse rsp = h.queryAndResponse(null, req);
+      ResultContext original = (ResultContext) rsp.getResponse();
+      SolrDocument doc = new SolrDocument();
+      doc.setField(
+          "bad_s",
+          new Field("bad_s", "unused", StringField.TYPE_STORED) {
+            @Override
+            public String stringValue() {
+              throw new IllegalStateException("synthetic stored-value conversion failure");
+            }
+
+            @Override
+            public String toString() {
+              return "bad_s";
+            }
+          });
+      doc.setField("good_i", req.getSchema().getField("good_i").createField(7));
+      doc.setField("good_s", new StringField("good_s", "still-returned", Field.Store.YES));
+
+      ResultContext withInvalidField =
+          new ResultContext() {
+            @Override
+            public DocList getDocList() {
+              return original.getDocList();
+            }
+
+            @Override
+            public ReturnFields getReturnFields() {
+              return original.getReturnFields();
+            }
+
+            @Override
+            public SolrIndexSearcher getSearcher() {
+              return original.getSearcher();
+            }
+
+            @Override
+            public Query getQuery() {
+              return original.getQuery();
+            }
+
+            @Override
+            public SolrQueryRequest getRequest() {
+              return original.getRequest();
+            }
+
+            @Override
+            public Iterator<SolrDocument> getProcessedDocuments() {
+              return List.of(doc).iterator();
+            }
+          };
+      rsp.getValues().remove("response");
+      rsp.add("response", withInvalidField);
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      h.getCore().getQueryResponseWriter("javabin").write(baos, req, rsp);
+
+      NamedList<?> response;
+      try (JavaBinCodec codec = new JavaBinCodec()) {
+        response = (NamedList<?>) codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+      }
+      SolrDocumentList docs = (SolrDocumentList) response.get("response");
+      assertEquals(1, docs.size());
+      SolrDocument returned = docs.get(0);
+      assertFalse(returned.containsKey("bad_s"));
+      assertEquals(Integer.valueOf(7), returned.getFieldValue("good_i"));
+      assertEquals("still-returned", returned.getFieldValue("good_s"));
+    } finally {
+      req.close();
+      clearIndex();
+      assertU(commit());
     }
   }
 

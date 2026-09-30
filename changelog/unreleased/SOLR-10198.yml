@@ -1,4 +1,4 @@
-title: Convert Lucene stored fields to native types in EmbeddedSolrServer streaming responses.
+title: Normalize Lucene stored fields to SolrJ-native types in JavaBin responses, including EmbeddedSolrServer streaming.
 type: fixed
 authors:
   - name: Nick Shanin

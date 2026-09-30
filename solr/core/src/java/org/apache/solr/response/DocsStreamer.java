@@ -19,6 +19,7 @@ package org.apache.solr.response;
 import static org.apache.solr.schema.FieldType.ExternalizeStoredValuesAsObjects;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -55,9 +56,14 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrReturnFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** This streams SolrDocuments from a DocList and applies transformer */
 public class DocsStreamer implements Iterator<SolrDocument> {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Object FAILED_STORED_VALUE = new Object();
+
   /**
    * A hardcoded list of known Solr field types that will be trusted to control their own conversion
    * of stored field values into external Objects (via {@link FieldType#toObject}) when returning
@@ -190,8 +196,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   /**
    * Replace Lucene {@link IndexableField} values on a {@link SolrDocument} (and nested / child
    * documents) with the SolrJ-native objects that clients see after JavaBin deserialization. Used
-   * by JavaBin response writing generally, including the EmbeddedSolrServer streaming path, so
-   * {@code queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
+   * for JavaBin response normalization generally, including the EmbeddedSolrServer streaming path,
+   * so {@code queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
+   *
+   * <p>A stored value that cannot be converted is logged and omitted; conversion continues for the
+   * remaining values and fields.
    *
    * <p>Do not call this from {@link #convertLuceneDocToSolrDoc}; JSON/XML writers and some
    * transformers still expect stored fields as {@link IndexableField}.
@@ -205,7 +214,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     for (String name : new ArrayList<>(doc.getFieldNames())) {
       Object val = doc.getFieldValue(name);
       Object converted = externalizeValue(val, schema);
-      if (converted != val) {
+      if (converted == FAILED_STORED_VALUE) {
+        doc.remove(name);
+      } else if (converted != val) {
         doc.setField(name, converted);
       }
     }
@@ -220,7 +231,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   private static Object externalizeValue(Object val, IndexSchema schema) {
     if (val instanceof IndexableField f) {
-      return getValue(schema.getFieldOrNull(f.name()), f);
+      try {
+        return getValue(schema.getFieldOrNull(f.name()), f);
+      } catch (Exception e) {
+        log.warn("Error reading a field : {}", f, e);
+        return FAILED_STORED_VALUE;
+      }
     }
     if (val instanceof SolrDocument nested) {
       return externalizeStoredValues(nested, schema);
@@ -230,10 +246,14 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       boolean changed = false;
       for (Object item : coll) {
         Object converted = externalizeValue(item, schema);
+        if (converted == FAILED_STORED_VALUE) {
+          changed = true;
+          continue;
+        }
         changed |= converted != item;
         out.add(converted);
       }
-      return changed ? out : val;
+      return changed ? (out.isEmpty() ? FAILED_STORED_VALUE : out) : val;
     }
     return val;
   }
