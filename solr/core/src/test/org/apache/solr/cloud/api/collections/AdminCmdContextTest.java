@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.junit.Assert.assertEquals;
@@ -27,10 +28,16 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for {@link AdminCmdContext}. */
 public class AdminCmdContextTest extends SolrTestCase {
+
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
 
   @Test
   public void toleratesNullRequest() {
