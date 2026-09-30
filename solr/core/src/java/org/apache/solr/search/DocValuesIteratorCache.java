@@ -97,7 +97,7 @@ public class DocValuesIteratorCache {
   }
 
   /** Whether this instance retains per-field suppliers across calls to {@link #getSupplier}. */
-  public boolean isCaching() {
+  boolean isCaching() {
     return cache;
   }
 

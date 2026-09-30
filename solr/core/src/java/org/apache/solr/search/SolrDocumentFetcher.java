@@ -232,7 +232,7 @@ public class SolrDocumentFetcher {
     return enableLazyFieldLoading;
   }
 
-  public boolean isDocValuesIteratorCacheEnabled() {
+  boolean isDocValuesIteratorCacheEnabled() {
     return enableDocValuesIteratorCache;
   }
 
