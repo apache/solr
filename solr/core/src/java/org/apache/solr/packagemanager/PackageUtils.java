@@ -91,7 +91,7 @@ public class PackageUtils {
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     try (final var stream = new ByteBufferInputStream(buffer)) {
-      final var uploadReq = new FileStoreApi.UploadFile(name, stream);
+      final var uploadReq = new FileStoreApi.UploadFile(name, stream, "application/octet-stream");
       if (sig != null) {
         uploadReq.setSig(List.of(sig));
       }

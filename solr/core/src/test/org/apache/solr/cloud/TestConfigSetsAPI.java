@@ -1219,7 +1219,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       try (InputStream fileBytes = new FileInputStream(file.toFile())) {
         // Create and execute the upload request using generated client
         final var uploadRequest =
-            new ConfigsetsApi.UploadConfigSet(configSetName + suffix, fileBytes);
+            new ConfigsetsApi.UploadConfigSet(configSetName + suffix, fileBytes, "application/zip");
         uploadRequest.setOverwrite(overwrite);
         uploadRequest.setCleanup(cleanup);
 
@@ -1280,7 +1280,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         // Create and execute the upload request using generated client
         final var uploadRequest =
             new ConfigsetsApi.UploadConfigSetFile(
-                configSetName + suffix, uploadPath, sampleConfigFile);
+                configSetName + suffix, uploadPath, sampleConfigFile, "application/octet-stream");
 
         final var response = uploadRequest.process(cluster.getSolrClient());
         return response.responseHeader.status;

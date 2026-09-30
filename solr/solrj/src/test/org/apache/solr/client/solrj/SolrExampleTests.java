@@ -30,6 +30,8 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -57,6 +60,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -104,8 +108,16 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public static void beforeTest() throws Exception {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    solrTestRule.startSolr();
-    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    Path solrHome = createTempDir("solrhome");
+    Path configSet = solrHome.resolve("configsets/techproducts/conf");
+    Files.createDirectories(configSet);
+    PathUtils.copyDirectory(ExternalPaths.TECHPRODUCTS_CONFIGSET, configSet);
+    solrTestRule.startSolr(solrHome);
+    solrTestRule.newCollection().withConfigSet(configSet).create();
+    new SchemaRequest.DeleteField("_nest_path_")
+        .process(solrTestRule.getSolrClient(), DEFAULT_TEST_COLLECTION_NAME);
+    new SchemaRequest.DeleteField("_nest_parent_")
+        .process(solrTestRule.getSolrClient(), DEFAULT_TEST_COLLECTION_NAME);
   }
 
   @Test
@@ -1038,6 +1050,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertNumFound("*:*", doc.length); // make sure it got in
 
     LukeRequest luke = new LukeRequest();
+    // LukeResponse expects the NamedList representation used by the binary response parser.
+    luke.setResponseParser(new JavaBinResponseParser());
     luke.setShowSchema(false);
     LukeResponse rsp = luke.process(client);
     assertNull(rsp.getFieldTypeInfo()); // if you don't ask for it, the schema is null

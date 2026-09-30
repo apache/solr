@@ -20,10 +20,10 @@
 <div id="documents" class="clearfix">
   <div id="form">
     <form>
-      <label for="qt">
-        <a rel="help">Request-Handler (qt)</a>
-      </label>
-      <input ng-model="handler" type="text" id="qt" value="/update" title="Request handler in solrconfig.xml.">
+      <div class="description">
+        Documents are submitted to the v2 endpoint
+        <code>/api/{{isCloudEnabled ? 'collections' : 'cores'}}/{{currentCollection.name || currentCore.name}}/update</code>.
+      </div>
       <label for="document-type">
         <a rel="help">Document Type</a>
       </label>
@@ -34,7 +34,7 @@
         <option value="wizard">Document Builder</option>
         <option value="upload">File Upload</option>
         <option value="json">JSON</option>
-        <option value="solr">Solr Command (raw XML or JSON)</option>
+        <option value="solr-json">Solr Command (raw JSON)</option>
         <option value="xml">XML</option>
       </select>
       </div>
@@ -107,5 +107,3 @@
 
   </div>
 </div>
-
-
