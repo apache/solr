@@ -97,8 +97,8 @@ public class DelegatingBackupRepository extends AbstractBackupRepository {
   }
 
   @Override
-  public void writeAtomically(URI path, byte[] data) throws IOException {
-    delegate.writeAtomically(path, data);
+  public void writeBytes(URI path, byte[] data) throws IOException {
+    delegate.writeBytes(path, data);
   }
 
   @Override

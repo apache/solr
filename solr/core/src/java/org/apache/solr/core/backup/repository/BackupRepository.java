@@ -150,12 +150,12 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   /**
    * Write {@code data} to {@code path} using this repository's output semantics.
    *
-   * <p>The default implementation writes directly through {@link #createOutput(URI)}. It does not
-   * itself stage the bytes or guarantee atomic publication or preservation of an existing object if
-   * writing fails. Any such guarantees depend on the concrete repository's {@code createOutput}
-   * implementation or an override of this method.
+   * <p>The default implementation writes directly through {@link #createOutput(URI)} and makes no
+   * atomicity guarantee: it does not stage the bytes, and a failed write may leave a partially
+   * written or replaced object. Repositories whose backing store supports it may override this
+   * method to stage the bytes and publish them atomically.
    */
-  default void writeAtomically(URI path, byte[] data) throws IOException {
+  default void writeBytes(URI path, byte[] data) throws IOException {
     try (OutputStream os = createOutput(path)) {
       os.write(data);
     }

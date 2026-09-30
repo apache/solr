@@ -105,15 +105,15 @@ public class ShardBackupMetadata {
 
   /**
    * Store this metadata at {@code folderURI} under the shard backup id's filename. The JSON is
-   * serialized completely before publication is attempted; atomicity and failure behavior depend on
-   * the repository's {@link BackupRepository#writeAtomically(URI, byte[])} implementation.
+   * serialized completely before the repository is asked to write it; whether publication is atomic
+   * depends on the repository's {@link BackupRepository#writeBytes(URI, byte[])} implementation.
    */
   public void store(BackupRepository repository, URI folderURI, ShardBackupId shardBackupId)
       throws IOException {
     final String filename = shardBackupId.getBackupMetadataFilename();
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     store(buffer);
-    repository.writeAtomically(repository.resolve(folderURI, filename), buffer.toByteArray());
+    repository.writeBytes(repository.resolve(folderURI, filename), buffer.toByteArray());
   }
 
   public Collection<String> listOriginalFileNames() {

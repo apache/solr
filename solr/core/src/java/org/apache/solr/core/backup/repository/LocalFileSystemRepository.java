@@ -119,18 +119,16 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
   }
 
   /**
-   * Stage the bytes in a sibling file and ask the filesystem provider to publish it with an atomic
-   * move.
+   * Stage the bytes in a sibling file and publish them by moving the staged file onto {@code path}
+   * atomically, replacing any existing file.
    *
    * <p>This method does not fall back to a non-atomic move. If the provider cannot perform the
-   * atomic move, the failure is propagated and cleanup of the staged file is attempted. Java NIO
-   * leaves replacement of an existing target provider-specific even when an atomic move is
-   * supported, so this method does not promise portable atomic replacement.
+   * atomic move, the failure is propagated and cleanup of the staged file is attempted.
    *
    * @throws IOException if writing or the requested atomic move fails
    */
   @Override
-  public void writeAtomically(URI path, byte[] data) throws IOException {
+  public void writeBytes(URI path, byte[] data) throws IOException {
     Path dest = Path.of(path);
     Path temp = dest.resolveSibling(dest.getFileName().toString() + ".tmp." + UUID.randomUUID());
     try {
@@ -146,9 +144,9 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
     }
   }
 
-  /** Performs the atomic move used by {@link #writeAtomically(URI, byte[])}. */
+  /** Performs the atomic move used by {@link #writeBytes(URI, byte[])}. */
   protected void moveAtomically(Path temp, Path dest) throws IOException {
-    Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE);
+    Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
   }
 
   @Override

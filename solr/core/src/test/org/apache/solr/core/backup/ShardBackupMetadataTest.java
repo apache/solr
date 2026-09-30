@@ -26,6 +26,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import org.apache.solr.SolrTestCase;
@@ -75,7 +76,7 @@ public class ShardBackupMetadataTest extends SolrTestCase {
 
     assertTrue("overwrite must not delete the previous metadata file", recording.deleted.isEmpty());
     assertTrue(
-        "LocalFS writeAtomically writes a sibling temp file instead of createOutput",
+        "LocalFS writeBytes writes a sibling temp file instead of createOutput",
         recording.created.isEmpty());
 
     ShardBackupMetadata loaded = ShardBackupMetadata.from(repository, folder, shardBackupId);
@@ -118,18 +119,22 @@ public class ShardBackupMetadataTest extends SolrTestCase {
 
     assertArrayEquals(previousMetadata, Files.readAllBytes(Path.of(dest)));
     String[] files = repository.listAll(folder);
-    assertEquals("the failed publication must not leave its sibling temp file", 1, files.length);
+    assertEquals(
+        "the failed publication must not leave its sibling temp file, found: "
+            + Arrays.toString(files),
+        1,
+        files.length);
     assertEquals(shardBackupId.getBackupMetadataFilename(), files[0]);
     ShardBackupMetadata loaded = ShardBackupMetadata.from(repository, folder, shardBackupId);
     assertEquals(List.of("uniq1"), loaded.listUniqueFileNames());
   }
 
   @Test
-  public void testInterfaceDefaultWriteAtomicallyUsesCreateOutput() throws Exception {
+  public void testInterfaceDefaultWriteBytesUsesCreateOutput() throws Exception {
     metadata("uniq1", "orig1", new Checksum(1L, 10)).store(repository, folder, shardBackupId);
 
     RecordingBackupRepository recording = new RecordingBackupRepository(repository);
-    BackupRepository interfaceDefault = usingInterfaceDefaultWriteAtomically(recording);
+    BackupRepository interfaceDefault = usingInterfaceDefaultWriteBytes(recording);
     metadata("uniq2", "orig2", new Checksum(2L, 20)).store(interfaceDefault, folder, shardBackupId);
 
     assertTrue(recording.deleted.isEmpty());
@@ -142,7 +147,7 @@ public class ShardBackupMetadataTest extends SolrTestCase {
     assertEquals(List.of("uniq2"), loaded.listUniqueFileNames());
   }
 
-  private static BackupRepository usingInterfaceDefaultWriteAtomically(
+  private static BackupRepository usingInterfaceDefaultWriteBytes(
       RecordingBackupRepository recording) {
     return (BackupRepository)
         Proxy.newProxyInstance(
@@ -196,7 +201,7 @@ public class ShardBackupMetadataTest extends SolrTestCase {
     }
 
     @Override
-    public void writeAtomically(URI path, byte[] data) throws IOException {
+    public void writeBytes(URI path, byte[] data) throws IOException {
       throw new IOException("injected write failure");
     }
   }
