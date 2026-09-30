@@ -32,7 +32,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -146,6 +145,7 @@ public class SuggestComponent extends SearchComponent
           NamedList<?> suggesterParams = (NamedList<?>) initParams.getVal(i);
           SolrSuggester suggester = new SolrSuggester();
           String dictionary = suggester.init(suggesterParams, core);
+          String dictionaryName = dictionary != null ? dictionary : DEFAULT_DICT_NAME;
           if (dictionary != null) {
             boolean isDefault = dictionary.equals(DEFAULT_DICT_NAME);
             if (isDefault && !hasDefault) {
@@ -153,15 +153,14 @@ public class SuggestComponent extends SearchComponent
             } else if (isDefault) {
               throw new RuntimeException("More than one dictionary is missing name.");
             }
-            suggesters.put(dictionary, suggester);
           } else {
             if (!hasDefault) {
-              suggesters.put(DEFAULT_DICT_NAME, suggester);
               hasDefault = true;
             } else {
               throw new RuntimeException("More than one dictionary is missing name.");
             }
           }
+          suggesters.put(dictionaryName, suggester);
           boolean buildOnStartup;
           Object buildOnStartupObj = suggesterParams.get(BUILD_ON_STARTUP_LABEL);
           if (buildOnStartupObj == null) {
@@ -195,7 +194,7 @@ public class SuggestComponent extends SearchComponent
             }
             core.registerFirstSearcherListener(listener);
             core.registerNewSearcherListener(listener);
-            suggesterListeners.put(dictionary != null ? dictionary : DEFAULT_DICT_NAME, listener);
+            suggesterListeners.put(dictionaryName, listener);
             if (buildOnCommit) {
               core.addCloseHook(
                   new CloseHook() {
@@ -764,8 +763,13 @@ public class SuggestComponent extends SearchComponent
                     lastBuildOnCommitDurationMs);
               }
             });
-      } catch (RejectedExecutionException e) {
-        // core is closing concurrently with this commit; safe to drop the rebuild.
+      } catch (RuntimeException e) {
+        // Most commonly RejectedExecutionException: core is closing concurrently with this
+        // commit. Whatever the cause, the task above never started, so its finally block never
+        // ran - undo what was set up for it here instead of leaving buildOnCommitInProgress
+        // stuck true (which would silently stop all future rebuilds) and leaking the pinned
+        // searcher reference.
+        log.warn("Failed to submit async buildOnCommit for {}", suggester.getName(), e);
         buildOnCommitInProgress.set(false);
         searcherRef.decref();
       }

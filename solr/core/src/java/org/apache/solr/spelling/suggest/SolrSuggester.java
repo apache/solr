@@ -236,35 +236,51 @@ public class SolrSuggester implements Accountable {
 
     SuggesterResult res = new SuggesterResult();
     List<LookupResult> suggestions;
-    try {
-      if (options.contextFilterQuery == null) {
-        // TODO: this path needs to be fixed to accept query params to override configs such as
-        // allTermsRequired, highlight
+    if (options.contextFilterQuery == null) {
+      // TODO: this path needs to be fixed to accept query params to override configs such as
+      // allTermsRequired, highlight
+      try {
         suggestions = lookup.lookup(options.token, false, options.count);
-      } else {
-        BooleanQuery query = parseContextFilterQuery(options.contextFilterQuery);
+      } catch (IllegalStateException e) {
+        suggestions = notYetBuilt(e);
+      }
+    } else {
+      BooleanQuery query = parseContextFilterQuery(options.contextFilterQuery);
+      try {
         suggestions =
             lookup.lookup(
                 options.token, query, options.count, options.allTermsRequired, options.highlight);
-        if (suggestions == null) {
-          // Context filtering not supported/configured by lookup
-          // Silently ignore filtering and serve a result by querying without context filtering
-          if (log.isDebugEnabled()) {
-            log.debug("Context Filtering Query not supported by {}", lookup.getClass());
-          }
+      } catch (IllegalStateException e) {
+        suggestions = notYetBuilt(e);
+      }
+      if (suggestions == null) {
+        // Context filtering not supported/configured by lookup (the call above returned null
+        // rather than throwing) - silently ignore filtering and serve a result by querying
+        // without context filtering instead.
+        if (log.isDebugEnabled()) {
+          log.debug("Context Filtering Query not supported by {}", lookup.getClass());
+        }
+        try {
           suggestions = lookup.lookup(options.token, false, options.count);
+        } catch (IllegalStateException e) {
+          suggestions = notYetBuilt(e);
         }
       }
-    } catch (IllegalStateException e) {
-      // Some Lookup implementations (e.g. AnalyzingInfixSuggester) throw this if queried before
-      // any build()/load() has ever succeeded, rather than just returning no results. With
-      // buildOnCommitAsync=true a query can now land in that window on the very first commit, so
-      // degrade to no suggestions instead of letting this escape as a request failure.
-      log.info("Suggester {} has not finished building yet: {}", name, e.getMessage());
-      suggestions = Collections.emptyList();
     }
     res.add(getName(), options.token.toString(), suggestions);
     return res;
+  }
+
+  /**
+   * Some {@link Lookup} implementations (e.g. AnalyzingInfixSuggester) throw {@link
+   * IllegalStateException} if queried before any build()/load() has ever succeeded, rather than
+   * just returning no results. With buildOnCommitAsync=true a query can now land in that window on
+   * the very first commit, so degrade to no suggestions instead of letting this escape as a request
+   * failure.
+   */
+  private List<LookupResult> notYetBuilt(IllegalStateException e) {
+    log.info("Suggester {} has not finished building yet: {}", name, e.getMessage());
+    return Collections.emptyList();
   }
 
   private BooleanQuery parseContextFilterQuery(String contextFilter) {

@@ -17,9 +17,9 @@
 package org.apache.solr.handler.component;
 
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import javax.xml.xpath.XPathConstants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -157,9 +157,16 @@ public class SuggestComponentBuildOnCommitDoesNotBlockCommitTest extends SolrTes
         freshBuiltFrom);
   }
 
-  private static long extractLongField(String xml, String fieldName) {
-    Matcher m = Pattern.compile("<long name=\"" + fieldName + "\">(-?\\d+)</long>").matcher(xml);
-    assertTrue("field " + fieldName + " not found in response: " + xml, m.find());
-    return Long.parseLong(m.group(1));
+  private static long extractLongField(String xml, String fieldName) throws Exception {
+    String value =
+        (String)
+            BaseTestHarness.evaluateXPath(
+                xml,
+                "//lst[@name='suggesterIndexVersions']/lst[@name='slowSuggester']/long[@name='"
+                    + fieldName
+                    + "']/text()",
+                XPathConstants.STRING);
+    assertFalse("field " + fieldName + " not found in response: " + xml, value.isEmpty());
+    return Long.parseLong(value);
   }
 }

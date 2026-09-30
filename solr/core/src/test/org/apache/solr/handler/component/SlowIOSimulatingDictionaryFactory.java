@@ -41,6 +41,14 @@ public class SlowIOSimulatingDictionaryFactory extends DictionaryFactory {
   // Test hook: counts down once the dictionary created by the most recent call to create() has
   // been fully iterated, i.e. the suggester build that consumed it has read every term. Reset on
   // every create() call, so it reflects the most recently started build.
+  //
+  // Deliberately static rather than instance state, since every test using this factory needs to
+  // observe it (SolrCore creates its own DictionaryFactory instance internally, so tests never get
+  // a handle to it directly). This is only safe as long as at most one test using this factory
+  // runs at a time per JVM - true today because Solr's test runner gives each test class its own
+  // JVM (or runs classes sequentially within one), but it would silently misattribute completions
+  // across tests if that execution model ever changed to run multiple such tests concurrently in
+  // the same JVM.
   private static volatile CountDownLatch dictionaryFullyReadLatch = new CountDownLatch(1);
 
   /**
