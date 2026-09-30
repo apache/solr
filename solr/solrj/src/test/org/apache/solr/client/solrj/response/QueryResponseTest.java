@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -326,6 +327,7 @@ public class QueryResponseTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "testing a same-version Java serialization round-trip on locally generated data")
   public void testQueryResponseSerialization() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response;

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -44,6 +45,7 @@ public class SimpleOrderedMapTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "testing a same-version Java serialization round-trip on locally generated data")
   public void testJavaSerializationRoundTrip() throws Exception {
     SimpleOrderedMap<Object> original = new SimpleOrderedMap<>();
     original.put("one", 1);
