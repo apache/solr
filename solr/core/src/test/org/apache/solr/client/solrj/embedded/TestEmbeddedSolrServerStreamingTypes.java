@@ -16,39 +16,57 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.index.IndexableField;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * SOLR-10198: EmbeddedSolrServer {@code queryAndStreamResponse} must return the same native field
- * types as {@code query} / HttpSolrClient, not Lucene {@link IndexableField} instances.
+ * EmbeddedSolrServer {@code queryAndStreamResponse} must return the same native field types as
+ * {@code query} / HttpSolrClient, not Lucene {@link IndexableField} instances.
  */
-public class TestEmbeddedSolrServerStreamingTypes extends SolrTestCaseJ4 {
+public class TestEmbeddedSolrServerStreamingTypes extends SolrTestCase {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    SolrTestCaseJ4.newRandomConfig();
+    solrTestRule.newCollection().withConfigSet(SolrTestCaseJ4.TEST_COLL1_CONF()).create();
   }
 
   @Test
   public void testQueryAndStreamResponseReturnsNativeFieldTypes() throws Exception {
-    clearIndex();
+    EmbeddedSolrServer server = solrTestRule.getSolrClient("collection1");
+    server.deleteByQuery("*:*");
     // city_s1 is *_s1: stored string, multiValued=false. schema.xml is version 1.0, so
     // fields without multiValued="false" (including name) default to multiValued and
     // query() returns a one-element list. foo_i_p is pint so the native type is Integer.
-    assertU(adoc("id", "1", "foo_i_p", "42", "city_s1", "Boston"));
-    assertU(commit());
+    // name is multiValued: streaming must convert each element (Collection branch).
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "1");
+    doc.addField("foo_i_p", 42);
+    doc.addField("city_s1", "Boston");
+    doc.addField("name", "Alice");
+    doc.addField("name", "Bob");
+    server.add(doc);
+    server.commit();
 
-    EmbeddedSolrServer server = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
     SolrQuery q = new SolrQuery("*:*");
-    q.setFields("id", "foo_i_p", "city_s1");
+    q.setFields("id", "foo_i_p", "city_s1", "name");
 
     QueryResponse rsp = server.query(q);
     SolrDocument queried = rsp.getResults().get(0);
@@ -91,5 +109,12 @@ public class TestEmbeddedSolrServerStreamingTypes extends SolrTestCaseJ4 {
     assertEquals(queriedName, streamedName);
     assertEquals(Integer.class, streamedInt.getClass());
     assertEquals(String.class, streamedName.getClass());
+    // multi-valued field: both paths return a list of native Strings
+    Object queriedNames = queried.getFieldValue("name");
+    Object streamedNames = streamedDoc.getFieldValue("name");
+    assertTrue(queriedNames instanceof List);
+    assertTrue(streamedNames instanceof List);
+    assertEquals(queriedNames, streamedNames);
+    assertEquals(Arrays.asList("Alice", "Bob"), streamedNames);
   }
 }
