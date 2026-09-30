@@ -1005,8 +1005,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   /**
-   * Slice-state rollback for a failed split, or {@code null} if the committed switch-over must not
-   * be undone. Always includes parent=ACTIVE so a stale snapshot cannot skip the restore.
+   * Returns the changes needed to undo a failed split, or {@code null} if the split has already
+   * finished. When it returns changes, they set the parent shard to {@code ACTIVE}, even if the
+   * cluster state has changed since it was read.
    */
   static Map<String, Object> buildCleanupShardStateUpdates(
       DocCollection coll, String parentShard, List<String> subSlices) {
