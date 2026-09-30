@@ -62,7 +62,6 @@ public final class ReplicationTestHelper {
           + FileSystems.getDefault().getSeparator();
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    // test-files solr.xml interpolates solr.tests.security.allow.urls (SOLR-18280)
     Files.copy(
         SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"),
         Path.of(instance.getHomeDir(), "solr.xml"),
@@ -70,7 +69,8 @@ public final class ReplicationTestHelper {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }

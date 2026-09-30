@@ -18,13 +18,12 @@ package org.apache.solr.handler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -46,22 +45,46 @@ public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReplicationHelperHonorsTestUrlAllowList() throws Exception {
+  public void testReplicationFetchHonorsTestUrlAllowList() throws Exception {
     System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "true");
-    System.setProperty(TEST_URL_ALLOW_LIST, "http://leader.example:8983,http://127.0.0.1:7574");
+    System.clearProperty(TEST_URL_ALLOW_LIST);
 
-    SolrInstance instance = new SolrInstance(createTempDir("solr-instance"), "leader", null);
-    instance.setUp();
-    JettySolrRunner jetty = ReplicationTestHelper.createAndStartJetty(instance);
+    SolrInstance leader = new SolrInstance(createTempDir("solr-instance"), "leader", null);
+    leader.setUp();
+    JettySolrRunner leaderJetty = ReplicationTestHelper.createAndStartJetty(leader);
+    JettySolrRunner followerJetty = null;
     try {
-      assertTrue(
-          "helper must copy test-files solr.xml so allowUrls reads " + TEST_URL_ALLOW_LIST,
-          Files.exists(Path.of(instance.getHomeDir()).resolve("solr.xml")));
-      assertEquals(
-          Set.of("leader.example:8983", "127.0.0.1:7574"),
-          jetty.getCoreContainer().getAllowListUrlChecker().getHostAllowList());
+      String leaderUrl = buildUrl(leaderJetty.getLocalPort());
+      System.setProperty(TEST_URL_ALLOW_LIST, leaderUrl);
+
+      SolrInstance follower =
+          new SolrInstance(
+              createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
+      follower.setUp();
+      followerJetty = ReplicationTestHelper.createAndStartJetty(follower);
+      String followerUrl = buildUrl(followerJetty.getLocalPort());
+
+      AllowListUrlChecker checker = followerJetty.getCoreContainer().getAllowListUrlChecker();
+      assertTrue(checker.isEnabled());
+      checker.checkAllowList(List.of(leaderUrl));
+
+      try (SolrClient leaderClient =
+              ReplicationTestHelper.createNewSolrClient(leaderUrl, DEFAULT_TEST_CORENAME);
+          SolrClient followerClient =
+              ReplicationTestHelper.createNewSolrClient(followerUrl, DEFAULT_TEST_CORENAME)) {
+        ReplicationTestHelper.index(leaderClient, "id", "allow-list-1", "name", "allowed");
+        leaderClient.commit();
+        ReplicationTestHelper.pullFromTo(leaderUrl, followerUrl);
+
+        NamedList<Object> response =
+            ReplicationTestHelper.rQuery(1, "id:allow-list-1", followerClient);
+        assertEquals(1L, ReplicationTestHelper.numFound(response));
+      }
     } finally {
-      jetty.stop();
+      if (followerJetty != null) {
+        followerJetty.stop();
+      }
+      leaderJetty.stop();
     }
   }
 
