@@ -1696,9 +1696,6 @@ public class IndexFetcher {
       boolean invalidIndexGeneration = false;
       try {
         while (true) {
-          if (fetchClient.isAborted()) {
-            throw abortedException();
-          }
           FastInputStream stream;
           try {
             stream = getStream();
@@ -1749,9 +1746,6 @@ public class IndexFetcher {
             }
             return 0;
           }
-          if (fetchClient.isAborted()) {
-            throw abortedException();
-          }
           long checkSumServer = -1;
 
           fis.readFully(intbytes);
@@ -1793,8 +1787,6 @@ public class IndexFetcher {
           // errorCount is always set to zero after a successful packet
           errorCount = 0;
         }
-      } catch (ReplicationHandlerException e) {
-        throw e;
       } catch (Exception e) {
         // An abort fails the exchange under us; that is not a transient error worth retrying.
         if (fetchClient.isAborted()) {
