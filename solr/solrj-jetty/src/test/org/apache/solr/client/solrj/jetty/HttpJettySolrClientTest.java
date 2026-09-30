@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -700,40 +701,90 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testCancelledAsyncRequestIsAborted() throws Exception {
-    var client =
-        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH).build();
-    CompletableFuture<NamedList<Object>> future = client.requestAsync(new QueryRequest());
-    // Let the request reach the servlet, which then sends nothing for 5s.
-    Thread.sleep(500);
-    assertTrue(future.cancel(true));
-    // close() waits for outstanding async requests; unless the cancel aborted the exchange, it
-    // stays open until the servlet answers.
-    assertClosesPromptly(client);
+  public void testAbortFailsRequestInFlight() throws Exception {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH).build()) {
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(new QueryRequest());
+      // Let the request reach the servlet, which then sends nothing for 5s.
+      Thread.sleep(500);
+      client.abort(new IOException("test abort"));
+      expectThrows(ExecutionException.class, () -> future.get(2, TimeUnit.SECONDS));
+      assertAllRequestsComplete(client);
+    }
   }
 
   @Test
-  public void testEarlyCloseOfStreamedAsyncResponseIsAborted() throws Exception {
-    var client =
+  public void testAbortFailsResponseMidBody() throws Exception {
+    try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + STALL_STREAM_SERVLET_PATH)
-            .build();
-    QueryRequest req = new QueryRequest();
-    req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-    NamedList<Object> response = client.requestAsync(req).get(10, TimeUnit.SECONDS);
-    InputStream is = (InputStream) response.get("stream");
-    assertEquals('0', is.read());
-    // The servlet now sends nothing, so closing the listener alone leaves nothing to abort on.
-    is.close();
-    assertClosesPromptly(client);
+            .build()) {
+      QueryRequest req = new QueryRequest();
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      NamedList<Object> response = client.requestAsync(req).get(10, TimeUnit.SECONDS);
+      try (InputStream is = (InputStream) response.get("stream")) {
+        assertEquals('0', is.read());
+        // The servlet now sends nothing; the abort must wake the read rather than wait it out.
+        client.abort(new IOException("test abort"));
+        long start = System.nanoTime();
+        IOException e = expectThrows(IOException.class, is::read);
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        assertEquals("test abort", e.getMessage());
+        assertTrue(
+            "read took " + elapsedMs + "ms after abort",
+            elapsedMs < ServletFixtures.StallStreamServlet.STALL_MS / 2);
+      }
+      assertAllRequestsComplete(client);
+    }
   }
 
-  private static void assertClosesPromptly(HttpJettySolrClient client) {
-    long start = System.nanoTime();
-    client.close();
-    long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-    assertTrue(
-        "close() took " + elapsedMs + "ms waiting on an exchange that should have been aborted",
-        elapsedMs < ServletFixtures.StallStreamServlet.STALL_MS / 2);
+  @Test
+  public void testAbortFailsLaterRequests() throws Exception {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .build()) {
+      client.abort(new IOException("test abort"));
+      assertTrue(client.isAborted());
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(req);
+      expectThrows(ExecutionException.class, () -> future.get(2, TimeUnit.SECONDS));
+      assertAllRequestsComplete(client);
+    }
+  }
+
+  @Test
+  public void testAbortIsScopedToOneClient() throws Exception {
+    String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
+    try (var base = new HttpJettySolrClient.Builder(url).build();
+        var copy = new HttpJettySolrClient.Builder(url).withHttpClient(base).build()) {
+      copy.abort(new IOException("test abort"));
+      assertTrue(copy.isAborted());
+      assertFalse(base.isAborted());
+      // The copy shares base's Jetty client, but not its tracker, so base still works.
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      NamedList<Object> response = base.requestAsync(req).get(10, TimeUnit.SECONDS);
+      try (InputStream is = (InputStream) response.get("stream")) {
+        assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+      }
+    }
+  }
+
+  /**
+   * Asserts every async request has completed, i.e. close() would not wait. Aborted requests
+   * complete straight away; without the abort these would stay open until the servlet answers.
+   */
+  private static void assertAllRequestsComplete(HttpJettySolrClient client) throws Exception {
+    long deadline =
+        System.nanoTime()
+            + TimeUnit.MILLISECONDS.toNanos(ServletFixtures.StallStreamServlet.STALL_MS / 2);
+    while (client.asyncTrackerAvailablePermits() != client.asyncTrackerMaxPermits()) {
+      assertTrue(
+          "async requests still outstanding after abort: "
+              + (client.asyncTrackerMaxPermits() - client.asyncTrackerAvailablePermits()),
+          System.nanoTime() < deadline);
+      Thread.sleep(10);
+    }
   }
 
   @Test

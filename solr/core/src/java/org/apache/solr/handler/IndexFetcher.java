@@ -37,7 +37,6 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 
-import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -66,9 +65,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -176,10 +173,10 @@ public class IndexFetcher {
   private volatile ExecutorService fsyncService;
 
   /**
-   * The fetch in progress, if any, or {@link FetchContext#CLOSED} once this fetcher is destroyed.
-   * Aborting a fetch has no effect on later fetches.
+   * The client of the fetch in progress, if any. Each fetch gets its own lightweight copy of {@link
+   * #solrClient}, so aborting it affects that fetch alone and nothing later.
    */
-  private final AtomicReference<FetchContext> currentFetch = new AtomicReference<>();
+  private final AtomicReference<HttpJettySolrClient> currentFetchClient = new AtomicReference<>();
 
   private boolean useInternalCompression = false;
 
@@ -385,7 +382,7 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response = request(req, attempt.ctx());
+      NamedList<?> response = request(req, attempt.fetchClient());
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -417,46 +414,52 @@ public class IndexFetcher {
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload)
       throws IOException, InterruptedException {
-    FetchContext ctx = new FetchContext();
-    // Either this lands first and destroy() cancels ctx, or destroy() lands first and the fetch
-    // never starts: both sides go through currentFetch, so no fetch can slip past a destroy.
-    FetchContext existing = currentFetch.compareAndExchange(null, ctx);
-    if (existing == FetchContext.CLOSED) {
-      return IndexFetchResult.REPLICATION_SHUTTING_DOWN;
-    }
+    // A lightweight copy of solrClient, so that aborting it (abortFetch, destroy) fails this
+    // fetch's requests and nothing else.
+    HttpJettySolrClient fetchClient =
+        new HttpJettySolrClient.Builder().withHttpClient(solrClient).build();
     // doFetch serializes fetches with indexFetchLock, so a fetch already in progress means that
-    // invariant broke. Fail loudly rather than silently cancel or orphan the other fetch.
-    if (existing != null) {
+    // invariant broke. Fail loudly rather than silently abort or orphan the other fetch.
+    if (!currentFetchClient.compareAndSet(null, fetchClient)) {
+      IOUtils.closeQuietly(fetchClient);
       throw new IllegalStateException("A fetch is already in progress on " + this);
     }
     try {
-      return fetchLatestIndexWithRetry(forceReplication, forceCoreReload, ctx);
+      // Pairs with destroy(): publish-then-check here and abort-then-read there, so either this
+      // sees the fetcher destroyed, or destroy() sees this fetch and aborts it.
+      if (solrClient.isAborted()) {
+        return IndexFetchResult.REPLICATION_SHUTTING_DOWN;
+      }
+      return fetchLatestIndexWithRetry(forceReplication, forceCoreReload, fetchClient);
     } finally {
-      // Never clobbers CLOSED.
-      currentFetch.compareAndSet(ctx, null);
+      currentFetchClient.compareAndSet(fetchClient, null);
+      // Abort anything the fetch left open (a response stream closed before its end stays open
+      // until the idle timeout), so that close() never waits on it.
+      fetchClient.abort(new IOException("Index fetch finished"));
+      IOUtils.closeQuietly(fetchClient);
     }
   }
 
   /**
    * Runs one fetch, restarting once if the leader discards the generation being fetched. Recursive
-   * attempts call this rather than {@link #fetchLatestIndex(boolean, boolean)}, so they stay under
-   * the caller's {@link FetchContext} and an abort reaches them too.
+   * attempts call this rather than {@link #fetchLatestIndex(boolean, boolean)}, so they use the
+   * caller's per-fetch client and an abort reaches them too.
    */
   private IndexFetchResult fetchLatestIndexWithRetry(
-      boolean forceReplication, boolean forceCoreReload, FetchContext ctx)
+      boolean forceReplication, boolean forceCoreReload, HttpJettySolrClient fetchClient)
       throws IOException, InterruptedException {
     try {
-      return fetchLatestIndexOnce(forceReplication, forceCoreReload, ctx);
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload, fetchClient);
     } catch (InvalidIndexGenerationException e) {
       log.info(
           "Leader no longer has index generation {}; restarting replication from its latest generation",
           e.generation);
-      return fetchLatestIndexOnce(forceReplication, forceCoreReload, ctx);
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload, fetchClient);
     }
   }
 
   private IndexFetchResult fetchLatestIndexOnce(
-      boolean forceReplication, boolean forceCoreReload, FetchContext ctx)
+      boolean forceReplication, boolean forceCoreReload, HttpJettySolrClient fetchClient)
       throws IOException, InterruptedException {
 
     boolean cleanupDone = false;
@@ -517,7 +520,7 @@ public class IndexFetcher {
       // get the current 'replicateable' index version in the leader
       NamedList<?> response;
       try {
-        response = request(createIndexVersionRequest(), ctx);
+        response = request(createIndexVersionRequest(), fetchClient);
       } catch (Exception e) {
         final String errorMsg = e.toString();
         if (StrUtils.isNotNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
@@ -539,7 +542,7 @@ public class IndexFetcher {
       long latestGeneration = (Long) response.get(GENERATION);
 
       log.info("Leader's generation: {}", latestGeneration);
-      FetchAttempt attempt = new FetchAttempt(ctx, latestGeneration);
+      FetchAttempt attempt = new FetchAttempt(fetchClient, latestGeneration);
       log.info("Leader's version: {}", latestVersion);
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no
@@ -801,7 +804,8 @@ public class IndexFetcher {
           log.warn(
               "Replication attempt was not successful - trying a full index replication reloadCore={}",
               reloadCore);
-          successfulInstall = fetchLatestIndexWithRetry(true, reloadCore, ctx).getSuccessful();
+          successfulInstall =
+              fetchLatestIndexWithRetry(true, reloadCore, fetchClient).getSuccessful();
         }
 
         markReplicationStop();
@@ -1516,27 +1520,24 @@ public class IndexFetcher {
 
   /** Aborts the fetch in progress, if any. A no-op when idle; later fetches are unaffected. */
   void abortFetch() {
-    FetchContext ctx = currentFetch.get();
-    if (ctx != null) {
-      ctx.cancel();
+    HttpJettySolrClient fetchClient = currentFetchClient.get();
+    if (fetchClient != null) {
+      fetchClient.abort(new IOException("Index fetch aborted"));
     }
   }
 
   /**
-   * Sends a request to the leader through the async API, so that cancelling {@code ctx} aborts it
-   * mid-flight. Failures are rethrown the way the synchronous API would throw them.
+   * Sends a request to the leader through the async API of the fetch's client, so that aborting
+   * that client fails the request mid-flight. Failures are rethrown the way the synchronous API
+   * would throw them.
    */
-  private NamedList<Object> request(SolrRequest<?> req, FetchContext ctx)
+  private NamedList<Object> request(SolrRequest<?> req, HttpJettySolrClient fetchClient)
       throws SolrServerException, IOException {
     CompletableFuture<NamedList<Object>> future =
-        solrClient.requestWithBaseUrl(
+        fetchClient.requestWithBaseUrl(
             leaderBaseUrl, client -> client.requestAsync(req, leaderCoreName));
-    Closeable cancel = () -> future.cancel(true);
-    ctx.register(cancel);
     try {
       return future.get();
-    } catch (CancellationException e) {
-      throw new SolrServerException("Request to " + leaderBaseUrl + " was aborted", e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
       if (cause instanceof SolrServerException sse) throw sse;
@@ -1545,11 +1546,10 @@ public class IndexFetcher {
       if (cause instanceof Error err) throw err;
       throw new SolrServerException(cause);
     } catch (InterruptedException e) {
-      future.cancel(true);
+      // Treat an interrupt as an abort of this fetch, which also fails the request above.
+      fetchClient.abort(new IOException("Interrupted waiting for " + leaderBaseUrl, e));
       Thread.currentThread().interrupt();
       throw new SolrServerException("Interrupted waiting for " + leaderBaseUrl, e);
-    } finally {
-      ctx.unregister(cancel);
     }
   }
 
@@ -1647,7 +1647,7 @@ public class IndexFetcher {
     private final Checksum checksum;
     private int errorCount = 0;
     private boolean aborted = false;
-    private final FetchContext ctx;
+    private final HttpJettySolrClient fetchClient;
 
     FileFetcher(
         FileInterface file,
@@ -1656,7 +1656,7 @@ public class IndexFetcher {
         String solrParamOutput,
         FetchAttempt attempt) {
       this.file = file;
-      this.ctx = attempt.ctx();
+      this.fetchClient = attempt.fetchClient();
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
       buf = new byte[(int) Math.min(this.size, ReplicationAPIBase.PACKET_SZ)];
@@ -1696,21 +1696,19 @@ public class IndexFetcher {
       boolean invalidIndexGeneration = false;
       try {
         while (true) {
-          if (ctx.isCancelled()) {
+          if (fetchClient.isAborted()) {
             throw abortedException();
           }
           FastInputStream stream;
           try {
             stream = getStream();
           } catch (IOException e) {
-            if (ctx.isCancelled()) {
+            if (fetchClient.isAborted()) {
               throw abortedException();
             }
             throw e;
           }
-          // Registered so that an abort closes the stream, waking a read parked on a stalled
-          // leader.
-          try (FastInputStream fis = ctx.register(stream)) {
+          try (FastInputStream fis = stream) {
             int result;
             // fetch packets one by one in a single request
             result = fetchPackets(fis);
@@ -1718,8 +1716,6 @@ public class IndexFetcher {
               return;
             }
             // if there is an error continue. But continue from the point where it got broken
-          } finally {
-            ctx.unregister(stream);
           }
         }
       } catch (InvalidIndexGenerationException e) {
@@ -1753,7 +1749,7 @@ public class IndexFetcher {
             }
             return 0;
           }
-          if (ctx.isCancelled()) {
+          if (fetchClient.isAborted()) {
             throw abortedException();
           }
           long checkSumServer = -1;
@@ -1800,8 +1796,8 @@ public class IndexFetcher {
       } catch (ReplicationHandlerException e) {
         throw e;
       } catch (Exception e) {
-        // An abort closes the stream under us; that is not a transient error worth retrying.
-        if (ctx.isCancelled()) {
+        // An abort fails the exchange under us; that is not a transient error worth retrying.
+        if (fetchClient.isAborted()) {
           throw abortedException();
         }
         log.warn(
@@ -1922,7 +1918,7 @@ public class IndexFetcher {
         var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = request(req, ctx);
+        response = request(req, fetchClient);
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
@@ -1964,62 +1960,11 @@ public class IndexFetcher {
   }
 
   /**
-   * Cancellation context for one fetch. Created when a fetch starts and discarded when it ends, so
-   * an abort only affects the fetch it was aimed at. Tracks the leader requests and response
-   * streams currently open, so that {@link #cancel()} reaches whatever is in flight and also stops
-   * anything opened afterwards.
+   * One attempt within a fetch: the fetch's client plus the leader generation this attempt is
+   * fetching. A fetch can make several attempts with the same client (the retry when the leader
+   * discards a generation, and the full-copy retry), each reading a fresh generation.
    */
-  private static final class FetchContext implements Closeable {
-    /** Occupies {@code currentFetch} once the fetcher is destroyed. Already cancelled. */
-    static final FetchContext CLOSED = new FetchContext(true);
-
-    private final Set<Closeable> resources = ConcurrentHashMap.newKeySet();
-    private volatile boolean cancelled;
-
-    FetchContext() {
-      this(false);
-    }
-
-    private FetchContext(boolean cancelled) {
-      this.cancelled = cancelled;
-    }
-
-    /** Tracks a resource; if the context is already cancelled, closes it on the spot. */
-    <T extends Closeable> T register(T resource) {
-      resources.add(resource);
-      // Pairs with cancel(): add-then-check here and set-then-iterate there, so at least one of the
-      // two closes the resource. At worst both do, and every resource tolerates a double close.
-      if (cancelled) {
-        IOUtils.closeQuietly(resource);
-      }
-      return resource;
-    }
-
-    void unregister(Closeable resource) {
-      resources.remove(resource);
-    }
-
-    void cancel() {
-      cancelled = true;
-      resources.forEach(IOUtils::closeQuietly);
-    }
-
-    boolean isCancelled() {
-      return cancelled;
-    }
-
-    @Override
-    public void close() {
-      cancel();
-    }
-  }
-
-  /**
-   * One attempt within a fetch: the fetch's {@link FetchContext} plus the leader generation this
-   * attempt is fetching. A fetch can make several attempts under the same context (the retry when
-   * the leader discards a generation, and the full-copy retry), each reading a fresh generation.
-   */
-  private record FetchAttempt(FetchContext ctx, long generation) {}
+  private record FetchAttempt(HttpJettySolrClient fetchClient, long generation) {}
 
   private static class InvalidIndexGenerationException extends IOException {
     private final long generation;
@@ -2142,10 +2087,13 @@ public class IndexFetcher {
   }
 
   public void destroy() {
-    // Cancels the fetch in progress, and stops any fetch from starting after this point.
-    FetchContext previous = currentFetch.getAndSet(FetchContext.CLOSED);
-    if (previous != null) {
-      previous.cancel();
+    // Marks this fetcher destroyed, which fetchLatestIndex checks, then aborts the fetch in
+    // progress. See fetchLatestIndex for why this order closes the race with a starting fetch.
+    IOException cause = new IOException("Index fetcher destroyed");
+    solrClient.abort(cause);
+    HttpJettySolrClient fetchClient = currentFetchClient.get();
+    if (fetchClient != null) {
+      fetchClient.abort(cause);
     }
     IOUtils.closeQuietly(solrClient);
   }

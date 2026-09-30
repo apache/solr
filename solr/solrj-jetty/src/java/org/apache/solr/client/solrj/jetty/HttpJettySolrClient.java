@@ -22,13 +22,15 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
-import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -402,13 +404,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
             executor.execute(
                 () -> {
                   InputStream is = listener.getInputStream();
-                  ResponseParser parser =
-                      solrRequest.getResponseParser() == null
-                          ? HttpJettySolrClient.this.parser
-                          : solrRequest.getResponseParser();
-                  if (wantStream(parser)) {
-                    is = abortOnEarlyClose(is, mrrv.request);
-                  }
                   try {
                     NamedList<Object> body =
                         processErrorsAndResponse(solrRequest, response, is, url);
@@ -449,14 +444,12 @@ public class HttpJettySolrClient extends HttpSolrClient {
           }
         });
 
-    // Abort on cancellation so the exchange completes now, releasing the connection's stream, the
-    // server's resources and the asyncTracker, instead of lingering until the idle timeout.
-    future.whenComplete(
-        (result, error) -> {
-          if (error instanceof CancellationException) {
-            mrrv.request.abort(error);
-          }
-        });
+    // SOLR-17916: Disable request aborting
+    // future.exceptionally(
+    //    (error) -> {
+    //     mrrv.request.abort(error);
+    //      return null;
+    //   });
 
     if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
@@ -836,43 +829,6 @@ public class HttpJettySolrClient extends HttpSolrClient {
   }
 
   /**
-   * Wraps a streamed response body so that closing it before end of stream aborts the exchange.
-   * Against an unresponsive server, closing the listener alone aborts nothing when no content is
-   * buffered, leaving the exchange (and its asyncTracker party) alive until the idle timeout.
-   * Reading to end of stream and then closing sends nothing extra.
-   */
-  private static InputStream abortOnEarlyClose(InputStream is, Request request) {
-    return new FilterInputStream(is) {
-      private volatile boolean endOfStream;
-
-      @Override
-      public int read() throws IOException {
-        int b = super.read();
-        if (b == -1) endOfStream = true;
-        return b;
-      }
-
-      @Override
-      public int read(byte[] b, int off, int len) throws IOException {
-        int n = super.read(b, off, len);
-        if (n == -1) endOfStream = true;
-        return n;
-      }
-
-      @Override
-      public void close() throws IOException {
-        try {
-          super.close();
-        } finally {
-          if (!endOfStream) {
-            request.abort(new AsynchronousCloseException());
-          }
-        }
-      }
-    };
-  }
-
-  /**
    * An HttpJettySolrClient that doesn't close or cleanup any resources
    *
    * <p>Only safe to use as a derived copy of an existing instance which retains responsibility for
@@ -916,6 +872,10 @@ public class HttpJettySolrClient extends HttpSolrClient {
     private final Phaser phaser;
     // maximum outstanding requests left
     private final Semaphore available;
+    // async requests queued and not yet complete, so that abort() can reach them
+    private final Set<Request> outstanding = ConcurrentHashMap.newKeySet();
+    // non-null once abort() has been called; fails any request queued afterwards
+    private volatile Throwable abortCause;
     private final Request.QueuedListener queuedListener;
     private final Response.CompleteListener completeListener;
 
@@ -939,15 +899,34 @@ public class HttpJettySolrClient extends HttpSolrClient {
               // completeListener will call arriveAndDeregister() when onComplete fires.
               Thread.currentThread().interrupt();
             }
+            // Pairs with abort(): add-then-check here and set-then-scan there, so a request queued
+            // concurrently with abort() is aborted by at least one of the two.
+            outstanding.add(request);
+            Throwable cause = abortCause;
+            if (cause != null) {
+              request.abort(cause);
+            }
           };
       completeListener =
           result -> {
+            if (result != null) {
+              outstanding.remove(result.getRequest());
+            }
             if (result != null
                 && result.getRequest().getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
               phaser.arriveAndDeregister();
               available.release();
             }
           };
+    }
+
+    void abort(Throwable cause) {
+      abortCause = Objects.requireNonNull(cause);
+      outstanding.forEach(request -> request.abort(cause));
+    }
+
+    boolean isAborted() {
+      return abortCause != null;
     }
 
     int getMaxRequestsQueuedPerDestination() {
@@ -976,6 +955,30 @@ public class HttpJettySolrClient extends HttpSolrClient {
       }
       phaser.arriveAndDeregister();
     }
+  }
+
+  /**
+   * Aborts every asynchronous request in flight on this client, and fails any asynchronous request
+   * made afterwards. Unlike {@link #close()}, this does not wait: each aborted request completes
+   * exceptionally straight away, so a subsequent {@link #close()} returns promptly.
+   *
+   * <p>Scoped to this client instance and to the clients derived from it by {@link
+   * #requestWithBaseUrl}, which share its tracker. Other clients wrapping the same Jetty {@link
+   * HttpClient} are unaffected, so a lightweight copy made with {@link
+   * Builder#withHttpClient(HttpJettySolrClient)} can be aborted without disturbing anyone else.
+   * Synchronous requests are not tracked and are unaffected.
+   *
+   * @param cause reported as the failure of each aborted request, and rethrown as-is to anyone
+   *     reading a streamed response body, so pass an {@link IOException} to keep {@link
+   *     InputStream} callers on their usual error path; must not be null
+   */
+  public void abort(Throwable cause) {
+    asyncTracker.abort(cause);
+  }
+
+  /** Whether {@link #abort(Throwable)} has been called on this client. */
+  public boolean isAborted() {
+    return asyncTracker.isAborted();
   }
 
   /** Returns the configured maximum number of outstanding async requests. */
