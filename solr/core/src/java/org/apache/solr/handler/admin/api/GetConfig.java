@@ -37,6 +37,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.jersey.NullKeyTolerantMap;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -81,7 +82,9 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       }
     }
 
-    return (Map<String, Object>) Utils.getDeepCopy(map, 20, true);
+    final var jsonSafeCopy = new NullKeyTolerantMap("children");
+    jsonSafeCopy.putAll((Map<String, Object>) Utils.getDeepCopy(map, 20, true));
+    return jsonSafeCopy;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
