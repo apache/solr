@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -84,7 +85,7 @@ public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
       String followerUrl = buildUrl(followerJetty.getLocalPort());
       String followerCoreUrl = followerUrl + "/" + DEFAULT_TEST_CORENAME;
       try (SolrCore core = followerJetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
-        assertEquals(follower.getDataDir(), core.getDataDir());
+        assertEquals(Path.of(follower.getDataDir()), Path.of(core.getDataDir()));
       }
 
       AllowListUrlChecker checker = followerJetty.getCoreContainer().getAllowListUrlChecker();
