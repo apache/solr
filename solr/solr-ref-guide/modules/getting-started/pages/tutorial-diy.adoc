@@ -73,14 +73,14 @@ Add the /update/extract handler to your collection, pointing to the Tika Server 
 
 [,console]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/localDocs/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/update/extract",
     "class": "solr.extraction.ExtractingRequestHandler",
     "tikaserver.url": "http://localhost:9998",
     "defaults": { "lowernames": "true", "captureAttr": "true" }
   }
-}' 'http://localhost:8983/solr/localDocs/config'
+}'
 ----
 
 === Indexing Ideas

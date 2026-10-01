@@ -136,7 +136,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
   {
     "name": "techproducts_v2",
     "configSet": "sample_techproducts_configs"
@@ -360,7 +360,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-Type: application/json' -d '
   {
     "to": "newCoreName"
   }
@@ -424,7 +424,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
   {
     "with": "_other-core-name_"
   }
@@ -492,7 +492,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/techproducts/unload -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/techproducts/unload -H 'Content-Type: application/json' -d '
   {}
 '
 ----
@@ -579,7 +579,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
 {
   "indexDirs": ["path/to/core1/data/index","path/to/core2/data/index"]
 }
@@ -610,7 +610,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
 {
   "srcCores": ["core1","core2"]
 }

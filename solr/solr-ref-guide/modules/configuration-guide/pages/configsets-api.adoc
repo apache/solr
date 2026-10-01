@@ -180,14 +180,14 @@ With the v1 API, the `upload` command must be capitalized as `UPLOAD`:
 ----
 $ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
 
-$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+curl "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet" --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
 ----
 
 The same can be achieved using a Unix pipe with a single request as follows:
 
 [source,bash]
 ----
-$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl -X POST --header "Content-Type:application/octet-stream" --data-binary @- "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet" --header "Content-Type:application/octet-stream" --data-binary @-
 ----
 ====
 
@@ -200,7 +200,7 @@ With the v2 API, the name of the configset to upload is provided as a path param
 ----
 $ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
 
-$ curl -X PUT --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
+curl -X PUT --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
     "http://localhost:8983/api/configsets/myConfigSet"
 ----
 
@@ -248,9 +248,8 @@ The filename to upload is provided via the `filePath` parameter:
 
 [source,bash]
 ----
-curl -X POST --header "Content-Type:application/octet-stream"
+curl "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet&filePath=solrconfig.xml" --header "Content-Type:application/octet-stream"
     --data-binary @solr/server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml
-    "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet&filePath=solrconfig.xml"
 ----
 ====
 
@@ -416,14 +415,13 @@ With the v2 API, the `create` command is implicit and parameters are specified i
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/configsets?omitHeader=true' -H 'Content-type: application/json' -d '{
   "name": "myConfigSet",
   "baseConfigSet": "predefinedTemplate",
   "properties": {
     "immutable": "false"
   }
 }'
-  http://localhost:8983/api/configsets?omitHeader=true
 ----
 ====
 ======

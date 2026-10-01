@@ -220,7 +220,7 @@ The curl commands in the following sections will not work with the system `curl`
 Instead, the certificate supplied with the `-E` parameter must be in PKCS12 format, and the file supplied with the `--cacert` parameter must contain only the CA certificate, and no key (see <<Convert the Certificate and Key to PEM Format for Use with curl,above>> for instructions on creating this file):
 
 [source,bash]
-$ curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...
+curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...
 
 ====
 
@@ -259,7 +259,7 @@ To get the resulting cluster status (again, if you have not enabled client authe
 
 [source,terminal]
 ----
-$ curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&indent=on"
+curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&indent=on"
 ----
 
 You should get a response that looks like this:
@@ -313,7 +313,7 @@ If you have not enabled client authentication (system property `-Djetty.ssl.clie
 
 [source,console]
 ----
-$ curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
+curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
 ----
 
 === Index a Document using CloudSolrClient
