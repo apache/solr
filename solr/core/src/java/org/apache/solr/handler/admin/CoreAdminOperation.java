@@ -161,6 +161,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
             core.getUpdateHandler()
                 .getSolrCoreState()
                 .doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
+          } else if (it.handler.coreContainer.isCoreLoading(cname)) {
+            // Transient: the core exists but hasn't finished loading yet. Report it as retriable
+            // instead of a bad request so the recovery nudge isn't silently dropped as invalid.
+            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Core " + cname + " is still loading");
           } else {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
           }

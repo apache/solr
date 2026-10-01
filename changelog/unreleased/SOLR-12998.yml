@@ -1,0 +1,7 @@
+title: Report 503 (with one retry) instead of 400 when recovery is requested on a still-loading core
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-12998
+    url: https://issues.apache.org/jira/browse/SOLR-12998

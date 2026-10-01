@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -379,6 +380,9 @@ public class SyncStrategy {
     }
   }
 
+  /** Delay before retrying a recovery request that hit a still-loading replica core. */
+  private static final long RECOVERY_RETRY_DELAY_MS = 30000;
+
   private void requestRecovery(
       final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
       throws SolrServerException, IOException {
@@ -391,17 +395,38 @@ public class SyncStrategy {
           RequestRecovery recoverRequestCmd = new RequestRecovery();
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
           recoverRequestCmd.setCoreName(coreName);
-          try (SolrClient client =
-              new HttpJettySolrClient.Builder(baseUrl)
-                  .withHttpClient(solrClient)
-                  .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
-                  .build()) {
-            client.request(recoverRequestCmd);
+          try {
+            sendRecoveryRequest(baseUrl, recoverRequestCmd);
           } catch (Throwable t) {
-            log.error(
-                "{}: Could not tell a replica to recover",
-                ZkCoreNodeProps.getCoreUrl(leaderProps),
-                t);
+            if (!isClosed && isCoreStillLoading(t)) {
+              // The replica's core hasn't finished loading; wait a bit and retry once
+              log.warn(
+                  "{}: replica core {} is still loading, retrying recovery request",
+                  ZkCoreNodeProps.getCoreUrl(leaderProps),
+                  coreName);
+              try {
+                Thread.sleep(RECOVERY_RETRY_DELAY_MS);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+              }
+              if (isClosed) {
+                return;
+              }
+              try {
+                sendRecoveryRequest(baseUrl, recoverRequestCmd);
+              } catch (Throwable t2) {
+                log.error(
+                    "{}: Could not tell a replica to recover",
+                    ZkCoreNodeProps.getCoreUrl(leaderProps),
+                    t2);
+              }
+            } else {
+              log.error(
+                  "{}: Could not tell a replica to recover",
+                  ZkCoreNodeProps.getCoreUrl(leaderProps),
+                  t);
+            }
             if (t instanceof Error) {
               throw (Error) t;
             }
@@ -409,6 +434,22 @@ public class SyncStrategy {
         };
 
     updateExecutor.execute(runnable);
+  }
+
+  private void sendRecoveryRequest(String baseUrl, RequestRecovery recoverRequestCmd)
+      throws SolrServerException, IOException {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(baseUrl)
+            .withHttpClient(solrClient)
+            .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
+            .build()) {
+      client.request(recoverRequestCmd);
+    }
+  }
+
+  private static boolean isCoreStillLoading(Throwable t) {
+    return t instanceof RemoteSolrException
+        && ((RemoteSolrException) t).code() == SolrException.ErrorCode.SERVICE_UNAVAILABLE.code;
   }
 
   public static ModifiableSolrParams params(String... params) {
