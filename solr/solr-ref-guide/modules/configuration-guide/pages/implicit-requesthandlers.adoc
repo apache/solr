@@ -125,21 +125,9 @@ api/node/properties
 ----
 ====
 ======
-a|
-[tabs#properties-class]
-======
-V1 API::
-+
-====
-{solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
-====
+|v1: {solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
 
-V2 API::
-+
-====
-{solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties]
-====
-======
+v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties]
 |`_ADMIN_PROPERTIES`
 |===
 +
