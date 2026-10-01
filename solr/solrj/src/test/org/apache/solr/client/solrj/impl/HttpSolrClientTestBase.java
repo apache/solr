@@ -81,7 +81,6 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
   protected static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
   protected static final String SLOW_STREAM_SERVLET_PATH = "/slowStream";
   protected static final String SLOW_STREAM_SERVLET_REGEX = SLOW_STREAM_SERVLET_PATH + "/*";
-
   // example chars that must be URI encoded - non-ASCII and curly quote
   protected static final String MUST_ENCODE = "\u1234\u007B";
 
