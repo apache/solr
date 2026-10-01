@@ -1666,16 +1666,7 @@ public class IndexFetcher {
       boolean invalidIndexGeneration = false;
       try {
         while (true) {
-          FastInputStream stream;
-          try {
-            stream = getStream();
-          } catch (IOException e) {
-            if (fetchClient.isAborted()) {
-              throw abortedException();
-            }
-            throw e;
-          }
-          try (FastInputStream fis = stream) {
+          try (FastInputStream fis = getStream()) {
             int result;
             // fetch packets one by one in a single request
             result = fetchPackets(fis);
@@ -1851,7 +1842,7 @@ public class IndexFetcher {
     }
 
     /** Open a new stream using HttpClient */
-    private FastInputStream getStream() throws IOException {
+    private FastInputStream getStream() throws IOException, ReplicationHandlerException {
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       // the method is command=filecontent
@@ -1906,8 +1897,11 @@ public class IndexFetcher {
         IOUtils.closeQuietly(is);
         throw e;
       } catch (Exception e) {
-        final var ioe = closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
-        throw ioe;
+        if (fetchClient.isAborted()) {
+          IOUtils.closeQuietly(is);
+          throw abortedException();
+        }
+        throw closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
       }
     }
 
