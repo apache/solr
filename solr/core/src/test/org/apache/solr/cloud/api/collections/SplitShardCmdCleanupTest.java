@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.Overseer;
@@ -44,7 +45,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** In-memory coverage for {@link SplitShardCmd} failed-split state rollback. */
-public class SplitShardCmdCleanupTest extends SolrTestCaseJ4 {
+public class SplitShardCmdCleanupTest extends SolrTestCase {
 
   private static final String COLLECTION = "collection1";
   private static final String PARENT = "shard1";
