@@ -403,12 +403,13 @@ public class CoreContainer {
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader); // early as possible!
+    this.tracer = TraceUtils.getGlobalTracer();
+    this.metricManager = new SolrMetricManager(loader);
+
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
-    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader);
-    this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
