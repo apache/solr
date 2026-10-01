@@ -151,7 +151,7 @@ $ bin/solr healthcheck -c gettingstarted
 
 The healthcheck command gathers basic information about each replica in a collection, such as number of docs, current status (active, down, etc.), and address (where the replica lives in the cluster).
 
-Documents can now be added to SolrCloud using the xref:indexing-guide:post-tool.adoc[].
+Documents can now be added to SolrCloud using the xref:indexing-guide:post-command.adoc[].
 
 To stop Solr in SolrCloud mode, you would use the `bin/solr` script and issue the `stop` command, as in:
 
