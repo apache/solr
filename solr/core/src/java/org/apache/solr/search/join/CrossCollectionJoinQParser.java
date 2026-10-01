@@ -23,9 +23,11 @@ import java.util.Iterator;
 import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
@@ -51,6 +53,7 @@ public class CrossCollectionJoinQParser extends QParser {
               QueryParsing.TYPE,
               QueryParsing.V,
               ZK_HOST,
+              SOLR_CONNECTION,
               SOLR_URL,
               FROM_INDEX,
               FROM,
@@ -80,6 +83,15 @@ public class CrossCollectionJoinQParser extends QParser {
     String zkHost = localParams.get(ZK_HOST);
     String solrConnectionString = localParams.get(SOLR_CONNECTION);
     String solrUrl = localParams.get(SOLR_URL);
+    // CrossCollectionJoinQuery.getDocSet() silently prefers zkHost when both are set.
+    if (zkHost != null && solrUrl != null) {
+      throw new SyntaxError(
+          "zkHost and solrUrl are mutually exclusive; specify at most one of them.");
+    }
+    CoreContainer cc = req.getCoreContainer(); // null in some unit tests
+    if (cc != null && cc.getZkController() == null) {
+      throw new SyntaxError("Cross-collection join requires SolrCloud.");
+    }
     // Test if this is a valid solr url.
     if (solrUrl != null) {
       if (allowSolrUrls == null) {
@@ -116,6 +128,13 @@ public class CrossCollectionJoinQParser extends QParser {
       solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionString);
     } else if (zkHost != null && !zkHost.isBlank()) {
       solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+    }
+    if (solrConnection != null && cc != null) { // no CoreContainer -- unit test
+      try {
+        cc.getZkController().validateSolrConnection(solrConnection);
+      } catch (SolrException e) {
+        throw new SyntaxError(e.getMessage(), e);
+      }
     }
     return new CrossCollectionJoinQuery(
         query,
