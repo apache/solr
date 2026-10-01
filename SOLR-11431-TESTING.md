@@ -45,3 +45,29 @@ Then run the adjacent generic-failure coverage, which intentionally remains a 50
 
 Record the Gradle seed and test-output path for any failure. No Gradle task was run while
 preparing this branch.
+
+## Base-discrimination check — completed 2026-10-01
+
+A throwaway worktree was created at the unpatched base `70c1a28995d` and only the branch's
+updated `solr/core/src/test/org/apache/solr/core/TestCoreContainer.java` was copied in (no
+production-code changes). Ran the two modified methods with `-Ptests.seed=CA115731`:
+
+```bash
+./gradlew :solr:core:test \
+  --tests "org.apache.solr.core.TestCoreContainer.testCoreInitFailuresFromEmptyContainer" \
+  --tests "org.apache.solr.core.TestCoreContainer.testCoreInitFailuresOnReload" \
+  -Ptests.seed=CA115731
+```
+
+Both failed on the unpatched base exactly as required for discrimination:
+
+- `testCoreInitFailuresFromEmptyContainer`: `java.lang.AssertionError: expected:<503> but was:<500>`
+- `testCoreInitFailuresOnReload`: `java.lang.AssertionError: expected:<503> but was:<500>`
+
+(The accompanying `classMethod` ObjectTracker failure is a cascade of the aborted tests, not a
+separate issue.) This confirms the new 503 assertions exercise the fix: unpatched production code
+returns 500, patched code returns 503.
+
+The throwaway worktree was deleted afterwards. The branch worktree still contains only the two
+committed changes (`9c32d162ae2` implementation, `066de52ba8b` testing handoff); `TestLazyCores`
+(6 tests) remains green on the branch and guards against scope expansion.
