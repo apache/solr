@@ -34,21 +34,57 @@ Many of these handlers are used throughout the Admin UI to show information abou
 File:: Return content of files in `${solr.home}/conf/`.
 This handler must have a collection name in the path to the endpoint.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
-|===
+Restrict which files can be served by listing them as `hidden` invariants in `solrconfig.xml` - a bare `*` hides everything else, but patterns like `*.xml` are not supported, only exact filenames:
++
+[source,xml]
+----
+<requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler">
+  <lst name="invariants">
+    <str name="hidden">synonyms.txt</str>
+    <str name="hidden">anotherfile.txt</str>
+    <str name="hidden">*</str>
+  </lst>
+</requestHandler>
+----
++
+Use the `contentType` parameter to override the returned `Content-Type`, e.g. `solr/admin/file?file=schema.xml&contentType=text/plain`.
++
+[source,bash]
+----
+solr/<collection>/admin/file
+----
++
+Paramset: `_ADMIN_FILE`
 
-Health:: Report the health of the node, via the `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]).
-See xref:deployment-guide:healthcheck.adoc[] for details, parameters, and examples.
+Health:: Report the health of the node.
++
+*Documentation*: xref:deployment-guide:healthcheck.adoc[]
++
+[tabs#health-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/admin/info/health
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/node/health
+----
+====
+======
++
+Paramset: none
 
 Logging:: Retrieve and modify registered loggers.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-a|
 [tabs#logging-endpoint]
 ======
 V1 API::
@@ -69,42 +105,40 @@ api/node/logging
 ----
 ====
 ======
-|{solr-javadocs}/core/org/apache/solr/handler/admin/LoggingHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
-|===
++
+Paramset: `_ADMIN_LOGGING`
 
 Luke:: Expose the internal Lucene index.
 This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: xref:indexing-guide:luke-request-handler.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
-|===
+[source,bash]
+----
+solr/<collection>/admin/luke
+----
++
+Paramset: `_ADMIN_LUKE`
 
-Ping:: Health check.
+Ping:: Health check designed for use by a load balancer.
 This handler must have a collection name in the path to the endpoint.
 +
-CAUTION: `PingRequestHandler` is deprecated and will be removed in a future release. Use the `Health` endpoint below instead.
+CAUTION: `PingRequestHandler` is deprecated and will be removed in a future release. Use the `Health` endpoint above instead.
 +
 *Documentation*: xref:deployment-guide:ping.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/ping` |{solr-javadocs}/core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
-|===
+[source,bash]
+----
+solr/<collection>/admin/ping
+----
++
+Paramset: `_ADMIN_PING`
 
 System Properties:: Return JRE system properties.
 Secret values are redacted.
 +
 *Documentation*: xref:deployment-guide:jvm-settings.adoc#java-properties-screen[Java Properties Screen]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-a|
 [tabs#properties-endpoint]
 ======
 V1 API::
@@ -113,6 +147,13 @@ V1 API::
 [source,bash]
 ----
 solr/admin/info/properties
+----
+
+To fetch a single property, use a `name` query parameter:
+
+[source,bash]
+----
+solr/admin/info/properties?name=java.version
 ----
 ====
 
@@ -123,33 +164,53 @@ V2 API::
 ----
 api/node/properties
 ----
+
+To fetch a single property, use a path segment:
+
+[source,bash]
+----
+api/node/properties/java.version
+----
 ====
 ======
-|v1: {solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler]
-
-v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/GetNodeProperties.html[GetNodeProperties]
-|`_ADMIN_PROPERTIES`
-|===
 +
-To fetch a single property, v1 uses a `name` query parameter (`solr/admin/info/properties?name=java.version`) and v2 uses a path segment (`api/node/properties/java.version`).
+Paramset: `_ADMIN_PROPERTIES`
 
 Segments:: Return info on last commit generation Lucene index segments.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
-|===
+[tabs#segments-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/admin/segments
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/cores/<core>/segments
+----
+====
+======
++
+Paramset: `_ADMIN_SEGMENTS`
 
 Core Info:: Return core information.
 +
 *Documentation*: xref:core-info-handler.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/<collection>/admin/info`|{solr-javadocs}/core/org/apache/solr/handler/admin/CoreInfoHandler.html[CoreInfoHandler] |
-|===
+[source,bash]
+----
+solr/<collection>/admin/info
+----
++
+Paramset: none
 
 Threads:: Return info on all JVM threads.
 +
@@ -198,33 +259,90 @@ The thread dump is an array of objects, each containing a `"thread"` property:
 ====
 ======
 +
-[cols="2*.",frame=none,grid=cols,options="header"]
-|===
-|Class & Javadocs |Paramset
-|{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
-|===
+Paramset: `_ADMIN_THREADS`
 
 === Analysis Handlers
 
 [horizontal]
 Document Analysis:: Return a breakdown of the analysis process of the given document.
 +
-*Documentation*: https://cwiki.apache.org/confluence/display/solr/AnalysisRequestHandler
+Expects a single content stream shaped like this, where every document includes a field serving as the unique key (used to associate each analysis breakdown back to its document):
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/analysis/document` |{solr-javadocs}/core/org/apache/solr/handler/DocumentAnalysisRequestHandler.html[DocumentAnalysisRequestHandler] |`_ANALYSIS_DOCUMENT`
-|===
+[source,xml]
+----
+<docs>
+    <doc>
+        <field name="id">1</field>
+        <field name="name">Running Analyzers</field>
+    </doc>
+    <doc>...</doc>
+    ...
+</docs>
+----
++
+[source,bash]
+----
+curl "http://localhost:8983/solr/<collection>/analysis/document" -H "Content-type:text/xml" --data-binary @mydoc.xml
+----
++
+The response breaks each field down by analysis stage, alternating the analyzer/filter class name with the tokens it produced (trimmed here for brevity):
++
+[source,json]
+----
+{
+  "analysis": {
+    "1": {
+      "name": {
+        "index": {
+          "Running Analyzers": [
+            "org.apache.lucene.analysis.standard.StandardTokenizer",
+            [
+              {"text": "Running", "start": 0, "end": 7, "position": 1},
+              {"text": "Analyzers", "start": 8, "end": 17, "position": 2}
+            ],
+            "org.apache.lucene.analysis.core.LowerCaseFilter",
+            [
+              {"text": "running", "start": 0, "end": 7, "position": 1},
+              {"text": "analyzers", "start": 8, "end": 17, "position": 2}
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
+----
++
+Also supports query-time analysis via an `analysis.query` or `q` parameter, plus `analysis.showmatch=true` to mark matching field tokens with `"match": true`.
++
+[source,bash]
+----
+solr/<collection>/analysis/document
+----
++
+Paramset: `_ANALYSIS_DOCUMENT`
 
 Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s).
 This handler drives the xref:indexing-guide:analysis-screen.adoc[] in Solr's Admin UI.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
+[cols="2*.",frame=none,grid=cols,options="header"]
 |===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/analysis/field` |{solr-javadocs}/core/org/apache/solr/handler/FieldAnalysisRequestHandler.html[FieldAnalysisRequestHandler] |`_ANALYSIS_FIELD`
+|Parameter |Description
+|`analysis.fieldname` |Analyze based on this field's type. Accepts a comma-separated list.
+|`analysis.fieldtype` |Analyze based on this field type. Accepts a comma-separated list.
+|`analysis.fieldvalue` |Text to analyze, mimicking index-time analysis.
+|`analysis.query` / `q` |Text to analyze, mimicking query-time analysis. `analysis.query` takes precedence over `q`.
+|`analysis.showmatch` |When `true` and query analysis is performed, marks field-value tokens that match the query's tokens.
 |===
++
+If neither `analysis.fieldname` nor `analysis.fieldtype` is given, the default search field's analyzer is used; one of `analysis.fieldvalue`, `analysis.query`, or `q` is required.
++
+[source,bash]
+----
+solr/<collection>/analysis/field
+----
++
+Paramset: `_ANALYSIS_FIELD`
 
 === Handlers for Configuration
 
@@ -233,10 +351,6 @@ Config API:: Retrieve and modify Solr configuration.
 +
 *Documentation*: xref:config-api.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-a|
 [tabs#config-endpoint]
 ======
 V1 API::
@@ -257,34 +371,34 @@ api/collections/<collection>/config
 ----
 ====
 ======
-|{solr-javadocs}/core/org/apache/solr/handler/SolrConfigHandler.html[SolrConfigHandler] |`_CONFIG`
-|===
++
+Paramset: `_CONFIG`
 
 Dump:: Echo the request contents back to the client.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/debug/dump` |{solr-javadocs}/core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP`
-|===
+[source,bash]
+----
+solr/debug/dump
+----
++
+Paramset: `_DEBUG_DUMP`
 
 Replication:: Replicate indexes for SolrCloud recovery and user-managed cluster index distribution.
 This handler must have a core name in the path to the endpoint.
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<core>/replication` |{solr-javadocs}/core/org/apache/solr/handler/ReplicationHandler.html[ReplicationHandler] |`_REPLICATION`
-|===
+*Documentation*: xref:deployment-guide:user-managed-index-replication.adoc[]
++
+[source,bash]
+----
+solr/<core>/replication
+----
++
+Paramset: `_REPLICATION`
 
 Schema API:: Retrieve and modify the Solr schema.
 +
 *Documentation*: xref:indexing-guide:schema-api.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-a|
 [tabs#schema-endpoint]
 ======
 V1 API::
@@ -307,8 +421,8 @@ api/cores/<core>/schema
 ----
 ====
 ======
-|{solr-javadocs}/core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA`
-|===
++
+Paramset: `_SCHEMA`
 
 === Query Handlers
 
@@ -317,61 +431,83 @@ Export:: Export full sorted result sets.
 +
 *Documentation*: xref:query-guide:exporting-result-sets.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/export` |{solr-javadocs}/core/org/apache/solr/handler/ExportHandler.html[ExportHandler] |`_EXPORT`
-|===
+[source,bash]
+----
+solr/<collection>/export
+----
++
+Paramset: `_EXPORT`
 
 RealTimeGet:: Low-latency retrieval of the latest version of a document.
 +
 *Documentation*: xref:realtime-get.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/get` |{solr-javadocs}/core/org/apache/solr/handler/RealTimeGetHandler.html[RealTimeGetHandler] |`_GET`
-|===
+[tabs#realtime-get-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/get
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/get
+----
+====
+======
++
+Paramset: `_GET`
 
 Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted output from a `gatherNodes` streaming expression.
 +
 *Documentation*: xref:query-guide:graph-traversal.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/graph` |{solr-javadocs}/core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH`
-|===
+[source,bash]
+----
+solr/<collection>/graph
+----
++
+Paramset: `_ADMIN_GRAPH`
 
 SQL:: SQL query support.
 +
 *Documentation*: xref:query-guide:sql-query.adoc#sql-request-handler[SQL Request Handler]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/sql` |{solr-javadocs}/modules/sql/org/apache/solr/handler/sql/SQLHandler.html[SQLHandler] |`_SQL`
-|===
+[source,bash]
+----
+solr/<collection>/sql
+----
++
+Paramset: `_SQL`
 
 Streaming Expressions:: Distributed stream processing.
 +
 *Documentation*: xref:query-guide:streaming-expressions.adoc#streaming-requests-and-responses[Streaming Requests and Responses]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/stream` |{solr-javadocs}/core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM`
-|===
+[source,bash]
+----
+solr/<collection>/stream
+----
++
+Paramset: `_STREAM`
 
 Terms:: Return a field's indexed terms and the number of documents containing each term.
 +
 *Documentation*: xref:query-guide:terms-component.adoc#using-the-terms-component-in-a-request-handler[Using the Terms Component in a Request Handler]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/terms` |{solr-javadocs}/core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS`
-|===
+[source,bash]
+----
+solr/<collection>/terms
+----
++
+Paramset: `_TERMS`
 
 === Update Handlers
 
@@ -380,41 +516,95 @@ Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, Sol
 +
 *Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE`
-|===
+[tabs#update-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/update
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/update
+----
+====
+======
++
+Paramset: `_UPDATE`
 
 CSV Updates:: Add and update CSV-formatted documents.
 +
 *Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc#csv-update-convenience-paths[CSV Update Convenience Paths]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update/csv` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV`
-|===
+[tabs#csv-update-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/update/csv
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/update/csv
+----
+====
+======
++
+Paramset: `_UPDATE_CSV`
 
 JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 +
 *Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc#json-update-convenience-paths[JSON Update Convenience Paths]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update/json` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON`
-|===
+[tabs#json-update-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/update/json
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/update/json
+----
+====
+======
++
+Paramset: `_UPDATE_JSON`
 
 Custom JSON Updates:: Add and update custom JSON-formatted documents.
 +
 *Documentation*: xref:indexing-guide:transforming-and-indexing-custom-json.adoc[]
 +
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update/json/docs` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS`
-|===
+Both the v2 `/update` and `/update/json` endpoints above are internally rewritten to this path, which is why it has no distinct v2 endpoint of its own.
++
+[source,bash]
+----
+solr/<collection>/update/json/docs
+----
++
+Paramset: `_UPDATE_JSON_DOCS`
 
 == How to View Implicit Handler Paramsets
 
