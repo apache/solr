@@ -785,7 +785,9 @@ public class HttpSolrCall {
       return;
     }
     assert cores.isZooKeeperAware();
-    String collectionParam = queryParams.get(COLLECTION_PROP);
+    // Read the merged URL + body params: a POST form body may carry the collection param, and it
+    // needs the same alias-resolution rewrite as a URL query-string param.
+    String collectionParam = getQueryParams().get(COLLECTION_PROP);
     // if there is no existing collection param and the core we go to is for the expected
     // collection, then we needn't add a collection param
     if (collectionParam == null
