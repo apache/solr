@@ -104,7 +104,7 @@ The commands below will start Solr, create a core/collection named `gettingstart
 bin/solr start -e schemaless -Dsolr.modules=extraction
 
 # Configure the handler
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/gettingstarted/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/update/extract",
     "class": "solr.extraction.ExtractingRequestHandler",
@@ -114,7 +114,7 @@ curl -X POST -H 'Content-type:application/json' -d '{
       "captureAttr":"true"
     }
   }
-}' 'http://localhost:8983/solr/gettingstarted/config'
+}'
 ----
 
 Once Solr is started, you can use curl to send a sample PDF included with Solr via HTTP POST:
