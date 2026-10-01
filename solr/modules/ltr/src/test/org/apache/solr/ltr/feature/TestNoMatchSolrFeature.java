@@ -139,7 +139,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
             ((Map<String, Object>)
                     ((ArrayList<Object>)
                             ((Map<String, Object>) jsonParse.get("response")).get("docs"))
-                        .get(0))
+                        .getFirst())
                 .get("score");
 
     final String docs0fv_dense_csv =
@@ -221,7 +221,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
             ((Map<String, Object>)
                     ((ArrayList<Object>)
                             ((Map<String, Object>) jsonParse.get("response")).get("docs"))
-                        .get(0))
+                        .getFirst())
                 .get("score");
 
     final String docs0fv_dense_csv =

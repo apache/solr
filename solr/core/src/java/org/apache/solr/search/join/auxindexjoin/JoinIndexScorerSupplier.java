@@ -48,6 +48,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.search.join.auxindexjoin.AuxIndexManager.JoinSegmentReference;
@@ -75,7 +76,8 @@ import org.slf4j.LoggerFactory;
  *       shape.
  *   <li>{@code evt=ctx} -- this context finished setting up: how many (from, to) pairs contributed,
  *       how many the a-priori from-edge check dropped before any column was opened, and how loose
- *       the resulting approximation is.
+ *       the resulting approximation is. Emitted from {@link #get}, with {@code mode=eager} when
+ *       every column is drained up front instead of confirmed lazily.
  *   <li>{@code evt=drain} -- one join column was read through during confirmation, and whether that
  *       read confirmed the doc under test (an early exit) or not.
  *   <li>{@code evt=done} -- confirmation reached a terminal state for this context: every column
@@ -156,6 +158,13 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    */
   private int rebindsAfterReap;
 
+  /**
+   * from-segments whose foreign-key column {@link #fromColumnsFor} had to read on the query path
+   * because the weight skipped it. Steady-state zero, like {@link #rebindsAfterReap}, but also
+   * counts pairs reaped before their cell was ever resolved, which that counter misses.
+   */
+  private int fkLateLoads;
+
   // how many cells handed their built model back for the column on disk, see adoptOnDiskColumn
   private int modelsReleasedToDisk;
 
@@ -204,19 +213,16 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
             this.shift = approximation.docID();
             falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
           }
-          int walked = joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
-          if (!joinTask.fromSegIterIsNotExausted()) {
-            JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
-            leafsDrained++;
+          DrainOutcome outcome =
+              joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
+          fromDocsWalked += joinTask.lastDrainWalked();
+          if (outcome == DrainOutcome.CONFIRMED) {
+            logDrain(joinTask, true, falseNegToDocsBits);
+            return true;
           }
-          fromDocsWalked += walked;
-          if (!leafJoins.isEmpty()) {
-            if (falseNegToDocsBits.get(approximation.docID() - shift)) {
-              logDrain(joinTask, walked, true);
-              return true;
-            } // otherwise we don't know if 0 is real false
-          }
-          logDrain(joinTask, walked, false);
+          JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
+          leafsDrained++;
+          logDrain(joinTask, false, falseNegToDocsBits);
         }
       } catch (ExecutionException e) {
         throw new RuntimeException(e);
@@ -238,34 +244,33 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       return matched;
     }
 
-    /**
-     * Reports one column read. {@code confirmed=true} is the early exit the lazy variant exists
-     * for: the doc under test was found before the remaining {@code cellsLeft} columns were
-     * touched.
-     */
-    private void logDrain(LeafJoin joinTask, int walked, boolean confirmed) {
-      if (!JoinIndexUtils.diagnosticsEnabled(log)) {
-        return;
-      }
-      JoinIndexUtils.logDiagnostic(
-          log,
-          "AUXIJOIN evt=drain ctx={} toSeg={} pair={} confirmed={} walked={} colToCount={}"
-              + " cellsLeft={} hCard={} confirmCalls={}",
-          ctxId,
-          JoinIndexUtils.segmentName(toContext),
-          joinTask.pairFieldName,
-          confirmed,
-          walked,
-          joinTask.toCount(),
-          leafJoins.size(),
-          falseNegToDocsBits == null ? 0 : falseNegToDocsBits.cardinality(),
-          confirmCalls);
-    }
-
     @Override
     public float matchCost() {
       return matchedToDocsCount;
     }
+  }
+
+  /**
+   * Reports one column read. {@code confirmed=true} is the early exit the lazy variant exists for:
+   * the doc under test was found before the remaining {@code cellsLeft} columns were touched.
+   */
+  private void logDrain(LeafJoin joinTask, boolean confirmed, FixedBitSet union) {
+    if (!JoinIndexUtils.diagnosticsEnabled(log)) {
+      return;
+    }
+    JoinIndexUtils.logDiagnostic(
+        log,
+        "AUXIJOIN evt=drain ctx={} toSeg={} pair={} confirmed={} walked={} colToCount={}"
+            + " cellsLeft={} hCard={} confirmCalls={}",
+        ctxId,
+        JoinIndexUtils.segmentName(toContext),
+        joinTask.pairFieldName,
+        confirmed,
+        joinTask.lastDrainWalked(),
+        joinTask.toCount(),
+        leafJoins.size(),
+        union == null ? 0 : union.cardinality(),
+        confirmCalls);
   }
 
   /**
@@ -276,6 +281,14 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    * #resolveFromCalculatedModel}: the pair's edges plus an in-memory {@link JoinColumnModel} that
    * needs no further indirection to read.
    */
+  /** How one {@link LeafJoin#dumpMatchesInto} call ended. */
+  enum DrainOutcome {
+    /** Found the doc under confirmation; the cell stays live and the next drain resumes there. */
+    CONFIRMED,
+    /** Nothing left in the cell's from-range or column, so it can be dropped. */
+    EXHAUSTED
+  }
+
   class LeafJoin implements DocEdges {
     final String pairFieldName;
     final DocIdSetIterator fromSegmentDocIdIter;
@@ -286,6 +299,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     // set only when resolved from the indexer; null means real docvalues are opened through
     // joinSegmentRef instead
     private JoinColumnModel docMapping;
+    private int lastDrainWalked;
 
     LeafJoin(
         String pairFieldName,
@@ -320,8 +334,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
      *
      * <p>Rebinding mid-query is safe because a cell's iteration state lives in {@link
      * #fromSegmentDocIdIter}, never in the column: {@link #toDocsByFromDocsDV()} is re-opened on
-     * every {@link #dumpMatchesInto} call and read by {@code advanceExact(fromDoc)}, so swapping
-     * what backs it between calls is invisible to the walk. A rebuilt column maps the same
+     * every {@link #dumpMatchesInto} call and read forward from the from-iterator's position, so
+     * swapping what backs it between calls is invisible to the walk. A rebuilt column maps the same
      * from-docs to the same to-docs as the one it replaces -- pair field names pin both segments --
      * which the assertion below states.
      */
@@ -387,48 +401,117 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
 
     /**
-     * Walks this cell's from-iterator from its current (prepositioned) doc through its edges' last
-     * from-doc, setting every to-doc it maps to -- shifted by {@code shift} -- in {@code
-     * matchedToDocs}.
+     * Walks this cell's from-docs from the current (prepositioned) one through its edges' last
+     * from-doc, setting every to-doc they map to -- shifted by {@code shift} -- in {@code
+     * matchedToDocs}, until {@code earlyExitDoc} is set or the cell has nothing left.
      *
-     * @return how many from-docs were walked, i.e. the column-read work this drain cost
+     * <p>The from-docs and the column are intersected, and which side drives mirrors Lucene's
+     * {@code ConjunctionDISI}: when the from-side matches are a {@link FixedBitSet} and the column
+     * holds fewer values than there are from-matches, the column leads and each of its docs is
+     * tested against the bitset; otherwise the two leapfrog. Probing the column at every from-match
+     * instead costs one {@code advanceExact} per from-doc, wasted on those a sparse column has no
+     * value for. {@code ConjunctionUtils} itself can't be used: it wants every iterator on the same
+     * doc, while this cell's from-iterator resumes mid-stream across drains.
+     *
+     * @return {@link DrainOutcome#CONFIRMED} with the from-iterator left on the confirmed doc, so
+     *     the next drain resumes there; or {@link DrainOutcome#EXHAUSTED}, after which the cell is
+     *     never drained again. The work either cost is {@link #lastDrainWalked()}.
      */
-    int dumpMatchesInto(FixedBitSet matchedToDocs, int shift, int earlyExitDoc) throws IOException {
+    DrainOutcome dumpMatchesInto(FixedBitSet matchedToDocs, int shift, int earlyExitDoc)
+        throws IOException {
       SortedNumericDocValues toDocsByFromDoc = toDocsByFromDocsDV();
-      int walked = 0;
-      boolean confirmedCurrent = false;
-      for (int fromDoc = fromSegmentDocIdIter.docID(); // prepositioned to the first match
-          fromSegIterIsNotExausted();
-          fromDoc = fromSegmentDocIdIter.nextDoc()) {
-        walked++;
-        if (toDocsByFromDoc.advanceExact(
-            fromDoc)) { // TODO will it be faster to use advance() and leapfrog?
-          for (int i = 0; i < toDocsByFromDoc.docValueCount(); i++) {
-            int toDocMatch = (int) toDocsByFromDoc.nextValue();
-            assert toDocMatch <= toDocEdges()[1] && toDocMatch >= toDocEdges()[0]
-                : "to doc "
-                    + toDocMatch
-                    + " above edges union max "
-                    + Arrays.toString(toDocEdges());
-            // shift is wherever the approximation iterator first landed, which need not be
-            // the global firstToDoc (e.g. under a boolean conjunction); a match below shift
-            // is unreachable -- the iterator only moves forward -- so it's dropped rather
-            // than written at a negative offset
-            // Also. we don't need toDocs less than one we're confirming currently
-            if (toDocMatch >= shift && toDocMatch >= earlyExitDoc) {
-              matchedToDocs.set(toDocMatch - shift);
-              if (toDocMatch == earlyExitDoc) {
-                confirmedCurrent = true;
-              }
-            }
+      lastDrainWalked = 0;
+      if (fromSegmentDocIdIter instanceof BitSetIterator fromBits && toCount() < fromMatchCount) {
+        return columnLedDrain(fromBits, toDocsByFromDoc, matchedToDocs, shift, earlyExitDoc);
+      }
+      return leapfrogDrain(toDocsByFromDoc, matchedToDocs, shift, earlyExitDoc);
+    }
+
+    /**
+     * How many entries of the driving side -- column values or from-docs -- the last {@link
+     * #dumpMatchesInto} visited, i.e. the column-read work it cost.
+     */
+    int lastDrainWalked() {
+      return lastDrainWalked;
+    }
+
+    /** The column leads; each of its from-docs is checked against the from-side bitset. */
+    private DrainOutcome columnLedDrain(
+        BitSetIterator fromIter,
+        SortedNumericDocValues column,
+        FixedBitSet matchedToDocs,
+        int shift,
+        int earlyExitDoc)
+        throws IOException {
+      BitSet fromBits = fromIter.getBitSet();
+      int lastFromDoc = fromDocEdges()[1];
+      for (int fromDoc = column.advance(fromIter.docID());
+          fromDoc != DocIdSetIterator.NO_MORE_DOCS && fromDoc <= lastFromDoc;
+          fromDoc = column.nextDoc()) {
+        lastDrainWalked++;
+        if (fromDoc < fromBits.length()
+            && fromBits.get(fromDoc)
+            && collectToDocs(column, matchedToDocs, shift, earlyExitDoc)) {
+          if (fromDoc > fromIter.docID()) {
+            fromIter.advance(fromDoc); // a set bit, so it lands exactly here
           }
-          if (confirmedCurrent) {
-            // we've just confirmed the doc, which was matches() is called for
-            return walked; // giveup
+          return DrainOutcome.CONFIRMED;
+        }
+      }
+      return DrainOutcome.EXHAUSTED;
+    }
+
+    /** From-docs and column leapfrog, each advancing to the other's doc. */
+    private DrainOutcome leapfrogDrain(
+        SortedNumericDocValues column, FixedBitSet matchedToDocs, int shift, int earlyExitDoc)
+        throws IOException {
+      int lastFromDoc = fromDocEdges()[1];
+      int columnDoc = -1;
+      for (int fromDoc = fromSegmentDocIdIter.docID(); fromSegIterIsNotExausted(); ) {
+        lastDrainWalked++;
+        if (columnDoc < fromDoc) {
+          columnDoc = column.advance(fromDoc);
+        }
+        if (columnDoc == DocIdSetIterator.NO_MORE_DOCS || columnDoc > lastFromDoc) {
+          return DrainOutcome.EXHAUSTED;
+        }
+        if (columnDoc > fromDoc) {
+          fromDoc = fromSegmentDocIdIter.advance(columnDoc);
+          continue;
+        }
+        if (collectToDocs(column, matchedToDocs, shift, earlyExitDoc)) {
+          return DrainOutcome.CONFIRMED;
+        }
+        fromDoc = fromSegmentDocIdIter.nextDoc();
+      }
+      return DrainOutcome.EXHAUSTED;
+    }
+
+    /**
+     * Sets the to-docs the column maps its current from-doc to, and reports whether {@code
+     * earlyExitDoc} -- the doc {@code matches()} was asked about -- was among them.
+     */
+    private boolean collectToDocs(
+        SortedNumericDocValues column, FixedBitSet matchedToDocs, int shift, int earlyExitDoc)
+        throws IOException {
+      boolean confirmedCurrent = false;
+      for (int i = 0; i < column.docValueCount(); i++) {
+        int toDocMatch = (int) column.nextValue();
+        assert toDocMatch <= toDocEdges()[1] && toDocMatch >= toDocEdges()[0]
+            : "to doc " + toDocMatch + " above edges union max " + Arrays.toString(toDocEdges());
+        // shift is wherever the approximation iterator first landed, which need not be
+        // the global firstToDoc (e.g. under a boolean conjunction); a match below shift
+        // is unreachable -- the iterator only moves forward -- so it's dropped rather
+        // than written at a negative offset
+        // Also. we don't need toDocs less than one we're confirming currently
+        if (toDocMatch >= shift && toDocMatch >= earlyExitDoc) {
+          matchedToDocs.set(toDocMatch - shift);
+          if (toDocMatch == earlyExitDoc) {
+            confirmedCurrent = true;
           }
         }
       }
-      return walked;
+      return confirmedCurrent;
     }
 
     private boolean fromSegIterIsNotExausted() {
@@ -553,18 +636,24 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       // array-backed,
       advanceAtMinFromEdge(task);
     }
-    // now let's read each cell's edges, then build "to" side bitset of approximation
-    // first pass: union the contributing pairs' to-doc ranges; every possible match in this
-    // to segment falls into [minToDoc, maxToDoc]
+    // bounds of the contributing pairs' to-doc ranges, which cost() needs before get(); every
+    // possible match in this to segment falls into [firstToDoc, lastToDoc]
     for (LeafJoin task : leafJoins) {
       DocEdges docEdges = task;
       firstToDoc = Math.min(firstToDoc, docEdges.toDocEdges()[0]);
       lastToDoc = Math.max(lastToDoc, docEdges.toDocEdges()[1]);
       matchedToDocsCount += docEdges.toDocEdges()[1] - docEdges.toDocEdges()[0] + 1;
-      if (falsePositiveToDocsBits == null) {
-        falsePositiveToDocsBits = new FixedBitSet(toContext.reader().maxDoc());
-      }
-      falsePositiveToDocsBits.set(docEdges.toDocEdges()[0], docEdges.toDocEdges()[1] + 1);
+    }
+  }
+
+  /**
+   * Builds the approximation -- the union of the surviving pairs' to-ranges -- and orders the cells
+   * for {@link LazyConfirmationIterator}.
+   */
+  private void setUpLazyConfirmation() {
+    falsePositiveToDocsBits = new FixedBitSet(toContext.reader().maxDoc());
+    for (LeafJoin task : leafJoins) {
+      falsePositiveToDocsBits.set(task.toDocEdges()[0], task.toDocEdges()[1] + 1);
     }
     // when confirming docs, we want to start from heaviest leafs first
     if (leafJoins.size() > 1) {
@@ -579,7 +668,36 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
                               leafJoin.edges.toCount())))
               .reversed());
     }
-    logContextSetUp();
+  }
+
+  /**
+   * Drains every cell through into an exact bitset of this segment's matches, one column after
+   * another. Used when nothing will thin the approximation, so {@link LazyConfirmationIterator}
+   * would end up confirming every doc of it anyway -- at a searcher acquire and a refresh per miss.
+   */
+  private FixedBitSet drainAll() throws IOException {
+    FixedBitSet matched = new FixedBitSet(toContext.reader().maxDoc());
+    IndexSearcher freshSearcher = joinIndex.acquire();
+    try {
+      TaskRefreshResult refreshed = refreshJoinTasksReferences(freshSearcher);
+      for (Entry<LeafJoin, JoinColumnModel> entry : refreshed.justWritten) {
+        entry.getKey().bind(entry.getValue());
+      }
+      for (LeafJoin cell : new ArrayList<>(leafJoins)) {
+        // no doc is under confirmation: -1 keeps every to-doc and never exits early
+        DrainOutcome outcome = cell.dumpMatchesInto(matched, 0, -1);
+        assert outcome == DrainOutcome.EXHAUSTED;
+        fromDocsWalked += cell.lastDrainWalked();
+        dropJoinLeaf(cell);
+        leafsDrained++;
+        logDrain(cell, false, matched);
+      }
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    } finally {
+      joinIndex.release(freshSearcher);
+    }
+    return matched;
   }
 
   /**
@@ -587,9 +705,10 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
    * approximation (the union of the surviving pairs' to-ranges), while {@code approxSpanSum} adds
    * those ranges up with their overlaps counted twice; the two together say how much the
    * single-range-per-column approximation actually narrows the segment, which is what bounds every
-   * saving the confirmation phase can make.
+   * saving the confirmation phase can make. {@code mode} is {@code lazy} or {@code eager}, see
+   * {@link #get}; an eager context builds no approximation, so its {@code approxCard} is 0.
    */
-  private void logContextSetUp() {
+  private void logContextSetUp(String mode) {
     if (!JoinIndexUtils.diagnosticsEnabled(log)) {
       return;
     }
@@ -599,11 +718,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
     JoinIndexUtils.logDiagnostic(
         log,
-        "AUXIJOIN evt=ctx ctx={} toSeg={} toMaxDoc={} cellsCreated={} cellsDroppedApriori={}"
-            + " cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
+        "AUXIJOIN evt=ctx ctx={} toSeg={} mode={} toMaxDoc={} cellsCreated={}"
+            + " cellsDroppedApriori={} cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
             + " colToCountSum={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
+        mode,
         toContext.reader().maxDoc(),
         joinLeafsCreated,
         leafsDroppedApriori,
@@ -629,7 +749,8 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
-            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} modelsReleased={} buildMs={}",
+            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} fkLateLoads={} modelsReleased={}"
+            + " buildMs={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
         reason,
@@ -639,6 +760,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         leafJoins.size(),
         fromDocsWalked,
         rebindsAfterReap,
+        fkLateLoads,
         modelsReleasedToDisk,
         joinIndexBuildNanos / 1_000_000L);
   }
@@ -682,6 +804,15 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     }
     if (loaded == null) {
       return fromColumnFutures;
+    }
+    fkLateLoads += loaded.size();
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
+      JoinIndexUtils.logDiagnostic(
+          log,
+          "AUXIJOIN evt=fkLateLoad ctx={} toSeg={} fromOrds={}",
+          ctxId,
+          JoinIndexUtils.segmentName(toContext),
+          loaded.keySet());
     }
     Map<Integer, Future<FromLeafJoinContext>> augmented = new HashMap<>(fromColumnFutures);
     loaded.forEach(
@@ -921,12 +1052,29 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   /** True if this context has any candidate docs at all; used by {@code JoinIndexWeight}. */
   boolean isEmpty() {
-    return falsePositiveToDocsBits == null || matchedToDocsCount == 0;
+    return leafJoins.isEmpty();
   }
 
+  /**
+   * With a {@code leadCost} of {@link Long#MAX_VALUE} nothing leads this clause, so every doc of
+   * the approximation would be confirmed anyway: the columns are drained eagerly into an exact,
+   * single-phase iterator. Otherwise the approximation is handed out and each doc a leading clause
+   * lands on is confirmed lazily.
+   */
   @Override
   public Scorer get(long leadCost) throws IOException {
     assert !isEmpty();
+    if (leadCost == Long.MAX_VALUE) {
+      logContextSetUp("eager");
+      FixedBitSet matched = drainAll();
+      logConfirmationDone("eager");
+      int card = matched.cardinality();
+      DocIdSetIterator exact =
+          card == 0 ? DocIdSetIterator.empty() : new BitSetIterator(matched, card);
+      return new ConstantScoreScorer(boost, scoreMode, exact);
+    }
+    setUpLazyConfirmation();
+    logContextSetUp("lazy");
     DocIdSetIterator approximation =
         new BitSetIterator(falsePositiveToDocsBits, matchedToDocsCount);
 
