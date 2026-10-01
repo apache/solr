@@ -340,4 +340,41 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     assertNull(configSetService.downloadFileFromConfig(configSetName, "lang/stopwords/old.txt"));
     assertNull(configSetService.downloadFileFromConfig(configSetName, "stale.txt"));
   }
+
+  @Test
+  public void testZipUploadRejectsPathTraversalEntries() throws Exception {
+    final String configSetName = "traversalpaths";
+    createExistingConfigSet(configSetName, "conf/solrconfig.xml", "<config/>");
+
+    // The backslash entry is normalized to forward slashes before the config-set
+    // backend sees it, so both entries below are traversal attempts on every platform.
+    // The "conf/" directory entry keeps cleanup from recursively deleting the
+    // pre-existing conf/ dir (and the new file in it) afterwards.
+    InputStream zipStream =
+        createZipStream(
+            "../evil.txt",
+            "evil",
+            "..\\evil2.txt",
+            "evil2",
+            "conf/",
+            "",
+            "conf/good.txt",
+            "good");
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    api.uploadConfigSet(configSetName, true, true, zipStream);
+
+    // Traversal entries must not land in the configset ...
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "evil.txt"));
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "evil2.txt"));
+    // ... nor escape next to it on disk ...
+    assertFalse(Files.exists(configSetBase.resolve("evil.txt")));
+    assertFalse(Files.exists(configSetBase.resolve("evil2.txt")));
+    // ... while legitimate entries still upload.
+    assertEquals(
+        "good",
+        new String(
+            configSetService.downloadFileFromConfig(configSetName, "conf/good.txt"),
+            StandardCharsets.UTF_8));
+  }
 }
