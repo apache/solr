@@ -311,7 +311,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             new ReplicationHandler(),
             "collectionRequests",
             List.of(new CollectionRequest("mycoll"))),
-        STATUS_OK); // Replication requires "READ" permission, which Tim has
+        STATUS_OK); // Replication with no command stays on READ_PERM, which Tim has
 
     checkRules(
         Map.of(
@@ -327,6 +327,23 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             List.of(new CollectionRequest("mycoll"))),
         FORBIDDEN); // User cio has role 'su' which does not have 'read' permission
 
+    // Tim holds "read" but not "update"; state-changing replication commands must be rejected.
+    checkRules(
+        Map.of(
+            "resource",
+            ReplicationHandler.PATH,
+            "httpMethod",
+            "POST",
+            "userPrincipal",
+            "tim",
+            "handler",
+            new ReplicationHandler(),
+            "collectionRequests",
+            List.of(new CollectionRequest("mycoll")),
+            "params",
+            new MapSolrParams(Map.of("command", "backup"))),
+        FORBIDDEN);
+
     checkRules(
         Map.of(
             "resource",
@@ -339,6 +356,28 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             new CollectionsHandler(),
             "params",
             new MapSolrParams(Map.of("action", "CREATE"))),
+        STATUS_OK);
+  }
+
+  @Test
+  public void testReplicationBackupAllowedWithUpdatePerm() {
+    // Positive counterpart: tim gains "update" via the admin role and can POST command=backup.
+    addPermission("update", "admin");
+
+    checkRules(
+        Map.of(
+            "resource",
+            ReplicationHandler.PATH,
+            "httpMethod",
+            "POST",
+            "userPrincipal",
+            "tim",
+            "handler",
+            new ReplicationHandler(),
+            "collectionRequests",
+            List.of(new CollectionRequest("mycoll")),
+            "params",
+            new MapSolrParams(Map.of("command", "backup"))),
         STATUS_OK);
   }
 
