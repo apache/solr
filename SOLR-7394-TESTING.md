@@ -55,3 +55,44 @@ remaining `_recovering` entry after `RECOVERY_FAILED`; the patched branch should
 Gradle seed and test-output path for any failure.
 
 No Gradle task was run while preparing this branch.
+
+## Cloud-level repro — implemented 2026-10-01
+
+The deterministic cloud test exists and is green on the patched branch.
+
+**Test seams** (commit `9da1f191cc4`, test-only, narrowly scoped):
+
+- `RecoveryStrategy.testing_maxRetriesOverride`: public static volatile `Integer`; when non-null,
+  takes precedence over `maxRetries` so tests exhaust retries quickly. Follows the in-file
+  precedent of `testing_beforeReplayBufferingUpdates`. Tests must reset it to null.
+- `TestInjection.failRecovery` + `injectFailRecovery()` hook in `RecoveryStrategy`, placed right
+  after `sendPrepRecoveryCmd` in the recovery path — i.e. it can only fire once recovery actually
+  runs, which is after the replica has published `RECOVERING`.
+
+**Test** (commit `15d88653d70`): new
+`solr/core/src/test/org/apache/solr/cloud/ZkShardTermsRecoveryFailureTest.java`, a
+`SolrCloudTestCase` modeled on `LeaderVoteWaitTimeoutTest`. It creates a 3-node cluster, elects a
+leader on node 0, arms `failRecovery` with a retry limit of 3, adds an NRT replica on another node,
+then asserts, in order:
+
+1. the replica publishes `RECOVERING`;
+2. the replica publishes `RECOVERY_FAILED`;
+3. `ZkShardTerms` shows no `<coreNodeName>_recovering` entry and a term of `0` for the failed
+   replica;
+4. `canBecomeLeader` is false for the failed replica while the higher-term leader remains;
+5. after stopping the leader's node, the failed replica wins the election (eligibility restored).
+
+**Validation (patched branch, 2026-10-01):** `ZkShardTermsRecoveryFailureTest` green on 5 runs
+across different seeds (1 test, 0 failures each; last serial run seed `DEADBEEF12345678`,
+`tests="1" failures="0" errors="0"`). `ShardTermsTest` still green (5 tests, 0 failures).
+Test-output XMLs: `solr/core/build/test-results/test/TEST-org.apache.solr.cloud.ZkShardTermsRecoveryFailureTest.xml`.
+
+**Incident note:** one intermediate `BUILD FAILED` on seed `DEADBEEF12345678` produced no test
+results at all (on-disk XML was stale from the earlier run); it overlapped with a second
+backgrounded Gradle build, i.e. the Gradle cache-lock contention scenario — an infrastructure
+failure, not a test failure. A serial re-run on the same seed was `BUILD SUCCESSFUL`. The
+"never run two Gradle builds concurrently" lesson in `~/AGENTS.md` was extended to note that
+backgrounded execs count as concurrent.
+
+The unpatched-base run (expected: `_recovering` entry retained after `RECOVERY_FAILED`) has not
+been executed yet; run it before proposing upstream.
