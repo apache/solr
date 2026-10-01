@@ -485,8 +485,7 @@ task checkSiteLinks(type: NpxTask) {
 
   def outputFile = "${buildDir}/validation/link-check.json"
   execOverrides {
-    // The it variable contains the `ExecSpec`
-    it.standardOutput = new TeeOutputStream(it.standardOutput, new FileOutputStream(outputFile))
+    it.standardOutput = new TeeOutputStream(System.out, new FileOutputStream(outputFile))
   }
 
   inputs.files(fileTree(siteDir))

@@ -72,10 +72,20 @@ public class FileUtils {
   }
 
   /**
-   * Takes a path and normalizes it with the OS default filesystems separator
+   * Rewrites {@code path} so every path separator matches the current filesystem's separator.
+   *
+   * <p>Both {@code /} and {@code \} are replaced with {@link FileSystems#getDefault()}'s separator.
+   * This is useful before iterating {@link Path} components, since on POSIX a {@code \} is
+   * otherwise part of a name rather than a separator, so {@code \..\conf\x} would be a single
+   * component.
+   *
+   * <p>Caveat: on non-Windows platforms this reinterprets any filename that legitimately contains a
+   * backslash as a path with additional components. Callers that treat backslash as a valid
+   * filename character on POSIX must not use this method.
    *
    * @param path the path to normalize
-   * @return path normalized with the filesystems default separator
+   * @return path normalized with the filesystem's default separator, or {@code null} if {@code
+   *     path} was {@code null}
    */
   public static String normalizeToOsPathSeparator(String path) {
     if (path == null) return null;
