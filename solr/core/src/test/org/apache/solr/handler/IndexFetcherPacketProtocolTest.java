@@ -318,7 +318,7 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
         new HttpJettySolrClient.Builder()
             .withHttpClient(
                 h.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyHttpClient())
-            .withAbortableSyncRequests(true)
+            .withAbortableRequests(true)
             .build()) {
       Map<String, Object> fileDetails = new HashMap<>();
       fileDetails.put("name", fileName);

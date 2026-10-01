@@ -715,9 +715,11 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   private static final long ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2;
 
   @Test
-  public void testAbortFailsRequestInFlight() throws Exception {
+  public void testAbortFailsAsyncRequestInFlight() throws Exception {
     try (var client =
-        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH).build()) {
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
       CompletableFuture<Void> arrived = new CompletableFuture<>();
       CompletableFuture<NamedList<Object>> future = client.requestAsync(stallRequest(arrived));
       arrived.get(SlowServlet.DELAY_MS, TimeUnit.MILLISECONDS);
@@ -731,7 +733,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testAbortFailsResponseMidBody() throws Exception {
     try (var client =
-        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH).build()) {
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
       QueryRequest req = new QueryRequest(SolrParams.of(SlowServlet.FIRST_BYTE_PARAM, "true"));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       NamedList<Object> response = client.requestAsync(req).get(10, TimeUnit.SECONDS);
@@ -750,9 +754,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testAbortFailsLaterRequests() throws Exception {
+  public void testAbortFailsLaterAsyncRequests() throws Exception {
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .withAbortableRequests(true)
             .build()) {
       client.abort(new IOException("test abort"));
       assertTrue(client.isAborted());
@@ -769,7 +774,11 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   public void testAbortIsScopedToOneClient() throws Exception {
     String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (var base = new HttpJettySolrClient.Builder(url).build();
-        var copy = new HttpJettySolrClient.Builder(url).withHttpClient(base).build()) {
+        var copy =
+            new HttpJettySolrClient.Builder(url)
+                .withHttpClient(base)
+                .withAbortableRequests(true)
+                .build()) {
       copy.abort(new IOException("test abort"));
       assertTrue(copy.isAborted());
       assertFalse(base.isAborted());
@@ -784,12 +793,12 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testAbortFailsSyncRequestInFlightWhenOptedIn() throws Exception {
+  public void testAbortFailsSyncRequestInFlight() throws Exception {
     ExecutorService executor =
         ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("syncRequest"));
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
-            .withAbortableSyncRequests(true)
+            .withAbortableRequests(true)
             .build()) {
       CompletableFuture<Void> arrived = new CompletableFuture<>();
       QueryRequest req = stallRequest(arrived);
@@ -806,10 +815,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testAbortFailsLaterSyncRequestsWhenOptedIn() {
+  public void testAbortFailsLaterSyncRequests() {
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
-            .withAbortableSyncRequests(true)
+            .withAbortableRequests(true)
             .build()) {
       client.abort(new IOException("test abort"));
       QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
@@ -819,17 +828,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testAbortSkipsSyncRequestsByDefault() throws Exception {
-    try (var client =
-        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
-            .build()) {
-      client.abort(new IOException("test abort"));
-      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
-      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-      NamedList<Object> response = client.request(req);
-      try (InputStream is = (InputStream) response.get("stream")) {
-        assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
-      }
+  public void testAbortRequiresOptIn() {
+    try (var client = new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl()).build()) {
+      expectThrows(IllegalStateException.class, () -> client.abort(new IOException("test abort")));
+      assertFalse(client.isAborted());
     }
   }
 

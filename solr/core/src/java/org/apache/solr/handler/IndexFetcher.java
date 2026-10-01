@@ -177,6 +177,9 @@ public class IndexFetcher {
    */
   private final AtomicReference<HttpJettySolrClient> currentFetchClient = new AtomicReference<>();
 
+  /** Set by {@link #destroy()}; a destroyed fetcher starts no further fetches. */
+  private volatile boolean destroyed;
+
   private boolean useInternalCompression = false;
 
   private boolean useExternalCompression = false;
@@ -418,7 +421,7 @@ public class IndexFetcher {
     HttpJettySolrClient fetchClient =
         new HttpJettySolrClient.Builder()
             .withHttpClient(solrClient)
-            .withAbortableSyncRequests(true)
+            .withAbortableRequests(true)
             .build();
     // doFetch serializes fetches with indexFetchLock, so a fetch already in progress means that
     // invariant broke. Fail loudly rather than silently abort or orphan the other fetch.
@@ -427,9 +430,9 @@ public class IndexFetcher {
       throw new IllegalStateException("A fetch is already in progress on " + this);
     }
     try {
-      // Pairs with destroy(): publish-then-check here and abort-then-read there, so either this
+      // Pairs with destroy(): publish-then-check here and mark-then-read there, so either this
       // sees the fetcher destroyed, or destroy() sees this fetch and aborts it.
-      if (solrClient.isAborted()) {
+      if (destroyed) {
         return IndexFetchResult.REPLICATION_SHUTTING_DOWN;
       }
       return fetchLatestIndexWithRetry(forceReplication, forceCoreReload, fetchClient);
@@ -2045,12 +2048,8 @@ public class IndexFetcher {
   public void destroy() {
     // Marks this fetcher destroyed, which fetchLatestIndex checks, then aborts the fetch in
     // progress. See fetchLatestIndex for why this order closes the race with a starting fetch.
-    IOException cause = new IOException("Index fetcher destroyed");
-    solrClient.abort(cause);
-    HttpJettySolrClient fetchClient = currentFetchClient.get();
-    if (fetchClient != null) {
-      fetchClient.abort(cause);
-    }
+    destroyed = true;
+    abortFetch();
     IOUtils.closeQuietly(solrClient);
   }
 

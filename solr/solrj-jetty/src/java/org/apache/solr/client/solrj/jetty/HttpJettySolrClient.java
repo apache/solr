@@ -121,7 +121,9 @@ public class HttpJettySolrClient extends HttpSolrClient {
   private final long idleTimeoutMillis;
 
   private final List<HttpListenerFactory> listenerFactory;
-  protected AsyncTracker asyncTracker;
+  protected AsyncTracker asyncTracker = new AsyncTracker();
+  // null unless built withAbortableRequests(true)
+  protected AbortTracker abortTracker;
 
   private final boolean closeClient;
   private ExecutorService executor;
@@ -133,7 +135,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
   protected HttpJettySolrClient(String serverBaseUrl, Builder builder) {
     super(serverBaseUrl, builder);
-    this.asyncTracker = new AsyncTracker(builder.abortableSyncRequests);
+    this.abortTracker = builder.abortableRequests ? new AbortTracker() : null;
 
     if (builder.httpClient != null) {
       // Validate that no conflicting options are provided when using an existing HttpClient
@@ -664,12 +666,15 @@ public class HttpJettySolrClient extends HttpSolrClient {
       req.onComplete(listener);
     }
 
+    // Registered before the async tracker's listener, which can block waiting for a permit, so
+    // that an abortable request is tracked as soon as it is queued.
+    if (abortTracker != null) {
+      req.onRequestQueued(abortTracker.trackRequestQueuedListener);
+      req.onComplete(abortTracker.untrackRequestCompleteListener);
+    }
     if (isAsync) {
       req.onRequestQueued(asyncTracker.queuedListener);
       req.onComplete(asyncTracker.completeListener);
-    } else if (asyncTracker.tracksSyncRequests) {
-      req.onRequestQueued(asyncTracker.syncQueuedListener);
-      req.onComplete(asyncTracker.syncCompleteListener);
     }
   }
 
@@ -846,6 +851,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
       super(baseUrl, new HttpJettySolrClient.Builder(baseUrl).withHttpClient(parentClient));
 
       this.asyncTracker = parentClient.asyncTracker;
+      this.abortTracker = parentClient.abortTracker;
     }
 
     @Override
@@ -876,20 +882,10 @@ public class HttpJettySolrClient extends HttpSolrClient {
     private final Phaser phaser;
     // maximum outstanding requests left
     private final Semaphore available;
-    // async requests queued and not yet complete, so that abort() can reach them
-    private final Set<Request> outstanding = ConcurrentHashMap.newKeySet();
-    // non-null once abort() has been called; fails any request queued afterwards
-    private volatile Throwable abortCause;
-    // whether synchronous requests are tracked too, so that abort() reaches them
-    private final boolean tracksSyncRequests;
-    // for synchronous requests: abort bookkeeping only, without a phaser party or a permit
-    private final Request.QueuedListener syncQueuedListener;
-    private final Response.CompleteListener syncCompleteListener;
     private final Request.QueuedListener queuedListener;
     private final Response.CompleteListener completeListener;
 
-    AsyncTracker(boolean tracksSyncRequests) {
-      this.tracksSyncRequests = tracksSyncRequests;
+    AsyncTracker() {
       // TODO: what about shared instances?
       maxOutstandingRequests = EnvUtils.getPropertyAsInteger(ASYNC_REQUESTS_MAX_SYSPROP, 1000);
       phaser = new Phaser(1);
@@ -909,40 +905,15 @@ public class HttpJettySolrClient extends HttpSolrClient {
               // completeListener will call arriveAndDeregister() when onComplete fires.
               Thread.currentThread().interrupt();
             }
-            trackForAbort(request);
           };
       completeListener =
           result -> {
-            if (result != null) {
-              outstanding.remove(result.getRequest());
-            }
             if (result != null
                 && result.getRequest().getAttributes().get(PERMIT_ACQUIRED_ATTR) != null) {
               phaser.arriveAndDeregister();
               available.release();
             }
           };
-      syncQueuedListener = this::trackForAbort;
-      syncCompleteListener = result -> outstanding.remove(result.getRequest());
-    }
-
-    private void trackForAbort(Request request) {
-      // Pairs with abort(): add-then-check here and set-then-scan there, so a request queued
-      // concurrently with abort() is aborted by at least one of the two.
-      outstanding.add(request);
-      Throwable cause = abortCause;
-      if (cause != null) {
-        request.abort(cause);
-      }
-    }
-
-    void abort(Throwable cause) {
-      abortCause = Objects.requireNonNull(cause);
-      outstanding.forEach(request -> request.abort(cause));
-    }
-
-    boolean isAborted() {
-      return abortCause != null;
     }
 
     int getMaxRequestsQueuedPerDestination() {
@@ -974,29 +945,64 @@ public class HttpJettySolrClient extends HttpSolrClient {
   }
 
   /**
-   * Aborts every asynchronous request in flight on this client, and fails any asynchronous request
-   * made afterwards (synchronous ones too, if opted in; see below). Unlike {@link #close()}, this
-   * does not wait: each aborted request completes exceptionally straight away, so a subsequent
-   * {@link #close()} returns promptly.
+   * Tracks a client's requests, synchronous and asynchronous, from queued to complete, so that
+   * {@link #abort(Throwable)} can reach them.
+   */
+  private static class AbortTracker {
+    // requests queued and not yet complete
+    private final Set<Request> outstanding = ConcurrentHashMap.newKeySet();
+    // non-null once abort() has been called; fails any request queued afterwards
+    private volatile Throwable abortCause;
+
+    private final Request.QueuedListener trackRequestQueuedListener =
+        request -> {
+          // Pairs with abort(): add-then-check here and set-then-scan there, so a request queued
+          // concurrently with abort() is aborted by at least one of the two.
+          outstanding.add(request);
+          Throwable cause = abortCause;
+          if (cause != null) {
+            request.abort(cause);
+          }
+        };
+    private final Response.CompleteListener untrackRequestCompleteListener =
+        result -> outstanding.remove(result.getRequest());
+
+    void abort(Throwable cause) {
+      abortCause = Objects.requireNonNull(cause);
+      outstanding.forEach(request -> request.abort(cause));
+    }
+
+    boolean isAborted() {
+      return abortCause != null;
+    }
+  }
+
+  /**
+   * Aborts every request in flight on this client, and fails any request made afterwards. Unlike
+   * {@link #close()}, this does not wait: each aborted request completes exceptionally straight
+   * away, so a subsequent {@link #close()} returns promptly.
    *
    * <p>Scoped to this client instance and to the clients derived from it by {@link
-   * #requestWithBaseUrl}, which share its tracker. Other clients wrapping the same Jetty {@link
+   * #requestWithBaseUrl}, which share its tracking. Other clients wrapping the same Jetty {@link
    * HttpClient} are unaffected, so a lightweight copy made with {@link
    * Builder#withHttpClient(HttpJettySolrClient)} can be aborted without disturbing anyone else.
-   * Synchronous requests are covered only if the client was built with {@link
-   * Builder#withAbortableSyncRequests(boolean)}.
    *
    * @param cause reported as the failure of each aborted request, and rethrown as-is to anyone
    *     reading a streamed response body, so pass an {@link IOException} to keep {@link
    *     InputStream} callers on their usual error path; must not be null
+   * @throws IllegalStateException if the client was not built with {@link
+   *     Builder#withAbortableRequests(boolean)}
    */
   public void abort(Throwable cause) {
-    asyncTracker.abort(cause);
+    if (abortTracker == null) {
+      throw new IllegalStateException("Client was not built with withAbortableRequests(true)");
+    }
+    abortTracker.abort(cause);
   }
 
   /** Whether {@link #abort(Throwable)} has been called on this client. */
   public boolean isAborted() {
-    return asyncTracker.isAborted();
+    return abortTracker != null && abortTracker.isAborted();
   }
 
   /** Returns the configured maximum number of outstanding async requests. */
@@ -1021,7 +1027,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
     private List<HttpListenerFactory> listenerFactories;
 
-    private boolean abortableSyncRequests;
+    private boolean abortableRequests;
 
     public Builder() {
       super();
@@ -1114,16 +1120,15 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
 
     /**
-     * Makes {@link HttpJettySolrClient#abort(Throwable)} reach synchronous requests too, not just
-     * asynchronous ones. Off by default, since it adds bookkeeping to every synchronous request.
-     * Can be combined with {@link #withHttpClient(HttpJettySolrClient)}; it is not inherited from
-     * the client passed there.
+     * Tracks every request, so that {@link HttpJettySolrClient#abort(Throwable)} can fail them. Off
+     * by default, since it adds bookkeeping to every request. Can be combined with {@link
+     * #withHttpClient(HttpJettySolrClient)}; it is not inherited from the client passed there.
      *
-     * @param abortableSyncRequests whether {@code abort} should fail synchronous requests too
+     * @param abortableRequests whether this client's requests can be aborted
      * @return This Builder
      */
-    public Builder withAbortableSyncRequests(boolean abortableSyncRequests) {
-      this.abortableSyncRequests = abortableSyncRequests;
+    public Builder withAbortableRequests(boolean abortableRequests) {
+      this.abortableRequests = abortableRequests;
       return this;
     }
 
