@@ -217,6 +217,7 @@ public class TestInjection {
     reindexLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
+    failRecovery = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;

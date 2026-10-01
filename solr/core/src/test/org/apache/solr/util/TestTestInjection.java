@@ -84,4 +84,14 @@ public class TestTestInjection extends SolrTestCase {
   public void testUsingConsistentRandomization() {
     assertSame(random(), TestInjection.random());
   }
+
+  public void testResetClearsFailRecovery() {
+    TestInjection.failRecovery = "true";
+
+    assertTrue(TestInjection.injectFailRecovery());
+    TestInjection.reset();
+
+    assertNull(TestInjection.failRecovery);
+    assertFalse(TestInjection.injectFailRecovery());
+  }
 }
