@@ -666,15 +666,32 @@ public class HttpJettySolrClient extends HttpSolrClient {
       req.onComplete(listener);
     }
 
-    // Registered before the async tracker's listener, which can block waiting for a permit, so
-    // that an abortable request is tracked as soon as it is queued.
-    if (abortTracker != null) {
-      req.onRequestQueued(abortTracker.trackRequestQueuedListener);
-      req.onComplete(abortTracker.untrackRequestCompleteListener);
-    }
-    if (isAsync) {
-      req.onRequestQueued(asyncTracker.queuedListener);
-      req.onComplete(asyncTracker.completeListener);
+    AsyncTracker asyncTracker = isAsync ? this.asyncTracker : null;
+    AbortTracker abortTracker = this.abortTracker;
+    if (asyncTracker != null || abortTracker != null) {
+      // One listener each, so this order doesn't depend on how Jetty orders separate listeners.
+      // The async tracker must take its permit before the request can be aborted: aborting a
+      // queued request completes it synchronously, and a permit taken after that is never
+      // released. Requests still waiting for a permit get one as aborted in-flight requests
+      // complete, and are then aborted here.
+      req.onRequestQueued(
+          request -> {
+            if (asyncTracker != null) {
+              asyncTracker.queuedListener.onQueued(request);
+            }
+            if (abortTracker != null) {
+              abortTracker.track(request);
+            }
+          });
+      req.onComplete(
+          result -> {
+            if (asyncTracker != null) {
+              asyncTracker.completeListener.onComplete(result);
+            }
+            if (abortTracker != null) {
+              abortTracker.untrack(result.getRequest());
+            }
+          });
     }
   }
 
@@ -954,18 +971,19 @@ public class HttpJettySolrClient extends HttpSolrClient {
     // non-null once abort() has been called; fails any request queued afterwards
     private volatile Throwable abortCause;
 
-    private final Request.QueuedListener trackRequestQueuedListener =
-        request -> {
-          // Pairs with abort(): add-then-check here and set-then-scan there, so a request queued
-          // concurrently with abort() is aborted by at least one of the two.
-          outstanding.add(request);
-          Throwable cause = abortCause;
-          if (cause != null) {
-            request.abort(cause);
-          }
-        };
-    private final Response.CompleteListener untrackRequestCompleteListener =
-        result -> outstanding.remove(result.getRequest());
+    void track(Request request) {
+      // Pairs with abort(): add-then-check here and set-then-scan there, so a request queued
+      // concurrently with abort() is aborted by at least one of the two.
+      outstanding.add(request);
+      Throwable cause = abortCause;
+      if (cause != null) {
+        request.abort(cause);
+      }
+    }
+
+    void untrack(Request request) {
+      outstanding.remove(request);
+    }
 
     void abort(Throwable cause) {
       abortCause = Objects.requireNonNull(cause);
