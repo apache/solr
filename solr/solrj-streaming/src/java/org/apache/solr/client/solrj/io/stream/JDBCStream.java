@@ -41,6 +41,7 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.sql.DriverImpl;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -319,7 +320,18 @@ public class JDBCStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     try {
-      connection = getDriver().connect(connectionUrl, connectionProperties);
+      Properties props = new Properties();
+      if (connectionProperties != null) {
+        props.putAll(connectionProperties);
+      }
+      // Solr's own driver must not create a SolrClientCache when we're within Solr
+      if (connectionUrl != null
+          && connectionUrl.startsWith("jdbc:solr")
+          && streamContext != null
+          && streamContext.getSolrClientCache() != null) {
+        props.put(DriverImpl.SOLR_CLIENT_CACHE_PROP, streamContext.getSolrClientCache());
+      }
+      connection = getDriver().connect(connectionUrl, props);
     } catch (SQLException e) {
       throw new IOException(
           String.format(Locale.ROOT, "Failed to open JDBC connection to '%s'", connectionUrl), e);

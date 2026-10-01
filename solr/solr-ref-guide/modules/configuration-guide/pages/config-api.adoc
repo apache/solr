@@ -240,7 +240,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}'
 ----
 ====
 V2 API::
@@ -248,7 +248,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}'
 ----
 ====
 ======
@@ -299,7 +299,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}'
 ----
 ====
 
@@ -308,7 +308,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}'
 ----
 ====
 ======
@@ -379,14 +379,14 @@ To create a request handler, we can use the `add-requesthandler` command:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults":{ "x": "y" ,"a": "b", "rows":10 },
     "useParams": "x"
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 
 [tabs#addhandler]
@@ -396,14 +396,14 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": { "x": "y" ,"a": "b", "rows":10 },
     "useParams": "x"
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -412,14 +412,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": { "x": "y" ,"a": "b", "rows":10 },
     "useParams": "x"
   }
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -428,7 +428,7 @@ Make a call to the new request handler to check if it is registered:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
+curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
 ----
 
 And you should see the following as output:
@@ -455,14 +455,14 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "update-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": {"x": "new value for X", "rows": "20"},
     "useParams": "x"
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -471,14 +471,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "update-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": {"x": "new value for X", "rows": "20"},
     "useParams": "x"
   }
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -492,14 +492,14 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/myterms",
     "class": "solr.SearchHandler",
     "defaults": {"terms": true, "distrib":false},
     "components": ["terms"]
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -508,14 +508,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/myterms",
     "class": "solr.SearchHandler",
     "defaults": {"terms": true, "distrib":false},
     "components": ["terms"]
   }
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -529,9 +529,9 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "delete-requesthandler": "/myterms"
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -540,9 +540,9 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "delete-requesthandler": "/myterms"
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -575,7 +575,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}'
 ----
 ====
 
@@ -584,7 +584,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}'
 ----
 ====
 ======
@@ -632,7 +632,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}'
 ----
 ====
 
@@ -641,7 +641,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}'
 ----
 ====
 ======
@@ -660,11 +660,11 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{"add-updateprocessor":
   {"name": "firstFld",
   "class": "solr.FirstFieldValueUpdateProcessorFactory",
   "fieldName": "test_s"}
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -673,11 +673,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{"add-updateprocessor":
   {"name": "firstFld",
   "class": "solr.FirstFieldValueUpdateProcessorFactory",
   "fieldName": "test_s"}
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -868,7 +868,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{}'
 ----
 ====
 
@@ -877,7 +877,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{}'
 ----
 ====
 ======
