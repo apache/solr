@@ -22,12 +22,16 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
+import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ReplicaCount;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -67,6 +71,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
     ClusterState clusterState = adminCmdContext.getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
+    boolean sliceAlreadyExists = collection.getSlice(sliceName) != null;
 
     ReplicaCount numReplicas = ReplicaCount.fromMessage(message, collection, 1);
     if (!numReplicas.hasLeaderReplica()) {
@@ -158,6 +163,26 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
               results);
       throw e;
+    }
+
+    if (!sliceAlreadyExists) {
+      // The new slice was created in CONSTRUCTION state; mark it ACTIVE now that its replicas
+      // have been added so it becomes visible to queries.
+      Map<String, Object> activateProps = new HashMap<>();
+      activateProps.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+      activateProps.put(COLLECTION_PROP, collectionName);
+      activateProps.put(sliceName, Slice.State.ACTIVE.toString());
+      ZkNodeProps activateMsg = new ZkNodeProps(activateProps);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater()
+            .doSingleStateUpdate(
+                DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState,
+                activateMsg,
+                ccc.getSolrCloudManager(),
+                ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(activateMsg);
+      }
     }
 
     log.info("Finished create command on all shards for collection: {}", collectionName);
