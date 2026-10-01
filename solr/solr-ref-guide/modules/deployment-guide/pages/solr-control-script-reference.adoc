@@ -277,7 +277,7 @@ If you want to accept all of the defaults, you can simply add the `--no-prompt` 
 +
 *Example*: `bin/solr start -e cloud --no-prompt`
 
-`--session-inputs <values>`::
+`--script-inputs <values>`::
 +
 [%autowidth,frame=none]
 |===
@@ -288,9 +288,9 @@ Don't prompt for input; instead supply ordered answers in comma delimited format
 +
 For example, when using the "cloud" example, you can answer the interactive session's questions non-interactively to start a three node cluster on specific ports:
 +
-*Example*: `bin/solr start -e cloud --session-inputs 3,9000,9001,9002,"mycollection",2,2,_default`
+*Example*: `bin/solr start -e cloud --script-inputs 3,9000,9001,9002,"mycollection",2,2,_default`
 
-On Windows please wrap the session-inputs value in double quotes to preserve the comma delimited format.
+On Windows please wrap the script-inputs value in double quotes to preserve the comma delimited format.
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 

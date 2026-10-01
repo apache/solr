@@ -522,11 +522,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test the --session-inputs option that allows providing all prompt values as a comma-separated
+   * Test the --script-inputs option that allows providing all prompt values as a comma-separated
    * string without requiring interactive input.
    */
   @Test
-  public void testSolrCloudExampleWithSessionInputs() throws Exception {
+  public void testSolrCloudExampleWithScriptInputs() throws Exception {
     Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
       fail(solrHomeDir + " not found and is required to run this test!");
@@ -539,11 +539,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       bindPort = socket.getLocalPort();
     }
 
-    String collectionName = "testCloudExampleWithSessionInputs";
+    String collectionName = "testCloudExampleWithScriptInputs";
 
-    // Provide all session values via --session-inputs option:
+    // Provide all prompt values via --script-inputs option:
     // numNodes, port1, collectionName, numShards, replicationFactor, configName
-    String sessionInputsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
+    String scriptInputsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
 
     String[] toolArgs =
         new String[] {
@@ -553,8 +553,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           solrServerDir.toString(),
           "--example-dir",
           solrExampleDir.toString(),
-          "--session-inputs",
-          sessionInputsValue
+          "--script-inputs",
+          scriptInputsValue
         };
 
     // capture tool output to stdout
@@ -581,7 +581,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String solrUrl = "http://localhost:" + bindPort + "/solr";
     if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
-          "After running Solr cloud example with --session-inputs, test collection '"
+          "After running Solr cloud example with --script-inputs, test collection '"
               + collectionName
               + "' not found in Solr at: "
               + solrUrl
