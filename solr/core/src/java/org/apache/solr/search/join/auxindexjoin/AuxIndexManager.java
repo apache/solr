@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -149,7 +150,10 @@ public final class AuxIndexManager implements Closeable {
     this.writer =
         new IndexWriter(
             directory,
-            new IndexWriterConfig().setMergePolicy(mergePolicy).setMergeScheduler(mergeScheduler));
+            new IndexWriterConfig()
+                .setCodec(Codec.forName(config.getCodecName()))
+                .setMergePolicy(mergePolicy)
+                .setMergeScheduler(mergeScheduler));
     // set once, not per batch: live commit data sticks on the writer and is applied by whichever
     // commit comes next, including the wipe's just below and the one close() makes
     this.writer.setLiveCommitData(
@@ -320,14 +324,31 @@ public final class AuxIndexManager implements Closeable {
    *       names.
    */
   synchronized void writeBatch(Map<String, JoinColumnModel> mappings) throws IOException {
+    long startNanos = System.nanoTime();
     this.writerDelegate.writeJoinColumns(writer, mappings);
+    long writtenNanos = System.nanoTime();
     if (this.commitPerBatch) {
       writer.commit();
     }
+    long committedNanos = System.nanoTime();
     if (this.blockingRefresh) {
       manager.maybeRefreshBlocking();
     } else {
       manager.maybeRefresh(); // perhaps it should be carried out the enclosing synchronize
+    }
+    if (JoinIndexUtils.diagnosticsEnabled(log)) {
+      long refreshedNanos = System.nanoTime();
+      // lock wait is not measured here: it is evt=build's persistMs minus this line's totalMs
+      JoinIndexUtils.logDiagnostic(
+          log,
+          "AUXIJOIN evt=writeBatch columns={} writer={} writeMs={} commitMs={} refreshMs={}"
+              + " totalMs={}",
+          mappings.size(),
+          writerDelegate.getClass().getSimpleName(),
+          (writtenNanos - startNanos) / 1_000_000L,
+          (committedNanos - writtenNanos) / 1_000_000L,
+          (refreshedNanos - committedNanos) / 1_000_000L,
+          (refreshedNanos - startNanos) / 1_000_000L);
     }
   }
 

@@ -895,16 +895,23 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
   }
 
+  /**
+   * Matches when the collection has exactly {@code expectedShards} {@link
+   * org.apache.solr.common.cloud.Slice.State#ACTIVE} slices, and exactly {@code expectedReplicas}
+   * active replicas across them. Slices in any other state (e.g. a split parent, or a slice under
+   * construction during a restore) and their replicas are not counted.
+   */
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(
       int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
-      if (collectionState.getSlices().size() != expectedShards) {
+      Collection<Slice> activeSlices = collectionState.getActiveSlices();
+      if (activeSlices.size() != expectedShards) {
         return false;
       }
 
       int activeReplicas = 0;
-      for (Slice slice : collectionState) {
+      for (Slice slice : activeSlices) {
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes)) {
             activeReplicas++;
@@ -915,11 +922,24 @@ public class MiniSolrCloudCluster implements SolrBackend {
     };
   }
 
+  /**
+   * Matches when every slice is either {@link org.apache.solr.common.cloud.Slice.State#ACTIVE} or
+   * {@link org.apache.solr.common.cloud.Slice.State#INACTIVE} (none are mid-split or mid-restore),
+   * and every replica of the active slices is active.
+   */
   public static CollectionStatePredicate expectedActive() {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
 
       for (Slice slice : collectionState) {
+        switch (slice.getState()) {
+          case INACTIVE:
+            continue;
+          case ACTIVE:
+            break;
+          default:
+            return false;
+        }
         for (Replica replica : slice) {
           if (!replica.isActive(liveNodes)) {
             return false;
