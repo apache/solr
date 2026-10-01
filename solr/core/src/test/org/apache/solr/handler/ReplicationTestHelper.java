@@ -70,7 +70,7 @@ public final class ReplicationTestHelper {
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty =
-        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
+        new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }

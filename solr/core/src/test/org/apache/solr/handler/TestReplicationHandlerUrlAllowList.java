@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -55,14 +56,18 @@ public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
     JettySolrRunner followerJetty = null;
     try {
       String leaderUrl = buildUrl(leaderJetty.getLocalPort());
+      String leaderCoreUrl = leaderUrl + "/" + DEFAULT_TEST_CORENAME;
       System.setProperty(TEST_URL_ALLOW_LIST, leaderUrl);
 
       SolrInstance follower =
-          new SolrInstance(
-              createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
+          new SolrInstance(createTempDir("solr-instance"), "follower", leaderJetty.getLocalPort());
       follower.setUp();
       followerJetty = ReplicationTestHelper.createAndStartJetty(follower);
       String followerUrl = buildUrl(followerJetty.getLocalPort());
+      String followerCoreUrl = followerUrl + "/" + DEFAULT_TEST_CORENAME;
+      try (SolrCore core = followerJetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+        assertEquals(follower.getDataDir(), core.getDataDir());
+      }
 
       AllowListUrlChecker checker = followerJetty.getCoreContainer().getAllowListUrlChecker();
       assertTrue(checker.isEnabled());
@@ -74,7 +79,7 @@ public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
               ReplicationTestHelper.createNewSolrClient(followerUrl, DEFAULT_TEST_CORENAME)) {
         ReplicationTestHelper.index(leaderClient, "id", "allow-list-1", "name", "allowed");
         leaderClient.commit();
-        ReplicationTestHelper.pullFromTo(leaderUrl, followerUrl);
+        ReplicationTestHelper.pullFromTo(leaderCoreUrl, followerCoreUrl);
 
         NamedList<Object> response =
             ReplicationTestHelper.rQuery(1, "id:allow-list-1", followerClient);
