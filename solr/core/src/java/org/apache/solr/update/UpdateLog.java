@@ -946,6 +946,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       try {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
+      } catch (SolrCoreState.CoreIsClosedException e) {
+        // the core is closing; the delete was already recorded in the tlog and no new
+        // searcher is needed, so this is expected rather than an error
+        log.debug("Core is closed, skipping realtime searcher open");
       } catch (Exception e) {
         log.error("Error opening realtime searcher", e);
         return;
@@ -963,6 +967,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       try {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
+      } catch (SolrCoreState.CoreIsClosedException e) {
+        log.debug("Core is closed, skipping realtime searcher open");
       } catch (Exception e) {
         log.error("Error opening realtime searcher for deleteByQuery", e);
       }
