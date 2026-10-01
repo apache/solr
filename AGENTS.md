@@ -42,6 +42,10 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - For BATS shell integration tests in `solr/packaging/test/`:
     - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
     - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
+- Avoid `Thread.sleep`; fixed sleeps waste build time on every run and can flake under load.
+    - Have the other thread signal when it reaches a point, e.g. complete a `CompletableFuture` that the test thread `get`s with a timeout.
+    - If you must poll, use `org.apache.solr.util.TimeOut#waitFor` (solr-core) rather than a hand-rolled sleep loop.
+    - Derive timeouts from what they bound and define them as constants, e.g. `ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2`, not a bare `2, SECONDS`.
 
 ## Documentation
 

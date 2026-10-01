@@ -63,7 +63,6 @@ import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
 import org.apache.solr.util.ServletFixtures.SlowServlet;
 import org.apache.solr.util.ServletFixtures.SlowStreamServlet;
-import org.apache.solr.util.ServletFixtures.StallStreamServlet;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -83,8 +82,6 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
   protected static final String SLOW_STREAM_SERVLET_PATH = "/slowStream";
   protected static final String SLOW_STREAM_SERVLET_REGEX = SLOW_STREAM_SERVLET_PATH + "/*";
 
-  protected static final String STALL_STREAM_SERVLET_PATH = "/stallStream";
-  protected static final String STALL_STREAM_SERVLET_REGEX = STALL_STREAM_SERVLET_PATH + "/*";
   // example chars that must be URI encoded - non-ASCII and curly quote
   protected static final String MUST_ENCODE = "\u1234\u007B";
 
@@ -96,7 +93,6 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(SlowServlet.class), SLOW_SERVLET_REGEX)
             .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
             .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
-            .withServlet(new ServletHolder(StallStreamServlet.class), STALL_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
