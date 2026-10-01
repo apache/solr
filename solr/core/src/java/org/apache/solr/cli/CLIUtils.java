@@ -285,6 +285,77 @@ public final class CLIUtils {
   }
 
   /**
+   * Resolves the base Solr URL for a picocli tool's {@link ConnectionOptions}, honoring whichever
+   * of {@code --solr-url}, {@code --solr-connection} or {@code --zk-host} was given. Mirrors {@link
+   * #normalizeSolrUrl(CommandLine)}, printing the same fallback warning when none was given.
+   */
+  public static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+      throws Exception {
+    if (connectionOptions != null && connectionOptions.solrUrl != null) {
+      return normalizeSolrUrl(connectionOptions.solrUrl);
+    }
+    String connectionString =
+        connectionOptions != null
+            ? (connectionOptions.solrConnection != null
+                ? connectionOptions.solrConnection
+                : connectionOptions.zkHost)
+            : null;
+    if (connectionString != null) {
+      return solrUrlFromConnection(
+          CloudSolrClient.CloudSolrClientConnection.parse(connectionString), credentials);
+    }
+    String defaultSolrUrl = getDefaultSolrUrl();
+    CLIO.err(
+        "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
+            + defaultSolrUrl
+            + ".");
+    return defaultSolrUrl;
+  }
+
+  /**
+   * Resolves a Solr connection from a picocli tool's {@link ConnectionOptions}, mirroring {@link
+   * #getSolrConnection(CommandLine)}: an explicit {@code --solr-connection} or {@code --zk-host}
+   * wins outright, otherwise a running Solr instance (found via {@code --solr-url} or the default
+   * URL) is queried to see if it reports a ZooKeeper connection (SolrCloud mode), returning {@code
+   * null} if it does not.
+   */
+  public static CloudSolrClient.CloudSolrClientConnection resolveSolrConnection(
+      ConnectionOptions connectionOptions, String credentials) throws Exception {
+    if (connectionOptions != null && connectionOptions.solrConnection != null) {
+      return CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.solrConnection);
+    }
+    if (connectionOptions != null && connectionOptions.zkHost != null) {
+      var zkSolrConnection =
+          CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.zkHost);
+      if (!zkSolrConnection.isZookeeper()) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Expected ZooKeeper connection string, but got: '%s'.",
+                connectionOptions.zkHost));
+      }
+      return zkSolrConnection;
+    }
+    String resolvedSolrUrl =
+        (connectionOptions != null && connectionOptions.solrUrl != null)
+            ? normalizeSolrUrl(connectionOptions.solrUrl)
+            : getDefaultSolrUrl();
+    try (SolrClient solrClient = getSolrClient(resolvedSolrUrl, credentials)) {
+      Map<String, Object> status = StatusTool.reportStatus(solrClient);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
+      if (cloud == null) {
+        return null;
+      }
+      String zookeeper = (String) cloud.get("ZooKeeper");
+      if (zookeeper.endsWith("(embedded)")) {
+        zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
+      }
+      return CloudSolrClient.CloudSolrClientConnection.parse(zookeeper);
+    }
+  }
+
+  /**
    * Get the value of the specified CLI option with fallback to system property and default value.
    *
    * @param cli the command line

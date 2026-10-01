@@ -84,6 +84,15 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
 /** Supports export command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "export",
+    description = "Exports documents from a collection to a local file.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Export a collection's documents to gettingstarted.json",
+      "  bin/solr export -c gettingstarted --solr-url http://localhost:8983"
+    })
 public class ExportTool extends ToolBase {
 
   private static final Option COLLECTION_NAME_OPTION =
@@ -148,6 +157,66 @@ public class ExportTool extends ToolBase {
       boolean compress,
       String fields,
       String limit) {}
+
+  // --- picocli fields ---
+  // The connection group is mandatory (multiplicity "1"): the commons-cli path throws
+  // IllegalArgumentException when no connection target is given, so ArgGroup enforces the same
+  // requirement declaratively.
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--output",
+      paramLabel = "PATH",
+      description =
+          "Path to output the exported data, and optionally the file name, defaults to"
+              + " 'collection-name'.")
+  private String outputOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--format",
+      paramLabel = "FORMAT",
+      description = "Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+  private String formatOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--compress",
+      description = "Compress the output. Defaults to false.")
+  private boolean compressOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--limit",
+      defaultValue = "100",
+      paramLabel = "#",
+      description = "Maximum number of docs to download. Default is 100, use -1 for all docs.")
+  private String limitOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--query",
+      defaultValue = "*:*",
+      paramLabel = "QUERY",
+      description = "A custom query, default is '*:*'.")
+  private String queryOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--fields",
+      paramLabel = "FIELDA,FIELDB",
+      description = "Comma separated list of fields to export. By default all fields are fetched.")
+  private String fieldsOpt;
+
+  public ExportTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ExportTool(ToolRuntime runtime) {
     super(runtime);
@@ -729,6 +798,20 @@ public class ExportTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String resolvedSolrUrl =
+        CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials);
+    String url = resolvedSolrUrl + "/solr/" + nameOpt;
+    ExportParams params =
+        new ExportParams(
+            url,
+            credentialsOptions.credentials,
+            queryOpt,
+            outputOpt,
+            formatOpt,
+            compressOpt,
+            fieldsOpt,
+            limitOpt);
+    export(params);
+    return 0;
   }
 }

@@ -34,6 +34,15 @@ import org.noggit.JSONWriter;
  *
  * <p>Used to send an arbitrary HTTP request to a Solr API endpoint.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "api",
+    description = "Used to send an arbitrary HTTP GET request to a Solr API endpoint.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Send a GET request to a Solr API endpoint",
+      "  bin/solr api -s http://localhost:8983/api/cluster"
+    })
 public class ApiTool extends ToolBase {
 
   private static final Option SOLR_URL_OPTION =
@@ -47,6 +56,21 @@ public class ApiTool extends ToolBase {
 
   /** Parameters for the api command, independent of the command line parser. */
   record ApiParams(String getUrl, String credentials) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = {"-s", "--solr-url"},
+      required = true,
+      paramLabel = "URL",
+      description = "Send a GET request to a Solr API endpoint.")
+  private String solrUrlOpt;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  public ApiTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ApiTool(ToolRuntime runtime) {
     super(runtime);
@@ -130,6 +154,8 @@ public class ApiTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    ApiParams params = new ApiParams(solrUrlOpt, credentialsOptions.credentials);
+    callApi(params);
+    return 0;
   }
 }

@@ -46,6 +46,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Supports healthcheck command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "healthcheck",
+    description = "Requests health information about a specific collection in SolrCloud.",
+    footerHeading = "%nExamples:%n",
+    footer = {"  # Check the health of a collection", "  bin/solr healthcheck -c gettingstarted"})
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -75,6 +81,24 @@ public class HealthcheckTool extends ToolBase {
 
   /** Parameters for the healthcheck command, independent of the command line parser. */
   record HealthcheckParams(String collection, String credentials) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "COLLECTION",
+      description = "Name of the collection to check.")
+  private String nameOpt;
+
+  public HealthcheckTool() {
+    this(new DefaultToolRuntime());
+  }
 
   /** Requests health information about a specific collection in SolrCloud. */
   public HealthcheckTool(ToolRuntime runtime) {
@@ -213,7 +237,20 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    var solrConnection =
+        CLIUtils.resolveSolrConnection(connectionOptions, credentialsOptions.credentials);
+    if (solrConnection == null) {
+      CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
+      runtime.exit(1);
+    }
+    HealthcheckParams params = new HealthcheckParams(nameOpt, credentialsOptions.credentials);
+    var builder =
+        new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(params.credentials());
+    try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
+      echoIfVerbose("Connecting to Solr at " + solrConnection.toString());
+      runCloudTool(cloudSolrClient, params);
+    }
+    return 0;
   }
 }
 

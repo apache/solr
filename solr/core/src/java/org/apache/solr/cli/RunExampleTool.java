@@ -56,6 +56,20 @@ import org.noggit.JSONWriter;
  * <p>Enhances start command by providing an interactive session with the user to launch (or
  * relaunch the -e cloud example)
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "run_example",
+    description =
+        "Enhances the start command by providing an interactive session with the user to launch"
+            + " (or relaunch) one of the bundled examples.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Launch the interactive SolrCloud example",
+      "  bin/solr start -e cloud",
+      "",
+      "  # Launch the techproducts example, accepting all prompt defaults",
+      "  bin/solr start -e techproducts --no-prompt"
+    })
 public class RunExampleTool extends ToolBase {
 
   private static final String PROMPT_FOR_NUMBER = "Please enter %s [%d]: ";
@@ -220,6 +234,127 @@ public class RunExampleTool extends ToolBase {
    */
   record CloudExampleParams(
       boolean noPrompt, String promptInputs, String zkHost, int basePort, StartSolrParams start) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = {"-y", "--no-prompt"},
+      description =
+          "Don't prompt for input; accept all defaults when running examples that accept user"
+              + " input.")
+  private boolean noPromptOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--prompt-inputs",
+      paramLabel = "VALUES",
+      description =
+          "Provide comma-separated values for prompts. Same as --no-prompt but uses provided"
+              + " values instead of defaults. Example: --prompt-inputs"
+              + " 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+  private String promptInputsOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-e", "--example"},
+      required = true,
+      paramLabel = "NAME",
+      description =
+          "Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
+  private String exampleOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--script",
+      paramLabel = "PATH",
+      description = "Path to the bin/solr script.")
+  private String scriptOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-d", "--server-dir"},
+      required = true,
+      paramLabel = "DIR",
+      description = "Path to the Solr server directory.")
+  private String serverDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-f", "--force"},
+      description = "Force option in case Solr is run as root.")
+  private boolean forceOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--example-dir",
+      paramLabel = "DIR",
+      description =
+          "Path to the Solr example directory; if not provided, ${serverDir}/../example is"
+              + " expected to exist.")
+  private String exampleDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--solr-home",
+      paramLabel = "SOLR_HOME_DIR",
+      description =
+          "Path to the Solr home directory; if not provided, ${serverDir}/solr is expected to"
+              + " exist.")
+  private String solrHomeOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--url-scheme",
+      defaultValue = "http",
+      paramLabel = "SCHEME",
+      description = "Solr URL scheme: http or https, defaults to http if not specified.")
+  private String urlSchemeOpt;
+
+  // No defaultValue attribute: paramLabel "port" matches CliDefaultValueProvider's <port> case
+  // (falls back to the solr.port.listen sysprop / SOLR_PORT_LISTEN env var, else 8983), mirroring
+  // the commons-cli path's System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983").
+  @picocli.CommandLine.Option(
+      names = {"-p", "--port"},
+      paramLabel = "port",
+      description = "Specify the port to start the Solr HTTP listener on; default is 8983.")
+  private int port;
+
+  @picocli.CommandLine.Option(
+      names = "--host",
+      paramLabel = "HOSTNAME",
+      description = "Specify the hostname for this Solr instance.")
+  private String hostOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--user-managed",
+      description = "Start Solr in User Managed mode.")
+  private boolean userManagedOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-m", "--memory"},
+      paramLabel = "MEM",
+      description =
+          "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in:"
+              + " -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
+  private String memoryOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--jvm-opts",
+      paramLabel = "OPTS",
+      description =
+          "Additional options to be passed to the JVM when starting example Solr server(s).")
+  private String jvmOptsOpt;
+
+  // paramLabel "zkHost" matches CliDefaultValueProvider's <zkHost> case (falls back to the zkHost
+  // sysprop / ZK_HOST env var, else null), mirroring the commons-cli path's
+  // CLIUtils.getCliOptionOrPropValue(cli, ZK_HOST_OPTION, "zkHost", null).
+  @picocli.CommandLine.Option(
+      names = {"-z", "--zk-host"},
+      paramLabel = "zkHost",
+      description = "Zookeeper connection string.")
+  private String zkHostOpt;
+
+  @picocli.CommandLine.Parameters(
+      arity = "0..*",
+      paramLabel = "ARG",
+      description = "Extra arguments passed through to the underlying bin/solr start command.")
+  private String[] extraArgsOpt = new String[0];
+
+  public RunExampleTool() {
+    this(new DefaultToolRuntime());
+  }
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
@@ -1140,7 +1275,54 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    if (noPromptOpt && promptInputsOpt != null) {
+      throw new IllegalArgumentException(
+          "Cannot use both --no-prompt and --prompt-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --prompt-inputs to provide specific values.");
+    }
+
+    this.urlScheme = urlSchemeOpt;
+    String exampleType = exampleOpt;
+
+    initDirs(serverDirOpt, scriptOpt, exampleDirOpt, solrHomeOpt, exampleType);
+
+    echoIfVerbose(
+        "Running with\nserverDir="
+            + serverDir.toAbsolutePath()
+            + ",\nexampleDir="
+            + exampleDir.toAbsolutePath()
+            + ",\nsolrHomeDir="
+            + solrHomeDir.toAbsolutePath()
+            + "\nscript="
+            + script);
+
+    if (!"cloud".equals(exampleType)
+        && !"techproducts".equals(exampleType)
+        && !"schemaless".equals(exampleType)
+        && !"films".equals(exampleType)) {
+      throw new IllegalArgumentException(
+          "Unsupported example "
+              + exampleType
+              + "! Please choose one of: cloud, schemaless, techproducts, or films");
+    }
+
+    StartSolrParams startParams =
+        new StartSolrParams(
+            exampleType,
+            hostOpt,
+            memoryOpt,
+            jvmOptsOpt,
+            forceOpt,
+            null,
+            readExtraArgs(extraArgsOpt));
+
+    if ("cloud".equals(exampleType)) {
+      runCloudExample(
+          new CloudExampleParams(noPromptOpt, promptInputsOpt, zkHostOpt, port, startParams));
+    } else {
+      runExample(new RunExampleParams(!userManagedOpt, zkHostOpt, port, startParams));
+    }
+    return 0;
   }
 
   protected boolean isPortAvailable(int port) {

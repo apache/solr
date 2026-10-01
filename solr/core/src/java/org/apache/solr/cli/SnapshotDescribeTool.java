@@ -34,6 +34,15 @@ import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 
 /** Supports snapshot-describe command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "snapshot-describe",
+    description = "Describes a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Describe a snapshot",
+      "  bin/solr snapshot-describe -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotDescribeTool extends ToolBase {
 
   private static final Option COLLECTION_NAME_OPTION =
@@ -57,6 +66,31 @@ public class SnapshotDescribeTool extends ToolBase {
   /** Parameters for the snapshot-describe command, independent of the command line parser. */
   record SnapshotDescribeParams(
       String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of collection to be snapshot.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--snapshot-name",
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the snapshot to describe")
+  private String snapshotNameOpt;
+
+  public SnapshotDescribeTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotDescribeTool(ToolRuntime runtime) {
     super(runtime);
@@ -151,6 +185,13 @@ public class SnapshotDescribeTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    SnapshotDescribeParams params =
+        new SnapshotDescribeParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            nameOpt,
+            snapshotNameOpt);
+    describeSnapshot(params);
+    return 0;
   }
 }

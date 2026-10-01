@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -32,6 +33,15 @@ import org.apache.solr.common.cloud.SolrZkClient;
  *
  * <p>Set cluster properties by directly manipulating ZooKeeper.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "cluster",
+    description = "Set cluster properties by directly manipulating ZooKeeper.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Set the urlScheme cluster property",
+      "  bin/solr cluster --property urlScheme --value https"
+    })
 public class ClusterTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
@@ -54,6 +64,33 @@ public class ClusterTool extends ToolBase {
 
   /** Parameters for the cluster command, independent of the command line parser. */
   record ClusterParams(String propertyName, String propertyValue, String zkHost) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = "--property",
+      required = true,
+      paramLabel = "PROPERTY",
+      description = "Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
+  private String propertyOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--value",
+      paramLabel = "VALUE",
+      description = "Set the property to this value.")
+  private String valueOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-z", "--zk-host"},
+      paramLabel = "zkHost",
+      description =
+          "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
+              + " otherwise, discovered from a running Solr instance.")
+  private String zkHostOpt;
+
+  public ClusterTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ClusterTool(ToolRuntime runtime) {
     super(runtime);
@@ -111,6 +148,32 @@ public class ClusterTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    ClusterParams params = new ClusterParams(propertyOpt, valueOpt, resolveZkHost());
+    setClusterProperty(params);
+    return 0;
+  }
+
+  /**
+   * Mirrors {@link CLIUtils#getZkHost(CommandLine)}: explicit {@code --zk-host} wins outright,
+   * otherwise discovered from a running Solr instance at the default URL.
+   */
+  private String resolveZkHost() throws Exception {
+    if (zkHostOpt != null && !zkHostOpt.isBlank()) {
+      return zkHostOpt;
+    }
+    String defaultSolrUrl = CLIUtils.getDefaultSolrUrl();
+    try (var solrClient = CLIUtils.getSolrClient(defaultSolrUrl, null)) {
+      Map<String, Object> status = StatusTool.reportStatus(solrClient);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
+      if (cloud == null) {
+        return null;
+      }
+      String zookeeper = (String) cloud.get("ZooKeeper");
+      if (zookeeper.endsWith("(embedded)")) {
+        zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
+      }
+      return zookeeper;
+    }
   }
 }

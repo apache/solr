@@ -80,7 +80,22 @@ import org.slf4j.LoggerFactory;
       ZkTool.class,
       AuthTool.class,
       CreateTool.class,
-      DeleteTool.class
+      DeleteTool.class,
+      PostTool.class,
+      StreamTool.class,
+      AssertTool.class,
+      HealthcheckTool.class,
+      ClusterTool.class,
+      ConfigTool.class,
+      ApiTool.class,
+      ExportTool.class,
+      PostLogsTool.class,
+      RunExampleTool.class,
+      SnapshotCreateTool.class,
+      SnapshotDeleteTool.class,
+      SnapshotDescribeTool.class,
+      SnapshotExportTool.class,
+      SnapshotListTool.class
     })
 public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 

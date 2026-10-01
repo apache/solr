@@ -74,6 +74,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -82,6 +83,23 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /** Supports post command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "post",
+    description =
+        "Sends one or more files, directories, urls or literal data to Solr for indexing, using"
+            + " the bin/solr CLI.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Index all JSON files into a collection",
+      "  bin/solr post -c gettingstarted *.json",
+      "",
+      "  # Index a tab-separated file, using the CSV handler's separator param",
+      "  bin/solr post -c gettingstarted --params \"separator=%09\" --type text/csv data.tsv",
+      "",
+      "  # Crawl a website one layer deep and index the pages found",
+      "  bin/solr post -c gettingstarted --mode web --recursive 1 https://solr.apache.org/"
+    })
 public class PostTool extends ToolBase {
 
   public static final String DEFAULT_FILE_TYPES =
@@ -212,6 +230,98 @@ public class PostTool extends ToolBase {
 
   PostTool.PageFetcher pageFetcher = new PostTool.PageFetcher();
 
+  // --- picocli fields ---
+  // Named distinctly from the commons-cli-era instance fields above (type, recursive, delay,
+  // fileTypes, params, commit, optimize, dryRun, args), which postDocuments() still populates from
+  // whichever parser ran.
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "name",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--skip-commit",
+      description = "Do not 'commit', and thus changes won't be visible till a commit occurs.")
+  private boolean skipCommitOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-o", "--optimize"},
+      description = "Issue an optimize at end of posting documents.")
+  private boolean optimizeOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--mode",
+      defaultValue = DATA_MODE_FILES,
+      paramLabel = "mode",
+      description =
+          "Which mode the Post command is running in, 'files' crawls local directory, 'web'"
+              + " crawls website, 'args' processes input args, and 'stdin' reads a command from"
+              + " standard in. default: files.")
+  private String modeOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-r", "--recursive"},
+      defaultValue = "1",
+      paramLabel = "recursive",
+      description = "For web crawl, how deep to go. default: 1")
+  private int recursiveOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-d", "--delay"},
+      paramLabel = "delay",
+      description =
+          "If recursive then delay will be the wait time between posts.  default: 10 for web, 0"
+              + " for files")
+  private Integer delayOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-t", "--type"},
+      paramLabel = "content-type",
+      description = "Specify a specific mimetype to use, such as application/json.")
+  private String typeOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-ft", "--filetypes"},
+      defaultValue = DEFAULT_FILE_TYPES,
+      paramLabel = "<type>[,<type>,...]",
+      description = "default: " + DEFAULT_FILE_TYPES)
+  private String fileTypesOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--params",
+      defaultValue = "",
+      paramLabel = "<key>=<value>[&<key>=<value>...]",
+      description = "Values must be URL-encoded; these pass through to Solr update request.")
+  private String paramsOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--format",
+      description =
+          "sends application/json content as Solr commands to /update instead of"
+              + " /update/json/docs.")
+  private boolean formatOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--dry-run",
+      description =
+          "Performs a dry run of the posting process without actually sending documents to"
+              + " Solr.  Only works with files mode.")
+  private boolean dryRunOpt;
+
+  @picocli.CommandLine.Parameters(
+      arity = "0..*",
+      paramLabel = "FILE",
+      description = "Files, directories, urls or literal data to post, depending on --mode.")
+  private String[] postArgs = new String[0];
+
   static {
     DATA_MODES.add(DATA_MODE_FILES);
     DATA_MODES.add(DATA_MODE_ARGS);
@@ -279,6 +389,10 @@ public class PostTool extends ToolBase {
       ContentOptions content,
       CrawlOptions crawl,
       UpdateOptions update) {}
+
+  public PostTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public PostTool(ToolRuntime runtime) {
     super(runtime);
@@ -1390,7 +1504,43 @@ public class PostTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    String resolvedSolrUrl;
+    if (connectionOptions != null && connectionOptions.solrUrl != null) {
+      resolvedSolrUrl = CLIUtils.normalizeSolrUrl(connectionOptions.solrUrl);
+    } else if (connectionOptions != null
+        && (connectionOptions.solrConnection != null || connectionOptions.zkHost != null)) {
+      String connectionString =
+          connectionOptions.solrConnection != null
+              ? connectionOptions.solrConnection
+              : connectionOptions.zkHost;
+      resolvedSolrUrl =
+          CLIUtils.solrUrlFromConnection(
+              CloudSolrClient.CloudSolrClientConnection.parse(connectionString),
+              credentialsOptions.credentials);
+    } else {
+      resolvedSolrUrl = CLIUtils.getDefaultSolrUrl();
+      CLIO.err(
+          "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
+              + resolvedSolrUrl
+              + ".");
+    }
+
+    URI updateUrl = new URI(resolvedSolrUrl + "/solr/" + nameOpt + "/update");
+    int defaultDelay = modeOpt.equals(DATA_MODE_WEB) ? DEFAULT_WEB_DELAY : 0;
+
+    PostToolParams postParams =
+        new PostToolParams(
+            updateUrl,
+            modeOpt,
+            dryRunOpt,
+            credentialsOptions.credentials,
+            postArgs,
+            new ContentOptions(typeOpt, formatOpt ? FORMAT_SOLR : "", paramsOpt),
+            new CrawlOptions(
+                fileTypesOpt, delayOpt != null ? delayOpt : defaultDelay, recursiveOpt),
+            new UpdateOptions(!skipCommitOpt, optimizeOpt));
+    postDocuments(postParams);
+    return 0;
   }
 
   /** Utility class to hold the result form a page fetch */
