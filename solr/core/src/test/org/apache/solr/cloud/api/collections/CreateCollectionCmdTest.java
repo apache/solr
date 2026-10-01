@@ -25,6 +25,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,7 +86,7 @@ public class CreateCollectionCmdTest extends SolrTestCase {
     when(placementPluginFactory.createPluginInstance()).thenReturn(mock(PlacementPlugin.class));
     CoreContainer coreContainer = mock(CoreContainer.class);
     when(coreContainer.getConfigSetService()).thenReturn(configSetService);
-    when(coreContainer.getPlacementPluginFactory()).thenReturn(placementPluginFactory);
+    doReturn(placementPluginFactory).when(coreContainer).getPlacementPluginFactory();
 
     SolrZkClient zkClient = mock(SolrZkClient.class);
     when(zkClient.getChildren(anyString(), isNull(Watcher.class))).thenReturn(List.of());
@@ -124,9 +125,7 @@ public class CreateCollectionCmdTest extends SolrTestCase {
     SolrException exception =
         expectThrows(
             SolrException.class,
-            () ->
-                new CreateCollectionCmd(ccc)
-                    .call(adminCmdContext, message, new NamedList<>()));
+            () -> new CreateCollectionCmd(ccc).call(adminCmdContext, message, new NamedList<>()));
 
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
     assertTrue(exception.getMessage().contains(collectionName));
