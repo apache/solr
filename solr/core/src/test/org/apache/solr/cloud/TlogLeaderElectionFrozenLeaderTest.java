@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.servlet.ServletOutputStreamWrapper;
@@ -157,7 +158,9 @@ public class TlogLeaderElectionFrozenLeaderTest extends SolrCloudTestCase {
 
     // Stall one of the leader's replication commands. The follower polls every second under
     // jetty.testMode, so its next request for that command lands in the filter and never returns.
-    log.info("Stalling {} responses from leader core {}", stallPoint, oldLeader.getCoreName());
+    if (log.isInfoEnabled()) {
+      log.info("Stalling {} responses from leader core {}", stallPoint, oldLeader.getCoreName());
+    }
     TestStallChannel channel = new TestStallChannel(oldLeader.getCoreName(), stallPoint);
     assertTrue(
         "the replication filter was already armed; a previous test did not release it",
@@ -177,7 +180,9 @@ public class TlogLeaderElectionFrozenLeaderTest extends SolrCloudTestCase {
     }
     log.info("Follower's index fetch is parked in the leader's replication handler");
 
-    log.info("Expiring the ZooKeeper session of the frozen leader {}", leaderJetty.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("Expiring the ZooKeeper session of the frozen leader {}", leaderJetty.getNodeName());
+    }
     long start = System.nanoTime();
     cluster.expireZkSession(leaderJetty);
 
@@ -306,6 +311,7 @@ public class TlogLeaderElectionFrozenLeaderTest extends SolrCloudTestCase {
       this(coreToStall, stallPoint, new CompletableFuture<>(), new CompletableFuture<>());
     }
 
+    @SuppressForbidden(reason = "forbiddenApis: getParameter is fine in tests")
     boolean matches(ServletRequest request) {
       if (!(request instanceof HttpServletRequest http)) {
         return false;

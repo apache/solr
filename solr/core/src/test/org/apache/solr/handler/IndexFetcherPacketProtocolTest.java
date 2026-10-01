@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
@@ -313,7 +314,12 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
 
     IndexFetcher indexFetcher = createIndexFetcher();
 
-    try {
+    try (HttpJettySolrClient fetchClient =
+        new HttpJettySolrClient.Builder()
+            .withHttpClient(
+                h.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyHttpClient())
+            .withAbortableSyncRequests(true)
+            .build()) {
       Map<String, Object> fileDetails = new HashMap<>();
       fileDetails.put("name", fileName);
       fileDetails.put("size", expectedSize);
@@ -322,6 +328,12 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
 
       MethodHandles.Lookup lookup =
           MethodHandles.privateLookupIn(fileFetcherClass, MethodHandles.lookup());
+      Class<?> fetchClass = getInnerClass("Fetch");
+      MethodHandle fetchCtorHandle =
+          MethodHandles.privateLookupIn(fetchClass, MethodHandles.lookup())
+              .findConstructor(
+                  fetchClass,
+                  MethodType.methodType(void.class, HttpJettySolrClient.class, long.class));
       MethodHandle ctorHandle =
           lookup.findConstructor(
               fileFetcherClass,
@@ -332,12 +344,14 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
                   Map.class,
                   String.class,
                   String.class,
-                  long.class));
+                  fetchClass));
 
       Object fileFetcher;
       try {
+        Object fetch = fetchCtorHandle.invoke(fetchClient, 0L);
         fileFetcher =
-            ctorHandle.invoke(indexFetcher, mockFileInterface, fileDetails, fileName, "file", 0L);
+            ctorHandle.invoke(
+                indexFetcher, mockFileInterface, fileDetails, fileName, "file", fetch);
       } catch (Exception e) {
         throw e;
       } catch (Throwable t) {
@@ -370,12 +384,16 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
   }
 
   private Class<?> getFileInterfaceClass() throws Exception {
+    return getInnerClass("FileInterface");
+  }
+
+  private static Class<?> getInnerClass(String simpleName) {
     for (Class<?> innerClass : IndexFetcher.class.getDeclaredClasses()) {
-      if (innerClass.getSimpleName().equals("FileInterface")) {
+      if (innerClass.getSimpleName().equals(simpleName)) {
         return innerClass;
       }
     }
-    throw new AssertionError("FileInterface not found");
+    throw new AssertionError(simpleName + " not found");
   }
 
   /** Creates a mock FileInterface that captures written bytes to the provided output stream. */
