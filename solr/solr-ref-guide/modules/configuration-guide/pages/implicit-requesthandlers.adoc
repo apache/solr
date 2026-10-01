@@ -20,7 +20,8 @@
 
 Solr ships with many out-of-the-box request handlers, which are called implicit because they do not need to be configured in `solrconfig.xml` before you are able to use them.
 
-These handlers have pre-defined default parameters, known as _paramsets_, which can be modified if necessary.
+Each implicit handler ships with a named bundle of default, invariant, and appended parameters - a _paramset_ - equivalent to the `<defaults>`, `<invariants>`, and `<appends>` blocks you'd normally write into a `<requestHandler>` definition in `solrconfig.xml`.
+Because implicit handlers have no entry in `solrconfig.xml` to edit directly, their paramset (shown for each handler below, e.g. `_ADMIN_THREADS` for the Threads handler) is the only way to override their parameters - see <<How to View Implicit Handler Paramsets>> and <<How to Edit Implicit Handler Paramsets>> below.
 
 == Available Implicit Endpoints
 
@@ -34,20 +35,7 @@ Many of these handlers are used throughout the Admin UI to show information abou
 File:: Return content of files in `${solr.home}/conf/`.
 This handler must have a collection name in the path to the endpoint.
 +
-Restrict which files can be served by listing them as `hidden` invariants in `solrconfig.xml` - a bare `*` hides everything else, but patterns like `*.xml` are not supported, only exact filenames:
-+
-[source,xml]
-----
-<requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler">
-  <lst name="invariants">
-    <str name="hidden">synonyms.txt</str>
-    <str name="hidden">anotherfile.txt</str>
-    <str name="hidden">*</str>
-  </lst>
-</requestHandler>
-----
-+
-Use the `contentType` parameter to override the returned `Content-Type`, e.g. `solr/admin/file?file=schema.xml&contentType=text/plain`.
+*Documentation*: xref:configuration-files.adoc#restricting-file-access[Restricting File Access]
 +
 [source,bash]
 ----
@@ -671,7 +659,8 @@ The response will look similar to:
 
 == How to Edit Implicit Handler Paramsets
 
-Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the xref:request-parameters-api.adoc[] using the paramset listed in the above table.
+Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the xref:request-parameters-api.adoc[] using the Paramset listed in each handler's entry above.
+See xref:request-parameters-api.adoc#the-useparams-parameter[The useParams Parameter] to override a paramset at request time instead of editing it.
 However, other parameters, including SearchHandler components, may not be modified.
 The invariants and appends specified in the implicit configuration cannot be overridden.
 
