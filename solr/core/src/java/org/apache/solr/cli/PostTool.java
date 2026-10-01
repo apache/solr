@@ -123,7 +123,7 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("mode")
           .desc(
-              "Which mode this runs in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads from standard in. default: files.")
+              "Specifies how to run: 'files' crawls local directories, 'web' crawls websites, 'args' processes positional arguments, and 'stdin' reads standard input stream. Default: files.")
           .get();
 
   private static final Option RECURSIVE_OPTION =
