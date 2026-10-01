@@ -143,7 +143,7 @@ For the "gettingstarted" collection, set the replication factor and whether to a
 
 [source,bash]
 ----
-$ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
+curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
 { modify: { replicationFactor: "3" } }'
 
 {"responseHeader":{"status":0,"QTime":842}}
@@ -153,7 +153,7 @@ See the state of the cluster:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/api/cluster
+curl http://localhost:8983/api/cluster
 
 {"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted"]}
 ----
@@ -162,7 +162,7 @@ Set a cluster property:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/api/cluster -H 'Content-type: application/json' -d '
+curl http://localhost:8983/api/cluster -H 'Content-type: application/json' -d '
 { set-property: { name: maxCoresPerNode, val: "100" } }'
 
 {"responseHeader":{"status":0,"QTime":4}}

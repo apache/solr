@@ -133,7 +133,7 @@ The best approach is to first delete everything from the index, and then index y
 You can delete all documents with a "delete-by-query", such as this:
 
 [source,bash]
-curl -X POST -H 'Content-Type: application/json' --data-binary '{"delete":{"query":"*:*" }}' http://localhost:8983/solr/my_collection/update
+curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' --data-binary '{"delete":{"query":"*:*" }}'
 
 It's important to verify that *all* documents have been deleted, as that ensures the Lucene index segments have been
 deleted as well.
