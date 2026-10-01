@@ -29,6 +29,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -39,10 +40,27 @@ import org.junit.Test;
 @SuppressSSL
 public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
 
+  private String previousTestUrlAllowList;
+  private String previousEnableUrlAllowList;
+
+  @Before
+  public void saveAllowListProperties() {
+    previousTestUrlAllowList = System.getProperty(TEST_URL_ALLOW_LIST);
+    previousEnableUrlAllowList = System.getProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
+  }
+
   @After
-  public void clearAllowListProperties() {
-    System.clearProperty(TEST_URL_ALLOW_LIST);
-    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
+  public void restoreAllowListProperties() {
+    restoreProperty(TEST_URL_ALLOW_LIST, previousTestUrlAllowList);
+    restoreProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, previousEnableUrlAllowList);
+  }
+
+  private static void restoreProperty(String propertyName, String previousValue) {
+    if (previousValue == null) {
+      System.clearProperty(propertyName);
+    } else {
+      System.setProperty(propertyName, previousValue);
+    }
   }
 
   @Test
