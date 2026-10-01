@@ -30,9 +30,11 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -371,5 +373,30 @@ public class QueryResponseTest extends SolrTestCase {
           "explain values must stay SimpleOrderedMap after Java serialization",
           value instanceof SimpleOrderedMap);
     }
+
+    // Representative document fields (not just counts) must survive the round-trip.
+    SolrDocumentList roundTrippedResults = deserialized.getResults();
+    assertEquals(2, roundTrippedResults.size());
+    SolrDocument firstDoc = roundTrippedResults.get(0);
+    assertEquals("VS1GB400C3", firstDoc.getFieldValue("id"));
+    assertEquals("Corsair Microsystems Inc.", firstDoc.getFieldValue("manu"));
+    assertEquals(Float.valueOf(74.99f), firstDoc.getFieldValue("price"));
+    assertEquals(Boolean.TRUE, firstDoc.getFieldValue("inStock"));
+    assertEquals(List.of("electronics", "memory"), firstDoc.getFieldValue("cat"));
+    SolrDocument secondDoc = roundTrippedResults.get(1);
+    assertEquals("TWINX2048-3200PRO", secondDoc.getFieldValue("id"));
+    assertEquals(Float.valueOf(185.0f), secondDoc.getFieldValue("price"));
+
+    // Explain entries must keep their keys, value types and nested content.
+    Map<String, Object> roundTrippedExplain = deserialized.getExplainMap();
+    assertEquals(Set.of("VS1GB400C3", "TWINX2048-3200PRO"), roundTrippedExplain.keySet());
+    Object explainValue = roundTrippedExplain.get("VS1GB400C3");
+    assertTrue(
+        "explain values must stay SimpleOrderedMap after Java serialization",
+        explainValue instanceof SimpleOrderedMap);
+    SimpleOrderedMap<?> explainMap = (SimpleOrderedMap<?>) explainValue;
+    assertEquals(Boolean.TRUE, explainMap.get("match"));
+    assertEquals(Float.valueOf(1.4886642f), explainMap.get("value"));
+    assertTrue(explainMap.get("description") instanceof String);
   }
 }

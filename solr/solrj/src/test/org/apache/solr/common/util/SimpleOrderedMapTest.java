@@ -22,6 +22,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.util.SuppressForbidden;
@@ -53,6 +54,11 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     original.put("two", "two");
     original.put("aNull", null);
     original.put(null, 4);
+    SimpleOrderedMap<Object> nested = new SimpleOrderedMap<>();
+    nested.put("match", true);
+    nested.put("value", 1.4886642f);
+    original.put("nested", nested);
+    original.put("categories", List.of("electronics", "memory"));
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
@@ -75,6 +81,15 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertNull(deserialized.getVal(2));
     assertNull(deserialized.getName(3));
     assertEquals(4, deserialized.getVal(3));
+    assertEquals(6, deserialized.size());
+    assertEquals("nested", deserialized.getName(4));
+    Object roundTrippedNested = deserialized.getVal(4);
+    assertTrue(
+        "nested maps must stay SimpleOrderedMap after Java serialization",
+        roundTrippedNested instanceof SimpleOrderedMap);
+    assertEquals(nested, roundTrippedNested);
+    assertEquals("categories", deserialized.getName(5));
+    assertEquals(List.of("electronics", "memory"), deserialized.getVal(5));
   }
 
   @Test
