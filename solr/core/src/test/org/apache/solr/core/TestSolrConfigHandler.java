@@ -172,7 +172,7 @@ public class TestSolrConfigHandler extends RestTestBase {
             + " 'defaults': {'def_a':'def A val', 'facet.field':['subject','country']}}\n"
             + "}";
     runConfigCommand(harness, "/config", payload);
-    assertMultiValuedFacetFieldDefaults(harness);
+    assertMultiValuedFacetFieldDefaults(harness, "/x-mv");
 
     payload =
         "{\n"
@@ -180,27 +180,38 @@ public class TestSolrConfigHandler extends RestTestBase {
             + " 'defaults': {'def_a':'def A val', 'facet.field':'subject', 'facet.field':'country'}}\n"
             + "}";
     runConfigCommand(harness, "/config", payload);
-    assertMultiValuedFacetFieldDefaults(harness);
+    assertMultiValuedFacetFieldDefaults(harness, "/x-mv");
   }
 
-  private static void assertMultiValuedFacetFieldDefaults(RestTestHarness harness)
-      throws Exception {
+  public void testRequestHandlerMultiValuedDefaultsOnCreate() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    String payload =
+        "{\n"
+            + "'create-requesthandler' : { 'name' : '/x-mv-create', 'class': 'org.apache.solr.handler.DumpRequestHandler', registerPath :'/solr,/v2',"
+            + " 'defaults': {'def_a':'def A val', 'facet.field':'subject', 'facet.field':'country'}}\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+    assertMultiValuedFacetFieldDefaults(harness, "/x-mv-create");
+  }
+
+  private static void assertMultiValuedFacetFieldDefaults(
+      RestTestHarness harness, String handlerPath) throws Exception {
     List<String> expected = asList("subject", "country");
     testForResponseElement(
         harness,
         "/config/overlay",
-        asList("overlay", "requestHandler", "/x-mv", "defaults", "facet.field"),
+        asList("overlay", "requestHandler", handlerPath, "defaults", "facet.field"),
         expected,
         TIMEOUT_S);
     testForResponseElement(
         harness,
         "/config",
-        asList("config", "requestHandler", "/x-mv", "defaults", "facet.field"),
+        asList("config", "requestHandler", handlerPath, "defaults", "facet.field"),
         expected,
         TIMEOUT_S);
     testForResponseElement(
         harness,
-        "/x-mv?param=facet.field&json.nl=map",
+        handlerPath + "?param=facet.field&json.nl=map",
         asList("params", "facet.field"),
         expected,
         TIMEOUT_S);

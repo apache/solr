@@ -33,7 +33,7 @@ import org.noggit.ObjectBuilder;
 
 public class CommandOperation {
   private static final Set<String> REQUEST_HANDLER_COMMANDS =
-      Set.of("add-requesthandler", "update-requesthandler");
+      Set.of("add-requesthandler", "update-requesthandler", "create-requesthandler");
   private static final Set<String> MULTI_VALUED_REQUEST_HANDLER_PARAMS =
       Set.of("defaults", "appends", "invariants");
 
