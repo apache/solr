@@ -23,6 +23,13 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.search.SyntaxError;
 
 class FacetRangeParser extends FacetParser<FacetRange> {
+
+  // Terms-facet parameters that have no effect on range facets. They used to be silently
+  // ignored; now they are rejected so users notice the mistake (SOLR-18482). The order is
+  // fixed so the error names the same parameter when several are present.
+  private static final List<String> UNSUPPORTED_PARAMS =
+      List.of("limit", "offset", "sort", "prelim_sort", "overrequest", "overrefine", "refine");
+
   public FacetRangeParser(FacetParser<?> parent, String key) {
     super(parent, key);
     facet = new FacetRange();
@@ -38,6 +45,12 @@ class FacetRangeParser extends FacetParser<FacetRange> {
 
     @SuppressWarnings({"unchecked"})
     Map<String, Object> m = (Map<String, Object>) arg;
+
+    for (String unsupported : UNSUPPORTED_PARAMS) {
+      if (m.containsKey(unsupported)) {
+        throw err(unsupported + " is not supported on range facets");
+      }
+    }
 
     facet.field = getString(m, "field", null);
     facet.ranges = getVal(m, "ranges", false);
