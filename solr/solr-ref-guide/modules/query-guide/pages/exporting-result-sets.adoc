@@ -65,7 +65,7 @@ V1 API::
 ====
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
 ----
 ====
 
@@ -74,7 +74,7 @@ V2 API::
 ====
 [source,text]
 ----
-http://localhost:8983/api/collections/collection_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
 ----
 ====
 ======
@@ -124,7 +124,7 @@ V1 API::
 ====
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
 ----
 ====
 
@@ -133,7 +133,7 @@ V2 API::
 ====
 [source,text]
 ----
-http://localhost:8983/api/collections/collection_name/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
 ----
 ====
 ======
@@ -150,7 +150,7 @@ V1 API::
 ====
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
 ----
 ====
 
@@ -159,7 +159,7 @@ V2 API::
 ====
 [source,text]
 ----
-http://localhost:8983/api/collections/collection_name/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
 ----
 ====
 ======
