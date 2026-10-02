@@ -209,9 +209,15 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   private void initAdminRequest(String path) throws Exception {
-    ensureRequest(path);
+    solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
+    solrReq.getContext().put(CoreContainer.class.getName(), cores);
     requestType = AuthorizationContext.RequestType.ADMIN;
     action = ADMIN;
+
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
+    }
   }
 
   protected void parseRequest() throws Exception {
@@ -222,18 +228,6 @@ public class V2HttpCall extends HttpSolrCall {
     // With a valid handler and a valid core...
 
     if (solrReq == null) solrReq = parser.parse(core, path, req);
-  }
-
-  private void ensureRequest(String path) throws Exception {
-    if (solrReq == null) {
-      solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
-    }
-    solrReq.getContext().put(CoreContainer.class.getName(), cores);
-
-    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
-    if (callingLockId != null && !callingLockId.isBlank()) {
-      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
-    }
   }
 
   public static Api getApiInfo(
@@ -324,12 +318,6 @@ public class V2HttpCall extends HttpSolrCall {
       PluginBag<SolrRequestHandler> requestHandlers,
       SolrQueryResponse rsp,
       Map<String, String> additionalProperties) {
-    try {
-      ensureRequest(this.path);
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-
     final ContainerRequest containerRequest =
         ContainerRequestUtils.createContainerRequest(
             req, response, jerseyHandler.getConfiguration());
