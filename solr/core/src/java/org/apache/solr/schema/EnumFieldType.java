@@ -72,6 +72,10 @@ public class EnumFieldType extends PrimitiveFieldType {
     enumMapping = new EnumMapping(schema, this, args);
   }
 
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
   public EnumMapping getEnumMapping() {
     return enumMapping;
   }
@@ -420,9 +424,10 @@ public class EnumFieldType extends PrimitiveFieldType {
     fields.add(field);
     final long longValue = field.numericValue().longValue();
     if (sf.multiValued()) {
-      fields.add(new SortedNumericDocValuesField(sf.getName(), longValue));
+      fields.add(
+          createSortedNumericDocValuesField(sf.getName(), longValue, sf.hasDocValuesSkipList()));
     } else {
-      fields.add(new NumericDocValuesField(sf.getName(), longValue));
+      fields.add(createNumericDocValuesField(sf.getName(), longValue, sf.hasDocValuesSkipList()));
     }
     return fields;
   }
