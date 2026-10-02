@@ -72,6 +72,44 @@ public class OrEvaluatorTest extends SolrTestCase {
   }
 
   @Test
+  public void orThreeBooleans() throws Exception {
+    StreamEvaluator evaluator = factory.constructEvaluator("or(a,b,c)");
+    Object result;
+
+    values.clear();
+    values.put("a", false);
+    values.put("b", false);
+    values.put("c", true);
+    result = evaluator.evaluate(new Tuple(values));
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
+    values.clear();
+    values.put("a", false);
+    values.put("b", true);
+    values.put("c", false);
+    result = evaluator.evaluate(new Tuple(values));
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
+    values.clear();
+    values.put("a", true);
+    values.put("b", false);
+    values.put("c", false);
+    result = evaluator.evaluate(new Tuple(values));
+    assertTrue(result instanceof Boolean);
+    assertEquals(true, result);
+
+    values.clear();
+    values.put("a", false);
+    values.put("b", false);
+    values.put("c", false);
+    result = evaluator.evaluate(new Tuple(values));
+    assertTrue(result instanceof Boolean);
+    assertEquals(false, result);
+  }
+
+  @Test
   public void orWithSubAndsBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("or(a,or(b,c))");
     Object result;
