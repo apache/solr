@@ -154,7 +154,7 @@ As an example, for the `/export` request handler:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/export&expandParams=true
+curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/export&expandParams=true
 ----
 
 == Viewing Request Parameters
@@ -163,10 +163,10 @@ To see the paramsets that have been created, you can use the `/config/params` en
 
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/techproducts/config/params
+curl http://localhost:8983/solr/techproducts/config/params
 
 #Or use the paramset name
-$ curl http://localhost:8983/solr/techproducts/config/params/myQueries
+curl http://localhost:8983/solr/techproducts/config/params/myQueries
 ----
 
 == The useParams Parameter
