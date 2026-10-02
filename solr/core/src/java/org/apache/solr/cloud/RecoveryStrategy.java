@@ -215,14 +215,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.error("Recovery failed - I give up.");
     try {
       if (replicaType.leaderEligible) {
-        try {
-          zkController
-              .getShardTerms(
-                  cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId())
-              .recoveryFailed(cd.getCloudDescriptor().getCoreNodeName());
-        } catch (Exception e) {
-          log.warn("Unable to clear failed recovery state from shard terms", e);
-        }
+        zkController
+            .getShardTerms(
+                cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId())
+            .recoveryFailed(cd.getCloudDescriptor().getCoreNodeName());
       }
       zkController.publish(cd, Replica.State.RECOVERY_FAILED);
     } finally {
@@ -503,7 +499,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         try {
           recoveryFailed(zkController, this.coreDescriptor);
         } catch (Exception e) {
-          log.error("Could not publish that recovery failed", e);
+          log.error("Could not finalize recovery failure", e);
         }
         return true;
       }
