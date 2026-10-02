@@ -364,6 +364,14 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String fromField = localParams.get("from");
         final String fromIndex = localParams.get("fromIndex");
         final String toField = localParams.get("to");
+        if (fromField == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'from' parameter");
+        }
+        if (toField == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'to' parameter");
+        }
         final ScoreMode scoreMode = ScoreModeParser.parse(getParam(SCORE));
 
         final String v = localParams.get(CommonParams.VALUE);
