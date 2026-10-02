@@ -84,8 +84,9 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
     assertEquals("conf", collection.configName);
     assertNotNull(collection.health);
     assertTrue(collection.aliases.contains(ALIAS));
-    Map<String, Object> router = (Map<String, Object>) collection.unknownProperties().get("router");
-    assertEquals("compositeId", router.get("name"));
+    assertNotNull(collection.router);
+    assertEquals("compositeId", collection.router.get("name"));
+    assertEquals(Integer.valueOf(1), collection.replicationFactor);
 
     ReplicaState replica = collection.shards.get("shard1").replicas.values().iterator().next();
     assertNotNull(replica.nodeName);

@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, CollectionsV2, AliasesV2, ShardsV2, ReplicasV2, ConfigSetsV2, ClusterV2, Constants, ApiErrorHandler){
+    function($scope, $routeParams, $location, $timeout, CollectionsV2, AliasesV2, ShardsV2, ReplicasV2, ConfigSetsV2, ClusterV2, Constants, ApiErrorHandler){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
@@ -30,7 +30,9 @@ solrAdminApp.controller('CollectionsController',
             });
           });
 
-          Collections.status(function (data) {
+          ClusterV2.getClusterStatus({}, function (error, data, response) {
+            $timeout(function() {
+              if (error) { ApiErrorHandler.handle(response); return; }
               $scope.collections = [];
               for (var name in data.cluster.collections) {
                   if (name.startsWith("._designer_")) {
@@ -85,6 +87,7 @@ solrAdminApp.controller('CollectionsController',
                       }
                   });
               });
+            });
           });
           ConfigSetsV2.listConfigSet(function(error, data, response) {
               $timeout(function() {

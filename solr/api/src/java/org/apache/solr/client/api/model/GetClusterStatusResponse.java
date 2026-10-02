@@ -27,10 +27,10 @@ import java.util.Map;
 /**
  * Response body for {@code GET /api/cluster}.
  *
- * <p>Shards, replicas, health, and the other stable collection-state fields are typed. A collection
- * state document is otherwise open: router settings, replica placement counts, user properties, and
- * per-replica state are preserved on the object rather than dropped. Each collection still lists the
- * aliases that point at it.
+ * <p>Shards, replicas, health, router, replicationFactor, and the other stable collection-state
+ * fields are typed. A collection state document is otherwise open: replica placement counts, user
+ * properties, and per-replica state are preserved on the object rather than dropped. Each
+ * collection still lists the aliases that point at it.
  */
 public class GetClusterStatusResponse extends SolrJerseyResponse {
 
@@ -59,6 +59,12 @@ public class GetClusterStatusResponse extends SolrJerseyResponse {
     @Schema(description = "Aliases that point at this collection.")
     @JsonProperty
     public List<String> aliases;
+
+    @Schema(description = "Document router for this collection, e.g. name=compositeId.")
+    @JsonProperty
+    public Map<String, String> router;
+
+    @JsonProperty public Integer replicationFactor;
 
     private final Map<String, Object> additionalProperties = new LinkedHashMap<>();
 
