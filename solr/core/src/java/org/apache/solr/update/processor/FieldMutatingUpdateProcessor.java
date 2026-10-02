@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
@@ -75,13 +76,15 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
    */
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    final SolrInputDocument doc = cmd.getSolrInputDocument();
+    mutateDocument(cmd.getSolrInputDocument());
+    super.processAdd(cmd);
+  }
 
-    // make a copy we can iterate over while mutating the doc
+  private void mutateDocument(SolrInputDocument doc) {
+    // Make copies so field and child-doc mutations do not interfere with iteration.
     final Collection<String> fieldNames = new ArrayList<>(doc.getFieldNames());
 
     for (final String fname : fieldNames) {
-
       if (!selector.shouldMutate(fname)) continue;
 
       final SolrInputField src = doc.get(fname);
@@ -108,7 +111,13 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
         doc.put(dest.getName(), dest);
       }
     }
-    super.processAdd(cmd);
+
+    final List<SolrInputDocument> childDocs = doc.getChildDocuments();
+    if (childDocs != null) {
+      for (SolrInputDocument childDoc : new ArrayList<>(childDocs)) {
+        mutateDocument(childDoc);
+      }
+    }
   }
 
   /** Interface for identifying which fields should be mutated */
