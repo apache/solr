@@ -1,0 +1,7 @@
+title: bin/solr create no longer requires a direct ZooKeeper connection to upload a configset; it now uses the Configsets V2 API.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18320
+    url: https://issues.apache.org/jira/browse/SOLR-18320
