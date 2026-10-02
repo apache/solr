@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPOutputStream;
@@ -58,7 +59,12 @@ import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -424,6 +430,223 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertOrder(tuples, 0, 1, 2, 3, 4);
 
     } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testCloudSolrStreamWithRouteParam() throws Exception {
+    final String routeCollection = "routeCollection";
+    CollectionAdminRequest.createCollectionWithImplicitRouter(routeCollection, "conf", "a,b,c", 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(routeCollection, 3, 3);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      new UpdateRequest()
+          .add(id, "0", "a_i", "0")
+          .add(id, "1", "a_i", "1")
+          .add(id, "2", "a_i", "2")
+          .withRoute("a")
+          .process(cluster.getSolrClient(), routeCollection);
+      new UpdateRequest()
+          .add(id, "3", "a_i", "3")
+          .add(id, "4", "a_i", "4")
+          .withRoute("b")
+          .process(cluster.getSolrClient(), routeCollection);
+      new UpdateRequest()
+          .add(id, "5", "a_i", "5")
+          .withRoute("c")
+          .commit(cluster.getSolrClient(), routeCollection);
+
+      CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+
+      assertEquals(Set.of("a"), routedSliceNames(routeCollection, cloudSolrClient, "a"));
+      assertEquals(Set.of("a", "c"), routedSliceNames(routeCollection, cloudSolrClient, "a,c"));
+      assertEquals(
+          3,
+          CloudSolrStream.getSlices(
+                  routeCollection, cloudSolrClient, true, new ModifiableSolrParams())
+              .size());
+
+      StreamFactory factory =
+          new StreamFactory()
+              .withDefaultSolrConnection(solrConnection)
+              .withCollectionUseThisConnection(routeCollection, solrConnection);
+
+      assertRouteQuery(routeCollection, factory, streamContext, "a", 1, new int[] {0, 1, 2});
+      assertRouteQuery(routeCollection, factory, streamContext, "a,c", 2, new int[] {0, 1, 2, 5});
+      assertRouteQuery(
+          routeCollection, factory, streamContext, null, 3, new int[] {0, 1, 2, 3, 4, 5});
+    } finally {
+      CollectionAdminRequest.deleteCollection(routeCollection).process(cluster.getSolrClient());
+      solrClientCache.close();
+    }
+  }
+
+  private Set<String> routedSliceNames(
+      String collection, CloudSolrClient cloudSolrClient, String routeKey) throws IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(ShardParams._ROUTE_, routeKey);
+    return CloudSolrStream.getSlices(collection, cloudSolrClient, true, params).stream()
+        .map(Slice::getName)
+        .collect(Collectors.toSet());
+  }
+
+  private void assertRouteQuery(
+      String collection,
+      StreamFactory factory,
+      StreamContext streamContext,
+      String routeKey,
+      int expectedStreamCount,
+      int[] expectedIds)
+      throws Exception {
+    CloudSolrStream stream = routeStream(collection, factory, streamContext, routeKey);
+    List<Tuple> tuples = getTuples(stream);
+    assertEquals(expectedStreamCount, stream.children().size());
+    assertEquals(expectedIds.length, tuples.size());
+    assertOrderOf(tuples, "a_i", expectedIds);
+  }
+
+  private CloudSolrStream routeStream(
+      String collection, StreamFactory factory, StreamContext streamContext, String routeKey)
+      throws IOException {
+    String routeClause = routeKey == null ? "" : ", _route_=\"" + routeKey + "\"";
+    StreamExpression expression =
+        StreamExpressionParser.parse(
+            "search("
+                + collection
+                + ", q=*:*, fl=\"id,a_i\", sort=\"a_i asc\""
+                + routeClause
+                + ")");
+    CloudSolrStream stream = new CloudSolrStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    return stream;
+  }
+
+  @Test
+  public void testCloudSolrStreamWithCompositeIdRoute() throws Exception {
+    new UpdateRequest()
+        .add(id, "user1!0", "a_i", "0")
+        .add(id, "user1!1", "a_i", "1")
+        .add(id, "user1!2", "a_i", "2")
+        .add(id, "user2!3", "a_i", "3")
+        .add(id, "user2!4", "a_i", "4")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    String realCollection =
+        cloudSolrClient.getClusterStateProvider().resolveAlias(COLLECTIONORALIAS).get(0);
+    DocCollection docCollection = cloudSolrClient.getClusterState().getCollection(realCollection);
+    assertEquals(
+        "This test requires the compositeId router",
+        CompositeIdRouter.NAME,
+        docCollection.getRouter().getName());
+
+    ModifiableSolrParams routeParams = new ModifiableSolrParams();
+    routeParams.add(ShardParams._ROUTE_, "user1!");
+    Set<String> expected =
+        docCollection.getRouter().getSearchSlices("user1!", routeParams, docCollection).stream()
+            .map(Slice::getName)
+            .collect(Collectors.toSet());
+    Set<String> routedSliceNames =
+        CloudSolrStream.getSlices(COLLECTIONORALIAS, cloudSolrClient, true, routeParams).stream()
+            .map(Slice::getName)
+            .collect(Collectors.toSet());
+    assertEquals(
+        "getSlices should match the compositeId router's slice selection",
+        expected,
+        routedSliceNames);
+
+    StreamFactory factory =
+        new StreamFactory()
+            .withDefaultSolrConnection(solrConnection)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection);
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      StreamExpression expression =
+          StreamExpressionParser.parse(
+              "search("
+                  + COLLECTIONORALIAS
+                  + ", q=*:*, fq=\"id:user1!*\", fl=\"id,a_i\", sort=\"a_i asc\", _route_=\"user1!\")");
+      CloudSolrStream stream = new CloudSolrStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(stream);
+      assertEquals(
+          "search() should open one SolrStream per routed slice",
+          routedSliceNames.size(),
+          stream.children().size());
+      assertEquals(3, tuples.size());
+      assertOrderOf(tuples, "a_i", 0, 1, 2);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testCloudSolrStreamWithEmptyRoute() throws Exception {
+    new UpdateRequest()
+        .add(id, "0", "a_i", "0")
+        .add(id, "1", "a_i", "1")
+        .add(id, "2", "a_i", "2")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    String realCollection =
+        cloudSolrClient.getClusterStateProvider().resolveAlias(COLLECTIONORALIAS).get(0);
+    DocCollection docCollection = cloudSolrClient.getClusterState().getCollection(realCollection);
+    int activeSliceCount = docCollection.getActiveSlices().size();
+
+    ModifiableSolrParams emptyRouteParams = new ModifiableSolrParams();
+    emptyRouteParams.add(ShardParams._ROUTE_, "");
+    List<Slice> slices =
+        CloudSolrStream.getSlices(COLLECTIONORALIAS, cloudSolrClient, true, emptyRouteParams);
+    assertEquals(
+        "Empty _route_ should fall back to all active slices", activeSliceCount, slices.size());
+  }
+
+  @Test
+  public void testCloudSolrStreamWithInvalidRoute() throws Exception {
+    final String routeCollection = "invalidRouteCollection";
+    CollectionAdminRequest.createCollectionWithImplicitRouter(routeCollection, "conf", "a,b", 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(routeCollection, 2, 2);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      new UpdateRequest()
+          .add(id, "0", "a_i", "0")
+          .withRoute("a")
+          .commit(cluster.getSolrClient(), routeCollection);
+
+      CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+      ModifiableSolrParams badRouteParams = new ModifiableSolrParams();
+      badRouteParams.add(ShardParams._ROUTE_, "doesNotExist");
+
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  CloudSolrStream.getSlices(
+                      routeCollection, cloudSolrClient, true, badRouteParams));
+      assertTrue(
+          "Error should mention the missing shard", ex.getMessage().contains("doesNotExist"));
+
+      StreamFactory factory =
+          new StreamFactory()
+              .withDefaultSolrConnection(solrConnection)
+              .withCollectionUseThisConnection(routeCollection, solrConnection);
+      expectThrows(
+          IOException.class,
+          () -> getTuples(routeStream(routeCollection, factory, streamContext, "doesNotExist")));
+    } finally {
+      CollectionAdminRequest.deleteCollection(routeCollection).process(cluster.getSolrClient());
       solrClientCache.close();
     }
   }
