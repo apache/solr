@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -387,6 +388,9 @@ public class SyncStrategy {
   /** Attempts for a recovery request when the replica core is still loading. */
   private static final int RECOVERY_REQUEST_ATTEMPTS = 3;
 
+  /** Suffix of the "core is still loading" message; see {@link #isCoreStillLoading}. */
+  private static final String CORE_STILL_LOADING_MESSAGE_SUFFIX = " is still loading";
+
   private void requestRecovery(
       final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
       throws SolrServerException, IOException {
@@ -399,43 +403,69 @@ public class SyncStrategy {
           RequestRecovery recoverRequestCmd = new RequestRecovery();
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
           recoverRequestCmd.setCoreName(coreName);
-          for (int attempt = 1; ; attempt++) {
-            try {
-              sendRecoveryRequest(baseUrl, recoverRequestCmd);
-              return;
-            } catch (Throwable t) {
-              if (t instanceof Error) {
-                throw (Error) t;
-              }
-              if (!isClosed && isCoreStillLoading(t) && attempt < RECOVERY_REQUEST_ATTEMPTS) {
-                // The replica's core hasn't finished loading; wait a bit and retry
-                log.warn(
-                    "{}: replica core {} is still loading, retrying recovery request (attempt {}/{})",
-                    ZkCoreNodeProps.getCoreUrl(leaderProps),
-                    coreName,
-                    attempt + 1,
-                    RECOVERY_REQUEST_ATTEMPTS);
-                try {
-                  Thread.sleep(RECOVERY_RETRY_DELAY_MS);
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                  return;
-                }
-                if (isClosed) {
-                  return;
-                }
-                continue;
-              }
-              log.error(
-                  "{}: Could not tell a replica to recover",
-                  ZkCoreNodeProps.getCoreUrl(leaderProps),
-                  t);
-              return;
-            }
-          }
+          sendRecoveryRequestWithRetry(
+              () -> sendRecoveryRequest(baseUrl, recoverRequestCmd),
+              () -> isClosed,
+              RECOVERY_RETRY_DELAY_MS,
+              ZkCoreNodeProps.getCoreUrl(leaderProps),
+              coreName);
         };
 
     updateExecutor.execute(runnable);
+  }
+
+  /** A single attempt at sending a recovery request. */
+  @FunctionalInterface
+  interface RecoveryRequestSender {
+    void send() throws Throwable;
+  }
+
+  /**
+   * Sends a recovery request, retrying only when the replica answers with the "core is still
+   * loading" 503 (see {@link #isCoreStillLoading}). Any other failure is logged and dropped, since
+   * recovery requests are best-effort nudges. An {@link Error} from any attempt is rethrown.
+   * Package-private and static so tests can drive it with a fake sender and a zero retry delay.
+   */
+  static void sendRecoveryRequestWithRetry(
+      RecoveryRequestSender sender,
+      BooleanSupplier closed,
+      long retryDelayMs,
+      String replicaUrl,
+      String coreName) {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        sender.send();
+        return;
+      } catch (Throwable t) {
+        if (t instanceof Error) {
+          throw (Error) t;
+        }
+        if (!closed.getAsBoolean()
+            && isCoreStillLoading(t)
+            && attempt < RECOVERY_REQUEST_ATTEMPTS) {
+          // The replica's core hasn't finished loading; wait a bit and retry
+          int nextAttempt = attempt + 1;
+          log.warn(
+              "{}: replica core {} is still loading, retrying recovery request (attempt {}/{})",
+              replicaUrl,
+              coreName,
+              nextAttempt,
+              RECOVERY_REQUEST_ATTEMPTS);
+          try {
+            Thread.sleep(retryDelayMs);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          if (closed.getAsBoolean()) {
+            return;
+          }
+          continue;
+        }
+        log.error("{}: Could not tell a replica to recover", replicaUrl, t);
+        return;
+      }
+    }
   }
 
   private void sendRecoveryRequest(String baseUrl, RequestRecovery recoverRequestCmd)
@@ -450,8 +480,17 @@ public class SyncStrategy {
   }
 
   private static boolean isCoreStillLoading(Throwable t) {
-    return t instanceof RemoteSolrException
-        && ((RemoteSolrException) t).code() == SolrException.ErrorCode.SERVICE_UNAVAILABLE.code;
+    if (!(t instanceof RemoteSolrException rse)
+        || rse.code() != SolrException.ErrorCode.SERVICE_UNAVAILABLE.code) {
+      return false;
+    }
+    // Only the exact "core is still loading" response from REQUESTRECOVERY is retriable. Any
+    // other 503 (a proxy error, or a different failure on the replica) must not be retried as
+    // if the core were still loading. The suffix must match the message of the 503 that
+    // CoreAdminOperation.REQUESTRECOVERY_OP throws for a loading core; the server side is
+    // pinned by CoreAdminOperationTest, this side by SyncStrategyTest.
+    String msg = rse.getMessage();
+    return msg != null && msg.contains(CORE_STILL_LOADING_MESSAGE_SUFFIX);
   }
 
   public static ModifiableSolrParams params(String... params) {

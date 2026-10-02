@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
@@ -287,6 +288,8 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.SERVICE_UNAVAILABLE.code);
+    // SyncStrategy retries only this exact response; the message is part of the contract.
+    assertTrue(ex.getMessage().contains("Core loadingCore is still loading"));
   }
 
   @Test
@@ -305,6 +308,8 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 
+  @SuppressForbidden(
+      reason = "test replaces the handler's CoreContainer to simulate loading and unknown cores")
   private void setCoreContainer(CoreAdminHandler handler, CoreContainer container)
       throws Exception {
     Field field = CoreAdminHandler.class.getDeclaredField("coreContainer");
