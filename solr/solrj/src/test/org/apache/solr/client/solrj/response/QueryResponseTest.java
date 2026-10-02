@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
 import org.apache.lucene.util.SuppressForbidden;
