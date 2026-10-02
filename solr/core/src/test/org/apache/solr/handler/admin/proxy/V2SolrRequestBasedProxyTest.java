@@ -82,6 +82,20 @@ public class V2SolrRequestBasedProxyTest extends SolrTestCaseJ4 {
     }
   }
 
+  // Mirrors how the node system-info endpoint constructs this proxy: it opts in to treating
+  // standalone "all" as this node. Does not stub out validation.
+  private V2SolrRequestBasedProxy<Object> broadcastProxy(CoreContainer coreContainer) {
+    return new V2SolrRequestBasedProxy<>(coreContainer, mockSolrRequest) {
+      @Override
+      protected boolean standaloneAllMeansLocal() {
+        return true;
+      }
+
+      @Override
+      protected void processTypedProxiedResponse(String nodeName, Object proxiedResponse) {}
+    };
+  }
+
   @Test
   public void shouldProxyIsFalseWhenNodesParamAbsent() {
     var proxy = new TestProxy(mockStandalone);
@@ -90,9 +104,19 @@ public class V2SolrRequestBasedProxyTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void shouldProxyIsFalseWhenStandaloneAndNodesAll() {
+  public void shouldProxyIsTrueWhenStandaloneAndNodesAllByDefault() {
     solrParams.add("nodes", "all");
     var proxy = new TestProxy(mockStandalone);
+    assertTrue(
+        "By default, standalone nodes=all still 'proxies' so validateNodeNames can reject it; "
+            + "only the broadcast endpoints opt in to treating it as local",
+        proxy.shouldProxy());
+  }
+
+  @Test
+  public void shouldProxyIsFalseWhenStandaloneAndNodesAllWithOptIn() {
+    solrParams.add("nodes", "all");
+    var proxy = broadcastProxy(mockStandalone);
     assertFalse("Expected standalone nodes=all to be handled locally", proxy.shouldProxy());
   }
 
@@ -117,7 +141,19 @@ public class V2SolrRequestBasedProxyTest extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("nodes"));
     assertTrue(ex.getMessage().contains("SolrCloud"));
-    // This proxy opts in to standaloneAllMeansLocal(), so the message names the 'all' exception
+    // The base class keeps the strict default, so the message names no 'all' exception
+    assertFalse(ex.getMessage().contains("treated as this node"));
+  }
+
+  @Test
+  public void destinationNodesThrowsWhenStandaloneAndExplicitNodesWithOptIn() {
+    solrParams.add("nodes", "localhost:7574_solr");
+    var proxy = broadcastProxy(mockStandalone);
+    SolrException ex = expectThrows(SolrException.class, proxy::getDestinationNodes);
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("nodes"));
+    assertTrue(ex.getMessage().contains("SolrCloud"));
+    // With the opt-in, the message names the 'all' exception
     assertTrue(ex.getMessage().contains("treated as this node"));
   }
 

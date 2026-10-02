@@ -50,7 +50,15 @@ public class SystemInfoHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
 
-    final var reqProxy = new GenericV1RequestProxy(getCoreContainer(req), req, rsp);
+    final var reqProxy =
+        new GenericV1RequestProxy(getCoreContainer(req), req, rsp) {
+          // The system-info endpoint's "nodes" parameter is a broadcast selector (collect
+          // from every node), so in standalone mode "all" degrades to just this node.
+          @Override
+          protected boolean standaloneAllMeansLocal() {
+            return true;
+          }
+        };
     if (reqProxy.proxyRequest()) {
       return;
     }

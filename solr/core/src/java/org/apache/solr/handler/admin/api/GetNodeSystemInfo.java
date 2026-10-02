@@ -74,6 +74,14 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
         req.setNodes(nodes);
         final var reqProxy =
             new V2SolrRequestBasedProxy<NodeSystemResponse>(coreContainer, req) {
+              // The system-info endpoint's "nodes" parameter is a broadcast selector
+              // (collect from every node), so in standalone mode "all" degrades to just
+              // this node.
+              @Override
+              protected boolean standaloneAllMeansLocal() {
+                return true;
+              }
+
               @Override
               public void processTypedProxiedResponse(
                   String nodeName, NodeSystemResponse proxiedResponse) {
@@ -82,6 +90,10 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
             };
         return reqProxy.proxyRequest();
       }
+    } catch (SolrException e) {
+      // Already carries the right status (e.g. the 400 for node selectors used outside
+      // SolrCloud); don't mask it as a 500.
+      throw e;
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);

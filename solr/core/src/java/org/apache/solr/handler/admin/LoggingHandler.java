@@ -92,7 +92,14 @@ public class LoggingHandler extends RequestHandlerBase {
     }
 
     rsp.setHttpCaching(false);
-    new GenericV1RequestProxy(cc, req, rsp).proxyRequest();
+    new GenericV1RequestProxy(cc, req, rsp) {
+      // The logging endpoint's "nodes" parameter is a broadcast selector (apply to every
+      // node), so in standalone mode "all" degrades to just this node.
+      @Override
+      protected boolean standaloneAllMeansLocal() {
+        return true;
+      }
+    }.proxyRequest();
   }
 
   private void squashV2Response(SolrQueryResponse rsp, LoggingResponse response) {
