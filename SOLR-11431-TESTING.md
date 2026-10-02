@@ -33,6 +33,12 @@ Then run the adjacent generic-failure coverage, which intentionally remains a 50
 ./gradlew :solr:core:test --tests org.apache.solr.core.TestLazyCores
 ```
 
+The leader-election classification is covered separately:
+
+```bash
+./gradlew :solr:core:test --tests org.apache.solr.update.PeerSyncLeaderElectionTest
+```
+
 ## Acceptance checks
 
 1. On the unpatched base, the three `TestCoreContainer` assertions should observe 500.
@@ -42,6 +48,8 @@ Then run the adjacent generic-failure coverage, which intentionally remains a 50
    failure.
 4. Do not broaden the change to unrelated `SERVER_ERROR` uses or to generic CoreAdmin failures.
    `TestLazyCores` is the guard against that accidental scope expansion.
+5. A failed core's 503 version request is tolerated only during the PeerSync version-request path;
+   generic 500 responses, update requests, and non-tolerant calls must still fail.
 
 Record the Gradle seed and test-output path for any failure. No Gradle task was run while
 preparing this branch.
@@ -68,6 +76,6 @@ Both failed on the unpatched base exactly as required for discrimination:
 separate issue.) This confirms the new 503 assertions exercise the fix: unpatched production code
 returns 500, patched code returns 503.
 
-The throwaway worktree was deleted afterwards. The branch worktree still contains only the two
-committed changes (`9c32d162ae2` implementation, `066de52ba8b` testing handoff); `TestLazyCores`
-(6 tests) remains green on the branch and guards against scope expansion.
+The throwaway worktree was deleted afterwards. The latest branch also contains the direct
+`PeerSyncLeaderElectionTest` coverage added in commit `3911124a57c`. `TestLazyCores` (6 tests)
+remains green on the branch and guards against scope expansion.
