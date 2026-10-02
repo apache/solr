@@ -4,12 +4,12 @@
 # To regenerate this file, run: ./gradlew :solr:server:dependencies --write-locks
 com.carrotsearch:hppc:0.11.1=jarValidation,runtimeClasspath,solrCore
 com.fasterxml.jackson.core:jackson-annotations:2.22=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.core:jackson-core:2.22.2=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.core:jackson-databind:2.22.2=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.22.2=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.22.2=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.22.2=jarValidation,runtimeClasspath,solrCore
-com.fasterxml.jackson:jackson-bom:2.22.2=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.core:jackson-core:2.22.3=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.core:jackson-databind:2.22.3=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.22.3=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.22.3=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.22.3=jarValidation,runtimeClasspath,solrCore
+com.fasterxml.jackson:jackson-bom:2.22.3=jarValidation,runtimeClasspath,solrCore
 com.fasterxml.woodstox:woodstox-core:7.2.2=jarValidation,runtimeClasspath,solrCore
 com.github.ben-manes.caffeine:caffeine:3.2.4=annotationProcessor,errorprone,jarValidation,runtimeClasspath,solrCore,testAnnotationProcessor
 com.github.kevinstern:software-and-algorithms:1.0=annotationProcessor,errorprone,testAnnotationProcessor
@@ -109,7 +109,7 @@ org.apache.lucene:lucene-spatial3d:10.4.0=jarValidation,runtimeClasspath,solrCor
 org.apache.lucene:lucene-suggest:10.4.0=jarValidation,runtimeClasspath,solrCore
 org.apache.zookeeper:zookeeper-jute:3.9.5=jarValidation,runtimeClasspath,solrCore
 org.apache.zookeeper:zookeeper:3.9.5=jarValidation,runtimeClasspath,solrCore
-org.codehaus.woodstox:stax2-api:4.3.0=jarValidation,runtimeClasspath,solrCore
+org.codehaus.woodstox:stax2-api:4.3.1=jarValidation,runtimeClasspath,solrCore
 org.eclipse.jetty.compression:jetty-compression-common:12.1.12=jarValidation,runtimeClasspath,solrCore
 org.eclipse.jetty.compression:jetty-compression-gzip:12.1.12=jarValidation,runtimeClasspath,solrCore
 org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.12=jarValidation,runtimeClasspath,serverLib
