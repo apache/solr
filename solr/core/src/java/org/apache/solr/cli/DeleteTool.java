@@ -17,14 +17,13 @@
 package org.apache.solr.cli;
 
 import java.util.Locale;
-import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
@@ -111,32 +110,20 @@ public class DeleteTool extends ToolBase {
   protected void deleteCollection(CommandLine cli, SolrClient solrClient) throws Exception {
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
 
-    // Uses the V1 CLUSTERSTATUS request rather than the V2 CollectionsApi.GetCollectionStatus:
-    // the latter goes through a Jersey code path that currently throws under basic-auth-secured
-    // clusters. Still a plain HTTP admin call, not a direct ZK connection. Scoping the request to
-    // this one collection also serves as the existence check below, instead of a separate
-    // ListCollections call that would have to scan every collection in the cluster.
-    Map<String, Object> collectionInfo;
+    // Scoping the request to this one collection also serves as the existence check below,
+    // instead of a separate ListCollections call that would have to scan every collection in
+    // the cluster.
+    String configName;
     try {
-      var statusReq = new CollectionAdminRequest.ClusterStatus().setCollectionName(collectionName);
+      var statusReq = new CollectionsApi.GetCollectionStatus(collectionName);
       var statusResponse = statusReq.process(solrClient);
-      @SuppressWarnings("unchecked")
-      Map<String, Object> cluster =
-          (Map<String, Object>) statusResponse.getResponse().get("cluster");
-      @SuppressWarnings("unchecked")
-      Map<String, Object> collections =
-          cluster != null ? (Map<String, Object>) cluster.get("collections") : null;
-      @SuppressWarnings("unchecked")
-      Map<String, Object> info =
-          collections != null ? (Map<String, Object>) collections.get(collectionName) : null;
-      collectionInfo = info;
-    } catch (SolrException e) {
-      if (e.code() == SolrException.ErrorCode.BAD_REQUEST.code) {
+      configName = statusResponse.properties != null ? statusResponse.properties.configName : null;
+    } catch (RemoteSolrException e) {
+      if (e.code() == SolrException.ErrorCode.NOT_FOUND.code) {
         throw new IllegalArgumentException("Collection " + collectionName + " not found!");
       }
       throw e;
     }
-    String configName = collectionInfo != null ? (String) collectionInfo.get("configName") : null;
     boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
 
     echoIfVerbose("\nDeleting collection '" + collectionName + "' using V2 Collections API");
