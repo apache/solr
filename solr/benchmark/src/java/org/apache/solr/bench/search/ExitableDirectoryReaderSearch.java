@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -112,6 +113,9 @@ public class ExitableDirectoryReaderSearch {
     @Param({"false", "true"})
     boolean verifyEDRInUse = true;
 
+    @Param({"false", "true"})
+    boolean multiThreaded = false;
+
     private static final String matchExpression = "ExitableTermsEnum:-1";
 
     @Setup(Level.Iteration)
@@ -151,9 +155,12 @@ public class ExitableDirectoryReaderSearch {
     }
   }
 
-  private static ModifiableSolrParams createInitialParams() {
+  private static ModifiableSolrParams createInitialParams(BenchState state) {
     ModifiableSolrParams params =
         SolrBenchState.params("rows", "100", "timeAllowed", "1000", "fl", "*");
+    if (state.multiThreaded) {
+      params.set(CommonParams.MULTI_THREADED, "true");
+    }
     return params;
   }
 
@@ -161,7 +168,7 @@ public class ExitableDirectoryReaderSearch {
   public void testShortQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
-    ModifiableSolrParams params = createInitialParams();
+    ModifiableSolrParams params = createInitialParams(state);
     params.set("q", "f1_ts:" + queryDoc.getFieldValue("f1_ts").toString());
     QueryRequest queryRequest = new QueryRequest(params);
     QueryResponse rsp = queryRequest.process(solrBenchState.client, COLLECTION);
@@ -172,7 +179,7 @@ public class ExitableDirectoryReaderSearch {
   public void testLongQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
-    ModifiableSolrParams params = createInitialParams();
+    ModifiableSolrParams params = createInitialParams(state);
     StringBuilder query = new StringBuilder();
     for (int i = 2; i < 10; i++) {
       if (query.length() > 0) {
@@ -182,6 +189,16 @@ public class ExitableDirectoryReaderSearch {
       query.append(fld + ":\"" + queryDoc.getFieldValue(fld) + "\"~20");
     }
     params.set("q", query.toString());
+    QueryRequest queryRequest = new QueryRequest(params);
+    QueryResponse rsp = queryRequest.process(solrBenchState.client, COLLECTION);
+    bh.consume(rsp);
+  }
+
+  @Benchmark
+  public void testRangeQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
+      throws Exception {
+    ModifiableSolrParams params = createInitialParams(state);
+    params.set("q", "id:[0 TO 250000]");
     QueryRequest queryRequest = new QueryRequest(params);
     QueryResponse rsp = queryRequest.process(solrBenchState.client, COLLECTION);
     bh.consume(rsp);
