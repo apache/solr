@@ -1,4 +1,4 @@
-title: Update com.fasterxml.jackson:jackson-bom to v2.22.3
+title: Update Jackson & Woodstox
 type: dependency_update
 authors:
 - name: solrbot
