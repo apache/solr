@@ -177,8 +177,11 @@ Each mode logs a distinct line at startup, which is the quickest way to confirm 
 | `OpenTelemetry Java agent is installed; using the OpenTelemetry it registered.`
 | A Java agent was detected; Solr configured nothing.
 
+| `OpenTelemetry loaded via <class name>`
+| The configurator named in `<tracerConfig>` was loaded.
+
 | `OpenTelemetry loaded via auto configuration.`
-| The module's configurator was loaded, via `<tracerConfig>` or `OTEL_SERVICE_NAME`.
+| `OTEL_SERVICE_NAME` is set, so the `opentelemetry` module's configurator was loaded automatically.
 
 | `OpenTelemetry loaded with simple propagation only.`
 | No integration; always-on trace ID generation is in effect.
