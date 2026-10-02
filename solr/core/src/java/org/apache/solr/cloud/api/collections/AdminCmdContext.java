@@ -43,7 +43,11 @@ public class AdminCmdContext {
       CollectionParams.CollectionAction action, String asyncId, SolrQueryRequest req) {
     this.action = action;
     this.asyncId = asyncId;
-    this.withCallingLockId((String) req.getContext().get(CALLING_LOCK_ID_HEADER));
+    // req may be null, e.g. when this constructor runs for a V2 request that failed before
+    // V2HttpCall attached a SolrQueryRequest to the Jersey request context (see SOLR-18324).
+    if (req != null) {
+      this.withCallingLockId((String) req.getContext().get(CALLING_LOCK_ID_HEADER));
+    }
   }
 
   public CollectionParams.CollectionAction getAction() {

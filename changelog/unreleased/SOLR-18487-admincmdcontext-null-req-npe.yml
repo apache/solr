@@ -1,0 +1,7 @@
+title: Fixed a NullPointerException in AdminCmdContext when a V2 collection-admin request's SolrQueryRequest was never attached to the Jersey request context.
+type: fixed
+authors:
+  - name: Marc Byrd
+links:
+  - name: SOLR-18487
+    url: https://issues.apache.org/jira/browse/SOLR-18487
