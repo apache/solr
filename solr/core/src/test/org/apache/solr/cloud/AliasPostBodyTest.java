@@ -18,8 +18,10 @@ package org.apache.solr.cloud;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,6 +30,7 @@ import org.junit.Test;
  * Verifies that a collection alias in the POST form body is resolved the same as in the URL query
  * string (SOLR-12849).
  */
+@SuppressSSL // the raw HttpURLConnection used below cannot validate the randomized test cert
 public class AliasPostBodyTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -47,7 +50,7 @@ public class AliasPostBodyTest extends SolrCloudTestCase {
     // POST to /solr/<alias>/select with collection=<alias> in the FORM BODY (ticket's scenario).
     // Must not fail with "Could not find collection".
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    URL url = new URL(baseUrl + "/" + alias + "/select");
+    URL url = URI.create(baseUrl + "/" + alias + "/select").toURL();
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");
     conn.setDoOutput(true);
