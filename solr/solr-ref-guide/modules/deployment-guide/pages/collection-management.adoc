@@ -1267,6 +1267,8 @@ The response will include an overview of the collection status, the number of
 active or inactive shards and replicas, and additional index information
 of shard leaders.
 
+If the requested collection does not exist, the V1 API returns a `200 OK` with an empty body, while the V2 API returns a `404` error with an appropriate error message.
+
 === Examples using COLSTATUS
 
 *Input*
