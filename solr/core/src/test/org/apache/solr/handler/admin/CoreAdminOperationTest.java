@@ -19,12 +19,14 @@ package org.apache.solr.handler.admin;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
@@ -269,6 +271,45 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> CoreAdminOperation.REQUESTSYNCSHARD_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
+  }
+
+  @Test
+  public void testRequestRecoveryCoreLoadingResultsIn503SolrException() throws Exception {
+    Map<String, String> params = new HashMap<>();
+    params.put("core", "loadingCore");
+    whenCoreAdminOpHasParams(params);
+    CoreContainer mockContainer = mock(CoreContainer.class);
+    when(mockContainer.getCore("loadingCore")).thenReturn(null);
+    when(mockContainer.isCoreLoading("loadingCore")).thenReturn(true);
+    setCoreContainer(mockHandler, mockContainer);
+
+    Exception ex =
+        expectThrows(
+            Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
+    assertSolrExceptionWithCode(ex, ErrorCode.SERVICE_UNAVAILABLE.code);
+  }
+
+  @Test
+  public void testRequestRecoveryUnknownCoreResultsIn400SolrException() throws Exception {
+    Map<String, String> params = new HashMap<>();
+    params.put("core", "unknownCore");
+    whenCoreAdminOpHasParams(params);
+    CoreContainer mockContainer = mock(CoreContainer.class);
+    when(mockContainer.getCore("unknownCore")).thenReturn(null);
+    when(mockContainer.isCoreLoading("unknownCore")).thenReturn(false);
+    setCoreContainer(mockHandler, mockContainer);
+
+    Exception ex =
+        expectThrows(
+            Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
+    assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
+  }
+
+  private void setCoreContainer(CoreAdminHandler handler, CoreContainer container)
+      throws Exception {
+    Field field = CoreAdminHandler.class.getDeclaredField("coreContainer");
+    field.setAccessible(true);
+    field.set(handler, container);
   }
 
   @Test
