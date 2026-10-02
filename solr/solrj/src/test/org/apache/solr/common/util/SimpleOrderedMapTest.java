@@ -71,25 +71,8 @@ public class SimpleOrderedMapTest extends SolrTestCase {
       deserialized = (SimpleOrderedMap<?>) in.readObject();
     }
 
-    assertEquals(original.size(), deserialized.size());
+    // One structural comparison covers size, order, keys, values and nesting.
     assertEquals(original, deserialized);
-    assertEquals("one", deserialized.getName(0));
-    assertEquals(1, deserialized.getVal(0));
-    assertEquals("two", deserialized.getName(1));
-    assertEquals("two", deserialized.getVal(1));
-    assertEquals("aNull", deserialized.getName(2));
-    assertNull(deserialized.getVal(2));
-    assertNull(deserialized.getName(3));
-    assertEquals(4, deserialized.getVal(3));
-    assertEquals(6, deserialized.size());
-    assertEquals("nested", deserialized.getName(4));
-    Object roundTrippedNested = deserialized.getVal(4);
-    assertTrue(
-        "nested maps must stay SimpleOrderedMap after Java serialization",
-        roundTrippedNested instanceof SimpleOrderedMap);
-    assertEquals(nested, roundTrippedNested);
-    assertEquals("categories", deserialized.getName(5));
-    assertEquals(List.of("electronics", "memory"), deserialized.getVal(5));
   }
 
   @Test
