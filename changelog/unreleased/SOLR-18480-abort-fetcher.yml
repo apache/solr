@@ -1,0 +1,10 @@
+title: >-
+  A TLOG replica taking over leadership no longer stalls for up to 60 seconds when the previous
+  leader has stopped responding without going down: the in-progress index fetch from the old
+  leader is now aborted instead of waited out.
+type: fixed
+authors:
+  - name: Luke Kot-Zaniewski
+links:
+  - name: SOLR-18480
+    url: https://issues.apache.org/jira/browse/SOLR-18480

@@ -70,6 +70,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.zip.Adler32;
@@ -170,7 +171,14 @@ public class IndexFetcher {
 
   private volatile ExecutorService fsyncService;
 
-  private volatile boolean stop = false;
+  /**
+   * The client of the fetch in progress, if any. Each fetch gets its own lightweight copy of {@link
+   * #solrClient}, so aborting it affects that fetch alone and nothing later.
+   */
+  private final AtomicReference<HttpJettySolrClient> currentFetchClient = new AtomicReference<>();
+
+  /** Set by {@link #destroy()}; a destroyed fetcher starts no further fetches. */
+  private volatile boolean destroyed;
 
   private boolean useInternalCompression = false;
 
@@ -205,9 +213,8 @@ public class IndexFetcher {
         new IndexFetchResult("Fetching latest index is successful", true, null);
     public static final IndexFetchResult LOCK_OBTAIN_FAILED =
         new IndexFetchResult("Obtaining SnapPuller lock failed", false, null);
-    public static final IndexFetchResult CONTAINER_IS_SHUTTING_DOWN =
-        new IndexFetchResult(
-            "I was asked to replicate but CoreContainer is shutting down", false, null);
+    public static final IndexFetchResult REPLICATION_SHUTTING_DOWN =
+        new IndexFetchResult("Index fetch not started: replication is shutting down", false, null);
     public static final IndexFetchResult LEADER_VERSION_ZERO =
         new IndexFetchResult("Index in peer is empty and never committed yet", true, null);
     public static final IndexFetchResult NO_INDEX_COMMIT_EXIST =
@@ -350,12 +357,16 @@ public class IndexFetcher {
 
   /** Gets the latest commit version and generation from the leader */
   public NamedList<Object> getLatestVersion() throws IOException {
+    return getLatestVersion(solrClient);
+  }
+
+  private NamedList<Object> getLatestVersion(HttpJettySolrClient client) throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      return solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
+      return client.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -366,20 +377,20 @@ public class IndexFetcher {
    * download.
    */
   @SuppressWarnings({"unchecked"})
-  private void fetchFileList(long gen) throws IOException {
+  private void fetchFileList(Fetch fetch) throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_GET_FILE_LIST);
-    params.set(GENERATION, String.valueOf(gen));
+    params.set(GENERATION, String.valueOf(fetch.generation()));
     params.set(CommonParams.WT, JAVABIN);
     var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
+      NamedList<?> response = fetch.client().requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
       else {
         filesToDownload = List.of();
-        log.error("No files to download for index generation: {}", gen);
+        log.error("No files to download for index generation: {}", fetch.generation());
       }
 
       files = (List<Map<String, Object>>) response.get(CONF_FILES);
@@ -405,17 +416,52 @@ public class IndexFetcher {
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload)
       throws IOException, InterruptedException {
+    // A lightweight copy of solrClient, so that aborting it (abortFetch, destroy) fails this
+    // fetch's requests and nothing else.
+    HttpJettySolrClient fetchClient =
+        new HttpJettySolrClient.Builder()
+            .withHttpClient(solrClient)
+            .withAbortableRequests(true)
+            .build();
+    // doFetch serializes fetches with indexFetchLock, so a fetch already in progress means that
+    // invariant broke. Fail loudly rather than silently abort or orphan the other fetch.
+    if (!currentFetchClient.compareAndSet(null, fetchClient)) {
+      IOUtils.closeQuietly(fetchClient);
+      throw new IllegalStateException("A fetch is already in progress on " + this);
+    }
     try {
-      return fetchLatestIndexOnce(forceReplication, forceCoreReload);
+      // Pairs with destroy(): publish-then-check here and mark-then-read there, so either this
+      // sees the fetcher destroyed, or destroy() sees this fetch and aborts it.
+      if (destroyed) {
+        return IndexFetchResult.REPLICATION_SHUTTING_DOWN;
+      }
+      return fetchLatestIndexWithRetry(forceReplication, forceCoreReload, fetchClient);
+    } finally {
+      currentFetchClient.compareAndSet(fetchClient, null);
+      IOUtils.closeQuietly(fetchClient);
+    }
+  }
+
+  /**
+   * Runs one fetch, restarting once if the leader discards the generation being fetched. Recursive
+   * attempts call this rather than {@link #fetchLatestIndex(boolean, boolean)}, so they use the
+   * caller's per-fetch client and an abort reaches them too.
+   */
+  private IndexFetchResult fetchLatestIndexWithRetry(
+      boolean forceReplication, boolean forceCoreReload, HttpJettySolrClient fetchClient)
+      throws IOException, InterruptedException {
+    try {
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload, fetchClient);
     } catch (InvalidIndexGenerationException e) {
       log.info(
           "Leader no longer has index generation {}; restarting replication from its latest generation",
           e.generation);
-      return fetchLatestIndexOnce(forceReplication, forceCoreReload);
+      return fetchLatestIndexOnce(forceReplication, forceCoreReload, fetchClient);
     }
   }
 
-  private IndexFetchResult fetchLatestIndexOnce(boolean forceReplication, boolean forceCoreReload)
+  private IndexFetchResult fetchLatestIndexOnce(
+      boolean forceReplication, boolean forceCoreReload, HttpJettySolrClient fetchClient)
       throws IOException, InterruptedException {
 
     boolean cleanupDone = false;
@@ -476,7 +522,7 @@ public class IndexFetcher {
       // get the current 'replicateable' index version in the leader
       NamedList<?> response;
       try {
-        response = getLatestVersion();
+        response = getLatestVersion(fetchClient);
       } catch (Exception e) {
         final String errorMsg = e.toString();
         if (StrUtils.isNotNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
@@ -498,6 +544,7 @@ public class IndexFetcher {
       long latestGeneration = (Long) response.get(GENERATION);
 
       log.info("Leader's generation: {}", latestGeneration);
+      Fetch fetch = new Fetch(fetchClient, latestGeneration);
       log.info("Leader's version: {}", latestVersion);
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no
@@ -567,7 +614,7 @@ public class IndexFetcher {
       }
       log.info("Starting replication process");
       // get the list of files first
-      fetchFileList(latestGeneration);
+      fetchFileList(fetch);
       assert testWait.getAsBoolean();
       // this can happen if the commit point is deleted before we fetch the file list.
       if (filesToDownload.isEmpty()) {
@@ -671,12 +718,7 @@ public class IndexFetcher {
 
           long bytesDownloaded =
               downloadIndexFiles(
-                  isFullCopyNeeded,
-                  indexDir,
-                  tmpIndexDir,
-                  indexDirPath,
-                  tmpIndexDirPath,
-                  latestGeneration);
+                  isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, fetch);
           final long timeTakenSeconds = getReplicationTimeElapsed();
           final Long bytesDownloadedPerSecond =
               (timeTakenSeconds != 0 ? bytesDownloaded / timeTakenSeconds : null);
@@ -692,7 +734,7 @@ public class IndexFetcher {
               getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
-            downloadConfFiles(confFilesToDownload, latestGeneration);
+            downloadConfFiles(confFilesToDownload, fetch);
             if (isFullCopyNeeded) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (successfulInstall) deleteTmpIdxDir = false;
@@ -764,7 +806,8 @@ public class IndexFetcher {
           log.warn(
               "Replication attempt was not successful - trying a full index replication reloadCore={}",
               reloadCore);
-          successfulInstall = fetchLatestIndex(true, reloadCore).getSuccessful();
+          successfulInstall =
+              fetchLatestIndexWithRetry(true, reloadCore, fetchClient).getSuccessful();
         }
 
         markReplicationStop();
@@ -829,7 +872,6 @@ public class IndexFetcher {
       localFileFetcher = null;
       if (fsyncService != null && !ExecutorUtil.isShutdown(fsyncService)) fsyncService.shutdown();
       fsyncService = null;
-      stop = false;
       fsyncException = null;
     } finally {
       // order below is important
@@ -1071,8 +1113,7 @@ public class IndexFetcher {
     }
   }
 
-  private void downloadConfFiles(
-      List<Map<String, Object>> confFilesToDownload, long latestGeneration) {
+  private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, Fetch fetch) {
     log.info("Starting download of configuration files from leader: {}", confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<>());
     Path tmpConfDir =
@@ -1087,8 +1128,7 @@ public class IndexFetcher {
       }
       for (Map<String, Object> file : confFilesToDownload) {
         String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-        localFileFetcher =
-            new LocalFsFileFetcher(tmpConfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
+        localFileFetcher = new LocalFsFileFetcher(tmpConfDir, file, saveAs, CONF_FILE_SHORT, fetch);
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
@@ -1113,7 +1153,7 @@ public class IndexFetcher {
    * @param indexDir the indexDir to be merged to
    * @param tmpIndexDir the directory to which files need to be downloaded to
    * @param indexDirPath the path of indexDir
-   * @param latestGeneration the version number
+   * @param fetch the fetch, including the generation being fetched
    * @return number of bytes downloaded
    */
   private long downloadIndexFiles(
@@ -1122,7 +1162,7 @@ public class IndexFetcher {
       Directory tmpIndexDir,
       String indexDirPath,
       String tmpIndexDirPath,
-      long latestGeneration)
+      Fetch fetch)
       throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("Download files to dir: {}", Arrays.asList(indexDir.listAll()));
@@ -1177,8 +1217,7 @@ public class IndexFetcher {
           bytesSkippedCopying += Files.size(localFile);
         } else {
           dirFileFetcher =
-              new DirectoryFileFetcher(
-                  tmpIndexDir, file, (String) file.get(NAME), FILE, latestGeneration);
+              new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, fetch);
           currentFile = file;
           dirFileFetcher.fetchFile();
           bytesDownloaded += dirFileFetcher.getBytesDownloaded();
@@ -1479,9 +1518,12 @@ public class IndexFetcher {
     }
   }
 
-  /** Stops the ongoing fetch */
+  /** Aborts the fetch in progress, if any. A no-op when idle; later fetches are unaffected. */
   void abortFetch() {
-    stop = true;
+    HttpJettySolrClient fetchClient = currentFetchClient.get();
+    if (fetchClient != null) {
+      fetchClient.abort(new IOException("Index fetch aborted"));
+    }
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis for debugging/stats")
@@ -1578,20 +1620,22 @@ public class IndexFetcher {
     private final Checksum checksum;
     private int errorCount = 0;
     private boolean aborted = false;
+    private final HttpJettySolrClient fetchClient;
 
     FileFetcher(
         FileInterface file,
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        long latestGen) {
+        Fetch fetch) {
       this.file = file;
+      this.fetchClient = fetch.client();
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
       buf = new byte[(int) Math.min(this.size, ReplicationAPIBase.PACKET_SZ)];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
-      indexGen = latestGen;
+      indexGen = fetch.generation();
       if (includeChecksum) {
         checksum = new Adler32();
       } else {
@@ -1666,11 +1710,6 @@ public class IndexFetcher {
             }
             return 0;
           }
-          if (stop) {
-            stop = false;
-            aborted = true;
-            throw new ReplicationHandlerException("User aborted replication");
-          }
           long checkSumServer = -1;
 
           fis.readFully(intbytes);
@@ -1712,9 +1751,11 @@ public class IndexFetcher {
           // errorCount is always set to zero after a successful packet
           errorCount = 0;
         }
-      } catch (ReplicationHandlerException e) {
-        throw e;
       } catch (Exception e) {
+        // An abort fails the exchange under us; that is not a transient error worth retrying.
+        if (fetchClient.isAborted()) {
+          throw abortedException();
+        }
         log.warn(
             "Error in fetching file: {} (downloaded {} of {} bytes)",
             fileName,
@@ -1743,6 +1784,14 @@ public class IndexFetcher {
         }
         return ERR;
       }
+    }
+
+    /**
+     * Marks this download as aborted, which suppresses retries, and returns the exception to throw.
+     */
+    private ReplicationHandlerException abortedException() {
+      aborted = true;
+      return new ReplicationHandlerException("User aborted replication");
     }
 
     /**
@@ -1796,7 +1845,7 @@ public class IndexFetcher {
     }
 
     /** Open a new stream using HttpClient */
-    private FastInputStream getStream() throws IOException {
+    private FastInputStream getStream() throws IOException, ReplicationHandlerException {
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       // the method is command=filecontent
@@ -1825,7 +1874,7 @@ public class IndexFetcher {
         var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
+        response = fetchClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
@@ -1851,8 +1900,11 @@ public class IndexFetcher {
         IOUtils.closeQuietly(is);
         throw e;
       } catch (Exception e) {
-        final var ioe = closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
-        throw ioe;
+        if (fetchClient.isAborted()) {
+          IOUtils.closeQuietly(is);
+          throw abortedException();
+        }
+        throw closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
       }
     }
 
@@ -1865,6 +1917,13 @@ public class IndexFetcher {
       return new IOException(exceptionMessage);
     }
   }
+
+  /**
+   * A fetch of one leader generation: the fetch's client plus the generation being fetched. A retry
+   * (when the leader discards the generation, or the full-copy retry) reads a fresh generation and
+   * starts a new {@code Fetch} with the same client.
+   */
+  private record Fetch(HttpJettySolrClient client, long generation) {}
 
   private static class InvalidIndexGenerationException extends IOException {
     private final long generation;
@@ -1913,10 +1972,9 @@ public class IndexFetcher {
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        long latestGen)
+        Fetch fetch)
         throws IOException {
-      super(
-          new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
+      super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, fetch);
     }
   }
 
@@ -1972,9 +2030,9 @@ public class IndexFetcher {
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        long latestGen)
+        Fetch fetch)
         throws IOException {
-      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
+      super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, fetch);
     }
   }
 
@@ -1988,6 +2046,9 @@ public class IndexFetcher {
   }
 
   public void destroy() {
+    // Marks this fetcher destroyed, which fetchLatestIndex checks, then aborts the fetch in
+    // progress. See fetchLatestIndex for why this order closes the race with a starting fetch.
+    destroyed = true;
     abortFetch();
     IOUtils.closeQuietly(solrClient);
   }

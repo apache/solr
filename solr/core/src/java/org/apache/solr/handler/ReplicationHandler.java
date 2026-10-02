@@ -504,7 +504,7 @@ public class ReplicationHandler extends RequestHandlerBase
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
       log.warn("I was asked to replicate but CoreContainer is shutting down");
-      return IndexFetchResult.CONTAINER_IS_SHUTTING_DOWN;
+      return IndexFetchResult.REPLICATION_SHUTTING_DOWN;
     }
     try {
       if (leaderUrl != null) {
