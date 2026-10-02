@@ -36,7 +36,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +53,32 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
 
   private static volatile boolean loaded = false;
 
+  /** Is the OpenTelemetry Java agent present? */
+  protected static final boolean OTEL_AGENT_PRESENT;
+
+  static {
+    // https://github.com/open-telemetry/opentelemetry-java-instrumentation/discussions/9173
+    boolean b;
+    try {
+      Class.forName("io.opentelemetry.javaagent.OpenTelemetryAgent");
+      b = true;
+    } catch (ClassNotFoundException e) {
+      b = false;
+    }
+    OTEL_AGENT_PRESENT = b;
+  }
+
+  /**
+   * Asserts that {@link GlobalOpenTelemetry} has been initialized by us (if not previously).
+   *
+   * @return true if OpenTelemetry has been initialized
+   */
+  @VisibleForTesting
+  public static boolean assertInitialized() {
+    assert loaded;
+    return loaded;
+  }
+
   /**
    * Initializes {@link io.opentelemetry.api.GlobalOpenTelemetry} from a custom plugin,
    * auto-configuration, or simple trace ID propagation. Does nothing if the OpenTelemetry Java
@@ -65,7 +90,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     if (loaded) return;
     loaded = true;
 
-    if (TraceUtils.OTEL_AGENT_PRESENT) {
+    if (OTEL_AGENT_PRESENT) {
       log.info("OpenTelemetry Java agent is installed; using the OpenTelemetry it registered.");
     } else {
       PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
@@ -75,6 +100,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
             loader.newInstance(info.className, OpenTelemetryConfigurator.class);
         configurator.init(info.initArgs);
         otel = configurator.createOpenTelemetry();
+        log.info("OpenTelemetry loaded via {}", info.className);
       } else if (shouldAutoConfigOTEL()) {
         otel = autoConfigOTEL(loader); // null if it failed to load
       }
@@ -82,12 +108,11 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         otel = OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
         log.info("OpenTelemetry loaded with simple propagation only.");
       }
-      boolean isNoop = otel == null;
 
       try {
         // throws IllegalStateException if already set
-        GlobalOpenTelemetry.set(isNoop ? OpenTelemetry.noop() : otel);
-        if (isNoop) {
+        GlobalOpenTelemetry.set(otel == null ? OpenTelemetry.noop() : otel);
+        if (otel == null) {
           return; // no point in the thread local provider below
         }
       } catch (IllegalStateException e) {
