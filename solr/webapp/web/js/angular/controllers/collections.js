@@ -30,15 +30,15 @@ solrAdminApp.controller('CollectionsController',
             });
           });
 
-          ClusterV2.getClusterStatus({}, function (error, data, response) {
+          CollectionsV2.listCollections({detailed: true}, function (error, data, response) {
             $timeout(function() {
               if (error) { ApiErrorHandler.handle(response); return; }
               $scope.collections = [];
-              for (var name in data.cluster.collections) {
+              for (var name in data.collectionsDetail) {
                   if (name.startsWith("._designer_")) {
                       continue;
                   }
-                  var collection = data.cluster.collections[name];
+                  var collection = data.collectionsDetail[name];
                   collection.name = name;
                   collection.type = 'collection';
                   var shards = collection.shards;

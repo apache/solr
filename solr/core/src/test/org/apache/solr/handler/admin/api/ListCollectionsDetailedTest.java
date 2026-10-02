@@ -21,12 +21,12 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.api.model.GetClusterStatusResponse;
-import org.apache.solr.client.api.model.GetClusterStatusResponse.CollectionState;
-import org.apache.solr.client.api.model.GetClusterStatusResponse.ReplicaState;
+import org.apache.solr.client.api.model.ListCollectionsResponse;
+import org.apache.solr.client.api.model.ListCollectionsResponse.CollectionState;
+import org.apache.solr.client.api.model.ListCollectionsResponse.ReplicaState;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -38,12 +38,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * HTTP tests for {@code GET /api/cluster}.
+ * HTTP tests for {@code GET /api/collections?detailed=true}.
  *
  * <p>The response is the collections, shards, and replicas tree. Live nodes, the alias map, and
- * cluster properties stay on their own endpoints. v1 {@code CLUSTERSTATUS} still returns them.
+ * cluster properties stay on their own endpoints (not this one). v1 {@code CLUSTERSTATUS} still
+ * returns them.
  */
-public class GetClusterStatusTest extends SolrCloudTestCase {
+public class ListCollectionsDetailedTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "clusterstatuscoll";
   private static final String ALIAS = "clusterstatusalias";
@@ -58,12 +59,13 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
 
   @Test
   public void testReturnsCollectionTreeWithoutClusterLevelExtras() throws Exception {
-    Map<String, Object> clusterState = clusterObject(getCluster(""));
-    assertNull(clusterState.get("live_nodes"));
-    assertNull(clusterState.get("aliases"));
-    assertNull(clusterState.get("properties"));
+    Map<String, Object> body = getCollections("?detailed=true");
+    assertNull(body.get("cluster"));
+    assertNull(body.get("live_nodes"));
+    assertNull(body.get("aliases"));
+    assertNull(body.get("properties"));
 
-    Map<String, Object> collection = collection(clusterState, COLLECTION);
+    Map<String, Object> collection = collection(body, COLLECTION);
     assertNotNull(collection.get("health"));
     assertEquals("conf", collection.get("configName"));
     assertNotNull(collection.get("router"));
@@ -76,10 +78,12 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testGeneratedClientReadsTheTree() throws Exception {
-    GetClusterStatusResponse response =
-        new ClusterApi.GetClusterStatus().process(cluster.getSolrClient());
+    var req = new CollectionsApi.ListCollections();
+    req.setDetailed(true);
+    ListCollectionsResponse response = req.process(cluster.getSolrClient());
     assertNull(response.error);
-    CollectionState collection = response.cluster.collections.get(COLLECTION);
+    assertNull(response.collections);
+    CollectionState collection = response.collectionsDetail.get(COLLECTION);
     assertNotNull(collection);
     assertEquals("conf", collection.configName);
     assertNotNull(collection.health);
@@ -95,14 +99,12 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testV1SelectionParamsAreIgnored() throws Exception {
-    Map<String, Object> clusterState =
-        clusterObject(
-            getCluster("?liveNodes=true&aliases=true&clusterProperties=true&includeAll=true"));
-    assertNull(clusterState.get("live_nodes"));
-    assertNull(clusterState.get("aliases"));
-    assertNull(clusterState.get("properties"));
-    assertNotNull(collections(clusterState).get(COLLECTION));
+  public void testWithoutDetailedReturnsPlainNameList() throws Exception {
+    var req = new CollectionsApi.ListCollections();
+    ListCollectionsResponse response = req.process(cluster.getSolrClient());
+    assertNull(response.error);
+    assertNull(response.collectionsDetail);
+    assertTrue(response.collections.contains(COLLECTION));
   }
 
   @Test
@@ -116,42 +118,45 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
     Map<String, Object> prs =
         (Map<String, Object>)
             collection(
-                    clusterObject(getCluster("?collection=" + prsCollection + "&prs=true")),
+                    getCollections("?detailed=true&collection=" + prsCollection + "&prs=true"),
                     prsCollection)
                 .get("PRS");
     assertNotNull(prs);
     assertNotNull(prs.get("states"));
 
-    var request = new ClusterApi.GetClusterStatus();
+    var request = new CollectionsApi.ListCollections();
+    request.setDetailed(true);
     request.setCollection(prsCollection);
     request.setPrs(true);
     CollectionState typed =
-        request.process(cluster.getSolrClient()).cluster.collections.get(prsCollection);
+        request.process(cluster.getSolrClient()).collectionsDetail.get(prsCollection);
     assertNotNull(typed.unknownProperties().get("PRS"));
   }
 
   @Test
   public void testCollectionShardAndAliasFilters() throws Exception {
     Map<String, Object> byCollection =
-        collections(clusterObject(getCluster("?collection=" + COLLECTION)));
+        collections(getCollections("?detailed=true&collection=" + COLLECTION));
     assertEquals(Set.of(COLLECTION), byCollection.keySet());
 
     Map<String, Object> oneShard =
         shards(
             collection(
-                clusterObject(getCluster("?collection=" + COLLECTION + "&shard=shard1")),
+                getCollections("?detailed=true&collection=" + COLLECTION + "&shard=shard1"),
                 COLLECTION));
     assertEquals(Set.of("shard1"), oneShard.keySet());
 
-    ContentResponse missingShard = httpGet("?collection=" + COLLECTION + "&shard=nosuchshard");
+    ContentResponse missingShard =
+        httpGet("?detailed=true&collection=" + COLLECTION + "&shard=nosuchshard");
     assertEquals(400, missingShard.getStatus());
 
-    assertNotNull(collections(clusterObject(getCluster("?collection=" + ALIAS))).get(COLLECTION));
+    assertNotNull(
+        collections(getCollections("?detailed=true&collection=" + ALIAS)).get(COLLECTION));
   }
 
   @Test
   public void testUnknownCollectionIsRejected() throws Exception {
-    ContentResponse response = httpGet("?collection=not-a-collection");
+    ContentResponse response = httpGet("?detailed=true&collection=not-a-collection");
     assertEquals(400, response.getStatus());
     assertTrue(response.getContentAsString().contains("not found"));
   }
@@ -182,7 +187,7 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
     assertNotNull(((Map<String, Object>) filtered.get("collections")).get(COLLECTION));
   }
 
-  private static Map<String, Object> getCluster(String query) throws Exception {
+  private static Map<String, Object> getCollections(String query) throws Exception {
     ContentResponse response = httpGet(query);
     assertEquals(response.getContentAsString(), 200, response.getStatus());
     return parsed(response);
@@ -190,7 +195,7 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
 
   private static ContentResponse httpGet(String query) throws Exception {
     HttpClient httpClient = cluster.getJettySolrRunner(0).getSolrClient().getHttpClient();
-    String url = cluster.getJettySolrRunner(0).getBaseURLV2().toString() + "/cluster" + query;
+    String url = cluster.getJettySolrRunner(0).getBaseURLV2().toString() + "/collections" + query;
     return httpClient.GET(url);
   }
 
@@ -200,19 +205,13 @@ public class GetClusterStatusTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("unchecked")
-  private static Map<String, Object> clusterObject(Map<String, Object> body) {
-    assertNotNull(body.get("cluster"));
-    return (Map<String, Object>) body.get("cluster");
+  private static Map<String, Object> collections(Map<String, Object> body) {
+    return (Map<String, Object>) body.get("collectionsDetail");
   }
 
   @SuppressWarnings("unchecked")
-  private static Map<String, Object> collections(Map<String, Object> clusterState) {
-    return (Map<String, Object>) clusterState.get("collections");
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> collection(Map<String, Object> clusterState, String name) {
-    Map<String, Object> collection = (Map<String, Object>) collections(clusterState).get(name);
+  private static Map<String, Object> collection(Map<String, Object> body, String name) {
+    Map<String, Object> collection = (Map<String, Object>) collections(body).get(name);
     assertNotNull(collection);
     return collection;
   }

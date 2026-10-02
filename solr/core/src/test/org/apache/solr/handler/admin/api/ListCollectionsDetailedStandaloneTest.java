@@ -18,14 +18,14 @@ package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.request.ClusterApi;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-/** Standalone coverage for {@code GET /api/cluster}. */
-public class GetClusterStatusStandaloneTest extends SolrTestCase {
+/** Standalone coverage for {@code GET /api/collections?detailed=true}. */
+public class ListCollectionsDetailedStandaloneTest extends SolrTestCase {
 
   @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
@@ -36,10 +36,10 @@ public class GetClusterStatusStandaloneTest extends SolrTestCase {
 
   @Test
   public void testRequiresSolrCloud() {
+    var req = new CollectionsApi.ListCollections();
+    req.setDetailed(true);
     final RemoteSolrException ex =
-        expectThrows(
-            RemoteSolrException.class,
-            () -> new ClusterApi.GetClusterStatus().process(solrTestRule.getAdminClient()));
+        expectThrows(RemoteSolrException.class, () -> req.process(solrTestRule.getAdminClient()));
     assertEquals(400, ex.code());
   }
 }

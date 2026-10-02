@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
+    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $timeout, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
+            nodesSubController($scope, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $timeout, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
+var nodesSubController = function($scope, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -178,13 +178,13 @@ var nodesSubController = function($scope, $timeout, ClusterV2, SystemV2, Metrics
     var live_nodes = [];
 
     // We build a node-centric view of the cluster state which we can easily consume to render the table
-    ClusterV2.getClusterStatus({}, function (error, data, response) {
+    CollectionsV2.listCollections({detailed: true}, function (error, data, response) {
       $timeout(function() {
         if (error) { ApiErrorHandler.handle(response); return; }
 
-        // Fetch cluster state from ClusterApi and invert to a nodes structure
-        for (var name in data.cluster.collections) {
-          var collection = data.cluster.collections[name];
+        // Fetch cluster state from CollectionsApi and invert to a nodes structure
+        for (var name in data.collectionsDetail) {
+          var collection = data.collectionsDetail[name];
           collection.name = name;
           var shards = collection.shards;
           collection.shards = [];

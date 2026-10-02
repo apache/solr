@@ -25,11 +25,11 @@ These API commands work with a SolrCloud cluster at the entire cluster level, or
 [[clusterstatus]]
 == CLUSTERSTATUS: Cluster Status
 
-Fetch the collections, shards, and replicas in the cluster, including each collection's configuration name and health.
+Fetch the cluster status including collections, shards, replicas, configuration name as well as collection aliases and cluster properties.
 
-The v1 command can also return the alias map, live nodes, and cluster properties.
-`GET /api/cluster` returns `cluster.collections` only.
-Live nodes, the alias map, and cluster properties are available from `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties`.
+NOTE: This is a v1-only command.
+The v2 API splits this information up: see xref:collection-management.adoc#collectionsdetail[Detailed Collections Tree] for the collections, shards, and replicas tree (`detailed=true`), and `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for live nodes, the alias map, and cluster properties, respectively.
+The two collection-tree responses overlap in content -- same `health` states, same shard/replica fields -- because they cover the same underlying data; they're documented separately because the parameters and response shape otherwise differ between v1 and v2 here.
 
 Additionally, this command reports a `health` status of each collection and shard, in
 order to make it easier to monitor the operational state of the collections.
@@ -48,28 +48,10 @@ No active replicas *OR* there's no shard leader.
 
 The collection health state is reported as the worst state of any shard, e.g., for a collection with all shards GREEN except for one YELLOW the collection health will be reported as YELLOW.
 
-[tabs#clusterstatus-request]
-======
-V1 API::
-+
-====
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
-
 ----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl -X GET http://localhost:8983/api/cluster
-
-----
-====
-======
 
 === CLUSTERSTATUS Parameters
 
@@ -102,10 +84,6 @@ Multiple shard names can be specified as a comma-separated list.
 |===
 +
 This can be used if you need the details of the shard where a particular document belongs to and you don't know which shard it falls under.
-
-`aliases`, `liveNodes`, `clusterProperties`, and `includeAll` are v1 parameters.
-`GET /api/cluster` ignores them.
-With no parameters, `GET /api/cluster` returns every collection.
 
 `aliases`::
 +
@@ -147,9 +125,6 @@ If set to `false`, the information returned is based on the other specified para
 === CLUSTERSTATUS Response
 
 The response will include the status of the request and the status of the cluster.
-
-A v1 response can include `live_nodes`, `aliases`, and `properties` next to `collections`.
-A v2 response has `collections` only.
 
 === Examples using CLUSTERSTATUS
 
