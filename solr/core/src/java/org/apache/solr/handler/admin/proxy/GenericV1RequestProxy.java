@@ -48,6 +48,13 @@ public class GenericV1RequestProxy extends RemoteRequestProxy {
     return shouldProxyTo(params.get(paramName), paramName);
   }
 
+  // The v1 endpoints proxied through this class (logging, system info) use "nodes" as a
+  // broadcast selector, so in standalone mode "all" degrades to just this node.
+  @Override
+  protected boolean standaloneAllMeansLocal() {
+    return true;
+  }
+
   @Override
   public Collection<String> getDestinationNodes() {
     return validateNodeNames(params.get(getDestinationNodeParamName()));

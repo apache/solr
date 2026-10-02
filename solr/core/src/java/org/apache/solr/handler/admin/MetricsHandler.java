@@ -163,6 +163,16 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         return "node";
       }
 
+      // Deliberate exception to this class's default: the metrics 'node' parameter selects a
+      // single destination node, so unlike the broadcast-style 'nodes' parameter of the
+      // logging/system-info endpoints, 'all' has never been a valid value for it. In standalone
+      // mode any 'node' value (including 'all') is rejected with a 400 by
+      // RemoteRequestProxy.validateNodeNames instead of silently meaning this node.
+      @Override
+      protected boolean standaloneAllMeansLocal() {
+        return false;
+      }
+
       // Metrics requests require a particular ResponseParser
       @Override
       protected SolrRequest<?> createGenericRequest(String apiPath, SolrParams params) {

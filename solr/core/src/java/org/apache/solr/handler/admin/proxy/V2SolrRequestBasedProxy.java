@@ -45,6 +45,13 @@ public abstract class V2SolrRequestBasedProxy<T> extends RemoteRequestProxy {
     return shouldProxyTo(solrRequest.getParams().get(PARAM_NODES));
   }
 
+  // This proxy backs the node system-info endpoint, whose "nodes" parameter is a broadcast
+  // selector, so in standalone mode "all" degrades to just this node.
+  @Override
+  protected boolean standaloneAllMeansLocal() {
+    return true;
+  }
+
   @Override
   public Collection<String> getDestinationNodes() {
     return validateNodeNames(solrRequest.getParams().get(PARAM_NODES));

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -249,6 +250,41 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(expectedMetricName, metrics.get(0).getMetadata().getPrometheusName());
     assertEquals("CORE", actualDatapoint.getLabels().get(MetricUtils.CATEGORY_PARAM));
     handler.close();
+  }
+
+  // The metrics 'node' parameter selects a single destination node, so (unlike the
+  // broadcast-style 'nodes' parameter of the logging/system-info endpoints) 'all' is not
+  // treated as "this node" in standalone mode: any 'node' value is rejected with a 400.
+  // The test harness CoreContainer is standalone (not ZooKeeper-aware).
+  @Test
+  public void testMetricProxyRejectsNodeAllInStandalone() {
+    var proxy =
+        MetricsHandler.createMetricProxy(
+            h.getCoreContainer(),
+            reqWithPath(CommonParams.METRICS_PATH, "node", "all"),
+            new SolrQueryResponse());
+    assertTrue(
+        "standalone node=all still 'proxies' so that validation can reject it",
+        proxy.shouldProxy());
+    SolrException ex = expectThrows(SolrException.class, proxy::getDestinationNodes);
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("'node'"));
+    assertTrue(ex.getMessage().contains("SolrCloud"));
+    assertFalse(ex.getMessage().contains("treated as this node"));
+  }
+
+  @Test
+  public void testMetricProxyRejectsExplicitNodeInStandalone() {
+    var proxy =
+        MetricsHandler.createMetricProxy(
+            h.getCoreContainer(),
+            reqWithPath(CommonParams.METRICS_PATH, "node", "localhost:7574_solr"),
+            new SolrQueryResponse());
+    assertTrue(proxy.shouldProxy());
+    SolrException ex = expectThrows(SolrException.class, proxy::getDestinationNodes);
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("'node'"));
+    assertTrue(ex.getMessage().contains("SolrCloud"));
   }
 
   public static class DumpRequestHandler extends RequestHandlerBase {

@@ -91,6 +91,8 @@ public class GenericV1RequestProxyTest extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("nodes"));
     assertTrue(ex.getMessage().contains("SolrCloud"));
+    // This proxy opts in to standaloneAllMeansLocal(), so the message names the 'all' exception
+    assertTrue(ex.getMessage().contains("treated as this node"));
   }
 
   @Test

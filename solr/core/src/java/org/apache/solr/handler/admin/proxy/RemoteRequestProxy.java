@@ -119,11 +119,26 @@ public abstract class RemoteRequestProxy {
   }
 
   /**
+   * Whether the node selector value {@code "all"} means "this node only" when the node is not
+   * running in SolrCloud mode.
+   *
+   * <p>The default is {@code false}: outside SolrCloud mode, any node selector value is rejected by
+   * {@link #validateNodeNames(String, String)} with a 400, since there are no other nodes to proxy
+   * to. Endpoints whose selector is a broadcast ("apply to every node") rather than a single
+   * destination, such as the logging and system-info endpoints, override this so that an {@code
+   * all} broadcast degrades to just this node instead of failing.
+   */
+  protected boolean standaloneAllMeansLocal() {
+    return false;
+  }
+
+  /**
    * Whether this request should be forwarded to other nodes.
    *
    * <p>Missing or empty {@code nodeNames} is always local. In user-managed (standalone) mode,
-   * {@code all} also means this node only. Any other standalone value still returns true so {@link
-   * #validateNodeNames(String, String)} can reject it with 400.
+   * {@code all} is also local for endpoints where {@link #standaloneAllMeansLocal()} holds; any
+   * other standalone value still returns true so {@link #validateNodeNames(String, String)} can
+   * reject it with 400.
    */
   protected boolean shouldProxyTo(String nodeNames) {
     return shouldProxyTo(nodeNames, PARAM_NODES);
@@ -134,7 +149,7 @@ public abstract class RemoteRequestProxy {
       return false;
     }
     if (coreContainer == null || !coreContainer.isZooKeeperAware()) {
-      return !"all".equals(nodeNames);
+      return !("all".equals(nodeNames) && standaloneAllMeansLocal());
     }
     return true;
   }
@@ -203,11 +218,11 @@ public abstract class RemoteRequestProxy {
     return zkController;
   }
 
-  private static SolrException requireSolrCloud(String paramName) {
-    return new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Parameter '"
-            + paramName
-            + "' requires SolrCloud except for the value 'all', which is treated as this node");
+  private SolrException requireSolrCloud(String paramName) {
+    String message = "Parameter '" + paramName + "' requires SolrCloud";
+    if (standaloneAllMeansLocal()) {
+      message += " except for the value 'all', which is treated as this node";
+    }
+    return new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
   }
 }
