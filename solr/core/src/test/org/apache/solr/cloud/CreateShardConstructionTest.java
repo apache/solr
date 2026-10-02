@@ -87,9 +87,9 @@ public class CreateShardConstructionTest extends SolrCloudTestCase {
       // "no servers hosting shard".
       ModifiableSolrParams queryParams = params("q", "*:*", "rows", "0");
       Exception queryError = null;
-      long deadline = System.currentTimeMillis() + 120000;
+      long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(120000);
       while (!activeLatch.await(200, TimeUnit.MILLISECONDS)) {
-        if (System.currentTimeMillis() > deadline) {
+        if (System.nanoTime() > deadlineNanos) {
           break;
         }
         try {
