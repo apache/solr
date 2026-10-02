@@ -33,8 +33,8 @@ import org.junit.Test;
 
 /**
  * Verifies that core-scoped authorization rules work in standalone mode (SOLR-13097). In standalone
- * mode there are no collections, so the authorization context must carry the serving core's name for
- * rules scoped via the "collection" field to match.
+ * mode there are no collections, so the authorization context must carry the serving core's name
+ * for rules scoped via the "collection" field to match.
  */
 public class CoreScopedAuthStandaloneTest extends SolrTestCase {
 
