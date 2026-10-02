@@ -82,7 +82,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   /**
    * Initializes {@link io.opentelemetry.api.GlobalOpenTelemetry} from a custom plugin,
    * auto-configuration, or simple trace ID propagation. Does nothing if the OpenTelemetry Java
-   * agent is present, since it has already done this.
+   * agent is present or {@link GlobalOpenTelemetry} is already set (e.g. by tests).
    */
   public static synchronized void initializeOpenTelemetrySdk(
       NodeConfig cfg, SolrResourceLoader loader) {
@@ -90,8 +90,12 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     if (loaded) return;
     loaded = true;
 
+    // Check for the agent explicitly; older agents don't instrument isSet(), so it returns false
     if (OTEL_AGENT_PRESENT) {
       log.info("OpenTelemetry Java agent is installed; using the OpenTelemetry it registered.");
+    } else if (GlobalOpenTelemetry.isSet()) {
+      // e.g. a 3rd party agent, or an early GlobalOpenTelemetry.get() call which sets a no-op
+      log.info("GlobalOpenTelemetry was already initialized by something else; using that.");
     } else {
       PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
       OpenTelemetry otel = null;
@@ -115,9 +119,9 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         if (otel == null) {
           return; // no point in the thread local provider below
         }
-      } catch (IllegalStateException e) {
+      } catch (IllegalStateException e) { // deprecated; remove in Solr 11.
         // e.g. a legacy configurator that set it in init()
-        log.info("GlobalOpenTelemetry was already initialized by something else; using that.");
+        log.info("GlobalOpenTelemetry was already initialized by the configurator; using that.");
       }
     }
 
