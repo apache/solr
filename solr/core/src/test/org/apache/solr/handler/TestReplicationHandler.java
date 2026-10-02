@@ -144,8 +144,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
-    System.clearProperty(TEST_URL_ALLOW_LIST);
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;

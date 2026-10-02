@@ -1,7 +1,0 @@
-title: Fix flaky TestReplicationHandler.testUrlAllowList (honor TEST_URL_ALLOW_LIST, stop wrapping doTestDetails).
-type: fixed
-authors:
-  - name: Nick Shanin
-links:
-  - name: SOLR-18280
-    url: https://issues.apache.org/jira/browse/SOLR-18280

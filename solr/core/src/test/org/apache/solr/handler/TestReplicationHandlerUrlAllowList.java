@@ -29,40 +29,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Non-nightly coverage for SOLR-18280. {@link TestReplicationHandler} is {@code @Nightly}; the
- * allow-list wiring lives in {@link ReplicationTestHelper#createAndStartJetty} and must be proven
- * without that annotation.
+ * Non-nightly coverage for the URL allow-list replication path. {@link TestReplicationHandler} is
+ * {@code @Nightly}; the allow-list wiring lives in {@link
+ * ReplicationTestHelper#createAndStartJetty} and must be proven without that annotation.
  */
 @SuppressSSL
 public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
-
-  private String previousTestUrlAllowList;
-  private String previousEnableUrlAllowList;
-
-  @Before
-  public void saveAllowListProperties() {
-    previousTestUrlAllowList = System.getProperty(TEST_URL_ALLOW_LIST);
-    previousEnableUrlAllowList = System.getProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
-  }
-
-  @After
-  public void restoreAllowListProperties() {
-    restoreProperty(TEST_URL_ALLOW_LIST, previousTestUrlAllowList);
-    restoreProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, previousEnableUrlAllowList);
-  }
-
-  private static void restoreProperty(String propertyName, String previousValue) {
-    if (previousValue == null) {
-      System.clearProperty(propertyName);
-    } else {
-      System.setProperty(propertyName, previousValue);
-    }
-  }
 
   @Test
   public void testReplicationFetchHonorsTestUrlAllowList() throws Exception {
