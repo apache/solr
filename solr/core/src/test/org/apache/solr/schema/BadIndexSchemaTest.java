@@ -121,6 +121,12 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-unsupported-docValues.xml", "does not support doc values");
   }
 
+  public void testDocValuesSkipListUnsupported() throws Exception {
+    doTest(
+        "bad-schema-unsupported-skip-list.xml",
+        "currently only supported on PointField-based numeric and date fields");
+  }
+
   public void testRootTypeMissmatchWithUniqueKey() throws Exception {
     doTest(
         "bad-schema-uniquekey-diff-type-root.xml",
