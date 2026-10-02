@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
@@ -121,7 +122,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               return new ConnectException("TEST");
             }
             if (i == 2) {
-              return new SocketException("TEST");
+              return new ConnectException("TEST");
             }
             if (i == 3) {
               return new ConnectException("TEST");
@@ -135,6 +136,93 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       // Race: sometimes async completes fast enough for 2 fetches, sometimes only 1.
       int fetchCount = refs.get(collName).getCount();
       assertTrue("Expected 1 or 2 fetches, got " + fetchCount, fetchCount >= 1 && fetchCount <= 2);
+    }
+  }
+
+  /**
+   * An update may already have been applied by the time a communication error surfaces, so it is
+   * replayed only when the transport proves the request never arrived.
+   */
+  public void testUpdateIsNotReplayedWhenItMayHaveBeenApplied() throws Exception {
+    String collName = "gettingstarted";
+    Set<String> livenodes = new HashSet<>();
+    Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
+
+    Map<String, Function<?, ?>> responses = new HashMap<>();
+    LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
+    AtomicInteger lbhttpRequestCount = new AtomicInteger();
+    try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
+        CloudSolrClient cloudClient =
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider) {
+              @Override
+              protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
+                return mockLbclient;
+              }
+            }
+            // Pin the routing so the update takes the load-balanced path and the transport's
+            // failure arrives unwrapped.
+            .sendUpdatesToAnyReplica().build()) {
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      refs.put(collName, new ClusterState.CollectionRef(loadCollection(collName, 1)));
+
+      // Not a ConnectException: the transport cannot prove this request never left.
+      responses.put(
+          "request",
+          o -> {
+            lbhttpRequestCount.incrementAndGet();
+            return new SocketException("TEST");
+          });
+      UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
+
+      expectThrows(SocketException.class, () -> cloudClient.request(update, collName));
+      assertEquals(
+          "an update that may have been applied must not be replayed", 1, lbhttpRequestCount.get());
+    }
+  }
+
+  /**
+   * {@link CloudSolrClient#directUpdate} raises a {@link CloudSolrClient.RouteException} only after
+   * collecting every shard's result, so a 503 from one shard can follow success on another and a
+   * replay would re-apply those.
+   */
+  public void testUpdateIsNotRetriedOnRouteExceptionWith503() throws Exception {
+    String collName = "gettingstarted";
+    Set<String> livenodes = new HashSet<>();
+    Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
+
+    Map<String, Function<?, ?>> responses = new HashMap<>();
+    LBJettySolrClient mockLbclient = getMockLbHttpSolrClient(responses);
+    AtomicInteger lbhttpRequestCount = new AtomicInteger();
+    try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
+        CloudSolrClient cloudClient =
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider) {
+              @Override
+              protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
+                return mockLbclient;
+              }
+            }.sendUpdatesToAnyReplica().build()) {
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      refs.put(collName, new ClusterState.CollectionRef(loadCollection(collName, 1)));
+
+      NamedList<Throwable> shardFailures = new NamedList<>();
+      shardFailures.add(
+          "http://127.0.0.1:8983/solr/gettingstarted_shard1_replica_n1",
+          new RemoteSolrException("127.0.0.1:8983", 503, "Service Unavailable", null));
+      responses.put(
+          "request",
+          o -> {
+            lbhttpRequestCount.incrementAndGet();
+            return new CloudSolrClient.RouteException(
+                SolrException.ErrorCode.SERVICE_UNAVAILABLE, shardFailures, Map.of());
+          });
+
+      UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
+      expectThrows(
+          CloudSolrClient.RouteException.class, () -> cloudClient.request(update, collName));
+      assertEquals(
+          "a 503 may follow partial success, so it must not be replayed",
+          1,
+          lbhttpRequestCount.get());
     }
   }
 
@@ -363,6 +451,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     private volatile Invocation defaultInvocation;
     private final List<String> stateHistory = Collections.synchronizedList(new ArrayList<>());
     private final NamedList<Object> okResponse;
+    // Answers "cannot tell" to both classification predicates, which these tests do not exercise.
+    // Stub it if a test needs a communication error.
+    private final HttpSolrClient httpClient = mock(HttpSolrClient.class);
 
     RecordingCloudSolrClient(ClusterStateProvider provider, int refreshThreads) {
       this(provider, true, true, false, refreshThreads);
@@ -431,7 +522,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     @Override
     public HttpSolrClient getHttpClient() {
-      throw new UnsupportedOperationException();
+      return httpClient;
     }
 
     @FunctionalInterface
