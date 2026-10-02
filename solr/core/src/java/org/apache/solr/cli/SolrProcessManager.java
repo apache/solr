@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,6 +42,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +76,14 @@ public class SolrProcessManager {
                     ProcessHandle::pid,
                     ph ->
                         new SolrProcess(
-                            ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
+                            ph.pid(),
+                            parseSyspropFromProcess(ph, "solr.port.listen")
+                                .map(Integer::parseInt)
+                                .orElseThrow(),
+                            isProcessSsl(ph),
+                            localConnectHost(
+                                parseSyspropFromProcess(ph, "solr.host.advertise"),
+                                parseSyspropFromProcess(ph, "solr.host.bind")))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
     String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
@@ -143,13 +153,47 @@ public class SolrProcessManager {
     return pidProcessMap.values();
   }
 
-  private Optional<Integer> parsePortFromProcess(ProcessHandle ph) {
-    Optional<String> portStr =
-        arguments(ph).stream()
-            .filter(a -> a.contains("-Dsolr.port.listen="))
-            .map(s -> s.split("=")[1])
-            .findFirst();
-    return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
+  /** Parses the value of the given system property from the process' command line arguments */
+  private static Optional<String> parseSyspropFromProcess(ProcessHandle ph, String sysprop) {
+    return arguments(ph).stream()
+        .filter(a -> a.contains("-D" + sysprop + "="))
+        .map(s -> s.split("=", 2)[1])
+        .findFirst();
+  }
+
+  /**
+   * Returns the process listening on the given port, if found, waiting up to {@code maxWaitSecs}
+   * for it to appear. A newly started process may not be visible in the process table right away,
+   * so the table is re-scanned once a second until the deadline.
+   */
+  public Optional<SolrProcess> waitForProcessOnPort(int port, int maxWaitSecs)
+      throws InterruptedException {
+    Optional<SolrProcess> proc = processForPort(port);
+    TimeOut timeOut = new TimeOut(maxWaitSecs, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (proc.isEmpty() && !timeOut.hasTimedOut()) {
+      timeOut.sleep(1000);
+      proc = new SolrProcessManager().processForPort(port);
+    }
+    return proc;
+  }
+
+  /**
+   * Resolves the host to use when connecting locally to a Solr process. The advertised host is
+   * preferred when set, as that is the name the node is reachable by and, with SSL, the name its
+   * certificate is issued for. Otherwise the bind host is used if it is a specific non-loopback
+   * address. Wildcard and loopback binds are reachable as {@code localhost}. IPv6 literals are
+   * bracketed for use in URLs.
+   */
+  static String localConnectHost(Optional<String> advertiseHost, Optional<String> bindHost) {
+    String host =
+        advertiseHost
+            .map(String::trim)
+            .filter(h -> !h.isEmpty())
+            .orElseGet(() -> bindHost.map(String::trim).orElse(""));
+    return switch (host) {
+      case "", "0.0.0.0", "::", "[::]", "127.0.0.1", "::1", "[::1]", "localhost" -> "localhost";
+      default -> host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
+    };
   }
 
   private boolean isProcessSsl(ProcessHandle ph) {
@@ -237,11 +281,15 @@ public class SolrProcessManager {
     }
   }
 
-  /** Represents a running Solr process */
-  public record SolrProcess(long pid, int port, boolean isHttps) {
+  /**
+   * Represents a running Solr process. The {@code host} is the host to use when connecting to the
+   * process from the local machine, i.e. the advertised host if set, else the bind host if bound to
+   * a specific address, else {@code localhost}.
+   */
+  public record SolrProcess(long pid, int port, boolean isHttps, String host) {
 
     public String getLocalUrl() {
-      return String.format(Locale.ROOT, "%s://localhost:%s/solr", isHttps ? "https" : "http", port);
+      return String.format(Locale.ROOT, "%s://%s:%s/solr", isHttps ? "https" : "http", host, port);
     }
   }
 }
