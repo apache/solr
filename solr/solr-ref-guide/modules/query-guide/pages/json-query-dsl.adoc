@@ -48,7 +48,7 @@ curl::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/techproducts/query?q=name:iPod"
+curl -X GET "http://localhost:8983/solr/techproducts/query?q=name:iPod"
 ----
 ====
 SolrJ::
@@ -161,7 +161,7 @@ curl::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}"
+curl -X GET "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}"
 ----
 ====
 

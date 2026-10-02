@@ -200,7 +200,7 @@ Query the documents to see the sentiment classifications:
 
 [,console]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=id:good"
+curl -X GET "http://localhost:8983/solr/sentiment/select?q=id:good"
 ----
 
 You should see the positive review classified as "very good":
@@ -222,7 +222,7 @@ Check the negative review:
 
 [,console]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=id:bad"
+curl -X GET "http://localhost:8983/solr/sentiment/select?q=id:bad"
 ----
 
 The result should show "very bad" sentiment:
