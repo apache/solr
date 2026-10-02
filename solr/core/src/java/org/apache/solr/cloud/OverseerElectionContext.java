@@ -26,7 +26,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,11 +60,21 @@ final class OverseerElectionContext extends ElectionContext {
     final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
-    zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL);
-
+    // Register and start under the same lock close() takes, so a close() cannot land between them
+    // and leave a leader znode with no overseer behind it. Registration also captures the parent
+    // version so cancelElection() only deletes our own. Mirrors ShardLeaderElectionContextBase.
     synchronized (this) {
-      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown()) {
+      boolean shutDown = overseer.getZkController().getCoreContainer().isShutDown();
+      if (!this.isClosed && !shutDown) {
+        registerLeaderNode(Utils.toJSON(myProps));
+        log.info("Created overseer leader registration {} -> {}", leaderPath, id);
         overseer.start(id);
+      } else {
+        log.info(
+            "Not registering as overseer leader for {}: isClosed={}, shutDown={}",
+            leaderPath,
+            this.isClosed,
+            shutDown);
       }
     }
   }
@@ -73,6 +82,19 @@ final class OverseerElectionContext extends ElectionContext {
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
+    // Delete only our own registration, guarded by the parent version captured at registration, so
+    // we can never remove a newer lineage's (ABA-safe). Mirrors ShardLeaderElectionContextBase.
+    synchronized (this) {
+      if (leaderZkNodeParentVersion != null) {
+        try {
+          deleteLeaderNode();
+        } catch (KeeperException.BadVersionException | KeeperException.NoNodeException e) {
+          // A newer lineage already re-registered (parent version bumped) or the node is already
+          // gone -- either way the leader znode is not ours to remove.
+        }
+        leaderZkNodeParentVersion = null;
+      }
+    }
     overseer.close();
   }
 
