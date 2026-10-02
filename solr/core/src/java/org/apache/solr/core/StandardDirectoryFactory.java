@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -23,17 +24,24 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.function.BiPredicate;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +50,77 @@ import org.slf4j.LoggerFactory;
  * behavior.
  *
  * <p>File based DirectoryFactory implementations generally extend this class.
+ *
+ * <p>Can set the following parameters:
+ *
+ * <ul>
+ *   <li>preload -- Whether to load each index file into the OS page cache when that file is opened.
+ *   <li>preloadExtensions -- Comma separated file extensions, such as {@code vex,vec}. Only files
+ *       whose name ends with a listed extension are loaded into the OS page cache when those files
+ *       are opened. Takes precedence over {@code preload}.
+ * </ul>
+ *
+ * <p>Both parameters only apply when the underlying directory is an {@link MMapDirectory}, which is
+ * what {@link FSDirectory#open} selects on most platforms.
  */
 public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private boolean preload;
+  private Set<String> preloadExtensions = Set.of();
+
+  @Override
+  public void init(NamedList<?> args) {
+    super.init(args);
+    SolrParams params = args.toSolrParams();
+    preload = params.getBool("preload", false); // default turn-off
+    preloadExtensions = parsePreloadExtensions(params.get("preloadExtensions"));
+    if (preload && !preloadExtensions.isEmpty()) {
+      log.info(
+          "Ignoring preload=true because preloadExtensions was provided, so only loading files with extensions: {}",
+          preloadExtensions);
+    }
+  }
+
+  private static Set<String> parsePreloadExtensions(String value) {
+    if (value == null) {
+      return Set.of();
+    }
+    Set<String> extensions = new LinkedHashSet<>();
+    for (String extension : value.split(",")) {
+      extension = extension.trim().toLowerCase(Locale.ROOT);
+      if (!extension.isEmpty()) {
+        extensions.add(extension.startsWith(".") ? extension : "." + extension);
+      }
+    }
+    return Collections.unmodifiableSet(extensions);
+  }
+
+  @VisibleForTesting
+  BiPredicate<String, IOContext> preloadPredicate() {
+    if (preloadExtensions.isEmpty()) {
+      return preload ? MMapDirectory.ALL_FILES : MMapDirectory.NO_FILES;
+    }
+    Set<String> extensions = preloadExtensions;
+    return (name, ioContext) -> {
+      int dot = name.lastIndexOf('.');
+      return dot >= 0 && extensions.contains(name.substring(dot).toLowerCase(Locale.ROOT));
+    };
+  }
+
+  /** Applies the configured preload settings, if the given directory supports them. */
+  protected void applyPreload(Directory directory) {
+    if (directory instanceof MMapDirectory mMapDirectory) {
+      mMapDirectory.setPreload(preloadPredicate());
+    }
+  }
+
   @Override
   protected Directory create(String path, LockFactory lockFactory) throws IOException {
-    return FSDirectory.open(Path.of(path), lockFactory);
+    Directory directory = FSDirectory.open(Path.of(path), lockFactory);
+    applyPreload(directory);
+    return directory;
   }
 
   @Override
