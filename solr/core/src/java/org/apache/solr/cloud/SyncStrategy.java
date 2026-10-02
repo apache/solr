@@ -384,6 +384,9 @@ public class SyncStrategy {
   /** Delay before retrying a recovery request that hit a still-loading replica core. */
   private static final long RECOVERY_RETRY_DELAY_MS = 30000;
 
+  /** Attempts for a recovery request when the replica core is still loading. */
+  private static final int RECOVERY_REQUEST_ATTEMPTS = 3;
+
   private void requestRecovery(
       final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
       throws SolrServerException, IOException {
@@ -396,40 +399,38 @@ public class SyncStrategy {
           RequestRecovery recoverRequestCmd = new RequestRecovery();
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
           recoverRequestCmd.setCoreName(coreName);
-          try {
-            sendRecoveryRequest(baseUrl, recoverRequestCmd);
-          } catch (Throwable t) {
-            if (!isClosed && isCoreStillLoading(t)) {
-              // The replica's core hasn't finished loading; wait a bit and retry once
-              log.warn(
-                  "{}: replica core {} is still loading, retrying recovery request",
-                  ZkCoreNodeProps.getCoreUrl(leaderProps),
-                  coreName);
-              try {
-                Thread.sleep(RECOVERY_RETRY_DELAY_MS);
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
+          for (int attempt = 1; ; attempt++) {
+            try {
+              sendRecoveryRequest(baseUrl, recoverRequestCmd);
+              return;
+            } catch (Throwable t) {
+              if (t instanceof Error) {
+                throw (Error) t;
               }
-              if (isClosed) {
-                return;
-              }
-              try {
-                sendRecoveryRequest(baseUrl, recoverRequestCmd);
-              } catch (Throwable t2) {
-                log.error(
-                    "{}: Could not tell a replica to recover",
+              if (!isClosed && isCoreStillLoading(t) && attempt < RECOVERY_REQUEST_ATTEMPTS) {
+                // The replica's core hasn't finished loading; wait a bit and retry
+                log.warn(
+                    "{}: replica core {} is still loading, retrying recovery request (attempt {}/{})",
                     ZkCoreNodeProps.getCoreUrl(leaderProps),
-                    t2);
+                    coreName,
+                    attempt + 1,
+                    RECOVERY_REQUEST_ATTEMPTS);
+                try {
+                  Thread.sleep(RECOVERY_RETRY_DELAY_MS);
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  return;
+                }
+                if (isClosed) {
+                  return;
+                }
+                continue;
               }
-            } else {
               log.error(
                   "{}: Could not tell a replica to recover",
                   ZkCoreNodeProps.getCoreUrl(leaderProps),
                   t);
-            }
-            if (t instanceof Error) {
-              throw (Error) t;
+              return;
             }
           }
         };
