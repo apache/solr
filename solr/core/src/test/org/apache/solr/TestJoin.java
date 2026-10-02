@@ -490,4 +490,65 @@ public class TestJoin extends SolrTestCaseJ4 {
         return "{!join " + allProvidedParams + " method=topLevelDV}";
     }
   }
+
+  /**
+   * Verifies that join queries missing required from/to parameters are rejected with 400
+   * BAD_REQUEST instead of a 500-class error (SOLR-13202).
+   */
+  @Test
+  public void testJoinMissingFromToReturns400() {
+    // Missing 'from' with default method
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("q", "{!join to=id}*:*", "fl", "id"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+
+    // Missing 'to' with default method
+    e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("q", "{!join from=id}*:*", "fl", "id"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+
+    // Missing 'from' with method=dvWithScore
+    e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("q", "{!join to=id method=dvWithScore score=none}*:*", "fl", "id"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+
+    // Missing 'to' with method=dvWithScore
+    e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("q", "{!join from=id method=dvWithScore score=none}*:*", "fl", "id"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+
+    // Missing 'from' with method=topLevelDV
+    e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("q", "{!join to=id method=topLevelDV}*:*", "fl", "id"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+
+    // Missing 'to' with method=topLevelDV
+    e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("q", "{!join from=id method=topLevelDV}*:*", "fl", "id"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+  }
 }
