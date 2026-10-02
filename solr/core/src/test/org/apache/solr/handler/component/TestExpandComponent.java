@@ -1110,6 +1110,50 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
   }
 
   /**
+   * Verifies that per-page expand group queries are not cached in the filter cache (SOLR-13568).
+   * Each page of an expanded collapse query builds a unique group query; caching those would flood
+   * the filter cache with single-use entries.
+   */
+  @Test
+  public void testPerPageGroupQueriesNotCached() throws Exception {
+    clearIndex();
+    for (int i = 1; i <= 6; i++) {
+      assertU(adoc("id", String.valueOf(i), "group_s", "g" + ((i % 3) + 1)));
+    }
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s}");
+    params.add("expand", "true");
+    params.add("rows", "1");
+    params.add("fl", "id");
+
+    // Warm up: run page 1 once so steady-state caches are populated.
+    assertQ(req(params, "start", "0"), "*[count(/response/result/doc)=1]");
+    int sizeAfterPage1 = filterCacheSize();
+
+    // Fetch subsequent pages; each builds a unique per-page group query.
+    assertQ(req(params, "start", "1"), "*[count(/response/result/doc)=1]");
+    assertQ(req(params, "start", "2"), "*[count(/response/result/doc)=1]");
+    int sizeAfterPage3 = filterCacheSize();
+
+    assertEquals(
+        "Per-page expand group queries must not accumulate in the filter cache",
+        sizeAfterPage1,
+        sizeAfterPage3);
+  }
+
+  private int filterCacheSize() {
+    var ref = h.getCore().getSearcher();
+    try {
+      return ref.get().getFilterCache().size();
+    } finally {
+      ref.decref();
+    }
+  }
+
+  /**
    * randomize addition of docs into bunch of segments TODO: there ought to be a test utility to do
    * this; even add in batches
    */
