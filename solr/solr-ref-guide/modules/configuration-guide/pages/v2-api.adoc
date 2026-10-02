@@ -43,7 +43,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/api/c/_collection-name_/config` |Configuration requests.
 |`/api/c/_collection-name_/schema` |Schema requests.
 |`/api/c/_collection-name_/_handler-name_` |Handler-specific requests.
-|`/api/c/_collection-name_/shards` |Split a shard, create a shard, add a replica.
+|`/api/c/_collection-name_/shards` |List shards, split a shard, create a shard, add a replica.
 |`/api/c/_collection-name_/shards/_shard-name_` |Delete a shard, force leader election
 |`/api/c/_collection-name_/shards/_shard-name_/_replica-name_` |Delete a replica.
 |`/api/cores` |Create a core.
