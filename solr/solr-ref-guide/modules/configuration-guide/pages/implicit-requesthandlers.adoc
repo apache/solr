@@ -21,11 +21,13 @@
 Solr ships with many out-of-the-box request handlers, which are called implicit because they do not need to be configured in `solrconfig.xml` before you are able to use them.
 
 Each implicit handler ships with a named bundle of default, invariant, and appended parameters - a _paramset_ - equivalent to the `<defaults>`, `<invariants>`, and `<appends>` blocks you'd normally write into a `<requestHandler>` definition in `solrconfig.xml`.
-Because implicit handlers have no entry in `solrconfig.xml` to edit directly, their paramset (shown for each handler below, e.g. `_ADMIN_THREADS` for the Threads handler) is the only way to override their parameters - see <<How to View Implicit Handler Paramsets>> and <<How to Edit Implicit Handler Paramsets>> below.
+Because implicit handlers have no entry in `solrconfig.xml` to edit directly, their paramset (shown for each handler below, e.g. `_ADMIN_PING` for the Ping handler) is the only way to override their parameters - see <<How to View Implicit Handler Paramsets>> and <<How to Edit Implicit Handler Paramsets>> below.
 
 == Available Implicit Endpoints
 
 NOTE: All endpoint paths listed below should be placed after Solr's host and port (if a port is used) to construct a URL.
+
+NOTE: V2 paths that start with `api/collections/` exist only in SolrCloud mode. In user-managed mode use the `api/cores/<core>/...` form of the same endpoint.
 
 === Admin Handlers
 
@@ -89,12 +91,15 @@ V2 API::
 ====
 [source,bash]
 ----
-api/node/logging
+api/node/logging/levels
 ----
 ====
 ======
 +
-Paramset: `_ADMIN_LOGGING`
+The log messages kept in memory come from `solr/admin/info/logging?since=0` in V1 and from `api/node/logging/messages?since=0` in V2.
+In the response, `history` is a document list with the messages under `docs` in V1, and a plain array of messages in V2.
++
+Paramset: none
 
 Luke:: Expose the internal Lucene index.
 This handler must have a collection name in the path to the endpoint.
@@ -162,7 +167,7 @@ api/node/properties/java.version
 ====
 ======
 +
-Paramset: `_ADMIN_PROPERTIES`
+Paramset: none
 
 Segments:: Return info on last commit generation Lucene index segments.
 +
@@ -198,7 +203,7 @@ Core Info:: Return core information.
 solr/<collection>/admin/info
 ----
 +
-Paramset: none
+Paramset: `_ADMIN_CORE`
 
 Threads:: Return info on all JVM threads.
 +
@@ -247,7 +252,7 @@ The thread dump is an array of objects, each containing a `"thread"` property:
 ====
 ======
 +
-Paramset: `_ADMIN_THREADS`
+Paramset: none
 
 === Analysis Handlers
 
@@ -363,10 +368,11 @@ api/collections/<collection>/config
 Paramset: `_CONFIG`
 
 Dump:: Echo the request contents back to the client.
+This handler must have a collection name in the path to the endpoint.
 +
 [source,bash]
 ----
-solr/debug/dump
+solr/<collection>/debug/dump
 ----
 +
 Paramset: `_DEBUG_DUMP`
@@ -466,6 +472,8 @@ Paramset: `_ADMIN_GRAPH`
 
 SQL:: SQL query support.
 +
+This handler is part of the `sql` xref:solr-modules.adoc[Solr Module], which must be enabled before the endpoint responds.
++
 *Documentation*: xref:query-guide:sql-query.adoc#sql-request-handler[SQL Request Handler]
 +
 [source,bash]
@@ -496,6 +504,62 @@ solr/<collection>/terms
 ----
 +
 Paramset: `_TERMS`
+
+Task List:: List the active cancellable tasks, or check whether one task is still active.
+This handler must have a collection name in the path to the endpoint.
++
+*Documentation*: xref:deployment-guide:task-management.adoc[]
++
+[tabs#task-list-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/tasks/list
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/tasks
+----
+====
+======
++
+Paramset: `_LIST_TASKS`
+
+Task Cancellation:: Cancel an active task by its ID.
+This handler must have a collection name in the path to the endpoint.
++
+*Documentation*: xref:deployment-guide:task-management.adoc[]
++
+[tabs#task-cancel-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/tasks/cancel
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/tasks/<task_id>
+----
+====
+======
++
+Paramset: `_TASK_CANCELLATION`
 
 === Update Handlers
 
@@ -593,6 +657,17 @@ solr/<collection>/update/json/docs
 ----
 +
 Paramset: `_UPDATE_JSON_DOCS`
+
+CBOR Updates:: Add and update CBOR-formatted documents.
++
+*Documentation*: xref:indexing-guide:indexing-with-cbor.adoc[]
++
+[source,bash]
+----
+solr/<collection>/update/cbor
+----
++
+Paramset: `_UPDATE_CBOR`
 
 == How to View Implicit Handler Paramsets
 
