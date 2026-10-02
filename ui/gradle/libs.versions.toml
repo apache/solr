@@ -27,7 +27,7 @@ material3 = "1.12.0-alpha03"
 mvikotlin = "4.4.0"
 nlopez-compose = "0.6.2"
 oshai-logging = "8.0.4"
-squareup-okio = "3.18.1"
+squareup-okio = "3.18.2"
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
