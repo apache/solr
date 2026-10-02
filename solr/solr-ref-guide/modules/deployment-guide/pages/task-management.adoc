@@ -49,7 +49,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/collectionName/tasks/list"
+curl "http://localhost:8983/solr/collectionName/tasks/list"
 ----
 ====
 
@@ -58,7 +58,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks"
+curl "http://localhost:8983/v2/collections/collectionName/tasks"
 ----
 ====
 ======
@@ -117,7 +117,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/collectionName/tasks/cancel?queryUUID=5"
+curl "http://localhost:8983/solr/collectionName/tasks/cancel?queryUUID=5"
 ----
 ====
 V2 API::
@@ -214,7 +214,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/collectionName/tasks/list?taskUUID=5"
+curl "http://localhost:8983/solr/collectionName/tasks/list?taskUUID=5"
 ----
 ====
 
@@ -223,7 +223,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/5"
+curl "http://localhost:8983/v2/collections/collectionName/tasks/5"
 ----
 ====
 ======
