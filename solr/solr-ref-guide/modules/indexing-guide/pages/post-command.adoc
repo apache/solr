@@ -1,4 +1,5 @@
-= Post Tool
+= Solr CLI Post Command
+:page-aliases: post-tool.adoc
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -30,7 +31,7 @@ $ bin/solr post --solr-url http://localhost:8983 --name gettingstarted example/f
 This will contact the server at `localhost:8983`.
 The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr post -h)`.
 
-== Using the bin/solr post Tool
+== Using the bin/solr post Command
 
 You must either specify `url` that is the full path to the update handler or provide a `c` collection/core name when using `bin/solr post`.
 
@@ -57,9 +58,9 @@ List of options:
                                                   xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,
                                                   ots,rtf,htm,html,txt,log
  -h,--help                                        Print this message.
-    --mode <mode>                                 Which mode the Post tool is running in, 'files' crawls local
-                                                  directory, 'web' crawls website, 'args' processes input args, and
-                                                  'stdin' reads a command from standard in. default: files.
+    --mode <mode>                                 Specifies how to run: 'files' crawls local directories, 'web' crawls
+                                                  websites, 'args' processes positional arguments, and 'stdin' reads
+                                                  standard input stream. Default: files.
  -o,--optimize                                    Issue an optimize at end of posting documents.
     --params <<key>=<value>[&<key>=<value>...]>   Values must be URL-encoded; these pass through to Solr update request.
  -r,--recursive <recursive>                       For web crawl, how deep to go. default: 1

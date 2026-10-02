@@ -509,7 +509,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type: application/json' -d '
   {
     "nodes": ["localhost:8983_solr", "localhost:8984_solr"],
     "async": "balance-replicas-1"
@@ -588,7 +588,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/balance-shard-unique -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/balance-shard-unique -H 'Content-Type: application/json' -d '
   {
     "property": "preferredLeader"
   }
@@ -687,7 +687,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type: application/json' -d '
   {
     "sourceNodes": ["localhost:8983_solr", "localhost:8984_solr"],
     "targetNodes": ["localhost:8985_solr", "localhost:8986_solr"],
@@ -788,7 +788,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
+curl "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
     {
       "targetNodeName": "localhost:8983_solr",
       "waitForFinalState": "false",
@@ -894,7 +894,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
+curl "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
     {
       "async": "someAsyncId"
     }

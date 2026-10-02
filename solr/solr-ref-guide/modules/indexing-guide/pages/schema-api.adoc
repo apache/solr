@@ -108,12 +108,12 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field":{
      "name":"sell_by",
      "type":"pdate",
      "stored":true }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -145,9 +145,9 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "delete-field" : { "name":"sell_by" }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -179,12 +179,12 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "replace-field":{
      "name":"sell_by",
      "type":"date",
      "stored":false }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -217,12 +217,12 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-dynamic-field":{
      "name":"*_s",
      "type":"string",
      "stored":true }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -253,9 +253,9 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -287,12 +287,12 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "replace-dynamic-field":{
      "name":"*_s",
      "type":"text_general",
      "stored":false }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -326,7 +326,7 @@ V1 API with Single Analysis::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field-type" : {
      "name":"myNewTxtField",
      "class":"solr.TextField",
@@ -341,7 +341,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
         "filters":[{
            "name":"wordDelimiter",
            "preserveOriginal":"0" }]}}
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 
 Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis.
@@ -355,7 +355,7 @@ As in this example:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field-type":{
      "name":"myNewTextField",
      "class":"solr.TextField",
@@ -366,7 +366,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "queryAnalyzer":{
         "tokenizer":{
            "name":"keyword" }}}
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -404,9 +404,9 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -439,7 +439,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "replace-field-type":{
      "name":"myNewTxtField",
      "class":"solr.TextField",
@@ -447,7 +447,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "analyzer":{
         "tokenizer":{
            "name":"standard" }}}
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -510,11 +510,11 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
      "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -523,11 +523,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/api/collections/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
      "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/api/collections/techproducts/schema
+}'
 ----
 ====
 ======
@@ -548,9 +548,9 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 ====
 
@@ -559,9 +559,9 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/api/collections/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/api/collections/techproducts/schema
+}'
 ----
 ====
 ======
@@ -580,7 +580,7 @@ First, the commands can simply be made serially, as in this request to create a 
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field-type":{
      "name":"myNewTxtField",
      "class":"solr.TextField",
@@ -599,14 +599,14 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
       "name":"sell_by",
       "type":"myNewTxtField",
       "stored":true }
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 
 Multiple commands of the same type may be repeated, as in this example:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field":{
      "name":"shelf",
      "type":"myNewTxtField",
@@ -618,14 +618,14 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
       "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 
 Commands sharing a type can also be grouped together within a list:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field":[
      { "name":"shelf",
        "type":"myNewTxtField",
@@ -633,7 +633,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      { "name":"location",
        "type":"myNewTxtField",
        "stored":true }]
-}' http://localhost:8983/solr/techproducts/schema
+}'
 ----
 
 Bulk schema operations are also supported in Solr's v2 API, using a slightly different syntax.
@@ -641,7 +641,7 @@ Individual operations are specified as elements within a list, with the operatio
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/schema/bulk' -H 'Content-type:application/json' --data-binary '
   [
     {
       "operationType": "add-field"
@@ -660,7 +660,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
       "source": "shelf",
       "destinations": ["location", "catchall"]
     }
-  ]' http://localhost:8983/solr/techproducts/schema/bulk
+  ]'
 ----
 
 === Schema Changes Among Replicas
