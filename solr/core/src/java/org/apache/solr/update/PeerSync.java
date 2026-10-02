@@ -439,7 +439,7 @@ public class PeerSync implements SolrMetricProducer {
    */
   @VisibleForTesting
   static boolean isToleratedLeaderElectionException(
-      Exception exception, boolean cantReachIsSuccess, int shardRequestPurpose) {
+      Throwable exception, boolean cantReachIsSuccess, int shardRequestPurpose) {
     if (!cantReachIsSuccess || shardRequestPurpose != SHARD_REQUEST_PURPOSE_GET_VERSIONS) {
       return false;
     }
