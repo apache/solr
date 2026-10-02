@@ -32,6 +32,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
@@ -48,6 +49,9 @@ import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyNoAuthPluginSecurityConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyNoAuthzPluginSecurityConfigAPI;
+import org.apache.solr.handler.admin.api.Permissions;
+import org.apache.solr.handler.admin.api.Roles;
+import org.apache.solr.handler.admin.api.Users;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -89,30 +93,12 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     if (SolrRequest.METHOD.GET.equals(httpMethod)) {
       getConf(rsp, key);
     } else if (SolrRequest.METHOD.POST.equals(httpMethod)) {
-      Object plugin = getPlugin(key);
-      doEdit(req, rsp, path, key, plugin);
+      doEdit(req, rsp, key);
     }
   }
 
-  private void doEdit(
-      SolrQueryRequest req,
-      SolrQueryResponse rsp,
-      String path,
-      final String key,
-      final Object plugin)
+  private void doEdit(SolrQueryRequest req, SolrQueryResponse rsp, final String key)
       throws IOException {
-    ConfigEditablePlugin configEditablePlugin = null;
-
-    if (plugin == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "No " + key + " plugin configured");
-    }
-    if (plugin instanceof ConfigEditablePlugin) {
-      configEditablePlugin = (ConfigEditablePlugin) plugin;
-    } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, key + " plugin is not editable");
-    }
-
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
@@ -120,6 +106,28 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
+    editSecurityConfig(req, key, ops);
+  }
+
+  /**
+   * Applies the given commands to the named security plugin's configuration ("authentication" or
+   * "authorization"), retrying up to 3 times if persisting the result races with a concurrent edit,
+   * then persists it. Shared by the legacy command-batch {@code /admin/authentication} and {@code
+   * /admin/authorization} handling above and by the resource-oriented v2 Jersey APIs (e.g. {@code
+   * org.apache.solr.handler.admin.api.Users}).
+   */
+  public void editSecurityConfig(SolrQueryRequest req, String key, List<CommandOperation> ops)
+      throws IOException {
+    Object plugin = getPlugin(key);
+    if (plugin == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "No " + key + " plugin configured");
+    }
+    if (!(plugin instanceof ConfigEditablePlugin)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, key + " plugin is not editable");
+    }
+    ConfigEditablePlugin configEditablePlugin = (ConfigEditablePlugin) plugin;
+
     for (int count = 1; count <= 3; count++) {
       SecurityConfig securityConfig = getSecurityConfig(true);
       Map<String, Object> data = securityConfig.getData();
@@ -201,7 +209,18 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     return Category.ADMIN;
   }
 
-  /** Gets security.json from source */
+  /**
+   * Gets security.json from source.
+   *
+   * <p>{@code getFresh=true} reads the source directly - ZooKeeper for {@link
+   * SecurityConfHandlerZk}, the local file for {@link SecurityConfHandlerLocal} (a no-op there; it
+   * always reads the file fresh). {@code getFresh=false} may return a locally cached snapshot: for
+   * {@link SecurityConfHandlerZk} this is refreshed by a ZK watcher that fires asynchronously after
+   * any write, so a {@code getFresh=false} read issued immediately after this handler's own {@link
+   * #editSecurityConfig} call can still observe the pre-write state. Callers that need to read back
+   * a value they (or another request) may have just written - e.g. the v2 Jersey APIs in {@code
+   * org.apache.solr.handler.admin.api} - should pass {@code true}.
+   */
   public abstract SecurityConfig getSecurityConfig(boolean getFresh);
 
   /** Persist security.json to the source, optionally with a version */
@@ -359,5 +378,10 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(Users.class, Roles.class, Permissions.class);
   }
 }

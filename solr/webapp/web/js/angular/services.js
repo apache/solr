@@ -118,6 +118,18 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.AliasesApi();
     })
+.factory('AuthenticationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.AuthenticationApi();
+    })
+.factory('AuthorizationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.AuthorizationApi();
+    })
 .factory('ShardsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
