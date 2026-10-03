@@ -407,6 +407,10 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 Refer <<Arbitrary Range>>
 |===
 
+The range facet does not support the `limit`, `offset`, `sort`, `prelim_sort`, `overrequest`, `overrefine`, or `refine` parameters that terms facets accept.
+Using any of them in a range facet is rejected with a 400 error naming the parameter.
+Buckets generated from `start`, `end`, and `gap` are returned in ascending range order; explicit `ranges` are returned in the requested order.
+
 ==== Arbitrary Range
 
 An arbitrary range consists of from and to values over which range bucket is computed.
