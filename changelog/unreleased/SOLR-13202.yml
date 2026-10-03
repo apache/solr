@@ -1,4 +1,4 @@
-title: Return 400 instead of 500 for join queries missing from/to parameters
+title: Return 400 instead of 500 for join queries, including cross-collection joins, that are missing the from or to parameter
 type: fixed
 authors:
   - name: Nick Shanin
