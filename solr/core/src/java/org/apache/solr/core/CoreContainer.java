@@ -2016,9 +2016,13 @@ public class CoreContainer {
       if (coreId != null) return; // yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
-        solrCores.waitAddPendingCoreOps(clf.cd.getName());
+        SolrCore loadedMeanwhile = solrCores.waitAddPendingCoreOps(clf.cd.getName());
         try {
-          createFromDescriptor(clf.cd, true, false);
+          // A concurrent reload may have loaded the core while we waited; creating it again would
+          // fail on the index lock and record a new init failure for a core that is serving.
+          if (loadedMeanwhile == null) {
+            createFromDescriptor(clf.cd, true, false);
+          }
         } finally {
           solrCores.removeFromPendingOps(clf.cd.getName());
         }
