@@ -219,12 +219,18 @@ public class HttpSolrCall {
   /**
    * The collection(s) to authorize this request against. In SolrCloud, when a local core serves the
    * request, this is the collection of that core, since that is where the request executes;
-   * requests it sends to other collections are authorized by the receiving nodes. Otherwise, this
-   * is {@link #getCollectionsList()}. Not null.
+   * requests it sends to other collections are authorized by the receiving nodes. In standalone
+   * mode this is the name of the core serving the request, since there are no collections.
+   * Otherwise, this is {@link #getCollectionsList()}. Not null.
    */
   public List<String> getAuthorizationCollectionsList() {
-    if (core == null || !cores.isZooKeeperAware()) {
+    if (core == null) {
       return getCollectionsList();
+    }
+    if (!cores.isZooKeeperAware()) {
+      // Standalone mode has no collections; authorize against the serving core's name so that
+      // core-scoped authorization rules can match.
+      return List.of(core.getCoreDescriptor().getName());
     }
     if (coreSelectedForCollection != null) {
       // e.g. a coordinator's synthetic core, which serves a collection other than its own
