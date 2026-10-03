@@ -41,3 +41,11 @@ bin/solr start -Dsolr.node.roles=data:on,overseer:preferred
 
 A node started this way asks the Overseer to re-run its node prioritization, so a preferred node takes over without waiting for the current Overseer to restart.
 Note that node roles are fixed for the lifetime of a node: unlike `ADDROLE`, they cannot be changed on a running node.
+
+== Security Changes
+
+=== Core-Scoped Authorization Rules in Standalone Mode
+
+In standalone mode, authorization permissions that set `collection` to a core name were never applied, so requests to that core were matched only against the permissions that apply to all collections.
+These permissions are now enforced, with the name of the core serving the request standing in for the collection.
+A permission that was silently ignored before may now deny requests, so review the `collection` values in the permissions of `security.json` before upgrading a standalone installation.
