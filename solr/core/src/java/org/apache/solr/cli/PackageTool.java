@@ -50,7 +50,12 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "package",
-    description = "",
+    description = {
+      "Install, deploy and manage Solr packages in SolrCloud.",
+      "Pass --help or -h after any command to see command-specific usage information.",
+      " Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).",
+      "       (b) Please make sure that all solr nodes are started with '-Dsolr.packages.enabled=true'."
+    },
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0:Operation completed successfully.",

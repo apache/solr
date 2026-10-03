@@ -42,7 +42,10 @@ bin/solr package [-hv] [-u=<credentials>] [-s=<solrConnection> |
 // tag::picocli-generated-man-section-description[]
 == Description
 
-
+Install, deploy and manage Solr packages in SolrCloud.
+Pass --help or -h after any command to see command-specific usage information.
+ Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).
+       (b) Please make sure that all solr nodes are started with '-Dsolr.packages.enabled=true'.
 
 // end::picocli-generated-man-section-description[]
 
