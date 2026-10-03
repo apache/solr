@@ -2222,10 +2222,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
     Path fullConfDir = configSetDir.resolve(srcConfigSet);
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().withUrl(zkAddr).withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS).build()) {
+        new SolrZkClient.Builder()
+            .withUrl(zkAddr)
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       zkClient.upConfig(fullConfDir, dstConfigName);
     }
-
   }
 
   @Override

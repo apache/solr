@@ -284,10 +284,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
     try (SolrClient unauthorizedClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
-      RemoteSolrException status = expectThrows(
-          RemoteSolrException.class,
-          () -> new SystemInfoRequest().process(unauthorizedClient)
-      );
+      RemoteSolrException status =
+          expectThrows(
+              RemoteSolrException.class, () -> new SystemInfoRequest().process(unauthorizedClient));
       assertEquals(401, status.code());
     }
 
