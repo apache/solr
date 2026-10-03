@@ -780,14 +780,21 @@ public class HttpSolrCall {
    *
    * @see #getCollectionsList()
    */
-  protected void addCollectionParamIfNeeded(List<String> collections) {
-    if (collections.isEmpty()) {
+  protected void addCollectionParamIfNeeded(List<String> requestCollections) {
+    if (requestCollections.isEmpty()) {
       return;
     }
     assert cores.isZooKeeperAware();
-    // Read the merged URL + body params: a POST form body may carry the collection param, and it
-    // needs the same alias-resolution rewrite as a URL query-string param.
+    // The collections list is computed from the URL params only. A collection param in a POST form
+    // body is not part of it, so resolve the aliases in that param instead of replacing it.
     String collectionParam = getQueryParams().get(COLLECTION_PROP);
+    List<String> collections = requestCollections;
+    if (collectionParam != null && queryParams.get(COLLECTION_PROP) == null) {
+      collections = resolveCollectionListOrAlias(collectionParam);
+      if (collections.isEmpty()) {
+        return;
+      }
+    }
     // if there is no existing collection param and the core we go to is for the expected
     // collection, then we needn't add a collection param
     if (collectionParam == null
