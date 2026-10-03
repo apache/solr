@@ -18,7 +18,13 @@
 package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -32,11 +38,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.FileSystemConfigSetService;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link UploadConfigSet#uploadConfigSet} (Upload interface). */
 public class UploadConfigSetAPITest extends SolrTestCase {
@@ -376,5 +384,39 @@ public class UploadConfigSetAPITest extends SolrTestCase {
         new String(
             configSetService.downloadFileFromConfig(configSetName, "conf/good.txt"),
             StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testZipUploadSkipsUnsafeEntryPathsBeforeBackendDispatch() throws Exception {
+    // The traversal guard must hold for every ConfigSetService backend, not just the
+    // filesystem one: the ZooKeeper backend builds a znode path from the entry name, so an
+    // entry the dispatch lets through aborts the whole upload there. Use a mock backend and
+    // pin exactly which entry names the dispatch hands over.
+    ConfigSetService mockService = mock(ConfigSetService.class);
+    when(mockService.checkConfigExists(anyString())).thenReturn(false);
+    CoreContainer container = mock(CoreContainer.class);
+    when(container.getConfigSetService()).thenReturn(mockService);
+
+    final String configSetName = "anybackend";
+    InputStream zipStream =
+        createZipStream(
+            "../evil.txt",
+            "evil",
+            "..\\evil2.txt",
+            "evil2",
+            "/abs.txt",
+            "abs",
+            "conf/../evil3.txt",
+            "evil3",
+            "conf/good.txt",
+            "good");
+
+    final var api = new UploadConfigSet(container, null, null);
+    api.uploadConfigSet(configSetName, true, false, zipStream);
+
+    ArgumentCaptor<String> fileNameCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockService, times(1))
+        .uploadFileToConfig(eq(configSetName), fileNameCaptor.capture(), any(), eq(true));
+    assertEquals(List.of("conf/good.txt"), fileNameCaptor.getAllValues());
   }
 }

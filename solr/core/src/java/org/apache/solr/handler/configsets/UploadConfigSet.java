@@ -106,6 +106,16 @@ public class UploadConfigSet extends ConfigSetAPIBase
           filesToDelete.remove(filePath);
           // Backslashes are invalid as ZIP separators, but older Windows-produced archives may
           // contain them. Normalize before handing the path to either config-set implementation.
+          if (!isSafeZipEntryPath(filePath)) {
+            // The filesystem backend contains such entries on its own, but the ZooKeeper
+            // backend builds a znode path from the entry name and the upload aborts. Reject
+            // unsafe entry paths here, before either backend sees them.
+            log.warn(
+                "Not uploading file [{}] from the uploaded zip, as its path could resolve"
+                    + " outside of the configset root directory",
+                filePath);
+            continue;
+          }
           if (!zipEntry.isDirectory() && !filePath.endsWith("/")) {
             try (InputStream entryStream = zipFile.getInputStream(zipEntry)) {
               configSetService.uploadFileToConfig(
@@ -134,6 +144,24 @@ public class UploadConfigSet extends ConfigSetAPIBase
 
   static String normalizeZipEntryName(String entryName) {
     return entryName.replace('\\', '/');
+  }
+
+  /**
+   * Whether a normalized zip entry path stays inside the configset it is uploaded to. Absolute
+   * paths and paths with "." or ".." segments are unsafe: the filesystem backend would resolve
+   * them outside of the configset directory, and the ZooKeeper backend cannot use them as znode
+   * path segments at all.
+   */
+  static boolean isSafeZipEntryPath(String normalizedPath) {
+    if (normalizedPath.startsWith("/")) {
+      return false;
+    }
+    for (String segment : normalizedPath.split("/")) {
+      if (segment.equals(".") || segment.equals("..")) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
