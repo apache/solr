@@ -157,17 +157,21 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
         try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
           if (core != null) {
-            // This can take a while, but doRecovery is already async so don't worry about it here
-            core.getUpdateHandler()
-                .getSolrCoreState()
-                .doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
+            CoreAdminOperation.requestRecovery(it.handler.coreContainer, core);
           } else if (it.handler.coreContainer.isCoreLoading(cname)) {
             // Transient: the core exists but hasn't finished loading yet. Report it as retriable
             // instead of a bad request so the recovery nudge isn't silently dropped as invalid.
             throw new SolrException(
-                ErrorCode.SERVICE_UNAVAILABLE, "Core " + cname + " is still loading");
+                ErrorCode.SERVICE_UNAVAILABLE,
+                "Core " + cname + CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX);
           } else {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+            // the core may have finished loading since it was looked up
+            try (SolrCore loaded = it.handler.coreContainer.getCore(cname)) {
+              if (loaded == null) {
+                throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+              }
+              CoreAdminOperation.requestRecovery(it.handler.coreContainer, loaded);
+            }
           }
         }
       }),
@@ -277,6 +281,17 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
   static Logger log() {
     return log;
+  }
+
+  /**
+   * End of the message of the 503 returned for a core that is still loading, which a recovery
+   * request is retried on.
+   */
+  public static final String CORE_STILL_LOADING_MESSAGE_SUFFIX = " is still loading";
+
+  /** This can take a while, but doRecovery is already async so there is nothing to wait for. */
+  private static void requestRecovery(CoreContainer coreContainer, SolrCore core) throws Exception {
+    core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
   }
 
   @Override
