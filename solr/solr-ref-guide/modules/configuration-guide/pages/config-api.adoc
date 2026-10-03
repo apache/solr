@@ -49,6 +49,21 @@ V1 API::
 ----
 http://localhost:8983/solr/techproducts/config
 ----
+
+The response is the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
+A plugin's *unnamed* child elements - for example, the anonymous `<processor>` entries inside an `updateRequestProcessorChain` that has no `name` attribute of its own - are grouped under an empty-string (`""`) key, matching the legacy behavior of `solrconfig.xml -> JSON` conversion:
+
+[source,json]
+----
+"updateRequestProcessorChain": [{
+    "name": "add-unknown-fields-to-the-schema",
+    "": [
+      {"class": "solr.LogUpdateProcessorFactory"},
+      {"class": "solr.DistributedUpdateProcessorFactory"},
+      {"class": "solr.RunUpdateProcessorFactory"}
+    ]
+}]
+----
 ====
 
 V2 API::
@@ -58,11 +73,22 @@ V2 API::
 ----
 http://localhost:8983/api/collections/techproducts/config
 ----
+
+The response is the same merged configuration as the V1 API, with one difference: a plugin's unnamed child elements are grouped under a self-describing `children` key instead of an empty string, since Solr's V2 JSON serialization library does not allow empty-string keys:
+
+[source,json]
+----
+"updateRequestProcessorChain": [{
+    "name": "add-unknown-fields-to-the-schema",
+    "children": [
+      {"class": "solr.LogUpdateProcessorFactory"},
+      {"class": "solr.DistributedUpdateProcessorFactory"},
+      {"class": "solr.RunUpdateProcessorFactory"}
+    ]
+}]
+----
 ====
 ======
-
-The response will be the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
-
 
 It's possible to restrict the returned configuration to a top-level section, such as, `query`, `requestHandler` or `updateHandler`.
 To do this, append the name of the section to the `config` endpoint.
