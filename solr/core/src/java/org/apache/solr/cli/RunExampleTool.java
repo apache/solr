@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.packagemanager.PackageUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -489,7 +490,7 @@ public class RunExampleTool extends ToolBase {
     } else if ("films".equals(exampleName) && !alreadyExists) {
       try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.start().credentials())) {
         echo("Adding dense vector field type to films schema");
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
             """
@@ -506,7 +507,7 @@ public class RunExampleTool extends ToolBase {
 
         echo(
             "Adding name, genre, directed_by, initial_release_date, and film_vector fields to films schema");
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
             """
@@ -556,7 +557,7 @@ public class RunExampleTool extends ToolBase {
 
         echo(
             "Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/config/params",
             """

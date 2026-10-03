@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -23,16 +23,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.CLITestHelper;
-import org.apache.solr.cli.CLIUtils;
-import org.apache.solr.cli.CreateTool;
-import org.apache.solr.cli.DeleteTool;
-import org.apache.solr.cli.HealthcheckTool;
-import org.apache.solr.cli.PostTool;
-import org.apache.solr.cli.SolrCLI;
-import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;

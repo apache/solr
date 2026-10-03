@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cli.CLITestHelper;
-import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -50,8 +48,7 @@ public class TestPackageManager extends SolrCloudTestCase {
     SolrZkClient zkClient = cluster.getZkClient();
     URL baseURLV2 = cluster.getJettySolrRunner(0).getBaseURLV2();
     try (var solrClient = new HttpJettySolrClient.Builder(baseURLV2.toString()).build()) {
-      ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
-      try (PackageManager manager = new StubPackageManager(runtime, solrClient, zkClient)) {
+      try (PackageManager manager = new StubPackageManager(solrClient, zkClient)) {
         SolrPackage.Plugin plugin = new SolrPackage.Plugin();
         if (random().nextBoolean()) {
           plugin.type = "cluster";
@@ -76,9 +73,9 @@ public class TestPackageManager extends SolrCloudTestCase {
   }
 
   private static class StubPackageManager extends PackageManager {
-    public StubPackageManager(ToolRuntime runtime, SolrClient solrClient, SolrZkClient zkClient) {
+    public StubPackageManager(SolrClient solrClient, SolrZkClient zkClient) {
       super(
-          runtime,
+          UserIO.NONE,
           solrClient,
           SolrCloudTestCase.cluster.getJettySolrRunners().get(0).getBaseUrl().toString(),
           zkClient.getZkServerAddress());
