@@ -947,9 +947,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (SolrCoreState.CoreIsClosedException e) {
-        // the core is closing; the delete was already recorded in the tlog and no new
-        // searcher is needed, so this is expected rather than an error
+        // no new searcher can be opened, so the caches must be kept, as for any other failure
         log.debug("Core is closed, skipping realtime searcher open");
+        return;
       } catch (Exception e) {
         log.error("Error opening realtime searcher", e);
         return;
