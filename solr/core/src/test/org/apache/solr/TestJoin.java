@@ -501,8 +501,7 @@ public class TestJoin extends SolrTestCaseJ4 {
   }
 
   private void assertMissingJoinParam(String query, String missing) {
-    SolrException e =
-        expectThrows(SolrException.class, () -> h.query(req("q", query, "fl", "id")));
+    SolrException e = expectThrows(SolrException.class, () -> h.query(req("q", query, "fl", "id")));
     assertEquals(query, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage(), e.getMessage().contains("'" + missing + "'"));
   }
