@@ -25,16 +25,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.cli.CLITestHelper;
-import org.apache.solr.cli.StatusTool;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -283,10 +283,12 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     verifySecurityStatus(httpClient, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
     assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
-    String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
-    int res = CLITestHelper.runTool(toolArgs, StatusTool.class);
-    if (res == 0) {
-      fail("Request should have failed because of missing auth");
+    try (SolrClient unauthorizedClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+      RemoteSolrException status = expectThrows(
+          RemoteSolrException.class,
+          () -> new SystemInfoRequest().process(unauthorizedClient)
+      );
+      assertEquals(401, status.code());
     }
 
     SolrParams params = new MapSolrParams(Map.of("q", "*:*"));
