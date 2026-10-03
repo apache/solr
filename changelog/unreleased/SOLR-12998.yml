@@ -1,4 +1,4 @@
-title: Report 503 instead of 400 when recovery is requested on a still-loading core, and retry only that exact response up to two times
+title: A recovery request for a replica core that is still loading now gets a 503 instead of a 400, and the leader retries that response up to two times
 type: fixed
 authors:
   - name: Nick Shanin

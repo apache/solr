@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -40,6 +40,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.CoreAdminOperation;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -57,6 +58,9 @@ public class SyncStrategy {
   private final ShardHandler shardHandler;
 
   private volatile boolean isClosed;
+
+  /** Released on close, so that a recovery request waiting to be retried stops waiting. */
+  private final CountDownLatch closedLatch = new CountDownLatch(1);
 
   private final HttpJettySolrClient solrClient;
 
@@ -370,6 +374,7 @@ public class SyncStrategy {
 
   public void close() {
     this.isClosed = true;
+    closedLatch.countDown();
   }
 
   public void requestRecoveries() {
@@ -383,13 +388,10 @@ public class SyncStrategy {
   }
 
   /** Delay before retrying a recovery request that hit a still-loading replica core. */
-  private static final long RECOVERY_RETRY_DELAY_MS = 30000;
+  private static final long RECOVERY_RETRY_DELAY_MS = 10000;
 
   /** Attempts for a recovery request when the replica core is still loading. */
   private static final int RECOVERY_REQUEST_ATTEMPTS = 3;
-
-  /** Suffix of the "core is still loading" message; see {@link #isCoreStillLoading}. */
-  private static final String CORE_STILL_LOADING_MESSAGE_SUFFIX = " is still loading";
 
   private void requestRecovery(
       final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
@@ -405,7 +407,7 @@ public class SyncStrategy {
           recoverRequestCmd.setCoreName(coreName);
           sendRecoveryRequestWithRetry(
               () -> sendRecoveryRequest(baseUrl, recoverRequestCmd),
-              () -> isClosed,
+              closedLatch,
               RECOVERY_RETRY_DELAY_MS,
               ZkCoreNodeProps.getCoreUrl(leaderProps),
               coreName);
@@ -423,12 +425,13 @@ public class SyncStrategy {
   /**
    * Sends a recovery request, retrying only when the replica answers with the "core is still
    * loading" 503 (see {@link #isCoreStillLoading}). Any other failure is logged and dropped, since
-   * recovery requests are best-effort nudges. An {@link Error} from any attempt is rethrown.
+   * recovery requests are best-effort nudges. An {@link Error} from any attempt is rethrown. The
+   * wait before a retry ends as soon as {@code closed} is released.
    * Package-private and static so tests can drive it with a fake sender and a zero retry delay.
    */
   static void sendRecoveryRequestWithRetry(
       RecoveryRequestSender sender,
-      BooleanSupplier closed,
+      CountDownLatch closed,
       long retryDelayMs,
       String replicaUrl,
       String coreName) {
@@ -440,7 +443,7 @@ public class SyncStrategy {
         if (t instanceof Error) {
           throw (Error) t;
         }
-        if (!closed.getAsBoolean()
+        if (closed.getCount() > 0
             && isCoreStillLoading(t)
             && attempt < RECOVERY_REQUEST_ATTEMPTS) {
           // The replica's core hasn't finished loading; wait a bit and retry
@@ -452,12 +455,11 @@ public class SyncStrategy {
               nextAttempt,
               RECOVERY_REQUEST_ATTEMPTS);
           try {
-            Thread.sleep(retryDelayMs);
+            if (closed.await(retryDelayMs, TimeUnit.MILLISECONDS)) {
+              return;
+            }
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return;
-          }
-          if (closed.getAsBoolean()) {
             return;
           }
           continue;
@@ -484,13 +486,10 @@ public class SyncStrategy {
         || rse.code() != SolrException.ErrorCode.SERVICE_UNAVAILABLE.code) {
       return false;
     }
-    // Only the exact "core is still loading" response from REQUESTRECOVERY is retriable. Any
-    // other 503 (a proxy error, or a different failure on the replica) must not be retried as
-    // if the core were still loading. The suffix must match the message of the 503 that
-    // CoreAdminOperation.REQUESTRECOVERY_OP throws for a loading core; the server side is
-    // pinned by CoreAdminOperationTest, this side by SyncStrategyTest.
+    // Only the "core is still loading" 503 of REQUESTRECOVERY is retriable; another 503, such as
+    // one from a proxy, is not.
     String msg = rse.getMessage();
-    return msg != null && msg.contains(CORE_STILL_LOADING_MESSAGE_SUFFIX);
+    return msg != null && msg.contains(CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX);
   }
 
   public static ModifiableSolrParams params(String... params) {

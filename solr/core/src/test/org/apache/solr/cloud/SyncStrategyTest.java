@@ -16,15 +16,17 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.handler.admin.CoreAdminOperation;
 import org.junit.Test;
 
 /**
- * Unit tests for the recovery-request retry in {@link SyncStrategy}: only the exact "core is still
+ * Unit tests for the recovery-request retry in {@link SyncStrategy}: only the "core is still
  * loading" 503 from REQUESTRECOVERY may be retried, and only up to the attempt limit.
  */
 public class SyncStrategyTest extends SolrTestCase {
@@ -34,11 +36,15 @@ public class SyncStrategyTest extends SolrTestCase {
 
   private static RemoteSolrException stillLoading() {
     return new RemoteSolrException(
-        "http://localhost:8983/solr", 503, "Core core1 is still loading", null);
+        "http://localhost:8983/solr",
+        503,
+        "Core core1" + CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX,
+        null);
   }
 
   private static void sendWithRetry(SyncStrategy.RecoveryRequestSender sender) {
-    SyncStrategy.sendRecoveryRequestWithRetry(sender, () -> false, 0, REPLICA_URL, CORE_NAME);
+    SyncStrategy.sendRecoveryRequestWithRetry(
+        sender, new CountDownLatch(1), 0, REPLICA_URL, CORE_NAME);
   }
 
   @Test
@@ -84,7 +90,10 @@ public class SyncStrategyTest extends SolrTestCase {
         () -> {
           sends.incrementAndGet();
           throw new RemoteSolrException(
-              "http://localhost:8983/solr", 500, "Core core1 is still loading", null);
+              "http://localhost:8983/solr",
+              500,
+              "Core core1" + CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX,
+              null);
         });
     assertEquals(1, sends.get());
   }
@@ -122,17 +131,43 @@ public class SyncStrategyTest extends SolrTestCase {
   }
 
   @Test
-  public void testClosedStopsRetry() {
+  public void testAlreadyClosedStopsRetry() {
     AtomicInteger sends = new AtomicInteger();
+    CountDownLatch closed = new CountDownLatch(1);
+    closed.countDown();
     SyncStrategy.sendRecoveryRequestWithRetry(
         () -> {
           sends.incrementAndGet();
           throw stillLoading();
         },
-        () -> true,
+        closed,
         0,
         REPLICA_URL,
         CORE_NAME);
+    assertEquals(1, sends.get());
+  }
+
+  @Test
+  public void testCloseEndsTheWaitBeforeARetry() throws Exception {
+    AtomicInteger sends = new AtomicInteger();
+    CountDownLatch closed = new CountDownLatch(1);
+    Thread t =
+        new Thread(
+            () ->
+                SyncStrategy.sendRecoveryRequestWithRetry(
+                    () -> {
+                      sends.incrementAndGet();
+                      throw stillLoading();
+                    },
+                    closed,
+                    TimeUnit.MINUTES.toMillis(5),
+                    REPLICA_URL,
+                    CORE_NAME));
+    t.start();
+    waitForFirstAttempt(sends);
+    closed.countDown();
+    t.join(10000);
+    assertFalse("closing should end the wait for a retry", t.isAlive());
     assertEquals(1, sends.get());
   }
 
@@ -148,23 +183,26 @@ public class SyncStrategyTest extends SolrTestCase {
                     sends.incrementAndGet();
                     throw stillLoading();
                   },
-                  () -> false,
-                  60000,
+                  new CountDownLatch(1),
+                  TimeUnit.MINUTES.toMillis(5),
                   REPLICA_URL,
                   CORE_NAME);
               interruptPreserved.set(Thread.currentThread().isInterrupted());
             });
     t.start();
-    // Wait until the first attempt has happened, then interrupt the 60s wait.
-    long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-    while (sends.get() == 0 && System.nanoTime() < deadlineNanos) {
-      Thread.sleep(10);
-    }
-    assertEquals(1, sends.get());
+    waitForFirstAttempt(sends);
     t.interrupt();
     t.join(10000);
     assertFalse("retry thread should have stopped after interrupt", t.isAlive());
     assertEquals(1, sends.get());
     assertTrue("interrupt status should be restored", interruptPreserved.get());
+  }
+
+  private static void waitForFirstAttempt(AtomicInteger sends) throws InterruptedException {
+    long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+    while (sends.get() == 0 && System.nanoTime() < deadlineNanos) {
+      Thread.sleep(10);
+    }
+    assertEquals(1, sends.get());
   }
 }
