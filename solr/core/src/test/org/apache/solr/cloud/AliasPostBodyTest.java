@@ -16,57 +16,67 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Verifies that a collection alias in the POST form body is resolved the same as in the URL query
- * string (SOLR-12849).
+ * Tests that a "collection" parameter in the form body of a POST has its aliases resolved, and is
+ * otherwise left as it is.
  */
-@SuppressSSL // the raw HttpURLConnection used below cannot validate the randomized test cert
 public class AliasPostBodyTest extends SolrCloudTestCase {
+
+  private static final String EMPTY_COLLECTION = "emptycoll";
+  private static final String DOC_COLLECTION = "doccoll";
+  private static final String EMPTY_ALIAS = "emptyalias";
+  private static final String DOC_ALIAS = "docalias";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+
+    for (String collection : new String[] {EMPTY_COLLECTION, DOC_COLLECTION}) {
+      CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collection, 1, 1);
+    }
+    CollectionAdminRequest.createAlias(EMPTY_ALIAS, EMPTY_COLLECTION)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias(DOC_ALIAS, DOC_COLLECTION).process(cluster.getSolrClient());
+    new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), DOC_COLLECTION);
+  }
+
+  /** Sends a form body POST to the path alias, with the collection parameter in the body. */
+  private static long postWithCollectionParam(String pathAlias, String collectionParam)
+      throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "*:*");
+    params.set("rows", "0");
+    params.set("collection", collectionParam);
+    SolrClient nodeClient = cluster.getJettySolrRunner(0).getSolrClient();
+    QueryResponse response =
+        new QueryRequest(params, SolrRequest.METHOD.POST).process(nodeClient, pathAlias);
+    return response.getResults().getNumFound();
   }
 
   @Test
-  public void testAliasInPostBody() throws Exception {
-    String collection = "testcoll";
-    String alias = "testalias";
-    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
-        .processAndWait(cluster.getSolrClient(), 30);
-    cluster.waitForActiveCollection(collection, 1, 1);
-    CollectionAdminRequest.createAlias(alias, collection).process(cluster.getSolrClient());
+  public void testAliasInPostBodyIsResolved() throws Exception {
+    assertEquals(0, postWithCollectionParam(EMPTY_ALIAS, EMPTY_ALIAS));
+  }
 
-    // POST to /solr/<alias>/select with collection=<alias> in the FORM BODY (ticket's scenario).
-    // Must not fail with "Could not find collection".
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    URL url = URI.create(baseUrl + "/" + alias + "/select").toURL();
-    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-    conn.setRequestMethod("POST");
-    conn.setDoOutput(true);
-    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-    String body = "q=*:*&rows=0&collection=" + alias;
-    try (OutputStream os = conn.getOutputStream()) {
-      os.write(body.getBytes(StandardCharsets.UTF_8));
-    }
-    int code = conn.getResponseCode();
-    String response = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-    assertEquals(200, code);
-    assertFalse(
-        "POST with alias in body failed: " + response,
-        response.contains("Could not find collection"));
+  @Test
+  public void testAliasInPostBodyDiffersFromThePathAlias() throws Exception {
+    assertEquals(1, postWithCollectionParam(EMPTY_ALIAS, DOC_ALIAS));
+  }
 
-    CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
-    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+  @Test
+  public void testCollectionInPostBodyIsNotReplacedByThePathCollection() throws Exception {
+    assertEquals(1, postWithCollectionParam(EMPTY_ALIAS, DOC_COLLECTION));
   }
 }
