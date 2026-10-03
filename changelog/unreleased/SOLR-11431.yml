@@ -1,0 +1,7 @@
+title: Fix PeerSync leader election when a replica responds 503 for a failed core.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-11431
+    url: https://issues.apache.org/jira/browse/SOLR-11431

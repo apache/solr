@@ -395,27 +395,22 @@ public class PeerSync implements SolrMetricProducer {
         }
       }
 
-      if (cantReachIsSuccess
-          && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS
-          && srsp.getException() instanceof SolrException
-          && ((SolrException) srsp.getException()).code() == 503) {
-        log.warn(
-            "{} got a 503 from {}, counting as success ",
-            msg(),
-            srsp.getShardAddress(),
-            srsp.getException());
-        return true;
-      }
-
-      if (cantReachIsSuccess
-          && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS
-          && srsp.getException() instanceof SolrException
-          && ((SolrException) srsp.getException()).code() == 404) {
-        log.warn(
-            "{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?",
-            msg(),
-            srsp.getShardAddress(),
-            srsp.getException());
+      if (isToleratedLeaderElectionException(
+          srsp.getException(), cantReachIsSuccess, sreq.purpose)) {
+        int exceptionCode = ((SolrException) srsp.getException()).code();
+        if (exceptionCode == SolrException.ErrorCode.SERVICE_UNAVAILABLE.code) {
+          log.warn(
+              "{} got a 503 from {}, counting as success ",
+              msg(),
+              srsp.getShardAddress(),
+              srsp.getException());
+        } else {
+          log.warn(
+              "{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?",
+              msg(),
+              srsp.getShardAddress(),
+              srsp.getException());
+        }
         return true;
       }
 
@@ -436,6 +431,24 @@ public class PeerSync implements SolrMetricProducer {
     } else {
       return handleUpdates(srsp);
     }
+  }
+
+  /**
+   * Returns whether a failed version request can be ignored while selecting a leader. A core that
+   * fails to initialize responds with 503 and therefore cannot participate in peer sync.
+   */
+  @VisibleForTesting
+  static boolean isToleratedLeaderElectionException(
+      Throwable exception, boolean cantReachIsSuccess, int shardRequestPurpose) {
+    if (!cantReachIsSuccess || shardRequestPurpose != SHARD_REQUEST_PURPOSE_GET_VERSIONS) {
+      return false;
+    }
+    if (!(exception instanceof SolrException)) {
+      return false;
+    }
+    int exceptionCode = ((SolrException) exception).code();
+    return exceptionCode == SolrException.ErrorCode.SERVICE_UNAVAILABLE.code
+        || exceptionCode == SolrException.ErrorCode.NOT_FOUND.code;
   }
 
   // sometimes the root exception is a SocketTimeoutException, but ConnectTimeoutException

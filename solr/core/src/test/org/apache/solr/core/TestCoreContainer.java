@@ -891,14 +891,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
-    // check that we get a 500 accessing the core with an init failure
+    // check that we get a 503 accessing the core with an init failure
     thrown =
         expectThrows(
             SolrException.class,
             () -> {
               SolrCore c = cc.getCore("bogus");
             });
-    assertEquals(500, thrown.code());
+    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, thrown.code());
     String cause = SolrException.getRootCause(thrown).getMessage();
     assertTrue(
         "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
@@ -950,14 +950,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     assertFalse(cc.isLoaded("does_not_exist"));
-    // check that we get a 500 accessing the core with an init failure
+    // check that we get a 503 accessing the core with an init failure
     SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
               SolrCore c = cc.getCore("col_bad");
             });
-    assertEquals(500, thrown.code());
+    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, thrown.code());
     String cause = thrown.getCause().getCause().getMessage();
     assertTrue(
         "getCore() ex cause doesn't mention init fail: " + cause,
@@ -1024,14 +1024,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
-    // check that we get a 500 accessing the core with an init failure
+    // check that we get a 503 accessing the core with an init failure
     thrown =
         expectThrows(
             SolrException.class,
             () -> {
               SolrCore c = cc.getCore("bogus");
             });
-    assertEquals(500, thrown.code());
+    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, thrown.code());
     cause = thrown.getCause().getMessage();
     assertTrue(
         "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
