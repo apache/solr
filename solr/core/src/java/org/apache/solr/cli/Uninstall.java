@@ -17,4 +17,38 @@
 
 package org.apache.solr.cli;
 
-public class Uninstall {}
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "uninstall",
+    description =
+        "Uninstall any package with a specified version from Solr.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # Uninstall a specific package version",
+        "  bin/solr package uninstall mypkg:1.0.0",
+    })
+public class Uninstall extends PackageSubCommand {
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      paramLabel = "PACKAGE:VERSION",
+      description = "Package name and version, separated by a colon.")
+  private String packageNameAndVersion;
+
+  @Override
+  public int callTool() throws Exception {
+    return runWithManagers((packageManager, repositoryManager) -> packageTool.uninstall(packageManager, packageNameAndVersion));
+  }
+
+  @Override
+  public String getName() {
+    return "uninstall";
+  }
+}

@@ -17,4 +17,78 @@
 
 package org.apache.solr.cli;
 
-public class Deploy {}
+import java.nio.file.Path;
+
+import static org.apache.solr.cli.SolrCLI.printRed;
+
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "deploy",
+    description = "Deploy an installed package to collections or at cluster level.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # Deploy a package to a collection",
+        "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
+        "",
+        "  # Update an existing deployment",
+        "  bin/solr package deploy mypkg --update --collections myCollection -y"
+    })
+public class Deploy extends PackageSubCommand {
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      paramLabel = "PACKAGE[:VERSION]",
+      description = "Package name, optionally with :version.")
+  private String packageNameAndVersion;
+
+  @picocli.CommandLine.Option(
+      names = {"--cluster"},
+      description = "Specifies that this action should affect cluster-level plugins only.")
+  private boolean cluster;
+
+  @picocli.CommandLine.Option(
+      names = {"--collections"},
+      paramLabel = "COLLECTIONS",
+      description = "Collections on which this package needs to be deployed on, excluding cluster level plugins")
+  private String collections;
+
+  @picocli.CommandLine.Option(
+      names = {"-p", "--param"},
+      paramLabel = "PARAMS",
+      description = "List of parameters to be used with the deploy command")
+  private String[] params;
+
+  @picocli.CommandLine.Option(
+      names = {"--update"},
+      description = "If a deployment is an update over a previous deployment.")
+  private boolean update;
+
+  @picocli.CommandLine.Option(
+      names = {"-y", "--no-prompt"},
+      description = "Do not prompt for input; accept all default choices, defaults to false.")
+  private boolean noPrompt;
+
+  @Override
+  public int callTool() throws Exception {
+    if (!cluster && collections == null) {
+      printRed(
+          "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
+      return 1;
+    }
+    return runWithManagers(
+        (packageManager, repositoryManager) ->
+            packageTool.deploy(packageManager, packageNameAndVersion, cluster, collections, params, update, noPrompt));
+  }
+
+  @Override
+  public String getName() {
+    return "deploy";
+  }
+}

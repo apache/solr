@@ -316,7 +316,7 @@ public class PackageTool extends ToolBase {
     }
   }
 
-  void install(RepositoryManager repositoryManager, String packageNameAndVersion)
+  boolean install(RepositoryManager repositoryManager, String packageNameAndVersion)
       throws Exception {
     Pair<String, String> parsedVersion = parsePackageVersion(packageNameAndVersion);
     String packageName = parsedVersion.first();
@@ -327,6 +327,7 @@ public class PackageTool extends ToolBase {
     } else {
       printRed(packageName + " installation failed.");
     }
+    return success;
   }
 
   /**

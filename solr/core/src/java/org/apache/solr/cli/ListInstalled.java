@@ -17,4 +17,30 @@
 
 package org.apache.solr.cli;
 
-public class ListInstalled {}
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "list-installed",
+    description = "Print a list of packages installed in Solr.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # List all installed packages",
+        "  bin/solr package list-installed",
+    })
+public class ListInstalled extends PackageSubCommand {
+
+  @Override
+  public int callTool() throws Exception {
+    return runWithManagers((packageManager, repositoryManager) -> packageTool.listInstalled(packageManager));
+  }
+
+  @Override
+  public String getName() {
+    return "list-installed";
+  }
+}

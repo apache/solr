@@ -17,4 +17,56 @@
 
 package org.apache.solr.cli;
 
-public class Undeploy {}
+import static org.apache.solr.cli.SolrCLI.printRed;
+
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "undeploy",
+    description = "Undeploy a package from specified collection(s) or at cluster level.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # Undeploy a package from a collection",
+        "  bin/solr package undeploy mypkg --collections myCollection"
+    })
+public class Undeploy extends PackageSubCommand {
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      paramLabel = "PACKAGE",
+      description = "Package name")
+  private String packageName;
+
+  @picocli.CommandLine.Option(
+      names = {"--cluster"},
+      description = "Specifies that this action should affect cluster-level plugins only.")
+  private boolean cluster;
+
+  @picocli.CommandLine.Option(
+      names = {"--collections"},
+      paramLabel = "COLLECTIONS",
+      description = "Collections on which this package needs to be undeployed from, excluding cluster level plugins")
+  private String collections;
+
+  @Override
+  public int callTool() throws Exception {
+    if (!cluster && collections == null) {
+      printRed(
+          "Either specify --cluster to undeploy cluster level plugins or --collections <list-of-collections> to undeploy collection level plugins");
+      return 1;
+    }
+    return runWithManagers(
+        (packageManager, repositoryManager) -> packageTool.undeploy(packageManager, packageName, cluster, collections));
+  }
+
+  @Override
+  public String getName() {
+    return "undeploy";
+  }
+}

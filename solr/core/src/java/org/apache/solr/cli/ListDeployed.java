@@ -17,4 +17,61 @@
 
 package org.apache.solr.cli;
 
-public class ListDeployed {}
+import static org.apache.solr.cli.SolrCLI.printRed;
+
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "list-deployed",
+    description = "Print packages deployed on a collection, or collections where a package is deployed.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # List packages deployed on a collection",
+        "  bin/solr package list-deployed -c myCollection",
+        "",
+        "  # List collections where a package is deployed",
+        "  bin/solr package list-deployed mypkg"
+    })
+public class ListDeployed extends PackageSubCommand {
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--collection"},
+      paramLabel = "COLLECTION",
+      description = "Collection for which deployed packages are to be listed.")
+  private String collection;
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "0..1",
+      paramLabel = "PACKAGE",
+      description = "Package name; lists collections where this package is deployed.")
+  private String packageName;
+
+
+  @Override
+  public int callTool() throws Exception {
+    if (collection == null && packageName == null) {
+      printRed("Either -c/--collection <collection> or a package name is required.");
+      return 1;
+    }
+
+    return runWithManagers(
+        (packageManager, repositoryManager) -> {
+          if (collection != null) {
+            packageTool.listPackagesDeployedOnCollection(packageManager, collection);
+          } else {
+            packageTool.listCollectionsWithPackageDeployed(packageManager, packageName);
+          }
+        });
+  }
+
+  @Override
+  public String getName() {
+    return "list-deployed";
+  }
+}

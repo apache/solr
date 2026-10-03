@@ -17,4 +17,30 @@
 
 package org.apache.solr.cli;
 
-public class ListAvailable {}
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "list-available",
+    description = "Print a list of packages available in the repositories.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # List packages available from configured repositories",
+        "  bin/solr package list-available",
+    })
+public class ListAvailable extends PackageSubCommand {
+
+  @Override
+  public int callTool() throws Exception {
+    return runWithManagers((packageManager, repositoryManager) -> packageTool.listAvailable(repositoryManager));
+  }
+
+  @Override
+  public String getName() {
+    return "list-available";
+  }
+}

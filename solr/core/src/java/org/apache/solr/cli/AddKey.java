@@ -17,4 +17,39 @@
 
 package org.apache.solr.cli;
 
-public class AddKey {}
+import java.nio.file.Path;
+
+/** Supports package add-repo command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "add-key",
+    description = "Add a trusted key to Solr.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+        "0: Operation completed successfully.",
+        "1: Operation failed; check output for details."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+        "  # Add a trusted public key",
+        "  bin/solr package add-key /path/to/public.key.der",
+    })
+public class AddKey extends PackageSubCommand {
+
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      paramLabel = "KEY-FILE",
+      description = "Path to a file containing the trusted key.")
+  private Path keyFile;
+
+  @Override
+  public int callTool() throws Exception {
+    return runWithManagers(((packageManager, repositoryManager) -> packageTool.addKey(repositoryManager, keyFile)));
+  }
+
+  @Override
+  public String getName() {
+    return "add-key";
+  }
+}

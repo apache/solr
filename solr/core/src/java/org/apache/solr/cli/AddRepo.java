@@ -34,15 +34,23 @@ package org.apache.solr.cli;
     })
 public class AddRepo extends PackageSubCommand {
 
-  @picocli.CommandLine.Parameters(index = "0", arity = "1", paramLabel = "REPOSITORY-NAME", description = "Name of the package repository.")
+  @picocli.CommandLine.Parameters(
+      index = "0",
+      arity = "1",
+      paramLabel = "REPOSITORY-NAME",
+      description = "Name of the package repository.")
   private String repoName;
 
-  @picocli.CommandLine.Parameters(index = "1", arity = "1", paramLabel = "REPOSITORY-URL", description = "URL of the package repository.")
+  @picocli.CommandLine.Parameters(
+      index = "1",
+      arity = "1",
+      paramLabel = "REPOSITORY-URL",
+      description = "URL of the package repository.")
   private String repoUrl;
 
   @Override
   public int callTool() throws Exception {
-    return
+    return runWithManagers(((packageManager, repositoryManager) -> packageTool.addRepo(repositoryManager, repoName, repoUrl)));
   }
 
   @Override
