@@ -17,7 +17,10 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
+import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.util.EnvUtils;
 import picocli.CommandLine;
 
 /**
@@ -72,5 +75,56 @@ class ConnectionOptions {
       return connection.isZookeeper() ? null : connection.quorumItems().get(0);
     }
     return solrUrl;
+  }
+
+  String resolveSolrUrl(String credentials) throws Exception {
+    if (connectionOptions != null) {
+      String solrUrl = connectionOptions.effectiveSolrUrl();
+      if (solrUrl != null) {
+        return CLIUtils.normalizeSolrUrl(solrUrl);
+      }
+      String zkHost = connectionOptions.effectiveZkHost();
+      if (zkHost != null) {
+        return CLIUtils.solrUrlFromConnection(
+            CloudSolrClient.CloudSolrClientConnection.parse(zkHost), credentials);
+      }
+    }
+    String zkHostProp = EnvUtils.getProperty("zkHost");
+    if (zkHostProp != null && !zkHostProp.isBlank()) {
+      return CLIUtils.solrUrlFromConnection(
+          CloudSolrClient.CloudSolrClientConnection.parse(zkHostProp), credentials);
+    }
+    String defaultUrl = CLIUtils.getDefaultSolrUrl();
+    CLIO.err(
+        "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
+            + defaultUrl
+            + ".");
+    return defaultUrl;
+  }
+
+  String resolveZkHost(String solrUrl, String credentials) throws Exception {
+    if (connectionOptions != null) {
+      String zkHost = connectionOptions.effectiveZkHost();
+      if (zkHost != null) {
+        return zkHost;
+      }
+    }
+    String zkHostProp = EnvUtils.getProperty("zkHost");
+    if (zkHostProp != null && !zkHostProp.isBlank()) {
+      return zkHostProp;
+    }
+    try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
+      Map<String, Object> status = StatusTool.reportStatus(solrClient);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
+      if (cloud != null) {
+        String zookeeper = cloud.get("ZooKeeper").toString();
+        if (zookeeper != null && zookeeper.endsWith("(embedded)")) {
+          zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
+        }
+        return zookeeper;
+      }
+    }
+    return null;
   }
 }
