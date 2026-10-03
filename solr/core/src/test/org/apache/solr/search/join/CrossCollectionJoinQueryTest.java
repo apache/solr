@@ -271,6 +271,54 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCcJoinWithTrailingUnmatchedExportSegment() throws Exception {
+    final String fromCollection = "products_16130";
+    final String toCollection = "parts_16130";
+    try {
+      CollectionAdminRequest.createCollection(fromCollection, "ccjoin", 1, 1)
+          .process(cluster.getSolrClient());
+      CollectionAdminRequest.createCollection(toCollection, "ccjoin", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(fromCollection, 1, 1);
+      cluster.waitForActiveCollection(toCollection, 1, 1);
+
+      List<SolrInputDocument> matchingFromDocs = new ArrayList<>();
+      List<SolrInputDocument> matchingToDocs = new ArrayList<>();
+      for (int i = 0; i < 4; i++) {
+        matchingFromDocs.add(new SolrInputDocument("id", "from-" + i, "test_ids_s", "2105443792"));
+        matchingToDocs.add(new SolrInputDocument("id", "to-" + i, "to_id_s", "from-" + i));
+      }
+
+      indexDocs(fromCollection, matchingFromDocs);
+      cluster.getSolrClient().commit(fromCollection);
+
+      // Keep a later segment that contributes no matching documents to the export query.
+      List<SolrInputDocument> unmatchedFromDocs = new ArrayList<>();
+      for (int i = 0; i < 4; i++) {
+        unmatchedFromDocs.add(new SolrInputDocument("id", "unmatched-" + i, "test_ids_s", "other"));
+      }
+      indexDocs(fromCollection, unmatchedFromDocs);
+      cluster.getSolrClient().commit(fromCollection);
+
+      indexDocs(toCollection, matchingToDocs);
+      cluster.getSolrClient().commit(toCollection);
+
+      String query =
+          String.format(
+              Locale.ROOT,
+              "{!join method=crossCollection fromIndex=%s from=id to=to_id_s routed=false}test_ids_s:2105443792",
+              fromCollection);
+      QueryResponse response =
+          cluster.getSolrClient().query(toCollection, params("q", query, "rows", "10"));
+
+      assertEquals(4, response.getResults().getNumFound());
+    } finally {
+      CollectionAdminRequest.deleteCollection(toCollection).process(cluster.getSolrClient());
+      CollectionAdminRequest.deleteCollection(fromCollection).process(cluster.getSolrClient());
+    }
+  }
+
+  @Test
   public void testAllowSolrUrlsList() throws Exception {
     setupIndexes(false);
 
