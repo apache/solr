@@ -1,0 +1,12 @@
+title: >-
+  The per-core /solr/{core}/replication endpoint is now authorized per command:
+  state-changing commands require the "update" permission, while read-only
+  commands continue to require "read".
+type: changed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18225
+    url: https://issues.apache.org/jira/browse/SOLR-18225
+important_notes:
+  - "Per-core `/solr/{core}/replication` commands are authorized individually. `backup`, `restore`, `deletebackup`, `disablereplication`, `enablereplication`, `abortfetch`, `disablepoll`, `enablepoll`, and `fetchindex` require the `update` permission; `indexversion`, `filelist`, `filecontent`, `details`, `commits`, and `restorestatus` require `read`. A command not listed here requires `update`. Grant `update` (or `all`) to roles that invoke the state-changing commands."

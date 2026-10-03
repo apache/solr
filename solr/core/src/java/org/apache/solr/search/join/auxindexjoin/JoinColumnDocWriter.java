@@ -18,6 +18,7 @@ package org.apache.solr.search.join.auxindexjoin;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -29,6 +30,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.DocEdges;
 import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sibling of {@code AIJoinColumnWriter} writing the same pair columns through the plain {@link
@@ -53,6 +56,8 @@ import org.apache.solr.search.join.auxindexjoin.JoinIndexUtils.JoinColumnModel;
  */
 final class JoinColumnDocWriter extends JoinColumWriter {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   JoinColumnDocWriter() {}
 
   @Override
@@ -64,8 +69,10 @@ final class JoinColumnDocWriter extends JoinColumWriter {
     }
     assert mappings.isEmpty() || batchNumDocs > 0
         : "a batch with columns to write needs a doc 0 to carry their edges: " + mappings.keySet();
+    long startNanos = System.nanoTime();
     // a single block: IndexWriter guarantees no intermediate flush splits it across segments
     writer.addDocuments(new BatchDocuments(mappings, batchNumDocs));
+    long addedNanos = System.nanoTime();
     // seal the batch into a segment of its own, so the next batch starts again at doc 0 -- the
     // invariant every column depends on, since a sidecar doc number IS a from-doc id. This used
     // to be a commit(), which sealed the segment only incidentally and paid an fsync of every new
@@ -73,6 +80,41 @@ final class JoinColumnDocWriter extends JoinColumWriter {
     // flush() writes the segment and nothing else; durability and file reclamation are the
     // periodic commit's job.
     writer.flush();
+    logPersistDiagnostics(mappings, batchNumDocs, startNanos, addedNanos);
+  }
+
+  /**
+   * Emits the {@code evt=persist} diagnostic line: one per sidecar segment written, so that {@code
+   * addDocsMs} and {@code flushMs} can be regressed against {@code batchNumDocs} (the segment
+   * width) and against {@code columns} / {@code toCount} (the data actually stored).
+   */
+  private static void logPersistDiagnostics(
+      Map<String, JoinColumnModel> mappings, int batchNumDocs, long startNanos, long addedNanos) {
+    if (!JoinIndexUtils.diagnosticsEnabled(log)) {
+      return;
+    }
+    long flushedNanos = System.nanoTime();
+    long toCount = 0;
+    long modelBytes = 0;
+    int sparseModels = 0;
+    for (JoinColumnModel model : mappings.values()) {
+      toCount += model.edges().toCount();
+      modelBytes += model.ramBytesUsed();
+      if (model.isSparse()) {
+        sparseModels++;
+      }
+    }
+    JoinIndexUtils.logDiagnostic(
+        log,
+        "AUXIJOIN evt=persist batchNumDocs={} columns={} sparseModels={} toCount={} modelBytes={}"
+            + " addDocsMs={} flushMs={}",
+        batchNumDocs,
+        mappings.size(),
+        sparseModels,
+        toCount,
+        modelBytes,
+        (addedNanos - startNanos) / 1_000_000L,
+        (flushedNanos - addedNanos) / 1_000_000L);
   }
 
   /**

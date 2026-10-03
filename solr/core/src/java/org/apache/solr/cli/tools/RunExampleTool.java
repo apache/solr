@@ -80,14 +80,14 @@ public class RunExampleTool extends ToolBase {
               "Don't prompt for input; accept all defaults when running examples that accept user input.")
           .get();
 
-  private static final Option PROMPT_INPUTS_OPTION =
+  private static final Option SCRIPT_INPUTS_OPTION =
       Option.builder()
-          .longOpt("prompt-inputs")
+          .longOpt("script-inputs")
           .hasArg()
           .argName("VALUES")
           .desc(
-              "Provide comma-separated values for prompts. Same as --no-prompt but uses provided values instead of defaults. "
-                  + "Example: --prompt-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+              "Provide comma-separated values for the interactive session's prompts. Same as --no-prompt but uses provided values instead of defaults. "
+                  + "Example: --script-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
           .build();
 
   private static final Option EXAMPLE_OPTION =
@@ -193,7 +193,7 @@ public class RunExampleTool extends ToolBase {
   protected Path exampleDir;
   protected Path solrHomeDir;
   protected String urlScheme;
-  private boolean usingPromptInputs = false;
+  private boolean usingScriptInputs = false;
 
   /**
    * Parameters consumed when starting a single Solr node via the bin/solr script, common to all
@@ -221,12 +221,13 @@ public class RunExampleTool extends ToolBase {
   /**
    * Parameters for running the multi-node cloud example, independent of the command line parser.
    *
-   * @param promptInputs comma-separated prompt answers, or null when prompting interactively
+   * @param scriptInputs comma-separated answers to the example's prompts, or null to run the
+   *     interactive session instead
    * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
    * @param basePort first node port; remaining nodes use basePort+1..+3 unless prompted otherwise
    */
   record CloudExampleParams(
-      boolean noPrompt, String promptInputs, String zkHost, int basePort, StartSolrParams start) {}
+      boolean noPrompt, String scriptInputs, String zkHost, int basePort, StartSolrParams start) {}
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
@@ -248,7 +249,7 @@ public class RunExampleTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(NO_PROMPT_OPTION)
-        .addOption(PROMPT_INPUTS_OPTION)
+        .addOption(SCRIPT_INPUTS_OPTION)
         .addOption(EXAMPLE_OPTION)
         .addOption(SCRIPT_OPTION)
         .addOption(SERVER_DIR_OPTION)
@@ -266,10 +267,10 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(PROMPT_INPUTS_OPTION)) {
+    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(SCRIPT_INPUTS_OPTION)) {
       throw new IllegalArgumentException(
-          "Cannot use both --no-prompt and --prompt-inputs options together. "
-              + "Use --no-prompt to accept defaults, or --prompt-inputs to provide specific values.");
+          "Cannot use both --no-prompt and --script-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --script-inputs to provide specific values.");
     }
 
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
@@ -322,7 +323,7 @@ public class RunExampleTool extends ToolBase {
       runCloudExample(
           new CloudExampleParams(
               cli.hasOption(NO_PROMPT_OPTION),
-              cli.getOptionValue(PROMPT_INPUTS_OPTION),
+              cli.getOptionValue(SCRIPT_INPUTS_OPTION),
               zkHost,
               port,
               startParams));
@@ -615,7 +616,7 @@ public class RunExampleTool extends ToolBase {
 
   void runCloudExample(CloudExampleParams params) throws Exception {
 
-    usingPromptInputs = params.promptInputs() != null;
+    usingScriptInputs = params.scriptInputs() != null;
     boolean prompt = !params.noPrompt();
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
@@ -629,20 +630,20 @@ public class RunExampleTool extends ToolBase {
     echo("\nWelcome to the SolrCloud example!\n");
 
     Scanner readInput = null;
-    if (usingPromptInputs) {
-      // Create a scanner from the provided prompts
-      String promptsValue = params.promptInputs();
-      InputStream promptsStream =
-          new ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
-      readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
+    if (usingScriptInputs) {
+      // Create a scanner from the provided script inputs
+      String scriptInputsValue = params.scriptInputs();
+      InputStream scriptInputsStream =
+          new ByteArrayInputStream(scriptInputsValue.getBytes(StandardCharsets.UTF_8));
+      readInput = new Scanner(scriptInputsStream, StandardCharsets.UTF_8);
       readInput.useDelimiter(",");
-      prompt = true; // Enable prompting code path, but reading from prompts instead of user
+      prompt = true; // Enable prompting code path, but reading from script inputs instead of user
     } else if (prompt) {
       readInput = new Scanner(userInput, StandardCharsets.UTF_8);
     }
 
     if (prompt) {
-      if (!usingPromptInputs) {
+      if (!usingScriptInputs) {
         echo(
             "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
       }
@@ -1232,10 +1233,10 @@ public class RunExampleTool extends ToolBase {
   protected String prompt(Scanner s, String prompt, String defaultValue) {
     echo(prompt);
     String nextInput;
-    if (usingPromptInputs) {
-      // Reading from prompts option - use next() instead of nextLine()
+    if (usingScriptInputs) {
+      // Reading from script-inputs option - use next() instead of nextLine()
       nextInput = s.hasNext() ? s.next() : null;
-      // Echo the value being used from prompts
+      // Echo the value being used from script inputs
       if (nextInput != null) {
         echo(nextInput);
       }

@@ -37,6 +37,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -55,6 +56,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
 
 /**
@@ -79,6 +81,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected transient List<TupleStream> solrStreams;
   protected transient TreeSet<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
+  // created when the StreamContext has none; shared by the SolrStreams
+  private transient SolrClientCache localSolrClientCache;
 
   // Used by parallel stream
   protected CloudSolrStream() {}
@@ -403,6 +407,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected void constructStreams() throws IOException {
     final ModifiableSolrParams mParams = adjustParams(new ModifiableSolrParams(params));
     mParams.set(DISTRIB, "false"); // We are the aggregator.
+    SolrClientCache contextCache =
+        streamContext != null ? streamContext.getSolrClientCache() : null;
+    if (contextCache == null && localSolrClientCache == null) {
+      // create here, not in each SolrStream, since they're opened on pool threads
+      localSolrClientCache = new SolrClientCache();
+    }
     try {
       final Stream<SolrStream> streamOfSolrStream;
       if (streamContext != null && streamContext.get("shards") != null) {
@@ -440,6 +450,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
                 ss.setDistrib(false);
               }
             }
+            if (contextCache == null) {
+              ss.setClientCache(localSolrClientCache);
+            }
             ss.setFieldMappings(this.fieldMappings);
             solrStreams.add(ss);
           });
@@ -468,6 +481,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         solrStream.close();
       }
     }
+    IOUtils.closeQuietly(localSolrClientCache);
+    localSolrClientCache = null;
   }
 
   /** Return the stream sort - ie, the order in which records are returned */

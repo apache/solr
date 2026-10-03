@@ -1,0 +1,12 @@
+title: >-
+  Replication file fetching treats both "/" and "\" as path separators when
+  validating a file name, and config/tlog file names must resolve within the
+  core's config or tlog directory.
+type: changed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18226
+    url: https://issues.apache.org/jira/browse/SOLR-18226
+important_notes:
+  - "A `filecontent` request to `/solr/{core}/replication` with `dirType=cf` or `dirType=tlogFile` must name a file that resolves inside the core's config or tlog directory; otherwise it is rejected."

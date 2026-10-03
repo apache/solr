@@ -135,6 +135,7 @@ def expand_jinja(text, vars=None):
         'docker_version_to_remove': state.get_docker_version_to_remove(),
         'editor': get_editor(),
         'rename_cmd': 'ren' if is_windows() else 'mv',
+        'open_cmd': 'start' if is_windows() else ('open' if is_mac() else 'xdg-open'),
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
@@ -457,6 +458,8 @@ class ReleaseState:
         if v.is_major_release():
             return 'main'
         elif v.is_minor_release():
+            if self.is_lts_release():
+                return self.get_lts_stable_branch_name()
             return self.get_stable_branch_name()
         elif v.major == Version.parse(self.latest_version).major:
             return self.get_minor_branch_name()
@@ -1871,7 +1874,8 @@ class Command(SecretYamlObject):
         return self.jinjaify(self.redirect)
 
     def get_cmd(self):
-        return self.jinjaify(self.cmd, join=True)
+        # Run python scripts with this interpreter (e.g. a venv), not whatever python3 is on PATH
+        return re.sub(r'^python3(?=\s)', lambda _: shlex.quote(sys.executable), self.jinjaify(self.cmd, join=True))
 
     def get_vars(self):
         myvars = {}

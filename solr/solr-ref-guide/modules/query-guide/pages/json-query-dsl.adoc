@@ -70,7 +70,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query" : "name:iPod"
 }'
@@ -96,7 +96,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query": "{!lucene df=name v=iPod}"
 }'
@@ -122,7 +122,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query": {
     "lucene": {
@@ -185,7 +185,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query" : {
         "boost": {
@@ -216,7 +216,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "boost": {
@@ -256,7 +256,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
@@ -292,7 +292,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
@@ -321,7 +321,7 @@ Example of referencing <<Additional Queries,additional queries>>, <<Tagging in J
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "queries": {
        "query_filters":[                                            // 1.
@@ -353,7 +353,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
@@ -395,7 +395,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "queries": {
         "electronic": {"field": {"f":"cat", "query":"electronics"}},
@@ -442,7 +442,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/select -d '
+curl http://localhost:8983/solr/techproducts/select -d '
 {
   "query": "*:*",
   "filter": [

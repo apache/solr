@@ -302,7 +302,7 @@ public class StreamTool extends ToolBase {
       streamContext.getSolrClientCache().close();
     }
 
-    echoIfVerbose("StreamTool -- Done.");
+    echoIfVerbose("Done.");
   }
 
   private StreamContext createStreamContext(
