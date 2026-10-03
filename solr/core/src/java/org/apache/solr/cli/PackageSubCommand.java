@@ -52,8 +52,8 @@ abstract class PackageSubCommand extends ToolBase {
     String credentials =
         credentialsOptions.credentials != null
             ? credentialsOptions.credentials
-            : packageTool.credentialOptions != null
-                ? packageTool.credentialOptions.credentials
+            : packageTool.credentialsOptions != null
+                ? packageTool.credentialsOptions.credentials
                 : null;
 
     packageTool.runWithManagers(

@@ -19,7 +19,7 @@
 // To update: modify the @Command/@Option annotations in the Java source, then run:
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
 
-= bin/solr package
+= bin/solr package undeploy
 :page-toclevels: 2
 
 [WARNING]
@@ -33,8 +33,9 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 == Synopsis
 
 ....
-bin/solr package [-hv] [-u=<credentials>] [-s=<solrConnection> |
-                 --solr-url=<solrUrl> | -z=<zkHost>] [COMMAND]
+bin/solr package undeploy [-hv] [--cluster] [--collections=COLLECTIONS]
+                          [-u=<credentials>] [-s=<solrConnection> |
+                          --solr-url=<solrUrl> | -z=<zkHost>] PACKAGE
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -42,12 +43,18 @@ bin/solr package [-hv] [-u=<credentials>] [-s=<solrConnection> |
 // tag::picocli-generated-man-section-description[]
 == Description
 
-
+Undeploy a package from specified collection(s) or at cluster level.
 
 // end::picocli-generated-man-section-description[]
 
 // tag::picocli-generated-man-section-options[]
 == Options
+
+*--cluster*::
+  Specifies that this action should affect cluster-level plugins only.
+
+*--collections*=_COLLECTIONS_::
+  Collections on which this package needs to be undeployed from, excluding cluster level plugins
 
 *-h*, *--help*::
   Print this help message and exit.
@@ -69,61 +76,28 @@ bin/solr package [-hv] [-u=<credentials>] [-s=<solrConnection> |
 
 // end::picocli-generated-man-section-options[]
 
-// tag::picocli-generated-man-section-commands[]
-== Commands
+// tag::picocli-generated-man-section-arguments[]
+== Arguments
 
-xref:cli/solr-package-add-repo.adoc[*add-repo*]::
-  Add a package repository to Solr.
+_PACKAGE_::
+  Package name
 
-xref:cli/solr-package-add-key.adoc[*add-key*]::
-  Add a trusted key to Solr.
-
-xref:cli/solr-package-list-installed.adoc[*list-installed*]::
-  Print a list of packages installed in Solr.
-
-xref:cli/solr-package-list-available.adoc[*list-available*]::
-  Print a list of packages available in the repositories.
-
-xref:cli/solr-package-list-deployed.adoc[*list-deployed*]::
-  Print packages deployed on a collection, or collections where a package is deployed.
-
-xref:cli/solr-package-install.adoc[*install*]::
-  Install a package into Solr.
-
-xref:cli/solr-package-deploy.adoc[*deploy*]::
-  Deploy an installed package to collections or at cluster level.
-
-xref:cli/solr-package-undeploy.adoc[*undeploy*]::
-  Undeploy a package from specified collection(s) or at cluster level.
-
-xref:cli/solr-package-uninstall.adoc[*uninstall*]::
-  Uninstall any package with a specified version from Solr.
-
-// end::picocli-generated-man-section-commands[]
+// end::picocli-generated-man-section-arguments[]
 
 // tag::picocli-generated-man-section-exit-status[]
 == Exit Codes
 *0*::
-  Operation completed successfully.
+   Operation completed successfully.
 
 *1*::
-  Operation failed; check output for details.
+   Operation failed; check output for details.
 
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]
 == Examples
 [%hardbreaks]
-  # Add a package repository
-  bin/solr package add-repo myrepo https://my.repo.example/repo
-
-[%hardbreaks]
-  # Install a package and deploy it to a collection
-  bin/solr package install mypkg:1.0.0
-  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y
-
-[%hardbreaks]
-  # List packages deployed on a collection
-  bin/solr package list-deployed -c myCollection
+  # Undeploy a package from a collection
+  bin/solr package undeploy mypkg --collections myCollection
 
 // end::picocli-generated-man-section-footer[]
