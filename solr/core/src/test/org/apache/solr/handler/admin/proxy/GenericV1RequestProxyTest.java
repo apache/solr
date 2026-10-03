@@ -25,7 +25,9 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -42,25 +44,107 @@ public class GenericV1RequestProxyTest extends SolrTestCaseJ4 {
 
   private ModifiableSolrParams solrParams;
   private SolrQueryRequest mockRequest;
+  private CoreContainer mockStandalone;
+  private CoreContainer mockCloud;
 
   @Before
   public void setUpMocks() {
     solrParams = new ModifiableSolrParams();
     mockRequest = mock(SolrQueryRequest.class);
+    mockStandalone = mock(CoreContainer.class);
+    mockCloud = mock(CoreContainer.class);
 
     when(mockRequest.getParams()).thenReturn(solrParams);
+    when(mockStandalone.isZooKeeperAware()).thenReturn(false);
+    when(mockStandalone.getZkController()).thenReturn(null);
+    when(mockCloud.isZooKeeperAware()).thenReturn(true);
+  }
+
+  // Mirrors how the broadcast endpoints (LoggingHandler, SystemInfoHandler) construct this
+  // proxy: they opt in to treating standalone "all" as this node.
+  private GenericV1RequestProxy broadcastProxy(CoreContainer cc) {
+    return new GenericV1RequestProxy(cc, mockRequest, new SolrQueryResponse()) {
+      @Override
+      protected boolean standaloneAllMeansLocal() {
+        return true;
+      }
+    };
   }
 
   @Test
-  public void shouldProxyReflectsPresenceOfNodesParam() {
-    var proxy = new GenericV1RequestProxy(null, mockRequest, new SolrQueryResponse());
+  public void shouldProxyIsFalseWhenNodesParamAbsent() {
+    var proxy = new GenericV1RequestProxy(mockStandalone, mockRequest, new SolrQueryResponse());
     assertFalse(
         "Expected 'shouldProxy' to return false when 'nodes' param is absent", proxy.shouldProxy());
+  }
 
-    solrParams.add("nodes", "localhost:7574_solr");
-    proxy = new GenericV1RequestProxy(null, mockRequest, new SolrQueryResponse());
+  @Test
+  public void shouldProxyIsTrueWhenStandaloneAndNodesAllByDefault() {
+    solrParams.add("nodes", "all");
+    var proxy = new GenericV1RequestProxy(mockStandalone, mockRequest, new SolrQueryResponse());
     assertTrue(
-        "Expected 'shouldProxy' to return true when 'nodes' param is present", proxy.shouldProxy());
+        "By default, standalone nodes=all still 'proxies' so validateNodeNames can reject it; "
+            + "only the broadcast endpoints opt in to treating it as local",
+        proxy.shouldProxy());
+  }
+
+  @Test
+  public void shouldProxyIsFalseWhenStandaloneAndNodesAllWithOptIn() {
+    solrParams.add("nodes", "all");
+    var proxy = broadcastProxy(mockStandalone);
+    assertFalse("Expected standalone nodes=all to be handled locally", proxy.shouldProxy());
+  }
+
+  @Test
+  public void shouldProxyIsTrueWhenStandaloneAndExplicitNodes() {
+    solrParams.add("nodes", "localhost:7574_solr");
+    var proxy = new GenericV1RequestProxy(mockStandalone, mockRequest, new SolrQueryResponse());
+    assertTrue(
+        "standalone nodes=<host> still proxies so validateNodeNames can reject it",
+        proxy.shouldProxy());
+  }
+
+  @Test
+  public void destinationNodesThrowsWhenStandaloneAndExplicitNodes() {
+    solrParams.add("nodes", "localhost:7574_solr");
+    var proxy = new GenericV1RequestProxy(mockStandalone, mockRequest, new SolrQueryResponse());
+    SolrException ex = expectThrows(SolrException.class, proxy::getDestinationNodes);
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("nodes"));
+    assertTrue(ex.getMessage().contains("SolrCloud"));
+    // The base class keeps the strict default, so the message names no 'all' exception
+    assertFalse(ex.getMessage().contains("treated as this node"));
+  }
+
+  @Test
+  public void destinationNodesThrowsWhenStandaloneAndNodesAllByDefault() {
+    solrParams.add("nodes", "all");
+    var proxy = new GenericV1RequestProxy(mockStandalone, mockRequest, new SolrQueryResponse());
+    SolrException ex = expectThrows(SolrException.class, proxy::getDestinationNodes);
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("SolrCloud"));
+    assertFalse(ex.getMessage().contains("treated as this node"));
+  }
+
+  @Test
+  public void destinationNodesThrowsWhenStandaloneAndExplicitNodesWithOptIn() {
+    solrParams.add("nodes", "localhost:7574_solr");
+    var proxy = broadcastProxy(mockStandalone);
+    SolrException ex = expectThrows(SolrException.class, proxy::getDestinationNodes);
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("nodes"));
+    assertTrue(ex.getMessage().contains("SolrCloud"));
+    // With the opt-in, the message names the 'all' exception
+    assertTrue(ex.getMessage().contains("treated as this node"));
+  }
+
+  @Test
+  public void shouldProxyIsTrueWhenCloudAndNodesPresent() {
+    solrParams.add("nodes", "localhost:7574_solr");
+    var proxy = new GenericV1RequestProxy(mockCloud, mockRequest, new SolrQueryResponse());
+    assertTrue(
+        "Expected 'shouldProxy' to return true when 'nodes' param is present in SolrCloud",
+        proxy.shouldProxy());
   }
 
   // ---- getDestinationNodes() tests ----

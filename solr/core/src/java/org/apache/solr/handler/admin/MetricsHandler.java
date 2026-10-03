@@ -155,6 +155,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   public static RemoteRequestProxy createMetricProxy(
       CoreContainer cc, SolrQueryRequest req, SolrQueryResponse rsp) {
+    // Note: unlike the logging/system-info endpoints, this proxy deliberately keeps the
+    // strict RemoteRequestProxy default for standalone mode. The metrics 'node' parameter
+    // selects destination nodes for a metrics scrape rather than broadcasting a change, so
+    // standalone 'node' values (including 'all') are rejected with a 400 instead of meaning
+    // "this node". SolrCloud behavior is unaffected: there, 'node=all' fans out to all live
+    // nodes via the shared validator.
     return new GenericV1RequestProxy(cc, req, rsp) {
 
       // Metric requests use 'node' to proxy rather than the generally accepted "nodes"

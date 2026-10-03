@@ -42,11 +42,7 @@ public abstract class V2SolrRequestBasedProxy<T> extends RemoteRequestProxy {
 
   @Override
   public boolean shouldProxy() {
-    String nodeNames = solrRequest.getParams().get(PARAM_NODES);
-    if (nodeNames == null || nodeNames.isEmpty()) {
-      return false; // No nodes parameter, handle locally
-    }
-    return true;
+    return shouldProxyTo(solrRequest.getParams().get(PARAM_NODES));
   }
 
   @Override

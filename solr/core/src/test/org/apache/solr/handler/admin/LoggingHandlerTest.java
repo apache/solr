@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -46,6 +47,9 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   private final String A_LOGGER_NAME = PARENT_LOGGER_NAME + ".BogusClass_A";
   private final String B_LOGGER_NAME = PARENT_LOGGER_NAME + ".BogusClass_B";
   private final String BX_LOGGER_NAME = B_LOGGER_NAME + ".BogusNestedClass_X";
+  // Dedicated logger for the nodes-param tests below, so their set/unset cycles do not disturb
+  // the LoggerConfig shape that testLogLevelHandlerOutput asserts for A, B and BX.
+  private final String C_LOGGER_NAME = PARENT_LOGGER_NAME + ".BogusClass_C";
 
   // TODO: This only tests Log4j at the moment, as that's what's defined
   // through the CoreContainer.
@@ -189,6 +193,55 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
       assertEquals(Level.DEBUG, aLogger.getLevel());
       assertEquals(Level.DEBUG, bLogger.getLevel());
       assertEquals(Level.DEBUG, bxLogger.getLevel());
+    }
+  }
+
+  @Test
+  public void testSetLevelWithNodesAllDoesNotNpeInStandalone() throws Exception {
+    assumeTrue("Test only works when log4j is in use", LogManager.getContext(false) != null);
+    Logger cLogger = LogManager.getLogger(C_LOGGER_NAME);
+
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
+    mparams.set("set", C_LOGGER_NAME + ":TRACE");
+    mparams.set("nodes", "all");
+
+    NamedList<Object> rsp =
+        client.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+
+    @SuppressWarnings({"unchecked"})
+    List<Map<String, Object>> updatedLoggerLevel = (List<Map<String, Object>>) rsp._get("loggers");
+    assertLoggerLevel(updatedLoggerLevel, C_LOGGER_NAME, "TRACE", true);
+    assertEquals(Level.TRACE, cLogger.getLevel());
+
+    mparams.set("set", C_LOGGER_NAME + ":unset");
+    client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+    assertEquals(Level.DEBUG, cLogger.getLevel());
+  }
+
+  @Test
+  public void testSetLevelWithExplicitNodesIsBadRequestInStandalone() throws Exception {
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
+    mparams.set("set", C_LOGGER_NAME + ":TRACE");
+    mparams.set("nodes", "example.com:8983_solr");
+
+    try {
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  client.request(
+                      new GenericSolrRequest(
+                          SolrRequest.METHOD.GET, "/admin/info/logging", mparams)));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage().contains("SolrCloud"));
+    } finally {
+      mparams.set("set", C_LOGGER_NAME + ":unset");
+      mparams.remove("nodes");
+      client.request(
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
     }
   }
 
