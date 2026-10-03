@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -59,7 +60,7 @@ public class CoreScopedAuthStandaloneTest extends SolrTestCase {
     }
 
     // each role may read only the core named in its permission
-    String securityJson =
+    String securityJsonTemplate =
         """
         {
           "authentication": {
@@ -75,16 +76,19 @@ public class CoreScopedAuthStandaloneTest extends SolrTestCase {
             ]
           }
         }
-        """
-            .formatted(
-                READER_USER,
-                Sha256AuthenticationProvider.getSaltedHashedValue(READER_PASS),
-                OTHER_USER,
-                Sha256AuthenticationProvider.getSaltedHashedValue(OTHER_PASS),
-                READER_USER,
-                OTHER_USER,
-                CORE_1,
-                CORE_2);
+        """;
+    String securityJson =
+        String.format(
+            Locale.ROOT,
+            securityJsonTemplate,
+            READER_USER,
+            Sha256AuthenticationProvider.getSaltedHashedValue(READER_PASS),
+            OTHER_USER,
+            Sha256AuthenticationProvider.getSaltedHashedValue(OTHER_PASS),
+            READER_USER,
+            OTHER_USER,
+            CORE_1,
+            CORE_2);
     Files.writeString(homeDir.resolve("security.json"), securityJson, StandardCharsets.UTF_8);
     jetty = new JettySolrRunner(homeDir.toString(), 0);
     jetty.start();
