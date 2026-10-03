@@ -88,6 +88,28 @@ Use one of the valid short names to get syntax highlighting for that language.
 
 Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible.
 When in doubt, choose `text`, or leave it blank.
+Commands are the exception: see <<Command Blocks>>.
+
+=== Command Blocks
+
+Use the same block style for every `curl`, `bin/solr` or other shell command, so readers see one convention across the Guide:
+
+* A block with commands only uses `bash` and no prompt, so it can be copied as is.
+* A block that also shows the output of the commands uses `console`, with `$` at the start of each command line, so the commands stand out from the output.
+* A block that shows output alone uses `text`.
+* The Windows variant of a command uses `powershell`.
+
+.Example Command Blocks
+[source]
+----
+[source,bash]
+curl "http://localhost:8983/solr/films/select?q=*:*"
+
+[,console]
+$ bin/solr create -c films --shards 2 --replication-factor 2
+Creating new collection 'films' using command:
+http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=2&replicationFactor=2&collection.configName=films
+----
 
 === Importing Code Snippets from Other Files
 
