@@ -1130,12 +1130,15 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("fl", "id");
 
     // Warm up: run page 1 once so steady-state caches are populated.
-    assertQ(req(params, "start", "0"), "*[count(/response/result/doc)=1]");
+    // each page shows one collapsed head and expands the other document of its group
+    final String onePerPage = "*[count(/response/result/doc)=1]";
+    final String oneExpanded = "*[count(/response/lst[@name='expanded']/result/doc)=1]";
+    assertQ(req(params, "start", "0"), onePerPage, oneExpanded);
     int sizeAfterPage1 = filterCacheSize();
 
-    // Fetch subsequent pages; each builds a unique per-page group query.
-    assertQ(req(params, "start", "1"), "*[count(/response/result/doc)=1]");
-    assertQ(req(params, "start", "2"), "*[count(/response/result/doc)=1]");
+    // Fetch subsequent pages; each page expands a different group.
+    assertQ(req(params, "start", "1"), onePerPage, oneExpanded);
+    assertQ(req(params, "start", "2"), onePerPage, oneExpanded);
     int sizeAfterPage3 = filterCacheSize();
 
     assertEquals(
