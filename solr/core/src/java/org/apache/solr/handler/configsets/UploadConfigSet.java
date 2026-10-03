@@ -148,9 +148,9 @@ public class UploadConfigSet extends ConfigSetAPIBase
 
   /**
    * Whether a normalized zip entry path stays inside the configset it is uploaded to. Absolute
-   * paths and paths with "." or ".." segments are unsafe: the filesystem backend would resolve
-   * them outside of the configset directory, and the ZooKeeper backend cannot use them as znode
-   * path segments at all.
+   * paths and paths with "." or ".." segments are unsafe: the filesystem backend would resolve them
+   * outside of the configset directory, and the ZooKeeper backend cannot use them as znode path
+   * segments at all.
    */
   static boolean isSafeZipEntryPath(String normalizedPath) {
     if (normalizedPath.startsWith("/")) {
