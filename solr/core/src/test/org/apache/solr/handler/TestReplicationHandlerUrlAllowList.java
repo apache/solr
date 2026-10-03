@@ -16,10 +16,13 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
+import static org.apache.solr.SolrTestCaseJ4.TEST_URL_ALLOW_LIST;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import java.nio.file.Path;
 import java.util.List;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -29,6 +32,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -37,7 +41,19 @@ import org.junit.Test;
  * ReplicationTestHelper#createAndStartJetty} and must be proven without that annotation.
  */
 @SuppressSSL
-public class TestReplicationHandlerUrlAllowList extends SolrTestCaseJ4 {
+public class TestReplicationHandlerUrlAllowList extends SolrTestCase {
+
+  // SolrTestCaseJ4#buildUrl equivalent; this class is @SuppressSSL, so the scheme is always http.
+  private static String buildUrl(int port) {
+    return "http://127.0.0.1:" + port + "/solr";
+  }
+
+  @BeforeClass
+  public static void beforeClass() {
+    // The replication solrconfig.xml resolves solr.tests.* placeholders; the J4 base class
+    // provided their values via newRandomConfig().
+    SolrTestCaseJ4.newRandomConfig();
+  }
 
   @Test
   public void testReplicationFetchHonorsTestUrlAllowList() throws Exception {
