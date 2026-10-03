@@ -40,11 +40,7 @@ public class TestConfigHighlightOutput extends SolrTestCaseJ4 {
     // the child types are keys, even though several children share the name "simple"
     for (String type :
         List.of(
-            "fragmenter",
-            "formatter",
-            "fragListBuilder",
-            "fragmentsBuilder",
-            "boundaryScanner")) {
+            "fragmenter", "formatter", "fragListBuilder", "fragmentsBuilder", "boundaryScanner")) {
       assertNotNull("missing child type " + type, ((Map<?, ?>) highlighting).get(type));
     }
     assertFalse(((Map<?, ?>) highlighting).containsKey("simple"));
