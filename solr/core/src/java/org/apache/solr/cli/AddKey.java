@@ -19,7 +19,7 @@ package org.apache.solr.cli;
 
 import java.nio.file.Path;
 
-/** Supports package add-repo command in the bin/solr script. */
+/** Supports package add-key command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "add-key",

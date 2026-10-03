@@ -17,7 +17,7 @@
 
 package org.apache.solr.cli;
 
-/** Supports package add-repo command in the bin/solr script. */
+/** Supports package uninstall command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "uninstall",

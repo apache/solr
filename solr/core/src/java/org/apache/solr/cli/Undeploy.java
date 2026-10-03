@@ -19,7 +19,7 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.cli.SolrCLI.printRed;
 
-/** Supports package add-repo command in the bin/solr script. */
+/** Supports package undeploy command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "undeploy",
