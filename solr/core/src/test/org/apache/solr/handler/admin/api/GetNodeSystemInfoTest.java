@@ -20,8 +20,13 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SystemApi;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -54,5 +59,41 @@ public class GetNodeSystemInfoTest extends SolrTestCaseJ4 {
     assertEquals(0, infoRsp.responseHeader.status);
     assertEquals("std", infoRsp.mode);
     assertEquals(Version.LATEST.toString(), infoRsp.lucene.luceneSpecVersion);
+  }
+
+  @Test
+  public void testNodesAllIsTreatedAsLocalInStandalone() throws Exception {
+    final var req = new SystemApi.GetNodeSystemInfo();
+    req.setNodes("all");
+
+    final var infoRsp = req.process(solrTestRule.getSolrClient(null));
+
+    assertEquals(0, infoRsp.responseHeader.status);
+    assertEquals("std", infoRsp.mode);
+  }
+
+  @Test
+  public void testExplicitNodesIsBadRequestInStandalone() throws Exception {
+    final var req = new SystemApi.GetNodeSystemInfo();
+    req.setNodes("example.com:8983_solr");
+
+    final var client = solrTestRule.getSolrClient(null);
+    SolrException ex = expectThrows(SolrException.class, () -> req.process(client));
+
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("SolrCloud"));
+  }
+
+  @Test
+  public void testV1NodesAllIsTreatedAsLocalInStandalone() throws Exception {
+    final var params = new ModifiableSolrParams();
+    params.set("nodes", "all");
+
+    NamedList<Object> rsp =
+        solrTestRule
+            .getSolrClient(null)
+            .request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params));
+
+    assertEquals("std", rsp.get("mode"));
   }
 }

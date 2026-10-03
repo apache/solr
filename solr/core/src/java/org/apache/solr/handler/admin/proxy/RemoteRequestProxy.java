@@ -141,10 +141,6 @@ public abstract class RemoteRequestProxy {
    * reject it with 400.
    */
   protected boolean shouldProxyTo(String nodeNames) {
-    return shouldProxyTo(nodeNames, PARAM_NODES);
-  }
-
-  protected boolean shouldProxyTo(String nodeNames, String paramName) {
     if (nodeNames == null || nodeNames.isEmpty()) {
       return false;
     }

@@ -44,8 +44,7 @@ public class GenericV1RequestProxy extends RemoteRequestProxy {
 
   @Override
   public boolean shouldProxy() {
-    String paramName = getDestinationNodeParamName();
-    return shouldProxyTo(params.get(paramName), paramName);
+    return shouldProxyTo(params.get(getDestinationNodeParamName()));
   }
 
   @Override
