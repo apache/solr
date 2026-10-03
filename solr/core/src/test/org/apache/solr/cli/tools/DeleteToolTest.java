@@ -1,0 +1,236 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.cli.tools;
+
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.util.SecurityJson;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class DeleteToolTest extends SolrCloudTestCase {
+
+  @BeforeClass
+  public static void setupClusterWithSecurityEnabled() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .withSecurityJson(SecurityJson.SIMPLE)
+        .configure();
+  }
+
+  private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
+    return req;
+  }
+
+  @Test
+  public void testDeleteCollectionWithBasicAuth() throws Exception {
+
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                "testDeleteCollectionWithBasicAuth", "conf", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testDeleteCollectionWithBasicAuth",
+        clusterShape(1, 1));
+
+    String[] args = {
+      "delete",
+      "-c",
+      "testDeleteCollectionWithBasicAuth",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+  }
+
+  @Test
+  public void testDeleteCollectionWithBasicAuthAndConnectionString() throws Exception {
+    String[] connStrings = {
+      getZookeeperSolrConnection().toString(), getHttpSolrConnection().toString()
+    };
+    for (String connectionString : connStrings) {
+      withBasicAuth(
+              CollectionAdminRequest.createCollection(
+                  "testDeleteCollectionWithBasicAuth", "conf", 1, 1))
+          .processAndWait(cluster.getSolrClient(), 10);
+      waitForState(
+          "Expected collection to be created with 1 shard and 1 replicas",
+          "testDeleteCollectionWithBasicAuth",
+          clusterShape(1, 1));
+
+      String[] args = {
+        "delete",
+        "-c",
+        "testDeleteCollectionWithBasicAuth",
+        "-s",
+        connectionString,
+        "--credentials",
+        SecurityJson.USER_PASS,
+        "--verbose"
+      };
+      assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+    }
+  }
+
+  @Test
+  public void testFailsToDeleteProtectedCollection() throws Exception {
+
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                "testFailsToDeleteProtectedCollection", "conf", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testFailsToDeleteProtectedCollection",
+        clusterShape(1, 1));
+
+    String[] args = {
+      "delete",
+      "-c",
+      "testFailsToDeleteProtectedCollection",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--verbose"
+    };
+    assertEquals(1, CLITestHelper.runTool(args, DeleteTool.class));
+  }
+
+  @Test
+  public void testFailsToDeleteNonexistentCollection() throws Exception {
+    String[] args = {
+      "delete",
+      "-c",
+      "testFailsToDeleteNonexistentCollection-does-not-exist",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(1, CLITestHelper.runTool(args, DeleteTool.class));
+  }
+
+  @Test
+  public void testForceFlagNoLongerBypassesInUseCheck() throws Exception {
+    String sharedConfigName = "testForceFlagNoLongerBypassesInUseCheck-config";
+    cluster.uploadConfigSet(configset("cloud-minimal"), sharedConfigName);
+
+    withBasicAuth(
+            CollectionAdminRequest.createCollection("testForceFlagInUseA", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    withBasicAuth(
+            CollectionAdminRequest.createCollection("testForceFlagInUseB", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testForceFlagInUseA",
+        clusterShape(1, 1));
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testForceFlagInUseB",
+        clusterShape(1, 1));
+
+    String[] args = {
+      "delete",
+      "-c",
+      "testForceFlagInUseA",
+      "--delete-config",
+      "--force",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    // --force is a no-op now: still accepted (doesn't break arg parsing), but doesn't bypass the
+    // still-in-use check -- the collection delete itself still succeeds.
+    assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+
+    assertTrue(
+        "configset should still exist since it's still used by testForceFlagInUseB, "
+            + "even with --force",
+        cluster.getZkClient().exists("/configs/" + sharedConfigName));
+  }
+
+  @Test
+  public void testDeleteCollectionSkipsConfigDeleteWhileStillInUse() throws Exception {
+    String sharedConfigName = "testDeleteCollectionSkipsConfigDeleteWhileStillInUse-config";
+    cluster.uploadConfigSet(configset("cloud-minimal"), sharedConfigName);
+
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                "testDeleteConfigInUseA", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                "testDeleteConfigInUseB", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testDeleteConfigInUseA",
+        clusterShape(1, 1));
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testDeleteConfigInUseB",
+        clusterShape(1, 1));
+
+    String[] deleteFirstArgs = {
+      "delete",
+      "-c",
+      "testDeleteConfigInUseA",
+      "--delete-config",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(0, CLITestHelper.runTool(deleteFirstArgs, DeleteTool.class));
+
+    // still used by testDeleteConfigInUseB, so it should have been left alone
+    assertTrue(
+        "configset should still exist since it's still used by testDeleteConfigInUseB",
+        cluster.getZkClient().exists("/configs/" + sharedConfigName));
+
+    String[] deleteSecondArgs = {
+      "delete",
+      "-c",
+      "testDeleteConfigInUseB",
+      "--delete-config",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(0, CLITestHelper.runTool(deleteSecondArgs, DeleteTool.class));
+
+    // no longer used by any collection, so it should now be gone
+    assertFalse(
+        "configset should have been deleted since no collection uses it anymore",
+        cluster.getZkClient().exists("/configs/" + sharedConfigName));
+  }
+}
