@@ -187,6 +187,28 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         ((Date) d.getFieldValue("not_in_schema")).toInstant());
   }
 
+  public void testParseDateNestedChildDocuments() throws Exception {
+    // SOLR-16655: the child and grandchild used to keep the string and fail later when indexed
+    String dateString = "2015-10-02T14:52:37";
+    Instant expectedInstant = Instant.parse(dateString + "Z");
+
+    SolrInputDocument grandChild = doc(f("id", "16655-gc"), f("dateUTC_dt", dateString));
+    SolrInputDocument child = doc(f("id", "16655-c"), f("dateUTC_dt", dateString));
+    child.addChildDocument(grandChild);
+    SolrInputDocument root = doc(f("id", "16655"), f("dateUTC_dt", dateString));
+    root.addChildDocument(child);
+
+    SolrInputDocument d = processAdd("parse-date-many-formats-no-run-processor", root);
+    assertNotNull(d);
+    for (SolrInputDocument parsed : new SolrInputDocument[] {root, child, grandChild}) {
+      Object value = parsed.getFieldValue("dateUTC_dt");
+      assertTrue(
+          "doc " + parsed.getFieldValue("id") + " date was not mutated to a Date: " + value,
+          value instanceof Date);
+      assertEquals(expectedInstant, ((Date) value).toInstant());
+    }
+  }
+
   public void testParseDateManyFormats() throws Exception {
     String[] formatExamples = {
       "2010-01-15T00:00:00.000Z",
