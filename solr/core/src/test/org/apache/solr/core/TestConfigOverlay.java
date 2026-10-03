@@ -41,6 +41,7 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("query.queryResultWindowSize", false, null));
     assertTrue(isEditableProp("query.queryResultMaxDocsCached", false, null));
     assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
+    assertTrue(isEditableProp("query.enableDocValuesIteratorCache", false, null));
     assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
 
     assertTrue(
