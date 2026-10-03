@@ -1,5 +1,5 @@
-title: >
-  Detangle Outgoing core dependencies to Solr CLI
+title:
+  Stop PackageManager and test-framework from depending on CLI
 type: other
 authors:
   - name: Jalaz Kumar
