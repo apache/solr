@@ -1,5 +1,5 @@
-title: Make core-scoped authorization rules work in Solr standalone mode
-type: fixed
+title: Authorization permissions scoped to a core with the collection field are now enforced in standalone mode, where they were silently ignored
+type: changed
 authors:
   - name: Nick Shanin
 links:

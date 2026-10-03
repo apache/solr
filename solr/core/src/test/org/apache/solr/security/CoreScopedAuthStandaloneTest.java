@@ -19,10 +19,10 @@ package org.apache.solr.security;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -32,57 +32,60 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Verifies that core-scoped authorization rules work in standalone mode (SOLR-13097). In standalone
- * mode there are no collections, so the authorization context must carry the serving core's name
- * for rules scoped via the "collection" field to match.
+ * Tests that authorization rules scoped to a core with the "collection" field apply in standalone
+ * mode, where the core name stands in for the collection.
  */
 public class CoreScopedAuthStandaloneTest extends SolrTestCase {
 
-  private static JettySolrRunner jetty;
+  private static final String CORE_1 = "collection1";
+  private static final String CORE_2 = "collection2";
 
   private static final String READER_USER = "reader";
   private static final String READER_PASS = "ReaderPass123";
   private static final String OTHER_USER = "other";
   private static final String OTHER_PASS = "OtherPass123";
 
+  private static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path homeDir = createTempDir("corescoped-auth").toAbsolutePath();
-    // Create the collection1 core by copying the _default configset; Jetty auto-discovers it.
-    Path confSrc = Path.of("../../../src/test-files/solr/configsets/_default/conf");
-    assertTrue("configset not found at " + confSrc.toAbsolutePath(), Files.isDirectory(confSrc));
-    Path coreDir = homeDir.resolve("collection1");
-    copyDir(confSrc, coreDir.resolve("conf"));
-    Files.writeString(coreDir.resolve("core.properties"), "name=collection1\n");
-    // Write security.json before startup: basic auth plus a read permission scoped to the
-    // "collection1" core, granted only to the "corereader" role.
+    Path confSrc = SolrTestCaseJ4.configset("_default");
+    assertTrue("configset not found at " + confSrc, Files.isDirectory(confSrc));
+    for (String core : List.of(CORE_1, CORE_2)) {
+      Path coreDir = homeDir.resolve(core);
+      copyDir(confSrc, coreDir.resolve("conf"));
+      Files.writeString(coreDir.resolve("core.properties"), "name=" + core + "\n");
+    }
+
+    // each role may read only the core named in its permission
     String securityJson =
-        "{"
-            + "'authentication':{"
-            + "  'class':'solr.BasicAuthPlugin',"
-            + "  'credentials':{"
-            + "    '"
-            + READER_USER
-            + "':'"
-            + Sha256AuthenticationProvider.getSaltedHashedValue(READER_PASS)
-            + "',"
-            + "    '"
-            + OTHER_USER
-            + "':'"
-            + Sha256AuthenticationProvider.getSaltedHashedValue(OTHER_PASS)
-            + "'"
-            + "  }},"
-            + "'authorization':{"
-            + "  'class':'solr.RuleBasedAuthorizationPlugin',"
-            + "  'user-role':{'"
-            + READER_USER
-            + "':'corereader','"
-            + OTHER_USER
-            + "':'otherrole'},"
-            + "  'permissions':[{'name':'read','role':'corereader','collection':'collection1'}]"
-            + "}}";
-    Files.writeString(
-        homeDir.resolve("security.json"), securityJson.replace('\'', '"'), StandardCharsets.UTF_8);
+        """
+        {
+          "authentication": {
+            "class": "solr.BasicAuthPlugin",
+            "credentials": {"%s": "%s", "%s": "%s"}
+          },
+          "authorization": {
+            "class": "solr.RuleBasedAuthorizationPlugin",
+            "user-role": {"%s": "reader-role", "%s": "other-role"},
+            "permissions": [
+              {"name": "read", "role": "reader-role", "collection": "%s"},
+              {"name": "read", "role": "other-role", "collection": "%s"}
+            ]
+          }
+        }
+        """
+            .formatted(
+                READER_USER,
+                Sha256AuthenticationProvider.getSaltedHashedValue(READER_PASS),
+                OTHER_USER,
+                Sha256AuthenticationProvider.getSaltedHashedValue(OTHER_PASS),
+                READER_USER,
+                OTHER_USER,
+                CORE_1,
+                CORE_2);
+    Files.writeString(homeDir.resolve("security.json"), securityJson, StandardCharsets.UTF_8);
     jetty = new JettySolrRunner(homeDir.toString(), 0);
     jetty.start();
   }
@@ -108,27 +111,34 @@ public class CoreScopedAuthStandaloneTest extends SolrTestCase {
     }
   }
 
-  private QueryResponse queryAs(String user, String pass) throws Exception {
-    SolrClient client = jetty.getSolrClient();
+  private static QueryResponse queryAs(String user, String pass, String core) throws Exception {
     QueryRequest req = new QueryRequest(new SolrQuery("*:*"));
-    req.setBasicAuthCredentials(user, pass);
-    return req.process(client, "collection1");
-  }
-
-  @Test
-  public void testCoreScopedRuleAllowsConfiguredRole() throws Exception {
-    QueryResponse rsp = queryAs(READER_USER, READER_PASS);
-    assertEquals(0, rsp.getStatus());
-  }
-
-  @Test
-  public void testCoreScopedRuleDeniesOtherRole() throws Exception {
-    try {
-      queryAs(OTHER_USER, OTHER_PASS);
-      fail("Expected authorization failure for a role without the core-scoped permission");
-    } catch (SolrServerException | RemoteSolrException e) {
-      // expected: 403 Forbidden
-      assertTrue("Expected 403 but got: " + e.getMessage(), e.getMessage().contains("403"));
+    if (user != null) {
+      req.setBasicAuthCredentials(user, pass);
     }
+    return req.process(jetty.getSolrClient(), core);
+  }
+
+  private static void assertDenied(String user, String pass, String core, int expectedCode) {
+    RemoteSolrException e =
+        expectThrows(RemoteSolrException.class, () -> queryAs(user, pass, core));
+    assertEquals(user + " on " + core, expectedCode, e.code());
+  }
+
+  @Test
+  public void testScopedRuleAllowsItsRoleOnItsCore() throws Exception {
+    assertEquals(0, queryAs(READER_USER, READER_PASS, CORE_1).getStatus());
+    assertEquals(0, queryAs(OTHER_USER, OTHER_PASS, CORE_2).getStatus());
+  }
+
+  @Test
+  public void testScopedRuleDeniesOtherRolesOnTheCore() {
+    assertDenied(OTHER_USER, OTHER_PASS, CORE_1, 403);
+    assertDenied(READER_USER, READER_PASS, CORE_2, 403);
+  }
+
+  @Test
+  public void testRequestWithoutCredentialsIsRejected() {
+    assertDenied(null, null, CORE_1, 401);
   }
 }
