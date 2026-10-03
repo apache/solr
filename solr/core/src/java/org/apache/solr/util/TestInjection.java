@@ -129,6 +129,8 @@ public class TestInjection {
 
   public static volatile String prepRecoveryOpPauseForever = null;
 
+  public static volatile String failRecovery = null;
+
   public static volatile String randomDelayInCoreCreation = null;
 
   public static volatile int randomDelayMaxInCoreCreationInSec = 10;
@@ -215,6 +217,7 @@ public class TestInjection {
     reindexLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
+    failRecovery = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
@@ -502,6 +505,11 @@ public class TestInjection {
     }
 
     return true;
+  }
+
+  /** Returns true when tests have armed a forced failure of the recovery process. */
+  public static boolean injectFailRecovery() {
+    return failRecovery != null;
   }
 
   private static boolean injectSplitFailure(String probability, String label) {

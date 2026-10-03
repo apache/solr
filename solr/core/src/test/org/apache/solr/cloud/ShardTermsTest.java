@@ -66,4 +66,48 @@ public class ShardTermsTest extends SolrTestCase {
     assertEquals(2L, terms.getTerm("bad-replica").longValue());
     assertEquals(1L, terms.getTerm("dead-replica").longValue());
   }
+
+  @Test
+  public void testRecoveryFailedClearsRecoveringState() {
+    Map<String, Long> map = new HashMap<>();
+    map.put("leader", 1L);
+    map.put("replica", 0L);
+    ShardTerms terms = new ShardTerms(map, 0);
+
+    terms = terms.startRecovering("replica");
+    assertTrue(terms.isRecovering("replica"));
+
+    terms = terms.recoveryFailed("replica");
+    assertFalse(terms.isRecovering("replica"));
+    assertEquals(0L, terms.getTerm("replica").longValue());
+    assertFalse(terms.canBecomeLeader("replica"));
+  }
+
+  @Test
+  public void testRecoveryFailedDoesNotChangeReplicaWithoutRecoveringState() {
+    Map<String, Long> map = new HashMap<>();
+    map.put("leader", 2L);
+    map.put("replica", 1L);
+    ShardTerms terms = new ShardTerms(map, 0);
+
+    assertNull(terms.recoveryFailed("replica"));
+    assertEquals(1L, terms.getTerm("replica").longValue());
+  }
+
+  @Test
+  public void testRecoveryFailedLetsIsolatedReplicaRejoinLeaderElection() {
+    Map<String, Long> map = new HashMap<>();
+    map.put("leader", 7L);
+    map.put("replica", 6L);
+    ShardTerms terms = new ShardTerms(map, 0);
+
+    terms = terms.startRecovering("replica");
+    terms = terms.removeTerm("leader");
+    assertFalse(terms.canBecomeLeader("replica"));
+
+    terms = terms.recoveryFailed("replica");
+    assertFalse(terms.isRecovering("replica"));
+    assertEquals(0L, terms.getTerm("replica").longValue());
+    assertTrue(terms.canBecomeLeader("replica"));
+  }
 }
