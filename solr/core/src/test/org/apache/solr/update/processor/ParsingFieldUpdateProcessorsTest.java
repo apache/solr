@@ -496,6 +496,23 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertTrue(mixed.isEmpty());
   }
 
+  public void testEmptyStringIsNotParsedAsNumber() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNull(schema.getFieldOrNull("not_in_schema"));
+    String[] chains = {
+      "parse-int-no-run-processor",
+      "parse-long-no-run-processor",
+      "parse-float-no-run-processor",
+      "parse-double-no-run-processor"
+    };
+    for (int i = 0; i < chains.length; i++) {
+      SolrInputDocument input = doc(f("id", "730" + i), f("not_in_schema", ""));
+      SolrInputDocument d = processAdd(chains[i], input);
+      assertNotNull(d);
+      assertEquals(chains[i], "", d.getFieldValue("not_in_schema"));
+    }
+  }
+
   public void testParseFloatRoundTrip() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float1_f")); // should match dynamic field "*_f"

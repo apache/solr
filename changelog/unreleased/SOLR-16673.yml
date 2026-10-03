@@ -1,0 +1,7 @@
+title: The Parse{Int,Long,Float,Double}FieldUpdateProcessorFactory classes no longer fail with a NullPointerException on an empty string value, which also made the Schema Designer fail on sample documents with empty values
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-16673
+    url: https://issues.apache.org/jira/browse/SOLR-16673
