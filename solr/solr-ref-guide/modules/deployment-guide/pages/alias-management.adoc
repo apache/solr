@@ -553,7 +553,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
+curl 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
 ----
 ====
 
@@ -562,7 +562,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/aliases
+curl http://localhost:8983/api/aliases
 ----
 ====
 ======
@@ -576,7 +576,7 @@ V2 API only::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/aliases/testalias2
+curl http://localhost:8983/api/aliases/testalias2
 ----
 ====
 ======
@@ -593,7 +593,7 @@ The output will contain a list of aliases with the corresponding collection name
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/aliases
+curl http://localhost:8983/api/aliases
 ----
 
 *Output*
@@ -623,7 +623,7 @@ curl -X GET http://localhost:8983/api/aliases
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/aliases/testalias2
+curl http://localhost:8983/api/aliases/testalias2
 ----
 
 *Output*
@@ -759,7 +759,7 @@ V2 API Get all properties on an alias::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties
+curl http://localhost:8983/api/aliases/techproducts_alias/properties
 ----
 
 *Output*
@@ -783,7 +783,7 @@ V2 API Get single property value on an alias::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties/foo
+curl http://localhost:8983/api/aliases/techproducts_alias/properties/foo
 ----
 
 *Output*
