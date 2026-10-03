@@ -32,11 +32,11 @@ import org.apache.commons.cli.Options;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.packagemanager.RepositoryManager;
@@ -180,7 +180,12 @@ public class PackageTool extends ToolBase {
     executePackage(cli, credentials, command, cmdArgs, packageFlags);
   }
 
-  @SuppressForbidden(reason = "TBA")
+  @SuppressForbidden(
+      reason =
+          "We really need to print the stacktrace here, otherwise "
+              + "there shall be little else information to debug problems. Other SolrCLI tools "
+              + "don't print stack traces, hence special treatment is needed here."
+              + "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   private void executePackage(
       CommandLine cli,
       String credentials,
@@ -229,7 +234,9 @@ public class PackageTool extends ToolBase {
    * Picocli subcommand path: resolve connection, open managers, run action, close. Commons-cli runs
    * through {@link #executePackage(CommandLine, String, String, String[], PackageFlags)} instead.
    */
-  @SuppressForbidden(reason = "TBA")
+  @SuppressForbidden(
+      reason =
+          "Package tool prints stack traces and turns off logging; this is same as executePackage.")
   void runWithManagers(
       ConnectionOptions opts, String credentials, PackageSubCommand.PackageAction action)
       throws Exception {
