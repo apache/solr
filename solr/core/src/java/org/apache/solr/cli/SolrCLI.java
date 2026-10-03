@@ -42,10 +42,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.cli.help.TableDefinition;
 import org.apache.commons.cli.help.TextHelpAppendable;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -391,15 +388,6 @@ public class SolrCLI implements CLIO {
       }
     }
     return classes;
-  }
-
-  private static final String JSON_CONTENT_TYPE = "application/json";
-
-  public static NamedList<Object> postJsonToSolr(
-      SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
-    ContentWriterUpdateRequest req = new ContentWriterUpdateRequest(updatePath);
-    req.addContentWithType(jsonBody, JSON_CONTENT_TYPE);
-    return solrClient.request(req);
   }
 
   private static final long MS_IN_MIN = 60 * 1000L;

@@ -39,6 +39,7 @@ import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -46,6 +47,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
@@ -63,6 +65,20 @@ public class PackageUtils {
   public static String CLUSTER_PLUGINS_PATH = "/api/cluster/plugin";
   public static String REPOSITORIES_ZK_PATH = "/repositories.json";
   public static String CLUSTERPROPS_PATH = "/api/cluster/zk/data/clusterprops.json";
+
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+  public static String RESET = "\u001B[0m";
+
+  private static final String JSON_CONTENT_TYPE = "application/json";
+
+  public static NamedList<Object> postJsonToSolr(
+      SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
+    ContentWriterUpdateRequest req = new ContentWriterUpdateRequest(updatePath);
+    req.addContentWithType(jsonBody, JSON_CONTENT_TYPE);
+    return solrClient.request(req);
+  }
 
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();

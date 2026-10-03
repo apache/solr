@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.cli.CLIUtils;
-import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -429,7 +428,7 @@ public class PackageManager implements Closeable {
                     .setRequiresCollection(
                         false) /* Making a collection-request, but already baked into path */);
         boolean packageParamsExist = collectionParams.get("params") != null;
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
             getMapper()
@@ -445,7 +444,7 @@ public class PackageManager implements Closeable {
 
       // Set the package version in the collection's parameters
       try {
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
             "{set:{PKG_VERSIONS:{"
@@ -460,7 +459,7 @@ public class PackageManager implements Closeable {
       // If updating, refresh the package version for this to take effect
       if (isUpdate || pegToLatest) {
         try {
-          SolrCLI.postJsonToSolr(
+          PackageUtils.postJsonToSolr(
               solrClient,
               PackageUtils.PACKAGE_PATH,
               "{\"refresh\": \"" + packageInstance.name + "\"}");
@@ -503,7 +502,7 @@ public class PackageManager implements Closeable {
                 runtime.printSuccess("Executing " + payload + " for path:" + path);
                 boolean shouldExecute = prompt(noprompt);
                 if (shouldExecute) {
-                  SolrCLI.postJsonToSolr(solrClient, path, payload);
+                  PackageUtils.postJsonToSolr(solrClient, path, payload);
                 }
               } catch (Exception ex) {
                 throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -520,7 +519,7 @@ public class PackageManager implements Closeable {
 
       // Set the package version in the collection's parameters
       try {
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
             "{update:{PKG_VERSIONS:{'"
@@ -579,7 +578,7 @@ public class PackageManager implements Closeable {
             String postBody = "{\"update\": " + Utils.toJSONString(pluginMeta) + "}";
             runtime.printSuccess(
                 "Posting " + postBody + " to " + PackageUtils.CLUSTER_PLUGINS_PATH);
-            SolrCLI.postJsonToSolr(solrClient, PackageUtils.CLUSTER_PLUGINS_PATH, postBody);
+            PackageUtils.postJsonToSolr(solrClient, PackageUtils.CLUSTER_PLUGINS_PATH, postBody);
           } catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
@@ -652,7 +651,7 @@ public class PackageManager implements Closeable {
               runtime.printSuccess("Executing " + payload + " for path:" + path);
               boolean shouldExecute = prompt(noprompt);
               if (shouldExecute) {
-                SolrCLI.postJsonToSolr(solrClient, path, payload);
+                PackageUtils.postJsonToSolr(solrClient, path, payload);
                 numberOfClusterPluginsDeployed++;
               }
             } catch (Exception ex) {
@@ -1001,7 +1000,7 @@ public class PackageManager implements Closeable {
                     PackageUtils.resolve(
                         cmd.path, deployedPackage.parameterDefaults, Map.of(), systemParams);
                 runtime.printSuccess("Executing " + payload + " for path:" + path);
-                SolrCLI.postJsonToSolr(solrClient, path, payload);
+                PackageUtils.postJsonToSolr(solrClient, path, payload);
               } catch (Exception ex) {
                 throw new SolrException(ErrorCode.SERVER_ERROR, ex);
               }
@@ -1058,7 +1057,7 @@ public class PackageManager implements Closeable {
                       collectionParameterOverrides,
                       systemParams);
               runtime.printSuccess("Executing " + payload + " for path:" + path);
-              SolrCLI.postJsonToSolr(solrClient, path, payload);
+              PackageUtils.postJsonToSolr(solrClient, path, payload);
             } catch (Exception ex) {
               throw new SolrException(ErrorCode.SERVER_ERROR, ex);
             }
@@ -1074,11 +1073,11 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         // Is it better to "unset"? If so, build support in params API for "unset"
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
             "{set: {PKG_VERSIONS: {" + packageName + ": null}}}");
-        SolrCLI.postJsonToSolr(
+        PackageUtils.postJsonToSolr(
             solrClient, PackageUtils.PACKAGE_PATH, "{\"refresh\": \"" + packageName + "\"}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);

@@ -26,6 +26,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.packagemanager.PackageUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -149,7 +150,7 @@ public class ConfigTool extends ToolBase {
     echoIfVerbose(jsonBody);
 
     try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.credentials())) {
-      NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
+      NamedList<Object> result = PackageUtils.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result._get(List.of("responseHeader", "status"), null);
       if (statusCode == 0) {
         if (value != null) {
