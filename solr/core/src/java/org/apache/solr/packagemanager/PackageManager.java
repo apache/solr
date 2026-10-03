@@ -38,7 +38,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -679,9 +678,9 @@ public class PackageManager implements Closeable {
     boolean shouldExecute = true;
     if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
       runtime.print(
-          CLIUtils.YELLOW
+          PackageUtils.YELLOW
               + "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): "
-              + CLIUtils.RESET);
+              + PackageUtils.RESET);
       try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
         if ("no".trim().equalsIgnoreCase(userInput) || "n".trim().equalsIgnoreCase(userInput)) {
