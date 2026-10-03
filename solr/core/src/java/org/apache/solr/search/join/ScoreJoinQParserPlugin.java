@@ -355,6 +355,18 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
   }
 
+  /** Fails with a bad request if a join has no {@code from} or no {@code to} field. */
+  public static void requireFromAndTo(String fromField, String toField) {
+    if (fromField == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'from' parameter");
+    }
+    if (toField == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'to' parameter");
+    }
+  }
+
   @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -364,14 +376,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String fromField = localParams.get("from");
         final String fromIndex = localParams.get("fromIndex");
         final String toField = localParams.get("to");
-        if (fromField == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'from' parameter");
-        }
-        if (toField == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'to' parameter");
-        }
+        requireFromAndTo(fromField, toField);
         final ScoreMode scoreMode = ScoreModeParser.parse(getParam(SCORE));
 
         final String v = localParams.get(CommonParams.VALUE);

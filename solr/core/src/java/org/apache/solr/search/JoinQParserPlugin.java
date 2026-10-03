@@ -146,14 +146,7 @@ public class JoinQParserPlugin extends QParserPlugin {
       final String v = qparser.localParams.get(QueryParsing.V);
       final String coreName;
 
-      if (fromField == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'from' parameter");
-      }
-      if (toField == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Join query missing required 'to' parameter");
-      }
+      ScoreJoinQParserPlugin.requireFromAndTo(fromField, toField);
 
       Query fromQuery;
       long fromCoreOpenTime = 0;
