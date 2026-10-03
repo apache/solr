@@ -52,7 +52,7 @@ public class Undeploy extends PackageSubCommand {
       names = {"--collections"},
       paramLabel = "COLLECTIONS",
       description =
-          "Collections on which this package needs to be undeployed from, excluding cluster level plugins")
+          "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
   private String collections;
 
   @Override

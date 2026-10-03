@@ -55,13 +55,13 @@ public class Deploy extends PackageSubCommand {
       names = {"--collections"},
       paramLabel = "COLLECTIONS",
       description =
-          "Collections on which this package needs to be deployed on, excluding cluster level plugins")
+          "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
   private String collections;
 
   @picocli.CommandLine.Option(
       names = {"-p", "--param"},
       paramLabel = "PARAMS",
-      description = "List of parameters to be used with the deploy command")
+      description = "List of parameters to be used with deploy command.")
   private String[] params;
 
   @picocli.CommandLine.Option(
@@ -71,7 +71,7 @@ public class Deploy extends PackageSubCommand {
 
   @picocli.CommandLine.Option(
       names = {"-y", "--no-prompt"},
-      description = "Do not prompt for input; accept all default choices, defaults to false.")
+      description = "Don't prompt for input; accept all default choices, defaults to false.")
   private boolean noPrompt;
 
   @Override

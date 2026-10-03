@@ -51,7 +51,7 @@ Print packages deployed on a collection, or collections where a package is deplo
 == Options
 
 *-c*, *--collection*=_COLLECTION_::
-  Collection for which deployed packages are to be listed.
+  The collection to apply the package to, not required.
 
 *-h*, *--help*::
   Print this help message and exit.

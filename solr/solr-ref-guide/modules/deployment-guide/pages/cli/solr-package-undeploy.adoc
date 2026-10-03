@@ -54,7 +54,7 @@ Undeploy a package from specified collection(s) or at cluster level.
   Specifies that this action should affect cluster-level plugins only.
 
 *--collections*=_COLLECTIONS_::
-  Collections on which this package needs to be undeployed from, excluding cluster level plugins
+  Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.
 
 *-h*, *--help*::
   Print this help message and exit.

@@ -43,7 +43,7 @@ public class ListDeployed extends PackageSubCommand {
   @picocli.CommandLine.Option(
       names = {"-c", "--collection"},
       paramLabel = "COLLECTION",
-      description = "Collection for which deployed packages are to be listed.")
+      description = "The collection to apply the package to, not required.")
   private String collection;
 
   @picocli.CommandLine.Parameters(
