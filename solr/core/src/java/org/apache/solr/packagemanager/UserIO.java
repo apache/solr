@@ -17,6 +17,9 @@
 
 package org.apache.solr.packagemanager;
 
+/**
+ * Console-facing output for package manager operations
+ */
 @FunctionalInterface
 public interface UserIO {
 
