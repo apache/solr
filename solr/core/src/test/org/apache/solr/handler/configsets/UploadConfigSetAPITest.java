@@ -19,7 +19,6 @@ package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -360,14 +359,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     // pre-existing conf/ dir (and the new file in it) afterwards.
     InputStream zipStream =
         createZipStream(
-            "../evil.txt",
-            "evil",
-            "..\\evil2.txt",
-            "evil2",
-            "conf/",
-            "",
-            "conf/good.txt",
-            "good");
+            "../evil.txt", "evil", "..\\evil2.txt", "evil2", "conf/", "", "conf/good.txt", "good");
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
     api.uploadConfigSet(configSetName, true, true, zipStream);
