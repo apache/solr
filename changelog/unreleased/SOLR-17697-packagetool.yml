@@ -1,0 +1,9 @@
+title:
+  Implement picocli for package command / PackageTool
+type: changed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-17697
+    url: https://issues.apache.org/jira/browse/SOLR-17697
