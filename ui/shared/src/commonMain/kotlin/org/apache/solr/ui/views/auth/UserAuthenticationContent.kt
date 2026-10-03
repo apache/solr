@@ -32,15 +32,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.solr.ui.components.auth.AuthenticationComponent
+import org.apache.solr.ui.components.auth.domain.AuthenticationEvent
+import org.apache.solr.ui.components.auth.viewmodel.AuthenticationUiState
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.action_go_back
 import org.apache.solr.ui.shared.generated.resources.cd_back_navigation
@@ -59,20 +64,92 @@ import org.jetbrains.compose.resources.stringResource
  * The user authentication content is the composable that will check and display
  * the available authentication options to the user.
  *
- * @param component The authentication component that manages the state of this composable.
+ * @param component The authentication component that provides the view model of this composable.
+ * @param onEvent Called when the authentication screen emits an event that the parent has to
+ * handle, e.g. when the user has been authenticated.
  * @param modifier Modifier to apply to the root composable.
  */
 @Composable
 fun UserAuthenticationContent(
     component: AuthenticationComponent,
+    onEvent: (AuthenticationEvent) -> Unit,
     modifier: Modifier = Modifier,
+) {
+    val viewModel = viewModel { component.createAuthenticationViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    val uriHandler = LocalUriHandler.current
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { currentOnEvent(it) }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.authorizationUrls.collect { uriHandler.openUri(uri = it.toString()) }
+    }
+
+    val basicAuth = viewModel.basicAuth
+    val oAuth = viewModel.oAuth
+
+    UserAuthenticationContent(
+        uiState = uiState,
+        onAbort = viewModel::abort,
+        modifier = modifier,
+        basicAuthContent = basicAuth?.let { holder ->
+            @Composable { contentModifier ->
+                val basicAuthState by holder.uiState.collectAsState()
+
+                BasicAuthContent(
+                    uiState = basicAuthState,
+                    onChangeUsername = holder::changeUsername,
+                    onChangePassword = holder::changePassword,
+                    onAuthenticate = holder::authenticate,
+                    modifier = contentModifier,
+                    isAuthenticating = uiState.isAuthenticating,
+                )
+            }
+        },
+        oAuthContent = oAuth?.let { holder ->
+            @Composable { contentModifier, showSupportingText ->
+                val oAuthState by holder.uiState.collectAsState()
+
+                OAuthContent(
+                    uiState = oAuthState,
+                    onAuthenticate = holder::authenticate,
+                    modifier = contentModifier,
+                    isAuthenticating = uiState.isAuthenticating,
+                    showSupportingText = showSupportingText,
+                )
+            }
+        },
+    )
+}
+
+/**
+ * The user authentication content is the composable that will check and display
+ * the available authentication options to the user.
+ *
+ * @param uiState The state of the authentication screen to render.
+ * @param onAbort Called when the user wants to abort the authentication.
+ * @param modifier Modifier to apply to the root composable.
+ * @param basicAuthContent The content for authenticating with credentials (basic auth), or
+ * `null` if the method is not supported.
+ * @param oAuthContent The content for authenticating with OAuth, or `null` if the method is not
+ * supported. Its second parameter tells whether to show supporting text, which is not the case
+ * if multiple authentication options are available.
+ */
+@Composable
+fun UserAuthenticationContent(
+    uiState: AuthenticationUiState,
+    onAbort: () -> Unit,
+    modifier: Modifier = Modifier,
+    basicAuthContent: (@Composable (modifier: Modifier) -> Unit)? = null,
+    oAuthContent: (@Composable (modifier: Modifier, showSupportingText: Boolean) -> Unit)? = null,
 ) = Row(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalAlignment = Alignment.CenterVertically,
 ) {
-    val model by component.model.collectAsState()
-
     Image(
         modifier = Modifier.weight(1f)
             .align(Alignment.Bottom)
@@ -88,7 +165,7 @@ fun UserAuthenticationContent(
         modifier = Modifier.weight(1f).padding(16.dp),
     ) {
         SolrTextButton(
-            onClick = component::onAbort,
+            onClick = onAbort,
             contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
         ) {
             Icon(
@@ -111,23 +188,13 @@ fun UserAuthenticationContent(
             )
 
             Text(
-                text = stringResource(Res.string.desc_solr_instance_with_auth, model.url),
+                text = stringResource(Res.string.desc_solr_instance_with_auth, uiState.url),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
-            val basicAuthState by component.basicAuthSlot.subscribeAsState()
+            basicAuthContent?.invoke(Modifier.testTag("basic_auth_content"))
 
-            basicAuthState.child?.let { basicAuth ->
-                BasicAuthContent(
-                    modifier = Modifier.testTag("basic_auth_content"),
-                    component = basicAuth.instance,
-                    isAuthenticating = model.isAuthenticating,
-                )
-            }
-
-            val oauthState by component.oAuthSlot.subscribeAsState()
-
-            val hasMultiAuth = basicAuthState.child != null && oauthState.child != null
+            val hasMultiAuth = basicAuthContent != null && oAuthContent != null
             if (hasMultiAuth) {
                 Text(
                     modifier = Modifier.testTag("separator_text"),
@@ -135,16 +202,9 @@ fun UserAuthenticationContent(
                 )
             }
 
-            oauthState.child?.let { oAuth ->
-                OAuthContent(
-                    modifier = Modifier.testTag("basic_auth_content"),
-                    component = oAuth.instance,
-                    isAuthenticating = model.isAuthenticating,
-                    showSupportingText = !hasMultiAuth,
-                )
-            }
+            oAuthContent?.invoke(Modifier.testTag("basic_auth_content"), !hasMultiAuth)
 
-            model.error?.let { error ->
+            uiState.error?.let { error ->
                 Text(
                     modifier = Modifier.testTag("error_text"),
                     text = stringResource(resource = error),

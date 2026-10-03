@@ -17,12 +17,9 @@
 
 package org.apache.solr.ui.components.logging.integration
 
-import com.arkivanov.mvikotlin.core.store.StoreFactory
 import org.apache.solr.ui.components.logging.LoggingComponent
-import org.apache.solr.ui.utils.AppComponentContext
 
-class DefaultLoggingComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
-) : LoggingComponent,
-    AppComponentContext by componentContext
+/**
+ * Default implementation of [LoggingComponent].
+ */
+class DefaultLoggingComponent : LoggingComponent

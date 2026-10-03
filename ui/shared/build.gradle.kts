@@ -55,13 +55,6 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
 
-            implementation(libs.decompose.decompose)
-            implementation(libs.essenty.lifecycle)
-            implementation(libs.decompose.extensions.compose)
-            implementation(libs.mvikotlin.extensions.coroutines)
-            implementation(libs.mvikotlin.mvikotlin)
-            implementation(libs.mvikotlin.main)
-
             api(project.dependencies.platform(libs.ktor.bom))
             api(libs.ktor.client.core)
             implementation(libs.ktor.client.auth)

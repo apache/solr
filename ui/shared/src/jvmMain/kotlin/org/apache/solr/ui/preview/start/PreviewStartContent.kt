@@ -19,59 +19,41 @@ package org.apache.solr.ui.preview.start
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.viewmodel.StartUiState
+import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.error_invalid_url
-import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.start.StartContent
 
 @Preview
 @Composable
 private fun PreviewStartContent() = PreviewContainer {
-    StartContent(component = PreviewStartComponent)
+    StartContent(
+        uiState = StartUiState(),
+        onSolrUrlChange = {},
+        onConnect = {},
+    )
 }
 
 @Preview
 @Composable
 private fun PreviewStartContentWithError() = PreviewContainer {
-    StartContent(component = PreviewStartComponentWithError)
+    StartContent(
+        uiState = StartUiState(
+            url = "some-invalid-url!",
+            error = Res.string.error_invalid_url,
+        ),
+        onSolrUrlChange = {},
+        onConnect = {},
+    )
 }
 
 @Preview
 @Composable
 private fun PreviewStartContentWithConnecting() = PreviewContainer {
-    StartContent(component = PreviewStartComponentWithConnecting)
-}
-
-private object PreviewStartComponent : StartComponent {
-    override val model: StateFlow<StartComponent.Model> =
-        MutableStateFlow(StartComponent.Model())
-
-    override fun onSolrUrlChange(url: String) = Unit
-    override fun onConnect() = Unit
-}
-
-private object PreviewStartComponentWithError : StartComponent {
-    override val model: StateFlow<StartComponent.Model> = MutableStateFlow(
-        StartComponent.Model(
-            url = "some-invalid-url!",
-            error = Res.string.error_invalid_url,
-        ),
+    StartContent(
+        uiState = StartUiState(isConnecting = true),
+        onSolrUrlChange = {},
+        onConnect = {},
     )
-
-    override fun onSolrUrlChange(url: String) = Unit
-    override fun onConnect() = Unit
-}
-
-private object PreviewStartComponentWithConnecting : StartComponent {
-    override val model: StateFlow<StartComponent.Model> = MutableStateFlow(
-        StartComponent.Model(
-            isConnecting = true,
-        ),
-    )
-
-    override fun onSolrUrlChange(url: String) = Unit
-    override fun onConnect() = Unit
 }

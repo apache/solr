@@ -22,17 +22,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ComposeViewport
-import com.arkivanov.decompose.DefaultComponentContext
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
-import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import io.ktor.http.Url
 import kotlin.js.unsafeCast
 import kotlinx.browser.document
 import kotlinx.browser.window
-import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.components.root.integration.SimpleRootComponent
-import org.apache.solr.ui.utils.DefaultAppComponentContext
 import org.apache.solr.ui.utils.defaultSolrUrl
 import org.apache.solr.ui.utils.getDefaultClient
 import org.apache.solr.ui.views.root.RootContent
@@ -41,13 +36,6 @@ import org.w3c.dom.Window
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class)
 fun main() {
-    val lifecycle = LifecycleRegistry()
-    val componentContext = DefaultAppComponentContext(
-        componentContext = DefaultComponentContext(lifecycle = lifecycle),
-        mainContext = Dispatchers.Main,
-        ioContext = Dispatchers.Default,
-    )
-
     val url = Url(window.location.href)
     val destination = url.parameters["dest"]
 
@@ -65,8 +53,6 @@ fun main() {
     val httpClient = getDefaultClient(url = Url(defaultSolrUrl()))
 
     val component: RootComponent = SimpleRootComponent(
-        componentContext = componentContext,
-        storeFactory = DefaultStoreFactory(),
         httpClient = httpClient,
         destination = destination,
     )

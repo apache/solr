@@ -17,79 +17,49 @@
 
 package org.apache.solr.ui.components.auth
 
-import com.arkivanov.decompose.router.slot.ChildSlot
-import com.arkivanov.decompose.value.Value
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.serialization.Serializable
-import org.apache.solr.ui.domain.AuthMethod
-import org.apache.solr.ui.domain.AuthOption
-import org.jetbrains.compose.resources.StringResource
+import org.apache.solr.ui.components.auth.domain.BasicAuthenticateUseCase
+import org.apache.solr.ui.components.auth.domain.CreateOAuthAuthorizationUseCase
+import org.apache.solr.ui.components.auth.domain.OAuthAuthenticateUseCase
+import org.apache.solr.ui.components.auth.repository.BasicAuthRepository
+import org.apache.solr.ui.components.auth.repository.OAuthRepository
+import org.apache.solr.ui.components.auth.viewmodel.AuthenticationViewModel
 
 /**
  * The authentication component takes care of the authentication processes. This typically includes
  * user authentication with credentials, tokens or certificates.
  *
  * Note that Solr does not support multiple authentication methods of the same type with the
- * MultiAuthPlugin, so there will be always up to one instance per method, hence the component-based
- * child slots for each method.
+ * MultiAuthPlugin, so there will be always up to one authentication option per method.
  */
 interface AuthenticationComponent {
 
     /**
-     * Component state flow.
+     * Dependencies provided by the application.
      */
-    val model: StateFlow<Model>
+    val basicAuthRepository: BasicAuthRepository
 
     /**
-     * A child slot that holds the [BasicAuthComponent] for user authentication with credentials
-     * (basic auth) if it is supported.
+     * Dependencies provided by the application.
      */
-    val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>>
+    val oAuthRepository: OAuthRepository
 
     /**
-     * A child slot that holds the [OAuthComponent] for user authentication with OAuth
-     * (bearer token) if it is supported.
+     * Use case responsible for authenticating with credentials (basic auth).
      */
-    val oAuthSlot: Value<ChildSlot<OAuthConfiguration, OAuthComponent>>
-
-    @Serializable
-    data class BasicAuthConfiguration(val method: AuthMethod.BasicAuthMethod = AuthMethod.BasicAuthMethod())
-
-    @Serializable
-    data class OAuthConfiguration(val method: AuthMethod.OAuthMethod)
+    val basicAuthenticateUseCase: BasicAuthenticateUseCase
 
     /**
-     * Aborts the authentication attempt.
+     * Use case responsible for creating OAuth authorization requests.
      */
-    fun onAbort()
+    val createOAuthAuthorizationUseCase: CreateOAuthAuthorizationUseCase
 
     /**
-     * Model data class that represents the component state.
-     *
-     * @property url URL of the Solr instance the user is trying to connect.
-     * @property methods List of authentication methods to render.
-     * @property isAuthenticating Whether a connection is currently established.
-     * @property error The error that may have occurred.
+     * Use case responsible for authenticating with OAuth.
      */
-    data class Model(
-        val url: String = "",
-        val methods: List<AuthMethod> = emptyList(),
-        val isAuthenticating: Boolean = false,
-        val error: StringResource? = null,
-    )
+    val oAuthAuthenticateUseCase: OAuthAuthenticateUseCase
 
-    sealed interface Output {
-
-        /**
-         * Emitted when the user successfully authenticated against the Solr instance.
-         *
-         * @property option The final authentication option that succeeded.
-         */
-        data class OnAuthenticated(val option: AuthOption) : Output
-
-        /**
-         * Emitted when the user aborts the authentication flow.
-         */
-        data object OnAbort : Output
-    }
+    /**
+     * Factory method to create a [AuthenticationViewModel] instance.
+     */
+    fun createAuthenticationViewModel(): AuthenticationViewModel
 }
