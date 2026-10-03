@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -255,7 +254,7 @@ public class PackageUtils {
 
   /** Console print using green color */
   public static void formatGreen(StringBuilder sb, Object message) {
-    format(sb, CLIUtils.GREEN, message);
+    format(sb, GREEN, message);
   }
 
   public static void format(StringBuilder sb, Object message) {
@@ -264,7 +263,7 @@ public class PackageUtils {
 
   public static void format(StringBuilder sb, String color, Object message) {
     if (color != null) {
-      sb.append(color + String.valueOf(message) + CLIUtils.RESET + "\n");
+      sb.append(color + String.valueOf(message) + RESET + "\n");
     } else {
       sb.append(message + "\n");
     }
