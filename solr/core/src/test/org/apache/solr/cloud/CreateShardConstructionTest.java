@@ -22,11 +22,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -109,6 +111,19 @@ public class CreateShardConstructionTest extends SolrCloudTestCase {
           "new shard was never observed in CONSTRUCTION state (saw: " + observedStates + ")",
           observedStates.contains(Slice.State.CONSTRUCTION));
       assertTrue("new shard never reached ACTIVE", activeLatch.getCount() == 0);
+
+      // updates to the new shard must be applied and searchable once it is active
+      UpdateRequest update = new UpdateRequest();
+      update.add("id", "doc1");
+      update.setParam(ShardParams._ROUTE_, "shard2");
+      update.commit(cluster.getSolrClient(), collection);
+      assertEquals(
+          1,
+          cluster
+              .getSolrClient()
+              .query(collection, params("q", "*:*", ShardParams._ROUTE_, "shard2"))
+              .getResults()
+              .getNumFound());
     } finally {
       zkStateReader.removeCollectionStateWatcher(collection, watcher);
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());

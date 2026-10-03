@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -43,9 +44,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,13 +167,6 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
                   success.addAll(addResultSuccess);
                 }
               });
-
-      if (!sliceAlreadyExists) {
-        // The new slice was created in CONSTRUCTION state; don't expose it to queries until its
-        // replicas are actually ACTIVE, then flip it to ACTIVE.
-        waitForShardReplicasActive(collectionName, sliceName, timeout);
-        activateShard(collectionName, sliceName);
-      }
     } catch (Exception e) {
       if (!sliceAlreadyExists) {
         // Don't leave a half-created shard stuck in CONSTRUCTION; remove it so the create can be
@@ -189,7 +186,53 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       throw e;
     }
 
+    if (!sliceAlreadyExists) {
+      // The new slice is in CONSTRUCTION state, so queries skip it until it is activated. It is
+      // activated even if waiting for its replicas fails, so that it is not left unusable.
+      try {
+        waitForShardReplicasActive(collectionName, sliceName, numReplicas.total(), timeout);
+        applyBufferedUpdatesOnLeader(adminCmdContext, collectionName, sliceName);
+      } finally {
+        activateShard(collectionName, sliceName);
+      }
+    }
+
     log.info("Finished create command on all shards for collection: {}", collectionName);
+  }
+
+  /**
+   * Cores of a CONSTRUCTION shard buffer their updates, which a split lifts for its sub-shards but
+   * nothing else would for a created shard, so ask the leader to apply them.
+   */
+  private void applyBufferedUpdatesOnLeader(
+      AdminCmdContext adminCmdContext, String collectionName, String sliceName) {
+    Slice slice =
+        ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlice(sliceName);
+    Replica leader = slice == null ? null : slice.getLeader();
+    if (leader == null) {
+      log.warn("No leader for new shard {} of collection {}", sliceName, collectionName);
+      return;
+    }
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(
+        CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+    params.set(CoreAdminParams.NAME, leader.getCoreName());
+
+    ShardHandler shardHandler = ccc.newShardHandler();
+    CollectionHandlingUtils.ShardRequestTracker tracker =
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+    tracker.sendShardRequest(leader, params, shardHandler);
+
+    // The core refuses the request when it is not buffering, which is fine, so only log a failure.
+    NamedList<Object> applyResults = new NamedList<>();
+    tracker.processResponses(applyResults, shardHandler, false, null);
+    if (applyResults.get("failure") != null) {
+      log.warn(
+          "Leader {} of new shard {} did not apply buffered updates: {}",
+          leader.getName(),
+          sliceName,
+          applyResults.get("failure"));
+    }
   }
 
   /** Flip a newly created shard from CONSTRUCTION to ACTIVE so it becomes visible to queries. */
@@ -212,10 +255,26 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
   }
 
-  /** Wait for all replicas of a shard to reach ACTIVE state. */
-  private void waitForShardReplicasActive(String collectionName, String sliceName, int timeout)
+  /** Wait until a shard has the expected number of replicas and all of them are ACTIVE. */
+  private void waitForShardReplicasActive(
+      String collectionName, String sliceName, int expectedReplicas, int timeout)
       throws InterruptedException {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
+    try {
+      zkStateReader.waitForState(
+          collectionName,
+          timeout,
+          TimeUnit.SECONDS,
+          collection -> {
+            Slice newSlice = collection == null ? null : collection.getSlice(sliceName);
+            return newSlice != null && newSlice.getReplicas().size() >= expectedReplicas;
+          });
+    } catch (TimeoutException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Timeout waiting " + timeout + " seconds for the replicas of shard " + sliceName,
+          e);
+    }
     Slice slice = zkStateReader.getClusterState().getCollection(collectionName).getSlice(sliceName);
     if (slice == null) {
       throw new SolrException(
