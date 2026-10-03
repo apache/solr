@@ -426,8 +426,8 @@ public class SyncStrategy {
    * Sends a recovery request, retrying only when the replica answers with the "core is still
    * loading" 503 (see {@link #isCoreStillLoading}). Any other failure is logged and dropped, since
    * recovery requests are best-effort nudges. An {@link Error} from any attempt is rethrown. The
-   * wait before a retry ends as soon as {@code closed} is released.
-   * Package-private and static so tests can drive it with a fake sender and a zero retry delay.
+   * wait before a retry ends as soon as {@code closed} is released. Package-private and static so
+   * tests can drive it with a fake sender and a zero retry delay.
    */
   static void sendRecoveryRequestWithRetry(
       RecoveryRequestSender sender,
@@ -443,9 +443,7 @@ public class SyncStrategy {
         if (t instanceof Error) {
           throw (Error) t;
         }
-        if (closed.getCount() > 0
-            && isCoreStillLoading(t)
-            && attempt < RECOVERY_REQUEST_ATTEMPTS) {
+        if (closed.getCount() > 0 && isCoreStillLoading(t) && attempt < RECOVERY_REQUEST_ATTEMPTS) {
           // The replica's core hasn't finished loading; wait a bit and retry
           int nextAttempt = attempt + 1;
           log.warn(
