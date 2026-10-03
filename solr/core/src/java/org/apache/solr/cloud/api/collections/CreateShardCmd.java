@@ -187,14 +187,29 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     if (!sliceAlreadyExists) {
-      // The new slice is in CONSTRUCTION state, so queries skip it until it is activated. It is
-      // activated even if waiting for its replicas fails, so that it is not left unusable.
+      // The new slice is in CONSTRUCTION state, so queries skip it until it is activated. Only
+      // activate it once its replicas are active and any buffered updates are applied. If that
+      // fails, delete the half-created slice instead of activating a shard that may not be
+      // ready, mirroring the AddReplica failure handling above, and report the failure so the
+      // create can be retried.
       try {
         waitForShardReplicasActive(collectionName, sliceName, numReplicas.total(), timeout);
         applyBufferedUpdatesOnLeader(adminCmdContext, collectionName, sliceName);
-      } finally {
-        activateShard(collectionName, sliceName);
+      } catch (Exception e) {
+        try {
+          new DeleteShardCmd(ccc)
+              .call(
+                  adminCmdContext
+                      .subRequestContext(CollectionParams.CollectionAction.DELETESHARD, async)
+                      .withClusterState(clusterState),
+                  new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
+                  results);
+        } catch (Exception cleanupEx) {
+          log.warn("Failed to delete shard {} after failed create", sliceName, cleanupEx);
+        }
+        throw e;
       }
+      activateShard(collectionName, sliceName);
     }
 
     log.info("Finished create command on all shards for collection: {}", collectionName);
