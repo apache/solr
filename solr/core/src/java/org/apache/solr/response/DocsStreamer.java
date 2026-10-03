@@ -19,10 +19,14 @@ package org.apache.solr.response;
 import static org.apache.solr.schema.FieldType.ExternalizeStoredValuesAsObjects;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -54,9 +58,14 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrReturnFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** This streams SolrDocuments from a DocList and applies transformer */
 public class DocsStreamer implements Iterator<SolrDocument> {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Object FAILED_STORED_VALUE = new Object();
+
   /**
    * A hardcoded list of known Solr field types that will be trusted to control their own conversion
    * of stored field values into external Objects (via {@link FieldType#toObject}) when returning
@@ -184,6 +193,72 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   @Override
   public void remove() { // do nothing
+  }
+
+  /**
+   * Replace Lucene {@link IndexableField} values on a {@link SolrDocument} (and nested / child
+   * documents) with the SolrJ-native objects that clients see after JavaBin deserialization. Used
+   * for JavaBin response normalization generally, including the EmbeddedSolrServer streaming path,
+   * so {@code queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
+   *
+   * <p>A stored value that cannot be converted is logged and omitted; conversion continues for the
+   * remaining values and fields.
+   *
+   * <p>Do not call this from {@link #convertLuceneDocToSolrDoc}; JSON/XML writers and some
+   * transformers still expect stored fields as {@link IndexableField}.
+   *
+   * @see #getValue(SchemaField, IndexableField)
+   */
+  public static SolrDocument externalizeStoredValues(SolrDocument doc, IndexSchema schema) {
+    if (doc == null || schema == null) {
+      return doc;
+    }
+    for (Iterator<Map.Entry<String, Object>> it = doc.iterator(); it.hasNext(); ) {
+      Map.Entry<String, Object> entry = it.next();
+      Object val = entry.getValue();
+      Object converted = externalizeValue(val, schema);
+      if (FAILED_STORED_VALUE.equals(converted)) {
+        it.remove();
+      } else if (!Objects.equals(converted, val)) {
+        entry.setValue(converted);
+      }
+    }
+    List<SolrDocument> children = doc.getChildDocuments();
+    if (children != null) {
+      for (SolrDocument child : children) {
+        externalizeStoredValues(child, schema);
+      }
+    }
+    return doc;
+  }
+
+  private static Object externalizeValue(Object val, IndexSchema schema) {
+    if (val instanceof IndexableField f) {
+      try {
+        return getValue(schema.getFieldOrNull(f.name()), f);
+      } catch (Exception e) {
+        log.warn("Error reading a field : {}", f, e);
+        return FAILED_STORED_VALUE;
+      }
+    }
+    if (val instanceof SolrDocument nested) {
+      return externalizeStoredValues(nested, schema);
+    }
+    if (val instanceof Collection<?> coll) {
+      List<Object> out = new ArrayList<>(coll.size());
+      boolean changed = false;
+      for (Object item : coll) {
+        Object converted = externalizeValue(item, schema);
+        if (FAILED_STORED_VALUE.equals(converted)) {
+          changed = true;
+          continue;
+        }
+        changed |= !Objects.equals(converted, item);
+        out.add(converted);
+      }
+      return changed ? (out.isEmpty() ? FAILED_STORED_VALUE : out) : val;
+    }
+    return val;
   }
 
   public static Object getValue(SchemaField sf, IndexableField f) {
