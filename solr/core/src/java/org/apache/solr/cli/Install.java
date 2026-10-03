@@ -24,16 +24,16 @@ package org.apache.solr.cli;
     description = "Install a package into Solr.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # Install a specific package version",
-        "  bin/solr package install mypkg:1.0.0",
-        "",
-        "  # Install the latest available version",
-        "  bin/solr package install mypkg"
+      "  # Install a specific package version",
+      "  bin/solr package install mypkg:1.0.0",
+      "",
+      "  # Install the latest available version",
+      "  bin/solr package install mypkg"
     })
 public class Install extends PackageSubCommand {
 
@@ -47,7 +47,9 @@ public class Install extends PackageSubCommand {
   @Override
   public int callTool() throws Exception {
     final boolean[] status = {true};
-    runWithManagers((packageManager, repositoryManager) -> status[0] = packageTool.install(repositoryManager, packageNameAndVersion));
+    runWithManagers(
+        (packageManager, repositoryManager) ->
+            status[0] = packageTool.install(repositoryManager, packageNameAndVersion));
     return status[0] ? 0 : 1;
   }
 

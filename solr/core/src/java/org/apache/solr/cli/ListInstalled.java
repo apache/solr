@@ -24,19 +24,20 @@ package org.apache.solr.cli;
     description = "Print a list of packages installed in Solr.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # List all installed packages",
-        "  bin/solr package list-installed",
+      "  # List all installed packages",
+      "  bin/solr package list-installed",
     })
 public class ListInstalled extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
-    return runWithManagers((packageManager, repositoryManager) -> packageTool.listInstalled(packageManager));
+    return runWithManagers(
+        (packageManager, repositoryManager) -> packageTool.listInstalled(packageManager));
   }
 
   @Override

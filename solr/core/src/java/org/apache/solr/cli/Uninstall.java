@@ -21,17 +21,16 @@ package org.apache.solr.cli;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "uninstall",
-    description =
-        "Uninstall any package with a specified version from Solr.",
+    description = "Uninstall any package with a specified version from Solr.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # Uninstall a specific package version",
-        "  bin/solr package uninstall mypkg:1.0.0",
+      "  # Uninstall a specific package version",
+      "  bin/solr package uninstall mypkg:1.0.0",
     })
 public class Uninstall extends PackageSubCommand {
 
@@ -44,7 +43,9 @@ public class Uninstall extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
-    return runWithManagers((packageManager, repositoryManager) -> packageTool.uninstall(packageManager, packageNameAndVersion));
+    return runWithManagers(
+        (packageManager, repositoryManager) ->
+            packageTool.uninstall(packageManager, packageNameAndVersion));
   }
 
   @Override

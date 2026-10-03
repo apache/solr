@@ -58,15 +58,15 @@ import org.slf4j.LoggerFactory;
     },
     footerHeading = "%nExamples:%n",
     subcommands = {
-        AddRepo.class,
-        AddKey.class,
-        ListInstalled.class,
-        ListAvailable.class,
-        ListDeployed.class,
-        Install.class,
-        Deploy.class,
-        Undeploy.class,
-        Uninstall.class
+      AddRepo.class,
+      AddKey.class,
+      ListInstalled.class,
+      ListAvailable.class,
+      ListDeployed.class,
+      Install.class,
+      Deploy.class,
+      Undeploy.class,
+      Uninstall.class
     },
     footer = {
       "  # Add a package repository",
@@ -158,7 +158,6 @@ public class PackageTool extends ToolBase {
     return "package";
   }
 
-
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
@@ -222,12 +221,10 @@ public class PackageTool extends ToolBase {
   }
 
   /**
-   * Picocli subcommand path: resolve connection, open managers, run action, close.
-   * Commons-cli runs through {@link #executePackage(CommandLine, String, String, String[], PackageFlags)} instead.
+   * Picocli subcommand path: resolve connection, open managers, run action, close. Commons-cli runs
+   * through {@link #executePackage(CommandLine, String, String, String[], PackageFlags)} instead.
    */
-  @SuppressForbidden(
-      reason =
-          "TBA")
+  @SuppressForbidden(reason = "TBA")
   void runWithManagers(
       ConnectionOptions opts, String credentials, PackageSubCommand.PackageAction action)
       throws Exception {
@@ -263,7 +260,8 @@ public class PackageTool extends ToolBase {
     }
   }
 
-  void addRepo(RepositoryManager repositoryManager, String repoName, String repoUrl) throws Exception {
+  void addRepo(RepositoryManager repositoryManager, String repoName, String repoUrl)
+      throws Exception {
     repositoryManager.addRepository(repoName, repoUrl);
     printGreen("Added repository: " + repoName);
   }
@@ -376,8 +374,7 @@ public class PackageTool extends ToolBase {
     packageManager.undeploy(packageName, collectionArray, cluster);
   }
 
-  void uninstall(PackageManager packageManager, String packageNameAndVersion)
-      throws Exception {
+  void uninstall(PackageManager packageManager, String packageNameAndVersion) throws Exception {
     Pair<String, String> parsedVersion = parsePackageVersion(packageNameAndVersion);
     if (parsedVersion.second() == null) {
       throw new SolrException(
@@ -429,8 +426,7 @@ public class PackageTool extends ToolBase {
         break;
       case "undeploy":
         if (packageFlags.cluster() || packageFlags.collections() != null) {
-          undeploy(
-              packageManager, cmdArgs[0], packageFlags.cluster(), packageFlags.collections());
+          undeploy(packageManager, cmdArgs[0], packageFlags.cluster(), packageFlags.collections());
         } else {
           printRed(
               "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");

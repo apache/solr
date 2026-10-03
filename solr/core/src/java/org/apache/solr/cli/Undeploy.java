@@ -26,13 +26,13 @@ import static org.apache.solr.cli.SolrCLI.printRed;
     description = "Undeploy a package from specified collection(s) or at cluster level.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # Undeploy a package from a collection",
-        "  bin/solr package undeploy mypkg --collections myCollection"
+      "  # Undeploy a package from a collection",
+      "  bin/solr package undeploy mypkg --collections myCollection"
     })
 public class Undeploy extends PackageSubCommand {
 
@@ -51,7 +51,8 @@ public class Undeploy extends PackageSubCommand {
   @picocli.CommandLine.Option(
       names = {"--collections"},
       paramLabel = "COLLECTIONS",
-      description = "Collections on which this package needs to be undeployed from, excluding cluster level plugins")
+      description =
+          "Collections on which this package needs to be undeployed from, excluding cluster level plugins")
   private String collections;
 
   @Override
@@ -62,7 +63,8 @@ public class Undeploy extends PackageSubCommand {
       return 1;
     }
     return runWithManagers(
-        (packageManager, repositoryManager) -> packageTool.undeploy(packageManager, packageName, cluster, collections));
+        (packageManager, repositoryManager) ->
+            packageTool.undeploy(packageManager, packageName, cluster, collections));
   }
 
   @Override

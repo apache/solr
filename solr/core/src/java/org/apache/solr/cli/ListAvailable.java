@@ -24,19 +24,20 @@ package org.apache.solr.cli;
     description = "Print a list of packages available in the repositories.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # List packages available from configured repositories",
-        "  bin/solr package list-available",
+      "  # List packages available from configured repositories",
+      "  bin/solr package list-available",
     })
 public class ListAvailable extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
-    return runWithManagers((packageManager, repositoryManager) -> packageTool.listAvailable(repositoryManager));
+    return runWithManagers(
+        (packageManager, repositoryManager) -> packageTool.listAvailable(repositoryManager));
   }
 
   @Override

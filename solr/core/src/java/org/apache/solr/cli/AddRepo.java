@@ -50,7 +50,9 @@ public class AddRepo extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
-    return runWithManagers(((packageManager, repositoryManager) -> packageTool.addRepo(repositoryManager, repoName, repoUrl)));
+    return runWithManagers(
+        ((packageManager, repositoryManager) ->
+            packageTool.addRepo(repositoryManager, repoName, repoUrl)));
   }
 
   @Override

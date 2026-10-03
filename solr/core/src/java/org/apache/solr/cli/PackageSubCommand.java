@@ -34,7 +34,6 @@ abstract class PackageSubCommand extends ToolBase {
   @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-
   ConnectionOptions connectionOptions;
 
   PackageSubCommand() {
@@ -44,8 +43,7 @@ abstract class PackageSubCommand extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     throw new UnsupportedOperationException(
-        getName() + " is implemented via the commons-cli path under PackageTool"
-    );
+        getName() + " is implemented via the commons-cli path under PackageTool");
   }
 
   final int runWithManagers(PackageAction action) throws Exception {
@@ -59,8 +57,7 @@ abstract class PackageSubCommand extends ToolBase {
     packageTool.runWithManagers(
         connectionOptions != null ? connectionOptions : packageTool.connectionOptions,
         credentials,
-        action
-    );
+        action);
     return 0;
   }
 }

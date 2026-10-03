@@ -17,8 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.nio.file.Path;
-
 import static org.apache.solr.cli.SolrCLI.printRed;
 
 /** Supports package add-repo command in the bin/solr script. */
@@ -28,16 +26,16 @@ import static org.apache.solr.cli.SolrCLI.printRed;
     description = "Deploy an installed package to collections or at cluster level.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # Deploy a package to a collection",
-        "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
-        "",
-        "  # Update an existing deployment",
-        "  bin/solr package deploy mypkg --update --collections myCollection -y"
+      "  # Deploy a package to a collection",
+      "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
+      "",
+      "  # Update an existing deployment",
+      "  bin/solr package deploy mypkg --update --collections myCollection -y"
     })
 public class Deploy extends PackageSubCommand {
 
@@ -56,7 +54,8 @@ public class Deploy extends PackageSubCommand {
   @picocli.CommandLine.Option(
       names = {"--collections"},
       paramLabel = "COLLECTIONS",
-      description = "Collections on which this package needs to be deployed on, excluding cluster level plugins")
+      description =
+          "Collections on which this package needs to be deployed on, excluding cluster level plugins")
   private String collections;
 
   @picocli.CommandLine.Option(
@@ -84,7 +83,14 @@ public class Deploy extends PackageSubCommand {
     }
     return runWithManagers(
         (packageManager, repositoryManager) ->
-            packageTool.deploy(packageManager, packageNameAndVersion, cluster, collections, params, update, noPrompt));
+            packageTool.deploy(
+                packageManager,
+                packageNameAndVersion,
+                cluster,
+                collections,
+                params,
+                update,
+                noPrompt));
   }
 
   @Override

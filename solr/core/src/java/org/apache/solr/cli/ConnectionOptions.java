@@ -77,7 +77,8 @@ class ConnectionOptions {
     return solrUrl;
   }
 
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials) throws Exception {
+  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+      throws Exception {
     if (connectionOptions != null) {
       String solrUrl = connectionOptions.effectiveSolrUrl();
       if (solrUrl != null) {
@@ -113,8 +114,8 @@ class ConnectionOptions {
     return defaultUrl;
   }
 
-  static String resolveZkHost(ConnectionOptions connectionOptions, String solrUrl, String credentials)
-      throws Exception {
+  static String resolveZkHost(
+      ConnectionOptions connectionOptions, String solrUrl, String credentials) throws Exception {
     if (connectionOptions != null) {
       String zkHost = connectionOptions.effectiveZkHost();
       if (zkHost != null) {

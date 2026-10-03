@@ -23,19 +23,20 @@ import static org.apache.solr.cli.SolrCLI.printRed;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "list-deployed",
-    description = "Print packages deployed on a collection, or collections where a package is deployed.",
+    description =
+        "Print packages deployed on a collection, or collections where a package is deployed.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
-        "0: Operation completed successfully.",
-        "1: Operation failed; check output for details."
+      "0: Operation completed successfully.",
+      "1: Operation failed; check output for details."
     },
     footerHeading = "%nExamples:%n",
     footer = {
-        "  # List packages deployed on a collection",
-        "  bin/solr package list-deployed -c myCollection",
-        "",
-        "  # List collections where a package is deployed",
-        "  bin/solr package list-deployed mypkg"
+      "  # List packages deployed on a collection",
+      "  bin/solr package list-deployed -c myCollection",
+      "",
+      "  # List collections where a package is deployed",
+      "  bin/solr package list-deployed mypkg"
     })
 public class ListDeployed extends PackageSubCommand {
 
@@ -51,7 +52,6 @@ public class ListDeployed extends PackageSubCommand {
       paramLabel = "PACKAGE",
       description = "Package name; lists collections where this package is deployed.")
   private String packageName;
-
 
   @Override
   public int callTool() throws Exception {
