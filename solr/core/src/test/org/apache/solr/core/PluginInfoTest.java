@@ -168,6 +168,9 @@ public class PluginInfoTest extends DOMUtilTestBase {
     PluginInfo formatter =
         new PluginInfo(
             "formatter", Map.of("name", "html", "class", "com.example.HtmlFormatter"), null, null);
+    PluginInfo secondFormatter =
+        new PluginInfo(
+            "formatter", Map.of("name", "text", "class", "com.example.TextFormatter"), null, null);
     PluginInfo encoder =
         new PluginInfo(
             "encoder", Map.of("name", "html", "class", "com.example.HtmlEncoder"), null, null);
@@ -176,7 +179,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
             "searchComponent",
             Map.of("name", "highlight", "class", "com.example.HighlightComponent"),
             null,
-            List.of(formatter, encoder, formatter));
+            List.of(formatter, encoder, secondFormatter));
 
     Map<String, Object> out = new LinkedHashMap<>();
     parent.writeMap(
@@ -198,6 +201,30 @@ public class PluginInfoTest extends DOMUtilTestBase {
     PluginInfo gotEncoder = (PluginInfo) out.get("encoder");
     assertEquals("html", gotEncoder.name);
     assertEquals("com.example.HtmlEncoder", gotEncoder.className);
+  }
+
+  @Test
+  public void testUnnamedChildIsWrittenUnderItsType() throws Exception {
+    PluginInfo unnamed =
+        new PluginInfo("highlighting", Map.of("class", "com.example.Highlighting"), null, null);
+    PluginInfo parent =
+        new PluginInfo(
+            "searchComponent",
+            Map.of("name", "highlight", "class", "com.example.HighlightComponent"),
+            null,
+            List.of(unnamed));
+
+    Map<String, Object> out = new LinkedHashMap<>();
+    parent.writeMap(
+        new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
+            out.put(k.toString(), v);
+            return this;
+          }
+        });
+
+    assertSame(unnamed, out.get("highlighting"));
   }
 
   @Test

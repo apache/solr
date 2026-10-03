@@ -1,4 +1,4 @@
-title: Config API output for the "highlight" searchComponent is no longer dropped
+title: The Config API now returns the highlight searchComponent, with child plugins keyed by their type instead of their name
 type: fixed
 authors:
   - name: Nick Shanin
