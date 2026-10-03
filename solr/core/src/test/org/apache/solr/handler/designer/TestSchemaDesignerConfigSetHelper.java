@@ -128,8 +128,11 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     ZipEntry entry;
     while ((entry = stream.getNextEntry()) != null) {
-      // ZipEntry names have file separators that are OS specific. This normalizes to forward slash.
-      String entryName = entry.getName().replace('\\', '/');
+      String entryName = entry.getName();
+      assertFalse(
+          "ZIP entry names must use / and must not be empty: " + entryName, entryName.isEmpty());
+      assertFalse("ZIP must not include a nameless root directory", "/".equals(entryName));
+      assertFalse("ZIP entry names must use / not \\: " + entryName, entryName.contains("\\"));
       if ("solrconfig.xml".equals(entryName)) {
         foundSolrConfig = true;
       } else if ("lang/stopwords_en.txt".equals(entryName)) {

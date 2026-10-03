@@ -1,0 +1,7 @@
+title: Write portable ZIP entry names when exporting configsets and normalize legacy Windows entries on upload.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18178
+    url: https://issues.apache.org/jira/browse/SOLR-18178

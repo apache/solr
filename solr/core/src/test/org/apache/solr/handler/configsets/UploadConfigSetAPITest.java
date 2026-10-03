@@ -18,7 +18,12 @@
 package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -27,15 +32,18 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.FileSystemConfigSetService;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link UploadConfigSet#uploadConfigSet} (Upload interface). */
 public class UploadConfigSetAPITest extends SolrTestCase {
@@ -303,5 +311,104 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     byte[] uploadedData =
         configSetService.downloadFileFromConfig(configSetName, "conf/solrconfig.xml");
     assertEquals("<config/>", new String(uploadedData, StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testZipUploadNormalizesBackslashEntryNames() throws Exception {
+    final String configSetName = "backslashpaths";
+    createExistingConfigSet(configSetName, "lang/stopwords/old.txt", "old", "stale.txt", "stale");
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+      zos.putNextEntry(new ZipEntry("lang\\"));
+      zos.closeEntry();
+      zos.putNextEntry(new ZipEntry("lang\\stopwords\\"));
+      zos.closeEntry();
+      zos.putNextEntry(new ZipEntry("lang\\stopwords\\en.txt"));
+      zos.write("a\nthe".getBytes(StandardCharsets.UTF_8));
+      zos.closeEntry();
+    }
+    InputStream zipStream = new ByteArrayInputStream(baos.toByteArray());
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    api.uploadConfigSet(configSetName, true, true, zipStream);
+
+    byte[] uploadedData =
+        configSetService.downloadFileFromConfig(configSetName, "lang/stopwords/en.txt");
+    assertEquals("a\nthe", new String(uploadedData, StandardCharsets.UTF_8));
+    assertEquals(
+        "lang/stopwords/en.txt", UploadConfigSet.normalizeZipEntryName("lang\\stopwords\\en.txt"));
+    List<String> configFiles = configSetService.getAllConfigFiles(configSetName);
+    assertTrue(configFiles.contains("lang/"));
+    assertTrue(configFiles.contains("lang/stopwords/"));
+    assertTrue(configFiles.contains("lang/stopwords/en.txt"));
+    assertTrue(configFiles.stream().noneMatch(path -> path.contains("\\")));
+
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "lang/stopwords/old.txt"));
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "stale.txt"));
+  }
+
+  @Test
+  public void testZipUploadRejectsPathTraversalEntries() throws Exception {
+    final String configSetName = "traversalpaths";
+    createExistingConfigSet(configSetName, "conf/solrconfig.xml", "<config/>");
+
+    // The backslash entry is normalized to forward slashes before the config-set
+    // backend sees it, so both entries below are traversal attempts on every platform.
+    // The "conf/" directory entry keeps cleanup from recursively deleting the
+    // pre-existing conf/ dir (and the new file in it) afterwards.
+    InputStream zipStream =
+        createZipStream(
+            "../evil.txt", "evil", "..\\evil2.txt", "evil2", "conf/", "", "conf/good.txt", "good");
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    api.uploadConfigSet(configSetName, true, true, zipStream);
+
+    // Traversal entries must not land in the configset ...
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "evil.txt"));
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "evil2.txt"));
+    // ... nor escape next to it on disk ...
+    assertFalse(Files.exists(configSetBase.resolve("evil.txt")));
+    assertFalse(Files.exists(configSetBase.resolve("evil2.txt")));
+    // ... while legitimate entries still upload.
+    assertEquals(
+        "good",
+        new String(
+            configSetService.downloadFileFromConfig(configSetName, "conf/good.txt"),
+            StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testZipUploadSkipsUnsafeEntryPathsBeforeBackendDispatch() throws Exception {
+    // The traversal guard must hold for every ConfigSetService backend, not just the
+    // filesystem one: the ZooKeeper backend builds a znode path from the entry name, so an
+    // entry the dispatch lets through aborts the whole upload there. Use a mock backend and
+    // pin exactly which entry names the dispatch hands over.
+    ConfigSetService mockService = mock(ConfigSetService.class);
+    when(mockService.checkConfigExists(anyString())).thenReturn(false);
+    CoreContainer container = mock(CoreContainer.class);
+    when(container.getConfigSetService()).thenReturn(mockService);
+
+    final String configSetName = "anybackend";
+    InputStream zipStream =
+        createZipStream(
+            "../evil.txt",
+            "evil",
+            "..\\evil2.txt",
+            "evil2",
+            "/abs.txt",
+            "abs",
+            "conf/../evil3.txt",
+            "evil3",
+            "conf/good.txt",
+            "good");
+
+    final var api = new UploadConfigSet(container, null, null);
+    api.uploadConfigSet(configSetName, true, false, zipStream);
+
+    ArgumentCaptor<String> fileNameCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockService, times(1))
+        .uploadFileToConfig(eq(configSetName), fileNameCaptor.capture(), any(), eq(true));
+    assertEquals(List.of("conf/good.txt"), fileNameCaptor.getAllValues());
   }
 }

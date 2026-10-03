@@ -132,6 +132,17 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     assertFalse(fileSystemConfigSetService.checkConfigExists("copytestconfig"));
   }
 
+  @Test
+  public void testGetAllConfigFilesUsesForwardSlashesForDirectories() throws IOException {
+    String configName = "nestedconfig";
+    fileSystemConfigSetService.uploadFileToConfig(
+        configName, "lang/stopwords_en.txt", "a\nthe".getBytes(StandardCharsets.UTF_8), true);
+
+    assertEquals(
+        List.of("lang/", "lang/stopwords_en.txt"),
+        fileSystemConfigSetService.getAllConfigFiles(configName));
+  }
+
   private static List<String> getFileList(Path confDir) throws IOException {
     try (Stream<Path> configs = Files.list(confDir)) {
       return configs
