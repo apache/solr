@@ -16,7 +16,10 @@
  */
 package org.apache.solr.core;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.util.DOMUtilTestBase;
 import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Test;
@@ -156,6 +159,72 @@ public class PluginInfoTest extends DOMUtilTestBase {
     for (PluginInfo childInfo : children) {
       assertNotNull(childInfo);
     }
+  }
+
+  @Test
+  public void testChildrenGroupedByTypeInSerializedOutput() throws Exception {
+    // Two unrelated child plugin types sharing a name must not clobber each other in the
+    // serialized output; children are grouped by type (see SOLR-13706).
+    PluginInfo formatter =
+        new PluginInfo(
+            "formatter", Map.of("name", "html", "class", "com.example.HtmlFormatter"), null, null);
+    PluginInfo secondFormatter =
+        new PluginInfo(
+            "formatter", Map.of("name", "text", "class", "com.example.TextFormatter"), null, null);
+    PluginInfo encoder =
+        new PluginInfo(
+            "encoder", Map.of("name", "html", "class", "com.example.HtmlEncoder"), null, null);
+    PluginInfo parent =
+        new PluginInfo(
+            "searchComponent",
+            Map.of("name", "highlight", "class", "com.example.HighlightComponent"),
+            null,
+            List.of(formatter, encoder, secondFormatter));
+
+    Map<String, Object> out = new LinkedHashMap<>();
+    parent.writeMap(
+        new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
+            out.put(k.toString(), v);
+            return this;
+          }
+        });
+
+    assertTrue(out.containsKey("formatter"));
+    assertTrue(out.containsKey("encoder"));
+    assertFalse("children must be grouped by type, not by shared name", out.containsKey("html"));
+    // repeated children of the same type become a list
+    assertTrue(out.get("formatter") instanceof List);
+    assertEquals(2, ((List<?>) out.get("formatter")).size());
+    // each child's own name is preserved in its attributes
+    PluginInfo gotEncoder = (PluginInfo) out.get("encoder");
+    assertEquals("html", gotEncoder.name);
+    assertEquals("com.example.HtmlEncoder", gotEncoder.className);
+  }
+
+  @Test
+  public void testUnnamedChildIsWrittenUnderItsType() throws Exception {
+    PluginInfo unnamed =
+        new PluginInfo("highlighting", Map.of("class", "com.example.Highlighting"), null, null);
+    PluginInfo parent =
+        new PluginInfo(
+            "searchComponent",
+            Map.of("name", "highlight", "class", "com.example.HighlightComponent"),
+            null,
+            List.of(unnamed));
+
+    Map<String, Object> out = new LinkedHashMap<>();
+    parent.writeMap(
+        new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(CharSequence k, Object v) {
+            out.put(k.toString(), v);
+            return this;
+          }
+        });
+
+    assertSame(unnamed, out.get("highlighting"));
   }
 
   @Test

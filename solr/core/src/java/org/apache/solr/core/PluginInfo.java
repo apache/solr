@@ -208,16 +208,19 @@ public class PluginInfo implements MapWriter {
 
     Map<String, Object> childrenGrouped = new LinkedHashMap<>();
     for (PluginInfo child : children) {
-      Object old = childrenGrouped.get(child.name);
+      // Group by type (not name): children are looked up by type via getChildren(type),
+      // and unrelated plugin types may share a name (e.g. formatter/encoder both named "html").
+      // The name, when present, is preserved inside each child's own serialized attributes.
+      Object old = childrenGrouped.get(child.type);
       if (old == null) {
-        childrenGrouped.put(child.name, child);
+        childrenGrouped.put(child.type, child);
       } else if (old instanceof List list) {
         list.add(child);
       } else {
         List<Object> l = new ArrayList<>();
         l.add(old);
         l.add(child);
-        childrenGrouped.put(child.name, l);
+        childrenGrouped.put(child.type, l);
       }
     }
     for (Map.Entry<String, Object> entry : childrenGrouped.entrySet()) {
