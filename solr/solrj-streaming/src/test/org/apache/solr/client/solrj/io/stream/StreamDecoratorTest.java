@@ -29,6 +29,7 @@ import java.util.Objects;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -60,6 +61,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -941,6 +943,62 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     solrClientCache.close();
   }
 
+  /**
+   * SOLR-12505: fetch() sends its batch query as "{! df=.. q.op=OR}.." and must not depend on the
+   * target handler's default defType. NOTE: written without being compiled or run; see
+   * SOLR-12505-TESTING.md.
+   */
+  @Test
+  public void testFetchStreamWithNonLuceneDefaultDefType() throws Exception {
+    final String edismaxCollection = "fetchEdismax";
+    CollectionAdminRequest.createCollection(edismaxCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(edismaxCollection, 1, 1);
+    try {
+      // make the target handler default to a parser that ignores the {! df=.. q.op=OR} local params
+      cluster
+          .getSolrClient()
+          .request(
+              new V2Request.Builder("/c/" + edismaxCollection + "/config")
+                  .withMethod(SolrRequest.METHOD.POST)
+                  .withPayload(
+                      "{'update-requesthandler': {'name': '/select',"
+                          + " 'class': 'solr.SearchHandler', 'defaults': {'defType': 'edismax'}}}")
+                  .build());
+
+      new UpdateRequest()
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "subject", "blah blah blah 0")
+          .add(id, "1", "a_s", "hello1", "a_i", "1", "subject", "blah blah blah 1")
+          .add(id, "2", "a_s", "hello2", "a_i", "2", "subject", "blah blah blah 2")
+          .commit(cluster.getSolrClient(), edismaxCollection);
+
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(edismaxCollection, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      TupleStream stream =
+          factory.constructStream(
+              "fetch("
+                  + edismaxCollection
+                  + ", search("
+                  + edismaxCollection
+                  + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a_i\","
+                  + " batchSize=\"2\", fl=\"subject\")");
+      StreamContext context = new StreamContext();
+      context.setSolrClientCache(new SolrClientCache());
+      stream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(stream);
+
+      assertEquals(3, tuples.size());
+      for (int i = 0; i < 3; i++) {
+        assertEquals("blah blah blah " + i, tuples.get(i).getString("subject"));
+      }
+    } finally {
+      CollectionAdminRequest.deleteCollection(edismaxCollection).process(cluster.getSolrClient());
+    }
+  }
   @Test
   public void testFetchStream() throws Exception {
 

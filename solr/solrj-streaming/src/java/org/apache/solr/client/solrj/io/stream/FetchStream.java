@@ -244,6 +244,9 @@ public class FetchStream extends TupleStream implements Expressible {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", buf.toString());
+      // The local-params prefix above is only honored by the lucene parser; do not inherit another
+      // defType (e.g. edismax) from the target request handler defaults.
+      params.add("defType", "lucene");
       params.add("fl", fieldList + appendFields());
       params.add("rows", Integer.toString(batchSize));
       params.add(SORT, "_version_ desc");
