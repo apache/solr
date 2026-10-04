@@ -1,0 +1,10 @@
+title: >
+  The fetch() streaming expression now sends defType=lucene with its batch query, so it no longer
+  fails to enrich tuples when the target request handler defaults to a different query parser.
+type: fixed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-12505
+    url: https://issues.apache.org/jira/browse/SOLR-12505
