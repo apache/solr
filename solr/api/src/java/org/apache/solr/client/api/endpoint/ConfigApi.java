@@ -25,6 +25,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
+import org.apache.solr.client.api.model.ConfigOverlayResponse;
+import org.apache.solr.client.api.model.ConfigZnodeVersionResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /** V2 API for reading and modifying a core/collection's config */
@@ -42,5 +44,29 @@ public interface ConfigApi {
             @DefaultValue("false")
             @Parameter(description = "Expand request handler useParams and effective parameters")
             boolean expandParams);
+
+    @GET
+    @Path("/overlay")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch the config overlay of the specified core or collection",
+        tags = {"config"})
+    ConfigOverlayResponse getOverlay();
+
+    @GET
+    @Path("/znodeversion")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch znode versions for config overlay and request params",
+        tags = {"config"})
+    ConfigZnodeVersionResponse getZnodeVersion(
+        @QueryParam("overlay")
+            @DefaultValue("-1")
+            @Parameter(description = "Expected overlay znode version")
+            int expectedOverlayVersion,
+        @QueryParam("params")
+            @DefaultValue("-1")
+            @Parameter(description = "Expected request-params znode version")
+            int expectedParamsVersion);
   }
 }

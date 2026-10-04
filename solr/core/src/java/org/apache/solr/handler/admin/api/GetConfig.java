@@ -30,6 +30,8 @@ import java.util.Map;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ConfigApi;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
+import org.apache.solr.client.api.model.ConfigOverlayResponse;
+import org.apache.solr.client.api.model.ConfigZnodeVersionResponse;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -37,6 +39,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.jersey.NullKeyTolerantMap;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -57,6 +60,29 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   public ConfigInfoResponse getConfig(boolean expandParams) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
     response.config = buildConfigMap(solrQueryRequest, expandParams);
+    return response;
+  }
+
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
+  public ConfigOverlayResponse getOverlay() {
+    final var response = instantiateJerseyResponse(ConfigOverlayResponse.class);
+    response.overlay = Utils.convertToMap(solrQueryRequest.getCore().getSolrConfig().getOverlay(), new LinkedHashMap<>());
+    return response;
+  }
+
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
+  public ConfigZnodeVersionResponse getZnodeVersion(int expectedOverlayVersion, int expectedParamsVersion) {
+    final var response = instantiateJerseyResponse(ConfigZnodeVersionResponse.class);
+    final var core = solrQueryRequest.getCore();
+    final var solrConfig = core.getSolrConfig();
+
+    response.znodeVersion = new ConfigZnodeVersionResponse.ZnodeVersion();
+    response.znodeVersion.overlay = solrConfig.getOverlay().getVersion();
+    response.znodeVersion.params = solrConfig.getRequestParams().getZnodeVersion();
+
+    SolrConfigHandler.maybeRefreshStaleConfig(core, expectedOverlayVersion, expectedParamsVersion);
     return response;
   }
 
