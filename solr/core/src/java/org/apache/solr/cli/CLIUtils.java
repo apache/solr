@@ -46,17 +46,17 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.packagemanager.PackageUtils;
+import org.apache.solr.packagemanager.UserIO;
 
 /** Utility class that holds various helper methods for the CLI. */
 public final class CLIUtils {
 
   private CLIUtils() {}
 
-  public static String RED = PackageUtils.RED;
-  public static String GREEN = PackageUtils.GREEN;
-  public static String YELLOW = PackageUtils.YELLOW;
-  public static String RESET = PackageUtils.RESET;
+  public static String RED = UserIO.RED;
+  public static String GREEN = UserIO.GREEN;
+  public static String YELLOW = UserIO.YELLOW;
+  public static String RESET = UserIO.RESET;
 
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);

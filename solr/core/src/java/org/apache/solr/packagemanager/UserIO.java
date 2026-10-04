@@ -21,15 +21,20 @@ package org.apache.solr.packagemanager;
 @FunctionalInterface
 public interface UserIO {
 
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+  public static String RESET = "\u001B[0m";
+
   UserIO NONE = message -> {};
 
   void print(String message);
 
   default void printSuccess(String message) {
-    print(PackageUtils.GREEN + message + PackageUtils.RESET + System.lineSeparator());
+    print(GREEN + message + RESET + System.lineSeparator());
   }
 
   default void printError(String message) {
-    print(PackageUtils.RED + message + PackageUtils.RESET + System.lineSeparator());
+    print(RED + message + RESET + System.lineSeparator());
   }
 }

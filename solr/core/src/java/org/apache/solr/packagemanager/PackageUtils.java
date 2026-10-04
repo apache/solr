@@ -65,11 +65,6 @@ public class PackageUtils {
   public static String REPOSITORIES_ZK_PATH = "/repositories.json";
   public static String CLUSTERPROPS_PATH = "/api/cluster/zk/data/clusterprops.json";
 
-  public static String RED = "\u001B[31m";
-  public static String GREEN = "\u001B[32m";
-  public static String YELLOW = "\u001B[33m";
-  public static String RESET = "\u001B[0m";
-
   private static final String JSON_CONTENT_TYPE = "application/json";
 
   public static NamedList<Object> postJsonToSolr(
@@ -254,7 +249,7 @@ public class PackageUtils {
 
   /** Console print using green color */
   public static void formatGreen(StringBuilder sb, Object message) {
-    format(sb, GREEN, message);
+    format(sb, UserIO.GREEN, message);
   }
 
   public static void format(StringBuilder sb, Object message) {
@@ -263,7 +258,7 @@ public class PackageUtils {
 
   public static void format(StringBuilder sb, String color, Object message) {
     if (color != null) {
-      sb.append(color + String.valueOf(message) + RESET + "\n");
+      sb.append(color + String.valueOf(message) + UserIO.RESET + "\n");
     } else {
       sb.append(message + "\n");
     }

@@ -677,9 +677,9 @@ public class PackageManager implements Closeable {
     boolean shouldExecute = true;
     if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
       runtime.print(
-          PackageUtils.YELLOW
+          UserIO.YELLOW
               + "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): "
-              + PackageUtils.RESET);
+              + UserIO.RESET);
       try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
         if ("no".trim().equalsIgnoreCase(userInput) || "n".trim().equalsIgnoreCase(userInput)) {
