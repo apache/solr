@@ -1,5 +1,5 @@
 title: The Config API now returns the highlight searchComponent, with child plugins keyed by their type instead of their name
-type: fixed
+type: changed
 authors:
   - name: Nick Shanin
 links:
