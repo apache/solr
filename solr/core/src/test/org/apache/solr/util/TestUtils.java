@@ -167,6 +167,51 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals(10, ((Number) defaults.get("rows")).intValue());
   }
 
+  public void testCommandOperationNestedDuplicateKeysInAppends() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'name':'/x',"
+                    + "  'appends':{"
+                    + "    'facet.field':'subject',"
+                    + "    'facet.field':'country',"
+                    + "    'rows':10"
+                    + "  }"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> appends = (Map<String, Object>) ops.get(0).getDataMap().get("appends");
+    assertEquals(asList("subject", "country"), appends.get("facet.field"));
+    assertEquals(10, ((Number) appends.get("rows")).intValue());
+  }
+
+  public void testCommandOperationNestedDuplicateKeysInInvariants() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'name':'/x',"
+                    + "  'invariants':{"
+                    + "    'facet.field':'subject',"
+                    + "    'facet.field':'country',"
+                    + "    'rows':10"
+                    + "  }"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> invariants =
+        (Map<String, Object>) ops.get(0).getDataMap().get("invariants");
+    assertEquals(asList("subject", "country"), invariants.get("facet.field"));
+    assertEquals(10, ((Number) invariants.get("rows")).intValue());
+  }
+
   public void testCommandOperationNestedArrayDefaults() throws IOException {
     List<CommandOperation> ops =
         CommandOperation.parse(

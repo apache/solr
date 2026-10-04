@@ -194,19 +194,46 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertMultiValuedFacetFieldDefaults(harness, "/x-mv-create");
   }
 
+  public void testRequestHandlerMultiValuedAppendsOnCreate() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    String payload =
+        "{\n"
+            + "'create-requesthandler' : { 'name' : '/x-mv-appends', 'class': 'org.apache.solr.handler.DumpRequestHandler', registerPath :'/solr,/v2',"
+            + " 'appends': {'facet.field':'subject', 'facet.field':'country'}}\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+    assertMultiValuedFacetField(harness, "/x-mv-appends", "appends");
+  }
+
+  public void testRequestHandlerMultiValuedInvariantsOnCreate() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    String payload =
+        "{\n"
+            + "'create-requesthandler' : { 'name' : '/x-mv-invariants', 'class': 'org.apache.solr.handler.DumpRequestHandler', registerPath :'/solr,/v2',"
+            + " 'invariants': {'facet.field':'subject', 'facet.field':'country'}}\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+    assertMultiValuedFacetField(harness, "/x-mv-invariants", "invariants");
+  }
+
   private static void assertMultiValuedFacetFieldDefaults(
       RestTestHarness harness, String handlerPath) throws Exception {
+    assertMultiValuedFacetField(harness, handlerPath, "defaults");
+  }
+
+  private static void assertMultiValuedFacetField(
+      RestTestHarness harness, String handlerPath, String section) throws Exception {
     List<String> expected = asList("subject", "country");
     testForResponseElement(
         harness,
         "/config/overlay",
-        asList("overlay", "requestHandler", handlerPath, "defaults", "facet.field"),
+        asList("overlay", "requestHandler", handlerPath, section, "facet.field"),
         expected,
         TIMEOUT_S);
     testForResponseElement(
         harness,
         "/config",
-        asList("config", "requestHandler", handlerPath, "defaults", "facet.field"),
+        asList("config", "requestHandler", handlerPath, section, "facet.field"),
         expected,
         TIMEOUT_S);
     testForResponseElement(
