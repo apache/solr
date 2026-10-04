@@ -1,4 +1,4 @@
-title: Resolve alias in collection param from POST body, not just URL query string
+title: Keep a POST body's collection parameter when the path names multiple collections
 type: fixed
 authors:
   - name: Nick Shanin
