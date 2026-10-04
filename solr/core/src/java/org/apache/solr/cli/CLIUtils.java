@@ -55,7 +55,6 @@ public final class CLIUtils {
 
   public static String RED = UserIO.RED;
   public static String GREEN = UserIO.GREEN;
-  public static String YELLOW = UserIO.YELLOW;
   public static String RESET = UserIO.RESET;
 
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
