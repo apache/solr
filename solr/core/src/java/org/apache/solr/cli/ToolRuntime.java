@@ -27,6 +27,7 @@ import org.apache.solr.packagemanager.UserIO;
  */
 public abstract class ToolRuntime implements UserIO {
 
+  @Override
   public abstract void print(String message);
 
   public abstract void println(String message);
