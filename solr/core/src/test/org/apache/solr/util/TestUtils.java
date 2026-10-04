@@ -167,6 +167,37 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals(10, ((Number) defaults.get("rows")).intValue());
   }
 
+  public void testCommandOperationDuplicateKeysInListForm() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'add-requesthandler':["
+                    + "  {'name':'/a',"
+                    + "   'defaults':{'fq':'x','fq':'y'}},"
+                    + "  {'name':'/b',"
+                    + "   'defaults':{'fq':'p','fq':'q'}}"
+                    + "]}"));
+
+    assertEquals(2, ops.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaultsA = (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    assertEquals(asList("x", "y"), defaultsA.get("fq"));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaultsB = (Map<String, Object>) ops.get(1).getDataMap().get("defaults");
+    assertEquals(asList("p", "q"), defaultsB.get("fq"));
+  }
+
+  public void testCommandOperationDuplicateKeysCollapseInListFormForOtherCommands()
+      throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader("{" + "'set-property':[" + "  {'a':1,'a':2}" + "]}"));
+
+    assertEquals(1, ops.size());
+    assertEquals(2, ((Number) ops.get(0).getDataMap().get("a")).intValue());
+  }
+
   public void testCommandOperationNestedDuplicateKeysInAppends() throws IOException {
     List<CommandOperation> ops =
         CommandOperation.parse(

@@ -330,6 +330,16 @@ public class CommandOperation {
 
   @SuppressWarnings("unchecked")
   private static Object normalizeCommandData(String commandName, Object commandData) {
+    if (commandData instanceof List<?> commandList) {
+      // The array-of-commands form: normalize each command object the same way as the
+      // single-object form, so the multi-valued sections accumulate there too instead
+      // of collapsing to the last value.
+      List<Object> list = (List<Object>) commandData;
+      for (int i = 0; i < list.size(); i++) {
+        list.set(i, normalizeCommandData(commandName, list.get(i)));
+      }
+      return list;
+    }
     if (!(commandData instanceof Map<?, ?>)) {
       return collapseDuplicateKeys(commandData);
     }

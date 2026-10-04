@@ -194,6 +194,22 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertMultiValuedFacetFieldDefaults(harness, "/x-mv-create");
   }
 
+  public void testRequestHandlerMultiValuedDefaultsInListForm() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    String payload =
+        "{\n"
+            + "'create-requesthandler' : ["
+            + " { 'name' : '/x-mv-list-a', 'class': 'org.apache.solr.handler.DumpRequestHandler', registerPath :'/solr,/v2',"
+            + "   'defaults': {'facet.field':'subject', 'facet.field':'country'}},"
+            + " { 'name' : '/x-mv-list-b', 'class': 'org.apache.solr.handler.DumpRequestHandler', registerPath :'/solr,/v2',"
+            + "   'defaults': {'facet.field':'subject', 'facet.field':'country'}}"
+            + " ]\n"
+            + "}";
+    runConfigCommand(harness, "/config", payload);
+    assertMultiValuedFacetFieldDefaults(harness, "/x-mv-list-a");
+    assertMultiValuedFacetFieldDefaults(harness, "/x-mv-list-b");
+  }
+
   public void testRequestHandlerMultiValuedAppendsOnCreate() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload =
