@@ -1,5 +1,5 @@
 title:
-  Migration of Get Config V2 Remaining API to JAX-RS construct.
+  Migration of GET /config/overlay and GET /config/znodeVersion V2 APIs to JAX-RS construct.
 type: changed
 authors:
   - name: Jalaz Kumar
