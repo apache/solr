@@ -111,7 +111,7 @@ The `CREATE` action creates a new core and registers it.
 If a Solr core with the given name already exists, it will continue to handle requests while the new core is initializing.
 When the new core is ready, it will take new requests and the old core will be unloaded.
 
-`admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data`
+`admin/cores?action=CREATE&name=\{coreName}&instanceDir=\{instanceDir}&config=solrconfig.xml&dataDir=data`
 [tabs#coreadmin-create-request]
 ======
 V1 API::
@@ -127,7 +127,7 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=techproducts_v2&config
 If you have already existing core files deployed on disk, and need to just create the Solr core from them then the url will look something like
 [source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data
+http://localhost:8983/solr/admin/cores?action=CREATE&name={coreName}&instanceDir={instanceDir}&config=solrconfig.xml&dataDir=data
 ----
 ====
 
@@ -352,7 +352,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=RENAME&core=currentCoreName&other=newCoreName"
+curl -X GET "http://localhost:8983/solr/admin/cores?action=RENAME&core={currentCoreName}&other=newCoreName"
 ----
 ====
 V2 API::
@@ -360,7 +360,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/{currentCoreName}/rename -H 'Content-Type: application/json' -d '
   {
     "to": "newCoreName"
   }
@@ -416,7 +416,7 @@ V1 API::
 ====
 [source,bash]
 ----
-`admin/cores?action=SWAP&core=_core-name_&other=_other-core-name_`
+`admin/cores?action=SWAP&core={coreName}&other={otherCoreName}`
 ----
 ====
 V2 API::
@@ -424,7 +424,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/{coreName}/swap -H 'Content-Type: application/json' -d '
   {
     "with": "_other-core-name_"
   }
@@ -570,7 +570,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core=targetCoreName&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
+curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core={targetCoreName}&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
 ----
 ====
 
@@ -579,7 +579,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/{targetCoreName}/merge-indices -H 'Content-Type: application/json' -d '
 {
   "indexDirs": ["path/to/core1/data/index","path/to/core2/data/index"]
 }
@@ -601,7 +601,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core=targetCoreName&srcCore=core1&srcCore=core2"
+curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core={targetCoreName}&srcCore=core1&srcCore=core2"
 ----
 ====
 
@@ -610,7 +610,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/cores/{targetCoreName}/merge-indices -H 'Content-Type: application/json' -d '
 {
   "srcCores": ["core1","core2"]
 }
@@ -949,7 +949,7 @@ http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=1
 The `REQUESTRECOVERY` action manually asks a core to recover by syncing with the leader.
 This should be considered an "expert" level command and should be used in situations where the node (SorlCloud replica) is unable to become active automatically.
 
-`admin/cores?action=REQUESTRECOVERY&core=_core-name_`
+`admin/cores?action=REQUESTRECOVERY&core=\{coreName}`
 
 === REQUESTRECOVERY Parameters
 

@@ -1777,7 +1777,7 @@ The name that should be used for this set of stop words in the managed REST API.
 
 *Example:*
 //TODO: make this show an actual API call.
-With this configuration the set of words is named "english" and can be managed via `/solr/collection_name/schema/analysis/stopwords/english`
+With this configuration the set of words is named "english" and can be managed via `/solr/\{collectionName}/schema/analysis/stopwords/english`
 
 [tabs#filter-managedstop]
 ======
@@ -1830,7 +1830,7 @@ The name that should be used for this mapping on synonyms in the managed REST AP
 
 *Example:*
 //TODO: make this show an actual API call
-With this configuration the set of mappings is named "english" and can be managed via `/solr/collection_name/schema/analysis/synonyms/english`
+With this configuration the set of mappings is named "english" and can be managed via `/solr/\{collectionName}/schema/analysis/synonyms/english`
 
 [tabs#filter-managed-synonymgrpah]
 ======
