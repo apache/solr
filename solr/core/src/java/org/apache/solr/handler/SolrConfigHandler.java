@@ -219,17 +219,12 @@ public class SolrConfigHandler extends RequestHandlerBase
 
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
-            resp.add(
-                ZNODEVER,
-                Map.of(
-                    ConfigOverlay.NAME,
-                    req.getCore().getSolrConfig().getOverlay().getVersion(),
-                    RequestParams.NAME,
-                    req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
-            boolean isStale = false;
-            int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
-            int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();
-
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                resp,
+                new GetConfig(req)
+                    .getZnodeVersion(
+                        req.getParams().getInt(ConfigOverlay.NAME, -1),
+                        req.getParams().getInt(RequestParams.NAME, -1)));
           } else {
             Map<String, Object> m = getConfigDetails(parts.get(1), req);
             Map<String, Object> val = new LinkedHashMap<>();
@@ -921,40 +916,45 @@ public class SolrConfigHandler extends RequestHandlerBase
     return activeReplicas;
   }
 
-  public static void maybeRefreshStaleConfig(SolrCore core, int expectedOverlayVersion, int expectedParamsVersion) {
-    boolean isStale = isExpectedVersionStale(
-        "overlay", expectedOverlayVersion, core.getSolrConfig().getOverlay().getVersion())
-        | isExpectedVersionStale(
-            "params", expectedParamsVersion, core.getSolrConfig().getRequestParams().getZnodeVersion());
+  public static void maybeRefreshStaleConfig(
+      SolrCore core, int expectedOverlayVersion, int expectedParamsVersion) {
+    boolean isStale =
+        isExpectedVersionStale(
+                "overlay", expectedOverlayVersion, core.getSolrConfig().getOverlay().getVersion())
+            | isExpectedVersionStale(
+                "params",
+                expectedParamsVersion,
+                core.getSolrConfig().getRequestParams().getZnodeVersion());
 
     if (isStale && core.getResourceLoader() instanceof ZkSolrResourceLoader) {
       final Lock reloadLock =
           ((SolrConfigHandler) core.getRequestHandler("/config")).getReloadLock();
       new Thread(
-          () -> {
-            if (!reloadLock.tryLock()) {
-              log.info("Another reload is in progress . Not doing anything");
-              return;
-            }
-            try {
-              log.info("Trying to update my configs");
-              SolrCore.getConfListener(core, (ZkSolrResourceLoader) core.getResourceLoader())
-                  .run();
-            } catch (Exception e) {
-              log.error("Unable to refresh conf ", e);
-            } finally {
-              reloadLock.unlock();
-            }
-          },
-          SolrConfigHandler.class.getSimpleName() + "-refreshconf")
+              () -> {
+                if (!reloadLock.tryLock()) {
+                  log.info("Another reload is in progress . Not doing anything");
+                  return;
+                }
+                try {
+                  log.info("Trying to update my configs");
+                  SolrCore.getConfListener(core, (ZkSolrResourceLoader) core.getResourceLoader())
+                      .run();
+                } catch (Exception e) {
+                  log.error("Unable to refresh conf ", e);
+                } finally {
+                  reloadLock.unlock();
+                }
+              },
+              SolrConfigHandler.class.getSimpleName() + "-refreshconf")
           .start();
     } else {
       if (log.isInfoEnabled()) {
-        log.info("isStale {} , resourceloader {}", isStale,
+        log.info(
+            "isStale {} , resourceloader {}",
+            isStale,
             core.getResourceLoader().getClass().getName());
       }
     }
-
   }
 
   private static boolean isExpectedVersionStale(String label, int expected, int actual) {

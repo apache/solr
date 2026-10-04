@@ -67,13 +67,16 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @PermissionName(CONFIG_READ_PERM)
   public ConfigOverlayResponse getOverlay() {
     final var response = instantiateJerseyResponse(ConfigOverlayResponse.class);
-    response.overlay = Utils.convertToMap(solrQueryRequest.getCore().getSolrConfig().getOverlay(), new LinkedHashMap<>());
+    response.overlay =
+        Utils.convertToMap(
+            solrQueryRequest.getCore().getSolrConfig().getOverlay(), new LinkedHashMap<>());
     return response;
   }
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public ConfigZnodeVersionResponse getZnodeVersion(int expectedOverlayVersion, int expectedParamsVersion) {
+  public ConfigZnodeVersionResponse getZnodeVersion(
+      int expectedOverlayVersion, int expectedParamsVersion) {
     final var response = instantiateJerseyResponse(ConfigZnodeVersionResponse.class);
     final var core = solrQueryRequest.getCore();
     final var solrConfig = core.getSolrConfig();
