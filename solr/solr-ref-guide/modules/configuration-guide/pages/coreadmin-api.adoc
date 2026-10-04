@@ -61,21 +61,21 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores/
+curl http://localhost:8983/api/cores/
 ----
 
 To get the status for a single core:
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores/techproducts
+curl http://localhost:8983/api/cores/techproducts
 ----
 
 To skip returning information about the index:
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores?indexInfo=false
+curl http://localhost:8983/api/cores?indexInfo=false
 ----
 
 ====
@@ -352,7 +352,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=RENAME&core={currentCoreName}&other=newCoreName"
+curl "http://localhost:8983/solr/admin/cores?action=RENAME&core={currentCoreName}&other=newCoreName"
 ----
 ====
 V2 API::
@@ -570,7 +570,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core={targetCoreName}&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
+curl "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core={targetCoreName}&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
 ----
 ====
 
@@ -601,7 +601,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core={targetCoreName}&srcCore=core1&srcCore=core2"
+curl "http://localhost:8983/solr/admin/cores?action=mergeindexes&core={targetCoreName}&srcCore=core1&srcCore=core2"
 ----
 ====
 
@@ -920,7 +920,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/node/commands/id
+curl http://localhost:8983/api/node/commands/id
 ----
 ====
 ======
