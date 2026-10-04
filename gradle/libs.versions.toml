@@ -70,7 +70,7 @@ carrotsearch-hppc = "0.11.1"
 carrotsearch-randomizedtesting = "2.9.1"
 # @keep for version alignment
 checkerframework = "4.2.2"
-codehaus-woodstox = "4.3.0"
+codehaus-woodstox = "4.3.1"
 commons-cli = "1.11.0"
 commons-codec = "1.22.1"
 commons-io = "2.22.0"
@@ -84,8 +84,8 @@ eclipse-ecj = "3.46.0"
 eclipse-jetty = "12.0.34"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.1.202607240634-r"
-fasterxml = "2.22.2"
-fasterxml-woodstox = "7.2.2"
+fasterxml = "2.22.3"
+fasterxml-woodstox = "7.3.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 # @keep for version alignment
