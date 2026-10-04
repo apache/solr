@@ -925,7 +925,6 @@ public class SolrConfigHandler extends RequestHandlerBase
                 "params",
                 expectedParamsVersion,
                 core.getSolrConfig().getRequestParams().getZnodeVersion());
-
     if (isStale && core.getResourceLoader() instanceof ZkSolrResourceLoader) {
       final Lock reloadLock =
           ((SolrConfigHandler) core.getRequestHandler("/config")).getReloadLock();

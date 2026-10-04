@@ -54,7 +54,7 @@ public interface ConfigApi {
     ConfigOverlayResponse getOverlay();
 
     @GET
-    @Path("/znodeversion")
+    @Path("/znodeVersion")
     @StoreApiParameters
     @Operation(
         summary = "Fetch znode versions for config overlay and request params",

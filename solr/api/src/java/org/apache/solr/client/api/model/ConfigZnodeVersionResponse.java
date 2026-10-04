@@ -20,9 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ConfigZnodeVersionResponse extends SolrJerseyResponse {
   @JsonProperty("zNodeVersion")
-  public ZnodeVersion znodeVersion;
+  public ZnodeVersions znodeVersion;
 
-  public static class ZnodeVersion {
+  public static class ZnodeVersions {
     @JsonProperty("overlay")
     public int overlay;
 

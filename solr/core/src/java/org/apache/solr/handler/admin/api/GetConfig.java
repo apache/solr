@@ -81,7 +81,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     final var core = solrQueryRequest.getCore();
     final var solrConfig = core.getSolrConfig();
 
-    response.znodeVersion = new ConfigZnodeVersionResponse.ZnodeVersion();
+    response.znodeVersion = new ConfigZnodeVersionResponse.ZnodeVersions();
     response.znodeVersion.overlay = solrConfig.getOverlay().getVersion();
     response.znodeVersion.params = solrConfig.getRequestParams().getZnodeVersion();
 
