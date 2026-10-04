@@ -15,19 +15,19 @@
 [versions]
 androidx-adaptive = "1.3.0-rc01"
 androidx-lifecycle = "2.11.0"
-androidx-navigation3 = "1.1.1"
-compose = "1.12.0"
+androidx-navigation3 = "1.1.2"
+compose = "1.12.1"
 decompose = "3.5.0"
 essenty = "2.6.0"
 kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
-ktor = "3.5.2"
+ktor = "3.6.0"
 material3 = "1.12.0-alpha03"
 mvikotlin = "4.4.0"
 nlopez-compose = "0.6.2"
 oshai-logging = "8.0.4"
-squareup-okio = "3.18.1"
+squareup-okio = "3.18.2"
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
