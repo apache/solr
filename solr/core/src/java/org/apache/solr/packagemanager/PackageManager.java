@@ -942,7 +942,6 @@ public class PackageManager implements Closeable {
               + SolrVersion.LATEST
               + ", package version constraint: "
               + manifest.versionConstraint);
-      throw new SolrException(ErrorCode.BAD_REQUEST, "");
     }
 
     boolean res =
