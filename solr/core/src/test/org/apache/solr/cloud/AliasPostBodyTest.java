@@ -85,10 +85,12 @@ public class AliasPostBodyTest extends SolrCloudTestCase {
 
   @Test
   public void testBodyCollectionSurvivesTwoCollectionPathAlias() throws Exception {
-    // The path alias resolves to two collections, so routing derives a two-collection
-    // list for the request. The body's collection (the empty one) must still win: on
-    // the base code it is overwritten with the path list and the document in the other
-    // collection is counted too.
+    // The path alias resolves to two collections, but the collection named by the
+    // request must still win. A body-only collection value is replaced with the joined
+    // path list inside addCollectionParamIfNeeded on the base code (see
+    // HttpSolrCallCollectionParamTest); this end-to-end case passes on base as well,
+    // because the SolrJ client also places the collection parameter in the URL, where
+    // it takes precedence over the path.
     assertEquals(0, postWithCollectionParam(BOTH_ALIAS, EMPTY_COLLECTION));
   }
 }
