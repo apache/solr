@@ -215,10 +215,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.error("Recovery failed - I give up.");
     try {
       if (replicaType.leaderEligible) {
-        zkController
-            .getShardTerms(
-                cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId())
-            .recoveryFailed(cd.getCloudDescriptor().getCoreNodeName());
+        try {
+          zkController
+              .getShardTerms(
+                  cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId())
+              .recoveryFailed(cd.getCloudDescriptor().getCoreNodeName());
+        } catch (Exception e) {
+          // The RECOVERY_FAILED publication below must still happen: a failed shard
+          // terms cleanup must not leave the replica without its terminal state.
+          log.error("Failed to update shard terms for the failed recovery", e);
+        }
       }
       zkController.publish(cd, Replica.State.RECOVERY_FAILED);
     } finally {
