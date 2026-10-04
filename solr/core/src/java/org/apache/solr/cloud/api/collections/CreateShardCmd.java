@@ -170,13 +170,15 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     } catch (Exception e) {
       if (!sliceAlreadyExists) {
         // Don't leave a half-created shard stuck in CONSTRUCTION; remove it so the create can be
-        // retried cleanly.
+        // retried cleanly. DeleteShardCmd needs a fresh cluster state here: the snapshot from
+        // waitForNewShard predates AddReplicaCmd, so it shows a slice with no replicas and the
+        // delete would leave the added replicas' cores behind.
         try {
           new DeleteShardCmd(ccc)
               .call(
                   adminCmdContext
                       .subRequestContext(CollectionParams.CollectionAction.DELETESHARD, async)
-                      .withClusterState(clusterState),
+                      .withClusterState(ccc.getZkStateReader().getClusterState()),
                   new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
                   results);
         } catch (Exception cleanupEx) {
@@ -201,7 +203,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               .call(
                   adminCmdContext
                       .subRequestContext(CollectionParams.CollectionAction.DELETESHARD, async)
-                      .withClusterState(clusterState),
+                      .withClusterState(ccc.getZkStateReader().getClusterState()),
                   new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
                   results);
         } catch (Exception cleanupEx) {
