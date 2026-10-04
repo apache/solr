@@ -3,7 +3,6 @@ title: >
 type: fixed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-13265
     url: https://issues.apache.org/jira/browse/SOLR-13265
