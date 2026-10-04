@@ -99,30 +99,33 @@ public class PackageManager implements Closeable {
     }
   }
 
+  private void fail(String message) {
+    runtime.printError(message);
+    throw new SolrException(ErrorCode.BAD_REQUEST, message);
+  }
+
   public void uninstall(String packageName, String version)
       throws IOException, SolrServerException {
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
-      runtime.printError(
+      fail(
           "Package "
               + packageName
               + ":"
               + version
               + " doesn't exist. Use the install command to install this package version first.");
-      throw new SolrException(ErrorCode.BAD_REQUEST, "");
     }
 
     // Make sure that this package instance is not deployed on any collection
     Map<String, String> collectionsDeployedOn = getDeployedCollections(packageName);
     for (String collection : collectionsDeployedOn.keySet()) {
       if (version.equals(collectionsDeployedOn.get(collection))) {
-        runtime.printError(
+        fail(
             "Package "
                 + packageName
                 + " is currently deployed on collection: "
                 + collection
                 + ". Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
-        throw new SolrException(ErrorCode.BAD_REQUEST, "");
       }
     }
 
@@ -133,13 +136,12 @@ public class PackageManager implements Closeable {
       SolrPackageInstance clusterPackageInstance = clusterPackages.get(clusterPackageName);
       if (packageName.equals(clusterPackageName)
           && version.equals(clusterPackageInstance.version)) {
-        runtime.printError(
+        fail(
             "Package "
                 + packageName
                 + "is currently deployed as a cluster-level plugin ("
                 + clusterPackageInstance.getCustomData()
                 + "). Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before uninstalling the package.");
-        throw new SolrException(ErrorCode.BAD_REQUEST, "");
       }
     }
 
@@ -925,18 +927,17 @@ public class PackageManager implements Closeable {
     boolean pegToLatest = PackageUtils.LATEST.equals(version);
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
-      runtime.printError(
+      fail(
           "Package instance doesn't exist: "
               + packageName
               + ":"
               + version
               + ". Use install command to install this version first.");
-      throw new SolrException(ErrorCode.BAD_REQUEST, "");
     }
 
     Manifest manifest = packageInstance.manifest;
     if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
-      runtime.printError(
+      fail(
           "Version incompatible! Solr version: "
               + SolrVersion.LATEST
               + ", package version constraint: "
