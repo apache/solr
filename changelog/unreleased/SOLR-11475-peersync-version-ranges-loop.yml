@@ -1,0 +1,10 @@
+title: >
+  PeerSync no longer loops forever (and runs out of memory) when computing the versions to request
+  if both replicas hold the same version with opposite signs.
+type: fixed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-11475
+    url: https://issues.apache.org/jira/browse/SOLR-11475
