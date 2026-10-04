@@ -147,6 +147,66 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         "Async exception during distributed update: " + message, distribError.getMessage());
   }
 
+  @Test
+  public void testDistribErrorMessageNamesTheTargetReplica() {
+    // SOLR-12245: say which replica/collection/shard a failed distributed update was sent to
+    SolrCmdDistributor.SolrError e = new SolrCmdDistributor.SolrError();
+    e.e = new IOException("Read timed out");
+    e.req =
+        new SolrCmdDistributor.Req(
+            null,
+            new SolrCmdDistributor.Node() {
+              @Override
+              public String getUrl() {
+                return "http://host:8983/solr/coll_shard1_replica_n1/";
+              }
+
+              @Override
+              public boolean checkRetry(SolrCmdDistributor.SolrError err) {
+                return false;
+              }
+
+              @Override
+              public String getCoreName() {
+                return "coll_shard1_replica_n1";
+              }
+
+              @Override
+              public String getBaseUrl() {
+                return "http://host:8983/solr";
+              }
+
+              @Override
+              public org.apache.solr.common.cloud.ZkCoreNodeProps getNodeProps() {
+                return null;
+              }
+
+              @Override
+              public String getCollection() {
+                return "coll";
+              }
+
+              @Override
+              public String getShardId() {
+                return "shard1";
+              }
+
+              @Override
+              public int getMaxRetries() {
+                return 0;
+              }
+            },
+            null,
+            false);
+
+    String msg =
+        new DistributedUpdateProcessor.DistributedUpdatesAsyncException(List.of(e)).getMessage();
+    assertTrue(msg, msg.startsWith("Async exception during distributed update: Read timed out"));
+    assertTrue(msg, msg.contains("http://host:8983/solr/coll_shard1_replica_n1/"));
+    assertTrue(msg, msg.contains("collection=coll"));
+    assertTrue(msg, msg.contains("shard=shard1"));
+  }
+
   /**
    * @return how many requests succeeded
    */
