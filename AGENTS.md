@@ -46,7 +46,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 ## Documentation
 
 - For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
-- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user
+- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user. To write or edit a page, see `dev-docs/ref-guide/` and the "About This Guide" page (`solr/solr-ref-guide/modules/getting-started/pages/about-this-guide.adoc`), which says how examples are presented to readers
 - For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
 - Keep all documentation including javadoc concise
 - New classes should have some javadocs
