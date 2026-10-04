@@ -1,5 +1,5 @@
 title: JSON range facets now reject the terms-facet parameters limit, offset, sort, prelim_sort, overrequest, overrefine and refine with a 400 error instead of silently ignoring them
-type: fixed
+type: changed
 authors:
   - name: Nick Shanin
     nick: nickshanin
