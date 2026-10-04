@@ -4,7 +4,6 @@ title: >
 type: fixed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-16910
     url: https://issues.apache.org/jira/browse/SOLR-16910
