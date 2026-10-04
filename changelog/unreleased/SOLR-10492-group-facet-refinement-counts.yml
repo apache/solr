@@ -5,7 +5,6 @@ title: >
 type: fixed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-10492
     url: https://issues.apache.org/jira/browse/SOLR-10492
