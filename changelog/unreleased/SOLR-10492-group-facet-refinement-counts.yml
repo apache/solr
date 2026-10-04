@@ -1,0 +1,11 @@
+title: >
+  Distributed facet refinement now returns grouped counts when group.facet=true, instead of
+  document counts that replaced the correct grouped counts whenever facet.limit truncated a shard's
+  facet results.
+type: fixed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-10492
+    url: https://issues.apache.org/jira/browse/SOLR-10492
