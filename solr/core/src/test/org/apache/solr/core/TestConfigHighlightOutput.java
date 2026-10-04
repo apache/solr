@@ -21,36 +21,23 @@ import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Tests that the serialized config, as returned by the Config API, includes the highlighter. */
 public class TestConfigHighlightOutput extends SolrTestCase {
 
-  @ClassRule
-  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
-
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+  public static void beforeClass() {
     // Sets the randomized solr.tests.* properties the collection1 solrconfig.xml requires.
     SolrTestCaseJ4.newRandomConfig();
-    solrTestRule
-        .newCollection()
-        .withConfigSet(SolrTestCaseJ4.TEST_COLL1_CONF())
-        .withSchemaFile("schema.xml")
-        .create();
   }
 
   @Test
   public void testHighlightComponentIsWrittenWithItsChildren() throws Exception {
-    Object config;
-    try (SolrCore core =
-        solrTestRule.getCoreContainer().getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME)) {
-      config = Utils.fromJSONString(core.getSolrConfig().jsonStr());
-    }
+    SolrConfig solrConfig =
+        new SolrConfig(SolrTestCaseJ4.TEST_PATH().resolve("collection1"), "solrconfig.xml");
+    Object config = Utils.fromJSONString(solrConfig.jsonStr());
     Object highlighting =
         Utils.getObjectByPath(
             config, false, List.of("searchComponent", "highlight", "highlighting"));
