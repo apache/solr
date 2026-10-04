@@ -4,7 +4,6 @@ title: >
 type: fixed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-11475
     url: https://issues.apache.org/jira/browse/SOLR-11475
