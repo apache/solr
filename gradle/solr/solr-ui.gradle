@@ -23,7 +23,15 @@ import java.security.MessageDigest
 import org.gradle.tooling.GradleConnector
 
 def uiProps = new Properties()
-file("$rootDir/gradle.properties").withInputStream { uiProps.load(it) }
+// gradle.properties is generated on demand (by gradlew) and gitignored, so it may not exist yet,
+// e.g. when this build is evaluated as an includeBuild from a consuming composite build. Fall back
+// to the tracked template, which carries the same real pinned defaults, rather than forcing that
+// generation step (or a build-from-source fallback) just to read them.
+def uiPropsFile = file("$rootDir/gradle.properties")
+if (!uiPropsFile.exists()) {
+  uiPropsFile = file("$rootDir/gradle/template.gradle.properties")
+}
+uiPropsFile.withInputStream {uiProps.load(it)}
 
 def buildFromSource = project.hasProperty('solr.ui.buildFromSource') &&
     project.property('solr.ui.buildFromSource') == 'true'

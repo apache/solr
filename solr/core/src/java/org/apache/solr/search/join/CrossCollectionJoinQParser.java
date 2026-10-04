@@ -88,6 +88,10 @@ public class CrossCollectionJoinQParser extends QParser {
       throw new SyntaxError(
           "zkHost and solrUrl are mutually exclusive; specify at most one of them.");
     }
+    CoreContainer cc = req.getCoreContainer(); // null in some unit tests
+    if (cc != null && cc.getZkController() == null) {
+      throw new SyntaxError("Cross-collection join requires SolrCloud.");
+    }
     // Test if this is a valid solr url.
     if (solrUrl != null) {
       if (allowSolrUrls == null) {
@@ -125,10 +129,9 @@ public class CrossCollectionJoinQParser extends QParser {
     } else if (zkHost != null && !zkHost.isBlank()) {
       solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
     }
-    CoreContainer cc = req.getCoreContainer();
     if (solrConnection != null && cc != null) { // no CoreContainer -- unit test
       try {
-        cc.getSolrClientCache().validateConnection(solrConnection);
+        cc.getZkController().validateSolrConnection(solrConnection);
       } catch (SolrException e) {
         throw new SyntaxError(e.getMessage(), e);
       }

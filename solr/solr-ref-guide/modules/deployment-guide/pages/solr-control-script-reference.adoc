@@ -277,7 +277,7 @@ If you want to accept all of the defaults, you can simply add the `--no-prompt` 
 +
 *Example*: `bin/solr start -e cloud --no-prompt`
 
-`--prompt-inputs <values>`::
+`--script-inputs <values>`::
 +
 [%autowidth,frame=none]
 |===
@@ -286,11 +286,11 @@ If you want to accept all of the defaults, you can simply add the `--no-prompt` 
 +
 Don't prompt for input; instead supply ordered answers in comma delimited format when running examples that accept input.
 +
-For example, when using the "cloud" example, you can answer the prompts non-interactively to start a three node cluster on specific ports:
+For example, when using the "cloud" example, you can answer the interactive session's questions non-interactively to start a three node cluster on specific ports:
 +
-*Example*: `bin/solr start -e cloud --prompt-inputs 3,9000,9001,9002,"mycollection",2,2,_default`
+*Example*: `bin/solr start -e cloud --script-inputs 3,9000,9001,9002,"mycollection",2,2,_default`
 
-On Windows please wrap the prompts value in double quotes to preserve the comma delimited format.
+On Windows please wrap the script-inputs value in double quotes to preserve the comma delimited format.
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
@@ -1919,7 +1919,7 @@ Notice the different endpoints used depending on the format.
 
 *Example: import `json` files*
 
-`curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json?commit=true`
+`curl http://localhost:8983/solr/gettingstarted/update/json?commit=true --header "Content-Type: application/json" -d @gettingstarted.json`
 
 *Example: import `json` files*
 
@@ -1941,12 +1941,12 @@ Now import the data with either of these methods:
 
 [,console]
 ----
-$ curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
+curl 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true' --header "Content-Type: application/json" -d @gettingstarted.json
 ----
 or
 [,console]
 ----
-$ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update?commit=true'
+curl 'http://localhost:8983/solr/test_collection/update?commit=true' -H 'Content-Type: application/json' -d @gettingstarted.json
 ----
 
 *Example: import `javabin` files*
@@ -1954,7 +1954,7 @@ $ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http
 [,console]
 ----
 $ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
-$ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
+curl 'http://localhost:8983/solr/test_collection/update?commit=true' --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin
 ----
 
 == Interacting with API
