@@ -400,6 +400,12 @@ public class UploadConfigSetAPITest extends SolrTestCase {
             "abs",
             "conf/../evil3.txt",
             "evil3",
+            "C:/outside/evil4.txt",
+            "evil4",
+            "C:\\outside\\evil5.txt",
+            "evil5",
+            "",
+            "empty",
             "conf/good.txt",
             "good");
 
@@ -410,5 +416,54 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     verify(mockService, times(1))
         .uploadFileToConfig(eq(configSetName), fileNameCaptor.capture(), any(), eq(true));
     assertEquals(List.of("conf/good.txt"), fileNameCaptor.getAllValues());
+  }
+
+  @Test
+  public void testZipUploadRejectsDriveQualifiedEntries() throws Exception {
+    final String configSetName = "drivepaths";
+    createExistingConfigSet(configSetName, "conf/solrconfig.xml", "<config/>");
+
+    // Both spellings of a drive-qualified Windows path are absolute there even
+    // though neither starts with "/"; the backslash form is normalized first.
+    // The "conf/" directory entry keeps cleanup from recursively deleting the
+    // pre-existing conf/ dir (and the new file in it) afterwards.
+    InputStream zipStream =
+        createZipStream(
+            "C:/outside/evil.txt",
+            "evil",
+            "C:\\outside\\evil2.txt",
+            "evil2",
+            "conf/",
+            "",
+            "conf/good.txt",
+            "good");
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    api.uploadConfigSet(configSetName, true, true, zipStream);
+
+    // Drive-qualified entries must not land in the configset ...
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "C:/outside/evil.txt"));
+    assertNull(configSetService.downloadFileFromConfig(configSetName, "C:/outside/evil2.txt"));
+    // ... nor be written under a literal "C:" directory on this platform ...
+    assertFalse(Files.exists(configSetBase.resolve(configSetName).resolve("C:")));
+    // ... while legitimate entries still upload.
+    assertEquals(
+        "good",
+        new String(
+            configSetService.downloadFileFromConfig(configSetName, "conf/good.txt"),
+            StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testSafeZipEntryPathRules() {
+    assertFalse(UploadConfigSet.isSafeZipEntryPath(""));
+    assertFalse(UploadConfigSet.isSafeZipEntryPath("/abs.txt"));
+    assertFalse(UploadConfigSet.isSafeZipEntryPath("C:/outside/evil.txt"));
+    assertFalse(
+        UploadConfigSet.isSafeZipEntryPath(
+            UploadConfigSet.normalizeZipEntryName("C:\\outside\\evil.txt")));
+    assertFalse(UploadConfigSet.isSafeZipEntryPath("conf/../evil.txt"));
+    assertTrue(UploadConfigSet.isSafeZipEntryPath("conf/good.txt"));
+    assertTrue(UploadConfigSet.isSafeZipEntryPath("solrconfig.xml"));
   }
 }
