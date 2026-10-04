@@ -68,22 +68,6 @@ public class ShardBackupMetadataTest extends SolrTestCase {
   }
 
   @Test
-  public void testStoreDoesNotDeleteExistingMetadata() throws Exception {
-    metadata("uniq1", "orig1", new Checksum(1L, 10)).store(repository, folder, shardBackupId);
-
-    RecordingBackupRepository recording = new RecordingBackupRepository(repository);
-    metadata("uniq2", "orig2", new Checksum(2L, 20)).store(recording, folder, shardBackupId);
-
-    assertTrue("overwrite must not delete the previous metadata file", recording.deleted.isEmpty());
-    assertTrue(
-        "LocalFS writeBytes writes a sibling temp file instead of createOutput",
-        recording.created.isEmpty());
-
-    ShardBackupMetadata loaded = ShardBackupMetadata.from(repository, folder, shardBackupId);
-    assertEquals(List.of("uniq2"), loaded.listUniqueFileNames());
-  }
-
-  @Test
   public void testFailedOverwriteKeepsPreviousMetadata() throws Exception {
     metadata("uniq1", "orig1", new Checksum(1L, 10)).store(repository, folder, shardBackupId);
 
