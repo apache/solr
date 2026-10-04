@@ -49,7 +49,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/collectionName/tasks/list"
+curl "http://localhost:8983/solr/{collectionName}/tasks/list"
 ----
 ====
 
@@ -58,7 +58,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/v2/collections/collectionName/tasks"
+curl "http://localhost:8983/v2/collections/{collectionName}/tasks"
 ----
 ====
 ======
@@ -117,7 +117,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/collectionName/tasks/cancel?queryUUID=5"
+curl "http://localhost:8983/solr/{collectionName}/tasks/cancel?queryUUID=5"
 ----
 ====
 V2 API::
@@ -125,7 +125,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE "http://localhost:8983/v2/collections/collectionName/tasks/5"
+curl -X DELETE "http://localhost:8983/v2/collections/{collectionName}/tasks/5"
 ----
 ====
 ======
@@ -214,7 +214,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/collectionName/tasks/list?taskUUID=5"
+curl "http://localhost:8983/solr/{collectionName}/tasks/list?taskUUID=5"
 ----
 ====
 
@@ -223,14 +223,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/v2/collections/collectionName/tasks/5"
+curl "http://localhost:8983/v2/collections/{collectionName}/tasks/5"
 ----
 ====
 ======
 
 === taskUUID Parameter
 With the V1 API, the `taskUUID` request parameter specifies which task's status to check.
-With the V2 API, the task ID is instead supplied as part of the path, e.g. `/v2/collections/collectionName/tasks/\{taskID}`.
+With the V2 API, the task ID is instead supplied as part of the path, e.g. `/v2/collections/\{collectionName}/tasks/\{taskID}`.
 
 === Sample Response
 
