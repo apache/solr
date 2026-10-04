@@ -148,12 +148,21 @@ public class UploadConfigSet extends ConfigSetAPIBase
 
   /**
    * Whether a normalized zip entry path stays inside the configset it is uploaded to. Absolute
-   * paths and paths with "." or ".." segments are unsafe: the filesystem backend would resolve them
-   * outside of the configset directory, and the ZooKeeper backend cannot use them as znode path
-   * segments at all.
+   * paths, drive-qualified Windows paths, empty names, and paths with "." or ".." segments are
+   * unsafe: the filesystem backend would resolve them outside of the configset directory, and the
+   * ZooKeeper backend cannot use them as znode path segments at all.
    */
   static boolean isSafeZipEntryPath(String normalizedPath) {
-    if (normalizedPath.startsWith("/")) {
+    if (normalizedPath.isEmpty() || normalizedPath.startsWith("/")) {
+      return false;
+    }
+    // A drive-qualified name such as "C:/..." does not start with "/" but is still
+    // absolute on Windows. The check must not depend on the host platform, and a colon
+    // cannot appear in a Windows file name at all, so reject any leading drive
+    // designator here.
+    if (normalizedPath.length() >= 2
+        && Character.isLetter(normalizedPath.charAt(0))
+        && normalizedPath.charAt(1) == ':') {
       return false;
     }
     for (String segment : normalizedPath.split("/")) {
