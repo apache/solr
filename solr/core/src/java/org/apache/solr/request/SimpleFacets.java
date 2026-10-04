@@ -970,19 +970,55 @@ public class SimpleFacets {
     final FieldType ft = sf.getType();
     final DocSet baseDocset = parsed.docs;
     final NamedList<Integer> res = new NamedList<>();
+    // with group.facet, refinement counts must be grouped counts too (plain numDocs would count
+    // documents, not groups, and then overwrite the shard's correct grouped counts)
+    final NamedList<Integer> groupedCounts =
+        parsed.params.getFieldBool(field, GroupParams.GROUP_FACET, false)
+            ? getGroupedListedCounts(field, sf, ft, baseDocset, terms)
+            : null;
     Stream<String> inputStream = terms.stream();
     if (sort.equals(FacetParams.FACET_SORT_INDEX)) { // it might always make sense
       inputStream = inputStream.sorted();
     }
     Stream<SimpleImmutableEntry<String, Integer>> termCountEntries =
         inputStream.map(
-            (term) -> new SimpleImmutableEntry<>(term, numDocs(term, sf, ft, baseDocset)));
+            (term) ->
+                new SimpleImmutableEntry<>(
+                    term,
+                    groupedCounts != null
+                        ? Objects.requireNonNullElse(groupedCounts.get(term), 0)
+                        : numDocs(term, sf, ft, baseDocset)));
     if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
       termCountEntries =
           termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
     }
     termCountEntries.forEach(e -> res.add(e.getKey(), e.getValue()));
     return res;
+  }
+
+  /** Grouped counts (group.facet) for just the listed terms, keyed by the readable term. */
+  private NamedList<Integer> getGroupedListedCounts(
+      String field, SchemaField sf, FieldType ft, DocSet baseDocset, List<String> terms)
+      throws IOException {
+    final Set<String> wanted = new HashSet<>(terms);
+    final CharsRefBuilder readable = new CharsRefBuilder();
+    final Predicate<BytesRef> termFilter =
+        indexed -> {
+          ft.indexedToReadable(indexed, readable);
+          return wanted.contains(readable.toString());
+        };
+    return getGroupedCounts(
+        searcher,
+        baseDocset,
+        field,
+        sf.multiValued() || ft.multiValuedFieldCache(),
+        0,
+        -1,
+        0,
+        false,
+        FacetParams.FACET_SORT_INDEX,
+        null,
+        termFilter);
   }
 
   private int numDocs(

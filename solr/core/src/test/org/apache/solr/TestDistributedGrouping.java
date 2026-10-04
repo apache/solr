@@ -1132,6 +1132,40 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       }
     }
 
+    // SOLR-10492: with overrequest off a small facet.limit forces facet refinement, which must
+    // also return grouped (not document) counts when group.facet=true
+    for (String flimit : new String[] {"1", "2"}) {
+      query(
+          "q",
+          "*:*",
+          "fq",
+          s1 + ":a",
+          "rows",
+          100,
+          "fl",
+          "id," + i1,
+          "sort",
+          i1 + " asc, id asc",
+          "group",
+          "true",
+          "group.field",
+          i1,
+          "group.limit",
+          10,
+          "facet",
+          "true",
+          "facet.field",
+          t1,
+          "group.facet",
+          "true",
+          "facet.limit",
+          flimit,
+          "facet.overrequest.count",
+          0,
+          "facet.overrequest.ratio",
+          1);
+    }
+
     // SOLR-3316
     query(
         "q",
