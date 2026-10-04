@@ -36,6 +36,7 @@ public class AliasPostBodyTest extends SolrCloudTestCase {
   private static final String DOC_COLLECTION = "doccoll";
   private static final String EMPTY_ALIAS = "emptyalias";
   private static final String DOC_ALIAS = "docalias";
+  private static final String BOTH_ALIAS = "bothalias";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -49,6 +50,8 @@ public class AliasPostBodyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createAlias(EMPTY_ALIAS, EMPTY_COLLECTION)
         .process(cluster.getSolrClient());
     CollectionAdminRequest.createAlias(DOC_ALIAS, DOC_COLLECTION).process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias(BOTH_ALIAS, EMPTY_COLLECTION + "," + DOC_COLLECTION)
+        .process(cluster.getSolrClient());
     new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), DOC_COLLECTION);
   }
 
@@ -78,5 +81,14 @@ public class AliasPostBodyTest extends SolrCloudTestCase {
   @Test
   public void testCollectionInPostBodyIsNotReplacedByThePathCollection() throws Exception {
     assertEquals(1, postWithCollectionParam(EMPTY_ALIAS, DOC_COLLECTION));
+  }
+
+  @Test
+  public void testBodyCollectionSurvivesTwoCollectionPathAlias() throws Exception {
+    // The path alias resolves to two collections, so routing derives a two-collection
+    // list for the request. The body's collection (the empty one) must still win: on
+    // the base code it is overwritten with the path list and the document in the other
+    // collection is counted too.
+    assertEquals(0, postWithCollectionParam(BOTH_ALIAS, EMPTY_COLLECTION));
   }
 }
