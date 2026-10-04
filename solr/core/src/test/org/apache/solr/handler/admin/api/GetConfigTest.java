@@ -56,4 +56,27 @@ public class GetConfigTest extends SolrTestCase {
     assertTrue(response.config.containsKey("searchComponent"));
     assertTrue(response.config.containsKey("updateProcessor"));
   }
+
+  @Test
+  public void testGetOverlayFromCore() throws Exception {
+    var request = new ConfigApi.GetOverlay(IndexType.CORE, CORE_NAME);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.overlay);
+    assertTrue(response.overlay.containsKey("znodeVersion"));
+  }
+
+  @Test
+  public void testGetZnodeVersionFromCore() throws Exception {
+    var request = new ConfigApi.GetZnodeVersion(IndexType.CORE, CORE_NAME);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.znodeVersion);
+    assertTrue(response.znodeVersion.overlay >= -1);
+    assertTrue(response.znodeVersion.params >= -1);
+  }
 }
