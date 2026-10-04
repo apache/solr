@@ -447,6 +447,34 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     testHandleVersionsWithRangesMissingOneRange(false /* duplicateMiddle */);
     testHandleVersionsWithRangesMissingOneRange(true /* duplicateMiddle */);
     testHandleVersionsWithRangesMissingTwoRanges();
+    testHandleVersionsWithRangesSameVersionDifferentSign();
+  }
+
+  private static void testHandleVersionsWithRangesSameVersionDifferentSign() {
+    // SOLR-11475: we have version 42 and the other has -42; this used to loop forever
+    for (boolean completeList : new boolean[] {false, true}) {
+      List<Long> otherVersions = List.of(-42L);
+      List<Long> ourUpdates = List.of(42L);
+      long ourLowThreshold = ourUpdates.get(0);
+      MissedUpdatesRequest[] result = new MissedUpdatesRequest[1];
+      Thread t =
+          new Thread(
+              () ->
+                  result[0] =
+                      PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+                          otherVersions, completeList, ourUpdates, ourLowThreshold));
+      t.setDaemon(true);
+      t.start();
+      try {
+        t.join(30_000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        fail("interrupted");
+      }
+      assertFalse("handleVersionsWithRanges did not terminate", t.isAlive());
+      assertEquals(0L, result[0].totalRequestedUpdates);
+      assertNull(result[0].versionsAndRanges);
+    }
   }
 
   private static void testHandleVersionsWithRangesNoOther() {
