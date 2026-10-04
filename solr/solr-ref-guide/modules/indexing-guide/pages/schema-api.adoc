@@ -975,7 +975,7 @@ V2 API::
 [source,bash]
 ----
 
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fields"
+curl "http://localhost:8983/api/collections/techproducts/schema/fields"
 ----
 ====
 ======
@@ -1093,7 +1093,7 @@ V2 API::
 [source,bash]
 ----
 
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/dynamicfields"
+curl "http://localhost:8983/api/collections/techproducts/schema/dynamicfields"
 ----
 ====
 ======
@@ -1221,7 +1221,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fieldtypes"
+curl "http://localhost:8983/api/collections/techproducts/schema/fieldtypes"
 ----
 ====
 ======
@@ -1344,7 +1344,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfields"
+curl "http://localhost:8983/api/collections/techproducts/schema/copyfields"
 ----
 ====
 ======
@@ -1434,7 +1434,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name"
+curl "http://localhost:8983/api/collections/techproducts/schema/name"
 ----
 ====
 ======
@@ -1504,7 +1504,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version"
+curl "http://localhost:8983/api/collections/techproducts/schema/version"
 ----
 ====
 ======
@@ -1573,7 +1573,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey"
+curl "http://localhost:8983/api/collections/techproducts/schema/uniquekey"
 ----
 ====
 ======
@@ -1642,7 +1642,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarity"
+curl "http://localhost:8983/api/collections/techproducts/schema/similarity"
 ----
 ====
 ======
