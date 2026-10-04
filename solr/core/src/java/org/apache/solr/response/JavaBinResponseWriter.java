@@ -129,23 +129,11 @@ public class JavaBinResponseWriter implements QueryResponseWriter {
 
     protected void writeResultsBody(ResultContext res, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.ARR, res.getDocList().size());
-      IndexSchema docSchema = schemaFor(res);
       Iterator<SolrDocument> docStreamer = res.getProcessedDocuments();
       while (docStreamer.hasNext()) {
         SolrDocument doc = docStreamer.next();
-        codec.writeSolrDocument(DocsStreamer.externalizeStoredValues(doc, docSchema));
+        codec.writeSolrDocument(doc);
       }
-    }
-
-    private IndexSchema schemaFor(ResultContext res) {
-      // Prefer the result searcher: a cross-core request's original req schema can differ.
-      if (res.getSearcher() != null) {
-        return res.getSearcher().getSchema();
-      }
-      if (schema == null && solrQueryRequest != null) {
-        schema = solrQueryRequest.getSchema();
-      }
-      return schema;
     }
 
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {

@@ -1,4 +1,4 @@
-title: Normalize Lucene stored fields to SolrJ-native types in JavaBin responses, including EmbeddedSolrServer streaming.
+title: EmbeddedSolrServer StreamingResponseCallback: Normalize Lucene stored fields to SolrJ-native types.
 type: fixed
 authors:
   - name: Nick Shanin

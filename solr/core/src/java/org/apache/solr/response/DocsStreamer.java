@@ -197,9 +197,10 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   /**
    * Replace Lucene {@link IndexableField} values on a {@link SolrDocument} (and nested / child
-   * documents) with the SolrJ-native objects that clients see after JavaBin deserialization. Used
-   * for JavaBin response normalization generally, including the EmbeddedSolrServer streaming path,
-   * so {@code queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
+   * documents) with the SolrJ-native objects that clients see after JavaBin deserialization. The
+   * serialized JavaBin path already converts stored values through JavaBinResponseWriter.Resolver;
+   * this exists for the EmbeddedSolrServer streaming path, whose codec hands documents straight to
+   * the callback, so {@code queryAndStreamResponse} matches {@code query} / {@code HttpSolrClient}.
    *
    * <p>A stored value that cannot be converted is logged and omitted; conversion continues for the
    * remaining values and fields.
