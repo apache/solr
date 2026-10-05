@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
 /** Console-facing output for package manager operations */
 @FunctionalInterface
