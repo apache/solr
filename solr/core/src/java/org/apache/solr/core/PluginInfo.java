@@ -206,22 +206,15 @@ public class PluginInfo implements MapWriter {
       return;
     }
 
-    Map<String, Object> childrenGrouped = new LinkedHashMap<>();
+    // Group by type, not name: lookups are by type (getChildren), and keying by name
+    // would leave unnamed children under a null key, which fails on write.
+    Map<String, List<PluginInfo>> childrenByType = new LinkedHashMap<>();
     for (PluginInfo child : children) {
-      Object old = childrenGrouped.get(child.name);
-      if (old == null) {
-        childrenGrouped.put(child.name, child);
-      } else if (old instanceof List list) {
-        list.add(child);
-      } else {
-        List<Object> l = new ArrayList<>();
-        l.add(old);
-        l.add(child);
-        childrenGrouped.put(child.name, l);
-      }
+      childrenByType.computeIfAbsent(child.type, t -> new ArrayList<>()).add(child);
     }
-    for (Map.Entry<String, Object> entry : childrenGrouped.entrySet()) {
-      ew.put(entry.getKey(), entry.getValue());
+    for (Map.Entry<String, List<PluginInfo>> entry : childrenByType.entrySet()) {
+      List<PluginInfo> group = entry.getValue();
+      ew.put(entry.getKey(), group.size() == 1 ? group.get(0) : group);
     }
   }
 

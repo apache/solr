@@ -41,3 +41,11 @@ bin/solr start -Dsolr.node.roles=data:on,overseer:preferred
 
 A node started this way asks the Overseer to re-run its node prioritization, so a preferred node takes over without waiting for the current Overseer to restart.
 Note that node roles are fixed for the lifetime of a node: unlike `ADDROLE`, they cannot be changed on a running node.
+
+== API Changes
+
+=== Child Plugins in Config API Output Are Keyed by Type
+
+In the Config API output for a plugin that has child plugins, each child is now keyed by the child's type instead of its name; the name, when the child has one, still appears inside the child's own entry.
+Clients that look up a plugin's children by name need to look them up by type instead.
+The `highlight` search component, which was previously omitted from this output, is now included.
