@@ -953,6 +953,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(edismaxCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(edismaxCollection, 1, 1);
+    SolrClientCache solrClientCache = new SolrClientCache();
     try {
       // make the target handler default to a parser that ignores the {! df=.. q.op=OR} local params
       cluster
@@ -989,7 +990,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a_i\","
                   + " batchSize=\"2\", fl=\"subject\")");
       StreamContext context = new StreamContext();
-      context.setSolrClientCache(new SolrClientCache());
+      context.setSolrClientCache(solrClientCache);
       stream.setStreamContext(context);
       List<Tuple> tuples = getTuples(stream);
 
@@ -999,6 +1000,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         assertEquals(expectedSubjects[i], tuples.get(i).getString("subject"));
       }
     } finally {
+      solrClientCache.close();
       CollectionAdminRequest.deleteCollection(edismaxCollection).process(cluster.getSolrClient());
     }
   }
