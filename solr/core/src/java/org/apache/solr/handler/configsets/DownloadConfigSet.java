@@ -21,16 +21,9 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_P
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.api.endpoint.ConfigsetsApi;
 import org.apache.solr.common.SolrException;
@@ -86,48 +79,12 @@ public class DownloadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi
    */
   public static byte[] zipConfigSet(ConfigSetService configSetService, String configSetName)
       throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
     Path tmpDirectory = Files.createTempDirectory("configset-download-");
     try {
       configSetService.downloadConfig(configSetName, tmpDirectory);
-      try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
-        Files.walkFileTree(
-            tmpDirectory,
-            new SimpleFileVisitor<>() {
-              @Override
-              public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                  throws IOException {
-                if (Files.isHidden(dir)) {
-                  return FileVisitResult.SKIP_SUBTREE;
-                }
-                String dirName = tmpDirectory.relativize(dir).toString();
-                if (!dirName.isEmpty()) {
-                  if (!dirName.endsWith("/")) {
-                    dirName += "/";
-                  }
-                  zipOut.putNextEntry(new ZipEntry(dirName));
-                  zipOut.closeEntry();
-                }
-                return FileVisitResult.CONTINUE;
-              }
-
-              @Override
-              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                  throws IOException {
-                if (!Files.isHidden(file)) {
-                  try (InputStream fis = Files.newInputStream(file)) {
-                    ZipEntry zipEntry = new ZipEntry(tmpDirectory.relativize(file).toString());
-                    zipOut.putNextEntry(zipEntry);
-                    fis.transferTo(zipOut);
-                  }
-                }
-                return FileVisitResult.CONTINUE;
-              }
-            });
-      }
+      return ConfigSetService.zipDirectory(tmpDirectory, false);
     } finally {
       PathUtils.deleteDirectory(tmpDirectory);
     }
-    return baos.toByteArray();
   }
 }
