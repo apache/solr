@@ -113,6 +113,9 @@ Its builder will dynamically detect if solr-jetty is available and use that, oth
 CommonParams.QT has been un-deprecated.
 Nonetheless, if your code makes explicit reference to "qt" when constructing a standard request, there is usually a better way.
 
+=== Testing Framework
+Standard `solr.xml` configuration used by `MiniSolrCloudCluster` turns off metrics by default (`metricsEnabled=false`) unlike the previous versions of Solr where metrics were enabled by default. Tests that need to access metrics should enable them by setting `System.setProperty("metricsEnabled", "true")` in test suite initialization.
+
 == Solr 10.0
 
 === Solr Jetty parameters
