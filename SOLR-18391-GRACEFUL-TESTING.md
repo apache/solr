@@ -111,7 +111,7 @@ reading is a different size of patch. It is listed under "Left unfixed".
 | 12 | PRS wait for active (431-450) | timeout | cleaned up / same 400 | cleaned up; "... (not all replicas became active)" |
 | 12b | same | interrupt | **collection stays** / null message, interrupt flag lost | stays (see Left unfixed 3); message; interrupt flag restored |
 | 13 | Cleanup in 7a/11/12 | cleanup throws | whatever cleanup did not reach / **cleanup's error replaces the real one** | original error returned; cleanup error logged and suppressed |
-| 14 | Alias (482) | ZK error | working collection, no alias / null message | collection deleted; message (judgment call, see below) |
+| 14 | Alias (498) | ZK error | working collection, no alias / null message | alias write retried (3 attempts, short pause); only a failure surviving the retries deletes the collection, with a message (judgment call, see below) |
 
 Async requests go through the same method; the failure is stored as the request's
 `exception` entry (`CollectionHandlingUtils.addExceptionToNamedList`, line 484), whose
@@ -170,11 +170,18 @@ Async requests go through the same method; the failure is stored as the request'
    section 5, which has no light test seam.
 8. Row 14: deleting a working collection because its alias could not be created is
    the consistent reading of "a failed create leaves nothing", but it is a choice.
-   Say so if you would rather keep the collection in that one case.
+   Say so if you would rather keep the collection in that one case. The alias write
+   itself is now retried briefly first (3 attempts with a short pause between them,
+   only on a ZooKeeper error), because the realistic trigger is a transient
+   ZooKeeper failure and the collection is already complete at that point; only a
+   failure that survives the retries reaches the cleanup. The retry narrows the
+   case, it does not settle it: whether the collection should be deleted when the
+   alias ultimately cannot be created is still the owner's call.
 
 ## 5. Tests
 
-All on a real `MiniSolrCloudCluster`, no mocks. Failures are injected through
+All on a real `MiniSolrCloudCluster`, no mocks, except the one unit test noted in
+the table. Failures are injected through
 `DelegatingPlacementPluginFactory.setDelegate`, an existing public method, with a
 small plugin that throws.
 
@@ -184,6 +191,7 @@ small plugin that throws.
 | `CreateCollectionCleanupTest.testCleanupAfterPlacementException` | row 7a | passes (guards the reshaped handling) |
 | `CreateCollectionCleanupTest.testCreateCollectionCleanup`, `testAsyncCreateCollectionCleanup` (existing) | rows 11, 12, sync and async | pass |
 | `PlacementPluginIntegrationTest.testAssignForMissingCollection` | strategy check, non-create caller | **fails**: NPE |
+| `CreateCollectionCmdRetryTest` (unit test, no cluster) | row 14 retry helper: fail once then succeed, failure after the bounded attempts, no retry on a non-ZooKeeper failure, interrupt during the pause | passes (the helper does not exist on `main`) |
 
 Not covered, and why:
 
@@ -191,10 +199,12 @@ Not covered, and why:
   state reader (the mock setup that was rejected on #4997) or a timing-dependent
   cluster test. Neither is written. The `copyWith` line is therefore untested; it is
   three lines and mirrors the PRS branch.
-- Timeouts (rows 5, 10), ZK write errors (rows 4, 8, 9), alias failure (row 14) and a
-  failing cleanup (row 13). Each needs fault injection into ZooKeeper or the Overseer
-  that does not exist as a light seam. They share the one `catch` that row 7b
-  exercises.
+- Timeouts (rows 5, 10), ZK write errors (rows 4, 8, 9), an alias failure end to end
+  (row 14) and a failing cleanup (row 13). Each needs fault injection into ZooKeeper
+  or the Overseer that does not exist as a light seam. They share the one `catch`
+  that row 7b exercises. The row 14 retry is the exception: it is factored as a small
+  helper and unit-tested directly (see the table), but staging a real ZooKeeper
+  failure at the alias step in a cluster test still has no seam.
 
 ## 6. Gate
 
