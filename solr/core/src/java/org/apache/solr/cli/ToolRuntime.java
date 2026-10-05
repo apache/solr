@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.cli.packagemanager.UserIO;
+import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * An implementation of this class is specified when executing {@link ToolBase} to access

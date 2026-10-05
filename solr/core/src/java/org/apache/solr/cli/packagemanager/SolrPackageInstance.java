@@ -21,10 +21,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.cli.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.cli.packagemanager.SolrPackage.Plugin;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 
 /** Describes one instance of a package as it exists in Solr when installed. */
 public class SolrPackageInstance implements ReflectMapWriter {

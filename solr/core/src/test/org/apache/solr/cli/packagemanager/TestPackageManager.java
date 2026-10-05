@@ -14,17 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
 import com.jayway.jsonpath.InvalidPathException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cli.packagemanager.PackageManager;
-import org.apache.solr.cli.packagemanager.SolrPackage;
-import org.apache.solr.cli.packagemanager.SolrPackageInstance;
-import org.apache.solr.cli.packagemanager.UserIO;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
