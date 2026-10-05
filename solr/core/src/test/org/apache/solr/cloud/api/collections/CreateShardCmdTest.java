@@ -346,6 +346,285 @@ public class CreateShardCmdTest extends SolrTestCase {
   }
 
   /**
+   * Drives the first cleanup block, the one around adding the replicas. The replica is registered
+   * in the cluster state first and creating its core fails afterwards, so {@code AddReplicaCmd}
+   * throws with the replica already in place. The create must then delete the half-created shard,
+   * including that replica, and the caller must see the original add failure rather than a cleanup
+   * result.
+   */
+  @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public void testAddReplicaFailureDeletesShardAndReplica() throws Exception {
+    // Cluster states in the ZooKeeper JSON shape, parsed by the production factory.
+    // Before the create: the collection has one unrelated slice, no shard2.
+    DocCollection before =
+        ClusterState.collectionFromObjects(
+            COLLECTION,
+            new HashMap<>(
+                Map.of(
+                    "configName",
+                    "conf1",
+                    "shards",
+                    Map.of(
+                        "shard1",
+                        Map.of(
+                            "state",
+                            "active",
+                            "range",
+                            "80000000-ffffffff",
+                            "replicas",
+                            Map.of())))),
+            1,
+            Instant.now(),
+            null);
+    // Right after the shard state update lands: shard2 exists, still no replicas.
+    DocCollection shardCreated =
+        ClusterState.collectionFromObjects(
+            COLLECTION,
+            new HashMap<>(
+                Map.of(
+                    "configName",
+                    "conf1",
+                    "shards",
+                    Map.of(
+                        "shard1",
+                        Map.of(
+                            "state", "active", "range", "80000000-7fffffff", "replicas", Map.of()),
+                        SHARD,
+                        Map.of(
+                            "state",
+                            "construction",
+                            "range",
+                            "80000000-ffffffff",
+                            "replicas",
+                            Map.of())))),
+            2,
+            Instant.now(),
+            null);
+    // After the replica is registered: shard2 has one replica, not yet active. Creating its
+    // core is what fails below, so this is the state the cleanup re-reads.
+    DocCollection replicaAdded =
+        ClusterState.collectionFromObjects(
+            COLLECTION,
+            new HashMap<>(
+                Map.of(
+                    "configName",
+                    "conf1",
+                    "shards",
+                    Map.of(
+                        "shard1",
+                        Map.of(
+                            "state", "active", "range", "80000000-7fffffff", "replicas", Map.of()),
+                        SHARD,
+                        Map.of(
+                            "state",
+                            "construction",
+                            "range",
+                            "80000000-ffffffff",
+                            "replicas",
+                            Map.of(
+                                "core_node1",
+                                Map.of(
+                                    "core",
+                                    "testcoll_shard2_replica_n1",
+                                    "node_name",
+                                    NODE1,
+                                    "base_url",
+                                    "http://node1:8983/solr",
+                                    "state",
+                                    "down",
+                                    "leader",
+                                    "true",
+                                    "type",
+                                    "NRT")))))),
+            3,
+            Instant.now(),
+            null);
+    Set<String> liveNodes = Set.of(NODE1, NODE2);
+    ClusterState beforeState = new ClusterState(liveNodes, Map.of(COLLECTION, before));
+    ClusterState replicaState = new ClusterState(liveNodes, Map.of(COLLECTION, replicaAdded));
+
+    ZkStateReader zkStateReader = mock(ZkStateReader.class);
+    // Simulate the cluster state advancing as the state updates recorded below are offered:
+    // the createshard update brings the slice into being, the addreplica update registers the
+    // replica, the deletecore update (DeleteReplicaCmd removing the replica from the state)
+    // drops it again, and the deleteshard update removes the slice. getClusterState reports
+    // the current simulated state, and waitForState answers its predicate against it, timing
+    // out like the real implementation when the predicate does not hold.
+    AtomicReference<DocCollection> currentDoc = new AtomicReference<>(shardCreated);
+    when(zkStateReader.getClusterState())
+        .thenAnswer(
+            invocation -> new ClusterState(liveNodes, Map.of(COLLECTION, currentDoc.get())));
+    doAnswer(
+            invocation -> {
+              Predicate<DocCollection> predicate = invocation.getArgument(3);
+              DocCollection current = currentDoc.get();
+              if (predicate.test(current)) {
+                return current;
+              }
+              throw new TimeoutException("simulated state never satisfied the wait predicate");
+            })
+        .when(zkStateReader)
+        .waitForState(anyString(), anyLong(), any(TimeUnit.class), any(Predicate.class));
+    // DeleteShardCmd cleans up shard metadata in ZooKeeper after deleting a shard.
+    when(zkStateReader.getZkClient()).thenReturn(mock(SolrZkClient.class));
+
+    ClusterStateProvider stateProvider = mock(ClusterStateProvider.class);
+    when(stateProvider.getClusterState()).thenReturn(replicaState);
+    when(stateProvider.getLiveNodes()).thenReturn(liveNodes);
+    SolrCloudManager cloudManager = mock(SolrCloudManager.class);
+    when(cloudManager.getClusterStateProvider()).thenReturn(stateProvider);
+    when(cloudManager.getClusterState()).thenReturn(replicaState);
+    when(cloudManager.getTimeSource()).thenReturn(new TimeSource.NanoTimeSource());
+    when(cloudManager.getDistribStateManager()).thenReturn(mock(DistribStateManager.class));
+
+    // The CREATE request for the replica's core fails; every other request (in particular
+    // the cleanup's UNLOAD of that same core) succeeds.
+    ShardHandler shardHandler = mock(ShardHandler.class);
+    ShardHandlerFactory shardHandlerFactory = mock(ShardHandlerFactory.class);
+    when(shardHandler.getShardHandlerFactory()).thenReturn(shardHandlerFactory);
+    when(shardHandlerFactory.getShardHandler()).thenReturn(shardHandler);
+    Queue<ShardRequest> submittedRequests = new ConcurrentLinkedQueue<>();
+    Queue<ModifiableSolrParams> submittedParams = new ConcurrentLinkedQueue<>();
+    doAnswer(
+            invocation -> {
+              submittedRequests.add(invocation.getArgument(0));
+              submittedParams.add(invocation.getArgument(2));
+              return null;
+            })
+        .when(shardHandler)
+        .submit(any(ShardRequest.class), any(), any(ModifiableSolrParams.class));
+    Answer<ShardResponse> takeAnswer =
+        invocation -> {
+          ShardRequest sreq = submittedRequests.poll();
+          ModifiableSolrParams params = submittedParams.poll();
+          if (sreq == null) {
+            return null;
+          }
+          ShardResponse response = new ShardResponse();
+          response.setShardRequest(sreq);
+          if (params != null
+              && CoreAdminParams.CoreAdminAction.CREATE
+                  .toString()
+                  .equals(params.get(CoreAdminParams.ACTION))) {
+            response.setException(
+                new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR, "simulated core creation failure"));
+          } else {
+            QueryResponse queryResponse = new QueryResponse();
+            queryResponse.setResponse(
+                new NamedList<>(Map.of("responseHeader", new NamedList<>(Map.of("status", 0)))));
+            response.setSolrResponse(queryResponse);
+          }
+          return response;
+        };
+    when(shardHandler.takeCompletedOrError()).thenAnswer(takeAnswer);
+    when(shardHandler.takeCompletedIncludingErrors()).thenAnswer(takeAnswer);
+
+    DistributedClusterStateUpdater stateUpdater = mock(DistributedClusterStateUpdater.class);
+    when(stateUpdater.isDistributedStateUpdate()).thenReturn(false);
+
+    CoreContainer coreContainer = mock(CoreContainer.class);
+    PlacementPluginFactory placementFactory = mock(PlacementPluginFactory.class);
+    when(placementFactory.createPluginInstance())
+        .thenReturn(new SimplePlacementFactory().createPluginInstance());
+    when(coreContainer.getPlacementPluginFactory()).thenReturn(placementFactory);
+    ZkController zkController = mock(ZkController.class);
+    when(coreContainer.getZkController()).thenReturn(zkController);
+    when(zkController.getNodeName()).thenReturn(NODE1);
+
+    CollectionCommandContext ccc = mock(CollectionCommandContext.class);
+    when(ccc.isDistributedCollectionAPI()).thenReturn(false);
+    when(ccc.newShardHandler()).thenReturn(shardHandler);
+    when(ccc.getSolrCloudManager()).thenReturn(cloudManager);
+    when(ccc.getZkStateReader()).thenReturn(zkStateReader);
+    when(ccc.getDistributedClusterStateUpdater()).thenReturn(stateUpdater);
+    when(ccc.getCoreContainer()).thenReturn(coreContainer);
+    when(ccc.getAdminPath()).thenReturn("/admin/collections");
+    when(ccc.getCloseableToLatchOn()).thenReturn(mock(SolrCloseable.class));
+    // DeleteReplicaCmd unloads the core on the command context's executor; run it inline so
+    // no thread outlives the test.
+    when(ccc.getExecutorService()).thenReturn(new SameThreadExecutorService());
+    // Record every cluster state update the command offers, and advance the simulated
+    // cluster state (see the ZkStateReader stub above) as each update lands.
+    List<Map<String, Object>> offeredUpdates = new ArrayList<>();
+    doAnswer(
+            invocation -> {
+              Object update = invocation.getArgument(0);
+              Map<String, Object> recorded;
+              if (update instanceof ZkNodeProps zkNodeProps) {
+                recorded = new HashMap<>(zkNodeProps.getProperties());
+              } else {
+                recorded =
+                    new HashMap<>((Map<String, Object>) Utils.fromJSON(Utils.toJSON(update)));
+              }
+              offeredUpdates.add(recorded);
+              switch (String.valueOf(recorded.get("operation"))) {
+                case "createshard" -> currentDoc.set(shardCreated);
+                case "addreplica" -> currentDoc.set(replicaAdded);
+                case "deletecore" -> currentDoc.set(shardCreated);
+                case "deleteshard" -> currentDoc.set(before);
+                default -> {}
+              }
+              return null;
+            })
+        .when(ccc)
+        .offerStateUpdate(any(MapWriter.class));
+
+    AdminCmdContext adminCmdContext =
+        new AdminCmdContext(CollectionAction.CREATESHARD).withClusterState(beforeState);
+    ZkNodeProps message =
+        new ZkNodeProps(
+            Map.of(
+                "collection",
+                COLLECTION,
+                "shard",
+                SHARD,
+                "timeout",
+                1,
+                "replicationFactor",
+                1,
+                "createNodeSet",
+                NODE1));
+
+    Exception thrown = null;
+    try {
+      new CreateShardCmd(ccc).call(adminCmdContext, message, new NamedList<>());
+    } catch (Exception e) {
+      thrown = e;
+    }
+    assertNotNull("expected the create to fail when creating the replica's core fails", thrown);
+    if (!String.valueOf(thrown.getMessage()).contains("ADDREPLICA failed to create replica")) {
+      throw new AssertionError("expected the add replica failure, got: " + thrown, thrown);
+    }
+
+    List<String> operations = new ArrayList<>();
+    for (Map<String, Object> update : offeredUpdates) {
+      operations.add(String.valueOf(update.get("operation")));
+    }
+    assertTrue(
+        "expected the cleanup to delete the replica that was registered before the failure,"
+            + " offered: "
+            + offeredUpdates,
+        operations.contains("deletecore"));
+    for (Map<String, Object> update : offeredUpdates) {
+      if ("deletecore".equals(String.valueOf(update.get("operation")))) {
+        assertEquals(
+            "the cleanup must delete the replica that AddReplicaCmd registered",
+            "testcoll_shard2_replica_n1",
+            String.valueOf(update.get("core")));
+      }
+      if ("updateshardstate".equalsIgnoreCase(String.valueOf(update.get("operation")))) {
+        fail("the failed shard must not be activated, offered: " + update);
+      }
+    }
+    assertTrue(
+        "expected a deleteshard state update, offered: " + offeredUpdates,
+        operations.contains("deleteshard"));
+    assertNull("expected no slice left behind after the cleanup", currentDoc.get().getSlice(SHARD));
+  }
+
+  /**
    * Pins the current buffered-updates policy: when the leader answers the REQUESTAPPLYUPDATES
    * request with a failure, the create logs it and still activates the shard. A core refuses that
    * request when it is not buffering, which is expected for a plain create, so the failure alone
