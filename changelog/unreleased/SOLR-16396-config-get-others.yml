@@ -1,5 +1,5 @@
 title:
-  Migration of GET /config/overlay and GET /config/znodeVersion V2 APIs to JAX-RS construct.
+  Migrate GET /config/overlay and GET /config/znodeVersion to JAX-RS.
 type: changed
 authors:
   - name: Jalaz Kumar
