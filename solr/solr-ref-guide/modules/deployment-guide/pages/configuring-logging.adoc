@@ -116,6 +116,15 @@ curl -X PUT "http://localhost:8983/api/node/logging/levels?nodes=all" -H 'Conten
 '
 ----
 
+[source,bash]
+----
+curl -X PUT "http://localhost:8983/api/node/logging/levels?nodes=all" -H 'Content-Type: application/json' -d '
+  [
+    {"logger": "root", "level": "WARN"}
+  ]
+'
+----
+
 === Choosing Log Level at Startup
 
 You can temporarily choose a different logging level as you start Solr.
