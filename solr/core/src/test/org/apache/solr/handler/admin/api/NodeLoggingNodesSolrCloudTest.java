@@ -32,8 +32,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests the {@code nodes} broadcast on the V2 {@code PUT /node/logging/levels} endpoint against a
- * two-node cluster.
+ * Tests the {@code nodes} broadcast on the V2 logging endpoints ({@code PUT /node/logging/levels}
+ * and {@code GET /node/logging/levels}) against a two-node cluster.
  *
  * <p>The requests are sent with a generic V2 request, and the assertions run against the raw JSON
  * response body. Log levels themselves cannot be observed per node here: every node of the test
@@ -114,6 +114,80 @@ public class NodeLoggingNodesSolrCloudTest extends SolrCloudTestCase {
         e.getMessage().contains("not part of the cluster"));
   }
 
+  @Test
+  public void testBroadcastLevelsToAllNodesReportsEveryNode() throws Exception {
+    final String receivingNode = jettyName(0);
+    final String otherNode = jettyName(1);
+
+    final JsonNode rsp = getLogLevels(cluster.getJettySolrRunners().get(0), "all");
+
+    final JsonNode failedNodes = rsp.get("failedNodes");
+    assertNotNull("Broadcast response should report failed nodes", failedNodes);
+    assertTrue("No node should be reported failed: " + failedNodes, failedNodes.isEmpty());
+    // The receiving node does not also serve the listing locally, so the top level carries no
+    // levels or loggers of its own; the listings live under the per-node entries.
+    assertNull("Expected no top-level 'levels' in a broadcast response: " + rsp, rsp.get("levels"));
+    assertNull(
+        "Expected no top-level 'loggers' in a broadcast response: " + rsp, rsp.get("loggers"));
+    for (String nodeName : new String[] {receivingNode, otherNode}) {
+      final JsonNode perNode = rsp.get(nodeName);
+      assertNotNull("Expected a per-node result for " + nodeName + " in " + rsp, perNode);
+      // The per-node entry is that node's own levels listing.
+      assertNotNull(perNode.get("watcher"));
+      assertNotNull(perNode.get("levels"));
+      final JsonNode loggers = perNode.get("loggers");
+      assertNotNull(loggers);
+      assertTrue("Expected a non-empty logger list for " + nodeName, loggers.size() > 0);
+    }
+  }
+
+  @Test
+  public void testBroadcastLevelsToSingleNamedNode() throws Exception {
+    final String receivingNode = jettyName(0);
+    final String otherNode = jettyName(1);
+
+    final JsonNode rsp = getLogLevels(cluster.getJettySolrRunners().get(0), otherNode);
+
+    assertNotNull(rsp.get("failedNodes"));
+    assertTrue(rsp.get("failedNodes").isEmpty());
+    final JsonNode perNode = rsp.get(otherNode);
+    assertNotNull("Expected a per-node result for " + otherNode, perNode);
+    assertNotNull(perNode.get("loggers"));
+    assertNull("The receiving node was not a target and must not appear", rsp.get(receivingNode));
+  }
+
+  @Test
+  public void testNoNodesLevelsKeepsLocalResponseShape() throws Exception {
+    final JsonNode rsp = getLogLevels(cluster.getJettySolrRunners().get(0), null);
+
+    assertNotNull(rsp.get("watcher"));
+    assertNotNull(rsp.get("levels"));
+    final JsonNode loggers = rsp.get("loggers");
+    assertNotNull(loggers);
+    assertTrue("Expected a non-empty logger list", loggers.size() > 0);
+    assertNull(rsp.get("failedNodes"));
+    rsp.fieldNames()
+        .forEachRemaining(
+            field ->
+                assertFalse("No per-node entries expected: " + field, field.endsWith("_solr")));
+  }
+
+  @Test
+  public void testUnknownNodeNameFailsFastForLevelsGet() {
+    final GenericV2SolrRequest req =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.GET,
+            "/node/logging/levels",
+            SolrRequest.SolrRequestType.ADMIN,
+            new ModifiableSolrParams().set("nodes", "no-such-host.invalid:9999_solr"));
+    final RemoteSolrException e =
+        expectThrows(RemoteSolrException.class, () -> sendWithDefaultParser(jetty(0), req));
+    assertEquals(400, e.code());
+    assertTrue(
+        "Error should name the problem: " + e.getMessage(),
+        e.getMessage().contains("not part of the cluster"));
+  }
+
   private static String jettyName(int idx) {
     return cluster.getJettySolrRunners().get(idx).getNodeName();
   }
@@ -134,6 +208,26 @@ public class NodeLoggingNodesSolrCloudTest extends SolrCloudTestCase {
             SolrRequest.SolrRequestType.ADMIN,
             params);
     req.withContent(LEVEL_CHANGES_JSON.getBytes(StandardCharsets.UTF_8), "application/json");
+    req.setResponseParser(new InputStreamResponseParser("json"));
+    try (HttpJettySolrClient client =
+        new HttpJettySolrClient.Builder(target.getBaseUrl().toString()).build()) {
+      final String body =
+          InputStreamResponseParser.consumeResponseToString(req.process(client).getResponse());
+      return MAPPER.readTree(body);
+    }
+  }
+
+  private static JsonNode getLogLevels(JettySolrRunner target, String nodes) throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    if (nodes != null) {
+      params.set("nodes", nodes);
+    }
+    final GenericV2SolrRequest req =
+        new GenericV2SolrRequest(
+            SolrRequest.METHOD.GET,
+            "/node/logging/levels",
+            SolrRequest.SolrRequestType.ADMIN,
+            params);
     req.setResponseParser(new InputStreamResponseParser("json"));
     try (HttpJettySolrClient client =
         new HttpJettySolrClient.Builder(target.getBaseUrl().toString()).build()) {
