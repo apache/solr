@@ -214,14 +214,25 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     if (doc == null || schema == null) {
       return doc;
     }
+    List<String> failedFields = null;
     for (Iterator<Map.Entry<String, Object>> it = doc.iterator(); it.hasNext(); ) {
       Map.Entry<String, Object> entry = it.next();
       Object val = entry.getValue();
       Object converted = externalizeValue(val, schema);
       if (FAILED_STORED_VALUE.equals(converted)) {
-        it.remove();
+        // The document's entry iterator does not support remove(), so collect the
+        // failed fields and remove them from the document after the loop instead.
+        if (failedFields == null) {
+          failedFields = new ArrayList<>();
+        }
+        failedFields.add(entry.getKey());
       } else if (!Objects.equals(converted, val)) {
         entry.setValue(converted);
+      }
+    }
+    if (failedFields != null) {
+      for (String failedField : failedFields) {
+        doc.remove(failedField);
       }
     }
     List<SolrDocument> children = doc.getChildDocuments();
@@ -237,7 +248,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     if (val instanceof IndexableField f) {
       try {
         return getValue(schema.getFieldOrNull(f.name()), f);
-      } catch (Exception e) {
+      } catch (Exception | AssertionError e) {
+        // AssertionError: point field types (IntPointField, DatePointField, ...) throw it
+        // from toObject when a stored value predates a change to a point type.
         log.warn("Error reading a field : {}", f, e);
         return FAILED_STORED_VALUE;
       }

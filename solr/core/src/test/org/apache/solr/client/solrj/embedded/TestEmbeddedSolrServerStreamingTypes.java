@@ -19,6 +19,9 @@ package org.apache.solr.client.solrj.embedded;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -27,7 +30,10 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -116,5 +122,65 @@ public class TestEmbeddedSolrServerStreamingTypes extends SolrTestCase {
     assertTrue(streamedNames instanceof List);
     assertEquals(queriedNames, streamedNames);
     assertEquals(Arrays.asList("Alice", "Bob"), streamedNames);
+  }
+
+  @Test
+  public void testStreamingOmitsValueWhoseConversionThrowsAssertionError() throws Exception {
+    EmbeddedSolrServer server = solrTestRule.getSolrClient("collection1");
+    server.deleteByQuery("*:*");
+    server.commit();
+
+    // Write a Lucene document directly, bypassing the update pipeline: count_i_p is a
+    // pint field now, but the stored value written here is a string, as if it had been
+    // indexed before the field's type changed to pint. (A pint field the other test in
+    // this class does not use, so the raw field cannot clash with its field metadata.)
+    // IntPointField.toObject throws AssertionError for such a value (it has no numeric
+    // value); that must not fail the whole streamed response. The value is logged and
+    // omitted instead. The other fields are created through the schema so their Lucene
+    // field shapes match documents the update pipeline writes.
+    Document luceneDoc = new Document();
+    luceneDoc.add(new StoredField("count_i_p", "not-a-number"));
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1")) {
+      IndexSchema schema = core.getLatestSchema();
+      for (IndexableField f : schema.getField("id").createFields("bad1")) {
+        luceneDoc.add(f);
+      }
+      for (IndexableField f : schema.getField("city_s1").createFields("Boston")) {
+        luceneDoc.add(f);
+      }
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
+      try {
+        iwRef.get().addDocument(luceneDoc);
+      } finally {
+        iwRef.decref();
+      }
+    }
+    server.commit();
+
+    SolrQuery q = new SolrQuery("*:*");
+    q.setFields("id", "count_i_p", "city_s1");
+
+    AtomicReference<SolrDocument> streamed = new AtomicReference<>();
+    server.queryAndStreamResponse(
+        q,
+        new StreamingResponseCallback() {
+          @Override
+          public void streamSolrDocument(SolrDocument doc) {
+            streamed.set(doc);
+          }
+
+          @Override
+          public void streamDocListInfo(long numFound, long start, Float maxScore) {
+            assertEquals(1, numFound);
+          }
+        });
+
+    SolrDocument streamedDoc = streamed.get();
+    assertNotNull("the document must still be streamed", streamedDoc);
+    assertEquals("bad1", streamedDoc.getFieldValue("id"));
+    assertEquals("Boston", streamedDoc.getFieldValue("city_s1"));
+    assertFalse(
+        "the unconvertible value must be omitted, not streamed",
+        streamedDoc.containsKey("count_i_p"));
   }
 }
