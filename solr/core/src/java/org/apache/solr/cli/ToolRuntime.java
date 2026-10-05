@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.solr.cli.packagemanager.UserIO;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -25,21 +24,18 @@ import org.apache.solr.common.util.SuppressForbidden;
  *
  * @see ToolBase
  */
-public abstract class ToolRuntime implements UserIO {
+public abstract class ToolRuntime {
 
-  @Override
   public abstract void print(String message);
 
   public abstract void println(String message);
 
   /** Print an error message, highlighted in red on terminals. */
-  @Override
   public void printError(String message) {
     println(CLIUtils.RED + message + CLIUtils.RESET);
   }
 
   /** Print a success message, highlighted in green on terminals. */
-  @Override
   public void printSuccess(String message) {
     println(CLIUtils.GREEN + message + CLIUtils.RESET);
   }

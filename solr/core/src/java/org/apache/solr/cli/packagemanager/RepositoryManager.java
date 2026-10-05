@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.cli.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.cli.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -66,7 +67,7 @@ public class RepositoryManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PackageManager packageManager;
-  private final UserIO runtime;
+  private final ToolRuntime runtime;
 
   final SolrClient solrClient;
 
