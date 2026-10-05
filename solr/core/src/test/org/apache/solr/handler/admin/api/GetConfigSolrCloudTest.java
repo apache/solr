@@ -52,4 +52,18 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.config.containsKey("query"));
     assertTrue(response.config.containsKey("requestHandler"));
   }
+
+  @Test
+  public void testGetConfigComponentFromCollection() throws Exception {
+    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
+      var request = new ConfigApi.GetConfigComponent(IndexType.COLLECTION, COLLECTION_NAME, component);
+      var response = request.process(cluster.getSolrClient());
+
+      assertNotNull(response);
+      assertNull(response.error);
+      assertNotNull(response.config);
+      assertTrue(response.config.containsKey(component));
+      assertEquals(1, response.config.size());
+    }
+  }
 }

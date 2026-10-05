@@ -59,6 +59,15 @@ public class GetConfigTest extends SolrTestCase {
 
   @Test
   public void testGetConfigComponentFromCore() throws Exception {
-    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {}
+    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
+      var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
+      var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+      assertNotNull(response);
+      assertNull(response.error);
+      assertNotNull(response.config);
+      assertTrue(response.config.containsKey(component));
+      assertEquals(1, response.config.size());
+    }
   }
 }
