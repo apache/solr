@@ -593,6 +593,11 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
           $scope.environment_color = data.environment_color;
         }
       }
+    }, function() {
+      // The mode could not be determined. Treat the node as standalone so that
+      // pages waiting for isCloudEnabled to settle (e.g. the logging page) fall
+      // back to local-only behavior instead of waiting forever.
+      $scope.isCloudEnabled = false;
     });
 
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;

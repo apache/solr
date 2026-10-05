@@ -155,9 +155,28 @@ solrAdminApp.controller('LoggingController',
       }
       var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
-      Logging.setLevel({set: setString}, function(data) {
-        $scope.refresh();
-      });
+      var doSetLevel = function() {
+        var params = {set: setString};
+        // "nodes=all" only makes sense in SolrCloud mode; in standalone (user-managed) mode the
+        // request is handled locally, so the param is omitted entirely.
+        if ($scope.isCloudEnabled) {
+          params.nodes = "all";
+        }
+        Logging.setLevel(params, function(data) {
+          $scope.refresh();
+        });
+      };
+      // isCloudEnabled populates asynchronously via resetMenu(), so wait for it to settle
+      // before deciding whether to broadcast.
+      if ($scope.isCloudEnabled === undefined) {
+        var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+          if (value === undefined) return;
+          unwatchCloudEnabled();
+          doSetLevel();
+        });
+      } else {
+        doSetLevel();
+      }
     };
 
     $scope.refresh();

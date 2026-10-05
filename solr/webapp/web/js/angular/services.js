@@ -69,10 +69,12 @@ solrAdminServices.factory('System',
   }])
 .factory('Logging',
   ['$resource', function($resource) {
+    // "setLevel" needs the "nodes=all" broadcast only in SolrCloud mode; the caller passes
+    // nodes:'all' when SolrCloud is enabled, and omits it in standalone mode.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
-      "setLevel": {params: {nodes:'all'}}
+      "setLevel": {}
       });
   }])
 .factory('Zookeeper',
