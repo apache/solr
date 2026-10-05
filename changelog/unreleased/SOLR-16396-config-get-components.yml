@@ -1,5 +1,5 @@
 title:
-  Migration of Get Config sections query, updateHandler, directoryFactory, indexConfig, and
+  Migrate GET config sections query, updateHandler, directoryFactory, indexConfig, and
   codecFactory to JAX-RS.
 type: changed
 authors:
