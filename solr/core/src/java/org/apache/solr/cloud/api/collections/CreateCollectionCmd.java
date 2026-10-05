@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -152,6 +151,9 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
     DocCollection newColl = null;
     final String collectionPath = DocCollection.getCollectionPath(collectionName);
+    // True once this command may have written the collection state. Any later failure then deletes
+    // the collection again, whatever the failure is, so that a failed create leaves nothing behind.
+    boolean stateWritten = false;
 
     try {
       ZkStateReader zkStateReader = ccc.getZkStateReader();
@@ -201,6 +203,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, m);
         byte[] data = Utils.toJSON(Map.of(collectionName, command.collection));
         ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
+        stateWritten = true;
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
@@ -216,6 +219,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               e);
         }
       } else {
+        // set before submitting: a submission that fails may still have been applied
+        stateWritten = true;
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and
           // defines the QUEUE_OPERATION to be CollectionParams.CollectionAction.CREATE.
@@ -243,28 +248,22 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // refresh cluster state (value read below comes from Zookeeper watch firing following the
         // update done previously, be it by Overseer or by this thread when updates are distributed)
         clusterState = ccc.getSolrCloudManager().getClusterState();
+        // The wait above saw the collection through a watch. This is a second, separate read, and
+        // while the watch is being released the collection can be absent from it for a moment.
+        // Replica assignment reads this cluster state, so make sure it holds what the wait saw.
+        if (!clusterState.hasCollection(collectionName)) {
+          clusterState = clusterState.copyWith(collectionName, newColl);
+        }
       }
 
-      final List<ReplicaPosition> replicaPositions;
-      try {
-        replicaPositions =
-            buildReplicaPositions(
-                ccc.getCoreContainer(),
-                ccc.getSolrCloudManager(),
-                clusterState,
-                message,
-                shardNames,
-                numReplicas);
-      } catch (Assign.AssignmentException e) {
-        ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ccc)
-            .call(
-                adminCmdContext.subRequestContext(DELETE).withClusterState(clusterState),
-                deleteMessage,
-                results);
-        // unwrap the exception
-        throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
-      }
+      final List<ReplicaPosition> replicaPositions =
+          buildReplicaPositions(
+              ccc.getCoreContainer(),
+              ccc.getSolrCloudManager(),
+              clusterState,
+              message,
+              shardNames,
+              numReplicas);
 
       if (replicaPositions.isEmpty()) {
         log.debug("Finished create command for collection: {}", collectionName);
@@ -428,6 +427,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       boolean failure =
           results.get("failure") != null
               && ((SimpleOrderedMap<?>) results.get("failure")).size() > 0;
+      String failureDetail = failure ? String.valueOf(results.get("failure")) : null;
       if (isPRS) {
         TimeOut timeout =
             new TimeOut(
@@ -446,18 +446,20 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           // we have successfully found all replicas to be ACTIVE
         } else {
           failure = true;
+          if (failureDetail == null) {
+            failureDetail = "not all replicas became active";
+          }
         }
       }
       if (failure) {
-        // Let's cleanup as we hit an exception
-        // We shouldn't be passing 'results' here for the cleanup as the response would then contain
-        // 'success' element, which may be interpreted by the user as a positive ack
-        CollectionHandlingUtils.cleanupCollection(
-            adminCmdContext, collectionName, new NamedList<>(), ccc);
-        log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
+        // the collection is cleaned up where this exception is caught, below
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Underlying core creation failed while creating collection: " + collectionName);
+            "Underlying core creation failed while creating collection: "
+                + collectionName
+                + " ("
+                + failureDetail
+                + ")");
       } else {
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
         log.debug("Finished create command on all shards for collection: {}", collectionName);
@@ -485,10 +487,47 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(alias, collectionName));
       }
 
-    } catch (SolrException ex) {
-      throw ex;
     } catch (Exception ex) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
+      if (ex instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      // An interrupted thread cannot complete the ZooKeeper calls the cleanup needs
+      if (stateWritten && !Thread.currentThread().isInterrupted()) {
+        cleanupFailedCreate(adminCmdContext, collectionName, ex);
+      }
+      if (ex instanceof SolrException solrException) {
+        throw solrException;
+      }
+      if (ex instanceof Assign.AssignmentException) {
+        // unwrap the exception
+        throw new SolrException(ErrorCode.BAD_REQUEST, ex.getMessage(), ex.getCause());
+      }
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Could not create collection " + collectionName + ": " + ex, ex);
+    }
+  }
+
+  /**
+   * Deletes what a failed create left behind. A failure of the cleanup itself is logged and added
+   * to {@code cause} as suppressed, so that the client still gets the original error.
+   */
+  private void cleanupFailedCreate(
+      AdminCmdContext adminCmdContext, String collectionName, Exception cause) {
+    try {
+      // We shouldn't be passing 'results' here for the cleanup as the response would then contain
+      // 'success' element, which may be interpreted by the user as a positive ack
+      CollectionHandlingUtils.cleanupCollection(
+          adminCmdContext, collectionName, new NamedList<>(), ccc);
+      log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
+    } catch (Exception cleanupFailure) {
+      if (cleanupFailure instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      log.error(
+          "Could not clean up after failed create collection for [{}]",
+          collectionName,
+          cleanupFailure);
+      cause.addSuppressed(cleanupFailure);
     }
   }
 
