@@ -21,19 +21,31 @@ import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.LogLevelChange;
+import org.apache.solr.client.api.model.LoggingResponse;
 import org.apache.solr.client.api.model.SetThresholdRequestBody;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
@@ -121,6 +133,66 @@ public class NodeLoggingAPITest extends SolrTestCase {
           "Expected the error to name the 'nodes' parameter, but was: " + e.getMessage(),
           e.getMessage().contains("'nodes'"));
     }
+    verify(mockLogWatcher, never()).setLogLevel(any(), any());
+  }
+
+  @Test
+  @SuppressForbidden(
+      reason =
+          "places a stubbed ZkStateReader on a ZkController mock; production reads the public"
+              + " final field directly, so there is no setter or getter to stub")
+  public void testModifyLogLevelsWithNodesReportsNodesThatDidNotRespond() throws Exception {
+    final String respondingNode = "host1:8983_solr";
+    final String failingNode = "host2:8983_solr";
+
+    final ZkController mockZkController = mock(ZkController.class);
+    final ZkStateReader mockZkStateReader = mock(ZkStateReader.class);
+    final ClusterState mockClusterState = mock(ClusterState.class);
+    // NodeLogging and the request proxy read ZkController.zkStateReader directly (a public
+    // final field) rather than calling a getter, so the stubbed reader has to be placed on
+    // the mock reflectively.
+    final Field zkStateReaderField = ZkController.class.getField("zkStateReader");
+    zkStateReaderField.setAccessible(true);
+    zkStateReaderField.set(mockZkController, mockZkStateReader);
+
+    when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
+    when(mockZkController.getCoreContainer()).thenReturn(mockCoreContainer);
+    when(mockZkStateReader.getClusterState()).thenReturn(mockClusterState);
+    when(mockClusterState.getLiveNodes()).thenReturn(Set.of(respondingNode, failingNode));
+    when(mockZkStateReader.getBaseUrlForNodeName(respondingNode))
+        .thenReturn("http://host1:8983/solr");
+    when(mockZkStateReader.getBaseUrlForNodeName(failingNode)).thenReturn("http://host2:8983/solr");
+
+    // One node answers with a logging response; the other's request fails, the way the proxy
+    // sees a node that errors or times out.
+    final HttpJettySolrClient mockClient = mock(HttpJettySolrClient.class);
+    when(mockCoreContainer.getDefaultHttpSolrClient()).thenReturn(mockClient);
+    final NamedList<Object> proxiedResponse = new NamedList<>();
+    proxiedResponse.add("response", new LoggingResponse());
+    doAnswer(
+            invocation -> {
+              if (invocation.getArgument(0).equals("http://host1:8983/solr")) {
+                return CompletableFuture.completedFuture(proxiedResponse);
+              }
+              return CompletableFuture.failedFuture(new RuntimeException("simulated node failure"));
+            })
+        .when(mockClient)
+        .requestWithBaseUrl(anyString(), any());
+
+    final var responseBody =
+        new NodeLogging(mockCoreContainer)
+            .modifyLocalLogLevel(
+                respondingNode + "," + failingNode,
+                List.of(new LogLevelChange("o.a.s.Foo", "WARN")));
+
+    assertEquals(
+        "Expected only the responding node to report a result",
+        Set.of(respondingNode),
+        responseBody.remoteNodeData.keySet());
+    assertEquals(
+        "Expected the node whose request failed to be reported",
+        List.of(failingNode),
+        responseBody.failedNodes);
     verify(mockLogWatcher, never()).setLogLevel(any(), any());
   }
 
