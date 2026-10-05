@@ -96,6 +96,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
@@ -2220,7 +2221,9 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr)
       throws Exception {
 
-    Path fullConfDir = configSetDir.resolve(srcConfigSet);
+    Path fullConfDir =
+        ConfigSetService.getConfigsetPath(
+            configSetDir.resolve(srcConfigSet).toString(), configSetDir.toString());
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkAddr)
