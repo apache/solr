@@ -69,17 +69,6 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   }
 
   /**
-   * Asserts that {@link GlobalOpenTelemetry} has been initialized by us (if not previously).
-   *
-   * @return true if OpenTelemetry has been initialized
-   */
-  @VisibleForTesting
-  public static boolean assertInitialized() {
-    assert loaded;
-    return loaded;
-  }
-
-  /**
    * Initializes {@link io.opentelemetry.api.GlobalOpenTelemetry} from a custom plugin,
    * auto-configuration, or simple trace ID propagation. Does nothing if the OpenTelemetry Java
    * agent is present or {@link GlobalOpenTelemetry} is already set (e.g. by tests).

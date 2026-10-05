@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.eclipse.jetty.client.Request;
@@ -71,7 +70,6 @@ public class TraceUtils {
   public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
 
   public static Tracer getGlobalTracer() {
-    OpenTelemetryConfigurator.assertInitialized();
     return GlobalOpenTelemetry.getTracer("solr");
   }
 
