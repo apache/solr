@@ -63,11 +63,11 @@ public class GetConfigTest extends SolrTestCase {
       var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
       var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
 
-      assertNotNull(response);
-      assertNull(response.error);
-      assertNotNull(response.config);
-      assertTrue(response.config.containsKey(component));
-      assertEquals(1, response.config.size());
+      assertNotNull(component, response);
+      assertNull(component, response.error);
+      assertNotNull(component, response.config);
+      assertTrue(component, response.config.containsKey(component));
+      assertEquals(component, 1, response.config.size());
     }
   }
 }
