@@ -40,6 +40,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider;
@@ -59,10 +60,12 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -963,7 +966,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13943")
   @Test
   public void testDateMathInStart() throws Exception {
     ClusterStateProvider clusterStateProvider = solrClient.getClusterStateProvider();
@@ -993,8 +995,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
       ((BaseHttpClusterStateProvider) clusterStateProvider).resolveAlias(getAlias(), true);
     }
-    aliasUpdate = new CountDownLatch(1);
-    monitorAlias(aliasUpdate);
 
     ModifiableSolrParams params = params();
     String nowDay =
@@ -1014,23 +1014,33 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // this process should have lead to the modification of the start time for the alias, converting
     // it into a parsable date, removing the DateMath
 
-    // what we test next happens in a separate thread, so we have to give it some time to happen
-    aliasUpdate.await();
-    if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
-      ((BaseHttpClusterStateProvider) clusterStateProvider).resolveAlias(getAlias(), true);
-    }
-
-    String hopeFullyModified =
-        clusterStateProvider.getAliasProperties(getAlias()).get(ROUTER_START);
-    try {
-      Instant.parse(hopeFullyModified);
-    } catch (DateTimeParseException e) {
-      fail(
-          ROUTER_START
-              + " should not have any date math by this point and parse as an instant. Using "
-              + aClass
-              + " Found:"
-              + hopeFullyModified);
+    // what we test next happens in a separate thread, so we have to give it some time to happen.
+    // Our own watcher on /aliases.json may fire before the provider's ZkStateReader has refreshed
+    // its aliases, so poll the provider itself instead of waiting on a latch.
+    final TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    String hopeFullyModified;
+    while (true) {
+      if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
+        ((BaseHttpClusterStateProvider) clusterStateProvider).resolveAlias(getAlias(), true);
+      }
+      hopeFullyModified = clusterStateProvider.getAliasProperties(getAlias()).get(ROUTER_START);
+      if (hopeFullyModified != null) {
+        try {
+          Instant.parse(hopeFullyModified);
+          break;
+        } catch (DateTimeParseException e) {
+          // still has date math, try again
+        }
+      }
+      if (timeOut.hasTimedOut()) {
+        fail(
+            ROUTER_START
+                + " should not have any date math by this point and parse as an instant. Using "
+                + aClass
+                + " Found:"
+                + hopeFullyModified);
+      }
+      timeOut.sleep(100);
     }
   }
 
