@@ -1,14 +1,14 @@
 # AGENTS.md for Apache Solr
 
-While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see `dev-docs/how-to-contribute.adoc` for some guidelines when using genAI to contribute to Solr.
+While [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see [`dev-docs/how-to-contribute.adoc`](dev-docs/how-to-contribute.adoc) for some guidelines when using genAI to contribute to Solr.
 
 ## Licensing and Dependencies
 
 - Follow Apache Software Foundation licensing rules, avoid adding a dependency with a banned license
 - Always apply the Apache License to new source files
-- All versions must be delcared in `gradle/libs.versions.toml`, never build.gradle files
+- All versions must be delcared in [`gradle/libs.versions.toml`](gradle/libs.versions.toml), never [`build.gradle`](build.gradle) files
 - Try first declaring a dependency without a version (the version might already be in a BOM); and if fails to resolve _then_ specify a version
-- Always run `gradlew updateLicenses resolveAndLockAll --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
+- Always run `gradlew updateLicenses resolveAndLockAll --write-locks` after adding or changing a dependency. See [`dev-docs/gradle-help/dependencies.txt`](dev-docs/gradle-help/dependencies.txt) for more info
 
 ## Build and Development Workflow
 
@@ -25,7 +25,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Running Tests
 
-- See `dev-docs/gradle-help/tests.txt` for hints on running tests
+- See [`dev-docs/gradle-help/tests.txt`](dev-docs/gradle-help/tests.txt) for hints on running tests
 - To run a specific test: `gradlew :solr:core:test --tests "org.apache.solr.search.TestCaffeineCache"`
 - To run a specific BATS test: `gradlew iTest --tests test_adminconsole_urls.bats`
 - The randomization seed is important.  To repeat a failing tests, pass the same seed given in the failure by adding to Gradle: `-Ptests.seed=HEXADECIMALHERE`.
@@ -45,37 +45,37 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Documentation
 
-- For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
-- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user. To write or edit a page, see `dev-docs/ref-guide/` and the "About This Guide" page (`solr/solr-ref-guide/modules/getting-started/pages/about-this-guide.adoc`), which says how examples are presented to readers
-- For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
+- For major or breaking changes, add a prominent note in the appropriate `major-changes-in-solr-X.adoc` page under the [`solr/solr-ref-guide/`](solr/solr-ref-guide/) reference guide
+- Always consider whether a [reference-guide page](solr/solr-ref-guide/) needs updating due to the new/changed features. Target audience is end user. To write or edit a page, see [`dev-docs/ref-guide/`](dev-docs/ref-guide/) and the ["About This Guide" page](solr/solr-ref-guide/modules/getting-started/pages/about-this-guide.adoc), which says how examples are presented to readers
+- For changes to build system and other developer-focused changes, consider updating or adding docs in [`dev-docs/`](dev-docs/) folder
 - Keep all documentation including javadoc concise
 - New classes should have some javadocs
 - Changes should not have code comments communicating the change, which are instead great comments to leave for code review / commentary
 
 ## Developer Docs Index
 
-Before diving into code on these topics, read the matching doc in `dev-docs/`. When adding a new dev doc, add a line here.
+Before diving into code on these topics, read the matching doc in [`dev-docs/`](dev-docs/). When adding a new dev doc, add a line here.
 
 Internals:
 
-- `dev-docs/overseer/overseer.adoc` — Overseer: cluster state updates, ZkStateWriter, collection API message flow
-- `dev-docs/shard-split/shard-split.adoc` — SPLITSHARD: shard/replica states, tlog buffering during split
-- `dev-docs/distributed-update-internals.adoc` — SolrCloud update path: routing, `_version_`/optimistic concurrency, tlog durability, replication acks, shard terms (user-facing consistency model: ref-guide page `solrcloud-update-consistency.adoc`)
-- `dev-docs/plugins-modules-packages.adoc` — plugin/module/package concepts
-- `dev-docs/apis.adoc`, `dev-docs/apis-v2-conventions.adoc` — API design and v2 conventions
-- `dev-docs/ui/` — new Admin UI architecture, component development, testing
+- [`dev-docs/overseer/overseer.adoc`](dev-docs/overseer/overseer.adoc) — Overseer: cluster state updates, ZkStateWriter, collection API message flow
+- [`dev-docs/shard-split/shard-split.adoc`](dev-docs/shard-split/shard-split.adoc) — SPLITSHARD: shard/replica states, tlog buffering during split
+- [`dev-docs/distributed-update-internals.adoc`](dev-docs/distributed-update-internals.adoc) — SolrCloud update path: routing, `_version_`/optimistic concurrency, tlog durability, replication acks, shard terms (user-facing consistency model: [`solrcloud-update-consistency.adoc`](solr/solr-ref-guide/modules/deployment-guide/pages/solrcloud-update-consistency.adoc))
+- [`dev-docs/plugins-modules-packages.adoc`](dev-docs/plugins-modules-packages.adoc) — plugin/module/package concepts
+- [`dev-docs/apis.adoc`](dev-docs/apis.adoc), [`dev-docs/apis-v2-conventions.adoc`](dev-docs/apis-v2-conventions.adoc) — API design and v2 conventions
+- [`dev-docs/ui/`](dev-docs/ui/) — new Admin UI architecture, component development, testing
 
 Process & tooling:
 
-- `dev-docs/solr-source-code.adoc`, `git.adoc`, `IDEs.adoc`, `jvms.adoc` — build and dev environment
-- `dev-docs/ref-guide/` — ref-guide authoring (AsciiDoc syntax, Antora templates)
-- `dev-docs/dependency-upgrades.adoc`, `lucene-upgrade.md`, `working-between-major-versions.adoc` — upgrades and branch management
-- `dev-docs/releasing.adoc`, `changelog.adoc`, `asf-jenkins.adoc` — release and CI process
+- [`dev-docs/solr-source-code.adoc`](dev-docs/solr-source-code.adoc), [`git.adoc`](dev-docs/git.adoc), [`IDEs.adoc`](dev-docs/IDEs.adoc), [`jvms.adoc`](dev-docs/jvms.adoc) — build and dev environment
+- [`dev-docs/ref-guide/`](dev-docs/ref-guide/) — ref-guide authoring (AsciiDoc syntax, Antora templates)
+- [`dev-docs/dependency-upgrades.adoc`](dev-docs/dependency-upgrades.adoc), [`lucene-upgrade.md`](dev-docs/lucene-upgrade.md), [`working-between-major-versions.adoc`](dev-docs/working-between-major-versions.adoc) — upgrades and branch management
+- [`dev-docs/releasing.adoc`](dev-docs/releasing.adoc), [`changelog.adoc`](dev-docs/changelog.adoc), [`asf-jenkins.adoc`](dev-docs/asf-jenkins.adoc) — release and CI process
 
 ## Changelog
 
-- We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
-- To scaffold a new changelog entry, run `gradlew writeChangelog` (JIRA) or `gradlew writeChangeLogPr` (no JIRA), and then edit the new file located in `changelog/unreleased/`.
+- We use the "logchange" tooling to manage our changelog. See [`dev-docs/changelog.adoc`](dev-docs/changelog.adoc) for details and conventions
+- To scaffold a new changelog entry, run `gradlew writeChangelog` (JIRA) or `gradlew writeChangeLogPr` (no JIRA), and then edit the new file located in [`changelog/unreleased/`](changelog/unreleased/).
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
 
 ## Issue Tracking (JIRA)
@@ -93,7 +93,7 @@ Solr issues are tracked at https://issues.apache.org/jira (project key `SOLR`). 
     - `releases/solr/X.Y.Z` — standalone Solr releases, 9.0 onward
 - Exclude `releases/lucene/*` (pure Lucene releases, not Solr), and `grafts/*` / `history/branches/*` refs (historical/graft markers, not real releases) from any version lookup.
 - Example pattern to find the earliest release containing a commit: `git tag --contains <hash> | grep -E '^releases/(solr|lucene-solr)/[0-9]+\.[0-9]+(\.[0-9]+)?$' | sed -E 's#^releases/(solr|lucene-solr)/##' | sort -V | head -1`
-- The active development branch is `main`; its in-progress version is the `baseVersion` string in the root `build.gradle`. Maintenance branches for prior lines follow the `branch_9x`, `branch_10x`, etc. naming pattern.
+- The active development branch is `main`; its in-progress version is the `baseVersion` string in the root [`build.gradle`](build.gradle). Maintenance branches for prior lines follow the `branch_9x`, `branch_10x`, etc. naming pattern.
 
 ## Security
 
