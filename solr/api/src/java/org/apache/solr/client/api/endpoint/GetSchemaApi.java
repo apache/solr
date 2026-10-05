@@ -78,12 +78,13 @@ public interface GetSchemaApi {
     SchemaListDynamicFieldsResponse listDynamicFields();
 
     @GET
-    @Path("/dynamicfields/{fieldName}")
+    @Path("/dynamicfields/{dynamicFieldName}")
     @StoreApiParameters
     @Operation(
         summary = "Get detailed info about a single dynamic field",
         tags = {"schema"})
-    SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(@PathParam("fieldName") String fieldName);
+    SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(
+        @PathParam("dynamicFieldName") String dynamicFieldName);
 
     @GET
     @Path("/fieldtypes")
