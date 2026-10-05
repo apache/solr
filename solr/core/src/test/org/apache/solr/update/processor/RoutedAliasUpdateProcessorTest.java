@@ -31,8 +31,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -64,7 +62,6 @@ import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore // don't try to run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -317,8 +314,6 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
               .get(getAlias()));
     }
 
-    int commitWithin = random().nextBoolean() ? -1 : 500; // if -1, we commit explicitly instead
-
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
       ExecutorService exec = null;
@@ -330,7 +325,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
         for (SolrInputDocument solrInputDocument : solrInputDocuments) {
           String col = collections.get(random().nextInt(collections.size()));
-          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument)));
         }
         for (Future<UpdateResponse> future : futures) {
           assertUpdateResponse(future.get());
@@ -347,33 +342,18 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       // send in a batch.
       String col = collections.get(random().nextInt(collections.size()));
       CloudSolrClient solrClient = cluster.getSolrClient();
-      assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
+      assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments)));
     }
-    String col = collections.get(random().nextInt(collections.size()));
-    if (commitWithin == -1) {
+    // The docs may have been routed to any collection of the alias, so commit every one of them.
+    // This is an explicit commit rather than commitWithin: each replica opens its searcher on its
+    // own timer then, and a query could see the docs on one replica but not on another.
+    List<String> aliasCollections =
+        new CollectionAdminRequest.ListAliases()
+            .process(getSolrClient())
+            .getAliasesAsLists()
+            .get(getAlias());
+    for (String col : aliasCollections) {
       getSolrClient().commit(col);
-    } else {
-      // check that it all got committed eventually
-      String docsQ =
-          "{!terms f=id}"
-              + Arrays.stream(solrInputDocuments)
-                  .map(d -> d.getFieldValue("id").toString())
-                  .collect(Collectors.joining(","));
-      int numDocs = queryNumDocs(docsQ);
-      if (numDocs == solrInputDocuments.length) {
-        System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
-        return;
-      }
-      // wait until it's committed
-      Thread.sleep(commitWithin);
-      // Loop for up to 10 seconds waiting for commit to catch up
-      for (int idx = 0; idx < 100; ++idx) {
-        numDocs = queryNumDocs(docsQ);
-        if (numDocs == solrInputDocuments.length) break;
-        Thread.sleep(100);
-      }
-
-      assertEquals("not committed.  Bug or a slow test?", solrInputDocuments.length, numDocs);
     }
   }
 
@@ -382,11 +362,6 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     @SuppressWarnings({"rawtypes"})
     List errors = (List) rsp.getResponseHeader().get("errors");
     assertTrue("Expected no errors: " + errors, errors == null || errors.isEmpty());
-  }
-
-  private int queryNumDocs(String q) throws SolrServerException, IOException {
-    return (int)
-        getSolrClient().query(getAlias(), params("q", q, "rows", "0")).getResults().getNumFound();
   }
 
   /** Adds the docs to Solr via {@link #getSolrClient()} with the params */
