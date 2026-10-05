@@ -451,11 +451,14 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   }
 
   private static void testHandleVersionsWithRangesSameVersionDifferentSign() {
-    // SOLR-11475: we have version 42 and the other has -42; this used to loop forever
+    // SOLR-11475: we have version 42 and the other has -42; this used to loop forever.
+    // The matching 50 and 10 versions around the pair matter: the walk starts at the
+    // lowest versions, and with the pair as the only entry the old code fails on an
+    // index error instead of looping.
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = List.of(-42L);
-      List<Long> ourUpdates = List.of(42L);
-      long ourLowThreshold = ourUpdates.get(0);
+      List<Long> otherVersions = List.of(50L, -42L, 10L);
+      List<Long> ourUpdates = List.of(50L, 42L, 10L);
+      long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
       MissedUpdatesRequest[] result = new MissedUpdatesRequest[1];
       Thread t =
           new Thread(
