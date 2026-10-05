@@ -28,6 +28,7 @@ import org.apache.solr.core.backup.repository.DelegatingBackupRepository;
 
 public class TrackingBackupRepository extends DelegatingBackupRepository {
   private static final List<URI> COPIED_FILES = Collections.synchronizedList(new ArrayList<>());
+  private static final List<URI> RESTORED_FILES = Collections.synchronizedList(new ArrayList<>());
   private static final List<URI> DIRECTORIES_CREATED =
       Collections.synchronizedList(new ArrayList<>());
   private static final List<URI> OUTPUTS_CREATED = Collections.synchronizedList(new ArrayList<>());
@@ -52,11 +53,22 @@ public class TrackingBackupRepository extends DelegatingBackupRepository {
     super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
   }
 
+  @Override
+  public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
+    RESTORED_FILES.add(resolve(sourceRepo, fileName));
+    super.copyFileTo(sourceRepo, fileName, dest);
+  }
+
   /**
    * @return list of files were copied by using {@link #copyFileFrom(Directory, String, URI)}
    */
   public static List<URI> copiedFiles() {
     return new ArrayList<>(COPIED_FILES);
+  }
+
+  /** Repository files that were copied into a Directory, i.e. restored/installed */
+  public static List<URI> restoredFiles() {
+    return new ArrayList<>(RESTORED_FILES);
   }
 
   public static List<URI> directoriesCreated() {
@@ -70,6 +82,7 @@ public class TrackingBackupRepository extends DelegatingBackupRepository {
   /** Clear all tracking data */
   public static void clear() {
     COPIED_FILES.clear();
+    RESTORED_FILES.clear();
     DIRECTORIES_CREATED.clear();
     OUTPUTS_CREATED.clear();
   }
