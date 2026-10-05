@@ -44,8 +44,7 @@ public interface ConfigApi {
             @Parameter(description = "Expand request handler useParams and effective parameters")
             boolean expandParams);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS till migration is
-    // completed
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path("/{component:query|updateHandler|directoryFactory|indexConfig|codecFactory}")
     @StoreApiParameters
