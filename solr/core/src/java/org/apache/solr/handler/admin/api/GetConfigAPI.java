@@ -29,7 +29,8 @@ import org.apache.solr.response.SolrQueryResponse;
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
  *
  * <p>This class covers legacy AnnotatedApi paths under GET /config: /params, /params{paramset},
- * /overlay, /znodeVersion, etc.
+ * /overlay, /znodeVersion, and remaining {@code /config/{component}} sections not yet migrated to
+ * {@link org.apache.solr.client.api.endpoint.ConfigApi.Get}
  */
 public class GetConfigAPI {
   private final SolrConfigHandler configHandler;

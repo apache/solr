@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
@@ -42,5 +43,15 @@ public interface ConfigApi {
             @DefaultValue("false")
             @Parameter(description = "Expand request handler useParams and effective parameters")
             boolean expandParams);
+
+    @GET
+    @Path("{component:query|updateHandler|directoryFactory|indexConfig|codecFactory")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a config section",
+        tags = {"config"})
+    ConfigInfoResponse getConfigComponent(
+        @PathParam("component") @Parameter(description = "Name of the config component")
+            String component);
   }
 }

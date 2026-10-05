@@ -1,5 +1,6 @@
 title:
-  Migration of Get Config V2 API supporting components to JAX-RS construct
+  Migration of Get Config sections query, updateHandler, directoryFactory, indexConfig, and
+  codecFactory to JAX-RS.
 type: changed
 authors:
   - name: Jalaz Kumar
