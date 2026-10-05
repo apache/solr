@@ -787,8 +787,14 @@ public class SimpleFacets {
       throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     String[] groupFields = groupingSpecification != null ? groupingSpecification.getFields() : null;
-    final String groupField =
+    String groupField =
         groupFields != null && Array.getLength(groupFields) != 0 ? groupFields[0] : null;
+    if (groupField == null) {
+      // A facet refinement request can arrive without a grouping specification even
+      // though its parameters carry group.field: the refinement may ride on the
+      // stored-fields shard request, whose request factory removes the group parameter.
+      groupField = rb.req.getParams().get(GroupParams.GROUP_FIELD);
+    }
     if (groupField == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
