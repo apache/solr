@@ -24,13 +24,17 @@ ticket is one instance: wrong exception type for the cleanup, and no message.
 
 ### What this change does
 
-1. **Any failure after the state write deletes the collection.** The command records
+1. **Any exception after the state write deletes the collection.** The command records
    that it has written (or tried to write) the collection state. The two special-case
    cleanups are replaced by one `catch` at the end of the method that runs the same
-   `DeleteCollectionCmd` cleanup for every failure once that flag is set. This is the
+   `DeleteCollectionCmd` cleanup for every exception once that flag is set. (The catch
+   is on `Exception`; an `Error` out of a plugin, such as a `NoClassDefFoundError`,
+   still skips the cleanup.) This is the
    shape `SplitShardCmd` already uses (cleanup keyed on "did not succeed", not on an
-   exception type). Nothing is cleaned up for a failure before the state write, so the
-   command never deletes a collection it did not create.
+   exception type). Nothing is cleaned up for a failure before the state write, and
+   just before that write the command checks ZooKeeper itself for an existing
+   `state.json` (section 4, item 7), so the command never deletes a collection it did
+   not create.
 2. **The error names the cause.** The catch-all message is now
    `Could not create collection <name>: <exception>`. `SolrException`s pass through
    unchanged. `AssignmentException` is still reported as a 400 with its own message.
@@ -94,7 +98,7 @@ reading is a different size of patch. It is listed under "Left unfixed".
 |---|---|---|---|---|
 | 1 | Validation (127-151) | exists, alias exists, no config, bad params | nothing / 400 with message | same |
 | 2 | `createCollectionZkNode` (171) | ZK error | maybe an empty `/collections/<name>` node / 500 with message | same (see Left unfixed 2) |
-| 3 | PRS state build + create (200-203) | bad router/shards, ZK error, node exists | empty `/collections/<name>` node / message, or **null message** for a ZK exception | not cleaned (state not written yet); message now present |
+| 3 | PRS state build + create (200-203) | bad router/shards, ZK error, node exists | `/collections/<name>` node, empty or holding a full `state.json` if the write landed but its reply was lost / message, or **null message** for a ZK exception | not cleaned (the flag is set only when `create` returns, so a lost reply can leave that `state.json`); message now present |
 | 4 | Submit state update, non-PRS (222, 229) | ZK or queue error | node, possibly state / null message for non-Solr exceptions | cleaned up; message |
 | 5 | Wait for collection, 30 s (211, 235) | timeout | node; in Overseer mode the queued create can still land later and produce an empty collection / 500 "Could not fully create collection" | cleaned up; same message (see Left unfixed 5) |
 | 6 | Re-read state (245) | collection missing (the ticket) | leads to 7b | cannot happen for create |
@@ -150,11 +154,20 @@ Async requests go through the same method; the failure is stored as the request'
    (lines 283-290, 406-408) that is treated as a bad message and dropped. Not run;
    worth a look by someone who knows that loop.
 6. A missing or rejected placement is still a 400. Not changed here.
-7. Non-PRS only: if the up-front "already exists" check misses an existing collection,
-   the state update is a no-op and the command continues against the existing
-   collection. A later failure then deletes it. This was already true for rows 7a and
-   11; it now applies to every later failure. I found no reachable way to miss the
-   check for a collection that has existed for more than a moment.
+7. Non-PRS only: if the up-front "already exists" check misses an existing collection
+   (this node's state view lags ZooKeeper), the two state-update modes diverge. With
+   Overseer updates the state update is a no-op and the command continues against the
+   existing collection; with distributed updates the state update creates `state.json`
+   with a plain `create`, which throws `NodeExistsException`. Either way, a failure
+   after that point would once have run the cleanup and deleted a collection this
+   command did not create: already true for rows 7a and 11 in the Overseer case, and
+   new with this change in the distributed case, where the exception itself triggered
+   the cleanup. The command now checks ZooKeeper directly for the collection's
+   `state.json` just before the state write is submitted and fails with "collection
+   already exists" if one is there, so neither variant reaches the cleanup. The
+   command holds the collection lock, so state present at that point is not its own.
+   The guard is verified by reading; reaching it needs the reader lag described in
+   section 5, which has no light test seam.
 8. Row 14: deleting a working collection because its alias could not be created is
    the consistent reading of "a failed create leaves nothing", but it is a choice.
    Say so if you would rather keep the collection in that one case.
