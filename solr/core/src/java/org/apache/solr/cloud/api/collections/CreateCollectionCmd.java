@@ -79,6 +79,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
@@ -96,6 +97,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private final CollectionCommandContext ccc;
 
   public static final String PRS_DEFAULT_PROP = "solr.cloud.prs.enabled";
+
+  // The alias write at the end of a create is retried a few times on a ZooKeeper error: the
+  // collection itself is complete by then, and a transient error should not fail the create.
+  private static final int ALIAS_CREATION_ATTEMPTS = 3;
+  private static final long ALIAS_CREATION_RETRY_PAUSE_MS = 200;
 
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
@@ -491,9 +497,14 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
       // create an alias pointing to the new collection, if different from the collectionName
       if (!alias.equals(collectionName)) {
-        ccc.getZkStateReader()
-            .aliasesManager
-            .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(alias, collectionName));
+        runWithBoundedRetries(
+            () ->
+                ccc.getZkStateReader()
+                    .aliasesManager
+                    .applyModificationAndExportToZk(
+                        a -> a.cloneWithCollectionAlias(alias, collectionName)),
+            ALIAS_CREATION_ATTEMPTS,
+            ALIAS_CREATION_RETRY_PAUSE_MS);
       }
 
     } catch (Exception ex) {
@@ -513,6 +524,43 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Could not create collection " + collectionName + ": " + ex, ex);
+    }
+  }
+
+  /**
+   * Runs {@code op}, retrying it if it fails with a {@link ZooKeeperException}, for up to {@code
+   * maxAttempts} attempts in total and pausing {@code pauseMillis} between attempts. Any other
+   * failure propagates at once, and so does a ZooKeeper failure on the last attempt. An interrupt
+   * is never retried: the interrupt flag is restored and the {@link InterruptedException}
+   * propagates.
+   */
+  static void runWithBoundedRetries(RetryUtil.RetryCmd op, int maxAttempts, long pauseMillis)
+      throws Exception {
+    int attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        op.execute();
+        return;
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw e;
+      } catch (ZooKeeperException e) {
+        if (attempt >= maxAttempts) {
+          throw e;
+        }
+        log.warn(
+            "Attempt {} of {} failed with a ZooKeeper error; retrying after a pause",
+            attempt,
+            maxAttempts,
+            e);
+        try {
+          Thread.sleep(pauseMillis);
+        } catch (InterruptedException interruptedDuringPause) {
+          Thread.currentThread().interrupt();
+          throw interruptedDuringPause;
+        }
+      }
     }
   }
 
