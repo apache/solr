@@ -2221,7 +2221,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr)
       throws Exception {
 
-    Path fullConfDir =
+    Path confPath =
         ConfigSetService.getConfigsetPath(
             configSetDir.resolve(srcConfigSet).toString(), configSetDir.toString());
     try (SolrZkClient zkClient =
@@ -2229,7 +2229,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
             .withUrl(zkAddr)
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      zkClient.upConfig(fullConfDir, dstConfigName);
+      zkClient.upConfig(confPath, dstConfigName);
     }
   }
 
