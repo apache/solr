@@ -31,10 +31,10 @@ import org.openqa.selenium.WebElement;
  *
  * <p>SOLR-18317: the UI used to unconditionally send {@code nodes=all} to {@code
  * /admin/info/logging}, a parameter that only makes sense in SolrCloud mode (it broadcasts the
- * level change to every live node) and used to NPE server-side without a {@code ZkController}.
- * This exercises the fixed {@code LoggingLevelController.setLevel} against a real standalone node,
- * where the mapping test coverage ({@code AdminUiLoggingScreenTest}) only ever runs against a
- * SolrCloud cluster.
+ * level change to every live node) and used to NPE server-side without a {@code ZkController}. This
+ * exercises the fixed {@code LoggingLevelController.setLevel} against a real standalone node, where
+ * the mapping test coverage ({@code AdminUiLoggingScreenTest}) only ever runs against a SolrCloud
+ * cluster.
  */
 public class AdminUiLoggingStandaloneTest extends AdminUiStandaloneTestBase {
 
@@ -76,8 +76,8 @@ public class AdminUiLoggingStandaloneTest extends AdminUiStandaloneTestBase {
    * logger has no explicit level (it then reports the inherited effective level with set=false).
    *
    * <p>Before SOLR-18317, the hardcoded {@code nodes=all} param made this request NPE server-side
-   * in standalone mode, so the UI's success callback (and thus {@code $scope.refresh()}) never
-   * ran; this would time out here rather than observing the new level.
+   * in standalone mode, so the UI's success callback (and thus {@code $scope.refresh()}) never ran;
+   * this would time out here rather than observing the new level.
    */
   @SuppressWarnings("unchecked")
   private void assertLoggerLevel(String logger, String expectedLevel) throws Exception {
