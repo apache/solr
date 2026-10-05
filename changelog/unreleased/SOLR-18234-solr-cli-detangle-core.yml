@@ -1,5 +1,5 @@
 title:
-  Stop PackageManager and test-framework from depending on CLI
+  Move packagemanager under CLI and stop test-framework from depending on CLI
 type: other
 authors:
   - name: Jalaz Kumar
