@@ -45,7 +45,7 @@ public interface ConfigApi {
             boolean expandParams);
 
     @GET
-    @Path("{component:query|updateHandler|directoryFactory|indexConfig|codecFactory")
+    @Path("/{component:query|updateHandler|directoryFactory|indexConfig|codecFactory}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
