@@ -945,8 +945,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
   /**
    * SOLR-12505: fetch() sends its batch query as "{! df=.. q.op=OR}.." and must not depend on the
-   * target handler's default defType. NOTE: written without being compiled or run; see
-   * SOLR-12505-TESTING.md.
+   * target handler's default defType.
    */
   @Test
   public void testFetchStreamWithNonLuceneDefaultDefType() throws Exception {
@@ -966,10 +965,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                           + " 'class': 'solr.SearchHandler', 'defaults': {'defType': 'edismax'}}}")
                   .build());
 
+      // The subject values deliberately share no token with the join keys (0, 1, 2): the schema
+      // copyFields subject into text, the handler default field, so a token in common would let
+      // the default edismax parser find the documents by accident and hide the defType bug.
       new UpdateRequest()
-          .add(id, "0", "a_s", "hello0", "a_i", "0", "subject", "blah blah blah 0")
-          .add(id, "1", "a_s", "hello1", "a_i", "1", "subject", "blah blah blah 1")
-          .add(id, "2", "a_s", "hello2", "a_i", "2", "subject", "blah blah blah 2")
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "subject", "alpha")
+          .add(id, "1", "a_s", "hello1", "a_i", "1", "subject", "bravo")
+          .add(id, "2", "a_s", "hello2", "a_i", "2", "subject", "charlie")
           .commit(cluster.getSolrClient(), edismaxCollection);
 
       StreamFactory factory =
@@ -992,13 +994,15 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       List<Tuple> tuples = getTuples(stream);
 
       assertEquals(3, tuples.size());
+      final String[] expectedSubjects = {"alpha", "bravo", "charlie"};
       for (int i = 0; i < 3; i++) {
-        assertEquals("blah blah blah " + i, tuples.get(i).getString("subject"));
+        assertEquals(expectedSubjects[i], tuples.get(i).getString("subject"));
       }
     } finally {
       CollectionAdminRequest.deleteCollection(edismaxCollection).process(cluster.getSolrClient());
     }
   }
+
   @Test
   public void testFetchStream() throws Exception {
 
