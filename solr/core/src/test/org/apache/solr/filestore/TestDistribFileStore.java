@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.cli.packagemanager.PackageUtils;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -330,7 +329,13 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
+
+    FileStoreAPI.MetaData metaData = ClusterFileStore._createJsonMetaData(bytes, null);
+    DistribFileStore._persistToFile(
+        jetty.getCoreContainer().getSolrHome(),
+        path,
+        ByteBuffer.wrap(bytes),
+        ByteBuffer.wrap(Utils.toJSON(metaData)));
 
     final var syncReq = new FileStoreApi.SyncFile(path);
     final var syncRsp = syncReq.process(jetty.getSolrClient());
