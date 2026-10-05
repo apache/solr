@@ -219,6 +219,15 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               e);
         }
       } else {
+        // The check at the top of this command reads this node's cluster state view, which can
+        // lag behind ZooKeeper. The state update below creates the collection's state.json, so
+        // if one is already in ZooKeeper it belongs to an existing collection, and a failed
+        // create must not delete a collection this command did not create. This command holds
+        // the collection lock, so state found here is not its own.
+        if (zkStateReader.getZkClient().exists(collectionPath)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
+        }
         // set before submitting: a submission that fails may still have been applied
         stateWritten = true;
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
