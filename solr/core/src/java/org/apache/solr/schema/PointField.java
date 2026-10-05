@@ -23,8 +23,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
@@ -79,6 +77,10 @@ public abstract class PointField extends NumericFieldType {
     if (TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS) {
       args.remove("precisionStep");
     }
+  }
+
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
   }
 
   @Override
@@ -292,7 +294,7 @@ public abstract class PointField extends NumericFieldType {
           assert numericValue instanceof Double;
           bits = Double.doubleToLongBits(numericValue.doubleValue());
         }
-        fields.add(new NumericDocValuesField(sf.getName(), bits));
+        fields.add(createNumericDocValuesField(sf.getName(), bits, sf.hasDocValuesSkipList()));
       } else {
         // MultiValued
         if (numericValue instanceof Integer || numericValue instanceof Long) {
@@ -303,7 +305,8 @@ public abstract class PointField extends NumericFieldType {
           assert numericValue instanceof Double;
           bits = NumericUtils.doubleToSortableLong(numericValue.doubleValue());
         }
-        fields.add(new SortedNumericDocValuesField(sf.getName(), bits));
+        fields.add(
+            createSortedNumericDocValuesField(sf.getName(), bits, sf.hasDocValuesSkipList()));
       }
     }
     if (sf.stored()) {

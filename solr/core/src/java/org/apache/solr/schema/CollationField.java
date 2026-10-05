@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
@@ -242,6 +241,10 @@ public class CollationField extends FieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
+  @Override
   protected boolean enableDocValuesByDefault() {
     return true;
   }
@@ -253,9 +256,11 @@ public class CollationField extends FieldType {
       fields.add(createField(field, value));
       final BytesRef bytes = getCollationKey(field.getName(), value.toString());
       if (field.multiValued()) {
-        fields.add(new SortedSetDocValuesField(field.getName(), bytes));
+        fields.add(
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList()));
       } else {
-        fields.add(new SortedDocValuesField(field.getName(), bytes));
+        fields.add(
+            createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList()));
       }
       return fields;
     } else {
