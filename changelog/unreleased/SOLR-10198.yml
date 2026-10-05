@@ -1,4 +1,4 @@
-title: EmbeddedSolrServer StreamingResponseCallback: Normalize Lucene stored fields to SolrJ-native types.
+title: "EmbeddedSolrServer StreamingResponseCallback: Normalize Lucene stored fields to SolrJ-native types."
 type: fixed
 authors:
   - name: Nick Shanin
