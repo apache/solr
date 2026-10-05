@@ -1132,6 +1132,26 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       }
     }
 
+    // SOLR-10492 setup: the per-shard docs above put every term of the facet field in a
+    // single group per shard, so both shards return the same top terms and no facet
+    // refinement ever happens. Add one extra group per shard built around a different
+    // term (term 0 on shard 0, term 1 on shard 1) so the shards return different top
+    // terms and the coordinator must refine the term a shard did not return, whose
+    // document count differs from its grouped count on that shard. The added docs are
+    // deleted again right after the queries below, because later sections assert exact
+    // match and group counts for fq=s1:a.
+    for (int j = 0; j < 30; j++) {
+      index_specific(
+          0, i1, 555001, s1, "a", id, 7000 + j, t1, (j % 7), oddField, "solr10492refine");
+      index_specific(
+          1, i1, 555003, s1, "a", id, 8000 + j, t1, (j % 7), oddField, "solr10492refine");
+    }
+    for (int j = 0; j < 10; j++) {
+      index_specific(0, i1, 555002, s1, "a", id, 7030 + j, t1, 0, oddField, "solr10492refine");
+      index_specific(1, i1, 555004, s1, "a", id, 8030 + j, t1, 1, oddField, "solr10492refine");
+    }
+    commit();
+
     // SOLR-10492: with overrequest off a small facet.limit forces facet refinement, which must
     // also return grouped (not document) counts when group.facet=true
     for (String flimit : new String[] {"1", "2"}) {
@@ -1165,6 +1185,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           "facet.overrequest.ratio",
           1);
     }
+
+    // remove the SOLR-10492 setup docs again (see above)
+    del(oddField + ":solr10492refine");
+    commit();
 
     // SOLR-3316
     query(
