@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.request.SolrQueryRequest;
@@ -177,7 +178,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
               }
 
               @Override
-              public org.apache.solr.common.cloud.ZkCoreNodeProps getNodeProps() {
+              public ZkCoreNodeProps getNodeProps() {
                 return null;
               }
 

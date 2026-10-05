@@ -1240,7 +1240,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    /** Helper method for constructor */
     /** The error message plus, when known, the replica the request was being sent to. */
     private static String describe(SolrError error) {
       String msg = error.e.getMessage();
@@ -1259,6 +1258,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return sb.append(')').toString();
     }
 
+    /** Helper method for constructor */
     private static int buildCode(List<SolrError> errors) {
       assert null != errors;
       assert 0 < errors.size();
