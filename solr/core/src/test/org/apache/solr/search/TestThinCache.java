@@ -150,6 +150,18 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
     assertNull(lfuCache.get(1)); // first item put in should be the first out
 
+    // Everything after this point used to run against a backing cache that stayed full:
+    // warming copies 25 entries in and the test then puts key 103, and every put into the
+    // full backing evicts an entry. An eviction whose victim belongs to the second cache's
+    // scope is counted in that cache's evictions metric, and Caffeine's lazy eviction
+    // maintenance decides whether such an eviction has been delivered by the time the
+    // metric is sampled at the end of the test; that race is the flake in SOLR-18506,
+    // where the second cache read 1 eviction instead of 0. Enlarging the backing to 200
+    // (both phases together hold at most 126 distinct entries) means nothing is evicted
+    // from here on, under any interleaving. As a side effect setMaxSize runs Caffeine
+    // cleanUp, settling any maintenance still pending from the puts above.
+    backing.setMaxSize(200);
+
     // Test autowarming
     newLFUCache.init(Map.of("autowarmCount", "25"), initObj, regenerator);
     newLFUCache.warm(null, lfuCache);
@@ -167,6 +179,10 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertEquals(7L, newhits + newmiss);
     assertEquals(4L, newhits);
     assertEquals(102L, newinserts);
+    // The eviction metric is cumulative and prior-inclusive, like the hits, inserts, and
+    // lookups asserted above, and the exact value here is 0: the priors copied from the
+    // first cache contribute no evictions, and the enlarged backing means the warming
+    // phase above evicted nothing either.
     assertEquals(0L, evictions);
 
     solrMetricsContext.close();
