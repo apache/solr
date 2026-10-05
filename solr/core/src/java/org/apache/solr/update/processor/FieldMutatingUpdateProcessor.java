@@ -24,7 +24,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
@@ -81,41 +84,67 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
   }
 
   private void mutateDocument(SolrInputDocument doc) {
+    mutateDocument(doc, Collections.newSetFromMap(new IdentityHashMap<>()));
+  }
+
+  private void mutateDocument(SolrInputDocument doc, Set<SolrInputDocument> seen) {
+    // The same document instance can be reachable by more than one path: an anonymous
+    // child that is also a field value, or one shared by several fields. Mutate it only
+    // once, since not every mutation is idempotent.
+    if (!seen.add(doc)) {
+      return;
+    }
+
     // Make copies so field and child-doc mutations do not interfere with iteration.
     final Collection<String> fieldNames = new ArrayList<>(doc.getFieldNames());
 
     for (final String fname : fieldNames) {
-      if (!selector.shouldMutate(fname)) continue;
+      if (selector.shouldMutate(fname)) {
+        final SolrInputField src = doc.get(fname);
 
-      final SolrInputField src = doc.get(fname);
-
-      SolrInputField dest = null;
-      try {
-        dest = mutate(src);
-      } catch (SolrException e) {
-        String msg = "Unable to mutate field '" + fname + "': " + e.getMessage();
-        log.error(msg, e);
-        throw new SolrException(BAD_REQUEST, msg, e);
-      }
-      if (null == dest) {
-        doc.remove(fname);
-      } else {
-        // semantics of what happens if dest has diff name are hard
-        // we could treat it as a copy, or a rename
-        // for now, don't allow it.
-        if (!fname.equals(dest.getName())) {
-          throw new SolrException(
-              SERVER_ERROR,
-              "mutate returned field with different name: " + fname + " => " + dest.getName());
+        SolrInputField dest = null;
+        try {
+          dest = mutate(src);
+        } catch (SolrException e) {
+          String msg = "Unable to mutate field '" + fname + "': " + e.getMessage();
+          log.error(msg, e);
+          throw new SolrException(BAD_REQUEST, msg, e);
         }
-        doc.put(dest.getName(), dest);
+        if (null == dest) {
+          doc.remove(fname);
+        } else {
+          // semantics of what happens if dest has diff name are hard
+          // we could treat it as a copy, or a rename
+          // for now, don't allow it.
+          if (!fname.equals(dest.getName())) {
+            throw new SolrException(
+                SERVER_ERROR,
+                "mutate returned field with different name: " + fname + " => " + dest.getName());
+          }
+          doc.put(dest.getName(), dest);
+        }
+      }
+
+      // Descend into child documents given as the value (or one of the values) of this
+      // field. This runs after any mutation of the field itself, using the field as it
+      // now stands, so a mutation that removed the field leaves nothing to descend into.
+      final SolrInputField field = doc.get(fname);
+      if (field != null) {
+        final Collection<Object> values = field.getValues();
+        if (values != null) {
+          for (final Object value : values) {
+            if (value instanceof SolrInputDocument childDoc) {
+              mutateDocument(childDoc, seen);
+            }
+          }
+        }
       }
     }
 
     final List<SolrInputDocument> childDocs = doc.getChildDocuments();
     if (childDocs != null) {
       for (SolrInputDocument childDoc : new ArrayList<>(childDocs)) {
-        mutateDocument(childDoc);
+        mutateDocument(childDoc, seen);
       }
     }
   }
