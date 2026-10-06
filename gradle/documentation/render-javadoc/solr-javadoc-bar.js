@@ -101,9 +101,16 @@ function loadScripts(doc, tag) {
    * reach the others, so offer them as a jump list.
    */
   function buildModulePicker(docsRoot) {
+    // Wrapped in a label: on its own a select showing the no-selection dash is
+    // just a bordered box, indistinguishable from a search field.
+    var wrapper = document.createElement('label');
+    wrapper.className = 'solr-docs-module-picker';
+    var caption = document.createElement('span');
+    caption.textContent = 'Module';
+    wrapper.appendChild(caption);
+
     var picker = document.createElement('select');
     picker.className = 'solr-docs-modules';
-    picker.setAttribute('aria-label', 'Jump to a module');
     // Pages outside any one module -- the Javadocs index -- start on a
     // placeholder rather than preselecting an arbitrary module. Choosing it
     // from inside a module goes back up to the index.
@@ -124,7 +131,8 @@ function loadScripts(doc, tag) {
         window.location.href = picker.value;
       }
     });
-    return picker;
+    wrapper.appendChild(picker);
+    return wrapper;
   }
 
   /*

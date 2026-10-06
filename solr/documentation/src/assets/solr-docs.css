@@ -163,20 +163,36 @@ code {
   text-decoration: none;
 }
 
-/* Injected into the masthead by solr-javadoc-bar.js on the Javadocs page. */
+.solr-docs-module-picker {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--solr-muted);
+}
+
+/* Injected into the masthead by solr-javadoc-bar.js on the Javadocs page.
+   Shaped as a tinted pill so it reads as a control to pick from, rather than
+   as another text field next to the search box. */
 .masthead-nav .solr-docs-modules {
   /* A select sizes itself to its widest option -- 'modules-opentelemetry' is
      wider than a phone -- so it has to be allowed to shrink. */
   flex: 0 1 auto;
   min-width: 0;
-  max-width: min(14rem, 100%);
-  padding: 0.3rem 0.4rem;
-  background-color: var(--solr-surface);
+  max-width: min(12rem, 100%);
+  padding: 0.25rem 0.3rem 0.25rem 0.65rem;
+  background-color: var(--solr-chip);
   border: 1px solid var(--solr-rule-strong);
-  border-radius: 3px;
+  border-radius: 999px;
   font-family: inherit;
   font-size: 0.8rem;
   color: var(--solr-ink);
+  cursor: pointer;
 }
 
 .masthead-nav .solr-docs-modules:hover,
