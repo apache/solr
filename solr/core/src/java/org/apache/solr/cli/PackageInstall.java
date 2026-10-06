@@ -35,7 +35,7 @@ package org.apache.solr.cli;
       "  # Install the latest available version",
       "  bin/solr package install mypkg"
     })
-public class Install extends PackageSubCommand {
+public class PackageInstall extends PackageSubCommand {
 
   @picocli.CommandLine.Parameters(
       index = "0",

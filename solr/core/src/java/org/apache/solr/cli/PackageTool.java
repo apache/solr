@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
       PackageListInstalled.class,
       PackageListAvailable.class,
       PackageListDeployed.class,
-      Install.class,
+      PackageInstall.class,
       PackageDeploy.class,
       PackageUndeploy.class,
       PackageUninstall.class
