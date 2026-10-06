@@ -48,7 +48,8 @@ public class StreamingSolrClients {
   private HttpJettySolrClient httpClient;
 
   private Map<String, ConcurrentUpdateBaseSolrClient> solrClients = new HashMap<>();
-  private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
+  // written by the client runner threads, see ErrorReportingConcurrentUpdateSolrClient
+  final List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
 
@@ -57,8 +58,20 @@ public class StreamingSolrClients {
     this.httpClient = updateShardHandler.getUpdateOnlyHttpClient();
   }
 
+  /** A snapshot of the errors reported so far; later errors do not show up in it. */
   public List<SolrError> getErrors() {
-    return errors;
+    synchronized (errors) {
+      return new ArrayList<>(errors);
+    }
+  }
+
+  /** Returns the errors reported so far and clears them, so no error can arrive in between. */
+  public List<SolrError> drainErrors() {
+    synchronized (errors) {
+      List<SolrError> drained = new ArrayList<>(errors);
+      errors.clear();
+      return drained;
+    }
   }
 
   public void clearErrors() {
