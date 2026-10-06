@@ -940,11 +940,23 @@ public class DirectUpdateHandler2 extends UpdateHandler
     // if we are supposed to wait for the searcher to be registered, then we should do it
     // outside any synchronized block so that other update operations can proceed.
     if (waitSearcher != null && waitSearcher[0] != null) {
-      try {
-        waitSearcher[0].get();
-      } catch (InterruptedException | ExecutionException e) {
-        log.error("Exception waiting for searcher", e);
-      }
+      awaitSearcher(waitSearcher[0]);
+    }
+  }
+
+  /**
+   * Waits for a new searcher to be registered. An interrupt (for example the core closing during a
+   * reload while an autocommit waits) is not an error: the interrupt status is restored and the
+   * wait is abandoned.
+   */
+  static void awaitSearcher(Future<?> searcherRegistered) {
+    try {
+      searcherRegistered.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.info("Interrupted while waiting for the new searcher to be registered");
+    } catch (ExecutionException e) {
+      log.error("Exception waiting for searcher", e);
     }
   }
 
