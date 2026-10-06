@@ -53,11 +53,3 @@ A request with no other parameters returns every collection.
 `collection`, `shard`, and `_route_` narrow which part of the tree is returned.
 
 The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
-
-== Security Changes
-
-=== Core-Scoped Authorization Rules in Standalone Mode
-
-In standalone mode, authorization permissions that set `collection` to a core name were never applied, so requests to that core were matched only against the permissions that apply to all collections.
-These permissions are now enforced, with the name of the core serving the request standing in for the collection.
-A permission that was silently ignored before may now deny requests, so review the `collection` values in the permissions of `security.json` before upgrading a standalone installation.
