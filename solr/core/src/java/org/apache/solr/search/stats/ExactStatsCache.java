@@ -118,10 +118,15 @@ public class ExactStatsCache extends StatsCache {
         log.debug("Exception response={}", res);
         continue;
       }
-      if (res.getResponse().get(ShardParams.SHARD_NAME) != null) {
-        shard = (String) res.getResponse().get(ShardParams.SHARD_NAME);
-      }
       NamedList<Object> nl = res.getResponse();
+      if (nl == null) {
+        // no server answered for this shard (not all cores are up)
+        log.debug("Empty response from shard={}", shard);
+        continue;
+      }
+      if (nl.get(ShardParams.SHARD_NAME) != null) {
+        shard = (String) nl.get(ShardParams.SHARD_NAME);
+      }
 
       String termStatsString = (String) nl.get(TERM_STATS_KEY);
       if (termStatsString != null) {
