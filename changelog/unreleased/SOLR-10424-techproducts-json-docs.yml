@@ -1,0 +1,7 @@
+title: "The techproducts example configset no longer sets mapUniqueKeyOnly on /update/json/docs, so posting JSON documents indexes all their fields instead of only the id and the _src_ copy."
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-10424
+    url: https://issues.apache.org/jira/browse/SOLR-10424
