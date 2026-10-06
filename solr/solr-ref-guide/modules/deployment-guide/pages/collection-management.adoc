@@ -492,7 +492,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections
+curl http://localhost:8983/api/collections
 ----
 ====
 ======
@@ -1312,7 +1312,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
+curl "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
 ======
@@ -2038,7 +2038,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
+curl "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
 ======
@@ -2088,7 +2088,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
+curl http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
 
 ----
 ====
@@ -2650,7 +2650,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts/snapshots
+curl http://localhost:8983/api/collections/techproducts/snapshots
 ----
 ====
 ======

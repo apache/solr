@@ -160,6 +160,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SchemaApi();
     })
+.factory('ConfigV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigApi();
+    })
 .factory('ConfigSetFiles',
  ['$http', function ($http) {
     // Fetches a single file from a configset via V2 /api/configsets/{name}/files/{path}.
@@ -179,11 +185,13 @@ solrAdminServices.factory('Metrics',
  }])
 .factory('Logging',
   ['$resource', function($resource) {
-    // This v1 factory only covers "setLevel", which needs the "nodes=all" broadcast-to-every-node
-    // behavior that the v2 NodeLoggingApis endpoint doesn't support yet (see SOLR-16738). Retire
-    // this factory once setLevel moves to LoggingV2.
+    // This v1 factory only covers "setLevel", which in SolrCloud mode needs the "nodes=all"
+    // broadcast-to-every-node behavior that the v2 NodeLoggingApis endpoint doesn't support yet
+    // (see SOLR-16738). The caller (LoggingLevelController) passes nodes:'all' only when
+    // SolrCloud is enabled; in standalone mode the param is omitted entirely. Retire this
+    // factory once setLevel moves to LoggingV2.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "setLevel": {params: {nodes:'all'}}
+      "setLevel": {}
       });
   }])
 .factory('Zookeeper',
@@ -368,12 +376,6 @@ solrAdminServices.factory('Metrics',
            return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
-}])
-.factory('Config',
-   ['$resource', function($resource) {
-     return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"}
-     })
 }])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {

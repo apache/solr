@@ -60,6 +60,10 @@ public class AuthToolTest extends SolrCloudTestCase {
     }
   }
 
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @Test
   public void testEnableAuth() throws Exception {
     Path solrIncludeFile = Files.createFile(dir.resolve("solrIncludeFile.txt"));
@@ -77,7 +81,7 @@ public class AuthToolTest extends SolrCloudTestCase {
       "--block-unknown",
       "true"
     };
-    assertEquals(0, CLITestHelper.runTool(args, AuthTool.class));
+    assertEquals(0, runTool(args, AuthTool.class));
   }
 
   @Test
@@ -95,7 +99,7 @@ public class AuthToolTest extends SolrCloudTestCase {
       "--credentials",
       "solr:solr"
     };
-    assertNotEquals(0, CLITestHelper.runTool(args, AuthTool.class));
+    assertNotEquals(0, runTool(args, AuthTool.class));
   }
 
   @Test
@@ -115,7 +119,7 @@ public class AuthToolTest extends SolrCloudTestCase {
         "--credentials",
         "solr:solr"
       };
-      assertEquals(0, CLITestHelper.runTool(args, AuthTool.class));
+      assertEquals(0, runTool(args, AuthTool.class));
     } finally {
       System.clearProperty(Sha256AuthenticationProvider.ALLOW_USER_AS_PASSWORD_PROP);
     }

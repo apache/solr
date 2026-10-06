@@ -213,7 +213,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/nodes
+curl http://localhost:8983/api/cluster/nodes
 ----
 ====
 ======
@@ -417,7 +417,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties
+curl http://localhost:8983/api/cluster/properties
 ----
 ====
 ======
@@ -426,7 +426,7 @@ curl -X GET http://localhost:8983/api/cluster/properties
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties
+curl http://localhost:8983/api/cluster/properties
 ----
 
 *Output*
@@ -461,7 +461,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
+curl http://localhost:8983/api/cluster/properties/urlScheme
 ----
 ====
 ======
@@ -470,7 +470,7 @@ curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
+curl http://localhost:8983/api/cluster/properties/urlScheme
 ----
 
 *Output*
@@ -945,7 +945,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/overseer
+curl http://localhost:8983/api/cluster/overseer
 ----
 ====
 ======

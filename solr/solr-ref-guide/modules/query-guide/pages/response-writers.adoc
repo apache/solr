@@ -348,7 +348,7 @@ import json
 import requests
 
 // replace 'coll1' with your own collection name. And use appropriate query params
-url = "http://localhost:8983/solr/coll1/select?q=*:*&wt=cbor"
+url = "http://localhost:8983/solr/{collectionName}/select?q=*:*&wt=cbor"
 
 # Make the HTTP request
 response = requests.get(url, headers={"Accept": "application/cbor"})
