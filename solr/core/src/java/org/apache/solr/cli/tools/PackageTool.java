@@ -416,4 +416,9 @@ public class PackageTool extends ToolBase {
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
   }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+  }
 }

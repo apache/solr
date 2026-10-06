@@ -28,12 +28,32 @@ import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 
 /** Supports delete command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "delete",
+    description =
+        "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.",
+    exitCodeListHeading = "%nExit Codes:%n",
+    exitCodeList = {
+      "0:Collection or core deleted successfully.",
+      "1:Failed to delete; collection or core may not exist, or Solr may not be running."
+    },
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Delete a collection in SolrCloud mode",
+      "  bin/solr delete -c myCollection",
+      "",
+      "  # Delete and also remove the associated configset",
+      "  bin/solr delete -c myCollection --delete-config"
+    })
 public class DeleteTool extends ToolBase {
 
   private static final Option COLLECTION_NAME_OPTION =
@@ -49,7 +69,7 @@ public class DeleteTool extends ToolBase {
       Option.builder()
           .longOpt("delete-config")
           .desc(
-              "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+              "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.")
           .get();
 
   /**
@@ -71,6 +91,42 @@ public class DeleteTool extends ToolBase {
                   .get())
           .desc("No longer has any effect; retained for backward compatibility.")
           .get();
+
+  /** Options bean shared between commons-cli and picocli paths. */
+  record DeleteParams(String name, boolean deleteConfig) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      description = "Name of the core / collection to delete.")
+  private String name;
+
+  @picocli.CommandLine.Option(
+      names = {"--delete-config"},
+      description =
+          "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.")
+  private boolean deleteConfig;
+
+  /**
+   * @deprecated Since Solr 11.0. See {@link #FORCE_OPTION}.
+   */
+  @Deprecated(since = "11.0")
+  @picocli.CommandLine.Option(
+      names = {"-f", "--force"},
+      description =
+          "Deprecated: no longer has any effect; configset deletion is always safely skipped if the configset is still in use by another collection.")
+  private boolean force;
+
+  public DeleteTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public DeleteTool(ToolRuntime runtime) {
     super(runtime);
@@ -103,16 +159,53 @@ public class DeleteTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      if (CLIUtils.isCloudMode(solrClient)) {
-        deleteCollection(cli, solrClient);
-      } else {
-        deleteCore(cli, solrClient);
-      }
+      DeleteParams params =
+          new DeleteParams(
+              cli.getOptionValue(COLLECTION_NAME_OPTION), cli.hasOption(DELETE_CONFIG_OPTION));
+      delete(params, solrClient);
     }
   }
 
-  protected void deleteCollection(CommandLine cli, SolrClient solrClient) throws Exception {
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
+  @Override
+  public int callTool() throws Exception {
+    String zkHostArg =
+        (connectionOptions != null)
+            ? connectionOptions.effectiveZkHost()
+            : EnvUtils.getProperty("zkHost");
+    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
+    String credentials = (credentialsOptions != null) ? credentialsOptions.credentials : null;
+
+    String resolvedSolrUrl;
+    if (solrUrlArg != null) {
+      resolvedSolrUrl = CLIUtils.normalizeSolrUrl(solrUrlArg);
+    } else if (zkHostArg != null) {
+      resolvedSolrUrl =
+          CLIUtils.solrUrlFromConnection(
+              CloudSolrClient.CloudSolrClientConnection.parse(zkHostArg), credentials);
+    } else {
+      resolvedSolrUrl = CLIUtils.getDefaultSolrUrl();
+      CLIO.err(
+          "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
+              + resolvedSolrUrl
+              + ".");
+    }
+
+    try (var solrClient = CLIUtils.getSolrClient(resolvedSolrUrl, credentials)) {
+      delete(new DeleteParams(name, deleteConfig), solrClient);
+    }
+    return 0;
+  }
+
+  private void delete(DeleteParams params, SolrClient solrClient) throws Exception {
+    if (CLIUtils.isCloudMode(solrClient)) {
+      deleteCollection(params, solrClient);
+    } else {
+      deleteCore(params, solrClient);
+    }
+  }
+
+  protected void deleteCollection(DeleteParams params, SolrClient solrClient) throws Exception {
+    String collectionName = params.name();
 
     // Scoping the request to this one collection also serves as the existence check below,
     // instead of a separate ListCollections call that would have to scan every collection in
@@ -128,7 +221,6 @@ public class DeleteTool extends ToolBase {
       }
       throw e;
     }
-    boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
 
     echoIfVerbose("\nDeleting collection '" + collectionName + "' using V2 Collections API");
 
@@ -141,7 +233,7 @@ public class DeleteTool extends ToolBase {
           "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (deleteConfig && configName != null) {
+    if (params.deleteConfig() && configName != null) {
       try {
         var req = new ConfigsetsApi.DeleteConfigSet(configName);
         req.process(solrClient);
@@ -159,8 +251,8 @@ public class DeleteTool extends ToolBase {
     echo(String.format(Locale.ROOT, "\nDeleted collection '%s'", collectionName));
   }
 
-  protected void deleteCore(CommandLine cli, SolrClient solrClient) throws Exception {
-    String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
+  protected void deleteCore(DeleteParams params, SolrClient solrClient) throws Exception {
+    String coreName = params.name();
 
     echo("\nDeleting core '" + coreName + "' using V2 Cores API\n");
 

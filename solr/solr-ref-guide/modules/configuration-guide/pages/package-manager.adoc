@@ -140,7 +140,7 @@ If the collection is named `collection1`, the package name is `mypackage`, and t
 
 [source,bash]
 ----
-curl  "http://localhost:8983/api/collections/collection1/config/params" \
+curl  "http://localhost:8983/api/collections/{collectionName}/config/params" \
    -H 'Content-type:application/json' -d "{set: {PKG_VERSIONS: {mypackage: '1.0.0'}}}"
 ----
 

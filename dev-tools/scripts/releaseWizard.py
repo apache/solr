@@ -1801,7 +1801,7 @@ def abbreviate_homedir(line):
         else:
             return None
     else:
-        return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1~", line)
+        return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1$HOME", line)
 
 
 def parse_wizard_vars(stdout_text):
