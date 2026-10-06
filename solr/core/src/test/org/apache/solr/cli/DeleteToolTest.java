@@ -121,4 +121,120 @@ public class DeleteToolTest extends SolrCloudTestCase {
     };
     assertEquals(1, runTool(args, DeleteTool.class));
   }
+
+  @Test
+  public void testFailsToDeleteNonexistentCollection() throws Exception {
+    String[] args = {
+      "delete",
+      "-c",
+      "testFailsToDeleteNonexistentCollection-does-not-exist",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(1, CLITestHelper.runTool(args, DeleteTool.class));
+  }
+
+  @Test
+  public void testForceFlagNoLongerBypassesInUseCheck() throws Exception {
+    String sharedConfigName = "testForceFlagNoLongerBypassesInUseCheck-config";
+    cluster.uploadConfigSet(configset("cloud-minimal"), sharedConfigName);
+
+    withBasicAuth(
+            CollectionAdminRequest.createCollection("testForceFlagInUseA", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    withBasicAuth(
+            CollectionAdminRequest.createCollection("testForceFlagInUseB", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testForceFlagInUseA",
+        clusterShape(1, 1));
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testForceFlagInUseB",
+        clusterShape(1, 1));
+
+    String[] args = {
+      "delete",
+      "-c",
+      "testForceFlagInUseA",
+      "--delete-config",
+      "--force",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    // --force is a no-op now: still accepted (doesn't break arg parsing), but doesn't bypass the
+    // still-in-use check -- the collection delete itself still succeeds.
+    assertEquals(0, CLITestHelper.runTool(args, DeleteTool.class));
+
+    assertTrue(
+        "configset should still exist since it's still used by testForceFlagInUseB, "
+            + "even with --force",
+        cluster.getZkClient().exists("/configs/" + sharedConfigName));
+  }
+
+  @Test
+  public void testDeleteCollectionSkipsConfigDeleteWhileStillInUse() throws Exception {
+    String sharedConfigName = "testDeleteCollectionSkipsConfigDeleteWhileStillInUse-config";
+    cluster.uploadConfigSet(configset("cloud-minimal"), sharedConfigName);
+
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                "testDeleteConfigInUseA", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                "testDeleteConfigInUseB", sharedConfigName, 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testDeleteConfigInUseA",
+        clusterShape(1, 1));
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        "testDeleteConfigInUseB",
+        clusterShape(1, 1));
+
+    String[] deleteFirstArgs = {
+      "delete",
+      "-c",
+      "testDeleteConfigInUseA",
+      "--delete-config",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(0, CLITestHelper.runTool(deleteFirstArgs, DeleteTool.class));
+
+    // still used by testDeleteConfigInUseB, so it should have been left alone
+    assertTrue(
+        "configset should still exist since it's still used by testDeleteConfigInUseB",
+        cluster.getZkClient().exists("/configs/" + sharedConfigName));
+
+    String[] deleteSecondArgs = {
+      "delete",
+      "-c",
+      "testDeleteConfigInUseB",
+      "--delete-config",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "--verbose"
+    };
+    assertEquals(0, CLITestHelper.runTool(deleteSecondArgs, DeleteTool.class));
+
+    // no longer used by any collection, so it should now be gone
+    assertFalse(
+        "configset should have been deleted since no collection uses it anymore",
+        cluster.getZkClient().exists("/configs/" + sharedConfigName));
+  }
 }

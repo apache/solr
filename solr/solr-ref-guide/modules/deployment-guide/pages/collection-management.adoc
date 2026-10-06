@@ -51,7 +51,7 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
     "name": "techproducts_v2",
     "config": "techproducts",
@@ -335,7 +335,7 @@ With the v2 API, the `reload` command is provided as a part of URL path. The req
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
     "async": "someAsyncId"
   }
@@ -401,7 +401,7 @@ With the v2 API, the `modify` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
   {
     "modify": {
       "replicationFactor": 2
@@ -492,7 +492,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections
+curl http://localhost:8983/api/collections
 ----
 ====
 ======
@@ -541,7 +541,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
     "to": "newName"
   }
@@ -827,7 +827,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
   {
     "migrate-docs": {
       "target": "postMigrationCollection",
@@ -1112,7 +1112,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
+curl "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
 ======
@@ -1266,6 +1266,8 @@ This information may be omitted if a field has an `omitNorms` flag in the schema
 The response will include an overview of the collection status, the number of
 active or inactive shards and replicas, and additional index information
 of shard leaders.
+
+If the requested collection does not exist, the V1 API returns a `200 OK` with an empty body, while the V2 API returns a `404` error with an appropriate error message.
 
 === Examples using COLSTATUS
 
@@ -1599,7 +1601,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
   {
     "location": "file:///path/to/my/shared/drive"
   }
@@ -1836,7 +1838,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
+curl "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
 ======
@@ -1886,7 +1888,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
+curl http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
 
 ----
 ====
@@ -1896,7 +1898,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
   {
       "collection": "techproducts_v3",
       "location": "file:///path/to/my/shared/drive",
@@ -2219,7 +2221,7 @@ With the v2 API, the `rebalance-leaders` command is provided as part of the JSON
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "rebalance-leaders": {
       "maxAtOnce": 3
@@ -2357,7 +2359,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
   {
     "followAliases": true,
     "async": "someAsyncId"
@@ -2448,7 +2450,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts/snapshots
+curl http://localhost:8983/api/collections/techproducts/snapshots
 ----
 ====
 ======

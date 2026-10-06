@@ -120,18 +120,18 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       repo.createDirectory(path);
       assertTrue(repo.exists(path));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
-      assertEquals("No files should exist in dir yet", repo.listAll(path).length, 0);
+      assertEquals("No files should exist in dir yet", 0, repo.listAll(path).length);
 
       URI subDir = new URI("/test/dir/");
       repo.createDirectory(subDir);
       assertTrue(repo.exists(subDir));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
-      assertEquals("No files should exist in subdir yet", repo.listAll(subDir).length, 0);
+      assertEquals("No files should exist in subdir yet", 0, repo.listAll(subDir).length);
 
       assertEquals(
           "subDir should now be returned when listing all in parent dir",
-          repo.listAll(path).length,
-          1);
+          1,
+          repo.listAll(path).length);
 
       repo.deleteDirectory(path);
       assertFalse(repo.exists(path));
@@ -258,7 +258,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
    * Check implementation of {@link S3BackupRepository#openInput(URI, String, IOContext)}. Open an
    * index input and seek to an absolute position.
    *
-   * <p>We use specified text. It must has the word "content" at given position.
+   * <p>We use specified text. It must have the word "content" at given position.
    */
   private void doRandomAccessTest(String content, int position) throws Exception {
 
@@ -304,7 +304,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       input.readBytes(buffer, 0, BufferedIndexInput.BUFFER_SIZE * 2);
 
       // Seek back to the 5th byte.
-      // It is not any more in the internal buffer, so we should fail
+      // It is not anymore in the internal buffer, so we should fail
       IOException exception = assertThrows(IOException.class, () -> input.seek(5));
       assertEquals("Cannot seek backward", exception.getMessage());
     }
