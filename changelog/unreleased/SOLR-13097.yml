@@ -1,5 +1,5 @@
-title: Authorization permissions scoped to a core with the collection field are now enforced in standalone mode, where they were silently ignored
-type: changed
+title: Core-scoped authorization permissions were not applied in standalone mode
+type: fixed
 authors:
   - name: Nick Shanin
 links:
