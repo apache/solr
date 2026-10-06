@@ -21,17 +21,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 
@@ -122,6 +127,40 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     assertEquals(
         MultiSortedSetDocValues.class, slowWrapper.getSortedSetDocValues("sorted_set").getClass());
     assertEquals(2, slowWrapper.cachedOrdMaps.size());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testTermsAndLiveDocsAreCached() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    for (int i = 0; i < 2; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", "id" + i, Field.Store.NO));
+      doc.add(new StringField("f", "v" + i, Field.Store.NO));
+      w.addDocument(doc);
+      w.commit();
+    }
+    w.deleteDocuments(new Term("id", "id0"));
+    IndexReader reader = w.getReader();
+    assertTrue(reader.leaves().size() > 1);
+    LeafReader slow = SlowCompositeReaderWrapper.wrap(reader);
+
+    Terms terms = slow.terms("f");
+    assertNotNull(terms);
+    assertSame(terms, slow.terms("f"));
+    assertNotSame(terms, slow.terms("id"));
+    assertNull(slow.terms("no_such_field"));
+
+    Bits liveDocs = slow.getLiveDocs();
+    assertNotNull(liveDocs);
+    assertSame(liveDocs, slow.getLiveDocs());
+    assertFalse(liveDocs.get(0));
+    assertTrue(liveDocs.get(1));
+
     reader.close();
     w.close();
     dir.close();
