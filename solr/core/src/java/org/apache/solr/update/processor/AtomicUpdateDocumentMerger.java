@@ -87,13 +87,34 @@ public class AtomicUpdateDocumentMerger {
 
   private static boolean isAtomicUpdate(SolrInputDocument sdoc) {
     for (SolrInputField sif : sdoc.values()) {
-      Object val = sif.getValue();
+      Object val = sif.getFirstValue();
       if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
         return true;
       }
     }
 
     return false;
+  }
+
+  /**
+   * The operations of an atomic update field: a single operation map, or several maps when the
+   * field was added more than once (each {@code addField} call appends another map).
+   */
+  @SuppressWarnings({"unchecked"})
+  private static List<Entry<String, Object>> atomicOperations(SolrInputField sif) {
+    List<Entry<String, Object>> operations = new ArrayList<>();
+    for (Object operation : sif.getValues()) {
+      if (!(operation instanceof Map)) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Field "
+                + sif.getName()
+                + " mixes atomic update operations with plain values: "
+                + sif.getValues());
+      }
+      operations.addAll(((Map<String, Object>) operation).entrySet());
+    }
+    return operations;
   }
 
   /**
@@ -154,9 +175,9 @@ public class AtomicUpdateDocumentMerger {
   private SolrInputDocument mergeDocHavingSameId(
       final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
-      Object val = sif.getValue();
+      Object val = sif.getFirstValue();
       if (val instanceof Map) {
-        for (Entry<String, Object> entry : ((Map<String, Object>) val).entrySet()) {
+        for (Entry<String, Object> entry : atomicOperations(sif)) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
           switch (key) {

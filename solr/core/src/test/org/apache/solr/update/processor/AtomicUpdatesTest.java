@@ -26,6 +26,8 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.Before;
@@ -1263,6 +1265,30 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", Map.of("set", "1001"));
     assertFailedU(adoc(doc));
+  }
+
+  @Test
+  public void testRepeatedAddFieldOfOperationsIsAtomicUpdate() throws Exception {
+    // each addField call appends another operation map; the XML writer folds them into one map,
+    // javabin keeps them as a collection of maps
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", Map.of("add", "ddd"));
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      SolrInputDocument merged = new AtomicUpdateDocumentMerger(req).merge(update, existing);
+      assertEquals(
+          List.of("bbb", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
+    }
   }
 
   public void testAtomicUpdatesOnDateFields() {
