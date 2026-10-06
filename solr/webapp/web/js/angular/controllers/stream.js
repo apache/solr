@@ -41,27 +41,33 @@ solrAdminApp.controller('StreamController',
       $scope.response = null;
       $scope.url = "";
 
+      // Shown for reference only - the request is actually sent as a POST body below, since a
+      // streaming expression can be too large for a URL/header (SOLR-9759).
       var url = Query.url(params);
 
-      Query.query(params, function(data) {
-
-        var jsonData = JSON.parse(data.toJSON().data);
-        if (undefined != jsonData["explanation"]) {
-          $scope.showExplanation = true;
-
-          streamGraphSubController($scope, jsonData["explanation"])
-          delete jsonData["explanation"]
-        } else {
-          $scope.showExplanation = false;
+      var showResult = function(raw) {
+        $scope.showExplanation = false;
+        try {
+          var jsonData = JSON.parse(raw);
+          if (undefined != jsonData["explanation"]) {
+            $scope.showExplanation = true;
+            streamGraphSubController($scope, jsonData["explanation"]);
+            delete jsonData["explanation"];
+          }
+          raw = JSON.stringify(jsonData, null, 2);
+        } catch (e) {
+          // not JSON (e.g. a raw HTTP error page) - show it as-is rather than crashing
         }
-
-        data.data = JSON.stringify(jsonData,null,2);
-
         $scope.lang = "json";
-        $scope.response = data;
+        $scope.response = {data: raw};
         $scope.url = url;
         $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
+      };
 
+      Query.queryPost({core: params.core, handler: params.handler}, params, function(data) {
+        showResult(data.toJSON().data);
+      }, function(rejection) {
+        showResult((rejection.data && rejection.data.data) || ("HTTP " + rejection.status + " " + rejection.statusText));
       });
     };
 

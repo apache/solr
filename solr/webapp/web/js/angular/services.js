@@ -355,6 +355,17 @@ solrAdminServices.factory('Metrics',
   }])
 .factory('Query',
     ['$resource', function($resource) {
+       var toQueryString = function(params) {
+           var qs = [];
+           for (var key in params) {
+               if (key != "core" && key != "handler") {
+                   for (var i in params[key]) {
+                       qs.push(key + "=" + encodeURIComponent(params[key][i]));
+                   }
+               }
+           }
+           return qs.sort().join("&");
+       }
        var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
            "query": {
              method: "GET",
@@ -362,18 +373,23 @@ solrAdminServices.factory('Metrics',
                return {data: data}
              },
              headers: {doNotIntercept: "true"}
+           },
+           // Same request as "query" above, but as a form-encoded POST body instead of a query
+           // string - for request params (e.g. a streaming expression) too large for a URL/header.
+           "queryPost": {
+             method: "POST",
+             transformRequest: toQueryString,
+             transformResponse: function (data) {
+               return {data: data}
+             },
+             headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               doNotIntercept: "true"
+             }
            }
        });
        resource.url = function(params) {
-           var qs = [];
-           for (key in params) {
-               if (key != "core" && key != "handler") {
-                   for (var i in params[key]) {
-                       qs.push(key + "=" + encodeURIComponent(params[key][i]));
-                   }
-               }
-           }
-           return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
+           return "" + params.core + "/" + params.handler + "?" + toQueryString(params);
        }
        return resource;
 }])
