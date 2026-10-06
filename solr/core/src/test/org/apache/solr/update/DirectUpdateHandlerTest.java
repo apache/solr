@@ -125,6 +125,8 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
                   h.update(adoc("id", "4"));
                 }
               });
+      // a full index is a server-side capacity limit, not a malformed request
+      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
       assertTrue(e.getMessage(), e.getMessage().contains("maximum number of documents"));
       assertFalse(e.getMessage(), e.getMessage().contains("analysis error"));
 
