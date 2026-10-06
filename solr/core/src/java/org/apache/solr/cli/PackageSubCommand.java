@@ -20,11 +20,9 @@ package org.apache.solr.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.RepositoryManager;
-import picocli.CommandLine.ArgGroup;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.ParentCommand;
 
 /** Shared picocli wiring for {@code bin/solr package <subcommand> leaves} */
+@SuppressWarnings("UnnecessarilyFullyQualified")
 abstract class PackageSubCommand extends ToolBase {
 
   @FunctionalInterface
@@ -32,11 +30,11 @@ abstract class PackageSubCommand extends ToolBase {
     void run(PackageManager packageManager, RepositoryManager repositoryManager) throws Exception;
   }
 
-  @ParentCommand PackageTool packageTool;
+  @picocli.CommandLine.ParentCommand PackageTool packageTool;
 
-  @Mixin CredentialsOptions credentialsOptions;
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
-  @ArgGroup(exclusive = true, multiplicity = "0..1")
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   ConnectionOptions connectionOptions;
 
   PackageSubCommand() {
