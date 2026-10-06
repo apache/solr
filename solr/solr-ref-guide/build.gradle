@@ -608,17 +608,34 @@ def DO_NOT_EDIT_NOTICE = """\
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
 """
 
-// Convert a generated filename stem (e.g. "solr-zk-ls") to an Antora page title
-// e.g. "solr-zk-ls" -> "bin/solr zk ls"
-String cliFileNameToTitle(String baseName) {
-  def parts = baseName.split('-')
-  return "bin/solr " + parts.drop(1).join(' ')
+// The parent of a generated page: the longest proper prefix, on a dash boundary, that is itself a
+// generated page, or null for a top-level command. A command's own name may contain a dash
+// ("snapshot-create"), so the file name alone cannot say where the hierarchy ends.
+String cliParentStem(String baseName, Set<String> stems) {
+  for (def stem = baseName; stem.contains('-'); ) {
+    stem = stem.substring(0, stem.lastIndexOf('-'))
+    if (stems.contains(stem)) {
+      return stem
+    }
+  }
+  return null
 }
 
-// Return the short nav label for a command file (last segment of dash-separated name)
-// e.g. "solr-zk-ls" -> "ls"
-String cliFileNameToNavLabel(String baseName) {
-  return baseName.split('-').last()
+// Convert a generated filename stem (e.g. "solr-zk-ls") to an Antora page title
+// e.g. "solr-zk-ls" -> "bin/solr zk ls", but "solr-snapshot-create" -> "bin/solr snapshot-create"
+String cliFileNameToTitle(String baseName, Set<String> stems) {
+  def parent = cliParentStem(baseName, stems)
+  if (parent == null) {
+    return "bin/solr " + baseName.substring('solr-'.length())
+  }
+  return cliFileNameToTitle(parent, stems) + " " + baseName.substring(parent.length() + 1)
+}
+
+// Return the short nav label for a command file: its name below its parent page
+// e.g. "solr-zk-ls" -> "ls", "solr-snapshot-create" -> "snapshot-create"
+String cliFileNameToNavLabel(String baseName, Set<String> stems) {
+  def parent = cliParentStem(baseName, stems)
+  return baseName.substring((parent == null ? 'solr'.length() : parent.length()) + 1)
 }
 
 // Strip "[...]" (optional groups) and "(...)" (required groups whose members
@@ -707,10 +724,10 @@ String markRequiredOptionsAndArgs(String content) {
 // Post-process a raw ManPageGenerator AsciiDoc file for Antora compatibility.
 // The title lives inside the man-section-header block, so we replace the whole
 // header block with an Antora-compatible page title + attributes.
-String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNotice, String experimentalNotice) {
+String postProcessCliManPage(File rawFile, Set<String> stems, String asfHeader, String doNotEditNotice, String experimentalNotice) {
   def content = rawFile.text
   def baseName = rawFile.name.replace('.adoc', '')
-  def newTitle = cliFileNameToTitle(baseName)
+  def newTitle = cliFileNameToTitle(baseName, stems)
 
   // Replace the entire man-section-header block (which contains :doctype:manpage, the page title
   // "= solr-start(1)", etc.) with our Antora-compatible title and page attributes.
@@ -776,9 +793,10 @@ String buildCliCommandTable(File cliDir) {
   def files = ((cliDir.listFiles() ?: []) as List<File>)
     .findAll { it.name.startsWith('solr-') && it.name.endsWith('.adoc') }
     .sort { it.name }
+  def stems = files.collect { it.name.replace('.adoc', '') } as Set
   def rows = files.collect { file ->
     def baseName = file.name.replace('.adoc', '')
-    "|xref:cli/${file.name}[${cliFileNameToTitle(baseName)}]"
+    "|xref:cli/${file.name}[${cliFileNameToTitle(baseName, stems)}]"
   }
   return "[cols=\"1\",options=\"header\"]\n|===\n|Command\n\n" + rows.join('\n') + "\n|==="
 }
@@ -793,7 +811,7 @@ List<String> buildCliNavEntries(File cliDir) {
   def stems = files.collect { it.name.replace('.adoc', '') } as Set
   return files.collect { file ->
     def baseName = file.name.replace('.adoc', '')
-    def label = cliFileNameToNavLabel(baseName)
+    def label = cliFileNameToNavLabel(baseName, stems)
     // Nest under the deepest ancestor that is itself a generated page. Counting dashes instead
     // would mis-nest a command whose own name contains one, e.g. a future "snapshot-create"
     // would be filed under a "solr-snapshot" page that does not exist.
@@ -856,8 +874,9 @@ task generateCliDocs {
 
     def rawFiles = runManPageGenerator(rawOutputDir)
 
+    def rawStems = rawFiles.collect { it.name.replace('.adoc', '') } as Set
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
+      def processed = postProcessCliManPage(rawFile, rawStems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
       new File(destDir, rawFile.name).text = processed
     }
 
@@ -912,8 +931,9 @@ task checkCliDocsUpToDate {
     def rawFiles = runManPageGenerator(rawOutputDir)
     def issues = []
 
+    def rawStems = rawFiles.collect { it.name.replace('.adoc', '') } as Set
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
+      def processed = postProcessCliManPage(rawFile, rawStems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
       def committed = new File(committedDir, rawFile.name)
       if (!committed.exists()) {
         issues << "MISSING committed file (new command): ${rawFile.name}"

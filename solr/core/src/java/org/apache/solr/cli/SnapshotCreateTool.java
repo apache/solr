@@ -24,8 +24,22 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 
 /** Supports snapshot-create command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "snapshot-create",
+    description = "Creates a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Create a snapshot",
+      "  bin/solr snapshot-create -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotCreateTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -35,6 +49,11 @@ public class SnapshotCreateTool extends ToolBase {
           .desc("Name of collection to be snapshot.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -47,6 +66,31 @@ public class SnapshotCreateTool extends ToolBase {
   /** Parameters for the snapshot-create command, independent of the command line parser. */
   record SnapshotCreateParams(
       String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of collection to be snapshot.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--snapshot-name",
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the snapshot to produce")
+  private String snapshotNameOpt;
+
+  public SnapshotCreateTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotCreateTool(ToolRuntime runtime) {
     super(runtime);
@@ -112,6 +156,13 @@ public class SnapshotCreateTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    SnapshotCreateParams params =
+        new SnapshotCreateParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            nameOpt,
+            snapshotNameOpt);
+    createSnapshot(params);
+    return 0;
   }
 }
