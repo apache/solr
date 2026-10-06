@@ -1,0 +1,8 @@
+title: "SlowCompositeReaderWrapper caches the merged Terms per field and the live docs instead of rebuilding them on every call"
+type: changed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-9595
+    url: https://issues.apache.org/jira/browse/SOLR-9595
