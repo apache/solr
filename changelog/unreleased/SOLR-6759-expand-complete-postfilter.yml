@@ -1,0 +1,8 @@
+title: >
+  ExpandComponent now calls complete() on the post filter collector chain it builds, so post filters that emit their last group there (for example block collapse) no longer lose it in the expanded section.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-6759
+    url: https://issues.apache.org/jira/browse/SOLR-6759
