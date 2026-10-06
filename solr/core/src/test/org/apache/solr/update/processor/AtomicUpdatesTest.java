@@ -1544,6 +1544,32 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertThat(e.getMessage(), containsString("'inc' is not supported on non-numeric field cat"));
   }
 
+  @Test
+  public void testNestedAtomicOperationIsRejected() {
+    // The nested shape reaches the merger through the javabin/SolrJ path, which preserves
+    // nested maps. It cannot be sent through adoc: ClientUtils.writeXML unwraps one map
+    // level, so the nested operation never arrives. Drive the merger directly instead,
+    // as NestedAtomicUpdateTest does.
+    SolrInputDocument existingDoc = new SolrInputDocument();
+    existingDoc.setField("id", "8");
+    existingDoc.setField("cat", new String[] {"aaa"});
+
+    SolrInputDocument invalidDoc = new SolrInputDocument();
+    invalidDoc.setField("id", "8");
+    invalidDoc.setField("cat", Map.of("set", Map.of("set", "bbb")));
+
+    AtomicUpdateDocumentMerger merger = new AtomicUpdateDocumentMerger(req());
+    SolrException e =
+        expectThrows(SolrException.class, () -> merger.merge(invalidDoc, existingDoc));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("is itself an atomic update operation map"));
+    assertThat(e.getMessage(), containsString("'cat'"));
+
+    // the rejected update leaves the existing document's field untouched
+    assertEquals(1, existingDoc.getField("cat").getValueCount());
+    assertEquals("aaa", existingDoc.getFieldValue("cat"));
+  }
+
   public void testFieldsWithDefaultValuesWhenAtomicUpdatesAgainstTlog() {
     for (String fieldToUpdate : Arrays.asList("field_to_update_i1", "field_to_update_i_dvo")) {
       clearIndex();
