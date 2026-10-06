@@ -86,9 +86,13 @@ configure(rootProject) {
       // is not there is a mistake worth reporting, not a reason to download GraalPy.
       def explicit = propertyOrDefault("python3.exe", null)
       if (explicit) {
-        def resolved = (explicit as String).contains(File.separator)
-            ? (new File(explicit as String).with {isFile() && canExecute() ? absolutePath : null})
-            : findOnPath(explicit as String)
+        def exe = explicit as String
+        // Both separators, not just File.separator: Windows paths are commonly written with
+        // forward slashes (C:/Python/python.exe), which would otherwise look like a bare name.
+        def isPath = exe.contains("/") || exe.contains("\\") || new File(exe).isAbsolute()
+        def resolved = isPath
+            ? (new File(exe).with {isFile() && canExecute() ? absolutePath : null})
+            : findOnPath(exe)
         if (!resolved) {
           throw new GradleException(
               "python3.exe is set to '${explicit}', which is not an executable file. " +

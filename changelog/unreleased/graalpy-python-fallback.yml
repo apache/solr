@@ -1,9 +1,10 @@
 title: >
-  Building Solr no longer requires Python to be installed. The documentation tasks that run
+  The Gradle build no longer requires a system Python installation. The tasks that run
   `changes2html.py` and `checkJavadocLinks.py` use `python3` from your `PATH` when it is
   available, and otherwise fall back to GraalPy, resolved as an ordinary Gradle dependency.
   `./gradlew pythonInfo` reports which interpreter is in use; `-Psolr.python.mode=system`
-  requires a system interpreter and never resolves GraalPy.
+  requires a system interpreter and never resolves GraalPy. Release-manager scripts under
+  `dev-tools/scripts` are unaffected and still need CPython with their pip dependencies.
 type: other
 authors:
   - name: Jan Høydahl

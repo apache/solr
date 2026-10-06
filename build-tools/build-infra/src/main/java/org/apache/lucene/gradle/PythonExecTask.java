@@ -140,10 +140,10 @@ public abstract class PythonExecTask extends DefaultTask {
             ? new BufferedOutputStream(Files.newOutputStream(log.toPath()))
             : OutputStream.nullOutputStream()) {
 
-      // Gradle pumps stdout and stderr on separate threads and closes each independently, so a
-      // shared log stream has to survive being closed twice.
-      OutputStream out = log != null ? nonClosing(logStream) : captured;
-      OutputStream err = log != null ? nonClosing(logStream) : captured;
+      // Both streams share one sink. Gradle pumps stdout and stderr on separate threads and
+      // closes each independently, so the log stream has to survive being closed twice; both
+      // sinks are synchronized internally, so concurrent writes are safe.
+      OutputStream sink = log != null ? nonClosing(logStream) : captured;
 
       if (graalPy) {
         if (getGraalPyClasspath().isEmpty()) {
@@ -162,8 +162,8 @@ public abstract class PythonExecTask extends DefaultTask {
                       spec.getMainClass().set(GRAALPY_MAIN_CLASS);
                       spec.setJvmArgs(graalPyJvmArgs());
                       spec.setArgs(argv);
-                      spec.setStandardOutput(out);
-                      spec.setErrorOutput(err);
+                      spec.setStandardOutput(sink);
+                      spec.setErrorOutput(sink);
                       spec.setIgnoreExitValue(true);
                     });
       } else {
@@ -175,8 +175,8 @@ public abstract class PythonExecTask extends DefaultTask {
                     spec -> {
                       spec.setExecutable(executable);
                       spec.setArgs(argv);
-                      spec.setStandardOutput(out);
-                      spec.setErrorOutput(err);
+                      spec.setStandardOutput(sink);
+                      spec.setErrorOutput(sink);
                       spec.setIgnoreExitValue(true);
                     });
       }
