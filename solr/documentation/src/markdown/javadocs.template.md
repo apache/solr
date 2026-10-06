@@ -1,5 +1,6 @@
 <div class="javadoc-search">
-  <input type="text" id="page-search-input" disabled placeholder="Search the Solr API" autocomplete="off">
+  <input type="text" id="page-search-input" disabled aria-label="Search the Solr API"
+         placeholder="Search the Solr API" autocomplete="off">
   <input type="reset" id="page-search-reset" disabled value="Reset">
   <p>
     <input type="checkbox" id="search-redirect" disabled>
