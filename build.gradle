@@ -23,11 +23,11 @@ plugins {
   id 'com.palantir.consistent-versions' version '2.32.0'
   id 'org.owasp.dependencycheck' version '13.0.0'
   id 'ca.cutterslade.analyze' version '1.10.0'
-  id 'de.thetaphi.forbiddenapis' version '3.10' apply false
-  id 'net.ltgt.errorprone' version '5.1.0' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.11' apply false
+  id 'net.ltgt.errorprone' version '5.1.1' apply false
   id 'com.diffplug.spotless' version '7.2.1' apply false
   id 'com.github.node-gradle.node' version '7.1.0' apply false
-  id 'dev.logchange' version '1.19.15'
+  id 'dev.logchange' version '1.19.16'
 }
 
 apply from: file('gradle/globals.gradle')
