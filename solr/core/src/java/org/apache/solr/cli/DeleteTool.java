@@ -65,7 +65,7 @@ public class DeleteTool extends ToolBase {
       Option.builder()
           .longOpt("delete-config")
           .desc(
-              "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+              "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.")
           .get();
 
   /**
@@ -107,7 +107,7 @@ public class DeleteTool extends ToolBase {
   @picocli.CommandLine.Option(
       names = {"--delete-config"},
       description =
-          "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+          "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.")
   private boolean deleteConfig;
 
   /**
@@ -116,8 +116,8 @@ public class DeleteTool extends ToolBase {
   @Deprecated(since = "11.0")
   @picocli.CommandLine.Option(
       names = {"-f", "--force"},
-      hidden = true,
-      description = "No longer has any effect; retained for backward compatibility.")
+      description =
+          "Deprecated: no longer has any effect; configset deletion is always safely skipped if the configset is still in use by another collection.")
   private boolean force;
 
   public DeleteTool() {

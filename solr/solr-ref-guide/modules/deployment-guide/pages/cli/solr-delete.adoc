@@ -56,7 +56,7 @@ Deletes a collection or core depending on whether Solr is running in SolrCloud o
   Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is false.
 
 *-f*, *--force*::
-  Skip safety checks when deleting the configuration directory used by a collection.
+  Deprecated: no longer has any effect; configset deletion is always safely skipped if the configset is still in use by another collection.
 
 *-h*, *--help*::
   Print this help message and exit.
