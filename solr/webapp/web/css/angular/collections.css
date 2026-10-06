@@ -53,24 +53,6 @@ limitations under the License.
   padding-top: 20px;
 }
 
-#content #collections #navigation ul li
-{
-  display: flex;
-  align-items: center;
-}
-
-#content #collections #navigation ul li .health-dot
-{
-  flex: 0 0 auto;
-}
-
-#content #collections #navigation ul li a
-{
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 #content #collections #navigation hr
 {
   margin-top: 20px;
