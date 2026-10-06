@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.apache.solr.cli.tools.AuthToolTest;
 import picocli.CommandLine;
 
 /**

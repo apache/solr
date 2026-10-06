@@ -17,6 +17,8 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.apache.solr.cli.tools.VersionTool;
+import org.apache.solr.cli.tools.VersionToolTest;
 import picocli.CommandLine;
 
 /**

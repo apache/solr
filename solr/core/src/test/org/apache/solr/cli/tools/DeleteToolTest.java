@@ -18,6 +18,7 @@
 package org.apache.solr.cli.tools;
 
 import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

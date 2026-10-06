@@ -149,7 +149,7 @@ public class SnapshotExportTool extends ToolBase {
    * The name of the backup this command creates. It is derived rather than supplied, because it
    * names the backup being written, not a snapshot being read.
    */
-  static String backupName(String collectionName, Instant when) {
+  public static String backupName(String collectionName, Instant when) {
     return collectionName + "_" + BACKUP_NAME_TIMESTAMP.format(when);
   }
 

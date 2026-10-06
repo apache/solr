@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.apache.solr.cli.tools.zk.ZkSubcommandsTest;
 import picocli.CommandLine;
 
 /**

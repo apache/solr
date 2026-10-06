@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.cli.tools.snapshot.SnapshotExportTool;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;

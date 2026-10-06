@@ -18,6 +18,7 @@
 package org.apache.solr.cli.tools;
 
 import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;

@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.junit.After;

@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.tools.cluster.ClusterTool;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * <p>Subclasses override {@link #runTool} to exercise different invocation paths (commons-cli vs
  * picocli). All {@code @Test} methods are inherited and run in each subclass.
  *
- * @see ZkSubcommandsPicocliTest
+ * @see org.apache.solr.cli.ZkSubcommandsPicocliTest
  */
 public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

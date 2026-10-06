@@ -18,6 +18,8 @@ package org.apache.solr.cli;
 
 import java.io.Reader;
 import java.util.Arrays;
+import org.apache.solr.cli.tools.cluster.StatusTool;
+import org.apache.solr.cli.tools.cluster.StatusToolTest;
 import picocli.CommandLine;
 
 /**
