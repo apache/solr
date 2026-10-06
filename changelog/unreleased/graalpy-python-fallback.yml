@@ -1,6 +1,5 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: >
-  SOLR-18119: Building Solr no longer requires Python to be installed. The documentation tasks that run
+  Building Solr no longer requires Python to be installed. The documentation tasks that run
   `changes2html.py` and `checkJavadocLinks.py` use `python3` from your `PATH` when it is
   available, and otherwise fall back to GraalPy, resolved as an ordinary Gradle dependency.
   `./gradlew pythonInfo` reports which interpreter is in use; `-Psolr.python.mode=system`
@@ -12,5 +11,3 @@ authors:
 links:
 - name: SOLR-18119
   url: https://issues.apache.org/jira/browse/SOLR-18119
-- name: PR#4999
-  url: https://github.com/apache/solr/pull/4999
