@@ -20,6 +20,9 @@ package org.apache.solr.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.RepositoryManager;
+import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.ParentCommand;
 
 /** Shared picocli wiring for {@code bin/solr package <subcommand> leaves} */
 abstract class PackageSubCommand extends ToolBase {
@@ -29,11 +32,11 @@ abstract class PackageSubCommand extends ToolBase {
     void run(PackageManager packageManager, RepositoryManager repositoryManager) throws Exception;
   }
 
-  @picocli.CommandLine.ParentCommand PackageTool packageTool;
+  @ParentCommand PackageTool packageTool;
 
-  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
+  @Mixin CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  @ArgGroup(exclusive = true, multiplicity = "0..1")
   ConnectionOptions connectionOptions;
 
   PackageSubCommand() {
