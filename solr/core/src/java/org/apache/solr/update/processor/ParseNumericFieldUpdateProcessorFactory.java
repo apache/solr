@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -45,7 +46,19 @@ public abstract class ParseNumericFieldUpdateProcessorFactory
 
   private static final String LOCALE_PARAM = "locale";
 
+  private static final Pattern EXPONENT_PLUS = Pattern.compile("([eE])\\+(\\d+)$");
+
   protected Locale locale = Locale.ROOT;
+
+  /**
+   * Removes a superfluous plus sign from a trailing exponent, e.g. {@code 4.5E+10} becomes {@code
+   * 4.5E10} and {@code 4.5e+3} becomes {@code 4.5E3}. {@link java.text.NumberFormat} accepts
+   * neither the sign nor a lowercase exponent marker, but Java, JSON and the corresponding Solr
+   * field types accept both.
+   */
+  static String dropExponentPlus(String value) {
+    return EXPONENT_PLUS.matcher(value).replaceFirst("E$2");
+  }
 
   @Override
   public void init(NamedList<?> args) {
