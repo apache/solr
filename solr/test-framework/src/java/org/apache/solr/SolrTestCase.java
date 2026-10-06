@@ -36,11 +36,13 @@ import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.QueryLimitsTestInjectionRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
@@ -161,6 +163,22 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.forceSync", "no");
       System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
+
+    injectRandomTraceRecordingFlag();
+  }
+
+  /**
+   * Randomizes the tracing {@link TraceUtils#ifNotNoop(io.opentelemetry.api.trace.Span,
+   * java.util.function.Consumer)} check.
+   *
+   * <p>Rationale: to have better coverage of all methods that deal with span creation without
+   * having to enable tracing.
+   */
+  private static void injectRandomTraceRecordingFlag() {
+    TraceUtils.IS_RECORDING =
+        LuceneTestCase.rarely()
+            ? (ignored) -> true
+            : TraceUtils.DEFAULT_IS_RECORDING; // honors Span::isRecording
   }
 
   /**
@@ -193,6 +211,11 @@ public class SolrTestCase extends LuceneTestCase {
   public void checkSyspropForceBeforeAssumptionFailure() {
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
+  }
+
+  @AfterClass
+  public static void afterSolrTestCase() {
+    OpenTelemetryConfigurator.resetForTest();
   }
 
   //              UTILITY METHODS FOLLOW

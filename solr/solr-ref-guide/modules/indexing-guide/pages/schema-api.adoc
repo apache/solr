@@ -122,11 +122,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT -H 'Content-type:application/json' --data-binary '
+curl -X PUT 'http://localhost:8983/api/collections/techproducts/schema/fields/sell_by' -H 'Content-type:application/json' --data-binary '
 {
   "type":"pdate",
   "stored":true
-}' http://localhost:8983/api/collections/techproducts/schema/fields/sell_by
+}'
 ----
 ====
 ======
@@ -156,7 +156,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/fields/sell_by"
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts/schema/fields/sell_by'
 ----
 ====
 ======
@@ -193,10 +193,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT -H 'Content-type:application/json' --data-binary '{
+curl -X PUT 'http://localhost:8983/api/collections/techproducts/schema/fields/sell_by' -H 'Content-type:application/json' --data-binary '{
    "type":"date",
    "stored":false
-}' http://localhost:8983/api/collections/techproducts/schema/fields/sell_by
+}'
 ----
 ====
 ======
@@ -231,10 +231,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT -H 'Content-type:application/json' --data-binary '{
+curl -X PUT 'http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s' -H 'Content-type:application/json' --data-binary '{
    "type":"string",
    "stored":true
-}' "http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s"
+}'
 ----
 ====
 ======
@@ -264,7 +264,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s"
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s'
 ----
 ====
 ======
@@ -301,10 +301,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT -H 'Content-type:application/json' --data-binary '{
+curl -X PUT 'http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s' -H 'Content-type:application/json' --data-binary '{
    "type": "text_general",
    "stored": false
-}' "http://localhost:8983/api/collections/techproducts/schema/dynamicfields/*_s"
+}'
 ----
 ====
 ======
@@ -376,7 +376,7 @@ V2 API with Two Analyzers::
 To define two analyzers with the V2 API, we just use a different endpoint:
 [source,bash]
 ----
-curl -X PUT -H 'Content-type:application/json' --data-binary '{
+curl -X PUT 'http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTextField' -H 'Content-type:application/json' --data-binary '{
    "class":"solr.TextField",
    "indexAnalyzer":{
       "tokenizer":{
@@ -385,7 +385,7 @@ curl -X PUT -H 'Content-type:application/json' --data-binary '{
    "queryAnalyzer":{
       "tokenizer":{
          "name":"keyword" }}
-}' http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTextField
+}'
 ----
 ====
 ======
@@ -415,7 +415,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTxtField"
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTxtField'
 ----
 ====
 ======
@@ -456,13 +456,13 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT -H 'Content-type:application/json' --data-binary '{
+curl -X PUT 'http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTxtField' -H 'Content-type:application/json' --data-binary '{
    "class":"solr.TextField",
    "positionIncrementGap":"100",
    "analyzer":{
       "tokenizer":{
          "name":"standard" }}
-}' http://localhost:8983/api/collections/techproducts/schema/fieldtypes/myNewTxtField
+}'
 ----
 ====
 ======
@@ -490,6 +490,7 @@ s|Required |Default: none
 |===
 +
 A field or an array of fields to which the source field will be copied.
+In the v2 API this attribute is named `destinations`; `dest` is still accepted as an alias.
 
 `maxChars`::
 +
@@ -523,11 +524,13 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
-  "add-copy-field":{
-     "source":"shelf",
-     "dest":[ "location", "catchall" ]}
-}'
+curl 'http://localhost:8983/api/collections/techproducts/schema/bulk' -H 'Content-type:application/json' -d '[
+  {
+    "operationType":"add-copy-field",
+    "source":"shelf",
+    "destinations":[ "location", "catchall" ]
+  }
+]'
 ----
 ====
 ======
@@ -559,9 +562,9 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/schema' -H 'Content-type:application/json' --data-binary '{
-  "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}'
+curl 'http://localhost:8983/api/collections/techproducts/schema/bulk' -H 'Content-type:application/json' --data-binary '[
+  { "operationType":"delete-copy-field", "source":"shelf", "destinations":[ "location" ] }
+]'
 ----
 ====
 ======
@@ -636,27 +639,28 @@ curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:applicati
 }'
 ----
 
-Bulk schema operations are also supported in Solr's v2 API, using a slightly different syntax.
+Bulk schema operations are also supported in Solr's v2 API, using a different endpoint and syntax.
+The v2 bulk endpoint is `POST /api/collections/_collection_/schema/bulk`; the `/schema` path itself only supports `GET` in v2.
 Individual operations are specified as elements within a list, with the operation name (e.g. `add-field`, `delete-field-type`) specified as a `"operationType"` property on each operation object:
 
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/schema/bulk' -H 'Content-type:application/json' --data-binary '
+curl 'http://localhost:8983/api/collections/techproducts/schema/bulk' -H 'Content-type:application/json' --data-binary '
   [
     {
-      "operationType": "add-field"
+      "operationType": "add-field",
       "name": "shelf",
       "type": "myNewTxtField",
-      "stored": true 
+      "stored": true
     },
     {
-      "operationType": "add-field"
+      "operationType": "add-field",
       "name": "location",
       "type": "myNewTxtField",
-      "stored": true 
+      "stored": true
     },
     {
-      "operationType": "add-copy-field"
+      "operationType": "add-copy-field",
       "source": "shelf",
       "destinations": ["location", "catchall"]
     }
@@ -729,7 +733,7 @@ Get the entire schema in JSON.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema
+curl 'http://localhost:8983/solr/techproducts/schema'
 ----
 
 [source,json]
@@ -793,7 +797,7 @@ Get the entire schema in XML.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema?wt=xml
+curl 'http://localhost:8983/solr/techproducts/schema?wt=xml'
 ----
 
 [source,xml]
@@ -847,7 +851,7 @@ Get the entire schema in "schema.xml" format.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema?wt=schema.xml
+curl 'http://localhost:8983/solr/techproducts/schema?wt=schema.xml'
 ----
 
 [source,xml]
@@ -1212,7 +1216,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/fieldtypes
+curl 'http://localhost:8983/solr/techproducts/schema/fieldtypes'
 ----
 ====
 
@@ -1335,7 +1339,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/copyfields
+curl 'http://localhost:8983/solr/techproducts/schema/copyfields'
 ----
 ====
 
@@ -1425,7 +1429,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/name
+curl 'http://localhost:8983/solr/techproducts/schema/name'
 ----
 ====
 
@@ -1495,7 +1499,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/version
+curl 'http://localhost:8983/solr/techproducts/schema/version'
 ----
 ====
 
@@ -1564,7 +1568,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/uniquekey
+curl 'http://localhost:8983/solr/techproducts/schema/uniquekey'
 ----
 ====
 
@@ -1633,7 +1637,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/schema/similarity
+curl 'http://localhost:8983/solr/techproducts/schema/similarity'
 ----
 ====
 
