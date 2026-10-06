@@ -34,7 +34,7 @@ import java.nio.file.Path;
       "  # Add a trusted public key",
       "  bin/solr package add-key /path/to/public.key.der",
     })
-public class AddKey extends PackageSubCommand {
+public class PackageAddKey extends PackageSubCommand {
 
   @picocli.CommandLine.Parameters(
       index = "0",

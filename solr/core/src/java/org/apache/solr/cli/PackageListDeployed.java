@@ -19,11 +19,12 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.cli.SolrCLI.printRed;
 
-/** Supports package undeploy command in the bin/solr script. */
+/** Supports package list-deployed command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "undeploy",
-    description = "Undeploy a package from specified collection(s) or at cluster level.",
+    name = "list-deployed",
+    description =
+        "Print packages deployed on a collection, or collections where a package is deployed.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0: Operation completed successfully.",
@@ -31,44 +32,46 @@ import static org.apache.solr.cli.SolrCLI.printRed;
     },
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # Undeploy a package from a collection",
-      "  bin/solr package undeploy mypkg --collections myCollection"
+      "  # List packages deployed on a collection",
+      "  bin/solr package list-deployed -c myCollection",
+      "",
+      "  # List collections where a package is deployed",
+      "  bin/solr package list-deployed mypkg"
     })
-public class Undeploy extends PackageSubCommand {
+public class PackageListDeployed extends PackageSubCommand {
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--collection"},
+      paramLabel = "COLLECTION",
+      description = "The collection to apply the package to, not required.")
+  private String collection;
 
   @picocli.CommandLine.Parameters(
       index = "0",
-      arity = "1",
+      arity = "0..1",
       paramLabel = "PACKAGE",
-      description = "Package name")
+      description = "Package name; lists collections where this package is deployed.")
   private String packageName;
-
-  @picocli.CommandLine.Option(
-      names = {"--cluster"},
-      description = "Specifies that this action should affect cluster-level plugins only.")
-  private boolean cluster;
-
-  @picocli.CommandLine.Option(
-      names = {"--collections"},
-      paramLabel = "COLLECTIONS",
-      description =
-          "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-  private String collections;
 
   @Override
   public int callTool() throws Exception {
-    if (!cluster && collections == null) {
-      printRed(
-          "Either specify --cluster to undeploy cluster level plugins or --collections <list-of-collections> to undeploy collection level plugins");
+    if (collection == null && packageName == null) {
+      printRed("Either -c/--collection <collection> or a package name is required.");
       return 1;
     }
+
     return runWithManagers(
-        (packageManager, repositoryManager) ->
-            packageTool.undeploy(packageManager, packageName, cluster, collections));
+        (packageManager, repositoryManager) -> {
+          if (collection != null) {
+            packageTool.listPackagesDeployedOnCollection(packageManager, collection);
+          } else {
+            packageTool.listCollectionsWithPackageDeployed(packageManager, packageName);
+          }
+        });
   }
 
   @Override
   public String getName() {
-    return "undeploy";
+    return "list-deployed";
   }
 }

@@ -124,7 +124,7 @@ public class PackageManager implements Closeable {
                 + packageName
                 + " is currently deployed on collection: "
                 + collection
-                + ". Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
+                + ". PackageUndeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
         runtime.exit(1);
       }
     }
@@ -141,7 +141,7 @@ public class PackageManager implements Closeable {
                 + packageName
                 + "is currently deployed as a cluster-level plugin ("
                 + clusterPackageInstance.getCustomData()
-                + "). Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before uninstalling the package.");
+                + "). PackageUndeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before uninstalling the package.");
         runtime.exit(1);
       }
     }
@@ -969,7 +969,7 @@ public class PackageManager implements Closeable {
       throws SolrException {
     ensureCollectionsExist(Arrays.asList(collections));
 
-    // Undeploy cluster level plugins
+    // PackageUndeploy cluster level plugins
     if (shouldUndeployClusterPlugins) {
       SolrPackageInstance deployedPackage =
           getPackagesDeployedAsClusterLevelPlugins().get(packageName);
@@ -1016,7 +1016,7 @@ public class PackageManager implements Closeable {
         }
       }
     }
-    // Undeploy collection level plugins
+    // PackageUndeploy collection level plugins
     for (String collection : collections) {
       SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageName);
       if (deployedPackage == null) {

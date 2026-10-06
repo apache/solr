@@ -17,11 +17,11 @@
 
 package org.apache.solr.cli;
 
-/** Supports package add-repo command in the bin/solr script. */
+/** Supports package list-available command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "add-repo",
-    description = "Add a package repository to Solr.",
+    name = "list-available",
+    description = "Print a list of packages available in the repositories.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0: Operation completed successfully.",
@@ -29,34 +29,19 @@ package org.apache.solr.cli;
     },
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # Add a package repository",
-      "  bin/solr package add-repo myrepo https://my.repo.example/repo",
+      "  # List packages available from configured repositories",
+      "  bin/solr package list-available",
     })
-public class AddRepo extends PackageSubCommand {
-
-  @picocli.CommandLine.Parameters(
-      index = "0",
-      arity = "1",
-      paramLabel = "REPOSITORY-NAME",
-      description = "Name of the package repository.")
-  private String repoName;
-
-  @picocli.CommandLine.Parameters(
-      index = "1",
-      arity = "1",
-      paramLabel = "REPOSITORY-URL",
-      description = "URL of the package repository.")
-  private String repoUrl;
+public class PackageListAvailable extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
     return runWithManagers(
-        ((packageManager, repositoryManager) ->
-            packageTool.addRepo(repositoryManager, repoName, repoUrl)));
+        (packageManager, repositoryManager) -> packageTool.listAvailable(repositoryManager));
   }
 
   @Override
   public String getName() {
-    return "add-repo";
+    return "list-available";
   }
 }

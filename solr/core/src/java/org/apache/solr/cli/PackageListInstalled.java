@@ -32,7 +32,7 @@ package org.apache.solr.cli;
       "  # List all installed packages",
       "  bin/solr package list-installed",
     })
-public class ListInstalled extends PackageSubCommand {
+public class PackageListInstalled extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {

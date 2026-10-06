@@ -63,15 +63,15 @@ import org.slf4j.LoggerFactory;
     },
     footerHeading = "%nExamples:%n",
     subcommands = {
-      AddRepo.class,
-      AddKey.class,
-      ListInstalled.class,
-      ListAvailable.class,
-      ListDeployed.class,
+      PackageAddRepo.class,
+      PackageAddKey.class,
+      PackageListInstalled.class,
+      PackageListAvailable.class,
+      PackageListDeployed.class,
       Install.class,
-      Deploy.class,
-      Undeploy.class,
-      Uninstall.class
+      PackageDeploy.class,
+      PackageUndeploy.class,
+      PackageUninstall.class
     },
     footer = {
       "  # Add a package repository",
@@ -488,12 +488,12 @@ public class PackageTool extends ToolBase {
     format(sb, "");
     formatGreen(
         sb, "bin/solr package undeploy <package-name> --collections <comma-separated-collections>");
-    format(sb, "Undeploy a package from specified collection(s)");
+    format(sb, "PackageUndeploy a package from specified collection(s)");
     format(sb, "");
     formatGreen(sb, "bin/solr package uninstall <package-name>:<version>");
     format(
         sb,
-        "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
+        "PackageUninstall an unused package with specified version from Solr. Both package name and version are required.");
     format(sb, "\n");
     format(
         sb,

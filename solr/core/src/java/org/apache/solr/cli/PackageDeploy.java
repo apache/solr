@@ -23,7 +23,7 @@ import static org.apache.solr.cli.SolrCLI.printRed;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "deploy",
-    description = "Deploy an installed package to collections or at cluster level.",
+    description = "PackageDeploy an installed package to collections or at cluster level.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0: Operation completed successfully.",
@@ -31,13 +31,13 @@ import static org.apache.solr.cli.SolrCLI.printRed;
     },
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # Deploy a package to a collection",
+      "  # PackageDeploy a package to a collection",
       "  bin/solr package deploy mypkg:1.0.0 --collections myCollection -y",
       "",
       "  # Update an existing deployment",
       "  bin/solr package deploy mypkg --update --collections myCollection -y"
     })
-public class Deploy extends PackageSubCommand {
+public class PackageDeploy extends PackageSubCommand {
 
   @picocli.CommandLine.Parameters(
       index = "0",
