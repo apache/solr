@@ -71,6 +71,7 @@ import org.apache.solr.cli.tools.zk.ZkLsTool;
 import org.apache.solr.cli.tools.zk.ZkMkrootTool;
 import org.apache.solr.cli.tools.zk.ZkMvTool;
 import org.apache.solr.cli.tools.zk.ZkRmTool;
+import org.apache.solr.cli.tools.zk.ZkTool;
 import org.apache.solr.cli.tools.zk.ZkToolHelp;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;

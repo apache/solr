@@ -14,9 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.zk;
 
 import java.util.Map;
+
+import org.apache.solr.cli.CLIO;
+import org.apache.solr.cli.CLIUtils;
+import org.apache.solr.cli.CommonCLIOptions;
+import org.apache.solr.cli.tools.cluster.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import picocli.CommandLine;

@@ -28,7 +28,6 @@ import org.apache.solr.cli.CommonCLIOptions;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
-import org.apache.solr.cli.ZkConnectionOptions;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
