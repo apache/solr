@@ -1,0 +1,142 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Appended to javadoc's own stylesheet, so it wins over the declarations above
+ * it. Two jobs: repaint javadoc in Solr's colours, and style the Solr bar that
+ * solr-javadoc-bar.js puts above javadoc's navigation, so an API page is
+ * recognisably part of the documentation site and has a way back out of it.
+ *
+ * Deliberately light-only: javadoc's stylesheet has no dark palette, so neither
+ * the page nor the bar offers the theme toggle the rest of the site has.
+ */
+
+/*
+ * Solr palette, as used on https://solr.apache.org/ and by solr-docs.css.
+ * Javadoc exposes every colour as a custom property, so nothing below needs to
+ * target javadoc's own selectors.
+ */
+:root {
+  --body-font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --block-font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --code-font-family: Menlo, Consolas, "Liberation Mono", Courier, monospace;
+
+  --body-text-color: #333333;
+  --block-text-color: #333333;
+
+  --body-background-color: #ffffff;
+  --section-background-color: #f9f8f8;
+  --detail-background-color: #ffffff;
+
+  --navbar-background-color: #262130;
+  --navbar-text-color: #f9f8f8;
+  --subnav-background-color: #e4e2dd;
+
+  --selected-background-color: #d9411e;
+  --selected-text-color: #ffffff;
+  --selected-link-color: #ffffff;
+
+  --even-row-color: #ffffff;
+  --odd-row-color: #f9f8f8;
+
+  --title-color: #262130;
+
+  --link-color: #d9411e;
+  --link-color-active: #a82e15;
+
+  --snippet-background-color: #f3f1ee;
+  --snippet-highlight-color: #ffd0bb;
+
+  --border-color: #e4e2dd;
+  --table-border-color: #d3cec6;
+
+  --search-input-placeholder-color: #6f6b66;
+  --search-tag-highlight-color: #ffd0bb;
+}
+
+/*
+ * The Solr bar
+ */
+
+.solr-docs-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #fff;
+  border-bottom: 3px solid #d9411e;
+  font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.solr-docs-bar .solr-docs-brand {
+  display: block;
+  flex: none;
+}
+
+.solr-docs-bar .solr-docs-brand img {
+  display: block;
+  width: auto;
+  height: 2rem;
+  border: none;
+}
+
+.solr-docs-bar .solr-docs-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: #262130;
+}
+
+.solr-docs-bar nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.solr-docs-bar nav a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #262130;
+  text-decoration: none;
+}
+
+.solr-docs-bar nav a:hover,
+.solr-docs-bar nav a:focus {
+  color: #d9411e;
+  text-decoration: none;
+}
+
+.solr-docs-bar nav a + a::before {
+  content: "|";
+  margin-right: 0.75rem;
+  color: #d3cec6;
+  font-weight: 400;
+}
+
+@media print {
+  .solr-docs-bar {
+    display: none;
+  }
+}

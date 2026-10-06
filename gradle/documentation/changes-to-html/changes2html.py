@@ -20,12 +20,22 @@
 """
 Transforms Solr's CHANGELOG.md into Changes.html
 
-Input is from CHANGELOG.md, output is to STDOUT
+Usage: changes2html.py <changelog-file> [<logo.svg>]
+Output is to STDOUT
 """
 
+import base64
 import sys
 import re
 from pathlib import Path
+
+# The Solr wordmark, relative to the repository root. Inlined into the page so
+# the generated HTML is a single self-contained file, and so the stylesheet can
+# recolour the wordmark for the dark theme.
+DEFAULT_LOGO = Path(__file__).resolve().parents[3] / 'solr/documentation/src/assets/solr.svg'
+
+# The ink the wordmark is drawn in; swapped for currentColor when inlining.
+LOGO_INK_FILL = 'fill:rgb(14.048767%,12.319946%,16.685486%)'
 
 
 class ChangelogParser:
@@ -124,8 +134,9 @@ class HTMLGenerator:
     GITHUB_PR_PREFIX = 'https://github.com/apache/solr/pull/'
     GITHUB_ISSUE_PREFIX = 'https://github.com/apache/solr/issues/'
 
-    def __init__(self, title="Solr Changelog"):
+    def __init__(self, title="Solr Changelog", logo_file=None):
         self.title = title
+        self.logo_svg, self.favicon_href = self._load_logo(logo_file)
         self.first_relid = None
         self.second_relid = None
         # Issue extraction patterns: (pattern, prefix, format_string)
@@ -137,6 +148,36 @@ class HTMLGenerator:
             (r'\[GITHUB#(\d+)\]\(https://github\.com/apache/solr/issues/\1\)',
              self.GITHUB_ISSUE_PREFIX, 'GITHUB#{0}')
         ]
+
+    def _load_logo(self, logo_file):
+        """
+        Read the Solr wordmark and return (inline_svg, favicon_href).
+        The wordmark's ink is swapped for currentColor so the stylesheet can
+        recolour it per theme, and its internal ids are namespaced so they
+        cannot clash with anything else on the page. Returns ('', '') when the
+        file is unavailable, so the page still renders without it.
+        """
+        path = Path(logo_file) if logo_file else DEFAULT_LOGO
+        try:
+            svg = path.read_text(encoding='utf-8')
+        except OSError:
+            print(f"Warning: logo {path} not found, rendering without it", file=sys.stderr)
+            return '', ''
+
+        favicon = 'data:image/svg+xml;base64,' + base64.b64encode(svg.encode('utf-8')).decode('ascii')
+
+        svg = re.sub(r'<\?xml[^>]*\?>\s*', '', svg)
+        svg = svg.replace(LOGO_INK_FILL, 'fill:currentColor')
+        svg = svg.replace('id="clip', 'id="solr-logo-clip').replace('url(#clip', 'url(#solr-logo-clip')
+        svg = svg.replace('id="surface1"', 'id="solr-logo-surface"')
+        # Drop the intrinsic pt dimensions from the root tag; the viewBox and the
+        # stylesheet size it instead.
+        svg = re.sub(
+            r'<svg\b[^>]*>',
+            lambda m: ('<svg class="brand-logo" role="img" aria-label="Apache Solr"'
+                       + re.sub(r'\s(?:width|height)="[^"]*"', '', m.group(0)[4:])),
+            svg, count=1)
+        return svg.strip(), favicon
 
     def _format_issue_link(self, url_prefix, issue_id, label):
         """Format a single issue reference as an HTML anchor tag"""
@@ -394,6 +435,9 @@ class HTMLGenerator:
         Format a changelog item from markdown to HTML
         Format: [ISSUE](url) description (author1) (author2)
         Output: <a href>ISSUE</a>: description<br><span class="attrib">(authors)</span>
+
+        Any markdown link left in the description once the issue reference has
+        been lifted out is a link the author wrote, so it is converted too.
         """
         # Extract the issue(s)
         issue_html, description_head, tail = self.extract_issue_from_text(item_text)
@@ -414,12 +458,13 @@ class HTMLGenerator:
         if issue_html:
             # We have an issue link
             description = re.sub(r'^[:\s]+', '', description).strip()
-            html = f'{issue_html}: {self.escape_html(description)}'
+            html = (f'<span class="issues">{issue_html}</span> '
+                    f'<span class="desc">{self.convert_markdown_links(description)}</span>')
         else:
             # No issue link found
             if authors_list:
                 # We have authors but no issue - just use the description part
-                html = self.escape_html(description)
+                html = f'<span class="desc">{self.convert_markdown_links(description)}</span>'
             else:
                 # No issue and no authors - linkify the full text
                 return self.linkify_remaining_text(item_text)
@@ -513,6 +558,9 @@ class HTMLGenerator:
             newer_version_regex += f"|{second_relid_regex}"
         newer_version_regex += ")"
 
+        favicon_link = (f'  <link rel="icon" href="{self.favicon_href}" type="image/svg+xml">\n'
+                        if self.favicon_href else '')
+
         html = f'''<!--
 **********************************************************
 ** WARNING: This file is generated from CHANGELOG.md by the
@@ -540,11 +588,26 @@ class HTMLGenerator:
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Apache Solr Release Notes</title>
-  <link rel="stylesheet" href="ChangesFancyStyle.css" title="Fancy">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apache Solr Changelog</title>
+{favicon_link}  <link rel="stylesheet" href="solr-docs.css" title="Fancy">
   <link rel="alternate stylesheet" href="ChangesSimpleStyle.css" title="Simple">
   <link rel="alternate stylesheet" href="ChangesFixedWidthStyle.css" title="Fixed Width">
-  <META http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <SCRIPT>
+    /* Applied before first paint so a dark-theme reader sees no light flash.
+       The page is light by default; only an explicit choice is remembered. */
+    (function() {{
+      try {{
+        var stored = localStorage.getItem('solr.docs.theme');
+        if (stored === 'dark' || stored === 'light') {{
+          document.documentElement.setAttribute('data-theme', stored);
+        }}
+      }} catch (e) {{
+        /* localStorage can be unavailable; the light default is fine. */
+      }}
+    }})();
+  </SCRIPT>
   <SCRIPT>
     function toggleList(id) {{
       listStyle = document.getElementById(id + '.list').style;
@@ -607,6 +670,27 @@ class HTMLGenerator:
       collapseButton.disabled = false;
     }}
 
+    function updateThemeToggle() {{
+      var button = document.getElementById('theme.toggle');
+      if (!button) return;
+      var dark = document.documentElement.getAttribute('data-theme') == 'dark';
+      var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+      button.title = label;
+      button.setAttribute('aria-label', label);
+    }}
+
+    function toggleTheme() {{
+      var root = document.documentElement;
+      var next = root.getAttribute('data-theme') == 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try {{
+        localStorage.setItem('solr.docs.theme', next);
+      }} catch (e) {{
+        /* Not remembering the choice is better than failing the toggle. */
+      }}
+      updateThemeToggle();
+    }}
+
     var newerRegex = new RegExp("{newer_version_regex}");
     function isOlder(listId) {{
       return ! newerRegex.test(listId);
@@ -657,18 +741,21 @@ class HTMLGenerator:
       }}
       var olderList = document.getElementById("older.list");
       if (olderList) olderList.style.display = "none";
-      /* Add "Click to collapse/expand" tooltips to the release/section headings */
+      /* Add "Click to collapse/expand" tooltips to the release/section headings.
+       * The stylesheet draws the expand/collapse marker off these titles, so
+       * they have to reflect what each list actually ended up doing above.
+       */
       var anchors = document.getElementsByTagName("a");
       for (var i = 0 ; i < anchors.length; i++) {{
         var anchor = anchors[i];
         if (anchor.id != '') {{
-          if (anchor.id == '{self.first_relid}' || anchor.id == '{self.second_relid}') {{
-            anchor.title = 'Click to collapse';
-          }} else {{
-            anchor.title = 'Click to expand';
-          }}
+          var list = document.getElementById(anchor.id + '.list');
+          anchor.title = (list && list.style.display != 'none')
+                       ? 'Click to collapse' : 'Click to expand';
         }}
       }}
+
+      updateThemeToggle();
 
       /* Insert "Expand All" and "Collapse All" buttons */
       var buttonsParent = document.getElementById('buttons.parent');
@@ -691,28 +778,69 @@ class HTMLGenerator:
 </head>
 <body>
 
-<h1>Apache Solr Release Notes</h1>
+<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" href="https://solr.apache.org/">{self.logo_svg}</a>
+    <div class="masthead-text">
+      <h1>Changelog</h1>
+    </div>
+    <nav class="masthead-nav">
+      <a href="https://solr.apache.org/">Home</a>
+      <a href="../index.html">Docs</a>
+      <button type="button" id="theme.toggle" class="theme-toggle" onclick="toggleTheme()"
+              title="Switch to dark theme" aria-label="Switch to dark theme">
+        <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M16.3 11.9A6.8 6.8 0 0 1 8.1 3.7a7.2 7.2 0 1 0 8.2 8.2z"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.6" fill="currentColor"/>
+          <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M10 1.6v2.1M10 16.3v2.1M1.6 10h2.1M16.3 10h2.1"/>
+            <path d="M4.1 4.1l1.5 1.5M14.4 14.4l1.5 1.5M15.9 4.1l-1.5 1.5M5.6 14.4l-1.5 1.5"/>
+          </g>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
 
-<div id="buttons.parent"></div>
+<main class="page">
 
 '''
         # Add preamble if present
         if preamble:
             # Convert markdown links to HTML links
             preamble_html = self.convert_markdown_links(preamble)
-            html += f'<p>{preamble_html}</p>\n\n'
+            html += f'<p class="intro">{preamble_html}</p>\n\n'
+
+        html += '<div id="buttons.parent" class="toolbar"></div>\n\n'
 
         return html
+
+    def generate_footer(self):
+        """Generate HTML footer"""
+        return '''
+</main>
+
+<footer class="colophon">
+  <p>Generated from <code>CHANGELOG.md</code> in the <a href="https://github.com/apache/solr">apache/solr</a> repository.</p>
+  <p>Apache Solr, Solr, Apache, the Apache feather logo and the Apache Solr project logo are trademarks of
+     The Apache Software Foundation. &mdash; <a href="https://solr.apache.org/">solr.apache.org</a></p>
+</footer>
+
+</body>
+</html>
+'''
 
     def _format_section(self, relid, section_name, items):
         """Format a single section with items"""
         sectid = section_name.lower().replace(' ', '_')
-        html = [f'  <li><a id="{relid}.{sectid}" href="javascript:toggleList(\'{relid}.{sectid}\')">'
+        html = [f'  <li class="section"><a id="{relid}.{sectid}" href="javascript:toggleList(\'{relid}.{sectid}\')">'
                 f'{self.escape_html(section_name)}</a>']
-        html.append(f'&nbsp;&nbsp;&nbsp;({len(items)})\n')
-        html.append(f'    <ul id="{relid}.{sectid}.list">\n')
+        html.append(f' <span class="count">{len(items)}</span>\n')
+        html.append(f'    <ul class="changes" id="{relid}.{sectid}.list">\n')
         for item in items:
-            html.append(f'      <li>{self.format_changelog_item(item)}</li>\n')
+            html.append(f'      <li class="change">{self.format_changelog_item(item)}</li>\n')
         html.append('    </ul>\n')
         return ''.join(html)
 
@@ -739,9 +867,9 @@ class HTMLGenerator:
             html.append(f'<{header}><a id="{relid}" href="javascript:toggleList(\'{relid}\')">'
                        f'Release {self.escape_html(version)}')
             if date:
-                html.append(f' [{self.escape_html(date)}]')
+                html.append(f' <span class="reldate">{self.escape_html(date)}</span>')
             html.append(f'</a></{header}>\n')
-            html.append(f'<ul id="{relid}.list">\n')
+            html.append(f'<ul class="sections" id="{relid}.list">\n')
 
             # Render sections
             for section in release.get('sections', []):
@@ -770,7 +898,7 @@ class HTMLGenerator:
         html_parts = [
             self.generate_header(preamble),
             self.generate_releases(releases),
-            '</body>\n</html>\n'
+            self.generate_footer()
         ]
 
         return ''.join(html_parts)
@@ -782,10 +910,12 @@ def main():
         # Try to read from CHANGELOG.md in current directory
         changelog_file = Path('CHANGELOG.md')
         if not changelog_file.exists():
-            print("Usage: changes2html.py <changelog-file>", file=sys.stderr)
+            print("Usage: changes2html.py <changelog-file> [<logo.svg>]", file=sys.stderr)
             sys.exit(1)
     else:
         changelog_file = Path(sys.argv[1])
+
+    logo_file = Path(sys.argv[2]) if len(sys.argv) > 2 else None
 
     if not changelog_file.exists():
         print(f"Error: {changelog_file} not found", file=sys.stderr)
@@ -800,7 +930,7 @@ def main():
     parser.parse(content)
 
     # Generate HTML
-    generator = HTMLGenerator()
+    generator = HTMLGenerator(logo_file=logo_file)
     html = generator.generate(parser.releases, parser.title, parser.preamble)
 
     # Output

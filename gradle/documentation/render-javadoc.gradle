@@ -75,6 +75,10 @@ allprojects {
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
       outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
+
+      // Climbs from this javadoc tree's root back to docroot, so the injected
+      // Solr bar can resolve the documentation index and the wordmark.
+      docsRootPrefix = '../' * (project.relativeDocPath.split('/').length)
     }
   }
 }
@@ -288,6 +292,14 @@ class RenderJavadocTask extends DefaultTask {
   final Property<String> executable = project.objects.property(String).convention(
       project.provider {Jvm.current().javadocExecutable.toString()})
 
+  /**
+   * Relative path from the root of this javadoc tree up to the documentation
+   * root, e.g. '../' for :solr:core. Empty means the rendered javadocs do not
+   * sit under a documentation root, and no Solr bar is injected.
+   */
+  @Input
+  String docsRootPrefix = ''
+
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
   @IgnoreEmptyDirectories
@@ -473,6 +485,15 @@ class RenderJavadocTask extends DefaultTask {
         encoding: "UTF-8") {
       filelist(dir: project.file("${taskResources}/prettify"),
           files: "prettify.min.js inject-javadocs.js")
+    }
+
+    // Give every page the Solr bar, by extending the stylesheet and script that
+    // javadoc already links from each one.
+    if (!docsRootPrefix.isEmpty()) {
+      project.file("${outputDir}/stylesheet.css") << '\n' +
+          project.file("${taskResources}/solr-javadoc-theme.css").getText('UTF-8')
+      project.file("${outputDir}/script.js") << '\nvar solrDocsRootUp = "' + docsRootPrefix + '";\n' +
+          project.file("${taskResources}/solr-javadoc-bar.js").getText('UTF-8')
     }
 
     ant.fixcrlf(

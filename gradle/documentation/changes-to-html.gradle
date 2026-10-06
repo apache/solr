@@ -57,6 +57,16 @@ abstract class ChangesToHtmlTask extends DefaultTask {
   @InputDirectory
   File siteDir
 
+  // The Solr wordmark shown in the page masthead, inlined into Changes.html, and
+  // the stylesheet shared with the rest of the documentation site, copied next to
+  // it. Both are kept local so the page stands alone under the docs site and in
+  // the release folder, where 'changes' is the only directory present.
+  @InputFile
+  File logoFile = project.rootProject.file('solr/documentation/src/assets/solr.svg')
+
+  @InputFile
+  File sharedStylesheet = project.rootProject.file('solr/documentation/src/assets/solr-docs.css')
+
   @OutputDirectory
   final DirectoryProperty targetDir = project.objects.directoryProperty()
       .fileProvider(project.providers.provider {project.file("${project.docroot}/changes")})
@@ -81,7 +91,8 @@ abstract class ChangesToHtmlTask extends DefaultTask {
 
       args += [
           script.toString(),
-          changesFile.toString()
+          changesFile.toString(),
+          logoFile.toString()
       ]
     }
 
@@ -99,6 +110,10 @@ abstract class ChangesToHtmlTask extends DefaultTask {
         from siteDir
         into targetDir
         include "*.css"
+      }
+      project.copy {
+        from sharedStylesheet
+        into targetDir
       }
     } else {
       throw new GradleException("Changes file ${changesFile} not found.")

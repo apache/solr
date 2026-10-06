@@ -39,6 +39,12 @@ buildscript {
 }
 
 configure(project(':solr:documentation')) {
+  ext {
+    // Masthead assets shared by every generated documentation page.
+    logoAsset = file("${project.assets}/solr.svg")
+    solrHomeUrl = 'https://solr.apache.org/'
+  }
+
   task markdownToHtml(type: Copy) {
     dependsOn copyDocumentationAssets
 
@@ -46,7 +52,12 @@ configure(project(':solr:documentation')) {
     includeEmptyDirs = false
     into project.docroot
     rename(/\.md$/, '.html')
-    filter(MarkdownFilter)
+    inputs.file(project.logoAsset)
+    inputs.property('version', project.version)
+    filter(MarkdownFilter,
+        logoFile: project.logoAsset,
+        heading: 'Documentation',
+        navLinks: ['Home': project.solrHomeUrl, 'Docs': 'index.html'])
   }
 }
 
@@ -63,6 +74,10 @@ configure(project(':solr:documentation')) {
 
     outputFile = file("${project.docroot}/index.html")
     templateFile = file("${project.markdownSrc}/index.template.md")
+    logoFile = project.logoAsset
+    heading = 'Documentation'
+    // The index is the Docs landing page, so it only links out to the website.
+    navLinks = ['Home': project.solrHomeUrl]
 
     // list all properties used by the template here to allow uptodate checks to be correct:
     inputs.property('version', project.version)
@@ -73,17 +88,149 @@ configure(project(':solr:documentation')) {
   }
 }
 
+// Renders the page chrome shared by every generated documentation page: the
+// head, and the sticky masthead with the Solr wordmark and the nav links.
+class SolrDocsPage {
+
+  // The ink the wordmark is drawn in, swapped for currentColor when inlining so
+  // the stylesheet can recolour it per theme. Keep in sync with changes2html.py.
+  private static final String LOGO_INK_FILL = 'fill:rgb(14.048767%,12.319946%,16.685486%)'
+
+  /** Inlines solr.svg, so a page needs no sibling image and can theme the wordmark. */
+  static String inlineLogo(File logoFile) {
+    if (logoFile == null || !logoFile.exists()) {
+      return ''
+    }
+    String svg = logoFile.getText('UTF-8')
+        .replaceFirst(/(?s)<\?xml[^>]*\?>\s*/, '')
+        .replace(LOGO_INK_FILL, 'fill:currentColor')
+        .replace('id="clip', 'id="solr-logo-clip')
+        .replace('url(#clip', 'url(#solr-logo-clip')
+        .replace('id="surface1"', 'id="solr-logo-surface"')
+    // Drop the intrinsic pt dimensions; the viewBox and the stylesheet size it.
+    return svg.replaceFirst(/<svg\b[^>]*>/) {match ->
+      '<svg class="brand-logo" role="img" aria-label="Apache Solr"' +
+          match.substring(4).replaceAll(/\s(?:width|height)="[^"]*"/, '')
+    }.trim()
+  }
+
+  /** Reapplies the reader's stored theme before first paint, so dark mode does not flash. */
+  static String themeScript() {
+    return '''<script>
+  (function() {
+    try {
+      var stored = localStorage.getItem('solr.docs.theme');
+      if (stored === 'dark' || stored === 'light') {
+        document.documentElement.setAttribute('data-theme', stored);
+      }
+    } catch (e) {
+      /* localStorage can be unavailable; the light default is fine. */
+    }
+  })();
+  function updateThemeToggle() {
+    var button = document.getElementById('theme.toggle');
+    if (!button) return;
+    var dark = document.documentElement.getAttribute('data-theme') == 'dark';
+    var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+  }
+  function toggleTheme() {
+    var root = document.documentElement;
+    var next = root.getAttribute('data-theme') == 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem('solr.docs.theme', next);
+    } catch (e) {
+      /* Not remembering the choice is better than failing the toggle. */
+    }
+    updateThemeToggle();
+  }
+  window.addEventListener('load', updateThemeToggle);
+</script>'''
+  }
+
+  /** `links` maps a nav label to its href, in the order they should appear. */
+  static String masthead(String logoSvg, String heading, Map<String, String> links) {
+    StringBuilder nav = new StringBuilder()
+    links.each {label, href ->
+      nav.append("      <a href=\"${href}\">${label}</a>\n")
+    }
+    return """<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" href="https://solr.apache.org/">${logoSvg}</a>
+    <div class="masthead-text">
+      <h1>${heading}</h1>
+    </div>
+    <nav class="masthead-nav">
+${nav}      <button type="button" id="theme.toggle" class="theme-toggle" onclick="toggleTheme()"
+              title="Switch to dark theme" aria-label="Switch to dark theme">
+        <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M16.3 11.9A6.8 6.8 0 0 1 8.1 3.7a7.2 7.2 0 1 0 8.2 8.2z"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.6" fill="currentColor"/>
+          <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M10 1.6v2.1M10 16.3v2.1M1.6 10h2.1M16.3 10h2.1"/>
+            <path d="M4.1 4.1l1.5 1.5M14.4 14.4l1.5 1.5M15.9 4.1l-1.5 1.5M5.6 14.4l-1.5 1.5"/>
+          </g>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+"""
+  }
+}
+
 // filter that can be used with the "copy" task of Gradle that transforms Markdown files
 // from source location to HTML (adding HTML header, styling,...)
 class MarkdownFilter extends FilterReader {
 
-  public MarkdownFilter(Reader reader) throws IOException {
-    // this is not really a filter: it reads whole file in ctor,
-    // converts it and provides result downstream as a StringReader
-    super(new StringReader(convert(reader.text)));
+  /** Set by the copy spec; see ContentFilterable.filter(Map, Class). */
+  File logoFile
+  String heading = 'Documentation'
+  Map<String, String> navLinks = [:]
+
+  private final Reader source
+  private Reader converted
+
+  MarkdownFilter(Reader reader) throws IOException {
+    // Conversion is deferred to the first read so the properties above, which
+    // Gradle sets after construction, are in place by the time they are used.
+    super(reader)
+    this.source = reader
   }
 
-  public static String convert(String markdownSource) {
+  private Reader delegate() {
+    if (converted == null) {
+      converted = new StringReader(convert(source.text, logoFile, heading, navLinks))
+    }
+    return converted
+  }
+
+  @Override
+  int read() throws IOException {
+    return delegate().read()
+  }
+
+  @Override
+  int read(char[] cbuf, int off, int len) throws IOException {
+    return delegate().read(cbuf, off, len)
+  }
+
+  @Override
+  boolean ready() throws IOException {
+    return delegate().ready()
+  }
+
+  @Override
+  void close() throws IOException {
+    source.close()
+  }
+
+  public static String convert(String markdownSource, File logoFile, String heading,
+                               Map<String, String> navLinks) {
     // first replace LUCENE and SOLR issue numbers with a markdown link
     markdownSource = markdownSource.replaceAll(/(?s)\b(LUCENE|SOLR)\-\d+\b/,
         '[$0](https://issues.apache.org/jira/browse/$0)');
@@ -97,15 +244,20 @@ class MarkdownFilter extends FilterReader {
     options.set(HtmlRenderer.MAX_TRAILING_BLANK_LINES, 0);
     Document parsed = Parser.builder(options).build().parse(markdownSource);
 
-    StringBuilder html = new StringBuilder('<html>\n<head>\n');
+    StringBuilder html = new StringBuilder('<!DOCTYPE html>\n<html lang="en">\n<head>\n');
+    html.append('<meta charset="UTF-8">\n');
+    html.append('<meta name="viewport" content="width=device-width, initial-scale=1">\n');
     CharSequence title = parsed.getFirstChildAny(Heading.class)?.getText();
     if (title != null) {
       html.append('<title>').append(Escaping.escapeHtml(title, false)).append('</title>\n');
     }
-    html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
-        .append('</head>\n<body>\n');
+    html.append('<link rel="stylesheet" href="solr-docs.css">\n')
+        .append(SolrDocsPage.themeScript()).append('\n')
+        .append('</head>\n<body>\n')
+        .append(SolrDocsPage.masthead(SolrDocsPage.inlineLogo(logoFile), heading, navLinks))
+        .append('\n<main class="page prose">\n');
     HtmlRenderer.builder(options).build().render(parsed, html);
-    html.append('</body>\n</html>\n');
+    html.append('</main>\n</body>\n</html>\n');
     return html;
   }
 }
@@ -119,6 +271,15 @@ class MarkdownTemplateTask extends DefaultTask {
 
   @InputFile
   File templateFile
+
+  @InputFile
+  File logoFile
+
+  @Input
+  String heading
+
+  @Input
+  Map<String, String> navLinks = [:]
 
   @OutputFile
   File outputFile
@@ -156,6 +317,7 @@ class MarkdownTemplateTask extends DefaultTask {
       engine.createTemplate(it).make(resolvedBinding).toString();
     }
     outputFile.getParentFile().mkdirs();
-    outputFile.write(MarkdownFilter.convert(markdown), 'UTF-8');
+    outputFile.write(
+        MarkdownFilter.convert(markdown, logoFile, heading, navLinks), 'UTF-8');
   }
 }

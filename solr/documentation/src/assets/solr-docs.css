@@ -1,0 +1,668 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Apache Solr documentation site - shared stylesheet.
+ *
+ * Used by the generated documentation index, SYSTEM_REQUIREMENTS and the
+ * release notes (where it is the preferred "Fancy" style).
+ *
+ * Colours and typography follow the Apache Solr brand as used on
+ * https://solr.apache.org/ (see themes/solr/static/css/base.css in the
+ * solr-site repository). Raleway is the site's heading font; it is not
+ * downloaded here so that the shipped HTML stays self-contained, and
+ * falls back to the platform sans-serif when unavailable.
+ *
+ * The page is light by default. A dark palette is applied only when the reader
+ * picks it with the masthead toggle, which sets data-theme="dark" on <html>.
+ */
+
+:root {
+  --solr-red: #d9411e;
+  --solr-red-dark: #a82e15;
+  --solr-orange: #ff833d;
+  --solr-ink: #262130;
+  --solr-text: #333;
+  --solr-muted: #6f6b66;
+  --solr-rule: #e4e2dd;
+  --solr-rule-strong: #d3cec6;
+  --solr-paper: #f9f8f8;
+  --solr-surface: #fff;
+  --solr-chip: #f3f1ee;
+  --solr-logo-ink: #262130;
+
+  --solr-sans: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --solr-mono: Menlo, Consolas, "Liberation Mono", Courier, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0 0 4rem 0;
+  background-color: var(--solr-paper);
+  color: var(--solr-text);
+  font-family: var(--solr-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  color: var(--solr-red);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus {
+  color: var(--solr-red-dark);
+  text-decoration: underline;
+}
+
+a:visited {
+  color: var(--solr-red);
+}
+
+code {
+  font-family: var(--solr-mono);
+  font-size: 0.9em;
+}
+
+/*
+ * Masthead
+ */
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--solr-surface);
+  border-bottom: 4px solid var(--solr-red);
+  box-shadow: 0 1px 4px rgba(38, 33, 48, 0.12);
+}
+
+.masthead-inner {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.brand {
+  display: block;
+  flex: none;
+  color: var(--solr-logo-ink);
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 2.6rem;
+}
+
+.masthead-text {
+  flex: 1 1 auto;
+}
+
+.masthead-nav {
+  flex: none;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.masthead-nav > a + a::before {
+  content: "|";
+  margin-right: 0.75rem;
+  color: var(--solr-rule-strong);
+  font-weight: 400;
+}
+
+.masthead-nav > a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--solr-ink);
+}
+
+.masthead-nav > a:hover,
+.masthead-nav > a:focus {
+  color: var(--solr-red);
+  text-decoration: none;
+}
+
+.theme-toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: var(--solr-muted);
+  background-color: transparent;
+  border: 1px solid var(--solr-rule);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.1s ease, border-color 0.1s ease;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus {
+  color: var(--solr-red);
+  border-color: var(--solr-red);
+}
+
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-family: var(--solr-sans);
+  font-weight: 300;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--solr-ink);
+  background-color: transparent;
+}
+
+/*
+ * Page body
+ */
+
+.page {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 0 1.5rem;
+}
+
+.intro {
+  margin: 0 0 1.75rem 0;
+  padding: 1rem 1.25rem;
+  background-color: var(--solr-surface);
+  border-left: 3px solid var(--solr-red);
+  border-radius: 3px;
+  font-size: 0.95rem;
+  color: var(--solr-muted);
+}
+
+.intro a {
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Expand All / Collapse All toolbar
+ */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.toolbar button {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--solr-ink);
+  background-color: var(--solr-surface);
+  border: 1px solid var(--solr-rule);
+  border-radius: 3px;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+  transition: color 0.1s ease, border-color 0.1s ease;
+}
+
+.toolbar button:hover,
+.toolbar button:focus {
+  color: var(--solr-red);
+  border-color: var(--solr-red);
+}
+
+.toolbar button:disabled {
+  color: var(--solr-muted);
+  border-color: var(--solr-rule);
+  background-color: transparent;
+  cursor: default;
+  opacity: 0.6;
+}
+
+/*
+ * Release headings
+ */
+
+h2,
+h3 {
+  font-family: var(--solr-sans);
+  background-color: transparent;
+}
+
+h2,
+h3,
+h2 > a,
+h3 > a,
+li.section > a {
+  scroll-margin-top: 7rem;
+}
+
+h2 {
+  margin: 2.75rem 0 0.75rem 0;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--solr-rule);
+  font-weight: 300;
+  font-size: 1.75rem;
+  line-height: 1.25;
+  color: var(--solr-ink);
+}
+
+h3 {
+  margin: 2rem 0 0.5rem 0;
+  font-weight: 500;
+  font-size: 1.2rem;
+  color: var(--solr-ink);
+}
+
+h2 > a,
+h3 > a {
+  color: inherit;
+}
+
+h2 > a:hover,
+h3 > a:hover {
+  color: var(--solr-red);
+  text-decoration: none;
+}
+
+.reldate {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.72em;
+  font-weight: 400;
+  color: var(--solr-muted);
+  white-space: nowrap;
+}
+
+h2#older,
+h2 > a#older {
+  font-weight: 400;
+}
+
+/*
+ * Expand/collapse affordance. The generator's script keeps the `title`
+ * attribute of every toggle anchor in sync with the collapsed state, so
+ * the marker can be driven straight off it.
+ */
+
+h2 > a::before,
+h3 > a::before,
+li.section > a::before {
+  content: "\25B8";
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+  color: var(--solr-muted);
+  font-size: 0.8em;
+}
+
+h2 > a[title="Click to collapse"]::before,
+h3 > a[title="Click to collapse"]::before,
+li.section > a[title="Click to collapse"]::before {
+  content: "\25BE";
+}
+
+h2 > a,
+h3 > a,
+li.section > a {
+  padding-left: 1em;
+}
+
+/*
+ * Section lists (Added / Fixed / Changed / ...)
+ */
+
+ul.sections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li.section {
+  margin: 0.4rem 0;
+  padding: 0;
+}
+
+li.section > a {
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: var(--solr-ink);
+}
+
+li.section > a:hover {
+  color: var(--solr-red);
+  text-decoration: none;
+}
+
+.count {
+  display: inline-block;
+  margin-left: 0.5rem;
+  min-width: 1.4em;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background-color: var(--solr-chip);
+  color: var(--solr-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  vertical-align: 0.1em;
+}
+
+/*
+ * Change items
+ */
+
+ul.changes {
+  list-style: disc;
+  margin: 0.6rem 0 1.4rem 0;
+  padding: 0.25rem 0 0.25rem 2.4rem;
+  border-left: 1px solid var(--solr-rule-strong);
+}
+
+li.change {
+  margin: 0 0 0.9rem 0;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+li.change::marker {
+  color: var(--solr-red);
+}
+
+li.change:last-child {
+  margin-bottom: 0;
+}
+
+.issues {
+  font-family: var(--solr-mono);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.issues a {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--solr-rule);
+  border-radius: 3px;
+  background-color: var(--solr-surface);
+  color: var(--solr-red);
+}
+
+.issues a:hover {
+  border-color: var(--solr-red);
+  text-decoration: none;
+}
+
+.desc {
+  color: var(--solr-text);
+}
+
+span.attrib {
+  display: inline-block;
+  margin-top: 0.1rem;
+  color: var(--solr-muted);
+  font-size: 0.85rem;
+}
+
+span.attrib a {
+  color: var(--solr-muted);
+}
+
+span.attrib a:hover {
+  color: var(--solr-red);
+}
+
+/*
+ * Legacy nested bullet lists (kept for hand-written entries)
+ */
+
+li.bulleted-list {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/*
+ * Keyboard focus, in the brand colour rather than the browser default
+ */
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--solr-red);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
+ * Highlight whatever the current URL fragment points at
+ */
+
+h2 > a:target,
+h3 > a:target,
+li.section > a:target {
+  color: var(--solr-red);
+}
+
+/*
+ * Prose pages (the documentation index, SYSTEM_REQUIREMENTS). The release
+ * notes use .page on its own, so none of this reaches the changelog lists.
+ */
+
+.prose h1 {
+  margin: 0 0 1.25rem 0;
+  font-weight: 300;
+  font-size: 2.1rem;
+  line-height: 1.2;
+  color: var(--solr-ink);
+}
+
+.prose h4 {
+  margin: 1.5rem 0 0.5rem 0;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--solr-ink);
+}
+
+.prose p {
+  margin: 0 0 1rem 0;
+}
+
+.prose ul,
+.prose ol {
+  margin: 0 0 1.25rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.4rem;
+}
+
+.prose li::marker {
+  color: var(--solr-red);
+}
+
+.prose code {
+  padding: 0.1rem 0.3rem;
+  background-color: var(--solr-chip);
+  border-radius: 3px;
+}
+
+.prose pre {
+  overflow-x: auto;
+  padding: 1rem 1.25rem;
+  background-color: var(--solr-surface);
+  border: 1px solid var(--solr-rule);
+  border-radius: 3px;
+}
+
+.prose pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+.prose blockquote {
+  margin: 0 0 1.25rem 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-left: 3px solid var(--solr-rule-strong);
+  color: var(--solr-muted);
+}
+
+.prose hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid var(--solr-rule);
+}
+
+.prose table {
+  width: 100%;
+  margin-bottom: 1.25rem;
+  border-collapse: collapse;
+}
+
+.prose th,
+.prose td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--solr-rule);
+  text-align: left;
+}
+
+.prose th {
+  color: var(--solr-ink);
+}
+
+/*
+ * Colophon
+ */
+
+.colophon {
+  max-width: 62rem;
+  margin: 3.5rem auto 0 auto;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  border-top: 1px solid var(--solr-rule);
+  font-size: 0.82rem;
+  color: var(--solr-muted);
+}
+
+.colophon p {
+  margin: 0.3rem 0;
+}
+
+/*
+ * Narrow viewports
+ */
+
+@media (max-width: 40rem) {
+  body {
+    font-size: 15px;
+  }
+
+  .masthead h1 {
+    font-size: 1.3rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  .reldate {
+    display: block;
+    margin-left: 0;
+  }
+
+  ul.changes {
+    padding-left: 1.5rem;
+  }
+}
+
+/*
+ * Dark theme, opt-in through the masthead toggle. The wordmark is drawn with
+ * fill:currentColor, so it simply inherits the light ink here.
+ */
+
+:root[data-theme="dark"] {
+  --solr-red: #ff6b43;
+  --solr-red-dark: #ff9470;
+  --solr-ink: #f2efe9;
+  --solr-text: #dcd8d1;
+  --solr-muted: #9d968d;
+  --solr-rule: #3a3445;
+  --solr-rule-strong: #4a4357;
+  --solr-paper: #1c1824;
+  --solr-surface: #262130;
+  --solr-chip: #312b3e;
+  --solr-logo-ink: #f2efe9;
+}
+
+:root[data-theme="dark"] .masthead {
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .toolbar button {
+  background-color: var(--solr-surface);
+}
+
+/*
+ * Print
+ */
+
+@media print {
+  body {
+    background-color: #fff;
+  }
+
+  .toolbar,
+  .masthead {
+    box-shadow: none;
+  }
+
+  .toolbar {
+    display: none;
+  }
+}
