@@ -156,6 +156,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /** columns read through during confirmation */
   private int leafsDrained;
 
+  /** columns dropped unread during confirmation, because the doc under test passed their to-range */
+  private int leafsPassed;
+
   /** from-docs walked while draining, i.e. the column reads laziness is trying to avoid */
   private long fromDocsWalked;
 
@@ -207,6 +210,26 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         } // otherwise we don't know if 0 is real false
       }
 
+      // only cells whose to-range covers the doc can confirm it. One ending below it can't map it
+      // or any later doc, since the approximation only moves forward, so it's dropped unread. One
+      // starting above it stays for the docs to come.
+      final int doc = approximation.docID();
+      List<LeafJoin> covering = new ArrayList<>(leafJoins.size());
+      for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
+        if (doc > joinTask.toDocEdges()[1]) {
+          JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
+          leafsPassed++;
+        } else if (doc >= joinTask.toDocEdges()[0]) {
+          covering.add(joinTask);
+        }
+      }
+      if (covering.isEmpty()) {
+        if (leafJoins.isEmpty()) {
+          converge(doc);
+        }
+        return false;
+      }
+
       IndexSearcher freshSearcher = JoinIndexScorerSupplier.this.joinIndex.acquire();
       try {
         // the result matters here too: a cell whose column the reaper dropped is rebuilt by the
@@ -216,13 +239,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
           entry.getKey().bind(entry.getValue());
         }
         assert Objects.equals(JoinIndexScorerSupplier.this.lastSeenJoinSearcher, freshSearcher);
-        for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
-          if (falseNegToDocsBits == null) {
-            this.shift = approximation.docID();
-            falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
-          }
-          DrainOutcome outcome =
-              joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
+        if (falseNegToDocsBits == null) {
+          this.shift = doc;
+          falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
+        }
+        for (LeafJoin joinTask : covering) {
+          DrainOutcome outcome = joinTask.dumpMatchesInto(falseNegToDocsBits, shift, doc);
           fromDocsWalked += joinTask.lastDrainWalked();
           if (outcome == DrainOutcome.CONFIRMED) {
             logDrain(joinTask, true, falseNegToDocsBits);
@@ -239,17 +261,30 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       } finally {
         JoinIndexScorerSupplier.this.joinIndex.release(freshSearcher);
       }
-      // drop all to masks, got no hit - it means it's a true negative now.
+      // every covering cell was drained without a hit, so the doc is a true negative; cells
+      // starting above it may remain, and until they are gone the union is still half-read
+      if (leafJoins.isEmpty()) {
+        converge(doc);
+      }
+      return false;
+    }
 
-      falsePositiveToDocsBits.clear(shift, lastToDoc + 1);
-      FixedBitSet.orRange(
-          falseNegToDocsBits, 0, falsePositiveToDocsBits, shift, lastToDoc - shift + 1);
-
-      boolean matched = falsePositiveToDocsBits.get(approximation.docID());
-      // every column has now been drained: the half-read union has converged, so from here on
-      // every answer -- true or false -- is a free lookup and there is nothing left to prune
-      logConfirmationDone(matched ? "converged-on-match" : "converged-on-refutation");
-      return matched;
+    /**
+     * Narrows the approximation to the drained union once no cell is left, so from here on every
+     * answer -- true or false -- is a free lookup and there is nothing left to prune. Docs below
+     * {@code doc} are behind the iterator and left as they are.
+     */
+    private void converge(int doc) {
+      if (falseNegToDocsBits == null) {
+        // nothing was ever drained: every cell was passed unread, so nothing ahead can match
+        falsePositiveToDocsBits.clear(doc, lastToDoc + 1);
+      } else {
+        falsePositiveToDocsBits.clear(shift, lastToDoc + 1);
+        FixedBitSet.orRange(
+            falseNegToDocsBits, 0, falsePositiveToDocsBits, shift, lastToDoc - shift + 1);
+      }
+      assert !falsePositiveToDocsBits.get(doc);
+      logConfirmationDone("converged");
     }
 
     @Override
@@ -758,7 +793,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
-            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} fkLateLoads={} modelsReleased={}"
+            + " cellsPassed={} cellsLive={} fromDocsWalked={} rebindsAfterReap={} fkLateLoads={} modelsReleased={}"
             + " buildMs={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
@@ -766,6 +801,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         confirmCalls,
         confirmFreeHits,
         leafsDrained,
+        leafsPassed,
         leafJoins.size(),
         fromDocsWalked,
         rebindsAfterReap,
