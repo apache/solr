@@ -466,4 +466,65 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     assertTrue(UploadConfigSet.isSafeZipEntryPath("conf/good.txt"));
     assertTrue(UploadConfigSet.isSafeZipEntryPath("solrconfig.xml"));
   }
+
+  @Test
+  public void testSingleFileUploadRejectsTraversalPath() throws Exception {
+    final String configSetName = "singlefile";
+    createExistingConfigSet(configSetName, "solrconfig.xml", "<config/>");
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    byte[] data = "evil".getBytes(StandardCharsets.UTF_8);
+    for (String filePath :
+        new String[] {"../evil.txt", "conf/../../evil.txt", "..\\evil.txt", "C:/evil.txt"}) {
+      final var ex =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  api.uploadConfigSetFile(configSetName, filePath, new ByteArrayInputStream(data)));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    }
+    // Nothing was written outside of the configset, and the configset is unchanged.
+    assertFalse(Files.exists(configSetBase.resolve("evil.txt")));
+    assertTrue(Files.exists(configSetBase.resolve(configSetName).resolve("solrconfig.xml")));
+  }
+
+  @Test
+  public void testSingleFileUploadNormalizesBackslashPath() throws Exception {
+    final String configSetName = "singlefile";
+    createExistingConfigSet(configSetName, "solrconfig.xml", "<config/>");
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    final var response =
+        api.uploadConfigSetFile(
+            configSetName,
+            "conf\\stopwords.txt",
+            new ByteArrayInputStream("a\nthe".getBytes(StandardCharsets.UTF_8)));
+
+    assertNotNull(response);
+    assertTrue(
+        Files.exists(
+            configSetBase.resolve(configSetName).resolve("conf").resolve("stopwords.txt")));
+  }
+
+  @Test
+  public void testSingleFileUploadNestedPath() throws Exception {
+    final String configSetName = "singlefile";
+    createExistingConfigSet(configSetName, "solrconfig.xml", "<config/>");
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    final var response =
+        api.uploadConfigSetFile(
+            configSetName,
+            "conf/good.txt",
+            new ByteArrayInputStream("good".getBytes(StandardCharsets.UTF_8)));
+
+    assertNotNull(response);
+    assertTrue(
+        Files.exists(configSetBase.resolve(configSetName).resolve("conf").resolve("good.txt")));
+    assertEquals(
+        "good",
+        Files.readString(
+            configSetBase.resolve(configSetName).resolve("conf").resolve("good.txt"),
+            StandardCharsets.UTF_8));
+  }
 }

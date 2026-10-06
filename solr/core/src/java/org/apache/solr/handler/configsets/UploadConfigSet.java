@@ -191,8 +191,12 @@ public class UploadConfigSet extends ConfigSetAPIBase
     if (!fixedSingleFilePath.isEmpty() && fixedSingleFilePath.charAt(0) == '/') {
       fixedSingleFilePath = fixedSingleFilePath.substring(1);
     }
+    // Apply the same normalization and safety check as for zip entry paths, so a single
+    // file upload cannot use backslash separators or "." and ".." segments to reach
+    // outside of the configset on either backend.
+    fixedSingleFilePath = normalizeZipEntryName(fixedSingleFilePath);
     byte[] data = requestBody.readAllBytes();
-    if (fixedSingleFilePath.isEmpty()) {
+    if (fixedSingleFilePath.isEmpty() || !isSafeZipEntryPath(fixedSingleFilePath)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file path provided for upload, '" + singleFilePath + "', is not valid.");
