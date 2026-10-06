@@ -83,6 +83,7 @@ configure(project(':solr:documentation')) {
     inputs.property('version', project.version)
     inputs.property('solrRefguideUrl', project.solrRefguideUrl)
     inputs.property('luceneDocUrl', project.luceneDocUrl)
+    inputs.property('luceneDocVersion', project.luceneDocVersion)
   }
 
   task createJavadocsIndex(type: MarkdownTemplateTask) {

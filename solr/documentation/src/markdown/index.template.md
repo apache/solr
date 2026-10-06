@@ -20,4 +20,4 @@ This is the official documentation for **Apache Solr ${project.version}**.
 * [System Requirements](SYSTEM_REQUIREMENTS.html): Minimum and supported Java versions
 * [Solr Tutorial](${project.solrRefguideUrl}/getting-started/solr-tutorial.html):
   This document covers the basics of running Solr using an example schema, and some sample data
-* [Lucene Documentation](${project.luceneDocUrl}/index.html)
+* [Lucene ${project.luceneDocVersion} Documentation](${project.luceneDocUrl}/index.html): Javadocs for the Lucene libraries that Solr is built on
