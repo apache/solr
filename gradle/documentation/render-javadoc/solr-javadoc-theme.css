@@ -97,6 +97,7 @@
 
 .solr-docs-bar .solr-docs-title {
   flex: 1 1 auto;
+  margin-right: auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -104,6 +105,23 @@
   font-size: 1.1rem;
   font-weight: 300;
   color: #262130;
+}
+
+.solr-docs-bar .solr-docs-modules {
+  flex: none;
+  max-width: 14rem;
+  padding: 0.25rem 0.4rem;
+  background-color: #fff;
+  border: 1px solid #d3cec6;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: #262130;
+}
+
+.solr-docs-bar .solr-docs-modules:hover,
+.solr-docs-bar .solr-docs-modules:focus {
+  border-color: #d9411e;
 }
 
 .solr-docs-bar nav {

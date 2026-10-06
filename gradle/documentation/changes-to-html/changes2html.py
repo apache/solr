@@ -496,6 +496,11 @@ class HTMLGenerator:
 
         return text
 
+    # Only absolute targets are treated as links. Change descriptions contain
+    # prose that merely looks like markdown, e.g. "factor [group](sort|offset|limit)
+    # into [group](sortSpec)", which must stay literal text.
+    MARKDOWN_LINK = re.compile(r'\[([^\]]+)\]\(((?:https?://|mailto:)[^)]+)\)')
+
     def convert_markdown_links(self, text):
         """
         Convert markdown links [text](url) to HTML links <a href="url">text</a>
@@ -519,7 +524,7 @@ class HTMLGenerator:
             return protect_with_placeholder(html_link)
 
         # Replace all markdown links first
-        result = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_markdown_link, text)
+        result = self.MARKDOWN_LINK.sub(replace_markdown_link, text)
 
         # Now handle plain URLs
         def replace_url(match):
@@ -804,7 +809,7 @@ class HTMLGenerator:
   </div>
 </header>
 
-<main class="page">
+<main class="page changelog">
 
 '''
         # Add preamble if present

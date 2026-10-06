@@ -79,6 +79,15 @@ allprojects {
       // Climbs from this javadoc tree's root back to docroot, so the injected
       // Solr bar can resolve the documentation index and the wordmark.
       docsRootPrefix = '../' * (project.relativeDocPath.split('/').length)
+      docsModulePath = project.relativeDocPath
+      // Every javadoc tree published alongside this one, for the bar's module
+      // picker. Resolved lazily: the sibling tasks do not exist yet here.
+      docsModules.set(project.providers.provider {
+        project.rootProject.project(':solr').subprojects
+            .findAll {it.tasks.findByName('renderSiteJavadoc')?.enabled}
+            .collect {it.relativeDocPath}
+            .sort()
+      })
     }
   }
 }
@@ -300,6 +309,14 @@ class RenderJavadocTask extends DefaultTask {
   @Input
   String docsRootPrefix = ''
 
+  /** This tree's own path below docroot, e.g. 'modules/ltr'. */
+  @Input
+  String docsModulePath = ''
+
+  /** Every javadoc tree under the same docroot, for the bar's module picker. */
+  @Input
+  final ListProperty<String> docsModules = project.objects.listProperty(String)
+
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
   @IgnoreEmptyDirectories
@@ -492,7 +509,12 @@ class RenderJavadocTask extends DefaultTask {
     if (!docsRootPrefix.isEmpty()) {
       project.file("${outputDir}/stylesheet.css") << '\n' +
           project.file("${taskResources}/solr-javadoc-theme.css").getText('UTF-8')
-      project.file("${outputDir}/script.js") << '\nvar solrDocsRootUp = "' + docsRootPrefix + '";\n' +
+      def barConfig = [
+          'var solrDocsRootUp = ' + groovy.json.JsonOutput.toJson(docsRootPrefix) + ';',
+          'var solrDocsModule = ' + groovy.json.JsonOutput.toJson(docsModulePath) + ';',
+          'var solrDocsModules = ' + groovy.json.JsonOutput.toJson(docsModules.get()) + ';'
+      ].join('\n')
+      project.file("${outputDir}/script.js") << '\n' + barConfig + '\n' +
           project.file("${taskResources}/solr-javadoc-bar.js").getText('UTF-8')
     }
 

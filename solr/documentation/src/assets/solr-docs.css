@@ -158,6 +158,24 @@ code {
   text-decoration: none;
 }
 
+/* Injected into the masthead by solr-javadoc-bar.js on the Javadocs page. */
+.masthead-nav .solr-docs-modules {
+  flex: none;
+  max-width: 14rem;
+  padding: 0.3rem 0.4rem;
+  background-color: var(--solr-surface);
+  border: 1px solid var(--solr-rule-strong);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--solr-ink);
+}
+
+.masthead-nav .solr-docs-modules:hover,
+.masthead-nav .solr-docs-modules:focus {
+  border-color: var(--solr-red);
+}
+
 .theme-toggle {
   flex: none;
   display: flex;
@@ -332,8 +350,8 @@ h2 > a#older {
  * the marker can be driven straight off it.
  */
 
-h2 > a::before,
-h3 > a::before,
+.changelog h2 > a::before,
+.changelog h3 > a::before,
 li.section > a::before {
   content: "\25B8";
   display: inline-block;
@@ -343,14 +361,14 @@ li.section > a::before {
   font-size: 0.8em;
 }
 
-h2 > a[title="Click to collapse"]::before,
-h3 > a[title="Click to collapse"]::before,
+.changelog h2 > a[title="Click to collapse"]::before,
+.changelog h3 > a[title="Click to collapse"]::before,
 li.section > a[title="Click to collapse"]::before {
   content: "\25BE";
 }
 
-h2 > a,
-h3 > a,
+.changelog h2 > a,
+.changelog h3 > a,
 li.section > a {
   padding-left: 1em;
 }
@@ -575,6 +593,115 @@ li.section > a:target {
 
 .prose th {
   color: var(--solr-ink);
+}
+
+/*
+ * Javadoc search embedded on the Javadocs page. javadoc's search-page.js
+ * builds the results table; its own stylesheet is not loaded, so the few
+ * classes it emits are styled here instead.
+ */
+
+.javadoc-search {
+  margin-bottom: 2rem;
+}
+
+/* javadoc's search.js decorates every heading on the page it runs on. */
+.prose .anchor-link {
+  display: none;
+}
+
+.javadoc-search #page-search-input {
+  width: 100%;
+  max-width: 28rem;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--solr-ink);
+  background-color: var(--solr-surface);
+  border: 1px solid var(--solr-rule-strong);
+  border-radius: 3px;
+}
+
+.javadoc-search #page-search-input:focus {
+  outline: none;
+  border-color: var(--solr-red);
+}
+
+.javadoc-search #page-search-reset {
+  margin-left: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--solr-ink);
+  background-color: var(--solr-surface);
+  border: 1px solid var(--solr-rule);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.javadoc-search label {
+  font-size: 0.85rem;
+  color: var(--solr-muted);
+}
+
+#page-search-notify {
+  font-size: 0.85rem;
+  color: var(--solr-muted);
+}
+
+#result-container .ui-tabs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+#result-container .table-tabs button {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--solr-ink);
+  background-color: var(--solr-chip);
+  border: 1px solid var(--solr-rule);
+  border-radius: 3px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+#result-container .table-tabs button.active-table-tab {
+  color: #fff;
+  background-color: var(--solr-red);
+  border-color: var(--solr-red);
+}
+
+#result-container .summary-table {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(12rem, 2fr);
+  font-size: 0.9rem;
+}
+
+#result-container .table-header {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--solr-ink);
+  background-color: var(--solr-chip);
+}
+
+#result-container .col-first,
+#result-container .col-last,
+#result-container .col-plain {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--solr-rule);
+  overflow-wrap: anywhere;
+}
+
+#result-container .even-row-color {
+  background-color: var(--solr-surface);
 }
 
 /*

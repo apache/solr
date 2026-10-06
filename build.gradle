@@ -213,6 +213,7 @@ apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
+apply from: file('gradle/documentation/javadoc-search.gradle')
 
 apply from: file('gradle/hacks/global-exclude-dependencies.gradle')
 apply from: file('gradle/hacks/gradle-archives.gradle')

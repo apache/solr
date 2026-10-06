@@ -86,6 +86,22 @@ configure(project(':solr:documentation')) {
 
     withProjectList()
   }
+
+  task createJavadocsIndex(type: MarkdownTemplateTask) {
+    dependsOn markdownToHtml
+
+    outputFile = file("${project.docroot}/javadocs.html")
+    templateFile = file("${project.markdownSrc}/javadocs.template.md")
+    logoFile = project.logoAsset
+    heading = 'Javadocs'
+    // The masthead already names the page, so the body carries no <h1>.
+    pageTitle = 'Solr Javadocs'
+    navLinks = ['Home': project.solrHomeUrl, 'Docs': 'index.html']
+
+    inputs.property('version', project.version)
+
+    withProjectList()
+  }
 }
 
 // Renders the page chrome shared by every generated documentation page: the
@@ -190,6 +206,8 @@ class MarkdownFilter extends FilterReader {
   /** Set by the copy spec; see ContentFilterable.filter(Map, Class). */
   File logoFile
   String heading = 'Documentation'
+  /** <title> for the page; defaults to its first heading. */
+  String pageTitle = null
   Map<String, String> navLinks = [:]
 
   private final Reader source
@@ -204,7 +222,7 @@ class MarkdownFilter extends FilterReader {
 
   private Reader delegate() {
     if (converted == null) {
-      converted = new StringReader(convert(source.text, logoFile, heading, navLinks))
+      converted = new StringReader(convert(source.text, logoFile, heading, navLinks, pageTitle))
     }
     return converted
   }
@@ -230,7 +248,7 @@ class MarkdownFilter extends FilterReader {
   }
 
   public static String convert(String markdownSource, File logoFile, String heading,
-                               Map<String, String> navLinks) {
+                               Map<String, String> navLinks, String pageTitle = null) {
     // first replace LUCENE and SOLR issue numbers with a markdown link
     markdownSource = markdownSource.replaceAll(/(?s)\b(LUCENE|SOLR)\-\d+\b/,
         '[$0](https://issues.apache.org/jira/browse/$0)');
@@ -247,7 +265,7 @@ class MarkdownFilter extends FilterReader {
     StringBuilder html = new StringBuilder('<!DOCTYPE html>\n<html lang="en">\n<head>\n');
     html.append('<meta charset="UTF-8">\n');
     html.append('<meta name="viewport" content="width=device-width, initial-scale=1">\n');
-    CharSequence title = parsed.getFirstChildAny(Heading.class)?.getText();
+    CharSequence title = pageTitle ?: parsed.getFirstChildAny(Heading.class)?.getText();
     if (title != null) {
       html.append('<title>').append(Escaping.escapeHtml(title, false)).append('</title>\n');
     }
@@ -277,6 +295,10 @@ class MarkdownTemplateTask extends DefaultTask {
 
   @Input
   String heading
+
+  @Input
+  @Optional
+  String pageTitle
 
   @Input
   Map<String, String> navLinks = [:]
@@ -318,6 +340,6 @@ class MarkdownTemplateTask extends DefaultTask {
     }
     outputFile.getParentFile().mkdirs();
     outputFile.write(
-        MarkdownFilter.convert(markdown, logoFile, heading, navLinks), 'UTF-8');
+        MarkdownFilter.convert(markdown, logoFile, heading, navLinks, pageTitle), 'UTF-8');
   }
 }
