@@ -83,8 +83,6 @@ configure(project(':solr:documentation')) {
     inputs.property('version', project.version)
     inputs.property('solrRefguideUrl', project.solrRefguideUrl)
     inputs.property('luceneDocUrl', project.luceneDocUrl)
-
-    withProjectList()
   }
 
   task createJavadocsIndex(type: MarkdownTemplateTask) {
@@ -98,8 +96,7 @@ configure(project(':solr:documentation')) {
     pageTitle = 'Solr Javadocs'
     navLinks = ['Home': project.solrHomeUrl, 'Docs': 'index.html']
 
-    inputs.property('version', project.version)
-
+    // list all properties used by the template here to allow uptodate checks to be correct:
     withProjectList()
   }
 }
