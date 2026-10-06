@@ -576,7 +576,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         var currentCollectionName = $route.current.params.core;
         delete $scope.currentCollection;
         if ($scope.isCloudEnabled) {
-          CollectionsV2.listCollections(function (error, cdata, response) {
+          CollectionsV2.listCollections({}, function (error, cdata, response) {
             $timeout(function() {
               if (error) { ApiErrorHandler.handle(response); return; }
               AliasesV2.getAliases(function (error, adata, response) {
