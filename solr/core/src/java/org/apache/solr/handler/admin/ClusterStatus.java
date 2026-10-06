@@ -408,6 +408,14 @@ public class ClusterStatus {
     byte[] bytes = Utils.toJSON(clusterStateCollection);
     @SuppressWarnings("unchecked")
     Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+
+    // Cross-check replica state with live nodes *before* computing health below: state.json isn't
+    // proactively rewritten when a node simply dies (only live_nodes membership changes), so a
+    // replica on a dead node still reads "active" here unless this runs first. Health is derived
+    // from these same states, so computing it before this correction produced a stale GREEN/YELLOW
+    // for shards that actually have a replica down.
+    crossCheckReplicaStateWithLiveNodes(liveNodes, docCollection);
+
     collectionStatus = getCollectionStatus(docCollection, name, shards);
 
     collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
@@ -423,9 +431,6 @@ public class ClusterStatus {
       PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
       collectionStatus.put("PRS", prs);
     }
-
-    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionStatus);
 
     return collectionStatus;
   }
