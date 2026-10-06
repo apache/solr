@@ -205,7 +205,7 @@ limitations under the License.
 
       <div class="block" id="collection-data" ng-show="collection.type === 'collection'">
 
-          <h2>Collection: {{collection.name}}</h2>
+          <h2>Collection: {{collection.name}} <span class="health-dot" ng-if="collection.health" ng-class="'health-' + collection.health" title="Health: {{collection.health}}"></span></h2>
 
           <div class="message-container">
               <div class="message"></div>
@@ -253,7 +253,7 @@ limitations under the License.
         <div class="content shard" ng-repeat="shard in collection.shards">
           <a ng-click="toggleShard(shard)">
             <h2>
-                  <span ng-class="{open:shard.show}"><b>Shard: {{shard.name}}</b></span>
+                  <span class="shard-name" ng-class="{open:shard.show}"><b>Shard: {{shard.name}}</b> <span class="health-dot" ng-if="shard.health" ng-class="'health-' + shard.health" title="Health: {{shard.health}}"></span></span>
                   <div style="float:right" ng-show="!shard.range || shard.state == 'inactive'"><a ng-click="toggleRemoveShard(shard)"><span class="rem"></span></a></div>
               </h2>
           </a>
@@ -401,7 +401,7 @@ limitations under the License.
   <div id="navigation" class="requires-core clearfix">
     <button id="add" ng-class="{action,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="showAddCollection()"><span>Add Collection</span></button>
     <ul>
-      <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name && collection.type === 'collection'}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
+      <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name && collection.type === 'collection'}"><span class="health-dot" ng-if="c.health" ng-class="'health-' + c.health" title="Health: {{c.health}}"></span><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
     </ul>
     <hr/>
     <button id="create-alias" ng-class="{action,disabled:!isPermitted(permissions.COLL_EDIT_PERM)}" ng-click="toggleCreateAlias()" ng-disabled="collections.length == 0 || !isPermitted(permissions.COLL_EDIT_PERM)"><span>Create Alias</span></button>

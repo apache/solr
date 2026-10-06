@@ -47,6 +47,44 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
   }
 
   @Test
+  public void testHealthStatusDisplay() {
+    openPage("~collections/" + COLLECTION, By.id("collections"));
+    waitForPageContains("shard1");
+
+    Map<String, By> healthDots =
+        Map.of(
+            "sidebar",
+                By.xpath(
+                    "//div[@id='navigation']//li[a[text()='"
+                        + COLLECTION
+                        + "']]//span[contains(@class,'health-dot')]"),
+            "collection header", By.cssSelector("#collection-data h2 .health-dot"),
+            "shard header", By.cssSelector("#shard-data h2 .health-dot"));
+    healthDots.forEach(
+        (label, locator) -> {
+          WebElement dot = waitFor(locator);
+          assertTrue(
+              label + " health dot should be GREEN: " + dot.getAttribute("class"),
+              dot.getAttribute("class").contains("health-GREEN"));
+        });
+
+    // dot and name must stay on the same line (not wrap) in the narrow sidebar
+    WebElement sidebarDot = waitFor(healthDots.get("sidebar"));
+    WebElement sidebarLink =
+        waitFor(By.xpath("//div[@id='navigation']//li[a[text()='" + COLLECTION + "']]/a"));
+    int dotCenterY = sidebarDot.getLocation().y + sidebarDot.getSize().height / 2;
+    int linkCenterY = sidebarLink.getLocation().y + sidebarLink.getSize().height / 2;
+    assertTrue(
+        "sidebar health dot and collection name should be on the same line (dot center y="
+            + dotCenterY
+            + ", link center y="
+            + linkCenterY
+            + ")",
+        Math.abs(dotCenterY - linkCenterY) <= 5);
+    assertNoSevereConsoleErrors();
+  }
+
+  @Test
   public void testCreateAndDeleteCollectionViaUi() throws Exception {
     String name = "uicreated";
     openPage("~collections", By.id("collections"));

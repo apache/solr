@@ -99,7 +99,42 @@ solrAdminApp.controller('CollectionsController',
                   }
               });
           });
+
+          $timeout.cancel($scope.timeout);
+          $scope.timeout = $timeout($scope.refreshHealth, 10000);
       };
+
+      // Patches health onto existing objects in place, so it never disturbs expanded/open UI state.
+      $scope.refreshHealth = function() {
+          CollectionsV2.listCollections({detailed: true}, function(error, data, response) {
+              $timeout(function() {
+                  if (error) {
+                      ApiErrorHandler.handle(response);
+                  } else {
+                      for (var name in data.collectionsDetail) {
+                          var existingCollection = ($scope.collections || []).find(function(c) { return c.name === name; });
+                          if (!existingCollection) {
+                              continue;
+                          }
+                          var freshCollection = data.collectionsDetail[name];
+                          existingCollection.health = freshCollection.health;
+                          for (var shardName in freshCollection.shards) {
+                              var existingShard = existingCollection.shards.find(function(s) { return s.name === shardName; });
+                              if (existingShard) {
+                                  existingShard.health = freshCollection.shards[shardName].health;
+                              }
+                          }
+                      }
+                  }
+                  $scope.timeout = $timeout($scope.refreshHealth, 10000);
+              });
+          });
+      };
+
+      var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+          $timeout.cancel($scope.timeout);
+          onRouteChangeOff();
+      });
 
       $scope.hideAll = function() {
           $scope.showRename = false;
@@ -242,6 +277,7 @@ solrAdminApp.controller('CollectionsController',
                  ApiErrorHandler.handle(response);
              } else {
                  $scope.reloadSuccess = true;
+                 $scope.refreshHealth();
              }
            });
         });
