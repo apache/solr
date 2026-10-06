@@ -41,7 +41,7 @@ apache-opennlp = "2.5.11"
 apache-rat = "0.18"
 apache-tika = "3.3.2"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.5"
+apache-zookeeper = "3.9.6"
 # @keep for version alignment
 apiguardian = "1.1.2"
 # @keep Asciidoctor mathjax version used in ref-guide
@@ -166,6 +166,7 @@ ow2-asm = "9.10.1"
 owasp-dependencycheck = "13.0.0"
 # @keep for version alignment
 perfmark = "0.27.0"
+picocli = "4.7.6"
 prometheus-metrics = "1.8.0"
 quicktheories = "0.26"
 selenium = "4.47.0"
@@ -442,6 +443,8 @@ ow2-asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "ow2-asm" 
 ow2-asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "ow2-asm" }
 # @keep transitive dependency for version alignment
 perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }

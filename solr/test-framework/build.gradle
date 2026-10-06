@@ -60,6 +60,9 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
+  implementation libs.commonscli.commonscli
+  // Needed on the compile classpath because this project compiles against annotated org.apache.solr.cli types
+  implementation libs.picocli
   implementation libs.opentelemetry.api
   implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have
