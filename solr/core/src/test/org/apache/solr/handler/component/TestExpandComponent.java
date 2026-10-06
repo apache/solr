@@ -947,6 +947,34 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExpandCompletesPostFilterCollectors() {
+    assertU(adoc("id", "1", "group_s", "g1", "test_i", "5"));
+    assertU(adoc("id", "2", "group_s", "g1", "test_i", "50"));
+    assertU(adoc("id", "3", "group_s", "g2", "test_i", "7"));
+    assertU(adoc("id", "4", "group_s", "g2", "test_i", "70"));
+    assertU(commit());
+
+    CompleteTrackingQParserPlugin.reset();
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s}",
+            "fq", "{!completetracking}",
+            "expand", "true",
+            "expand.rows", "10"),
+        "count(/response/lst[@name='expanded']/result)=2");
+
+    // one collector for the main search and one for the expand search; both must be completed
+    assertTrue(
+        "expand should build its own post filter collector",
+        CompleteTrackingQParserPlugin.CREATED.get() >= 2);
+    assertEquals(
+        "every post filter collector must have complete() called",
+        CompleteTrackingQParserPlugin.CREATED.get(),
+        CompleteTrackingQParserPlugin.COMPLETED.get());
+  }
+
+  @Test
   @SuppressWarnings("try")
   public void testErrorCases() {
     String[] doc = {

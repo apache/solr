@@ -76,6 +76,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.DelegatingCollector;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
@@ -445,6 +446,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
+    if (collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).complete();
+    }
     if (queryLimits.maybeExitWithPartialResults("Expand expand")) {
       return;
     }

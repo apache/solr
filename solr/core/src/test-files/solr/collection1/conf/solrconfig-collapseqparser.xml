@@ -217,6 +217,7 @@
   </requestDispatcher>
 
   <queryParser name="foo" class="FooQParserPlugin"/>
+  <queryParser name="completetracking" class="org.apache.solr.handler.component.CompleteTrackingQParserPlugin"/>
 
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
