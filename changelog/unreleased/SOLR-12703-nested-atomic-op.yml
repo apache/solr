@@ -1,0 +1,8 @@
+title: >
+  An atomic update whose operation value is itself an atomic operation map (for example set inside set) is rejected with a clear 400 error instead of surfacing as a confusing RunUpdateProcessor failure.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-12703
+    url: https://issues.apache.org/jira/browse/SOLR-12703
