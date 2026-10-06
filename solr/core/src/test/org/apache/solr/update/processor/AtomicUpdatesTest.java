@@ -21,12 +21,21 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
@@ -1289,6 +1298,45 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertEquals(
           List.of("bbb", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
     }
+  }
+
+  @Test
+  public void testRepeatedAddFieldOfOperationsViaJavabin() throws Exception {
+    // The ticket's wire path: a SolrJ client writing javabin sends one addField per operation
+    // map, and javabin (unlike the XML writer, which folds them into one map) keeps them as a
+    // collection of maps. Sent through the real update handler, the update must still land as
+    // an atomic update on the stored document.
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "7");
+    doc.setField("cat", new String[] {"aaa", "ccc"});
+    assertU(adoc(doc));
+    assertU(commit());
+
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", Map.of("add", "ddd"));
+
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.add(update);
+    SolrQueryRequestBase req =
+        new SolrQueryRequestBase(h.getCore(), new MultiMapSolrParams(new HashMap<>()));
+    try {
+      req.setContentStreams(List.of(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
+      UpdateRequestHandler handler = new UpdateRequestHandler();
+      handler.init(new NamedList<>());
+      handler.handleRequestBody(req, new SolrQueryResponse());
+    } finally {
+      req.close();
+    }
+    assertU(commit());
+
+    assertQ(
+        req("q", "id:7"),
+        "//result[@numFound='1']",
+        "count(//arr[@name='cat']/str)=2",
+        "//arr[@name='cat']/str[1][.='bbb']",
+        "//arr[@name='cat']/str[2][.='ddd']");
   }
 
   public void testAtomicUpdatesOnDateFields() {
