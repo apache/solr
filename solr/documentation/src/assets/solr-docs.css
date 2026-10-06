@@ -18,7 +18,7 @@
 /*
  * Apache Solr documentation site - shared stylesheet.
  *
- * Used by the generated documentation index, SYSTEM_REQUIREMENTS and the
+ * Used by the generated documentation index, the Javadocs page and the
  * release notes (where it is the preferred "Fancy" style).
  *
  * Colours and typography follow the Apache Solr brand as used on
@@ -533,7 +533,7 @@ li.section > a:target {
 }
 
 /*
- * Prose pages (the documentation index, SYSTEM_REQUIREMENTS). The release
+ * Prose pages (the documentation index, the Javadocs page). The release
  * notes use .page on its own, so none of this reaches the changelog lists.
  */
 

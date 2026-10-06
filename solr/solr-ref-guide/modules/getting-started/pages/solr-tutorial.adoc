@@ -37,8 +37,7 @@ Finally, we'll introduce <<Spatial Queries,spatial search>>, and show you how to
 
 To follow along with this tutorial, you will need...
 
-// TODO possibly remove this system requirements or only replace the link
-. To meet the {solr-javadocs}/SYSTEM_REQUIREMENTS.html[system requirements]
+. To meet the xref:deployment-guide:system-requirements.adoc[system requirements]
 . An Apache Solr release http://solr.apache.org/downloads.html[download].
 This tutorial is designed for Apache Solr {solr-docs-version}.
 
