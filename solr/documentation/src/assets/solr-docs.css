@@ -650,11 +650,6 @@ li.section > a:target {
   cursor: pointer;
 }
 
-.javadoc-search label {
-  font-size: 0.85rem;
-  color: var(--solr-muted);
-}
-
 #page-search-notify {
   font-size: 0.85rem;
   color: var(--solr-muted);
