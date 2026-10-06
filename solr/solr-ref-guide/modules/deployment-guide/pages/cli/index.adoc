@@ -60,6 +60,7 @@ Any command not listed here is unavailable when the picocli implementation is en
 |Command
 
 |xref:cli/solr-auth.adoc[bin/solr auth]
+|xref:cli/solr-cluster.adoc[bin/solr cluster]
 |xref:cli/solr-create.adoc[bin/solr create]
 |xref:cli/solr-delete.adoc[bin/solr delete]
 |xref:cli/solr-start.adoc[bin/solr start]

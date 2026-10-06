@@ -590,20 +590,32 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetClusterProperty() throws Exception {
-    // ClusterTool is not a picocli ZK subcommand; always use the commons-cli path.
     ClusterProperties properties = new ClusterProperties(zkClient);
     // add property urlScheme=http
     String[] args =
         new String[] {
           "cluster", "--property", "urlScheme", "--value", "http", "-z", zkServer.getZkAddress()
         };
-    assertEquals(0, CLITestHelper.runTool(args, ClusterTool.class));
+    assertEquals(0, runTool(args, ClusterTool.class));
 
     assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
 
     args = new String[] {"cluster", "--property", "urlScheme", "-z", zkServer.getZkAddress()};
-    assertEquals(0, CLITestHelper.runTool(args, ClusterTool.class));
+    assertEquals(0, runTool(args, ClusterTool.class));
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
+  }
+
+  @Test
+  public void testSetClusterPropertyUsesZkHostProperty() throws Exception {
+    ClusterProperties properties = new ClusterProperties(zkClient);
+    System.setProperty("zkHost", zkServer.getZkAddress());
+    try {
+      String[] args = new String[] {"cluster", "--property", "urlScheme", "--value", "https"};
+      assertEquals(0, runTool(args, ClusterTool.class));
+    } finally {
+      System.clearProperty("zkHost");
+    }
+    assertEquals("https", properties.getClusterProperty("urlScheme", "none"));
   }
 
   @Test
