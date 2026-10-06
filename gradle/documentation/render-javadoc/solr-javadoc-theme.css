@@ -75,6 +75,7 @@
 .solr-docs-bar {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1.5rem;
   padding: 0.5rem 1rem;
