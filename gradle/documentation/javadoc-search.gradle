@@ -30,10 +30,10 @@ configure(project(':solr:documentation')) {
     }
     docroot = project.docroot
 
-    // Reads and rewrites files inside other tasks' output directory -- merged
-    // indexes beside the trees, and an arming line appended to each tree's
-    // script.js -- so it has no input/output pair Gradle can reason about.
-    // Re-running is idempotent and takes seconds.
+    // Writes into another task's output directory, so there is no input/output
+    // pair Gradle can fingerprint. It only adds files at the documentation root
+    // and never touches the javadoc trees, which must stay byte-identical or
+    // every renderSiteJavadoc task would be dirty on the next build.
     outputs.upToDateWhen {false}
   }
 }
@@ -55,17 +55,6 @@ abstract class UnifiedJavadocSearchTask extends DefaultTask {
    * site page styled by solr-docs.css, not a javadoc page.
    */
   private static final List<String> ASSETS = ['script.js', 'search.js', 'search-page.js', 'link.svg']
-
-  /** Switches on the loadScripts() override that solr-javadoc-bar.js installs. */
-  private static final String ARM_LINE = 'var solrDocsGlobalSearch = true;'
-
-  /**
-   * javadoc hardcodes its own per-tree search page in the "Go to search page"
-   * link under each search box. That page is not generated at the
-   * documentation root, and the site-wide one is javadocs.html.
-   */
-  private static final String SEARCH_PAGE_LINK = '"search.html?q="'
-  private static final String SITE_SEARCH_PAGE_LINK = '"javadocs.html?q="'
 
   @Internal
   File docroot
@@ -162,24 +151,6 @@ abstract class UnifiedJavadocSearchTask extends DefaultTask {
         .replaceFirst(/var solrDocsRootUp = "[^"]*";/, 'var solrDocsRootUp = "";')
         .replaceFirst(/var solrDocsModule = "[^"]*";/, 'var solrDocsModule = "";'), 'UTF-8')
 
-    // Arm the trees last, so a tree never points at an index that was not built.
-    (trees + [docroot]).each {dir ->
-      def searchScript = new File(dir, 'search.js')
-      if (searchScript.exists()) {
-        def searchText = searchScript.getText('UTF-8')
-        if (searchText.contains(SEARCH_PAGE_LINK)) {
-          searchScript.setText(searchText.replace(SEARCH_PAGE_LINK, SITE_SEARCH_PAGE_LINK), 'UTF-8')
-        }
-      }
-      if (dir == docroot) {
-        return
-      }
-      def script = new File(dir, 'script.js')
-      def text = script.getText('UTF-8')
-      if (!text.contains(ARM_LINE)) {
-        script.setText(text + '\n' + ARM_LINE + '\n', 'UTF-8')
-      }
-    }
-    logger.lifecycle("Merged ${trees.size()} javadoc trees; site-wide search armed")
+    logger.lifecycle("Merged ${trees.size()} javadoc trees into a site-wide search index")
   }
 }

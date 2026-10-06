@@ -509,10 +509,21 @@ class RenderJavadocTask extends DefaultTask {
     if (!docsRootPrefix.isEmpty()) {
       project.file("${outputDir}/stylesheet.css") << '\n' +
           project.file("${taskResources}/solr-javadoc-theme.css").getText('UTF-8')
+      // javadoc hardcodes its own per-tree search page in the "Go to search page"
+      // link under each search box; the site-wide one is javadocs.html.
+      def searchScript = project.file("${outputDir}/search.js")
+      if (searchScript.exists()) {
+        searchScript.setText(
+            searchScript.getText('UTF-8').replace('"search.html?q="', '"javadocs.html?q="'), 'UTF-8')
+      }
+
       def barConfig = [
           'var solrDocsRootUp = ' + groovy.json.JsonOutput.toJson(docsRootPrefix) + ';',
           'var solrDocsModule = ' + groovy.json.JsonOutput.toJson(docsModulePath) + ';',
-          'var solrDocsModules = ' + groovy.json.JsonOutput.toJson(docsModules.get()) + ';'
+          'var solrDocsModules = ' + groovy.json.JsonOutput.toJson(docsModules.get()) + ';',
+          // Site builds always publish the merged index alongside these trees,
+          // because unifiedJavadocSearch is part of the documentation task.
+          'var solrDocsGlobalSearch = true;'
       ].join('\n')
       project.file("${outputDir}/script.js") << '\n' + barConfig + '\n' +
           project.file("${taskResources}/solr-javadoc-bar.js").getText('UTF-8')
