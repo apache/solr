@@ -488,12 +488,12 @@ public class PackageTool extends ToolBase {
     format(sb, "");
     formatGreen(
         sb, "bin/solr package undeploy <package-name> --collections <comma-separated-collections>");
-    format(sb, "PackageUndeploy a package from specified collection(s)");
+    format(sb, "Undeploy a package from specified collection(s)");
     format(sb, "");
     formatGreen(sb, "bin/solr package uninstall <package-name>:<version>");
     format(
         sb,
-        "PackageUninstall an unused package with specified version from Solr. Both package name and version are required.");
+        "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
     format(sb, "\n");
     format(
         sb,
