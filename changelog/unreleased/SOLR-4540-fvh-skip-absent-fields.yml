@@ -1,0 +1,7 @@
+title: "FastVectorHighlighter no longer does per-field work for fields a document does not have, which made wildcard hl.fl (many sparse fields) slow."
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-4540
+    url: https://issues.apache.org/jira/browse/SOLR-4540
