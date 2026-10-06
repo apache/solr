@@ -34,6 +34,14 @@ This compatibility safeguard can be disabled via the environment variable `SOLR_
 
 Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
+== Solr 10.2
+
+=== Security
+
+In standalone mode, authorization permissions that set `collection` to a core name were never applied, so requests to that core were matched only against the permissions that apply to all collections.
+These permissions are now enforced, with the name of the core serving the request standing in for the collection.
+A permission that was silently ignored before may now deny requests, so review the `collection` values in the permissions of `security.json` before upgrading a standalone installation.
+
 == Solr 10.1
 
 === Misc
