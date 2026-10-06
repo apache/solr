@@ -14,23 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+
+package org.apache.solr.cli.tools;
 
 import java.util.Arrays;
-import org.apache.solr.cli.tools.CreateToolTest;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.CliDefaultValueProvider;
+import org.apache.solr.cli.ToolBase;
+import org.apache.solr.cli.ToolRuntime;
 import picocli.CommandLine;
 
 /**
- * Runs all {@link CreateToolTest} tests through the picocli invocation path.
+ * Runs all {@link AuthToolTest} tests through the picocli invocation path.
  *
- * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
+ * <p>All {@code @Test} methods are inherited from {@link AuthToolTest}. Only the tool invocation
+ * strategy is overridden here to use {@code picocli.CommandLine.execute()} instead of the
+ * commons-cli path.
  */
-public class CreateToolPicocliTest extends CreateToolTest {
+public class AuthToolPicocliTest extends AuthToolTest {
 
   @Override
   protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
     // args[0] is the tool name used by commons-cli dispatch; strip it for picocli.
     String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
+    // Use a TestingRuntime so runtime.exit() cannot terminate the test JVM
     ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     ToolBase tool = clazz.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
     return new CommandLine(tool)

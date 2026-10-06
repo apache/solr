@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.pkg;
 
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -25,7 +25,7 @@ import java.util.Objects;
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;
-import org.apache.solr.cli.tools.pkg.PackageTool;
+import org.apache.solr.cli.tools.ApiTool;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

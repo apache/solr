@@ -17,7 +17,6 @@
 package org.apache.solr.cli.tools.zk;
 
 import java.util.concurrent.Callable;
-
 import org.apache.solr.cli.CLIO;
 import org.apache.solr.cli.HelpMixin;
 import picocli.CommandLine;
@@ -42,8 +41,7 @@ import picocli.CommandLine;
     })
 public class ZkTool implements Callable<Integer> {
 
-  @CommandLine.Mixin
-  HelpMixin helpMixin;
+  @CommandLine.Mixin HelpMixin helpMixin;
 
   @CommandLine.Spec CommandLine.Model.CommandSpec spec;
 

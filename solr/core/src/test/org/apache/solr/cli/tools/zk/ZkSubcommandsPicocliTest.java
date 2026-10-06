@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.zk;
 
 import java.util.Arrays;
-import org.apache.solr.cli.tools.zk.ZkSubcommandsTest;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.CliDefaultValueProvider;
+import org.apache.solr.cli.ToolBase;
+import org.apache.solr.cli.ToolRuntime;
 import picocli.CommandLine;
 
 /**

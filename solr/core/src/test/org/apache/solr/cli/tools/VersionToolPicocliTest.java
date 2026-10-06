@@ -14,28 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
-import java.io.Reader;
 import java.util.Arrays;
-import org.apache.solr.cli.tools.cluster.StatusTool;
-import org.apache.solr.cli.tools.cluster.StatusToolTest;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.CliDefaultValueProvider;
 import picocli.CommandLine;
 
 /**
- * Runs all {@link StatusToolTest} tests through the picocli invocation path.
+ * Runs all {@link VersionToolTest} tests through the picocli invocation path.
  *
  * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
  */
-public class StatusToolPicocliTest extends StatusToolTest {
+public class VersionToolPicocliTest extends VersionToolTest {
 
   @Override
-  protected Reader runStatusTool(String[] toolArgs) throws Exception {
+  protected String runVersionTool(String[] toolArgs) throws Exception {
     // toolArgs[0] is the tool name used by commons-cli dispatch; strip it for picocli.
     String[] args = Arrays.copyOfRange(toolArgs, 1, toolArgs.length);
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    StatusTool tool = new StatusTool(runtime);
+    VersionTool tool = new VersionTool(runtime);
     new CommandLine(tool).setDefaultValueProvider(new CliDefaultValueProvider()).execute(args);
-    return runtime.getReader();
+    return runtime.getOutput();
   }
 }

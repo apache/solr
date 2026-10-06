@@ -14,27 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.cluster;
 
+import java.io.Reader;
 import java.util.Arrays;
-import org.apache.solr.cli.tools.DeleteToolTest;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.CliDefaultValueProvider;
 import picocli.CommandLine;
 
 /**
- * Runs all {@link DeleteToolTest} tests through the picocli invocation path.
+ * Runs all {@link StatusToolTest} tests through the picocli invocation path.
  *
  * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
  */
-public class DeleteToolPicocliTest extends DeleteToolTest {
+public class StatusToolPicocliTest extends StatusToolTest {
 
   @Override
-  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
-    // args[0] is the tool name used by commons-cli dispatch; strip it for picocli.
-    String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
-    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
-    ToolBase tool = clazz.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
-    return new CommandLine(tool)
-        .setDefaultValueProvider(new CliDefaultValueProvider())
-        .execute(toolArgs);
+  protected Reader runStatusTool(String[] toolArgs) throws Exception {
+    // toolArgs[0] is the tool name used by commons-cli dispatch; strip it for picocli.
+    String[] args = Arrays.copyOfRange(toolArgs, 1, toolArgs.length);
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    StatusTool tool = new StatusTool(runtime);
+    new CommandLine(tool).setDefaultValueProvider(new CliDefaultValueProvider()).execute(args);
+    return runtime.getReader();
   }
 }

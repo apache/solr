@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.snapshot;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.cli.tools.snapshot.SnapshotExportTool;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;

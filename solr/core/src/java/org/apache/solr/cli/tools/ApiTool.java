@@ -81,7 +81,7 @@ public class ApiTool extends ToolBase {
     echo(response);
   }
 
-  protected String callGet(String url, String credentials) throws Exception {
+  public String callGet(String url, String credentials) throws Exception {
     URI uri = new URI(url.replace("+", "%20"));
     String solrUrl = getSolrUrlFromUri(uri);
     String path = uri.getPath();

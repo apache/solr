@@ -14,27 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
 import java.util.Arrays;
-import org.apache.solr.cli.tools.VersionTool;
-import org.apache.solr.cli.tools.VersionToolTest;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.CliDefaultValueProvider;
+import org.apache.solr.cli.ToolBase;
+import org.apache.solr.cli.ToolRuntime;
 import picocli.CommandLine;
 
 /**
- * Runs all {@link VersionToolTest} tests through the picocli invocation path.
+ * Runs all {@link DeleteToolTest} tests through the picocli invocation path.
  *
  * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
  */
-public class VersionToolPicocliTest extends VersionToolTest {
+public class DeleteToolPicocliTest extends DeleteToolTest {
 
   @Override
-  protected String runVersionTool(String[] toolArgs) throws Exception {
-    // toolArgs[0] is the tool name used by commons-cli dispatch; strip it for picocli.
-    String[] args = Arrays.copyOfRange(toolArgs, 1, toolArgs.length);
-    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    VersionTool tool = new VersionTool(runtime);
-    new CommandLine(tool).setDefaultValueProvider(new CliDefaultValueProvider()).execute(args);
-    return runtime.getOutput();
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    // args[0] is the tool name used by commons-cli dispatch; strip it for picocli.
+    String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    ToolBase tool = clazz.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
+    return new CommandLine(tool)
+        .setDefaultValueProvider(new CliDefaultValueProvider())
+        .execute(toolArgs);
   }
 }

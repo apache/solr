@@ -17,7 +17,6 @@
 package org.apache.solr.cli.tools.zk;
 
 import java.util.Map;
-
 import org.apache.solr.cli.CLIO;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.CommonCLIOptions;
