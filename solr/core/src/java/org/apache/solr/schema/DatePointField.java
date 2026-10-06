@@ -158,6 +158,11 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
+  public String toExternal(IndexableField f) {
+    return ((Date) toObject(f)).toInstant().toString();
+  }
+
+  @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
     return LongPoint.newExactQuery(
         field.getName(), DateMathParser.parseMath(null, externalVal).getTime());
