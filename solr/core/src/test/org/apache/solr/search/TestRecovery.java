@@ -401,6 +401,25 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testCommitWhileBufferingIsReported() throws Exception {
+    UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
+    clearIndex();
+    assertU(commit());
+
+    String activeRsp = h.update(commit());
+    assertFalse(activeRsp, activeRsp.contains("commitIgnored"));
+
+    ulog.bufferUpdates();
+    try {
+      assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+      String bufferingRsp = h.update(commit());
+      assertTrue(bufferingRsp, bufferingRsp.contains("name=\"commitIgnored\""));
+    } finally {
+      ulog.dropBufferedUpdates();
+    }
+  }
+
+  @Test
   public void testLogReplayWithReorderedDBQ() throws Exception {
     testLogReplayWithReorderedDBQWrapper(
         () -> {
