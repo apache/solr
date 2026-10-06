@@ -28,6 +28,7 @@ import base64
 import sys
 import re
 from pathlib import Path
+from string import Template
 
 # The Solr wordmark, relative to the repository root. Inlined into the page so
 # the generated HTML is a single self-contained file, and so the stylesheet can
@@ -551,292 +552,6 @@ class HTMLGenerator:
         text = text.replace('>', '&gt;')
         return text
 
-    def generate_header(self, preamble=None):
-        """Generate HTML header"""
-        first_relid_regex = re.escape(self.first_relid or 'trunk')
-        first_relid_regex = first_relid_regex.replace('\\', '\\\\')
-        second_relid_regex = re.escape(self.second_relid or '')
-        second_relid_regex = second_relid_regex.replace('\\', '\\\\')
-
-        newer_version_regex = f"^(?:{first_relid_regex}"
-        if self.second_relid:
-            newer_version_regex += f"|{second_relid_regex}"
-        newer_version_regex += ")"
-
-        favicon_link = (f'  <link rel="icon" href="{self.favicon_href}" type="image/svg+xml">\n'
-                        if self.favicon_href else '')
-
-        html = f'''<!--
-**********************************************************
-** WARNING: This file is generated from CHANGELOG.md by the
-**          Python script 'changes2html.py'.
-**          Do *not* edit this file!
-**********************************************************
-
-****************************************************************************
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-****************************************************************************
--->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apache Solr Changelog</title>
-{favicon_link}  <link rel="stylesheet" href="solr-docs.css" title="Fancy">
-  <link rel="alternate stylesheet" href="ChangesSimpleStyle.css" title="Simple">
-  <link rel="alternate stylesheet" href="ChangesFixedWidthStyle.css" title="Fixed Width">
-  <SCRIPT>
-    /* Applied before first paint so a dark-theme reader sees no light flash.
-       The page is light by default; only an explicit choice is remembered. */
-    (function() {{
-      try {{
-        var stored = localStorage.getItem('solr.docs.theme');
-        if (stored === 'dark' || stored === 'light') {{
-          document.documentElement.setAttribute('data-theme', stored);
-        }}
-      }} catch (e) {{
-        /* localStorage can be unavailable; the light default is fine. */
-      }}
-    }})();
-  </SCRIPT>
-  <SCRIPT>
-    function toggleList(id) {{
-      listStyle = document.getElementById(id + '.list').style;
-      anchor = document.getElementById(id);
-      if (listStyle.display == 'none') {{
-        listStyle.display = 'block';
-        anchor.title = 'Click to collapse';
-        location.href = '#' + id;
-      }} else {{
-        listStyle.display = 'none';
-        anchor.title = 'Click to expand';
-      }}
-      var expandButton = document.getElementById('expand.button');
-      expandButton.disabled = false;
-      var collapseButton = document.getElementById('collapse.button');
-      collapseButton.disabled = false;
-    }}
-
-    function collapseAll() {{
-      var unorderedLists = document.getElementsByTagName("ul");
-      for (var i = 0; i < unorderedLists.length; i++) {{
-        if (unorderedLists[i].className != 'bulleted-list')
-          unorderedLists[i].style.display = "none";
-        else
-          unorderedLists[i].style.display = "block";
-      }}
-      var orderedLists = document.getElementsByTagName("ol");
-      for (var i = 0; i < orderedLists.length; i++)
-        orderedLists[i].style.display = "none";
-      var olderList = document.getElementById("older.list");
-      if (olderList) olderList.style.display = "none";
-      var anchors = document.getElementsByTagName("a");
-      for (var i = 0 ; i < anchors.length; i++) {{
-        if (anchors[i].id != '')
-          anchors[i].title = 'Click to expand';
-      }}
-      var collapseButton = document.getElementById('collapse.button');
-      collapseButton.disabled = true;
-      var expandButton = document.getElementById('expand.button');
-      expandButton.disabled = false;
-    }}
-
-    function expandAll() {{
-      var unorderedLists = document.getElementsByTagName("ul");
-      for (var i = 0; i < unorderedLists.length; i++)
-        unorderedLists[i].style.display = "block";
-      var orderedLists = document.getElementsByTagName("ol");
-      for (var i = 0; i < orderedLists.length; i++)
-        orderedLists[i].style.display = "block";
-      var olderList = document.getElementById("older.list");
-      if (olderList) olderList.style.display = "block";
-      var anchors = document.getElementsByTagName("a");
-      for (var i = 0 ; i < anchors.length; i++) {{
-        if (anchors[i].id != '')
-          anchors[i].title = 'Click to collapse';
-      }}
-      var expandButton = document.getElementById('expand.button');
-      expandButton.disabled = true;
-      var collapseButton = document.getElementById('collapse.button');
-      collapseButton.disabled = false;
-    }}
-
-    function updateThemeToggle() {{
-      var button = document.getElementById('theme.toggle');
-      if (!button) return;
-      var dark = document.documentElement.getAttribute('data-theme') == 'dark';
-      var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
-      button.title = label;
-      button.setAttribute('aria-label', label);
-    }}
-
-    function toggleTheme() {{
-      var root = document.documentElement;
-      var next = root.getAttribute('data-theme') == 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next);
-      try {{
-        localStorage.setItem('solr.docs.theme', next);
-      }} catch (e) {{
-        /* Not remembering the choice is better than failing the toggle. */
-      }}
-      updateThemeToggle();
-    }}
-
-    var newerRegex = new RegExp("{newer_version_regex}");
-    function isOlder(listId) {{
-      return ! newerRegex.test(listId);
-    }}
-
-    function escapeMeta(s) {{
-      return s.replace(/([.*+?^${{}}()|[\\\\]\\\\\\/])/g, '\\\\\\\\$1');
-    }}
-
-    function shouldExpand(currentList, currentAnchor, listId) {{
-      var listName = listId.substring(0, listId.length - 5);
-      var parentRegex = new RegExp("^" + escapeMeta(listName) + "\\\\\\\\.");
-      return currentList == listId
-             || (isOlder(currentAnchor) && listId == 'older.list')
-             || parentRegex.test(currentAnchor);
-    }}
-
-    function collapse() {{
-      /* Collapse all but the first and second releases. */
-      var unorderedLists = document.getElementsByTagName("ul");
-      var currentAnchor = location.hash.substring(1);
-      var currentList = currentAnchor + ".list";
-
-      for (var i = 0; i < unorderedLists.length; i++) {{
-        var list = unorderedLists[i];
-        /* Collapse the current item, unless either the current item is one of
-         * the first two releases, or the current URL has a fragment and the
-         * fragment refers to the current item or one of its ancestors.
-         */
-        if (list.id != '{self.first_relid}.list'
-            && list.id != '{self.second_relid}.list'
-            && list.className != 'bulleted-list'
-            && (currentAnchor == ''
-                || ! shouldExpand(currentList, currentAnchor, list.id))) {{
-          list.style.display = "none";
-        }}
-      }}
-      var orderedLists = document.getElementsByTagName("ol");
-      for (var i = 0; i < orderedLists.length; i++) {{
-        var list = orderedLists[i];
-        /* Collapse the current item, unless the current URL has a fragment
-         * and the fragment refers to the current item or one of its ancestors.
-         */
-        if (currentAnchor == ''
-            || ! shouldExpand(currentList, currentAnchor, list.id)) {{
-          list.style.display = "none";
-        }}
-      }}
-      var olderList = document.getElementById("older.list");
-      if (olderList) olderList.style.display = "none";
-      /* Add "Click to collapse/expand" tooltips to the release/section headings.
-       * The stylesheet draws the expand/collapse marker off these titles, so
-       * they have to reflect what each list actually ended up doing above.
-       */
-      var anchors = document.getElementsByTagName("a");
-      for (var i = 0 ; i < anchors.length; i++) {{
-        var anchor = anchors[i];
-        if (anchor.id != '') {{
-          var list = document.getElementById(anchor.id + '.list');
-          anchor.title = (list && list.style.display != 'none')
-                       ? 'Click to collapse' : 'Click to expand';
-        }}
-      }}
-
-      updateThemeToggle();
-
-      /* Insert "Expand All" and "Collapse All" buttons */
-      var buttonsParent = document.getElementById('buttons.parent');
-      if (buttonsParent) {{
-        var expandButton = document.createElement('button');
-        expandButton.appendChild(document.createTextNode('Expand All'));
-        expandButton.onclick = function() {{ expandAll(); }}
-        expandButton.id = 'expand.button';
-        buttonsParent.appendChild(expandButton);
-        var collapseButton = document.createElement('button');
-        collapseButton.appendChild(document.createTextNode('Collapse All'));
-        collapseButton.onclick = function() {{ collapseAll(); }}
-        collapseButton.id = 'collapse.button';
-        buttonsParent.appendChild(collapseButton);
-      }}
-    }}
-
-    window.onload = collapse;
-  </SCRIPT>
-</head>
-<body>
-
-<header class="masthead">
-  <div class="masthead-inner">
-    <a class="brand" href="https://solr.apache.org/">{self.logo_svg}</a>
-    <div class="masthead-text">
-      <h1>Changelog</h1>
-    </div>
-    <nav class="masthead-nav">
-      <a href="https://solr.apache.org/">Home</a>
-      <a href="../index.html">Docs</a>
-      <button type="button" id="theme.toggle" class="theme-toggle" onclick="toggleTheme()"
-              title="Switch to dark theme" aria-label="Switch to dark theme">
-        <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
-          <path fill="currentColor" d="M16.3 11.9A6.8 6.8 0 0 1 8.1 3.7a7.2 7.2 0 1 0 8.2 8.2z"/>
-        </svg>
-        <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
-          <circle cx="10" cy="10" r="3.6" fill="currentColor"/>
-          <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-            <path d="M10 1.6v2.1M10 16.3v2.1M1.6 10h2.1M16.3 10h2.1"/>
-            <path d="M4.1 4.1l1.5 1.5M14.4 14.4l1.5 1.5M15.9 4.1l-1.5 1.5M5.6 14.4l-1.5 1.5"/>
-          </g>
-        </svg>
-      </button>
-    </nav>
-  </div>
-</header>
-
-<main class="page changelog">
-
-'''
-        # Add preamble if present
-        if preamble:
-            # Convert markdown links to HTML links
-            preamble_html = self.convert_markdown_links(preamble)
-            html += f'<p class="intro">{preamble_html}</p>\n\n'
-
-        html += '<div id="buttons.parent" class="toolbar"></div>\n\n'
-
-        return html
-
-    def generate_footer(self):
-        """Generate HTML footer"""
-        return '''
-</main>
-
-<footer class="colophon">
-  <p>Generated from <code>CHANGELOG.md</code> in the <a href="https://github.com/apache/solr">apache/solr</a> repository.</p>
-  <p>Apache Solr, Solr, Apache, the Apache feather logo and the Apache Solr project logo are trademarks of
-     The Apache Software Foundation. &mdash; <a href="https://solr.apache.org/">solr.apache.org</a></p>
-</footer>
-
-</body>
-</html>
-'''
-
     def _format_section(self, relid, section_name, items):
         """Format a single section with items"""
         sectid = section_name.lower().replace(' ', '_')
@@ -900,13 +615,300 @@ class HTMLGenerator:
         else:
             self.second_relid = self.first_relid
 
-        html_parts = [
-            self.generate_header(preamble),
-            self.generate_releases(releases),
-            self.generate_footer()
-        ]
+        first_relid_regex = re.escape(self.first_relid or 'trunk').replace('\\', '\\\\')
+        second_relid_regex = re.escape(self.second_relid or '').replace('\\', '\\\\')
+        newer_version_regex = f"^(?:{first_relid_regex}"
+        if self.second_relid:
+            newer_version_regex += f"|{second_relid_regex}"
+        newer_version_regex += ")"
 
-        return ''.join(html_parts)
+        # Carries its own trailing blank line, so the template can butt the toolbar
+        # straight up against it and still lay out correctly when there is no preamble.
+        intro = ''
+        if preamble:
+            intro = f'<p class="intro">{self.convert_markdown_links(preamble)}</p>\n\n'
+
+        return PAGE_TEMPLATE.substitute(
+            favicon_link=(f'  <link rel="icon" href="{self.favicon_href}" type="image/svg+xml">\n'
+                          if self.favicon_href else ''),
+            logo_svg=self.logo_svg,
+            first_relid=self.first_relid,
+            second_relid=self.second_relid,
+            newer_version_regex=newer_version_regex,
+            intro=intro,
+            releases=self.generate_releases(releases),
+        )
+
+
+class _PageTemplate(Template):
+    """
+    The page skeleton is HTML with inline JavaScript, where '$' is common: regex
+    anchors, capture-group references, jQuery. A delimiter that does not occur in
+    the document keeps that JavaScript verbatim and needs no escaping. Write '@@@@'
+    for a literal '@@'.
+    """
+    delimiter = '@@'
+
+
+PAGE_TEMPLATE = _PageTemplate('''<!--
+**********************************************************
+** WARNING: This file is generated from CHANGELOG.md by the
+**          Python script 'changes2html.py'.
+**          Do *not* edit this file!
+**********************************************************
+
+****************************************************************************
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+****************************************************************************
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apache Solr Changelog</title>
+@@favicon_link  <link rel="stylesheet" href="solr-docs.css" title="Fancy">
+  <link rel="alternate stylesheet" href="ChangesSimpleStyle.css" title="Simple">
+  <link rel="alternate stylesheet" href="ChangesFixedWidthStyle.css" title="Fixed Width">
+  <SCRIPT>
+    /* Applied before first paint so a dark-theme reader sees no light flash.
+       The page is light by default; only an explicit choice is remembered. */
+    (function() {
+      try {
+        var stored = localStorage.getItem('solr.docs.theme');
+        if (stored === 'dark' || stored === 'light') {
+          document.documentElement.setAttribute('data-theme', stored);
+        }
+      } catch (e) {
+        /* localStorage can be unavailable; the light default is fine. */
+      }
+    })();
+  </SCRIPT>
+  <SCRIPT>
+    function toggleList(id) {
+      listStyle = document.getElementById(id + '.list').style;
+      anchor = document.getElementById(id);
+      if (listStyle.display == 'none') {
+        listStyle.display = 'block';
+        anchor.title = 'Click to collapse';
+        location.href = '#' + id;
+      } else {
+        listStyle.display = 'none';
+        anchor.title = 'Click to expand';
+      }
+      var expandButton = document.getElementById('expand.button');
+      expandButton.disabled = false;
+      var collapseButton = document.getElementById('collapse.button');
+      collapseButton.disabled = false;
+    }
+
+    function collapseAll() {
+      var unorderedLists = document.getElementsByTagName("ul");
+      for (var i = 0; i < unorderedLists.length; i++) {
+        if (unorderedLists[i].className != 'bulleted-list')
+          unorderedLists[i].style.display = "none";
+        else
+          unorderedLists[i].style.display = "block";
+      }
+      var orderedLists = document.getElementsByTagName("ol");
+      for (var i = 0; i < orderedLists.length; i++)
+        orderedLists[i].style.display = "none";
+      var olderList = document.getElementById("older.list");
+      if (olderList) olderList.style.display = "none";
+      var anchors = document.getElementsByTagName("a");
+      for (var i = 0 ; i < anchors.length; i++) {
+        if (anchors[i].id != '')
+          anchors[i].title = 'Click to expand';
+      }
+      var collapseButton = document.getElementById('collapse.button');
+      collapseButton.disabled = true;
+      var expandButton = document.getElementById('expand.button');
+      expandButton.disabled = false;
+    }
+
+    function expandAll() {
+      var unorderedLists = document.getElementsByTagName("ul");
+      for (var i = 0; i < unorderedLists.length; i++)
+        unorderedLists[i].style.display = "block";
+      var orderedLists = document.getElementsByTagName("ol");
+      for (var i = 0; i < orderedLists.length; i++)
+        orderedLists[i].style.display = "block";
+      var olderList = document.getElementById("older.list");
+      if (olderList) olderList.style.display = "block";
+      var anchors = document.getElementsByTagName("a");
+      for (var i = 0 ; i < anchors.length; i++) {
+        if (anchors[i].id != '')
+          anchors[i].title = 'Click to collapse';
+      }
+      var expandButton = document.getElementById('expand.button');
+      expandButton.disabled = true;
+      var collapseButton = document.getElementById('collapse.button');
+      collapseButton.disabled = false;
+    }
+
+    function updateThemeToggle() {
+      var button = document.getElementById('theme.toggle');
+      if (!button) return;
+      var dark = document.documentElement.getAttribute('data-theme') == 'dark';
+      var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+      button.title = label;
+      button.setAttribute('aria-label', label);
+    }
+
+    function toggleTheme() {
+      var root = document.documentElement;
+      var next = root.getAttribute('data-theme') == 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try {
+        localStorage.setItem('solr.docs.theme', next);
+      } catch (e) {
+        /* Not remembering the choice is better than failing the toggle. */
+      }
+      updateThemeToggle();
+    }
+
+    var newerRegex = new RegExp("@@newer_version_regex");
+    function isOlder(listId) {
+      return ! newerRegex.test(listId);
+    }
+
+    function escapeMeta(s) {
+      return s.replace(/([.*+?^${}()|[\\\\]\\\\\\/])/g, '\\\\\\\\$1');
+    }
+
+    function shouldExpand(currentList, currentAnchor, listId) {
+      var listName = listId.substring(0, listId.length - 5);
+      var parentRegex = new RegExp("^" + escapeMeta(listName) + "\\\\\\\\.");
+      return currentList == listId
+             || (isOlder(currentAnchor) && listId == 'older.list')
+             || parentRegex.test(currentAnchor);
+    }
+
+    function collapse() {
+      /* Collapse all but the first and second releases. */
+      var unorderedLists = document.getElementsByTagName("ul");
+      var currentAnchor = location.hash.substring(1);
+      var currentList = currentAnchor + ".list";
+
+      for (var i = 0; i < unorderedLists.length; i++) {
+        var list = unorderedLists[i];
+        /* Collapse the current item, unless either the current item is one of
+         * the first two releases, or the current URL has a fragment and the
+         * fragment refers to the current item or one of its ancestors.
+         */
+        if (list.id != '@@first_relid.list'
+            && list.id != '@@second_relid.list'
+            && list.className != 'bulleted-list'
+            && (currentAnchor == ''
+                || ! shouldExpand(currentList, currentAnchor, list.id))) {
+          list.style.display = "none";
+        }
+      }
+      var orderedLists = document.getElementsByTagName("ol");
+      for (var i = 0; i < orderedLists.length; i++) {
+        var list = orderedLists[i];
+        /* Collapse the current item, unless the current URL has a fragment
+         * and the fragment refers to the current item or one of its ancestors.
+         */
+        if (currentAnchor == ''
+            || ! shouldExpand(currentList, currentAnchor, list.id)) {
+          list.style.display = "none";
+        }
+      }
+      var olderList = document.getElementById("older.list");
+      if (olderList) olderList.style.display = "none";
+      /* Add "Click to collapse/expand" tooltips to the release/section headings.
+       * The stylesheet draws the expand/collapse marker off these titles, so
+       * they have to reflect what each list actually ended up doing above.
+       */
+      var anchors = document.getElementsByTagName("a");
+      for (var i = 0 ; i < anchors.length; i++) {
+        var anchor = anchors[i];
+        if (anchor.id != '') {
+          var list = document.getElementById(anchor.id + '.list');
+          anchor.title = (list && list.style.display != 'none')
+                       ? 'Click to collapse' : 'Click to expand';
+        }
+      }
+
+      updateThemeToggle();
+
+      /* Insert "Expand All" and "Collapse All" buttons */
+      var buttonsParent = document.getElementById('buttons.parent');
+      if (buttonsParent) {
+        var expandButton = document.createElement('button');
+        expandButton.appendChild(document.createTextNode('Expand All'));
+        expandButton.onclick = function() { expandAll(); }
+        expandButton.id = 'expand.button';
+        buttonsParent.appendChild(expandButton);
+        var collapseButton = document.createElement('button');
+        collapseButton.appendChild(document.createTextNode('Collapse All'));
+        collapseButton.onclick = function() { collapseAll(); }
+        collapseButton.id = 'collapse.button';
+        buttonsParent.appendChild(collapseButton);
+      }
+    }
+
+    window.onload = collapse;
+  </SCRIPT>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" href="https://solr.apache.org/">@@logo_svg</a>
+    <div class="masthead-text">
+      <h1>Changelog</h1>
+    </div>
+    <nav class="masthead-nav">
+      <a href="https://solr.apache.org/">Home</a>
+      <a href="../index.html">Docs</a>
+      <button type="button" id="theme.toggle" class="theme-toggle" onclick="toggleTheme()"
+              title="Switch to dark theme" aria-label="Switch to dark theme">
+        <svg class="icon-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M16.3 11.9A6.8 6.8 0 0 1 8.1 3.7a7.2 7.2 0 1 0 8.2 8.2z"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.6" fill="currentColor"/>
+          <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M10 1.6v2.1M10 16.3v2.1M1.6 10h2.1M16.3 10h2.1"/>
+            <path d="M4.1 4.1l1.5 1.5M14.4 14.4l1.5 1.5M15.9 4.1l-1.5 1.5M5.6 14.4l-1.5 1.5"/>
+          </g>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="page changelog">
+
+@@intro<div id="buttons.parent" class="toolbar"></div>
+
+@@releases
+</main>
+
+<footer class="colophon">
+  <p>Generated from <code>CHANGELOG.md</code> in the <a href="https://github.com/apache/solr">apache/solr</a> repository.</p>
+  <p>Apache Solr, Solr, Apache, the Apache feather logo and the Apache Solr project logo are trademarks of
+     The Apache Software Foundation. &mdash; <a href="https://solr.apache.org/">solr.apache.org</a></p>
+</footer>
+
+</body>
+</html>
+''')
 
 
 def main():
