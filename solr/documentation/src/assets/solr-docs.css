@@ -130,9 +130,11 @@ code {
 }
 
 .masthead-nav {
-  flex: none;
+  flex: 0 1 auto;
   margin-left: auto;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.75rem;
 }
@@ -160,8 +162,11 @@ code {
 
 /* Injected into the masthead by solr-javadoc-bar.js on the Javadocs page. */
 .masthead-nav .solr-docs-modules {
-  flex: none;
-  max-width: 14rem;
+  /* A select sizes itself to its widest option -- 'modules-opentelemetry' is
+     wider than a phone -- so it has to be allowed to shrink. */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(14rem, 100%);
   padding: 0.3rem 0.4rem;
   background-color: var(--solr-surface);
   border: 1px solid var(--solr-rule-strong);
@@ -745,6 +750,12 @@ li.section > a:target {
 
   ul.changes {
     padding-left: 1.5rem;
+  }
+
+  /* The two columns have a 22rem minimum between them, wider than the content
+     box on a phone; stack them instead. */
+  #result-container .summary-table {
+    grid-template-columns: 1fr;
   }
 }
 
