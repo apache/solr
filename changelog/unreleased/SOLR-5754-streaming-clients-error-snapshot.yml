@@ -1,0 +1,8 @@
+title: "StreamingSolrClients.getErrors() returns a snapshot instead of the live synchronized list, and the retry pass drains errors atomically so an error reported meanwhile is not cleared unseen"
+type: fixed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-5754
+    url: https://issues.apache.org/jira/browse/SOLR-5754
