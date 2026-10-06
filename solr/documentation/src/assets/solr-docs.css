@@ -54,8 +54,11 @@ html {
   color-scheme: light;
 }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
+/* Screen only: a reader who picked dark must not print light-on-white. */
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
 }
 
 body {
@@ -764,26 +767,30 @@ li.section > a:target {
  * fill:currentColor, so it simply inherits the light ink here.
  */
 
-:root[data-theme="dark"] {
-  --solr-red: #ff6b43;
-  --solr-red-dark: #ff9470;
-  --solr-ink: #f2efe9;
-  --solr-text: #dcd8d1;
-  --solr-muted: #9d968d;
-  --solr-rule: #3a3445;
-  --solr-rule-strong: #4a4357;
-  --solr-paper: #1c1824;
-  --solr-surface: #262130;
-  --solr-chip: #312b3e;
-  --solr-logo-ink: #f2efe9;
+@media screen {
+  :root[data-theme="dark"] {
+    --solr-red: #ff6b43;
+    --solr-red-dark: #ff9470;
+    --solr-ink: #f2efe9;
+    --solr-text: #dcd8d1;
+    --solr-muted: #9d968d;
+    --solr-rule: #3a3445;
+    --solr-rule-strong: #4a4357;
+    --solr-paper: #1c1824;
+    --solr-surface: #262130;
+    --solr-chip: #312b3e;
+    --solr-logo-ink: #f2efe9;
+  }
+
+  :root[data-theme="dark"] .masthead {
+    box-shadow: none;
+  }
 }
 
-:root[data-theme="dark"] .masthead {
-  box-shadow: none;
-}
-
-:root[data-theme="dark"] .toolbar button {
-  background-color: var(--solr-surface);
+@media screen {
+  :root[data-theme="dark"] .toolbar button {
+    background-color: var(--solr-surface);
+  }
 }
 
 /*
