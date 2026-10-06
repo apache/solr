@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: The `config` command is now available in the experimental picocli command line interface.
+type: added
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18512
+    url: https://issues.apache.org/jira/browse/SOLR-18512

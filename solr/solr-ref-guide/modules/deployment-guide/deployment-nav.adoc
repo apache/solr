@@ -21,6 +21,7 @@
 ** xref:cli/index.adoc[Experimental picocli CLI]
 // CLI-DOCS-START
 *** xref:cli/solr-auth.adoc[auth]
+*** xref:cli/solr-config.adoc[config]
 *** xref:cli/solr-create.adoc[create]
 *** xref:cli/solr-delete.adoc[delete]
 *** xref:cli/solr-start.adoc[start]
