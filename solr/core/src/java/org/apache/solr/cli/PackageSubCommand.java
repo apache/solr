@@ -29,8 +29,7 @@ abstract class PackageSubCommand extends ToolBase {
     void run(PackageManager packageManager, RepositoryManager repositoryManager) throws Exception;
   }
 
-  @picocli.CommandLine.ParentCommand
-  PackageTool packageTool;
+  @picocli.CommandLine.ParentCommand PackageTool packageTool;
 
   @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
