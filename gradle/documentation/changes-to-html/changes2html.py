@@ -20,7 +20,8 @@
 """
 Transforms Solr's CHANGELOG.md into Changes.html
 
-Input is from CHANGELOG.md, output is to STDOUT
+Usage: changes2html.py <changelog-file> [output-file]
+Output goes to the given file, or to STDOUT when no output file is given.
 """
 
 import sys
@@ -782,7 +783,7 @@ def main():
         # Try to read from CHANGELOG.md in current directory
         changelog_file = Path('CHANGELOG.md')
         if not changelog_file.exists():
-            print("Usage: changes2html.py <changelog-file>", file=sys.stderr)
+            print("Usage: changes2html.py <changelog-file> [output-file]", file=sys.stderr)
             sys.exit(1)
     else:
         changelog_file = Path(sys.argv[1])
@@ -803,9 +804,14 @@ def main():
     generator = HTMLGenerator()
     html = generator.generate(parser.releases, parser.title, parser.preamble)
 
-    # Output
-    sys.stdout.reconfigure(encoding='utf-8') #UTF-8 encoding for Windows compatibility
-    print(html)
+    # Output: to the file given as the second argument, or to stdout.
+    if len(sys.argv) > 2:
+        with open(sys.argv[2], 'w', encoding='utf-8', newline='\n') as out:
+            out.write(html)
+            out.write('\n')
+    else:
+        sys.stdout.reconfigure(encoding='utf-8') #UTF-8 encoding for Windows compatibility
+        print(html)
 
 
 if __name__ == '__main__':

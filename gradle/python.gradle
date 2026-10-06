@@ -1,0 +1,143 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Python support for the build. A system interpreter is used when one is available; otherwise the
+// build falls back to GraalPy, resolved as a regular Gradle dependency and run on the JVM.
+// See dev-docs/solr-source-code.adoc.
+//
+// Groovy rather than Kotlin: PythonExecTask lives in build-infra, whose classes are not
+// importable from build scripts, so its properties have to be set dynamically.
+
+import java.util.Locale
+
+configure(rootProject) {
+  // Resolved lazily, and only if a task actually takes the GraalPy path.
+  configurations {
+    graalpy {
+      description = "GraalPy runtime, used when no system python3 is available."
+      canBeConsumed = false
+    }
+  }
+
+  dependencies {
+    // Deliberately not org.graalvm.python:python (the aggregator): it pulls in
+    // org.graalvm.truffle:truffle-runtime, the optimizing runtime, which is unsupported on a
+    // stock OpenJDK. Naming the three jars directly keeps it out.
+    graalpy libs.graalvm.python.launcher
+    graalpy libs.graalvm.python.language
+    graalpy libs.graalvm.python.resources
+  }
+
+  ext {
+    // -Psolr.python.mode / SOLR_PYTHON_MODE:
+    //   auto    - -Ppython3.exe, else python3 on PATH, else GraalPy (default)
+    //   system  - require a system interpreter; never resolves GraalPy
+    //   graalpy - always use GraalPy (to exercise the fallback)
+    solrPythonMode = propertyOrEnvOrDefault("solr.python.mode", "SOLR_PYTHON_MODE", "auto")
+        .toString().toLowerCase(Locale.ROOT)
+
+    if (!(solrPythonMode in ["auto", "system", "graalpy"])) {
+      throw new GradleException("Invalid -Psolr.python.mode=${solrPythonMode}; " +
+          "expected one of: auto, system, graalpy")
+    }
+
+    // Absolute path of 'name' on PATH, or null. A plain PATH walk rather than spawning
+    // '<exe> --version': far cheaper, and safe to do at configuration time.
+    findOnPath = {String name ->
+      def isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
+      def extensions = isWindows
+          ? ((System.getenv("PATHEXT") ?: ".EXE;.BAT;.CMD").split(";") as List)
+          : [""]
+      for (String dir : (System.getenv("PATH") ?: "").split(File.pathSeparator)) {
+        if (!dir) {
+          continue
+        }
+        for (String ext : extensions) {
+          def candidate = new File(dir, name + ext)
+          if (candidate.isFile() && candidate.canExecute()) {
+            return candidate.absolutePath
+          }
+        }
+      }
+      return null
+    }
+
+    // The system interpreter to use, or null to use the GraalPy fallback.
+    solrPythonExecutable = {
+      if (solrPythonMode == "graalpy") {
+        return null
+      }
+      // Honour the convention shared with externalTool("python3"). An explicitly configured
+      // interpreter is validated rather than silently ignored: pointing the build at a path that
+      // is not there is a mistake worth reporting, not a reason to download GraalPy.
+      def explicit = propertyOrDefault("python3.exe", null)
+      if (explicit) {
+        def resolved = (explicit as String).contains(File.separator)
+            ? (new File(explicit as String).with {isFile() && canExecute() ? absolutePath : null})
+            : findOnPath(explicit as String)
+        if (!resolved) {
+          throw new GradleException(
+              "python3.exe is set to '${explicit}', which is not an executable file. " +
+              "Fix -Ppython3.exe, or drop it to use python3 from PATH or the GraalPy fallback.")
+        }
+        return resolved
+      }
+      def found = findOnPath("python3")
+      if (!found && solrPythonMode == "system") {
+        throw new GradleException(
+            "-Psolr.python.mode=system was requested but no python3 was found on PATH. " +
+            "Pass -Ppython3.exe=<path>, or use the default -Psolr.python.mode=auto to fall " +
+            "back to GraalPy.")
+      }
+      return found
+    }()
+
+    solrPythonDescription = solrPythonExecutable
+        ? "system interpreter at ${solrPythonExecutable}"
+        : "GraalPy ${libs.versions.graalvm.python.get()} (Gradle dependency, JVM interpreter mode)"
+  }
+
+  task pythonInfo {
+    group = "Help"
+    description = "Shows which Python interpreter the build will use."
+
+    def mode = solrPythonMode
+    def runtime = solrPythonDescription
+    doLast {
+      logger.lifecycle("Python mode    : ${mode}")
+      logger.lifecycle("Python runtime : ${runtime}")
+    }
+  }
+}
+
+// Apply the interpreter policy to every Python task in the build.
+allprojects {
+  tasks.withType(buildinfra.pythonExecTaskClass()).configureEach {task ->
+    def systemPython = rootProject.ext.solrPythonExecutable
+    task.executable.convention(systemPython ?: "")
+    if (!systemPython) {
+      // Only reference the configuration when the fallback is actually in use: this is what keeps
+      // the ~150 MB of GraalPy jars off the wire for everyone who has a system interpreter.
+      // dependsOn gives the cross-project resolution the lock Gradle requires.
+      task.graalPyClasspath.from(rootProject.configurations.graalpy)
+      task.dependsOn(rootProject.configurations.graalpy)
+    }
+    // Keep the unpacked Python standard library out of the user's home directory.
+    task.graalPyResourceCache.convention(
+        rootProject.layout.buildDirectory.dir("graalpy-resources"))
+  }
+}

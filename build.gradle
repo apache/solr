@@ -210,6 +210,9 @@ apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
+// Python support: a system interpreter when available, otherwise a GraalPy fallback.
+apply from: file('gradle/python.gradle')
+
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')

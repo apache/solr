@@ -34,7 +34,11 @@ To build the documentation, type `./gradlew -p solr documentation`.
 
 `./gradlew check` will assemble Solr and run all validation tasks unit tests.
 
-NOTE: the `check` command requires `python3` to be present on your `PATH` to validate documentation.
+NOTE: documentation validation runs two Python scripts. The build uses `python3` from your `PATH`
+when available, and otherwise falls back to GraalPy, which Gradle resolves as an ordinary
+dependency -- a one-time ~150 MB download, and a few times slower than CPython. `./gradlew
+pythonInfo` shows which interpreter will be used. Use `-Ppython3.exe=<path>` to pick one, or
+`-Psolr.python.mode=system` to require a system interpreter and never resolve GraalPy.
 
 To build the final Solr artifacts run `./gradlew assemble`.
 
