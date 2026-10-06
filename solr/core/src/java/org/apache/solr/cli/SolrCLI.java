@@ -49,7 +49,7 @@ import org.apache.solr.cli.tools.ConfigTool;
 import org.apache.solr.cli.tools.CreateTool;
 import org.apache.solr.cli.tools.DeleteTool;
 import org.apache.solr.cli.tools.ExportTool;
-import org.apache.solr.cli.tools.PackageTool;
+import org.apache.solr.cli.tools.pkg.PackageTool;
 import org.apache.solr.cli.tools.PostLogsTool;
 import org.apache.solr.cli.tools.PostTool;
 import org.apache.solr.cli.tools.RunExampleTool;
