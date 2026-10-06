@@ -119,6 +119,7 @@ public class CreateTool extends ToolBase {
       String confDir,
       String confName,
       String solrUrl,
+      boolean explicitConnection,
       String credentials,
       int shards,
       int replicationFactor) {}
@@ -205,7 +206,8 @@ public class CreateTool extends ToolBase {
               cli.getOptionValue(COLLECTION_NAME_OPTION),
               cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET),
               cli.getOptionValue(CONF_NAME_OPTION),
-              CLIUtils.hasConnectionOption(cli) ? CLIUtils.normalizeSolrUrl(cli) : null,
+              CLIUtils.normalizeSolrUrl(cli),
+              CLIUtils.hasConnectionOption(cli),
               cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
               cli.getParsedOptionValue(SHARDS_OPTION, 1),
               cli.getParsedOptionValue(REPLICATION_FACTOR_OPTION, 1));
@@ -304,7 +306,7 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = params.solrUrl;
+    String solrUrl = params.explicitConnection ? params.solrUrl : null;
     if (solrUrl == null) {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
@@ -451,6 +453,7 @@ public class CreateTool extends ToolBase {
               confDir,
               confName,
               null,
+              false,
               credentialsOptions.credentials,
               shards,
               replicationFactor);
@@ -472,6 +475,7 @@ public class CreateTool extends ToolBase {
               confDir,
               confName,
               resolvedSolrUrl,
+              solrUrlArg != null,
               credentialsOptions.credentials,
               shards,
               replicationFactor);
