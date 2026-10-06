@@ -1,0 +1,9 @@
+title: >
+  ExactStatsCache no longer throws a NullPointerException when merging global stats if a shard
+  returned no response.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-8051
+    url: https://issues.apache.org/jira/browse/SOLR-8051
