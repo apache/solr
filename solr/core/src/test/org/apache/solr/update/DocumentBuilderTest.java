@@ -441,10 +441,31 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertThat(
         thrown.getMessage(),
         is(
-            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
+            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=copyField destination 'vector5': Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
     assertThat(
-        thrown.getCause().getCause().getMessage(),
+        thrown.getCause().getCause().getCause().getMessage(),
         is(
             "incorrect vector dimension. The vector value has size 4 while it is expected a vector with size 5"));
+  }
+
+  @Test
+  public void copyField_unparseableValueForNumericDestination_shouldThrowException() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    // 'id' is a string field copied to numeric destinations (range_facet_l, id_i1, ...)
+    doc.addField("id", "not-a-number");
+
+    RuntimeException thrown =
+        assertThrows(
+            "Unparseable value for a numeric copyField destination should raise exception",
+            SolrException.class,
+            () -> {
+              DocumentBuilder.toDocument(doc, core.getLatestSchema());
+            });
+    assertThat(
+        thrown.getMessage(),
+        is(
+            "ERROR: [doc=not-a-number] Error adding field 'id'='not-a-number' msg=copyField destination 'range_facet_l': For input string: \"not-a-number\""));
   }
 }
