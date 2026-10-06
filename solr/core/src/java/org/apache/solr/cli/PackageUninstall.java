@@ -21,7 +21,7 @@ package org.apache.solr.cli;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "uninstall",
-    description = "PackageUninstall any package with a specified version from Solr.",
+    description = "Uninstall any package with a specified version from Solr.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0: Operation completed successfully.",
@@ -29,7 +29,7 @@ package org.apache.solr.cli;
     },
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # PackageUninstall a specific package version",
+      "  # Uninstall a specific package version",
       "  bin/solr package uninstall mypkg:1.0.0",
     })
 public class PackageUninstall extends PackageSubCommand {

@@ -392,7 +392,7 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     captureRuntime.clearOutput();
 
-    // PackageUndeploy of a package that was never deployed should give a clear message.
+    // Undeploy of a package that was never deployed should give a clear message.
     runTool(
         new String[] {
           "--solr-url",

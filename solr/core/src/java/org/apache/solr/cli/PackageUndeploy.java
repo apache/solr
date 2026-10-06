@@ -23,7 +23,7 @@ import static org.apache.solr.cli.SolrCLI.printRed;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "undeploy",
-    description = "PackageUndeploy a package from specified collection(s) or at cluster level.",
+    description = "Undeploy a package from specified collection(s) or at cluster level.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0: Operation completed successfully.",
@@ -31,7 +31,7 @@ import static org.apache.solr.cli.SolrCLI.printRed;
     },
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # PackageUndeploy a package from a collection",
+      "  # Undeploy a package from a collection",
       "  bin/solr package undeploy mypkg --collections myCollection"
     })
 public class PackageUndeploy extends PackageSubCommand {
