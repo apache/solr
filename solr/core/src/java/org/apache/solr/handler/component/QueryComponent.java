@@ -146,6 +146,11 @@ public class QueryComponent extends SearchComponent {
     SolrQueryResponse rsp = rb.rsp;
 
     if (rb.isDistrib) {
+      if (req.getSchema().getUniqueKeyField() == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Distributed search requires a uniqueKey field in the schema");
+      }
       boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
       if (isCancellableQuery) {

@@ -17,6 +17,7 @@
 package org.apache.solr;
 
 import java.util.Set;
+import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -65,6 +66,16 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
         req("subject:Yonik"),
         "//result[@numFound=1]",
         "//str[@name='id'][.='4056']");
+  }
+
+  /** SOLR-10305: no uniqueKey and a shards parameter was a NullPointerException in mergeIds */
+  @Test
+  public void testDistributedQueryWithoutUniqueKeyIsBadRequest() {
+    assertQEx(
+        "distributed query without a uniqueKey must be rejected",
+        "uniqueKey",
+        req("q", "subject:Hoss", "shards", "127.0.0.1:1/solr/collection1"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   /** SOLR-1371 */
