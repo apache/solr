@@ -127,6 +127,18 @@ function loadScripts(doc, tag) {
     return picker;
   }
 
+  /*
+   * The SEARCH link beside javadoc's own search box points at this one module's
+   * search page. The box now searches every module, so the link belongs on the
+   * site-wide Javadocs page.
+   */
+  function retargetSearchLink(docsRoot) {
+    var link = document.querySelector('.nav-list-search a[href$="search.html"]');
+    if (link) {
+      link.href = docsRoot + 'javadocs.html';
+    }
+  }
+
   function insertBar() {
     if (document.querySelector('.solr-docs-bar')) {
       return;
@@ -134,6 +146,8 @@ function loadScripts(doc, tag) {
     // loadScripts() may have repointed pathtoroot, so use what it recorded.
     var docsRoot = solrDocsRoot
         || ((typeof pathtoroot === 'string' ? pathtoroot : './') + solrDocsRootUp);
+
+    retargetSearchLink(docsRoot);
 
     // A documentation site page renders the real masthead server-side, so it
     // needs only the module picker, not a second header.
