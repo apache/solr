@@ -38,7 +38,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 [width="100%",options="header",]
 |===
 |Path prefix |Some Supported Operations
-|`/api/collections` |Create, alias, backup, and restore a collection.
+|`/api/collections` |Create, alias, backup, and restore a collection. Fetch the collections, shards, and replicas tree (`?detailed=true`).
 |`/api/c/\{collectionName}/update` |Update requests.
 |`/api/c/\{collectionName}/config` |Configuration requests.
 |`/api/c/\{collectionName}/schema` |Schema requests.
@@ -49,7 +49,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/api/cores` |Create a core.
 |`/api/cores/\{coreName}` |Reload, rename, delete, and unload a core.
 |`/api/node` |Perform overseer operation, rejoin leader election.
-|`/api/cluster` |List live nodes, add role, remove role, set cluster property.
+|`/api/cluster` |List live nodes, manage node roles, set cluster property. `POST` sets the cluster rate limiter.
 |===
 
 == Introspect
@@ -149,13 +149,13 @@ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/jso
 {"responseHeader":{"status":0,"QTime":842}}
 ----
 
-See the state of the cluster:
+See the collections, shards, and replicas in the cluster:
 
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster
+curl http://localhost:8983/api/collections?detailed=true
 
-{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted"]}
+{"responseHeader":{"status":0,"QTime":1},"collectionsDetail":{"gettingstarted":{"health":"GREEN","shards":{"shard1":{"state":"active"}}}}}
 ----
 
 Set a cluster property:
