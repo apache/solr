@@ -156,7 +156,9 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /** columns read through during confirmation */
   private int leafsDrained;
 
-  /** columns dropped unread during confirmation, because the doc under test passed their to-range */
+  /**
+   * columns dropped unread during confirmation, because the doc under test passed their to-range
+   */
   private int leafsPassed;
 
   /** from-docs walked while draining, i.e. the column reads laziness is trying to avoid */
