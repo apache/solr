@@ -43,6 +43,11 @@ import org.junit.Test;
 
 public class StreamToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
     configureCluster(2).withSecurityJson(SecurityJson.SIMPLE).configure();
@@ -240,7 +245,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           getSolrConnection().toString(),
           expression
         };
-    assertEquals(1, CLITestHelper.runTool(args, StreamTool.class));
+    assertEquals(1, runTool(args, StreamTool.class));
   }
 
   @Test
@@ -259,7 +264,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           SecurityJson.USER_PASS,
           expression
         };
-    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
+    assertEquals(0, runTool(args, StreamTool.class));
   }
 
   @Test
@@ -285,7 +290,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       expressionFile.toString()
     };
 
-    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
+    assertEquals(0, runTool(args, StreamTool.class));
 
     // test passing in the expression directly
     args =
@@ -301,7 +306,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           expression
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
+    assertEquals(0, runTool(args, StreamTool.class));
   }
 
   @Test
@@ -335,7 +340,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       expressionFile.toString()
     };
 
-    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
+    assertEquals(0, runTool(args, StreamTool.class));
 
     // test passing in the expression directly
     args =
@@ -353,7 +358,36 @@ public class StreamToolTest extends SolrCloudTestCase {
           expression
         };
 
-    assertEquals(0, CLITestHelper.runTool(args, StreamTool.class));
+    assertEquals(0, runTool(args, StreamTool.class));
+  }
+
+  @Test
+  public void testRunEchoStreamRemotelyUsesZkHostProperty() throws Exception {
+    String collectionName = "streamZkHostPropertyCollection";
+    withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "_default", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        collectionName,
+        clusterShape(1, 1));
+
+    String[] args = {
+      "stream",
+      "--execution",
+      "remote",
+      "-c",
+      collectionName,
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "echo(Hello)"
+    };
+
+    System.setProperty("zkHost", cluster.getZkClient().getZkServerAddress());
+    try {
+      assertEquals(0, runTool(args, StreamTool.class));
+    } finally {
+      System.clearProperty("zkHost");
+    }
   }
 
   // Copied from StreamExpressionTest.java

@@ -65,6 +65,7 @@ Any command not listed here is unavailable when the picocli implementation is en
 |xref:cli/solr-start.adoc[bin/solr start]
 |xref:cli/solr-status.adoc[bin/solr status]
 |xref:cli/solr-stop.adoc[bin/solr stop]
+|xref:cli/solr-stream.adoc[bin/solr stream]
 |xref:cli/solr-version.adoc[bin/solr version]
 |xref:cli/solr-zk-cp.adoc[bin/solr zk cp]
 |xref:cli/solr-zk-downconfig.adoc[bin/solr zk downconfig]

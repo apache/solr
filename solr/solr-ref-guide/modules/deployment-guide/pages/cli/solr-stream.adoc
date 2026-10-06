@@ -1,0 +1,110 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr stream
+:page-toclevels: 2
+
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr stream [-hv] [--header] [--array-delimiter=CHARACTER] [-c=name]
+                [--delimiter=CHARACTER] [--execution=ENVIRONMENT] [--fields=FIELDS]
+                [-u=<credentials>] [-s=<solrConnection> | --solr-url=<solrUrl> |
+                -z=<zkHost>] expr...
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+Runs a streaming expression in Solr and prints the results, using the bin/solr CLI.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*--array-delimiter*=_CHARACTER_::
+  The delimiter multi-valued fields. Default to using a pipe (|) delimiter.
+
+*-c*, *--name*=_name_::
+  Name of the specific collection to execute expression on if the execution is set to 'remote'. Required for 'remote' execution environment.
+
+*--delimiter*=_CHARACTER_::
+  The output delimiter. Default to using three spaces.
+
+*--execution*=_ENVIRONMENT_::
+  Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr server. Default environment is 'remote'.
+
+*--fields*=_FIELDS_::
+  The fields in the tuples to output. Defaults to fields in the first tuple of result set.
+
+*-h*, *--help*::
+  Print this help message and exit.
+
+*--header*::
+  Specify to include a header line.
+
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
+
+*-u*, *--credentials*=_<credentials>_::
+  Credentials in the format username:password. Example: --credentials solr:SolrRocks
+
+*-v*, *--verbose*::
+  Enable verbose mode.
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+== Arguments
+
+_expr_...::
+  The streaming expression, or a *.expr file, followed by $1/$2/... substitution args.
+
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-footer[]
+== Examples
+[%hardbreaks]
+  # Run a streaming expression against the techproducts collection
+  bin/solr stream -c techproducts 'search(techproducts,q="iPod",fl="name,price")'
+
+[%hardbreaks]
+  # Run a streaming expression stored in a .expr file
+  bin/solr stream --header -c techproducts stream.expr
+
+// end::picocli-generated-man-section-footer[]
