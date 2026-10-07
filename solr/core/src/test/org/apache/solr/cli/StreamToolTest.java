@@ -53,7 +53,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     configureCluster(2).withSecurityJson(SecurityJson.SIMPLE).configure();
   }
 
-  private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
+  <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
     req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return req;
   }
@@ -383,11 +383,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     };
 
     System.setProperty("zkHost", cluster.getZkClient().getZkServerAddress());
-    try {
-      assertEquals(0, runTool(args, StreamTool.class));
-    } finally {
-      System.clearProperty("zkHost");
-    }
+    assertEquals(0, runTool(args, StreamTool.class));
   }
 
   // Copied from StreamExpressionTest.java

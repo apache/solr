@@ -702,7 +702,7 @@ public class StreamTool extends ToolBase {
     String solrConnection =
         (connectionOptions != null && connectionOptions.solrConnection != null)
             ? connectionOptions.solrConnection
-            : EnvUtils.getProperty("solr-connection");
+            : EnvUtils.getProperty("solr.connection");
     if (solrConnection != null && !solrConnection.isBlank()) {
       return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
     }

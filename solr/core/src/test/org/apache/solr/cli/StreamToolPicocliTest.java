@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.util.SecurityJson;
 import org.junit.Test;
 import picocli.CommandLine;
@@ -67,5 +68,30 @@ public class StreamToolPicocliTest extends StreamToolTest {
       "echo(Hello)"
     };
     assertEquals(2, runTool(args, StreamTool.class));
+  }
+
+  @Test
+  public void testRunEchoStreamRemotelyUsesSolrConnectionProperty() throws Exception {
+    // SOLR_CONNECTION reaches the JVM as the solr.connection property
+    String collectionName = "streamSolrConnectionPropertyCollection";
+    withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "_default", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        collectionName,
+        clusterShape(1, 1));
+
+    System.setProperty("solr.connection", getSolrConnection().toString());
+    String[] args = {
+      "stream",
+      "--execution",
+      "remote",
+      "-c",
+      collectionName,
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "echo(Hello)"
+    };
+    assertEquals(0, runTool(args, StreamTool.class));
   }
 }
