@@ -29,6 +29,12 @@ import org.junit.Test;
 /**
  * Tests that a "collection" parameter in the form body of a POST has its aliases resolved, and is
  * otherwise left as it is.
+ *
+ * <p>Every case here also passes on the base code, so these are end-behavior pins, not the
+ * discriminating proof: the SolrJ client used by these tests also places the collection parameter
+ * in the URL query string, where it already took precedence over the path, so these requests never
+ * present a body-only parameter to the server. The case that fails on base is the method-level
+ * {@code HttpSolrCallCollectionParamTest} in {@code org.apache.solr.servlet}.
  */
 public class AliasPostBodyTest extends SolrCloudTestCase {
 

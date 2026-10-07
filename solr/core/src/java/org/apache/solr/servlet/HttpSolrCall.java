@@ -126,6 +126,8 @@ public class HttpSolrCall {
   protected SolrQueryRequest solrReq = null;
   private boolean mustClearSolrRequestInfo = false;
   protected SolrRequestHandler handler = null;
+  // Parameters parsed from the URL query string only. Unlike getQueryParams(), this never
+  // includes a POST form body; use getQueryParams() when body parameters must be seen.
   protected SolrParams queryParams;
   protected String path;
   protected Action action;

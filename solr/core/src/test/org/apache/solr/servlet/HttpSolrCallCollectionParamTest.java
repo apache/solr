@@ -46,6 +46,28 @@ public class HttpSolrCallCollectionParamTest extends SolrTestCase {
 
   @Test
   public void testAddCollectionParamIfNeededKeepsBodyValueForTwoCollectionPath() {
+    HttpSolrCall call = callWithBodyCollection("bodycoll");
+
+    // The request path names an alias that resolves to two collections.
+    call.addCollectionParamIfNeeded(List.of("emptycollection", "doccollection"));
+
+    assertEquals("bodycoll", call.solrReq.getParams().get(COLLECTION_PROP));
+  }
+
+  @Test
+  public void testAddCollectionParamIfNeededKeepsNonexistentBodyValue() {
+    HttpSolrCall call = callWithBodyCollection("nosuchcoll");
+
+    call.addCollectionParamIfNeeded(List.of("emptycollection", "doccollection"));
+
+    // A name that is not an alias resolves to itself, so the value is kept as sent and the
+    // request fails later, as a request for a missing collection, the same as a URL collection
+    // parameter naming a missing collection. On the base code the value was replaced by the
+    // joined path list here, and the request silently used the path collections instead.
+    assertEquals("nosuchcoll", call.solrReq.getParams().get(COLLECTION_PROP));
+  }
+
+  private static HttpSolrCall callWithBodyCollection(String bodyCollection) {
     CoreContainer cores = mock(CoreContainer.class);
     when(cores.isZooKeeperAware()).thenReturn(true);
     when(cores.getAliases()).thenReturn(Aliases.EMPTY);
@@ -60,13 +82,9 @@ public class HttpSolrCallCollectionParamTest extends SolrTestCase {
     call.queryParams = SolrRequestParsers.parseQueryString("q=*:*");
     // ...but the parsed request, which merges in the POST form body, carries one.
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
-    requestParams.set(COLLECTION_PROP, "bodycoll");
+    requestParams.set(COLLECTION_PROP, bodyCollection);
     requestParams.set("q", "*:*");
     call.solrReq = new SolrQueryRequestBase(null, requestParams);
-
-    // The request path names an alias that resolves to two collections.
-    call.addCollectionParamIfNeeded(List.of("emptycollection", "doccollection"));
-
-    assertEquals("bodycoll", call.solrReq.getParams().get(COLLECTION_PROP));
+    return call;
   }
 }
