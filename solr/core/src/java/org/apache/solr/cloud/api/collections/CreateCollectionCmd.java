@@ -442,7 +442,12 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       boolean failure =
           results.get("failure") != null
               && ((SimpleOrderedMap<?>) results.get("failure")).size() > 0;
-      String failureDetail = failure ? String.valueOf(results.get("failure")) : null;
+      String failureDetail = null;
+      if (failure) {
+        // Name the first failure only. The map holds one entry per failed core, and dumping all
+        // of them puts every node's error text, URLs and paths included, in the client message.
+        failureDetail = String.valueOf(((SimpleOrderedMap<?>) results.get("failure")).getVal(0));
+      }
       if (isPRS) {
         TimeOut timeout =
             new TimeOut(
