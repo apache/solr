@@ -1150,7 +1150,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
   private int filterCacheSize() {
     var ref = h.getCore().getSearcher();
     try {
-      return ref.get().getFilterCache().size();
+      var filterCache = ref.get().getFilterCache();
+      return filterCache == null ? 0 : filterCache.size();
     } finally {
       ref.decref();
     }
