@@ -82,8 +82,7 @@ More info: https://docs.asciidoctor.org/asciidoc/latest/verbatim/source-blocks/
 The HTML output uses https://highlightjs.org/[highlight.js] to add syntax highlighting to code examples.
 This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
 
-The highlight.js build of the Guide's UI bundle includes only some languages, so only these names get highlighting:
-`asciidoc`, `bash`, `clojure`, `console`, `cpp`, `cs`, `css`, `diff`, `dockerfile`, `elixir`, `go`, `groovy`, `haskell`, `java`, `javascript`, `json`, `julia`, `kotlin`, `lua`, `markdown`, `nix`, `objectivec`, `perl`, `php`, `properties`, `puppet`, `python`, `ruby`, `rust`, `scala`, `shell`, `sql`, `swift`, `xml` and `yaml`, plus the usual aliases such as `sh` and `yml`.
+Only the languages in the highlight.js build of the Guide's UI bundle are highlighted.
 A block with any other language name is shown without highlighting, and the browser console logs a warning.
 Adding a language is a change to the UI bundle, not to the pages.
 
