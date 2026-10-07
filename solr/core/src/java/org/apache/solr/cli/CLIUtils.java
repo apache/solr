@@ -69,7 +69,7 @@ public final class CLIUtils {
    * long-running requests like bulk indexing or replica recovery; a CLI command run by a human at a
    * terminal should fail fast instead of hanging for minutes against an unresponsive node.
    */
-  public static final int CLI_CONNECTION_TIMEOUT_SECONDS = 15;
+  public static final int CLI_CONNECTION_TIMEOUT_SECONDS = 3;
 
   public static final int CLI_IDLE_TIMEOUT_SECONDS = 30;
 
