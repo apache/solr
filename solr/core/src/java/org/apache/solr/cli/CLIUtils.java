@@ -77,7 +77,7 @@ public final class CLIUtils {
       CommandLine cli) throws IOException {
     String solrConnection =
         getCliOptionOrPropValue(
-            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr-connection", null);
+            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr.connection", null);
     if (solrConnection != null && !solrConnection.isBlank()) {
       return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
     }
@@ -233,7 +233,11 @@ public final class CLIUtils {
   /**
    * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * SolrCloud.
+   *
+   * @deprecated Only used by the commons-cli parser. Picocli tools resolve the URL from their own
+   *     annotated connection options and call {@link #normalizeSolrUrl(String)}.
    */
+  @Deprecated
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 

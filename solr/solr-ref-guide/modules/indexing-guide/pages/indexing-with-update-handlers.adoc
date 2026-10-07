@@ -60,7 +60,7 @@ The simplest way to add documents via JSON is to send each document individually
 
 [source,bash]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update/json/docs' --data-binary '
+curl 'http://localhost:8983/solr/{collectionName}/update/json/docs' -H 'Content-Type: application/json' --data-binary '
 {
   "id": "1",
   "title": "Doc 1"
@@ -73,7 +73,7 @@ Adding multiple documents at one time via JSON can be done via a JSON Array of J
 
 [source,bash]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H 'Content-Type: application/json' --data-binary '
 [
   {
     "id": "1",
@@ -100,7 +100,7 @@ Multiple commands, adding and deleting documents, may be contained in one messag
 
 [source,bash,subs="verbatim,callouts"]
 ----
-curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_collection/update' --data-binary '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H 'Content-Type: application/json' --data-binary '
 {
   "add": {
     "doc": {
@@ -371,7 +371,7 @@ For example:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary '
+curl http://localhost:8983/solr/{collectionName}/update -H "Content-Type: text/xml" --data-binary '
 <add>
   <doc>
     <field name="authors">Patrick Eagar</field>
@@ -388,7 +388,7 @@ For posting XML messages contained in a file, you can use the alternative form:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary @myfile.xml
+curl http://localhost:8983/solr/{collectionName}/update -H "Content-Type: text/xml" --data-binary @myfile.xml
 ----
 
 The approach above works well, but using the `--data-binary` option causes `curl` to load the whole `myfile.xml` into memory before posting it to server.
@@ -397,7 +397,7 @@ This alternative `curl` command performs equivalent operations but with minimal 
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
+curl http://localhost:8983/solr/{collectionName}/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 
 Responses from Solr take the form shown here:
@@ -494,9 +494,9 @@ One example usage would be to copy a Solr 1.3 index (which does not have CSV res
 
 [source,bash]
 ----
-$ curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
+curl -o standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml"
 
-$ curl -X POST -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl"
+curl "http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl" -H "Content-Type: text/xml" -d @standard_solr_xml_format.xml
 ----
 
 NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
@@ -509,7 +509,7 @@ A sample CSV file is provided at `example/exampledocs/books.csv` that you can us
 
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update?commit=true' --data-binary @example/exampledocs/books.csv -H 'Content-type:application/csv'
+curl 'http://localhost:8983/solr/{collectionName}/update?commit=true' --data-binary @example/exampledocs/books.csv -H 'Content-type:application/csv'
 ----
 
 === CSV Update Parameters
@@ -735,7 +735,7 @@ This file could then be imported into Solr by setting the `separator` to tab (%0
 
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
+curl 'http://localhost:8983/solr/{collectionName}/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
 ----
 
 === CSV Update Convenience Paths

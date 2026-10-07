@@ -95,7 +95,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"name": "gettingstarted", "numShards": 1, "properties": {"my.custom.prop": "edismax"}}' http://localhost:8983/api/collections
+curl 'http://localhost:8983/api/collections' -H 'Content-type: application/json' -d '{"name": "gettingstarted", "numShards": 1, "properties": {"my.custom.prop": "edismax"}}'
 ----
 ====
 ======
