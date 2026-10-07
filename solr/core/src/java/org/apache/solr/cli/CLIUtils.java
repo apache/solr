@@ -261,7 +261,7 @@ public final class CLIUtils {
       String solrConnection =
           (connectionOptions != null && connectionOptions.solrConnection != null)
               ? connectionOptions.solrConnection
-              : EnvUtils.getProperty("solr-connection");
+              : EnvUtils.getProperty("solr.connection");
       String zkHost =
           (connectionOptions != null && connectionOptions.zkHost != null)
               ? connectionOptions.zkHost

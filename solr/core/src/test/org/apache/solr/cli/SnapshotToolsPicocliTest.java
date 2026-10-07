@@ -67,6 +67,20 @@ public class SnapshotToolsPicocliTest extends SnapshotToolsTest {
   }
 
   @Test
+  public void testConnectionFallsBackToTheSolrConnectionProperty() throws Exception {
+    // SOLR_CONNECTION reaches the JVM as the solr.connection property
+    run(SnapshotCreateTool.class, "snapshot-create", "--snapshot-name", "snapViaConnection");
+
+    System.setProperty("solr.connection", cluster.getZkClient().getZkServerAddress());
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    assertEquals(
+        0,
+        runTool(new String[] {"snapshot-list", "-c", COLLECTION}, runtime, SnapshotListTool.class));
+    assertTrue(runtime.getOutput(), runtime.getOutput().contains("snapViaConnection"));
+    run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "snapViaConnection");
+  }
+
+  @Test
   public void testOldSpellingsStillWork() throws Exception {
     CommandLine root = root(new CLITestHelper.TestingRuntime(true));
     String url = cluster.getJettySolrRunner(0).getBaseUrl().toString();

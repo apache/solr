@@ -81,16 +81,11 @@ public class SnapshotToolsTest extends SolrCloudTestCase {
     run(SnapshotCreateTool.class, "snapshot-create", "--snapshot-name", "snapViaProperty");
 
     System.setProperty("zkHost", cluster.getZkClient().getZkServerAddress());
-    try {
-      CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-      assertEquals(
-          0,
-          runTool(
-              new String[] {"snapshot-list", "-c", COLLECTION}, runtime, SnapshotListTool.class));
-      assertTrue(runtime.getOutput(), runtime.getOutput().contains("snapViaProperty"));
-    } finally {
-      System.clearProperty("zkHost");
-    }
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    assertEquals(
+        0,
+        runTool(new String[] {"snapshot-list", "-c", COLLECTION}, runtime, SnapshotListTool.class));
+    assertTrue(runtime.getOutput(), runtime.getOutput().contains("snapViaProperty"));
     run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "snapViaProperty");
   }
 }
