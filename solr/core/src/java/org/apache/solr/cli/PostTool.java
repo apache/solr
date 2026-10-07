@@ -482,6 +482,10 @@ public class PostTool extends ToolBase {
     return Files.exists(srcFile);
   }
 
+  private boolean matchesFileTypes(Path file) {
+    return !auto || fileFilter == null || fileFilter.test(file);
+  }
+
   private static Collection<Path> listFiles(Path directory, Predicate<Path> fileFilter)
       throws IOException {
     Predicate<Path> filter = fileFilter != null ? fileFilter : p -> true;
@@ -523,7 +527,7 @@ public class PostTool extends ToolBase {
     reset();
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
-      filesPosted = getFilesPosted(out, type, args[j]);
+      filesPosted += getFilesPosted(out, type, args[j]);
     }
     return filesPosted;
   }
@@ -536,7 +540,11 @@ public class PostTool extends ToolBase {
     if (isValidPath && Files.isDirectory(srcFile) && Files.isReadable(srcFile)) {
       filesPosted += postDirectory(srcFile, out, type);
     } else if (isValidPath && Files.isRegularFile(srcFile) && Files.isReadable(srcFile)) {
-      filesPosted += postFiles(List.of(srcFile), out, type);
+      if (matchesFileTypes(srcFile)) {
+        filesPosted += postFiles(List.of(srcFile), out, type);
+      } else {
+        warn("Skipping " + srcFile + ", its file type is not in " + fileTypes);
+      }
     } else {
       filesPosted += handleGlob(src, out, type);
     }
@@ -612,9 +620,12 @@ public class PostTool extends ToolBase {
     }
     String fileGlob = globPath.getFileName().toString();
     GlobFilter ff = new GlobFilter(fileGlob, false);
-    Collection<Path> fileList = listFiles(parent, ff);
-    if (fileList.isEmpty()) {
+    Collection<Path> matches = listFiles(parent, ff);
+    List<Path> fileList = matches.stream().filter(this::matchesFileTypes).toList();
+    if (matches.isEmpty()) {
       warn("No files or directories matching " + globPath);
+    } else if (fileList.isEmpty()) {
+      warn("No files matching " + globPath + " have a file type in " + fileTypes);
     } else {
       filesPosted = postFiles(fileList, out, type);
     }
