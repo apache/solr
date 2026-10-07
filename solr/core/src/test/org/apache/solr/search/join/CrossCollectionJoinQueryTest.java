@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -30,12 +32,15 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -268,6 +273,80 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
     testCcJoinQuery(
         "{!join_nonrouted method=crossCollection fromIndex=products from=product_id_s to=product_id_s routed=true}size_s:M",
         false);
+  }
+
+  @Test
+  public void testCcJoinWithTrailingUnmatchedExportSegment() throws Exception {
+    final String fromCollection = "products_16130";
+    final String toCollection = "parts_16130";
+    try {
+      CollectionAdminRequest.createCollection(fromCollection, "ccjoin", 1, 1)
+          .process(cluster.getSolrClient());
+      CollectionAdminRequest.createCollection(toCollection, "ccjoin", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(fromCollection, 1, 1);
+      cluster.waitForActiveCollection(toCollection, 1, 1);
+
+      List<SolrInputDocument> matchingFromDocs = new ArrayList<>();
+      List<SolrInputDocument> matchingToDocs = new ArrayList<>();
+      for (int i = 0; i < 4; i++) {
+        matchingFromDocs.add(new SolrInputDocument("id", "from-" + i, "test_ids_s", "2105443792"));
+        matchingToDocs.add(new SolrInputDocument("id", "to-" + i, "to_id_s", "from-" + i));
+      }
+
+      indexDocs(fromCollection, matchingFromDocs);
+      cluster.getSolrClient().commit(fromCollection);
+
+      // Keep a later segment that contributes no matching documents to the export query.
+      List<SolrInputDocument> unmatchedFromDocs = new ArrayList<>();
+      for (int i = 0; i < 4; i++) {
+        unmatchedFromDocs.add(new SolrInputDocument("id", "unmatched-" + i, "test_ids_s", "other"));
+      }
+      indexDocs(fromCollection, unmatchedFromDocs);
+      cluster.getSolrClient().commit(fromCollection);
+
+      // The scenario depends on the two commits leaving separate segments in the from core:
+      // the first holds the matching docs, the second contributes no matches.
+      int fromLeaves = countLeaves(fromCollection);
+      assertTrue(
+          "expected at least 2 leaves (segments) in the from core, one per commit, but got "
+              + fromLeaves,
+          fromLeaves >= 2);
+
+      indexDocs(toCollection, matchingToDocs);
+      cluster.getSolrClient().commit(toCollection);
+
+      String query =
+          String.format(
+              Locale.ROOT,
+              "{!join method=crossCollection fromIndex=%s from=id to=to_id_s routed=false}test_ids_s:2105443792",
+              fromCollection);
+      QueryResponse response =
+          cluster.getSolrClient().query(toCollection, params("q", query, "rows", "10"));
+
+      assertEquals(4, response.getResults().getNumFound());
+      Set<String> ids = new HashSet<>();
+      for (SolrDocument doc : response.getResults()) {
+        ids.add((String) doc.getFieldValue("id"));
+      }
+      assertEquals(Set.of("to-0", "to-1", "to-2", "to-3"), ids);
+    } finally {
+      CollectionAdminRequest.deleteCollection(toCollection).process(cluster.getSolrClient());
+      CollectionAdminRequest.deleteCollection(fromCollection).process(cluster.getSolrClient());
+    }
+  }
+
+  private int countLeaves(String collection) throws IOException {
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      for (CoreDescriptor desc : jetty.getCoreContainer().getCoreDescriptors()) {
+        if (collection.equals(desc.getCollectionName())) {
+          try (SolrCore core = jetty.getCoreContainer().getCore(desc.getName())) {
+            return core.withSearcher(searcher -> searcher.getIndexReader().leaves().size());
+          }
+        }
+      }
+    }
+    throw new IllegalStateException("no core found for collection " + collection);
   }
 
   @Test
