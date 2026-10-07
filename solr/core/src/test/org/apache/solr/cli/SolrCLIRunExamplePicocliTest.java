@@ -52,14 +52,13 @@ public class SolrCLIRunExamplePicocliTest extends TestSolrCLIRunExample {
   public void testPortAndZkHostDefaultsComeFromTheProperties() {
     System.setProperty("solr.port.listen", "7777");
     System.setProperty("zkHost", "zk.example:2181");
-    try {
-      CommandLine cmd = parse();
-      assertEquals(7777, parsedValue(cmd, "--port"));
-      assertEquals("zk.example:2181", parsedValue(cmd, "--zk-host"));
-    } finally {
-      System.clearProperty("solr.port.listen");
-      System.clearProperty("zkHost");
-    }
+    CommandLine cmd = parse();
+    assertEquals(7777, parsedValue(cmd, "--port"));
+    assertEquals("zk.example:2181", parsedValue(cmd, "--zk-host"));
+  }
+
+  @Test
+  public void testPortDefaultsTo8983WithoutTheProperty() {
     assertEquals(8983, parsedValue(parse(), "--port"));
   }
 
