@@ -127,14 +127,32 @@ public class ConfigTool extends ToolBase {
       description = "Name of the collection.")
   private String nameOpt;
 
+  /** The values of {@code --action}, spelled on the command line as {@link #toString()} says. */
+  enum Action {
+    SET_PROPERTY("set-property"),
+    UNSET_PROPERTY("unset-property"),
+    SET_USER_PROPERTY("set-user-property"),
+    UNSET_USER_PROPERTY("unset-user-property");
+
+    private final String id;
+
+    Action(String id) {
+      this.id = id;
+    }
+
+    @Override
+    public String toString() {
+      return id;
+    }
+  }
+
   @picocli.CommandLine.Option(
       names = {"-a", "--action"},
       defaultValue = "set-property",
       paramLabel = "ACTION",
       description =
-          "Config API action, one of: set-property, unset-property, set-user-property,"
-              + " unset-user-property; default is 'set-property'.")
-  private String actionOpt;
+          "Config API action, one of: ${COMPLETION-CANDIDATES}; default is '${DEFAULT-VALUE}'.")
+  private Action actionOpt;
 
   @picocli.CommandLine.Option(
       names = "--property",
@@ -244,13 +262,14 @@ public class ConfigTool extends ToolBase {
     String solrUrl = resolveSolrUrl(credentialsOptions.credentials);
 
     // value is required unless the property is one of the "unset-" type.
-    if (!actionOpt.contains("unset-") && valueOpt == null) {
+    String action = actionOpt.toString();
+    if (!action.contains("unset-") && valueOpt == null) {
       throw new MissingArgumentException("'value' is a required option.");
     }
 
     ConfigParams params =
         new ConfigParams(
-            solrUrl, actionOpt, nameOpt, propertyOpt, valueOpt, credentialsOptions.credentials);
+            solrUrl, action, nameOpt, propertyOpt, valueOpt, credentialsOptions.credentials);
     updateConfig(params);
     return 0;
   }

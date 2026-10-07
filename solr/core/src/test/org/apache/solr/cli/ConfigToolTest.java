@@ -90,4 +90,31 @@ public class ConfigToolTest extends SolrCloudTestCase {
     assertEquals(
         1, runTool(args("--property", "updateHandler.autoCommit.maxDocs"), ConfigTool.class));
   }
+
+  @Test
+  public void testSetAndUnsetUserProperty() throws Exception {
+    assertEquals(
+        0,
+        runTool(
+            args("--action", "set-user-property", "--property", "my.prop", "--value", "abc"),
+            ConfigTool.class));
+    assertTrue(overlay(), overlay().contains("my.prop=abc"));
+
+    assertEquals(
+        0,
+        runTool(
+            args("--action", "unset-user-property", "--property", "my.prop"), ConfigTool.class));
+    assertFalse(overlay(), overlay().contains("my.prop"));
+  }
+
+  @Test
+  public void testUnknownActionFails() throws Exception {
+    // commons-cli passes it on and the Config API refuses it (1); picocli rejects it first (2)
+    assertNotEquals(
+        0,
+        runTool(
+            args("--action", "no-such-action", "--property", "my.prop", "--value", "x"),
+            ConfigTool.class));
+    assertFalse(overlay(), overlay().contains("my.prop"));
+  }
 }
