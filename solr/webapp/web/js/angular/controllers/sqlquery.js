@@ -32,10 +32,7 @@ solrAdminApp.controller('SQLQueryController',
     };
     $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
 
-    // Handles both the success and error callbacks below: app.js's global interceptor
-    // (see failed()'s doNotIntercept branch) routes most failures for this request through
-    // the "success" callback too, so this must defend against a response that isn't a SQL
-    // result-set either way (e.g. the sql module/handler isn't installed - SOLR-16640).
+    // The global interceptor can route errors to the success callback, so handle both here.
     $scope.showResult = function(raw) {
       $scope.lang = "json";
       $scope.sqlError = null;
@@ -63,10 +60,8 @@ solrAdminApp.controller('SQLQueryController',
         return;
       }
 
-      //get all docs
       for (var i = 0; i < docs.length; i++) {
           var doc = docs[i]
-          //get all the properties
           if(doc.hasOwnProperty("EOF")){
               if(doc.hasOwnProperty("EXCEPTION")){
                   $scope.sqlError = doc.EXCEPTION
@@ -75,7 +70,7 @@ solrAdminApp.controller('SQLQueryController',
               $scope.gridOptions.data.push(doc);
           }
       }
-      //Build the columnFields from data
+      // Build grid columns from the result fields.
       var fields = $scope.gridOptions.data[1];
       for (var property in fields) {
           if (fields.hasOwnProperty(property)) {
