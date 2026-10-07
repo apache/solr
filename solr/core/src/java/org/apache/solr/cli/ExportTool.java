@@ -218,11 +218,19 @@ public class ExportTool extends ToolBase {
               + " 'collection-name'.")
   private String outputOpt;
 
+  /** The values of {@code --format}; each constant is spelled as it is on the command line. */
+  enum Format {
+    json,
+    jsonl,
+    javabin
+  }
+
   @picocli.CommandLine.Option(
       names = "--format",
       paramLabel = "FORMAT",
-      description = "Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-  private String formatOpt;
+      description =
+          "Output format for exported docs (${COMPLETION-CANDIDATES}), defaulting to json.")
+  private Format formatOpt;
 
   @picocli.CommandLine.Option(
       names = "--compress",
@@ -840,7 +848,7 @@ public class ExportTool extends ToolBase {
             credentialsOptions.credentials,
             queryOpt,
             outputOpt,
-            formatOpt,
+            formatOpt == null ? null : formatOpt.name(),
             compressOpt,
             fieldsOpt,
             limitOpt);

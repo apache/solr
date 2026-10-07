@@ -61,7 +61,7 @@ Exports documents from a collection to a local file.
   Comma separated list of fields to export. By default all fields are fetched.
 
 *--format*=_FORMAT_::
-  Output format for exported docs (json, jsonl or javabin), defaulting to json.
+  Output format for exported docs (json, jsonl, javabin), defaulting to json.
 
 *-h*, *--help*::
   Print this help message and exit.

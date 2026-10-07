@@ -99,4 +99,39 @@ public class ExportToolTest extends SolrCloudTestCase {
     // commons-cli reports 1; picocli reports its usage-error code 2
     assertNotEquals(0, runTool(new String[] {"export", "-c", COLLECTION}, ExportTool.class));
   }
+
+  private int exportTo(Path outDir, String... extraArgs) throws Exception {
+    String[] fixed = {
+      "export", "-c", COLLECTION, "--solr-url", solrUrl(), "--output", outDir.toString()
+    };
+    String[] args = new String[fixed.length + extraArgs.length];
+    System.arraycopy(fixed, 0, args, 0, fixed.length);
+    System.arraycopy(extraArgs, 0, args, fixed.length, extraArgs.length);
+    return runTool(args, ExportTool.class);
+  }
+
+  @Test
+  public void testFormatDefaultsToJson() throws Exception {
+    Path outDir = createTempDir();
+    assertEquals(0, exportTo(outDir));
+    String json = Files.readString(outDir.resolve(COLLECTION + ".json"));
+    assertTrue(json, json.contains("\"id\":\"1\""));
+  }
+
+  @Test
+  public void testJavabinFormat() throws Exception {
+    Path outDir = createTempDir();
+    assertEquals(0, exportTo(outDir, "--format", "javabin"));
+    assertTrue(Files.size(outDir.resolve(COLLECTION + ".javabin")) > 0);
+  }
+
+  @Test
+  public void testUnknownFormatFails() throws Exception {
+    Path outDir = createTempDir();
+    // commons-cli reports 1; picocli reports its usage-error code 2
+    assertNotEquals(0, exportTo(outDir, "--format", "xml"));
+    try (var written = Files.list(outDir)) {
+      assertEquals(List.of(), written.toList());
+    }
+  }
 }
