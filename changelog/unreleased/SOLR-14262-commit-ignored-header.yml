@@ -1,6 +1,6 @@
 title: >
   A commit that is skipped because the update log is not ACTIVE now reports commitIgnored in the response header instead of looking successful.
-type: fixed
+type: changed
 authors:
   - name: Nick Shanin
 links:
