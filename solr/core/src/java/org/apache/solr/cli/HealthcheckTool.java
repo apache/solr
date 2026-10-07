@@ -252,7 +252,7 @@ public class HealthcheckTool extends ToolBase {
     var solrConnection = resolveSolrConnection(credentialsOptions.credentials);
     if (solrConnection == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
-      runtime.exit(1);
+      return 1;
     }
     HealthcheckParams params = new HealthcheckParams(nameOpt, credentialsOptions.credentials);
     var builder =
