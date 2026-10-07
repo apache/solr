@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
@@ -50,6 +52,13 @@ public class StreamingSolrClients {
   private Map<String, ConcurrentUpdateBaseSolrClient> solrClients = new HashMap<>();
   private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
+  // Maps each UpdateRequest handed to a streaming client back to the distributor request it
+  // belongs to, so a failed stream can be attributed to the requests that were in it. Entries
+  // for failed requests are removed as their errors are reported; the rest live only as long
+  // as this object, which is a single distribution round.
+  private final Map<UpdateRequest, SolrCmdDistributor.Req> reqByUpdateRequest =
+      Collections.synchronizedMap(new IdentityHashMap<>());
+
   private ExecutorService updateExecutor;
 
   public StreamingSolrClients(UpdateShardHandler updateShardHandler) {
@@ -66,6 +75,7 @@ public class StreamingSolrClients {
   }
 
   public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
+    reqByUpdateRequest.put(req.uReq, req);
     String url = getFullUrl(req.node.getUrl());
     ConcurrentUpdateBaseSolrClient client = solrClients.get(url);
     if (client == null) {
@@ -76,7 +86,7 @@ public class StreamingSolrClients {
           StrUtils.isNotBlank(req.node.getCoreName()) ? req.node.getCoreName() : null;
       client =
           new ErrorReportingConcurrentUpdateSolrClient.Builder(
-                  req.node.getBaseUrl(), httpClient, req, errors)
+                  req.node.getBaseUrl(), httpClient, req, errors, reqByUpdateRequest)
               .withDefaultCollection(defaultCore)
               .withQueueSize(100)
               .withThreadCount(runnerCount)
@@ -127,26 +137,48 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCmdDistributor.Req req;
   private final List<SolrError> errors;
+  private final Map<UpdateRequest, SolrCmdDistributor.Req> reqByUpdateRequest;
 
   public ErrorReportingConcurrentUpdateSolrClient(Builder builder) {
     super(builder);
     this.req = builder.req;
     this.errors = builder.errors;
+    this.reqByUpdateRequest = builder.reqByUpdateRequest;
   }
 
   @Override
   public void handleError(Throwable ex) {
-    log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
+    recordError(ex, req);
+  }
+
+  @Override
+  protected void handleError(
+      Throwable ex, List<UpdateRequest> requests, List<String> failedIds, String collection) {
+    if (requests.isEmpty()) {
+      handleError(ex);
+      return;
+    }
+    // The failure belongs to the stream as a whole, so record it once against each request
+    // that was actually in the stream, instead of once against the request this client
+    // happened to be built with.
+    for (UpdateRequest updateRequest : requests) {
+      SolrCmdDistributor.Req streamReq = reqByUpdateRequest.remove(updateRequest);
+      recordError(ex, streamReq != null ? streamReq : req);
+    }
+  }
+
+  private void recordError(Throwable ex, SolrCmdDistributor.Req errorReq) {
+    log.error("Error when calling {} to {}", errorReq, errorReq.node.getUrl(), ex);
     SolrError error = new SolrError();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {
       error.statusCode = ((SolrException) ex).code();
     }
-    error.req = req;
+    error.req = errorReq;
     errors.add(error);
-    if (!req.shouldRetry(error)) {
+    if (!errorReq.shouldRetry(error)) {
       // only track the error if we are not retrying the request
-      req.trackRequestResult(null, null, false);
+      errorReq.trackRequestResult(null, null, false);
     }
   }
 
@@ -159,6 +191,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
     protected SolrCmdDistributor.Req req;
     protected List<SolrError> errors;
+    protected Map<UpdateRequest, SolrCmdDistributor.Req> reqByUpdateRequest;
 
     /**
      * @param baseSolrUrl the base URL of a Solr node. Should <em>not</em> contain a collection or
@@ -166,15 +199,19 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
      * @param client the client to use in making requests
      * @param req the command distributor request object for this client
      * @param errors a collector for any errors
+     * @param reqByUpdateRequest maps each submitted update request back to its distributor request,
+     *     for attributing stream errors
      */
     public Builder(
         String baseSolrUrl,
         HttpJettySolrClient client,
         SolrCmdDistributor.Req req,
-        List<SolrError> errors) {
+        List<SolrError> errors,
+        Map<UpdateRequest, SolrCmdDistributor.Req> reqByUpdateRequest) {
       super(baseSolrUrl, client);
       this.req = req;
       this.errors = errors;
+      this.reqByUpdateRequest = reqByUpdateRequest;
     }
 
     @Override

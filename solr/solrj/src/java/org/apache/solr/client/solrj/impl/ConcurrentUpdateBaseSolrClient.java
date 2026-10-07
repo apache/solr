@@ -252,6 +252,39 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     return ids;
   }
 
+  /**
+   * The updates written into the stream the calling runner thread is currently sending. Stream
+   * implementations report them via {@link #recordStreamedUpdate(Update)} so that a failure of the
+   * stream can be attributed to the requests it contained.
+   */
+  private final ThreadLocal<List<Update>> updatesInCurrentStream = new ThreadLocal<>();
+
+  /**
+   * Records that {@code update} was written into the stream currently being sent on this thread.
+   * Implementations of {@link #doSendUpdateStream(Update)} that merge several queued updates into
+   * one stream must call this for every update they write; updates that are polled but returned to
+   * the queue unsent must not be recorded.
+   */
+  protected final void recordStreamedUpdate(Update update) {
+    List<Update> updates = updatesInCurrentStream.get();
+    if (updates != null) {
+      updates.add(update);
+    }
+  }
+
+  /** The requests written into the stream that {@code firstUpdate} started, in write order. */
+  private List<UpdateRequest> requestsInStream(Update firstUpdate) {
+    List<Update> updates = updatesInCurrentStream.get();
+    if (updates == null || updates.isEmpty()) {
+      return firstUpdate == null ? List.of() : List.of(firstUpdate.request());
+    }
+    List<UpdateRequest> requests = new ArrayList<>(updates.size());
+    for (Update update : updates) {
+      requests.add(update.request());
+    }
+    return requests;
+  }
+
   /** Opens a connection and sends everything... */
   class Runner implements Runnable {
 
@@ -302,13 +335,15 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
           InputStream rspBody = null;
           List<String> docIds = List.of();
           String collection = null;
+          Update update = null;
           try {
             notifyQueueAndRunnersIfEmptyQueue();
-            Update update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
+            update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
 
             if (update == null) {
               break;
             }
+            updatesInCurrentStream.set(new ArrayList<>());
 
             SentStream sent = doSendUpdateStream(update);
             StreamingResponse responseListener = sent.response();
@@ -334,7 +369,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
                 solrExc = new RemoteSolrException(basePath, statusCode, remoteError);
               }
 
-              handleError(solrExc, docIds, collection);
+              handleError(solrExc, requestsInStream(update), docIds, collection);
             } else {
               onSuccess(responseListener.getUnderlyingResponse(), rspBody);
             }
@@ -343,14 +378,16 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
           } catch (OutOfMemoryError | InterruptedException e) {
             throw e;
           } catch (RemoteSolrException e) {
-            handleError(e, docIds, collection);
+            handleError(e, requestsInStream(update), docIds, collection);
           } catch (Throwable e) {
             handleError(
                 new SolrServerException(
                     "Error from server at " + basePath + ": " + e.getMessage(), e),
+                requestsInStream(update),
                 docIds,
                 collection);
           } finally {
+            updatesInCurrentStream.remove();
             try {
               consumeFully(rspBody);
             } catch (Exception e) {
@@ -616,6 +653,27 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     if (threadInterrupted) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  /**
+   * Called when sending a stream of updates fails. {@code requests} holds the update requests that
+   * were written into the failed stream, in the order they were written, so a subclass can
+   * attribute the failure to the requests it actually involved. Stream implementations report the
+   * merged requests via {@link #recordStreamedUpdate(Update)}; when none were reported, {@code
+   * requests} holds only the request the stream was started with.
+   *
+   * <p>The default implementation reports the failure once for the stream as a whole, exactly like
+   * {@link #handleError(Throwable)}. Override it to react per request instead.
+   *
+   * @param ex the failure
+   * @param requests the update requests written into the failed stream
+   * @param failedIds ids of the documents in the stream, as computed for an {@link
+   *     UpdateErrorHandler}; empty when no error handler is registered
+   * @param collection the collection the stream was sent to, or null
+   */
+  protected void handleError(
+      Throwable ex, List<UpdateRequest> requests, List<String> failedIds, String collection) {
+    handleError(ex, failedIds, collection);
   }
 
   public void handleError(Throwable ex) {
