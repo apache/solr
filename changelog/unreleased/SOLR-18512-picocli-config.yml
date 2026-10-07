@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
-title: The `config` command is now available in the experimental picocli command line interface.
+title: The `config` command is now available in the experimental picocli command line interface; there `--value` has no `-v` short form, use `--value`.
 type: added
 authors:
   - name: Serhiy Bzhezytskyy
