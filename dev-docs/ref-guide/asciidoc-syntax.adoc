@@ -79,14 +79,15 @@ More info: https://docs.asciidoctor.org/asciidoc/latest/verbatim/source-blocks/
 
 === Source Block Syntax Highlighting
 
-The HTML output uses Rouge to add syntax highlighting to code examples.
+The HTML output uses https://highlightjs.org/[highlight.js] to add syntax highlighting to code examples.
 This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
 
-Rouge has a long selection of lexers available.
-You can see the full list at https://github.com/rouge-ruby/rouge/wiki/List-of-supported-languages-and-lexers.
-Use one of the valid short names to get syntax highlighting for that language.
+The highlight.js build of the Guide's UI bundle includes only some languages, so only these names get highlighting:
+`asciidoc`, `bash`, `clojure`, `console`, `cpp`, `cs`, `css`, `diff`, `dockerfile`, `elixir`, `go`, `groovy`, `haskell`, `java`, `javascript`, `json`, `julia`, `kotlin`, `lua`, `markdown`, `nix`, `objectivec`, `perl`, `php`, `properties`, `puppet`, `python`, `ruby`, `rust`, `scala`, `shell`, `sql`, `swift`, `xml` and `yaml`, plus the usual aliases such as `sh` and `yml`.
+A block with any other language name is shown without highlighting, and the browser console logs a warning.
+Adding a language is a change to the UI bundle, not to the pages.
 
-Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible.
+Use `text` for output and for anything that needs no highlighting; `plain` and `nohighlight` behave the same.
 When in doubt, choose `text`, or leave it blank.
 Commands are the exception: see <<Command Blocks>>.
 
@@ -97,7 +98,7 @@ Use the same block style for every `curl`, `bin/solr` or other shell command, so
 * A block with commands only uses `bash` and no prompt, so it can be copied as is.
 * A block that also shows the output of the commands uses `console`, with `$` at the start of each command line, so the commands stand out from the output.
 * A block that shows output alone uses `text`.
-* The Windows variant of a command uses `powershell`.
+* The Windows variant of a command uses `powershell`, which the highlight.js build does not include yet, so it is shown without highlighting.
 
 .Example Command Blocks
 [source]
