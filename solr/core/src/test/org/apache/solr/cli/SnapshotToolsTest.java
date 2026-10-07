@@ -26,7 +26,7 @@ import org.junit.Test;
 
 /** The snapshot-create, -list, -describe and -delete commands through the command line. */
 public class SnapshotToolsTest extends SolrCloudTestCase {
-  private static final String COLLECTION = "snapshotToolsColl";
+  static final String COLLECTION = "snapshotToolsColl";
 
   /** Runs the tool. Overridden by the picocli variant of this test. */
   protected int runTool(
@@ -45,8 +45,7 @@ public class SnapshotToolsTest extends SolrCloudTestCase {
     cluster.getSolrClient().commit(COLLECTION);
   }
 
-  private String run(Class<? extends ToolBase> tool, String name, String... extra)
-      throws Exception {
+  String run(Class<? extends ToolBase> tool, String name, String... extra) throws Exception {
     List<String> args =
         new ArrayList<>(
             List.of(

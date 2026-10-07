@@ -28,10 +28,10 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 /** Supports snapshot-list command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "snapshot-list",
+    name = "list",
     description = "Lists the snapshots for a collection.",
     footerHeading = "%nExamples:%n",
-    footer = {"  # List a collection's snapshots", "  bin/solr snapshot-list -c mycollection"})
+    footer = {"  # List a collection's snapshots", "  bin/solr snapshot list -c mycollection"})
 public class SnapshotListTool extends ToolBase {
 
   /**
@@ -58,12 +58,7 @@ public class SnapshotListTool extends ToolBase {
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of collection to list snapshots for.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
 
   public SnapshotListTool() {
     this(new DefaultToolRuntime());
@@ -132,7 +127,7 @@ public class SnapshotListTool extends ToolBase {
         new SnapshotListParams(
             CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
             credentialsOptions.credentials,
-            nameOpt);
+            collection.name);
     listSnapshots(params);
     return 0;
   }

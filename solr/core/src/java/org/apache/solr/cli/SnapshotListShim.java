@@ -17,16 +17,15 @@
 package org.apache.solr.cli;
 
 /**
- * Runs the {@link SnapshotExportToolTest} tests that go through {@code runTool} using the {@code
- * bin/solr snapshot export} sub-command; the tests that call the commons-cli parser directly are
- * inherited and run unchanged.
+ * The old top-level {@code snapshot-list} spelling of {@code bin/solr snapshot list}, kept so that
+ * existing scripts keep working. It is hidden from help and the reference guide.
+ *
+ * @deprecated Use {@code bin/solr snapshot list}; this spelling is removed in Solr 12.
  */
-public class SnapshotExportToolPicocliTest extends SnapshotExportToolTest {
-
-  @Override
-  protected int runTool(
-      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
-      throws Exception {
-    return SnapshotToolsPicocliTest.runAsGroup(args, runtime);
-  }
-}
+@Deprecated(since = "11.0")
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "snapshot-list",
+    hidden = true,
+    description = "Deprecated; use 'snapshot list'.")
+public class SnapshotListShim extends SnapshotListTool {}

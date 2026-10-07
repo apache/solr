@@ -36,12 +36,12 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 /** Supports snapshot-describe command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "snapshot-describe",
+    name = "describe",
     description = "Describes a named snapshot of a collection.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Describe a snapshot",
-      "  bin/solr snapshot-describe -c mycollection --snapshot-name snap1"
+      "  bin/solr snapshot describe -c mycollection --snapshot-name snap1"
     })
 public class SnapshotDescribeTool extends ToolBase {
 
@@ -84,19 +84,9 @@ public class SnapshotDescribeTool extends ToolBase {
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of collection to be snapshot.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
 
-  @picocli.CommandLine.Option(
-      names = "--snapshot-name",
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the snapshot to describe")
-  private String snapshotNameOpt;
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
 
   public SnapshotDescribeTool() {
     this(new DefaultToolRuntime());
@@ -199,8 +189,8 @@ public class SnapshotDescribeTool extends ToolBase {
         new SnapshotDescribeParams(
             CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
             credentialsOptions.credentials,
-            nameOpt,
-            snapshotNameOpt);
+            collection.name,
+            snapshot.name);
     describeSnapshot(params);
     return 0;
   }

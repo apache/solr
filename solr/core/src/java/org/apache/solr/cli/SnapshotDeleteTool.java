@@ -26,12 +26,12 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 /** Supports snapshot-delete command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "snapshot-delete",
+    name = "delete",
     description = "Deletes a named snapshot of a collection.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Delete a snapshot",
-      "  bin/solr snapshot-delete -c mycollection --snapshot-name snap1"
+      "  bin/solr snapshot delete -c mycollection --snapshot-name snap1"
     })
 public class SnapshotDeleteTool extends ToolBase {
 
@@ -74,19 +74,9 @@ public class SnapshotDeleteTool extends ToolBase {
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of collection to manage.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
 
-  @picocli.CommandLine.Option(
-      names = "--snapshot-name",
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the snapshot to delete")
-  private String snapshotNameOpt;
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
 
   public SnapshotDeleteTool() {
     this(new DefaultToolRuntime());
@@ -160,8 +150,8 @@ public class SnapshotDeleteTool extends ToolBase {
         new SnapshotDeleteParams(
             CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
             credentialsOptions.credentials,
-            nameOpt,
-            snapshotNameOpt);
+            collection.name,
+            snapshot.name);
     deleteSnapshot(params);
     return 0;
   }

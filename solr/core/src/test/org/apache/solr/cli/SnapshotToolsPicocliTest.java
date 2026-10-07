@@ -16,21 +16,107 @@
  */
 package org.apache.solr.cli;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Test;
 import picocli.CommandLine;
 
-/** Runs the {@link SnapshotToolsTest} tests through picocli. */
+/**
+ * Runs {@link SnapshotToolsTest} through picocli, using the {@code bin/solr snapshot <sub-command>}
+ * group, and checks that the old {@code snapshot-*} spellings still work as hidden, deprecated
+ * shims.
+ */
 public class SnapshotToolsPicocliTest extends SnapshotToolsTest {
+
+  /**
+   * Builds the real root command, giving each tool the test's runtime so its output is captured.
+   */
+  private static CommandLine root(CLITestHelper.TestingRuntime runtime) {
+    CommandLine.IFactory factory =
+        new CommandLine.IFactory() {
+          @Override
+          public <K> K create(Class<K> cls) throws Exception {
+            if (ToolBase.class.isAssignableFrom(cls)) {
+              try {
+                return cls.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
+              } catch (NoSuchMethodException e) {
+                // a shim: it has only the default constructor
+              }
+            }
+            return CommandLine.defaultFactory().create(cls);
+          }
+        };
+    return new CommandLine(new SolrCLI(), factory);
+  }
+
+  /** Runs a commons-cli style {@code snapshot-<x> ...} command line as {@code snapshot <x> ...}. */
+  static int runAsGroup(String[] args, CLITestHelper.TestingRuntime runtime) {
+    List<String> grouped =
+        new ArrayList<>(List.of("snapshot", args[0].substring("snapshot-".length())));
+    grouped.addAll(List.of(args).subList(1, args.length));
+    return root(runtime).execute(grouped.toArray(new String[0]));
+  }
 
   @Override
   protected int runTool(
       String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
       throws Exception {
-    // args[0] is the tool name used by commons-cli dispatch; strip it for picocli.
-    String[] toolArgs = Arrays.copyOfRange(args, 1, args.length);
-    ToolBase tool = clazz.getDeclaredConstructor(ToolRuntime.class).newInstance(runtime);
-    return new CommandLine(tool)
-        .setDefaultValueProvider(new CliDefaultValueProvider())
-        .execute(toolArgs);
+    return runAsGroup(args, runtime);
+  }
+
+  @Test
+  public void testOldSpellingsStillWork() throws Exception {
+    CommandLine root = root(new CLITestHelper.TestingRuntime(true));
+    String url = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+
+    assertEquals(
+        0,
+        root.execute(
+            "snapshot-create",
+            "-c",
+            COLLECTION,
+            "--snapshot-name",
+            "oldSpelling",
+            "--solr-url",
+            url));
+    assertTrue(run(SnapshotListTool.class, "snapshot-list").contains("oldSpelling"));
+    assertEquals(
+        0,
+        root.execute(
+            "snapshot-delete",
+            "-c",
+            COLLECTION,
+            "--snapshot-name",
+            "oldSpelling",
+            "--solr-url",
+            url));
+    assertFalse(run(SnapshotListTool.class, "snapshot-list").contains("oldSpelling"));
+  }
+
+  @Test
+  public void testOldSpellingsAreHiddenAndDeprecated() {
+    CommandLine root = root(new CLITestHelper.TestingRuntime(true));
+    for (String sub : List.of("create", "delete", "describe", "export", "list")) {
+      CommandLine shim = root.getSubcommands().get("snapshot-" + sub);
+      assertNotNull("snapshot-" + sub, shim);
+      assertTrue("snapshot-" + sub, shim.getCommandSpec().usageMessage().hidden());
+      Deprecated deprecated = shim.getCommand().getClass().getAnnotation(Deprecated.class);
+      assertNotNull("snapshot-" + sub, deprecated);
+      assertEquals("11.0", deprecated.since());
+    }
+    assertFalse(root.getUsageMessage().contains("snapshot-create"));
+    assertTrue(root.getUsageMessage().contains("snapshot"));
+  }
+
+  @Test
+  public void testGroupListsItsSubCommands() {
+    String usage =
+        root(new CLITestHelper.TestingRuntime(true))
+            .getSubcommands()
+            .get("snapshot")
+            .getUsageMessage();
+    for (String sub : List.of("create", "delete", "describe", "export", "list")) {
+      assertTrue(sub + " in " + usage, usage.contains(sub));
+    }
   }
 }

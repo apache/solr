@@ -16,17 +16,31 @@
  */
 package org.apache.solr.cli;
 
+import java.util.concurrent.Callable;
+import picocli.CommandLine;
+
 /**
- * Runs the {@link SnapshotExportToolTest} tests that go through {@code runTool} using the {@code
- * bin/solr snapshot export} sub-command; the tests that call the commons-cli parser directly are
- * inherited and run unchanged.
+ * Sub commands for working with collection snapshots, only here to provide a common parent for the
+ * subcommands and print tool help.
  */
-public class SnapshotExportToolPicocliTest extends SnapshotExportToolTest {
+@CommandLine.Command(
+    name = "snapshot",
+    description = "Sub commands for working with collection snapshots.",
+    footer = "\nPass --help or -h after any COMMAND to see command-specific usage information.",
+    subcommands = {
+      SnapshotCreateTool.class,
+      SnapshotDeleteTool.class,
+      SnapshotDescribeTool.class,
+      SnapshotExportTool.class,
+      SnapshotListTool.class
+    })
+public class SnapshotTool implements Callable<Integer> {
+  @CommandLine.Mixin HelpMixin helpMixin;
+  @CommandLine.Spec CommandLine.Model.CommandSpec spec;
 
   @Override
-  protected int runTool(
-      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
-      throws Exception {
-    return SnapshotToolsPicocliTest.runAsGroup(args, runtime);
+  public Integer call() {
+    spec.commandLine().usage(CLIO.getOutStream());
+    return 0;
   }
 }

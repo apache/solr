@@ -16,17 +16,15 @@
  */
 package org.apache.solr.cli;
 
-/**
- * Runs the {@link SnapshotExportToolTest} tests that go through {@code runTool} using the {@code
- * bin/solr snapshot export} sub-command; the tests that call the commons-cli parser directly are
- * inherited and run unchanged.
- */
-public class SnapshotExportToolPicocliTest extends SnapshotExportToolTest {
+import picocli.CommandLine;
 
-  @Override
-  protected int runTool(
-      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
-      throws Exception {
-    return SnapshotToolsPicocliTest.runAsGroup(args, runtime);
-  }
+/** Picocli mixin for the {@code --snapshot-name} option shared by the snapshot sub-commands. */
+class SnapshotNameOptions {
+
+  @CommandLine.Option(
+      names = "--snapshot-name",
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the snapshot.")
+  String name;
 }

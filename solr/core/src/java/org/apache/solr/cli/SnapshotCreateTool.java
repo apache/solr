@@ -26,12 +26,12 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 /** Supports snapshot-create command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "snapshot-create",
+    name = "create",
     description = "Creates a named snapshot of a collection.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Create a snapshot",
-      "  bin/solr snapshot-create -c mycollection --snapshot-name snap1"
+      "  bin/solr snapshot create -c mycollection --snapshot-name snap1"
     })
 public class SnapshotCreateTool extends ToolBase {
 
@@ -74,19 +74,9 @@ public class SnapshotCreateTool extends ToolBase {
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of collection to be snapshot.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
 
-  @picocli.CommandLine.Option(
-      names = "--snapshot-name",
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the snapshot to produce")
-  private String snapshotNameOpt;
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
 
   public SnapshotCreateTool() {
     this(new DefaultToolRuntime());
@@ -160,8 +150,8 @@ public class SnapshotCreateTool extends ToolBase {
         new SnapshotCreateParams(
             CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
             credentialsOptions.credentials,
-            nameOpt,
-            snapshotNameOpt);
+            collection.name,
+            snapshot.name);
     createSnapshot(params);
     return 0;
   }

@@ -30,12 +30,12 @@ import org.apache.solr.common.params.CollectionAdminParams;
 /** Supports snapshot-export command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
-    name = "snapshot-export",
+    name = "export",
     description = "Backs up a collection's current state to a local directory.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Export a collection's current state as a backup",
-      "  bin/solr snapshot-export -c mycollection --dest-dir /tmp/backups --backup-repo-name local"
+      "  bin/solr snapshot export -c mycollection --dest-dir /tmp/backups --backup-repo-name local"
     })
 public class SnapshotExportTool extends ToolBase {
 
@@ -131,12 +131,7 @@ public class SnapshotExportTool extends ToolBase {
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection to be backed up.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
 
   // Accepted only so that passing it can be rejected with an explanation; see callTool().
   @picocli.CommandLine.Option(
@@ -269,7 +264,7 @@ public class SnapshotExportTool extends ToolBase {
         new SnapshotExportParams(
             CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
             credentialsOptions.credentials,
-            nameOpt,
+            collection.name,
             destDirOpt,
             backupRepoNameOpt,
             asyncIdOpt);

@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
-title: The `snapshot-create`, `snapshot-delete`, `snapshot-describe`, `snapshot-export` and `snapshot-list` commands are now available in the experimental picocli command line interface.
+title: The snapshot commands are now available as `bin/solr snapshot create`, `delete`, `describe`, `export` and `list` in the experimental picocli command line interface. The `snapshot-create` and the other `snapshot-*` spellings still work there, hidden and deprecated, and are removed in Solr 12.
 type: added
 authors:
   - name: Serhiy Bzhezytskyy
