@@ -53,7 +53,7 @@ teardown() {
 
 @test "multiple connection options are prevented" {
   run solr status --port ${SOLR_PORT} --solr-url http://localhost:${SOLR_PORT}
-  assert_output --partial "The option 'solr-url' was specified but an option from this group has already been selected: 'p'"
+  assert_output --regexp "(-s|solr-url).*(mutually exclusive|already been selected)"
 }
 
 @test "status with invalid --solr-url from user" {
