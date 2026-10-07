@@ -554,7 +554,14 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
     SystemV2.getNodeSystemInfo({}, function(error, data, response) {
       $timeout(function() {
-        if (error) { ApiErrorHandler.handle(response); return; }
+        if (error) {
+          ApiErrorHandler.handle(response);
+          // The mode could not be determined. Treat the node as standalone so that
+          // pages waiting for isCloudEnabled to settle (e.g. the logging page) fall
+          // back to local-only behavior instead of waiting forever.
+          $scope.isCloudEnabled = false;
+          return;
+        }
         $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
         $scope.usersPermissions = data.security.permissions;
         $scope.isSecurityEnabled = data.security.authenticationPlugin != null;
@@ -569,7 +576,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         var currentCollectionName = $route.current.params.core;
         delete $scope.currentCollection;
         if ($scope.isCloudEnabled) {
-          CollectionsV2.listCollections(function (error, cdata, response) {
+          CollectionsV2.listCollections({}, function (error, cdata, response) {
             $timeout(function() {
               if (error) { ApiErrorHandler.handle(response); return; }
               AliasesV2.getAliases(function (error, adata, response) {

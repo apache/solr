@@ -22,7 +22,7 @@ antora-default-ui = "782311344b54aaa734d4c86629b8cd75e4da36d6"
 # @keep Antora Lunr extensions version used in ref-guide
 antora-lunr-extension = "1.0.0-alpha.10"
 apache-calcite = "1.42.0"
-apache-calcite-avatica = "1.28.0"
+apache-calcite-avatica = "1.29.0"
 apache-commons-collections4 = "4.6.0"
 apache-commons-compress = "1.28.0"
 apache-commons-exec = "1.6.0"
@@ -41,7 +41,7 @@ apache-opennlp = "2.5.11"
 apache-rat = "0.18"
 apache-tika = "3.3.2"
 apache-tomcat = "6.0.53"
-apache-zookeeper = "3.9.5"
+apache-zookeeper = "3.9.6"
 # @keep for version alignment
 apiguardian = "1.1.2"
 # @keep Asciidoctor mathjax version used in ref-guide
@@ -70,7 +70,7 @@ carrotsearch-hppc = "0.11.1"
 carrotsearch-randomizedtesting = "2.9.1"
 # @keep for version alignment
 checkerframework = "4.2.2"
-codehaus-woodstox = "4.3.0"
+codehaus-woodstox = "4.3.1"
 commons-cli = "1.11.0"
 commons-codec = "1.22.1"
 commons-io = "2.22.0"
@@ -84,15 +84,15 @@ eclipse-ecj = "3.46.0"
 eclipse-jetty = "12.1.12"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.1.202607240634-r"
-fasterxml = "2.22.2"
-fasterxml-woodstox = "7.2.2"
+fasterxml = "2.22.3"
+fasterxml-woodstox = "7.3.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 # @keep for version alignment
-google-api-grpc-proto = "2.75.0"
+google-api-grpc-proto = "2.77.0"
 # @keep for version alignment
 google-autovalue = "1.11.1"
-google-cloud-bom = "0.268.0"
+google-cloud-bom = "0.270.0"
 google-errorprone = "2.50.0"
 # @keep for version alignment
 google-gson = "2.14.0"
@@ -102,10 +102,10 @@ google-j2objc = "3.1"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.35.0"
 # @keep for version alignment
-google-protobuf = "4.36.0"
+google-protobuf = "4.36.2"
 # @keep Gradle version to run the build
 gradle = "9.7.0"
-grpc = "1.83.1"
+grpc = "1.84.0"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
 hamcrest = "3.0"
@@ -148,9 +148,9 @@ ltgt-errorprone = "5.1.1"
 mockito = "5.23.0"
 morethan-jmhreport = "0.9.6"
 navsecurity = "6.0.2"
-netty = "4.2.17.Final"
+netty = "4.2.18.Final"
 # @keep for version alignment
-netty-tcnative = "2.0.82.Final"
+netty-tcnative = "2.0.84.Final"
 nimbusds-josejwt = "10.9.1"
 nodegradle-node = "7.1.0"
 # @keep Node JS version used in node.gradle (LTS)
@@ -166,11 +166,12 @@ ow2-asm = "9.10.1"
 owasp-dependencycheck = "13.0.0"
 # @keep for version alignment
 perfmark = "0.27.0"
+picocli = "4.7.6"
 prometheus-metrics = "1.8.0"
 quicktheories = "0.26"
 selenium = "4.47.0"
 semver4j = "6.0.0"
-slf4j = "2.0.18"
+slf4j = "2.0.20"
 spatial4j = "0.8"
 spotbugs = "4.10.4"
 squareup-okhttp3-okhttp = "5.5.0"
@@ -442,6 +443,8 @@ ow2-asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "ow2-asm" 
 ow2-asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "ow2-asm" }
 # @keep transitive dependency for version alignment
 perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
