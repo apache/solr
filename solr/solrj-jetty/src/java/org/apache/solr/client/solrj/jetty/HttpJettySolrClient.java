@@ -719,11 +719,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
-        || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
+        || SolrRequest.METHOD.PUT == solrRequest.getMethod()
+        || SolrRequest.METHOD.QUERY == solrRequest.getMethod()) {
       RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
-      HttpMethod method =
-          SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
+      String method = solrRequest.getMethod().toString();
 
       if (contentWriter instanceof RequestWriter.MultipartContentWriter multipartWriter) {
         // send server list and request list as query string params

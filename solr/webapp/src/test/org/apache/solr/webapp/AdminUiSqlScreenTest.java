@@ -16,6 +16,7 @@
  */
 package org.apache.solr.webapp;
 
+import java.util.Locale;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -46,15 +47,84 @@ public class AdminUiSqlScreenTest extends AdminUiTestBase {
 
   @Test
   public void testSqlQueryViaUi() {
+    assertSqlQueryViaUi("POST", "SELECT id FROM " + COLLECTION + " LIMIT 10");
+  }
+
+  @Test
+  public void testSqlQueryViaQuery() {
+    assertSqlQueryViaUi("QUERY", "SELECT id FROM " + COLLECTION + " LIMIT 10");
+  }
+
+  @Test
+  public void testSqlQueryViaGet() {
+    assertSqlQueryViaUi("GET", "SELECT id FROM " + COLLECTION + " LIMIT 10");
+  }
+
+  @Test
+  public void testLargeSqlStatementViaPost() {
+    assertSqlQueryViaUi("POST", largeStatement());
+  }
+
+  @Test
+  public void testLargeSqlStatementViaQuery() {
+    assertSqlQueryViaUi("QUERY", largeStatement());
+  }
+
+  private String largeStatement() {
+    return "SELECT /* " + "a".repeat(20000) + " */ id FROM " + COLLECTION + " LIMIT 10";
+  }
+
+  private void assertSqlQueryViaUi(String method, String statement) {
     openPage(COLLECTION + "/sqlquery", By.id("sqlquery"));
+    WebElement selector = waitFor(By.id("httpMethod"));
+    assertEquals("POST", selector.getDomProperty("value"));
+    selector.findElement(By.cssSelector("option[value='" + method + "']")).click();
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "window.sqlRequest = null;"
+                + "var originalOpen = XMLHttpRequest.prototype.open;"
+                + "var originalSend = XMLHttpRequest.prototype.send;"
+                + "XMLHttpRequest.prototype.open = function(method, url) {"
+                + "  if (/\\/sql(?:\\?|$)/.test(url)) {"
+                + "    this.sqlRequest = window.sqlRequest = {method: method, url: url};"
+                + "  }"
+                + "  return originalOpen.apply(this, arguments);"
+                + "};"
+                + "XMLHttpRequest.prototype.send = function(body) {"
+                + "  if (this.sqlRequest) this.sqlRequest.body = body;"
+                + "  return originalSend.apply(this, arguments);"
+                + "};");
     WebElement stmt = waitFor(By.id("sqlexp"));
-    stmt.clear();
-    stmt.sendKeys("SELECT id FROM " + COLLECTION + " LIMIT 10");
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = arguments[1];"
+                + "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+            stmt,
+            statement);
     click(By.xpath("//div[@id='sqlquery']//button[@type='submit']"));
 
     // the result grid lists all documents
     for (int i = 1; i <= 3; i++) {
       waitForPageContains("sql-doc-" + i);
+    }
+    assertEquals(
+        method, ((JavascriptExecutor) driver).executeScript("return window.sqlRequest.method;"));
+    if ("GET".equals(method)) {
+      assertNull(((JavascriptExecutor) driver).executeScript("return window.sqlRequest.body;"));
+      assertEquals(
+          statement,
+          ((JavascriptExecutor) driver)
+              .executeScript(
+                  "return new URL(window.sqlRequest.url, window.location.href).searchParams.get('stmt');"));
+    } else {
+      assertEquals(
+          "stmt=" + statement,
+          ((JavascriptExecutor) driver)
+              .executeScript("return decodeURIComponent(window.sqlRequest.body);"));
+      assertEquals(
+          false,
+          ((JavascriptExecutor) driver)
+              .executeScript("return window.sqlRequest.url.includes('stmt=');"));
     }
     assertNoSevereConsoleErrors();
   }
@@ -101,8 +171,14 @@ public class AdminUiSqlScreenTest extends AdminUiTestBase {
                     classNotFoundResponse);
     assertTrue(
         "should show a friendly message, got: " + sqlError,
-        sqlError != null && sqlError.toLowerCase().contains("sql module"));
+        sqlError != null && sqlError.toLowerCase(Locale.ROOT).contains("sql module"));
     assertTrue(
-        "should say how to fix it: " + sqlError, sqlError.toLowerCase().contains("enable"));
+        "should say how to fix it: " + sqlError,
+        sqlError.toLowerCase(Locale.ROOT).contains("enable"));
+    WebElement documentation = waitFor(By.cssSelector("#sql-response span a"));
+    assertEquals(
+        "https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html",
+        documentation.getDomAttribute("href"));
+    assertEquals("_out", documentation.getDomAttribute("target"));
   }
 }

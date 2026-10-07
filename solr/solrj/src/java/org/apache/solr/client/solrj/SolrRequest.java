@@ -63,6 +63,7 @@ public abstract class SolrRequest<T> implements Serializable {
     HEAD,
     POST,
     PUT,
+    QUERY,
     DELETE;
 
     /**
@@ -113,6 +114,7 @@ public abstract class SolrRequest<T> implements Serializable {
           METHOD.GET.toString(),
           METHOD.POST.toString(),
           METHOD.PUT.toString(),
+          METHOD.QUERY.toString(),
           METHOD.DELETE.toString());
 
   private METHOD method = METHOD.GET;

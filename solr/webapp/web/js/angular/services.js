@@ -355,25 +355,48 @@ solrAdminServices.factory('Metrics',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
-           "query": {
-             method: "GET",
-             transformResponse: function (data) {
-               return {data: data}
-             },
-             headers: {doNotIntercept: "true"}
-           }
-       });
-       resource.url = function(params) {
+       var toQueryString = function(params) {
            var qs = [];
-           for (key in params) {
+           for (var key in params) {
                if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
                        qs.push(key + "=" + encodeURIComponent(params[key][i]));
                    }
                }
            }
-           return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
+           return qs.sort().join("&");
+       }
+       var wrapRawResponse = function(data) {
+           return {data: data}
+       }
+       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
+           "query": {
+             method: "GET",
+             transformResponse: wrapRawResponse,
+             headers: {doNotIntercept: "true"}
+           },
+           "queryPost": {
+             method: "POST",
+             transformRequest: toQueryString,
+             transformResponse: wrapRawResponse,
+             headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               doNotIntercept: "true"
+             }
+           },
+           "queryQuery": {
+             method: "QUERY",
+             hasBody: true,
+             transformRequest: toQueryString,
+             transformResponse: wrapRawResponse,
+             headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               doNotIntercept: "true"
+             }
+           }
+       });
+       resource.url = function(params) {
+           return "" + params.core + "/" + params.handler + "?" + toQueryString(params);
        }
        return resource;
 }])

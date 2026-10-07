@@ -19,6 +19,7 @@ solrAdminApp.controller('SQLQueryController',
 
     $scope.resetMenu("sqlquery", Constants.IS_COLLECTION_PAGE);
     $scope.qt = "sql";
+    $scope.httpMethod = "POST";
     $scope.doExplanation = false
     $scope.gridOptions = {
         enableSorting: false,
@@ -39,6 +40,7 @@ solrAdminApp.controller('SQLQueryController',
     $scope.showResult = function(raw) {
       $scope.lang = "json";
       $scope.sqlError = null;
+      $scope.sqlModuleMissing = false;
       $scope.sqlData = [];
 
       var jsonData;
@@ -54,8 +56,8 @@ solrAdminApp.controller('SQLQueryController',
         var err = jsonData && jsonData.error;
         if (err && err.metadata && err.metadata['root-error-class'] === 'java.lang.ClassNotFoundException'
             && err.msg && err.msg.indexOf('SQLHandler') !== -1) {
-          $scope.sqlError = "The sql module doesn't appear to be enabled on this Solr node. " +
-              "See https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html for how to enable it.";
+          $scope.sqlModuleMissing = true;
+          $scope.sqlError = "The sql module doesn't appear to be enabled on this Solr node.";
         } else {
           $scope.sqlError = (jsonData && jsonData.message) || (err && err.msg) || raw;
         }
@@ -105,11 +107,18 @@ solrAdminApp.controller('SQLQueryController',
 
       $scope.url = Query.url(params);
 
-      Query.query(params, function(data) {
+      var onSuccess = function(data) {
         $scope.showResult(data.toJSON().data);
-      }, function(rejection) {
+      };
+      var onError = function(rejection) {
         $scope.showResult((rejection.data && rejection.data.data) || ("HTTP " + rejection.status + " " + rejection.statusText));
-      });
+      };
+      if ($scope.httpMethod === "GET") {
+        Query.query(params, onSuccess, onError);
+      } else {
+        var sendRequest = $scope.httpMethod === "QUERY" ? Query.queryQuery : Query.queryPost;
+        sendRequest({core: params.core, handler: params.handler}, params, onSuccess, onError);
+      }
     };
   }
 );
