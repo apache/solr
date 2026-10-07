@@ -7,6 +7,9 @@ type: added
 authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
+  - name: Serhiy Bzhezytskyy
 links:
   - name: SOLR-17697
     url: https://issues.apache.org/jira/browse/SOLR-17697
+  - name: SOLR-18519
+    url: https://issues.apache.org/jira/browse/SOLR-18519
