@@ -105,6 +105,7 @@ curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: appl
 In SolrCloud mode, the V2 request above changes only the node that receives it.
 Add the `nodes` query parameter to apply the same changes on other nodes: `nodes=all` targets every live node, or provide a comma-separated list of node names (in `host:port_solr` form).
 The response then reports the result from each node, and names any requested nodes that did not respond under `failedNodes`.
+A node named in `failedNodes` is not guaranteed to be unchanged: if the node accepted the request but its response was lost or timed out, it may already have applied the change.
 
 [source,bash]
 ----
