@@ -62,7 +62,9 @@ public class OrEvaluator extends RecursiveBooleanEvaluator implements ManyValueW
       return new BooleanChecker() {
         @Override
         public boolean test(Object left, Object right) {
-          return (Boolean) left || (Boolean) right;
+          // Never invoked: doWork reduces the values itself, so this checker only
+          // provides the type validation performed by validateValues.
+          return false;
         }
       };
     }
