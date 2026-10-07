@@ -53,7 +53,10 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "healthcheck",
-    description = "Requests health information about a specific collection in SolrCloud.",
+    description =
+        "Verifies that a collection is functioning: queries every replica directly, compares"
+            + " document counts and checks that each shard has a leader and every replica is"
+            + " ACTIVE. Requires SolrCloud.",
     footerHeading = "%nExamples:%n",
     footer = {"  # Check the health of a collection", "  bin/solr healthcheck -c gettingstarted"})
 public class HealthcheckTool extends ToolBase {
