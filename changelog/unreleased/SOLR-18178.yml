@@ -1,4 +1,4 @@
-title: Write portable ZIP entry names when exporting configsets, normalize legacy Windows entries on upload, and skip unsafe entries on upload.
+title: Write portable ZIP entry names when exporting configsets, normalize legacy Windows entries on upload, and fail uploads whose entry paths are unsafe.
 type: fixed
 authors:
   - name: Nick Shanin
