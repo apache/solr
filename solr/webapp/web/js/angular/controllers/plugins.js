@@ -35,7 +35,7 @@ solrAdminApp.controller('PluginsController',
             var type = $location.search().type;
 
             Metrics.raw(params, function (response) {
-                $scope.metricsDisabled = (response.data || '').indexOf('metrics collection is disabled') !== -1;
+                $scope.metricsDisabled = false;
                 $scope.types = getPluginTypesFromMetrics(response.data, type);
                 $scope.type = getSelectedType($scope.types, type);
 
@@ -45,6 +45,12 @@ solrAdminApp.controller('PluginsController',
                 } else {
                     $scope.plugins = [];
                 }
+            }, function (response) {
+                // Solr answers HTTP 510 when metrics collection is turned off in solr.xml
+                $scope.metricsDisabled = response.status === 510;
+                $scope.types = [];
+                $scope.type = null;
+                $scope.plugins = [];
             });
         };
 
