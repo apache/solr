@@ -78,21 +78,23 @@ def has_staged_changes(git_root, paths=None):
     return bool(r.stdout.strip())
 
 
-def commit_touches_unreleased(sha, git_root):
-    """Return True if the given commit modifies any file under changelog/unreleased/."""
+def git_paths(args, git_root):
+    """Run a git command that lists paths, NUL-separated so non-ASCII names are not quoted."""
     r = subprocess.run(
-        ["git", "diff-tree", "--no-commit-id", "-r", "--name-only", sha],
+        ["git"] + args + ["-z"],
         cwd=git_root, capture_output=True, text=True, check=True,
     )
-    return any(f.startswith("changelog/unreleased/") for f in r.stdout.splitlines())
+    return [p for p in r.stdout.split("\0") if p]
+
+
+def commit_touches_unreleased(sha, git_root):
+    """Return True if the given commit modifies any file under changelog/unreleased/."""
+    files = git_paths(["diff-tree", "--no-commit-id", "-r", "--name-only", sha], git_root)
+    return any(f.startswith("changelog/unreleased/") for f in files)
 
 
 def unmerged_paths(git_root):
-    r = subprocess.run(
-        ["git", "diff", "--name-only", "--diff-filter=U"],
-        cwd=git_root, capture_output=True, text=True, check=True,
-    )
-    return r.stdout.splitlines()
+    return git_paths(["diff", "--name-only", "--diff-filter=U"], git_root)
 
 
 def recover_cherry_pick(git_root, version):
