@@ -45,6 +45,9 @@ solrAdminApp.controller('StreamController',
       // streaming expression can be too large for a URL/header (SOLR-9759).
       var url = Query.url(params);
 
+      // Handles both the success and error callbacks below: app.js's global interceptor
+      // (see failed()'s doNotIntercept branch) routes most failures for this request through
+      // the "success" callback too, so this must defend against a non-JSON body either way.
       var showResult = function(raw) {
         $scope.showExplanation = false;
         try {

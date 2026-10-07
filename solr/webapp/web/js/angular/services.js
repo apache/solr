@@ -366,12 +366,13 @@ solrAdminServices.factory('Metrics',
            }
            return qs.sort().join("&");
        }
+       var wrapRawResponse = function(data) {
+           return {data: data}
+       }
        var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
            "query": {
              method: "GET",
-             transformResponse: function (data) {
-               return {data: data}
-             },
+             transformResponse: wrapRawResponse,
              headers: {doNotIntercept: "true"}
            },
            // Same request as "query" above, but as a form-encoded POST body instead of a query
@@ -379,9 +380,7 @@ solrAdminServices.factory('Metrics',
            "queryPost": {
              method: "POST",
              transformRequest: toQueryString,
-             transformResponse: function (data) {
-               return {data: data}
-             },
+             transformResponse: wrapRawResponse,
              headers: {
                'Content-Type': 'application/x-www-form-urlencoded',
                doNotIntercept: "true"
