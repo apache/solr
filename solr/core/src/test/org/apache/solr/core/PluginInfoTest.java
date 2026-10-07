@@ -181,15 +181,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
             null,
             List.of(formatter, encoder, secondFormatter));
 
-    Map<String, Object> out = new LinkedHashMap<>();
-    parent.writeMap(
-        new MapWriter.EntryWriter() {
-          @Override
-          public MapWriter.EntryWriter put(CharSequence k, Object v) {
-            out.put(k.toString(), v);
-            return this;
-          }
-        });
+    Map<String, Object> out = writeToMap(parent);
 
     assertTrue(out.containsKey("formatter"));
     assertTrue(out.containsKey("encoder"));
@@ -214,8 +206,14 @@ public class PluginInfoTest extends DOMUtilTestBase {
             null,
             List.of(unnamed));
 
+    Map<String, Object> out = writeToMap(parent);
+
+    assertSame(unnamed, out.get("highlighting"));
+  }
+
+  private static Map<String, Object> writeToMap(PluginInfo info) throws Exception {
     Map<String, Object> out = new LinkedHashMap<>();
-    parent.writeMap(
+    info.writeMap(
         new MapWriter.EntryWriter() {
           @Override
           public MapWriter.EntryWriter put(CharSequence k, Object v) {
@@ -223,8 +221,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
             return this;
           }
         });
-
-    assertSame(unnamed, out.get("highlighting"));
+    return out;
   }
 
   @Test
