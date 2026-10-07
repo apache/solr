@@ -125,6 +125,10 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
    * <p>This method does not fall back to a non-atomic move. If the provider cannot perform the
    * atomic move, the failure is propagated and cleanup of the staged file is attempted.
    *
+   * <p>A purge running during a backup can remove the staged file before it is published and so
+   * fail the write, just as it could already remove an unreferenced metadata file mid-write before
+   * this change.
+   *
    * @throws IOException if writing or the requested atomic move fails
    */
   @Override
