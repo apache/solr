@@ -608,7 +608,8 @@ def build_parser():
                         help="Set release date and forward-port changelog post-vote",
                         description="Run once after a successful vote.\n"
                                     "Writes the release date to the version folder and regenerates CHANGELOG.md.\n"
-                                    "Then cherry-picks all changelog commits from the release branch to the stable branch and main.\n"
+                                    "Then cherry-picks the commits touching changelog/v<version>/ from the release branch to the stable branch and main.\n"
+                                    "Requires a clean working tree; each local branch is fast-forwarded from the remote before committing.\n"
                                     "By default nothing is pushed; review first and pass --push when satisfied.",
                         formatter_class=fmt)
     fp.add_argument("--stable-branch", required=True,

@@ -1299,11 +1299,13 @@ groups:
       2. Regenerates `CHANGELOG.md` — now with the correct release date in the
          version heading (e.g. `## [{{ release_version }}] - {{ release_date_iso }}`) —
          and commits `CHANGELOG.md` + `version-summary.md` to `{{ release_branch }}` (commit B)
-      3. Cherry-picks the commits touching `changelog/v{{ release_version }}/` that are on
-         `{{ release_branch }}` but not yet on the target to
-         `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %};
-         regenerates `CHANGELOG.md` fresh on each target branch
+      3. For each of `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %}:
+         cherry-picks the commits touching `changelog/v{{ release_version }}/` that are on
+         `{{ release_branch }}` but not yet on that branch, then regenerates `CHANGELOG.md` fresh
       4. Pushes `{{ release_branch }}`, `{{ stable_branch }}`, `main`{% if is_lts_release %}, and `{{ latest_lts_stable_branch }}`{% endif %}
+
+      Note that the script requires a clean working tree and fast-forwards each of
+      these local branches from the git remote (`origin` by default) before committing to it.
 
       Can be run standalone, see `dev-tools/scripts/logchange.py --help` for details:
     commands: !Commands
