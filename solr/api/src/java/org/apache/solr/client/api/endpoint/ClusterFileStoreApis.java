@@ -65,10 +65,10 @@ public interface ClusterFileStoreApis {
   @Operation(
       summary = "Delete a file or directory from the filestore.",
       tags = {"file-store"})
-  @Path("/filestore/files{path:.+}")
+  @Path("/filestore/files{filePath:.+}")
   SolrJerseyResponse deleteFile(
       @Parameter(description = "Path to a file or directory within the filestore")
-          @PathParam("path")
+          @PathParam("filePath")
           String path,
       @Parameter(
               description =
@@ -161,11 +161,11 @@ public interface ClusterFileStoreApis {
         @Extension(
             properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
       })
-  @Path("/files{path:.+}")
+  @Path("/files{filePath:.+}")
   @Deprecated
   SolrJerseyResponse deleteFileDeprecated(
       @Parameter(description = "Path to a file or directory within the filestore")
-          @PathParam("path")
+          @PathParam("filePath")
           String path,
       @Parameter(
               description =
