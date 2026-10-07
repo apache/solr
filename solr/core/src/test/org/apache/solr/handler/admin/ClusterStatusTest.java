@@ -23,24 +23,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
-/**
- * Unit tests for {@link ClusterStatus}'s shard/collection "health" computation (SOLR-15300),
- * specifically its interaction with the live-node cross-check.
- *
- * <p>state.json isn't proactively rewritten the instant a node dies - only live_nodes membership
- * changes immediately. A replica on a dead node can therefore still read "active" in state.json
- * for a window of time. {@link ClusterStatus#crossCheckReplicaStateWithLiveNodes} corrects this
- * for display, but if health were computed from the data *before* that correction runs (as it was
- * prior to this fix - see SOLR-15395), a shard with a replica on a dead node is reported GREEN,
- * contradicting the "down" state shown for that same replica in the same response.
- */
+/** Tests that cluster health reflects replica states corrected against live nodes. */
 public class ClusterStatusTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings("unchecked")
   public void testHealthReflectsReplicaOnDeadNode() {
-    // shard1: 2 replicas, both say "active" in state.json (as a real dead node would, before
-    // Overseer gets around to rewriting it) - but only node1 is actually live.
+    // Both replicas are marked active, but only node1 is live.
     Map<String, Object> replica1 = new LinkedHashMap<>();
     replica1.put("state", "active");
     replica1.put("node_name", "node1:8983_solr");
@@ -48,7 +37,7 @@ public class ClusterStatusTest extends SolrTestCaseJ4 {
 
     Map<String, Object> replica2 = new LinkedHashMap<>();
     replica2.put("state", "active");
-    replica2.put("node_name", "node2:8983_solr"); // this node is dead
+    replica2.put("node_name", "node2:8983_solr");
 
     Map<String, Object> replicas = new LinkedHashMap<>();
     replicas.put("core_node1", replica1);
@@ -63,19 +52,17 @@ public class ClusterStatusTest extends SolrTestCaseJ4 {
     Map<String, Object> docCollection = new LinkedHashMap<>();
     docCollection.put("shards", shards);
 
-    List<String> liveNodes = List.of("node1:8983_solr"); // node2 is absent
+    List<String> liveNodes = List.of("node1:8983_solr");
 
-    // Exercise the same two steps, in the same order, as ClusterStatus.buildResponseForCollection:
-    // cross-check against live nodes first, then compute health from the corrected data.
+    // Match buildResponseForCollection: correct replica states, then compute health.
     ClusterStatus clusterStatus = new ClusterStatus(null, new ModifiableSolrParams());
     clusterStatus.crossCheckReplicaStateWithLiveNodes(liveNodes, docCollection);
     Map<String, Object> result = ClusterStatus.postProcessCollectionJSON(docCollection);
 
-    // the dead replica's displayed state is corrected...
     assertEquals("down", replica2.get("state"));
-    // ...and health must reflect that same corrected state (1 of 2 replicas up -> ORANGE),
-    // not the stale "both active" view that produced GREEN before this fix.
-    Map<String, Object> resultShard1 = (Map<String, Object>) ((Map<String, Object>) result.get("shards")).get("shard1");
+    // One of two replicas is active, so shard and collection health are ORANGE.
+    Map<String, Object> resultShard1 =
+        (Map<String, Object>) ((Map<String, Object>) result.get("shards")).get("shard1");
     assertEquals("ORANGE", resultShard1.get("health"));
     assertEquals("ORANGE", result.get("health"));
   }

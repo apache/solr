@@ -409,11 +409,8 @@ public class ClusterStatus {
     @SuppressWarnings("unchecked")
     Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
 
-    // Cross-check replica state with live nodes *before* computing health below: state.json isn't
-    // proactively rewritten when a node simply dies (only live_nodes membership changes), so a
-    // replica on a dead node still reads "active" here unless this runs first. Health is derived
-    // from these same states, so computing it before this correction produced a stale GREEN/YELLOW
-    // for shards that actually have a replica down.
+    // Replicas on dead nodes can still be marked active in state.json.
+    // Correct their states before computing health.
     crossCheckReplicaStateWithLiveNodes(liveNodes, docCollection);
 
     collectionStatus = getCollectionStatus(docCollection, name, shards);
