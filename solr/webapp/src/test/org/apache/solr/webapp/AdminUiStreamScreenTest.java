@@ -63,7 +63,8 @@ public class AdminUiStreamScreenTest extends AdminUiTestBase {
     String padding = "a".repeat(20000);
     String expression =
         "search(" + COLLECTION + ",q=\"*:*\",fl=\"id\",sort=\"id asc\",fq=\"id:" + padding + "*\")";
-    assertTrue("test expression should exceed a typical 8K header/URL limit", expression.length() > 16384);
+    assertTrue(
+        "test expression should exceed a typical 8K header/URL limit", expression.length() > 16384);
 
     openPage(COLLECTION + "/stream", By.id("stream"));
     WebElement expr = waitFor(By.id("expr"));
