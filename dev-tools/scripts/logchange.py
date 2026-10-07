@@ -97,7 +97,7 @@ def unmerged_paths(git_root):
     return git_paths(["diff", "--name-only", "--diff-filter=U"], git_root)
 
 
-def recover_cherry_pick(git_root, version):
+def recover_cherry_pick(git_root, version, dry_run=False):
     """Try to finish a cherry-pick that stopped. Return True if it was resolved.
 
     Handles two cases: conflicts confined to changelog/unreleased/ entries that
@@ -105,6 +105,8 @@ def recover_cherry_pick(git_root, version):
     unreleased entry is removed), and a pick that is empty because its changes
     are already on this branch.  Any other conflict is left for the user.
     """
+    if dry_run:
+        return False
     in_progress = subprocess.run(
         ["git", "rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD"],
         cwd=git_root, capture_output=True,
@@ -493,7 +495,7 @@ def cmd_forward_port(args, git_root):
             try:
                 git(cp_args, cwd=git_root, dry_run=dry_run)
             except subprocess.CalledProcessError:
-                if recover_cherry_pick(git_root, version):
+                if recover_cherry_pick(git_root, version, dry_run=dry_run):
                     continue
                 print(f"\nError: cherry-pick of {sha} failed on {target}.",
                       file=sys.stderr)
