@@ -19,6 +19,7 @@ solrAdminApp.controller('SQLQueryController',
 
     $scope.resetMenu("sqlquery", Constants.IS_COLLECTION_PAGE);
     $scope.qt = "sql";
+    $scope.httpMethod = "POST";
     $scope.doExplanation = false
     $scope.gridOptions = {
         enableSorting: false,
@@ -106,11 +107,18 @@ solrAdminApp.controller('SQLQueryController',
 
       $scope.url = Query.url(params);
 
-      Query.query(params, function(data) {
+      var onSuccess = function(data) {
         $scope.showResult(data.toJSON().data);
-      }, function(rejection) {
+      };
+      var onError = function(rejection) {
         $scope.showResult((rejection.data && rejection.data.data) || ("HTTP " + rejection.status + " " + rejection.statusText));
-      });
+      };
+      if ($scope.httpMethod === "GET") {
+        Query.query(params, onSuccess, onError);
+      } else {
+        var sendRequest = $scope.httpMethod === "QUERY" ? Query.queryQuery : Query.queryPost;
+        sendRequest({core: params.core, handler: params.handler}, params, onSuccess, onError);
+      }
     };
   }
 );
