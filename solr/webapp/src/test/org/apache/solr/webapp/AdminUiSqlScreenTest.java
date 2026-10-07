@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
 /**
@@ -72,5 +73,36 @@ public class AdminUiSqlScreenTest extends AdminUiTestBase {
     waitForTextContains(By.id("sql-response"), "no handler, collection, or core");
     // the request is expected to fail (404) - that's the scenario under test
     assertNoSevereConsoleErrors("404 (Not Found)");
+  }
+
+  @Test
+  public void testSqlModuleNotEnabledShowsFriendlyMessage() {
+    // The real response when the sql module isn't on the classpath (reproduced against an
+    // actual build without the module): a 500 with this exact error envelope shape, since /sql
+    // is always nominally registered (lazily) for every core regardless of whether the module
+    // jar is present - only the first real request reveals the class is missing. Invoking
+    // showResult() directly with this captured shape, rather than needing a real sql-less
+    // build, since the webapp test classpath always has the module.
+    openPage(COLLECTION + "/sqlquery", By.id("sqlquery"));
+    waitFor(By.id("sqlexp"));
+    String classNotFoundResponse =
+        "{\"error\":{\"metadata\":{\"error-class\":\"org.apache.solr.common.SolrException\","
+            + "\"root-error-class\":\"java.lang.ClassNotFoundException\"},"
+            + "\"errorClass\":\"org.apache.solr.common.SolrException\","
+            + "\"msg\":\" Error loading class 'solr.SQLHandler'\",\"code\":500}}";
+    String sqlError =
+        (String)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "var scope = angular.element(document.getElementById('sqlquery')).scope();"
+                        + "scope.showResult(arguments[0]);"
+                        + "scope.$apply();"
+                        + "return scope.sqlError;",
+                    classNotFoundResponse);
+    assertTrue(
+        "should show a friendly message, got: " + sqlError,
+        sqlError != null && sqlError.toLowerCase().contains("sql module"));
+    assertTrue(
+        "should say how to fix it: " + sqlError, sqlError.toLowerCase().contains("enable"));
   }
 }
