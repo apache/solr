@@ -101,7 +101,7 @@ public class ParseDoubleFieldUpdateProcessorFactory
 
   public static Object parsePossibleDouble(Object srcVal, NumberFormat numberFormat) {
     if (srcVal instanceof CharSequence) {
-      String stringVal = dropExponentPlus(srcVal.toString());
+      String stringVal = normalizeExponent(srcVal.toString());
       ParsePosition pos = new ParsePosition(0);
       Number number = numberFormat.parse(stringVal, pos);
       if (pos.getIndex() != stringVal.length()) {

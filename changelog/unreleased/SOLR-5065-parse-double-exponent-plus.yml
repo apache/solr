@@ -1,5 +1,5 @@
 title: >
-  ParseDoubleFieldUpdateProcessorFactory and ParseFloatFieldUpdateProcessorFactory now accept a plus sign in the exponent (for example 4.5E+10).
+  ParseDoubleFieldUpdateProcessorFactory and ParseFloatFieldUpdateProcessorFactory now accept a plus sign in the exponent and a lowercase exponent marker (for example 4.5E+10 or 4.5e3).
 type: fixed
 authors:
   - name: Nick Shanin

@@ -48,15 +48,19 @@ public abstract class ParseNumericFieldUpdateProcessorFactory
 
   private static final Pattern EXPONENT_PLUS = Pattern.compile("([eE])\\+(\\d+)$");
 
+  private static final Pattern LOWERCASE_EXPONENT = Pattern.compile("(\\d)e([+-]?\\d+)$");
+
   protected Locale locale = Locale.ROOT;
 
   /**
-   * Removes a superfluous plus sign from a trailing exponent, e.g. {@code 4.5E+10} becomes {@code
-   * 4.5E10} and {@code 4.5e+3} becomes {@code 4.5E3}. {@link java.text.NumberFormat} accepts
-   * neither the sign nor a lowercase exponent marker, but Java, JSON and the corresponding Solr
-   * field types accept both.
+   * Normalizes a trailing exponent so {@link java.text.NumberFormat} can parse it, e.g. {@code
+   * 4.5E+10} becomes {@code 4.5E10} and {@code 4.5e-3} becomes {@code 4.5E-3}. NumberFormat accepts
+   * neither a plus sign in the exponent nor a lowercase exponent marker, but Java, JSON and the
+   * corresponding Solr field types accept both. Both rewrites are anchored to a trailing exponent,
+   * so a value without one is returned unchanged.
    */
-  static String dropExponentPlus(String value) {
+  static String normalizeExponent(String value) {
+    value = LOWERCASE_EXPONENT.matcher(value).replaceFirst("$1E$2");
     return EXPONENT_PLUS.matcher(value).replaceFirst("E$2");
   }
 
