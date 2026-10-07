@@ -188,6 +188,12 @@ public class SignatureUpdateProcessorFactory extends UpdateRequestProcessorFacto
           }
         }
 
+        if (isPartialUpdate) {
+          // none of the signature fields are in the partial update, so there is nothing to sign;
+          // an empty signature would overwrite or delete unrelated documents
+          if (next != null) next.processAdd(cmd);
+          return;
+        }
         byte[] signature = sig.getSignature();
         char[] arr = new char[signature.length << 1];
         for (int i = 0; i < signature.length; i++) {
