@@ -1,0 +1,9 @@
+title: >
+  Package Uninstall works in absence of clusterprops.json file
+type: fixed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-18520
+    url: https://issues.apache.org/jira/browse/SOLR-18520
