@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.Is.is;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
@@ -463,9 +464,8 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=not-a-number] Error adding field 'id'='not-a-number' msg=copyField destination 'range_facet_l': For input string: \"not-a-number\""));
+    // Only the branch's own prefix is pinned: the text after it is the JDK's
+    // NumberFormatException message, whose wording is not Solr's to assert.
+    assertThat(thrown.getMessage(), containsString("msg=copyField destination 'range_facet_l': "));
   }
 }
