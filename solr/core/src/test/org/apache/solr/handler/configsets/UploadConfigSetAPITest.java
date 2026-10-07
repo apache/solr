@@ -43,7 +43,6 @@ import org.apache.solr.core.FileSystemConfigSetService;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link UploadConfigSet#uploadConfigSet} (Upload interface). */
 public class UploadConfigSetAPITest extends SolrTestCase {
@@ -353,69 +352,72 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     final String configSetName = "traversalpaths";
     createExistingConfigSet(configSetName, "conf/solrconfig.xml", "<config/>");
 
-    // The backslash entry is normalized to forward slashes before the config-set
-    // backend sees it, so both entries below are traversal attempts on every platform.
-    // The "conf/" directory entry keeps cleanup from recursively deleting the
-    // pre-existing conf/ dir (and the new file in it) afterwards.
-    InputStream zipStream =
-        createZipStream(
-            "../evil.txt", "evil", "..\\evil2.txt", "evil2", "conf/", "", "conf/good.txt", "good");
+    // The backslash entry is normalized to forward slashes before the path check,
+    // so both entries below are traversal attempts on every platform. An archive
+    // containing any unsafe entry path is rejected as a whole: the upload fails
+    // with BAD_REQUEST and no entry, safe or not, is stored.
+    for (String unsafePath : new String[] {"../evil.txt", "..\\evil.txt"}) {
+      InputStream zipStream = createZipStream(unsafePath, "evil", "conf/good.txt", "good");
 
-    final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    api.uploadConfigSet(configSetName, true, true, zipStream);
+      final var api = new UploadConfigSet(mockCoreContainer, null, null);
+      final var ex =
+          assertThrows(
+              SolrException.class, () -> api.uploadConfigSet(configSetName, true, true, zipStream));
 
-    // Traversal entries must not land in the configset ...
-    assertNull(configSetService.downloadFileFromConfig(configSetName, "evil.txt"));
-    assertNull(configSetService.downloadFileFromConfig(configSetName, "evil2.txt"));
-    // ... nor escape next to it on disk ...
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(
+          "Error message should name the offending entry", ex.getMessage().contains("../evil.txt"));
+    }
+
+    // Nothing from the rejected archives landed in the configset ...
+    assertFalse(
+        Files.exists(configSetBase.resolve(configSetName).resolve("conf").resolve("good.txt")));
+    assertFalse(Files.exists(configSetBase.resolve(configSetName).resolve("evil.txt")));
+    // ... nothing escaped next to it on disk ...
     assertFalse(Files.exists(configSetBase.resolve("evil.txt")));
-    assertFalse(Files.exists(configSetBase.resolve("evil2.txt")));
-    // ... while legitimate entries still upload.
+    // ... and the pre-existing configset content is untouched.
     assertEquals(
-        "good",
-        new String(
-            configSetService.downloadFileFromConfig(configSetName, "conf/good.txt"),
+        "<config/>",
+        Files.readString(
+            configSetBase.resolve(configSetName).resolve("conf").resolve("solrconfig.xml"),
             StandardCharsets.UTF_8));
   }
 
   @Test
-  public void testZipUploadSkipsUnsafeEntryPathsBeforeBackendDispatch() throws Exception {
+  public void testZipUploadRejectsUnsafeEntryPathsBeforeBackendDispatch() throws Exception {
     // The traversal guard must hold for every ConfigSetService backend, not just the
-    // filesystem one: the ZooKeeper backend builds a znode path from the entry name, so an
-    // entry the dispatch lets through aborts the whole upload there. Use a mock backend and
-    // pin exactly which entry names the dispatch hands over.
-    ConfigSetService mockService = mock(ConfigSetService.class);
-    when(mockService.checkConfigExists(anyString())).thenReturn(false);
-    CoreContainer container = mock(CoreContainer.class);
-    when(container.getConfigSetService()).thenReturn(mockService);
-
+    // filesystem one: the ZooKeeper backend builds a znode path from the entry name.
+    // Every entry path is validated before anything is dispatched, so an archive
+    // containing any unsafe entry path fails as a whole and the backend receives
+    // nothing, not even the archive's safe entries. Use a mock backend and pin that
+    // zero files are dispatched for each unsafe shape.
     final String configSetName = "anybackend";
-    InputStream zipStream =
-        createZipStream(
-            "../evil.txt",
-            "evil",
-            "..\\evil2.txt",
-            "evil2",
-            "/abs.txt",
-            "abs",
-            "conf/../evil3.txt",
-            "evil3",
-            "C:/outside/evil4.txt",
-            "evil4",
-            "C:\\outside\\evil5.txt",
-            "evil5",
-            "",
-            "empty",
-            "conf/good.txt",
-            "good");
+    for (String unsafePath :
+        new String[] {
+          "../evil.txt",
+          "conf/../../evil.txt",
+          "..\\evil.txt",
+          "/abs.txt",
+          "C:/evil.txt",
+          "C:\\evil.txt",
+          ""
+        }) {
+      ConfigSetService mockService = mock(ConfigSetService.class);
+      when(mockService.checkConfigExists(anyString())).thenReturn(false);
+      CoreContainer container = mock(CoreContainer.class);
+      when(container.getConfigSetService()).thenReturn(mockService);
 
-    final var api = new UploadConfigSet(container, null, null);
-    api.uploadConfigSet(configSetName, true, false, zipStream);
+      InputStream zipStream = createZipStream(unsafePath, "evil", "conf/good.txt", "good");
 
-    ArgumentCaptor<String> fileNameCaptor = ArgumentCaptor.forClass(String.class);
-    verify(mockService, times(1))
-        .uploadFileToConfig(eq(configSetName), fileNameCaptor.capture(), any(), eq(true));
-    assertEquals(List.of("conf/good.txt"), fileNameCaptor.getAllValues());
+      final var api = new UploadConfigSet(container, null, null);
+      final var ex =
+          assertThrows(
+              SolrException.class,
+              () -> api.uploadConfigSet(configSetName, true, false, zipStream));
+
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      verify(mockService, times(0)).uploadFileToConfig(anyString(), anyString(), any(), eq(true));
+    }
   }
 
   @Test
@@ -425,33 +427,26 @@ public class UploadConfigSetAPITest extends SolrTestCase {
 
     // Both spellings of a drive-qualified Windows path are absolute there even
     // though neither starts with "/"; the backslash form is normalized first.
-    // The "conf/" directory entry keeps cleanup from recursively deleting the
-    // pre-existing conf/ dir (and the new file in it) afterwards.
-    InputStream zipStream =
-        createZipStream(
-            "C:/outside/evil.txt",
-            "evil",
-            "C:\\outside\\evil2.txt",
-            "evil2",
-            "conf/",
-            "",
-            "conf/good.txt",
-            "good");
+    // An archive containing one is rejected as a whole.
+    for (String unsafePath : new String[] {"C:/outside/evil.txt", "C:\\outside\\evil.txt"}) {
+      InputStream zipStream = createZipStream(unsafePath, "evil", "conf/good.txt", "good");
 
-    final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    api.uploadConfigSet(configSetName, true, true, zipStream);
+      final var api = new UploadConfigSet(mockCoreContainer, null, null);
+      final var ex =
+          assertThrows(
+              SolrException.class, () -> api.uploadConfigSet(configSetName, true, true, zipStream));
 
-    // Drive-qualified entries must not land in the configset ...
-    assertNull(configSetService.downloadFileFromConfig(configSetName, "C:/outside/evil.txt"));
-    assertNull(configSetService.downloadFileFromConfig(configSetName, "C:/outside/evil2.txt"));
-    // ... nor be written under a literal "C:" directory on this platform ...
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(
+          "Error message should name the offending entry",
+          ex.getMessage().contains("C:/outside/evil.txt"));
+    }
+
+    // Nothing from the rejected archives landed in the configset ...
+    assertFalse(
+        Files.exists(configSetBase.resolve(configSetName).resolve("conf").resolve("good.txt")));
+    // ... nor was anything written under a literal "C:" directory on this platform.
     assertFalse(Files.exists(configSetBase.resolve(configSetName).resolve("C:")));
-    // ... while legitimate entries still upload.
-    assertEquals(
-        "good",
-        new String(
-            configSetService.downloadFileFromConfig(configSetName, "conf/good.txt"),
-            StandardCharsets.UTF_8));
   }
 
   @Test
