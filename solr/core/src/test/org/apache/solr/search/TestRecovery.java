@@ -414,6 +414,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
       String bufferingRsp = h.update(commit());
       assertTrue(bufferingRsp, bufferingRsp.contains("name=\"commitIgnored\""));
+      // the value names the update log state that caused the commit to be skipped
+      assertTrue(bufferingRsp, bufferingRsp.contains("name=\"commitIgnored\">BUFFERING"));
     } finally {
       ulog.dropBufferedUpdates();
     }
