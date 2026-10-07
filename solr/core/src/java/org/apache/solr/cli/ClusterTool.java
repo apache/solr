@@ -18,7 +18,6 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -90,12 +89,7 @@ public class ClusterTool extends ToolBase {
       description = "Set the property to this value.")
   private String valueOpt;
 
-  @picocli.CommandLine.Option(
-      names = {"-z", "--zk-host"},
-      description =
-          "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
-              + " otherwise, discovered from a running Solr instance.")
-  private String zkHost;
+  @picocli.CommandLine.Mixin private ZkConnectionOptions zkOpts;
 
   public ClusterTool() {
     this(new DefaultToolRuntime());
@@ -157,32 +151,8 @@ public class ClusterTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    ClusterParams params = new ClusterParams(propertyOpt, valueOpt, resolveZkHost());
+    ClusterParams params = new ClusterParams(propertyOpt, valueOpt, zkOpts.resolveZkHost());
     setClusterProperty(params);
     return 0;
-  }
-
-  /**
-   * Mirrors {@link CLIUtils#getZkHost(CommandLine)}: explicit {@code --zk-host} wins outright,
-   * otherwise discovered from a running Solr instance at the default URL.
-   */
-  private String resolveZkHost() throws Exception {
-    if (zkHost != null && !zkHost.isBlank()) {
-      return zkHost;
-    }
-    String defaultSolrUrl = CLIUtils.getDefaultSolrUrl();
-    try (var solrClient = CLIUtils.getSolrClient(defaultSolrUrl, null)) {
-      Map<String, Object> status = StatusTool.reportStatus(solrClient);
-      @SuppressWarnings("unchecked")
-      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
-      if (cloud == null) {
-        return null;
-      }
-      String zookeeper = (String) cloud.get("ZooKeeper");
-      if (zookeeper.endsWith("(embedded)")) {
-        zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
-      }
-      return zookeeper;
-    }
   }
 }

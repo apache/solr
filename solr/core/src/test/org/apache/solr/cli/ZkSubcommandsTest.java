@@ -59,7 +59,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   protected ZkTestServer zkServer;
 
-  private SolrZkClient zkClient;
+  SolrZkClient zkClient;
 
   protected static final Path SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
 
