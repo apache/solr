@@ -38,7 +38,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Send a GET request to a Solr API endpoint",
-      "  bin/solr api -s http://localhost:8983/api/cluster"
+      "  bin/solr api -s http://localhost:8983/api/collections"
     })
 public class ApiTool extends ToolBase {
 
@@ -65,7 +65,8 @@ public class ApiTool extends ToolBase {
       names = {"-s", "--solr-url"},
       required = true,
       paramLabel = "URL",
-      description = "Send a GET request to a Solr API endpoint.")
+      description =
+          "Full URL of the Solr API endpoint to GET, e.g. http://localhost:8983/api/collections")
   private String solrUrlOpt;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;

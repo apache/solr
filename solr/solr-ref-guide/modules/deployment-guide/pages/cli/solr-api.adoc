@@ -52,7 +52,7 @@ Used to send an arbitrary HTTP GET request to a Solr API endpoint.
   Print this help message and exit.
 
 *-s*, *--solr-url*=_URL_::
-  *(required)* Send a GET request to a Solr API endpoint.
+  *(required)* Full URL of the Solr API endpoint to GET, e.g. http://localhost:8983/api/collections
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks
@@ -66,6 +66,6 @@ Used to send an arbitrary HTTP GET request to a Solr API endpoint.
 == Examples
 [%hardbreaks]
   # Send a GET request to a Solr API endpoint
-  bin/solr api -s http://localhost:8983/api/cluster
+  bin/solr api -s http://localhost:8983/api/collections
 
 // end::picocli-generated-man-section-footer[]
