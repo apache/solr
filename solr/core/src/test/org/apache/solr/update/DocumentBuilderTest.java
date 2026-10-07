@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -72,6 +73,22 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertEquals("should be bad request", 400, ex.code());
+  }
+
+  @Test
+  public void testAddUpdateCommandErrorNamesCore() {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "123");
+    doc.addField("unknown", "something");
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = doc;
+      SolrException ex =
+          expectThrows(SolrException.class, () -> cmd.makeLuceneDocs().iterator().next());
+      assertEquals(400, ex.code());
+      assertTrue(ex.getMessage(), ex.getMessage().contains("core " + h.getCore().getName()));
+      assertTrue(ex.getMessage(), ex.getMessage().contains("unknown field 'unknown'"));
+    }
   }
 
   @Test
