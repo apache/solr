@@ -192,7 +192,7 @@ class DefaultMainComponent internal constructor(
         data object Collections : Configuration
 
         @Serializable
-        data object QueriesAndOperations : Configuration
+        data object IndexAndQuery : Configuration
 
         @Serializable
         data object Environment : Configuration
@@ -211,7 +211,7 @@ class DefaultMainComponent internal constructor(
         MainMenu.Security -> Configuration.Security
         MainMenu.Configsets -> Configuration.Configsets
         MainMenu.Collections -> Configuration.Collections
-        MainMenu.QueriesAndOperations -> Configuration.QueriesAndOperations
+        MainMenu.IndexAndQuery -> Configuration.IndexAndQuery
         MainMenu.Environment -> Configuration.Environment
         MainMenu.Logging -> Configuration.Logging
         MainMenu.ThreadDump -> Configuration.ThreadDump

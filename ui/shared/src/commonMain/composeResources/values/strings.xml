@@ -56,7 +56,7 @@
   <string name="nav_environment">Environment</string>
   <string name="nav_logging">Logging</string>
   <string name="nav_metrics">Metrics</string>
-  <string name="nav_queries_and_operations">Queries &amp; Operations</string>
+  <string name="nav_index_and_query">Index &amp; Query</string>
   <string name="nav_security">Security</string>
   <string name="nav_thread_dump">Thread Dump</string>
 
