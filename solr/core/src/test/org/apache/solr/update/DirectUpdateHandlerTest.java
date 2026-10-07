@@ -486,21 +486,11 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExpungeDeletes() throws Exception {
-    // Wrap the live writer's merge policy for the duration of this test so it cannot
-    // schedule a natural merge. TieredMergePolicy schedules a natural merge when the
-    // index's deleted documents exceed deletesPctAllowed (20 percent by default) of
-    // its total documents. The duplicate add below creates one deletion, and whether
-    // that alone crosses the budget depends on how the seed's flush settings split
-    // the adds into segments: counted while the index still holds four documents,
-    // one deletion is over the allowed count of zero, and a merge picked then runs
-    // on the merge scheduler thread and drops the deletion before the first sample
-    // reads it, making maxDoc == numDocs at the assertion. Returning no merges from
-    // both findMerges and findFullFlushMerges (the entry point that commits and
-    // searcher opens consult) removes that race. The wrapper delegates
-    // findForcedDeletesMerges to the live policy, so the expungeDeletes commit at
-    // the end still performs the real expunge verified below. Raising
-    // deletesPctAllowed instead would rest on the same budget arithmetic; the
-    // wrapper does not depend on it.
+    // Wrap the live writer's merge policy for the duration of this test so no natural
+    // merge can run: a background merge admitted by the deletes budget could drop the
+    // deletion created below before the first sample reads it (SOLR-18505). The
+    // wrapper returns no merges from findMerges and findFullFlushMerges but delegates
+    // findForcedDeletesMerges, so the expungeDeletes commit below still expunges.
     RefCounted<IndexWriter> iw = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
     MergePolicy savedPolicy = iw.get().getConfig().getMergePolicy();
     MergePolicy noNaturalMerges =
