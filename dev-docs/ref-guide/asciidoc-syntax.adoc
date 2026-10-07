@@ -96,6 +96,7 @@ Use the same block style for every `curl`, `bin/solr` or other shell command, so
 
 * A block with commands only uses `bash` and no prompt, so it can be copied as is.
 * A block that also shows the output of the commands uses `console`, with `$` at the start of each command line, so the commands stand out from the output.
+The copy button of the Guide copies only the `$` lines of such a block, so a command whose argument continues on the next lines without a trailing `\` (a multi-line JSON body) belongs in a `bash` block instead.
 * A block that shows output alone uses `text`.
 * The Windows variant of a command uses `powershell`, which the highlight.js build does not include yet, so it is shown without highlighting.
 
