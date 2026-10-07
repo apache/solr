@@ -19,6 +19,8 @@
 Changelog release helper for Apache Solr release managers.
 
 Normally invoked by the Release Wizard; see dev-docs/changelog.adoc for details.
+
+Requires git 2.23 or later (git restore).
 """
 
 import argparse
