@@ -91,7 +91,7 @@ class ConnectionOptions {
       }
     }
 
-    String solrConnectionProp = EnvUtils.getProperty("solr-connection");
+    String solrConnectionProp = EnvUtils.getProperty("solr.connection");
     if (solrConnectionProp != null && !solrConnectionProp.isBlank()) {
       var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionProp);
       if (connection.isZookeeper()) {
@@ -123,7 +123,7 @@ class ConnectionOptions {
       }
     }
 
-    String solrConnectionProp = EnvUtils.getProperty("solr-connection");
+    String solrConnectionProp = EnvUtils.getProperty("solr.connection");
     if (solrConnectionProp != null && !solrConnectionProp.isBlank()) {
       var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionProp);
       if (connection.isZookeeper()) {
