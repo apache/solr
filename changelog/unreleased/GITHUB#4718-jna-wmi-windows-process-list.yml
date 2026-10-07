@@ -6,6 +6,8 @@ title: >
 type: changed
 authors:
   - name: Jan Høydahl
+  - name: Chan Chan
+    nick: chan-dx
 links:
   - name: GITHUB#4718
     url: https://github.com/apache/solr/pull/4718
