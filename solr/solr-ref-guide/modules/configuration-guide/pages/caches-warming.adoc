@@ -271,7 +271,7 @@ Values are still retrieved; Solr just does not retain the per-field iterators.
 <enableDocValuesIteratorCache>true</enableDocValuesIteratorCache>
 ----
 
-This can also be changed at runtime with the Config API property `query.enableDocValuesIteratorCache`.
+This can also be changed with the Config API property `query.enableDocValuesIteratorCache`; the new value takes effect on the core reload that the Config API triggers.
 
 === <useFilterForSortedQuery> Element
 
