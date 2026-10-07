@@ -410,9 +410,12 @@ def cmd_forward_port(args, git_root):
     #            each branch gets a correct full-history version (avoids cross-major
     #            conflicts).  version-summary.md is also excluded from cherry-picks
     #            for the same reason; it is regenerated alongside CHANGELOG.md.
-    #            --cherry-pick with the symmetric-difference range (three dots) omits
-    #            commits whose patch is already present on the target, making
-    #            forward-port idempotent when re-run after an initial no-push run.
+    #            --cherry-pick is deliberately not used: git would compute patch-ids
+    #            for the whole symmetric difference (thousands of commits across
+    #            majors) before path limiting, taking minutes per target.  A commit
+    #            already applied to the target instead cherry-picks to an empty
+    #            change, which recover_cherry_pick skips, so re-running after an
+    #            initial no-push run remains idempotent.
     targets = [stable_branch, "main"]
     if latest_lts_stable_branch:
         targets.append(latest_lts_stable_branch)
@@ -423,12 +426,11 @@ def cmd_forward_port(args, git_root):
         git(["checkout", target], cwd=git_root, dry_run=dry_run)
         git(["pull", "--ff-only", args.git_remote, target], cwd=git_root, dry_run=dry_run)
         if dry_run:
-            print(f"  (dry-run) would run: git log --cherry-pick --right-only {target}...{release_branch} -- {version_pathspec} :(exclude)changelog/*/version-summary.md")
+            print(f"  (dry-run) would run: git log --right-only {target}...{release_branch} -- {version_pathspec} :(exclude)changelog/*/version-summary.md")
             commits = []
         else:
             result = subprocess.run(
-                ["git", "log", "--oneline", "--reverse",
-                 "--cherry-pick", "--right-only",
+                ["git", "log", "--oneline", "--reverse", "--right-only",
                  f"{target}...{release_branch}",
                  "--", version_pathspec, ":(exclude)changelog/*/version-summary.md"],
                 cwd=git_root, capture_output=True, text=True, check=True,
