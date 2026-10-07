@@ -431,7 +431,7 @@ solrAdminApp.config([
     var isHandledBySecurity = rejection.config.url && rejection.config.url.startsWith("/api/cluster/security/");
     // HTTP 510 means a feature is switched off in solr.xml, e.g. metrics collection. The screen
     // asking for that data explains it in place, so skip the global error banner.
-    var isDisabledFeature = rejection.status === 510;
+    var isDisabledFeature = rejection.status === 510 && rejection.config.url && rejection.config.url.endsWith("admin/metrics");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
