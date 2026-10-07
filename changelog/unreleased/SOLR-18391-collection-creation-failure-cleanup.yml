@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: A collection creation that fails part way no longer leaves a half-created collection behind, and the error returned to the client names the cause
+title: A collection creation that fails part way no longer leaves a half-created collection behind, and the error returned to the client names the cause; a create whose final alias write fails now removes the completed collection instead of leaving it behind
 type: fixed
 authors:
   - name: Nick Shanin
