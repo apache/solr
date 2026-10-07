@@ -28,6 +28,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -97,29 +98,33 @@ public class UploadConfigSet extends ConfigSetAPIBase
     try {
       Files.copy(requestBody, tempZip, StandardCopyOption.REPLACE_EXISTING);
       try (ZipFile zipFile = new ZipFile(tempZip.toFile())) {
+        // Read every entry before writing any of them: every entry path is validated
+        // first, so an archive containing an unsafe path fails as a whole instead of
+        // leaving a partially uploaded configset behind.
+        List<Map.Entry<String, byte[]>> filesToUpload = new ArrayList<>();
         boolean hasEntry = false;
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         while (entries.hasMoreElements()) {
           ZipEntry zipEntry = entries.nextElement();
           hasEntry = true;
-          String filePath = normalizeZipEntryName(zipEntry.getName());
-          filesToDelete.remove(filePath);
           // Backslashes are invalid as ZIP separators, but older Windows-produced archives may
           // contain them. Normalize before handing the path to either config-set implementation.
+          String filePath = normalizeZipEntryName(zipEntry.getName());
           if (!isSafeZipEntryPath(filePath)) {
-            // The filesystem backend contains such entries on its own, but the ZooKeeper
-            // backend builds a znode path from the entry name and the upload aborts. Reject
-            // unsafe entry paths here, before either backend sees them.
-            log.warn(
-                "Not uploading file [{}] from the uploaded zip, as its path could resolve"
-                    + " outside of the configset root directory",
-                filePath);
-            continue;
+            // Neither backend may ever see an unsafe entry path: the filesystem backend
+            // would resolve it outside of the configset directory, and the ZooKeeper
+            // backend cannot use it as a znode path segment at all.
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "The zip entry path '"
+                    + filePath
+                    + "' is not valid: entry paths must not be empty, absolute,"
+                    + " drive-qualified, or contain '.' or '..' segments.");
           }
+          filesToDelete.remove(filePath);
           if (!zipEntry.isDirectory() && !filePath.endsWith("/")) {
             try (InputStream entryStream = zipFile.getInputStream(zipEntry)) {
-              configSetService.uploadFileToConfig(
-                  configSetName, filePath, entryStream.readAllBytes(), true);
+              filesToUpload.add(Map.entry(filePath, entryStream.readAllBytes()));
             }
           }
         }
@@ -127,6 +132,10 @@ public class UploadConfigSet extends ConfigSetAPIBase
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
+        }
+        for (Map.Entry<String, byte[]> fileToUpload : filesToUpload) {
+          configSetService.uploadFileToConfig(
+              configSetName, fileToUpload.getKey(), fileToUpload.getValue(), true);
         }
       } catch (ZipException e) {
         throw new SolrException(
