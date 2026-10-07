@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.junit.Test;
 import picocli.CommandLine;
 
 /**
@@ -35,5 +36,13 @@ public class HealthcheckToolPicocliTest extends HealthcheckToolTest {
     return new CommandLine(tool)
         .setDefaultValueProvider(new CliDefaultValueProvider())
         .execute(toolArgs);
+  }
+
+  @Test
+  public void testHealthcheckWithSolrConnectionProperty() throws Exception {
+    // SOLR_CONNECTION reaches the JVM as the solr.connection property
+    System.setProperty("solr.connection", getHttpSolrConnection().toString());
+    String[] args = new String[] {"healthcheck", "-c", "bob"};
+    assertEquals(0, runTool(args, HealthcheckTool.class));
   }
 }
