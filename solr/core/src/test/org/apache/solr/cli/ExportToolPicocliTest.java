@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.junit.Test;
 import picocli.CommandLine;
 
 /**
@@ -35,5 +36,11 @@ public class ExportToolPicocliTest extends ExportToolTest {
     return new CommandLine(tool)
         .setDefaultValueProvider(new CliDefaultValueProvider())
         .execute(toolArgs);
+  }
+
+  @Test
+  public void testNonNumericLimitIsAUsageError() throws Exception {
+    // picocli reads --limit as a number, so it rejects "abc" before the tool runs: usage error 2
+    assertEquals(2, exportTo(createTempDir(), "--limit", "abc"));
   }
 }

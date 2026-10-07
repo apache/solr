@@ -100,7 +100,7 @@ public class ExportToolTest extends SolrCloudTestCase {
     assertNotEquals(0, runTool(new String[] {"export", "-c", COLLECTION}, ExportTool.class));
   }
 
-  private int exportTo(Path outDir, String... extraArgs) throws Exception {
+  int exportTo(Path outDir, String... extraArgs) throws Exception {
     String[] fixed = {
       "export", "-c", COLLECTION, "--solr-url", solrUrl(), "--output", outDir.toString()
     };
@@ -130,6 +130,16 @@ public class ExportToolTest extends SolrCloudTestCase {
     Path outDir = createTempDir();
     // commons-cli reports 1; picocli reports its usage-error code 2
     assertNotEquals(0, exportTo(outDir, "--format", "xml"));
+    try (var written = Files.list(outDir)) {
+      assertEquals(List.of(), written.toList());
+    }
+  }
+
+  @Test
+  public void testNonNumericLimitFails() throws Exception {
+    Path outDir = createTempDir();
+    // commons-cli fails on parsing the number (1); picocli rejects it up front (2)
+    assertNotEquals(0, exportTo(outDir, "--limit", "abc"));
     try (var written = Files.list(outDir)) {
       assertEquals(List.of(), written.toList());
     }

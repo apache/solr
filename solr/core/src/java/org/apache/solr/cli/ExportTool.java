@@ -242,7 +242,7 @@ public class ExportTool extends ToolBase {
       defaultValue = "100",
       paramLabel = "#",
       description = "Maximum number of docs to download. Default is 100, use -1 for all docs.")
-  private String limitOpt;
+  private long limitOpt;
 
   @picocli.CommandLine.Option(
       names = "--query",
@@ -851,7 +851,7 @@ public class ExportTool extends ToolBase {
             formatOpt == null ? null : formatOpt.name(),
             compressOpt,
             fieldsOpt,
-            limitOpt);
+            String.valueOf(limitOpt));
     export(params);
     return 0;
   }
