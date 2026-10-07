@@ -1,0 +1,8 @@
+title: "LoggingInfoStream (IndexWriter infoStream logging) now includes the core name in every message so multi-core logs can be told apart"
+type: changed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-5505
+    url: https://issues.apache.org/jira/browse/SOLR-5505
