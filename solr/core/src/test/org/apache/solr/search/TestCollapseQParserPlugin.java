@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelector;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
 import org.junit.Before;
@@ -44,6 +45,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
       System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
+    // tie-breaking on group head depends on docid order; avoid merges that reorder docs
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     initCore("solrconfig-collapseqparser.xml", "schema11.xml");
   }
 
