@@ -155,23 +155,25 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String cname = params.required().get(CoreAdminParams.CORE);
         log().info("It has been requested that we recover: core=" + cname);
 
-        try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-          if (core != null) {
-            CoreAdminOperation.requestRecovery(it.handler.coreContainer, core);
-          } else if (it.handler.coreContainer.isCoreLoading(cname)) {
+        final CoreContainer coreContainer = it.handler.coreContainer;
+        SolrCore core = coreContainer.getCore(cname);
+        // A core that is still loading is invisible to getCore. If it is not loading either, it
+        // may have finished loading since the lookup, so look once more before giving up on it.
+        final boolean stillLoading = core == null && coreContainer.isCoreLoading(cname);
+        if (core == null && !stillLoading) {
+          core = coreContainer.getCore(cname);
+        }
+        try (SolrCore found = core) {
+          if (found != null) {
+            CoreAdminOperation.requestRecovery(coreContainer, found);
+          } else if (stillLoading) {
             // Transient: the core exists but hasn't finished loading yet. Report it as retriable
             // instead of a bad request so the recovery nudge isn't silently dropped as invalid.
             throw new SolrException(
                 ErrorCode.SERVICE_UNAVAILABLE,
                 "Core " + cname + CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX);
           } else {
-            // the core may have finished loading since it was looked up
-            try (SolrCore loaded = it.handler.coreContainer.getCore(cname)) {
-              if (loaded == null) {
-                throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-              }
-              CoreAdminOperation.requestRecovery(it.handler.coreContainer, loaded);
-            }
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
           }
         }
       }),
