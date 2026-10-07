@@ -285,7 +285,7 @@ public class PackageManager implements Closeable {
           solrClient.request(
               new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
       Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
-      if (statusCode != null || statusCode != ErrorCode.NOT_FOUND.code) {
+      if (statusCode != null && statusCode != ErrorCode.NOT_FOUND.code) {
         // Cluster props exists, that means there are cluster level plugins installed.
         pluginsValue = response.get(ContainerPluginsApi.PLUGIN);
       }
