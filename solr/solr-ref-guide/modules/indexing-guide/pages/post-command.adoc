@@ -121,6 +121,9 @@ Index all CSV and JSON files into `gettingstarted` from current directory:
 $ bin/solr post -c gettingstarted --filetypes json,csv .
 ----
 
+`--filetypes` also applies to files named on the command line, including a shell-expanded `*`.
+A file with any other extension is skipped with a warning, unless `--type` is set.
+
 Index a tab-separated file into `gettingstarted`:
 
 [,console]
