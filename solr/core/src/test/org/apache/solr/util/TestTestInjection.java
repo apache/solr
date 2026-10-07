@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.util.Locale;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.SolrException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -86,12 +87,15 @@ public class TestTestInjection extends SolrTestCase {
   }
 
   public void testResetClearsFailRecovery() {
-    TestInjection.failRecovery = "true";
+    TestInjection.failRecovery = "true:100";
+    TestInjection.recoveryMaxRetriesOverride = 3;
 
-    assertTrue(TestInjection.injectFailRecovery());
+    SolrException e = expectThrows(SolrException.class, TestInjection::injectFailRecovery);
+    assertEquals("injected recovery failure", e.getMessage());
     TestInjection.reset();
 
     assertNull(TestInjection.failRecovery);
-    assertFalse(TestInjection.injectFailRecovery());
+    assertNull(TestInjection.recoveryMaxRetriesOverride);
+    assertTrue(TestInjection.injectFailRecovery());
   }
 }

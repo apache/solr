@@ -70,8 +70,8 @@ public class ShardTermsTest extends SolrTestCase {
   @Test
   public void testRecoveryFailedClearsRecoveringState() {
     Map<String, Long> map = new HashMap<>();
-    map.put("leader", 1L);
-    map.put("replica", 0L);
+    map.put("leader", 7L);
+    map.put("replica", 6L);
     ShardTerms terms = new ShardTerms(map, 0);
 
     terms = terms.startRecovering("replica");
@@ -79,8 +79,30 @@ public class ShardTermsTest extends SolrTestCase {
 
     terms = terms.recoveryFailed("replica");
     assertFalse(terms.isRecovering("replica"));
-    assertEquals(0L, terms.getTerm("replica").longValue());
+    // the speculative raise is rolled back: the replica keeps the term its data had reached
+    assertEquals(6L, terms.getTerm("replica").longValue());
     assertFalse(terms.canBecomeLeader("replica"));
+  }
+
+  @Test
+  public void testRecoveryFailedKeepsFreshestFailedReplicaLeaderEligible() {
+    Map<String, Long> map = new HashMap<>();
+    map.put("leader", 7L);
+    map.put("fresh-replica", 6L);
+    map.put("stale-replica", 3L);
+    ShardTerms terms = new ShardTerms(map, 0);
+
+    terms = terms.startRecovering("fresh-replica");
+    terms = terms.startRecovering("stale-replica");
+    terms = terms.recoveryFailed("fresh-replica");
+    terms = terms.recoveryFailed("stale-replica");
+    terms = terms.removeTerm("leader");
+
+    assertEquals(6L, terms.getTerm("fresh-replica").longValue());
+    assertEquals(3L, terms.getTerm("stale-replica").longValue());
+    // of the two failed replicas, only the one whose data was most current may lead
+    assertTrue(terms.canBecomeLeader("fresh-replica"));
+    assertFalse(terms.canBecomeLeader("stale-replica"));
   }
 
   @Test
@@ -107,7 +129,7 @@ public class ShardTermsTest extends SolrTestCase {
 
     terms = terms.recoveryFailed("replica");
     assertFalse(terms.isRecovering("replica"));
-    assertEquals(0L, terms.getTerm("replica").longValue());
+    assertEquals(6L, terms.getTerm("replica").longValue());
     assertTrue(terms.canBecomeLeader("replica"));
   }
 }

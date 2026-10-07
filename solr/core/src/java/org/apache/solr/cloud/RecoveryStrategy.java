@@ -110,13 +110,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private int startingRecoveryDelayMilliSeconds = 2000;
   private ReplicationHandler replicationHandlerDoingFetch;
 
-  /**
-   * Test-only override for the maximum number of recovery attempts. When non-null, takes precedence
-   * over {@link #maxRetries} so tests can exhaust retries quickly. Tests must reset this to null
-   * after use.
-   */
-  public static volatile Integer testing_maxRetriesOverride = null;
-
   public static interface RecoveryListener {
     public void recovered();
 
@@ -210,7 +203,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
 
-  private final void recoveryFailed(final ZkController zkController, final CoreDescriptor cd)
+  final void recoveryFailed(final ZkController zkController, final CoreDescriptor cd)
       throws Exception {
     log.error("Recovery failed - I give up.");
     try {
@@ -499,7 +492,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       retries++;
       int effectiveMaxRetries =
-          testing_maxRetriesOverride != null ? testing_maxRetriesOverride : maxRetries;
+          TestInjection.recoveryMaxRetriesOverride != null
+              ? TestInjection.recoveryMaxRetriesOverride
+              : maxRetries;
       if (retries >= effectiveMaxRetries) {
         log.error("Recovery failed - max retries exceeded ({}).", retries);
         try {
@@ -677,10 +672,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getCoreName(), slice);
 
         // test-only hook to force recovery failure deterministically
-        if (TestInjection.injectFailRecovery()) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "injected recovery failure");
-        }
+        assert TestInjection.injectFailRecovery();
 
         if (isClosed()) {
           log.info("RecoveryStrategy has been closed");

@@ -22,19 +22,18 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Deterministic cloud-level test for SOLR-7394: when a recovering replica exhausts its recovery
  * attempts, {@link RecoveryStrategy} must clear the replica's {@code _recovering} shard-terms entry
- * and reset its term to 0, so the replica can win a future leader election once no higher-term
- * replica remains.
+ * and restore the term the replica had before recovery began, so the replica can win a future
+ * leader election once no higher-term replica remains.
  *
  * <p>Recovery failure is forced deterministically via {@link TestInjection} hooks (armed only after
  * the replica publishes RECOVERING, so the failure path is exercised realistically). The test-only
- * retry limit seam in {@link RecoveryStrategy} ({@code testing_maxRetriesOverride}) keeps the run
+ * retry limit seam in {@link TestInjection} ({@code recoveryMaxRetriesOverride}) keeps the run
  * fast.
  */
 public class ZkShardTermsRecoveryFailureTest extends SolrCloudTestCase {
@@ -42,14 +41,10 @@ public class ZkShardTermsRecoveryFailureTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 3;
 
   @BeforeClass
-  public static void setupCluster() {
+  public static void setupCluster() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "2000");
-  }
-
-  @Before
-  public void setupTest() throws Exception {
     configureCluster(NODE_COUNT).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
@@ -77,8 +72,8 @@ public class ZkShardTermsRecoveryFailureTest extends SolrCloudTestCase {
 
     // keep the run fast: exhaust recovery retries after a handful of attempts;
     // force recovery to fail deterministically via TestInjection
-    RecoveryStrategy.testing_maxRetriesOverride = 3;
-    TestInjection.failRecovery = "true";
+    TestInjection.recoveryMaxRetriesOverride = 3;
+    TestInjection.failRecovery = "true:100";
     try {
       // add an NRT replica on another node; it must start recovering and then give up
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
@@ -107,14 +102,16 @@ public class ZkShardTermsRecoveryFailureTest extends SolrCloudTestCase {
               .orElseThrow(() -> new AssertionError("failed replica not found in cluster state"));
 
       // SOLR-7394: the failed recovery must have cleared the _recovering shard-terms entry and
-      // reset the replica's term to 0
+      // restored the replica's pre-recovery term (0 here: the replica was brand new)
       try (ZkShardTerms zkShardTerms =
           new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
         assertFalse(
             "failed replica must not retain a _recovering shard-terms entry",
             zkShardTerms.isRecovering(failedCoreNodeName));
         assertEquals(
-            "failed replica term must be reset to 0", 0L, zkShardTerms.getTerm(failedCoreNodeName));
+            "failed replica term must be restored to its pre-recovery value",
+            0L,
+            zkShardTerms.getTerm(failedCoreNodeName));
         // while the higher-term leader remains, the failed replica must not be eligible
         assertFalse(
             "failed replica must not be leader-eligible while a higher-term replica remains",
@@ -136,7 +133,7 @@ public class ZkShardTermsRecoveryFailureTest extends SolrCloudTestCase {
             return newLeader != null && newLeader.getName().equals(failedCoreNodeName);
           });
     } finally {
-      RecoveryStrategy.testing_maxRetriesOverride = null;
+      TestInjection.recoveryMaxRetriesOverride = null;
       TestInjection.failRecovery = null;
     }
   }

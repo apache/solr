@@ -23,11 +23,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Method;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.junit.BeforeClass;
@@ -42,7 +40,6 @@ public class RecoveryStrategyTest extends SolrTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = "reflection invokes the private recoveryFailed method under test")
   public void testRecoveryFailedPublishesTerminalStateWhenShardTermsCleanupThrows()
       throws Exception {
     CloudDescriptor cloudDescriptor = mock(CloudDescriptor.class);
@@ -71,13 +68,9 @@ public class RecoveryStrategyTest extends SolrTestCase {
     RecoveryStrategy.RecoveryListener listener = mock(RecoveryStrategy.RecoveryListener.class);
     RecoveryStrategy strategy = new RecoveryStrategy(coreContainer, coreDescriptor, listener);
 
-    Method recoveryFailed =
-        RecoveryStrategy.class.getDeclaredMethod(
-            "recoveryFailed", ZkController.class, CoreDescriptor.class);
-    recoveryFailed.setAccessible(true);
     // The cleanup failure must not propagate: the terminal state publication
     // and the listener notification still have to run.
-    recoveryFailed.invoke(strategy, zkController, coreDescriptor);
+    strategy.recoveryFailed(zkController, coreDescriptor);
 
     verify(zkController).publish(coreDescriptor, Replica.State.RECOVERY_FAILED);
     verify(listener).failed();

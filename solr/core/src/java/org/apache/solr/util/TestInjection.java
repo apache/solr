@@ -131,6 +131,13 @@ public class TestInjection {
 
   public static volatile String failRecovery = null;
 
+  /**
+   * Test-only override for the maximum number of recovery attempts in {@code RecoveryStrategy}.
+   * When non-null, it takes precedence over the configured retry count so tests can exhaust retries
+   * quickly.
+   */
+  public static volatile Integer recoveryMaxRetriesOverride = null;
+
   public static volatile String randomDelayInCoreCreation = null;
 
   public static volatile int randomDelayMaxInCoreCreationInSec = 10;
@@ -218,6 +225,7 @@ public class TestInjection {
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
     failRecovery = null;
+    recoveryMaxRetriesOverride = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
@@ -507,9 +515,21 @@ public class TestInjection {
     return true;
   }
 
-  /** Returns true when tests have armed a forced failure of the recovery process. */
+  /** Throws an injected failure when tests have armed a forced failure of the recovery process. */
   public static boolean injectFailRecovery() {
-    return failRecovery != null;
+    if (failRecovery != null) {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean, Integer> pair = parseValue(failRecovery);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "injected recovery failure");
+      }
+    }
+
+    return true;
   }
 
   private static boolean injectSplitFailure(String probability, String label) {
