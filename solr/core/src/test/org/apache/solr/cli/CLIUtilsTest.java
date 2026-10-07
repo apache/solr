@@ -156,27 +156,19 @@ public class CLIUtilsTest extends SolrCloudTestCase {
   public void testSolrConnectionFromSystemProperty() throws Exception {
     var cli = new DefaultParser().parse(connectionOptions(), new String[0]);
     System.setProperty("solr.connection", "zk1:2181,zk2:2181/solr");
-    try {
-      var connection = CLIUtils.getSolrConnection(cli);
-      assertNotNull("SOLR_CONNECTION / solr.connection should be picked up", connection);
-      assertTrue(connection.isZookeeper());
-      assertEquals(List.of("zk1:2181", "zk2:2181"), connection.quorumItems());
-      assertEquals("/solr", connection.zkChroot());
-    } finally {
-      System.clearProperty("solr.connection");
-    }
+    var connection = CLIUtils.getSolrConnection(cli);
+    assertNotNull("SOLR_CONNECTION / solr.connection should be picked up", connection);
+    assertTrue(connection.isZookeeper());
+    assertEquals(List.of("zk1:2181", "zk2:2181"), connection.quorumItems());
+    assertEquals("/solr", connection.zkChroot());
   }
 
   @Test
   public void testZkHostFromSystemProperty() throws Exception {
     var cli = new DefaultParser().parse(connectionOptions(), new String[0]);
     System.setProperty("zkHost", "zk1:2181/solr");
-    try {
-      var connection = CLIUtils.getSolrConnection(cli);
-      assertNotNull(connection);
-      assertTrue(connection.isZookeeper());
-    } finally {
-      System.clearProperty("zkHost");
-    }
+    var connection = CLIUtils.getSolrConnection(cli);
+    assertNotNull(connection);
+    assertTrue(connection.isZookeeper());
   }
 }

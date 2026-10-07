@@ -32,15 +32,9 @@ public class CliDefaultValueProviderTest extends SolrTestCase {
     System.setProperty("solr.connection", "zk1:2181/solr");
     System.setProperty("zkHost", "zk2:2181/solr");
     System.setProperty("solr.url", "http://solr.local:8983");
-    try {
-      assertEquals("zk1:2181/solr", defaultFor("--solr-connection", "<solrConnection>"));
-      assertEquals("zk2:2181/solr", defaultFor("--zk-host", "<zkHost>"));
-      assertEquals("http://solr.local:8983", defaultFor("--solr-url", "<solrUrl>"));
-    } finally {
-      System.clearProperty("solr.connection");
-      System.clearProperty("zkHost");
-      System.clearProperty("solr.url");
-    }
+    assertEquals("zk1:2181/solr", defaultFor("--solr-connection", "<solrConnection>"));
+    assertEquals("zk2:2181/solr", defaultFor("--zk-host", "<zkHost>"));
+    assertEquals("http://solr.local:8983", defaultFor("--solr-url", "<solrUrl>"));
   }
 
   @Test
