@@ -1,4 +1,4 @@
-title: "Config API: keep multi-valued request-handler defaults, appends and invariants sent as duplicate JSON keys, instead of dropping all but the last value."
+title: "Config API: accumulate duplicate JSON keys in request-handler defaults, appends and invariants instead of dropping all but the last value"
 type: fixed
 authors:
   - name: Nick Shanin
