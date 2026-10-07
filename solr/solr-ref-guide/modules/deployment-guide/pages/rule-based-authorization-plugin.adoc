@@ -283,6 +283,8 @@ If this name matches a predefined permission, Solr ignores any other properties 
 +
 Defines the collection(s) the permission applies to.
 The value can either be a single collection name, or a JSON array containing multiple collections.
+In standalone mode there are no collections, and the value can instead be the name of a core; the permission then applies to requests served by that core.
+For a distributed request, only the core that receives the request is checked against the permission; the cores hosting the individual shards named in a `shards` parameter are not checked separately.
 +
 The wildcard `*` is used to indicate that this rule applies to all collections.
 Similarly the special value `null` can be used to indicate that this permission governs Solr's collection-agnostic ("admin") APIs.
