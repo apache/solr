@@ -57,4 +57,20 @@ public class AdminUiSqlScreenTest extends AdminUiTestBase {
     }
     assertNoSevereConsoleErrors();
   }
+
+  @Test
+  public void testFailedRequestShowsErrorInsteadOfCrashing() {
+    // a nonexistent collection makes the request fail with a response that has no "result-set"
+    // key - the same shape the server returns when the sql module/handler isn't installed
+    // (SOLR-16640). Before the fix, parsing this crashed with an uncaught TypeError and the
+    // screen just stayed blank with no explanation.
+    openPage("nonexistentcoll/sqlquery", By.id("sqlquery"));
+    WebElement stmt = waitFor(By.id("sqlexp"));
+    stmt.clear();
+    stmt.sendKeys("SELECT id FROM " + COLLECTION + " LIMIT 10");
+    click(By.xpath("//div[@id='sqlquery']//button[@type='submit']"));
+    waitForTextContains(By.id("sql-response"), "no handler, collection, or core");
+    // the request is expected to fail (404) - that's the scenario under test
+    assertNoSevereConsoleErrors("404 (Not Found)");
+  }
 }

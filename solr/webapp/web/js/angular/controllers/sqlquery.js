@@ -52,36 +52,57 @@ solrAdminApp.controller('SQLQueryController',
       $scope.gridOptions.columnDefs = []
 
       var url = Query.url(params);
-      Query.query(params, function(data) {
 
-        var jsonData = JSON.parse(data.toJSON().data);
+      // Handles both the success and error callbacks below: app.js's global interceptor
+      // (see failed()'s doNotIntercept branch) routes most failures for this request through
+      // the "success" callback too, so this must defend against a response that isn't a SQL
+      // result-set either way (e.g. the sql module/handler isn't installed - SOLR-16640).
+      var showResult = function(raw) {
         $scope.lang = "json";
         $scope.url = url;
         $scope.sqlError = null;
         $scope.sqlData = [];
-          if(jsonData != undefined){
-              var docs = jsonData['result-set'].docs
-              //get all docs
-              for (var i = 0; i < docs.length; i++) {
-                  var doc = docs[i]
-                  //get all the properties
-                  if(doc.hasOwnProperty("EOF")){
-                      if(doc.hasOwnProperty("EXCEPTION")){
-                          $scope.sqlError = doc.EXCEPTION
-                      }
-                  } else {
-                      $scope.gridOptions.data.push(doc);
-                  }
-              }
-          }
-          //Build the columnFields from data
-          var fields = $scope.gridOptions.data[1];
-          for (var property in fields) {
-              if (fields.hasOwnProperty(property)) {
-                  $scope.gridOptions.columnDefs.push({"name":property, "type":{}})
-              }
-          }
-          $scope.gridApi.core.notifyDataChange
+
+        var jsonData;
+        try {
+          jsonData = JSON.parse(raw);
+        } catch (e) {
+          $scope.sqlError = raw;
+          return;
+        }
+
+        var docs = jsonData && jsonData['result-set'] && jsonData['result-set'].docs;
+        if (!docs) {
+          $scope.sqlError = (jsonData && jsonData.message) || raw;
+          return;
+        }
+
+        //get all docs
+        for (var i = 0; i < docs.length; i++) {
+            var doc = docs[i]
+            //get all the properties
+            if(doc.hasOwnProperty("EOF")){
+                if(doc.hasOwnProperty("EXCEPTION")){
+                    $scope.sqlError = doc.EXCEPTION
+                }
+            } else {
+                $scope.gridOptions.data.push(doc);
+            }
+        }
+        //Build the columnFields from data
+        var fields = $scope.gridOptions.data[1];
+        for (var property in fields) {
+            if (fields.hasOwnProperty(property)) {
+                $scope.gridOptions.columnDefs.push({"name":property, "type":{}})
+            }
+        }
+        $scope.gridApi.core.notifyDataChange
+      };
+
+      Query.query(params, function(data) {
+        showResult(data.toJSON().data);
+      }, function(rejection) {
+        showResult((rejection.data && rejection.data.data) || ("HTTP " + rejection.status + " " + rejection.statusText));
       });
     };
   }
