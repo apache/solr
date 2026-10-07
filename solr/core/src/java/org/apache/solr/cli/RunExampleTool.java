@@ -27,8 +27,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
@@ -418,6 +420,15 @@ public class RunExampleTool extends ToolBase {
       paramLabel = "ARG",
       description = "Extra arguments passed through to the underlying bin/solr start command.")
   private String[] extraArgsOpt = new String[0];
+
+  /**
+   * Options picocli does not know. {@code bin/solr start -e <example> -Dfoo=bar} forwards the
+   * {@code -D} system properties here; they are kept as extra arguments, as {@code
+   * SolrCLI.parseCmdLine} does for commons-cli, and anything else is an unknown option.
+   */
+  @picocli.CommandLine.Unmatched private List<String> unmatchedOpts = new ArrayList<>();
+
+  @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 
   public RunExampleTool() {
     this(new DefaultToolRuntime());
@@ -1340,8 +1351,33 @@ public class RunExampleTool extends ToolBase {
       throw new IllegalStateException("Required file " + dest.toAbsolutePath() + " not found!");
   }
 
+  /** The unknown options that are not {@code -D} system properties; picocli would reject these. */
+  List<String> unknownOptions() {
+    return unmatchedOpts.stream().filter(opt -> !opt.startsWith("-D")).toList();
+  }
+
+  /**
+   * The positional arguments followed by the {@code -D} options, the order commons-cli gives them.
+   */
+  String[] picocliExtraArgs() {
+    List<String> extra = new ArrayList<>(Arrays.asList(extraArgsOpt));
+    unmatchedOpts.stream().filter(opt -> opt.startsWith("-D")).forEach(extra::add);
+    return extra.toArray(new String[0]);
+  }
+
   @Override
   public int callTool() throws Exception {
+    List<String> unknown = unknownOptions();
+    if (!unknown.isEmpty()) {
+      // What picocli does for an unknown option it parses itself; thrown from here it would be a
+      // stack trace and exit code 1 instead.
+      java.io.PrintWriter err = spec.commandLine().getErr();
+      err.println("Unknown option: '" + unknown.getFirst() + "'");
+      spec.commandLine().usage(err);
+      err.flush();
+      return picocli.CommandLine.ExitCode.USAGE;
+    }
+    String[] extraArgs = picocliExtraArgs();
     if (noPromptOpt && scriptInputsOpt != null) {
       throw new IllegalArgumentException(
           "Cannot use both --no-prompt and --script-inputs options together. "
@@ -1375,13 +1411,7 @@ public class RunExampleTool extends ToolBase {
 
     StartSolrParams startParams =
         new StartSolrParams(
-            exampleType,
-            hostOpt,
-            memoryOpt,
-            jvmOptsOpt,
-            forceOpt,
-            null,
-            readExtraArgs(extraArgsOpt));
+            exampleType, hostOpt, memoryOpt, jvmOptsOpt, forceOpt, null, readExtraArgs(extraArgs));
 
     if ("cloud".equals(exampleType)) {
       runCloudExample(
