@@ -434,7 +434,7 @@ Then run the command below appropriate for your operating system:
 ====
 [source,bash]
 ----
-$ bin/solr zk updateacls /zk-path
+bin/solr zk updateacls /zk-path
 ----
 ====
 
@@ -443,7 +443,7 @@ Windows::
 ====
 [source,powershell]
 ----
-$ bin/solr.cmd zk updateacls /zk-path
+bin/solr.cmd zk updateacls /zk-path
 ----
 ====
 ======

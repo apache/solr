@@ -30,7 +30,7 @@ Solr is tested on several versions of Linux, macOS and Windows.
 You will need the Java Runtime Environment (JRE) version 21 or higher.
 At a command line, check your Java version like this:
 
-[source,bash]
+[source,console]
 ----
 $ java -version
 openjdk version "11.0.14.1" 2022-02-08

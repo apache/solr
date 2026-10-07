@@ -36,10 +36,10 @@ It predicts the sentiment of the review as a number of stars (between 1 and 5).
 
 To enable NLP processing in Solr, start Solr with the `analysis-extras` module and package support:
 
-[,console]
+[,bash]
 ----
-$ export SOLR_SECURITY_MANAGER_ENABLED=false
-$ bin/solr start -m 4g -Dsolr.modules=analysis-extras -Dsolr.packages.enabled=true
+export SOLR_SECURITY_MANAGER_ENABLED=false
+bin/solr start -m 4g -Dsolr.modules=analysis-extras -Dsolr.packages.enabled=true
 ----
 
 [NOTE]
@@ -56,11 +56,11 @@ For sentiment analysis, we need two essential files:
 
 Let's create a directory for our models and download them:
 
-[,console]
+[,bash]
 ----
-$ mkdir -p ./downloads/sentiment/
-$ wget -O ./downloads/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
-$ wget -O ./downloads/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
+mkdir -p ./downloads/sentiment/
+wget -O ./downloads/sentiment/model.onnx https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/resolve/main/onnx/model_quantized.onnx
+wget -O ./downloads/sentiment/vocab.txt https://huggingface.co/onnx-community/bert-base-multilingual-uncased-sentiment-ONNX/raw/main/vocab.txt
 ----
 
 If you do not have `wget` installed you will need to adjust the above command or download manually.
@@ -81,16 +81,16 @@ Learn more about ONNX at https://onnx.ai[onnx.ai^, role="external", window="_bla
 
 Create a new collection for our sentiment analysis experiments:
 
-[,console]
+[,bash]
 ----
-$ bin/solr create -c sentiment
+bin/solr create -c sentiment
 ----
 
 === Step 4: Configure the Schema
 
 We need to add fields to our schema to store both the input text and the sentiment classification results:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/json' --data-binary '{
   "add-field":{
@@ -100,7 +100,7 @@ curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/
 }'
 ----
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/json' --data-binary '{
   "add-field":{
@@ -114,12 +114,12 @@ curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/
 
 Solr's FileStore provides a distributed file storage mechanism for SolrCloud. Upload our model files there:
 
-[,console]
+[,bash]
 ----
 curl --data-binary @./downloads/sentiment/vocab.txt -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/vocab.txt"
 ----
 
-[,console]
+[,bash]
 ----
 curl --data-binary @./downloads/sentiment/model.onnx -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/model.onnx"
 ----
@@ -136,7 +136,7 @@ When you reference these files in configuration, you use paths relative to the F
 
 Now we'll configure the update processor that will analyze sentiment during document indexing:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/config" -H 'Content-type:application/json' -d '{
   "add-updateprocessor": {
@@ -178,7 +178,7 @@ This configuration creates an update processor that:
 
 Let's index some sample documents to see the sentiment analysis in action:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/update/json?processor=sentimentClassifier&commit=true" -H 'Content-type:application/json' -d '[
   {
@@ -198,7 +198,7 @@ Notice that we specify the processor name with `processor=sentimentClassifier` i
 
 Query the documents to see the sentiment classifications:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/select?q=id:good"
 ----
@@ -220,7 +220,7 @@ You should see the positive review classified as "very good":
 
 Check the negative review:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/select?q=id:bad"
 ----
@@ -355,7 +355,7 @@ For a permanent configuration, define an update processor chain in `solrconfig.x
 
 You can then use this chain by default or explicitly reference it when indexing:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/update/json?update.chain=sentiment-analysis-chain" -d '...'
 ----
@@ -366,7 +366,7 @@ curl "http://localhost:8983/solr/sentiment/update/json?update.chain=sentiment-an
 
 Create facets based on sentiment to understand opinion distribution:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.field=name_sentiment"
 ----
@@ -375,7 +375,7 @@ curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.field=n
 
 Filter search results to show only documents with specific sentiment:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/select?q=product_type:electronics&fq=name_sentiment:very%20good"
 ----
@@ -384,7 +384,7 @@ curl "http://localhost:8983/solr/sentiment/select?q=product_type:electronics&fq=
 
 Boost documents with positive sentiment in search results:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/select?q=*:*&defType=edismax&bq=name_sentiment:very%20good^5.0"
 ----
@@ -393,7 +393,7 @@ curl "http://localhost:8983/solr/sentiment/select?q=*:*&defType=edismax&bq=name_
 
 Analyze sentiment trends over time using time-based queries and facets:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.range=timestamp&facet.range.start=NOW/DAY-30DAY&facet.range.end=NOW&facet.range.gap=%2B1DAY&facet.pivot=timestamp,name_sentiment"
 ----
@@ -457,7 +457,7 @@ This integration demonstrates how Solr can leverage modern NLP capabilities to e
 
 When you're done with this tutorial, stop Solr:
 
-[,console]
+[,bash]
 ----
-$ bin/solr stop --all
+bin/solr stop --all
 ----

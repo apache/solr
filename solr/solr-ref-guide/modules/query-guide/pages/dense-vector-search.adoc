@@ -1246,21 +1246,21 @@ EOF
 
 . Start Solr
 +
-[source,sh]
+[source,bash]
 ----
 ./bin/solr start
 ----
 
 . Upload the configset and create a collection
 +
-[source,sh]
+[source,bash]
 ----
 ./bin/solr zk upconfig -n cuvs_vectors -d cuvs_configset/conf && ./bin/solr create -c vectors -n cuvs_vectors
 ----
 
 . Index documents
 +
-[source,sh]
+[source,bash]
 ----
 curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
      -H "Content-Type: application/json" \
@@ -1275,7 +1275,7 @@ curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
 
 . Query the index
 +
-[source,sh]
+[source,bash]
 ----
 curl -s 'http://localhost:8983/solr/vectors/select?q=%7B!knn%20f=article_vector%20topK=1%7D%5B0.84393,0.50073,0.57059,0.89899,-0.08722,0.26803,0.00807,0.09877%5D&fl=id,score&rows=3&omitHeader=true'
 ----
