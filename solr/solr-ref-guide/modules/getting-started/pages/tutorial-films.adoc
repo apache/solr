@@ -217,34 +217,36 @@ OK, now we're ready to index the data and start playing around with it.
 
 The films data we will index is located in the `example/films` directory of your installation.
 It comes in three formats: JSON, XML and CSV.
-Pick one of the formats and index it into the "films" collection (in each example, one command is for Unix/MacOS and the other is for Windows):
+Pick one of the formats and index it into the "films" collection:
 
-.To Index JSON Format
-[tabs#index-json]
+[tabs#index-film-data]
 ======
+JSON::
++
+====
+[source,bash]
 ----
-$ bin/solr post -c films example/films/films.json
+bin/solr post -c films example/films/films.json
 ----
-======
+====
 
-
-.To Index XML Format
-[tabs#index-xml]
-======
-[,bash]
+XML::
++
+====
+[source,bash]
 ----
 bin/solr post -c films example/films/films.xml
 ----
-======
+====
 
-
-.To Index CSV Format
-[tabs#index-csv]
-======
-[,bash]
+CSV::
++
+====
+[source,bash]
 ----
 bin/solr post -c films example/films/films.csv --params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 ----
+====
 ======
 
 Each command includes these main parameters:
