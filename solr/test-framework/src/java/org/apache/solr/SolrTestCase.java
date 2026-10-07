@@ -192,7 +192,7 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   @AfterClass
-  public static void afterClass() {
+  public static void afterClassSolrTestCase() {
     StartupLoggingUtils.shutdown();
     OpenTelemetryConfigurator.resetForTest();
   }
