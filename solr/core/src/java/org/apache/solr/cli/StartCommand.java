@@ -113,11 +113,11 @@ public class StartCommand implements Callable<Integer> {
   boolean noPrompt;
 
   @CommandLine.Option(
-      names = "--prompt-inputs",
+      names = "--script-inputs",
       description =
           "Don't prompt for input; comma-delimited list of inputs to use when running examples that accept user input",
       paramLabel = "<values>")
-  String promptInputs;
+  String scriptInputs;
 
   @CommandLine.Option(
       names = "--example-dir",
@@ -227,7 +227,7 @@ public class StartCommand implements Callable<Integer> {
           -y, --no-prompt
               Don't prompt for input; accept all defaults when running examples.
 
-          --prompt-inputs <values>
+          --script-inputs <values>
               Don't prompt for input; comma-delimited list of inputs for examples that
               accept user input.
 
