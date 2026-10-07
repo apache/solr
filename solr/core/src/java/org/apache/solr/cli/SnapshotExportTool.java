@@ -150,7 +150,7 @@ public class SnapshotExportTool extends ToolBase {
 
   @picocli.CommandLine.Option(
       names = "--backup-repo-name",
-      paramLabel = "DIR",
+      paramLabel = "NAME",
       description =
           "Specifies name of the backup repository to be used during snapshot export preparation.")
   private String backupRepoNameOpt;

@@ -16,16 +16,27 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.logging.DeprecationLog;
+
 /**
  * The old top-level {@code snapshot-list} spelling of {@code bin/solr snapshot list}, kept so that
  * existing scripts keep working. It is hidden from help and the reference guide.
  *
- * @deprecated Use {@code bin/solr snapshot list}; this spelling is removed in Solr 12.
+ * @deprecated Use {@code bin/solr snapshot list}; this spelling is removed in Solr 11.
  */
-@Deprecated(since = "11.0")
+@Deprecated(since = "10.2")
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "snapshot-list",
     hidden = true,
     description = "Deprecated; use 'snapshot list'.")
-public class SnapshotListShim extends SnapshotListTool {}
+public class SnapshotListShim extends SnapshotListTool {
+
+  @Override
+  public int callTool() throws Exception {
+    DeprecationLog.log(
+        "cli.snapshot-list",
+        "'bin/solr snapshot-list' is deprecated and will be removed in Solr 11; use 'bin/solr snapshot list'.");
+    return super.callTool();
+  }
+}

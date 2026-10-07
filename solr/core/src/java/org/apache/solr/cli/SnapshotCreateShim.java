@@ -16,16 +16,27 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.logging.DeprecationLog;
+
 /**
  * The old top-level {@code snapshot-create} spelling of {@code bin/solr snapshot create}, kept so
  * that existing scripts keep working. It is hidden from help and the reference guide.
  *
- * @deprecated Use {@code bin/solr snapshot create}; this spelling is removed in Solr 12.
+ * @deprecated Use {@code bin/solr snapshot create}; this spelling is removed in Solr 11.
  */
-@Deprecated(since = "11.0")
+@Deprecated(since = "10.2")
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "snapshot-create",
     hidden = true,
     description = "Deprecated; use 'snapshot create'.")
-public class SnapshotCreateShim extends SnapshotCreateTool {}
+public class SnapshotCreateShim extends SnapshotCreateTool {
+
+  @Override
+  public int callTool() throws Exception {
+    DeprecationLog.log(
+        "cli.snapshot-create",
+        "'bin/solr snapshot-create' is deprecated and will be removed in Solr 11; use 'bin/solr snapshot create'.");
+    return super.callTool();
+  }
+}

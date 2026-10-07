@@ -16,16 +16,27 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.logging.DeprecationLog;
+
 /**
  * The old top-level {@code snapshot-export} spelling of {@code bin/solr snapshot export}, kept so
  * that existing scripts keep working. It is hidden from help and the reference guide.
  *
- * @deprecated Use {@code bin/solr snapshot export}; this spelling is removed in Solr 12.
+ * @deprecated Use {@code bin/solr snapshot export}; this spelling is removed in Solr 11.
  */
-@Deprecated(since = "11.0")
+@Deprecated(since = "10.2")
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "snapshot-export",
     hidden = true,
     description = "Deprecated; use 'snapshot export'.")
-public class SnapshotExportShim extends SnapshotExportTool {}
+public class SnapshotExportShim extends SnapshotExportTool {
+
+  @Override
+  public int callTool() throws Exception {
+    DeprecationLog.log(
+        "cli.snapshot-export",
+        "'bin/solr snapshot-export' is deprecated and will be removed in Solr 11; use 'bin/solr snapshot export'.");
+    return super.callTool();
+  }
+}

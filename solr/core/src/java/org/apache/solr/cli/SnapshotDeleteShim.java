@@ -16,16 +16,27 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.solr.logging.DeprecationLog;
+
 /**
  * The old top-level {@code snapshot-delete} spelling of {@code bin/solr snapshot delete}, kept so
  * that existing scripts keep working. It is hidden from help and the reference guide.
  *
- * @deprecated Use {@code bin/solr snapshot delete}; this spelling is removed in Solr 12.
+ * @deprecated Use {@code bin/solr snapshot delete}; this spelling is removed in Solr 11.
  */
-@Deprecated(since = "11.0")
+@Deprecated(since = "10.2")
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(
     name = "snapshot-delete",
     hidden = true,
     description = "Deprecated; use 'snapshot delete'.")
-public class SnapshotDeleteShim extends SnapshotDeleteTool {}
+public class SnapshotDeleteShim extends SnapshotDeleteTool {
+
+  @Override
+  public int callTool() throws Exception {
+    DeprecationLog.log(
+        "cli.snapshot-delete",
+        "'bin/solr snapshot-delete' is deprecated and will be removed in Solr 11; use 'bin/solr snapshot delete'.");
+    return super.callTool();
+  }
+}

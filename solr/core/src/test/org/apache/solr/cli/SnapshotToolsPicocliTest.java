@@ -18,6 +18,8 @@ package org.apache.solr.cli;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.solr.logging.DeprecationLog;
+import org.apache.solr.util.LogListener;
 import org.junit.Test;
 import picocli.CommandLine;
 
@@ -69,16 +71,23 @@ public class SnapshotToolsPicocliTest extends SnapshotToolsTest {
     CommandLine root = root(new CLITestHelper.TestingRuntime(true));
     String url = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    assertEquals(
-        0,
-        root.execute(
-            "snapshot-create",
-            "-c",
-            COLLECTION,
-            "--snapshot-name",
-            "oldSpelling",
-            "--solr-url",
-            url));
+    // the notice is logged once per JVM, and this is the only test that runs the old spellings
+    try (LogListener deprecation =
+        LogListener.warn(DeprecationLog.LOG_PREFIX + "cli.snapshot-create")) {
+      assertEquals(
+          0,
+          root.execute(
+              "snapshot-create",
+              "-c",
+              COLLECTION,
+              "--snapshot-name",
+              "oldSpelling",
+              "--solr-url",
+              url));
+      String notice = deprecation.pollMessage();
+      assertNotNull("a deprecation notice is logged", notice);
+      assertTrue(notice, notice.contains("bin/solr snapshot create"));
+    }
     assertTrue(run(SnapshotListTool.class, "snapshot-list").contains("oldSpelling"));
     assertEquals(
         0,
@@ -93,6 +102,8 @@ public class SnapshotToolsPicocliTest extends SnapshotToolsTest {
     assertFalse(run(SnapshotListTool.class, "snapshot-list").contains("oldSpelling"));
   }
 
+  /** Goes with the shims, which are removed in Solr 11. */
+  @Deprecated
   @Test
   public void testOldSpellingsAreHiddenAndDeprecated() {
     CommandLine root = root(new CLITestHelper.TestingRuntime(true));
@@ -102,7 +113,7 @@ public class SnapshotToolsPicocliTest extends SnapshotToolsTest {
       assertTrue("snapshot-" + sub, shim.getCommandSpec().usageMessage().hidden());
       Deprecated deprecated = shim.getCommand().getClass().getAnnotation(Deprecated.class);
       assertNotNull("snapshot-" + sub, deprecated);
-      assertEquals("11.0", deprecated.since());
+      assertEquals("10.2", deprecated.since());
     }
     assertFalse(root.getUsageMessage().contains("snapshot-create"));
     assertTrue(root.getUsageMessage().contains("snapshot"));
