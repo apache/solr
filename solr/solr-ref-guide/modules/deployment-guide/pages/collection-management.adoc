@@ -51,7 +51,7 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
     "name": "techproducts_v2",
     "config": "techproducts",
@@ -335,7 +335,7 @@ With the v2 API, the `reload` command is provided as a part of URL path. The req
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
     "async": "someAsyncId"
   }
@@ -401,7 +401,7 @@ With the v2 API, the `modify` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
   {
     "modify": {
       "replicationFactor": 2
@@ -492,7 +492,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections
+curl http://localhost:8983/api/collections
 ----
 ====
 ======
@@ -508,6 +508,206 @@ curl -X GET http://localhost:8983/api/collections
   "collections":["collection1",
     "example1",
     "example2"]}
+----
+
+[[collectionsdetail]]
+=== Detailed Collections Tree (V2 Only)
+
+With `detailed=true`, the V2 API returns the collections, shards, and replicas tree, in `collectionsDetail`, including each collection's configuration name and health, instead of the plain collection name list `LIST` returns by default.
+
+NOTE: This is a v2-only variant of `LIST`.
+See xref:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS] for the v1 command that returns similar information (plus live nodes, the alias map, and cluster properties).
+The two overlap in content -- same `health` states, same shard/replica fields -- because they cover the same underlying data; they're documented separately because the parameters and response shape otherwise differ between v1 and v2 here.
+
+This command reports a `health` status of each collection and shard, in order to make
+it easier to monitor the operational state of the collections.
+The following health
+state values are defined, ordered from the best to worst, based on the percentage of
+active replicas (`active`):
+
+`GREEN`::
+`active == 100%`, all replicas are active and there's a shard leader.
+`YELLOW`::
+`100% > active > 50%`, AND there's a shard leader.
+`ORANGE`::
+`50% >= active > 0%`, AND there's a shard leader.
+`RED`::
+No active replicas *OR* there's no shard leader.
+
+The collection health state is reported as the worst state of any shard, e.g., for a collection with all shards GREEN except for one YELLOW the collection health will be reported as YELLOW.
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/api/collections?detailed=true"
+----
+
+==== Detailed Collections Tree Parameters
+
+`detailed`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Return the collections, shards, and replicas tree in `collectionsDetail` instead of the plain collection name list in `collections`.
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Only used when `detailed=true`.
+The collection or alias name for which information is requested.
+If omitted, information on all collections in the cluster will be returned.
+If an alias is supplied, information on the collections in the alias will be returned.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Only used when `detailed=true`.
+The shard(s) for which information is requested.
+Multiple shard names can be specified as a comma-separated list.
+
+`\_route_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Only used when `detailed=true`.
+This can be used if you need the details of the shard where a particular document belongs to and you don't know which shard it falls under.
+
+`prs`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Only used when `detailed=true`.
+Include per-replica state when the collection uses it.
+
+==== Detailed Collections Tree Response
+
+The response will include the status of the request and `collectionsDetail`, a map of collection name to collection state.
+
+==== Example
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/api/collections?detailed=true
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":333},
+  "collectionsDetail":{
+    "collection1":{
+      "shards":{
+        "shard1":{
+          "range":"80000000-ffffffff",
+          "state":"active",
+          "health": "GREEN",
+          "replicas":{
+            "core_node1":{
+              "state":"active",
+              "core":"collection1",
+              "node_name":"127.0.1.1:8983_solr",
+              "base_url":"http://127.0.1.1:8983/solr",
+              "leader":"true"},
+            "core_node3":{
+              "state":"active",
+              "core":"collection1",
+              "node_name":"127.0.1.1:8900_solr",
+              "base_url":"http://127.0.1.1:8900/solr"}}},
+        "shard2":{
+          "range":"0-7fffffff",
+          "state":"active",
+          "health": "GREEN",
+          "replicas":{
+            "core_node2":{
+              "state":"active",
+              "core":"collection1",
+              "node_name":"127.0.1.1:7574_solr",
+              "base_url":"http://127.0.1.1:7574/solr",
+              "leader":"true"},
+            "core_node4":{
+              "state":"active",
+              "core":"collection1",
+              "node_name":"127.0.1.1:7500_solr",
+              "base_url":"http://127.0.1.1:7500/solr"}}}},
+      "router":{"name":"compositeId"},
+      "replicationFactor":1,
+      "znodeVersion": 11,
+      "configName" : "my_config",
+      "health": "GREEN",
+      "aliases":["both_collections"]
+    },
+    "collection2":{"key": "value"}
+  }
+}
+----
+
+Adding `collection` and `shard` narrows the tree to just that shard of that collection:
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/api/collections?detailed=true&collection=collection1&shard=shard1
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":12},
+  "collectionsDetail":{
+    "collection1":{
+      "shards":{
+        "shard1":{
+          "range":"80000000-ffffffff",
+          "state":"active",
+          "health": "GREEN",
+          "replicas":{
+            "core_node1":{
+              "state":"active",
+              "core":"collection1",
+              "node_name":"127.0.1.1:8983_solr",
+              "base_url":"http://127.0.1.1:8983/solr",
+              "leader":"true"},
+            "core_node3":{
+              "state":"active",
+              "core":"collection1",
+              "node_name":"127.0.1.1:8900_solr",
+              "base_url":"http://127.0.1.1:8900/solr"}}}},
+      "router":{"name":"compositeId"},
+      "replicationFactor":1,
+      "znodeVersion": 11,
+      "configName" : "my_config",
+      "health": "GREEN",
+      "aliases":["both_collections"]
+    }
+  }
+}
 ----
 
 [[rename]]
@@ -541,7 +741,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
     "to": "newName"
   }
@@ -827,7 +1027,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
   {
     "migrate-docs": {
       "target": "postMigrationCollection",
@@ -1112,7 +1312,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
+curl "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
 ----
 ====
 ======
@@ -1266,6 +1466,8 @@ This information may be omitted if a field has an `omitNorms` flag in the schema
 The response will include an overview of the collection status, the number of
 active or inactive shards and replicas, and additional index information
 of shard leaders.
+
+If the requested collection does not exist, the V1 API returns a `200 OK` with an empty body, while the V2 API returns a `404` error with an appropriate error message.
 
 === Examples using COLSTATUS
 
@@ -1599,7 +1801,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
   {
     "location": "file:///path/to/my/shared/drive"
   }
@@ -1836,7 +2038,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
+curl "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
 ======
@@ -1886,7 +2088,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
+curl http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
 
 ----
 ====
@@ -1896,7 +2098,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
   {
       "collection": "techproducts_v3",
       "location": "file:///path/to/my/shared/drive",
@@ -2219,7 +2421,7 @@ With the v2 API, the `rebalance-leaders` command is provided as part of the JSON
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "rebalance-leaders": {
       "maxAtOnce": 3
@@ -2357,7 +2559,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
   {
     "followAliases": true,
     "async": "someAsyncId"
@@ -2448,7 +2650,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts/snapshots
+curl http://localhost:8983/api/collections/techproducts/snapshots
 ----
 ====
 ======

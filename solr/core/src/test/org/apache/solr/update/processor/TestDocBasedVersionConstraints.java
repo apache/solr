@@ -53,6 +53,43 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  /**
+   * The processor uses {@code _version_} for its own optimistic concurrency, so a client-supplied
+   * one cannot be honored and must fail rather than be silently ignored.
+   */
+  public void testNativeVersionIsRejected() throws Exception {
+    try (ErrorLogMuter muter = ErrorLogMuter.regex("Optimistic concurrency via _version_")) {
+      // on the document
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  updateJ(
+                      jsonAdd(sdoc("id", "aaa", "my_version_l", "1001", "_version_", "-1")),
+                      params("update.chain", "external-version-constraint")));
+      assertEquals(400, ex.code());
+
+      // as a request param
+      ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  updateJ(
+                      jsonAdd(sdoc("id", "aaa", "my_version_l", "1001")),
+                      params("update.chain", "external-version-constraint", "_version_", "-1")));
+      assertEquals(400, ex.code());
+
+      assertEquals(2, muter.getCount());
+    }
+
+    // sanity check: the same add without a version still works
+    updateJ(
+        jsonAdd(sdoc("id", "aaa", "my_version_l", "1001")),
+        params("update.chain", "external-version-constraint"));
+    assertU(commit());
+    assertJQ(req("q", "id:aaa"), "/response/numFound==1");
+  }
+
   public void testSimpleUpdates() throws Exception {
 
     // skip low version against committed data

@@ -311,7 +311,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext =
-        new AdminCmdContext(operation.action, req.getParams().get(ASYNC), req);
+        new AdminCmdContext(
+            operation.action,
+            req.getParams().get(ASYNC),
+            (String) req.getContext().get(CALLING_LOCK_ID_HEADER));
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
@@ -782,7 +785,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LIST,
         (req, rsp, h) -> {
           final ListCollections listCollectionsAPI = new ListCollections(h.coreContainer, req, rsp);
-          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
+          final SolrJerseyResponse listCollectionsResponse =
+              listCollectionsAPI.listCollections(null, null, null, null, null);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
