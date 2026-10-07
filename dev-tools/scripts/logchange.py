@@ -95,12 +95,13 @@ def unmerged_paths(git_root):
     return r.stdout.splitlines()
 
 
-def recover_cherry_pick(git_root):
+def recover_cherry_pick(git_root, version):
     """Try to finish a cherry-pick that stopped. Return True if it was resolved.
 
-    Handles two cases: conflicts confined to changelog/unreleased/ (the entry
-    is being released, so it is removed), and a pick that is empty because its
-    changes are already on this branch.
+    Handles two cases: conflicts confined to changelog/unreleased/ entries that
+    are being released (a counterpart exists in changelog/v{version}/, so the
+    unreleased entry is removed), and a pick that is empty because its changes
+    are already on this branch.  Any other conflict is left for the user.
     """
     in_progress = subprocess.run(
         ["git", "rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD"],
@@ -109,8 +110,14 @@ def recover_cherry_pick(git_root):
     if not in_progress:
         return False
     conflicts = unmerged_paths(git_root)
-    if any(not p.startswith("changelog/unreleased/") for p in conflicts):
-        return False
+    version_dir = git_root / "changelog" / f"v{version}"
+    for p in conflicts:
+        if not p.startswith("changelog/unreleased/"):
+            return False
+        if not (version_dir / Path(p).name).exists():
+            print(f"  {p} conflicts but has no counterpart in {version_dir.relative_to(git_root)}/ — "
+                  f"not removing it.")
+            return False
     if conflicts:
         print(f"  Removing {len(conflicts)} conflicting unreleased file(s): "
               f"{', '.join(Path(p).name for p in conflicts)}")
@@ -456,7 +463,7 @@ def cmd_forward_port(args, git_root):
             try:
                 git(cp_args, cwd=git_root, dry_run=dry_run)
             except subprocess.CalledProcessError:
-                if recover_cherry_pick(git_root):
+                if recover_cherry_pick(git_root, version):
                     continue
                 print(f"\nError: cherry-pick of {sha} failed on {target}.",
                       file=sys.stderr)
