@@ -87,8 +87,8 @@ import org.xml.sax.SAXException;
 @picocli.CommandLine.Command(
     name = "post",
     description =
-        "Sends one or more files, directories, urls or literal data to Solr for indexing, using"
-            + " the bin/solr CLI.",
+        "The Post command sends one or more files, directories, URLs or literal data to a"
+            + " collection for indexing.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Index all JSON files into a collection",

@@ -45,7 +45,7 @@ bin/solr post [-hov] [--dry-run] [--format] [--skip-commit] -c=name [-d=delay]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Sends one or more files, directories, urls or literal data to Solr for indexing, using the bin/solr CLI.
+The Post command sends one or more files, directories, URLs or literal data to a collection for indexing.
 
 // end::picocli-generated-man-section-description[]
 
