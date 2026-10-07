@@ -78,7 +78,7 @@ public final class ShardResponse {
     this.shard = shard;
   }
 
-  public void setException(Throwable exception) {
+  void setException(Throwable exception) {
     this.exception = exception;
   }
 
