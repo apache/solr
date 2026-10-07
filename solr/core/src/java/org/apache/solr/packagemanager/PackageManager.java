@@ -293,8 +293,7 @@ public class PackageManager implements Closeable {
       if (log.isDebugEnabled()) {
         log.debug("Unable to fetch clusterprops for package plugins", ex);
       }
-    }
-    catch (SolrServerException | IOException ex) {
+    } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
     @SuppressWarnings({"unchecked"})
