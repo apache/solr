@@ -392,9 +392,10 @@ def cmd_forward_port(args, git_root):
     # git restore, so refuse to run on top of uncommitted work.
     require_clean_tree(git_root)
 
-    # Step 1: checkout release branch and write release-date.txt
-    print(f"[1] Checking out {release_branch} and writing release-date.txt")
+    # Step 1: checkout and update release branch, write release-date.txt
+    print(f"[1] Checking out and updating {release_branch}, writing release-date.txt")
     git(["checkout", release_branch], cwd=git_root, dry_run=dry_run)
+    git(["pull", "--ff-only", args.git_remote, release_branch], cwd=git_root, dry_run=dry_run)
 
     if not dry_run and not version_dir.exists():
         print(f"Error: version folder {version_dir} does not exist. "
