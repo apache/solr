@@ -57,12 +57,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * All Solr test cases should derive from this class eventually. This is originally a result of
- * async logging, see: SOLR-12055 and associated. To enable async logging, we must gracefully shut
- * down logging. Many Solr tests subclass LuceneTestCase.
+ * All Solr test cases should derive from this class.
  *
- * <p>Rather than add the cruft from SolrTestCaseJ4 to all the Solr tests that currently subclass
- * LuceneTestCase, we'll add the shutdown to this class and subclass it.
+ * <p><em>Be conservative in what's here; avoid arbitrary/misc utilities.</em>
  *
  * <p>Other changes that should affect every Solr test case may go here if they don't require the
  * added capabilities in SolrTestCaseJ4.
@@ -195,11 +192,14 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   @AfterClass
-  public static void afterClassShutdownLogging() {
+  public static void afterClass() {
     StartupLoggingUtils.shutdown();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
-  @Rule public TestRule methodRules = new LogLevelTestRule();
+  @Rule
+  public TestRule solrTestRules =
+      RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(new LogLevelTestRule());
 
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
@@ -213,12 +213,8 @@ public class SolrTestCase extends LuceneTestCase {
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
 
-  @AfterClass
-  public static void afterSolrTestCase() {
-    OpenTelemetryConfigurator.resetForTest();
-  }
-
   //              UTILITY METHODS FOLLOW
+  // NOTE: be very conservative in what we add!
 
   public static void assertJSONEquals(String expected, String actual) {
     Object json1 = fromJSONString(expected);
