@@ -4,4 +4,6 @@ title: bin/solr CLI commands now fail fast (3s connect / 30s idle) against an un
 type: changed
 authors:
   - name: Eric Pugh
-links: https://github.com/apache/solr/pull/4955
+links:
+- name: PR#4955
+  url: https://github.com/apache/solr/pull/4955
