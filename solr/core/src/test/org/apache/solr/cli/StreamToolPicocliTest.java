@@ -17,6 +17,8 @@
 package org.apache.solr.cli;
 
 import java.util.Arrays;
+import org.apache.solr.util.SecurityJson;
+import org.junit.Test;
 import picocli.CommandLine;
 
 /**
@@ -35,5 +37,35 @@ public class StreamToolPicocliTest extends StreamToolTest {
     return new CommandLine(tool)
         .setDefaultValueProvider(new CliDefaultValueProvider())
         .execute(toolArgs);
+  }
+
+  @Test
+  public void testExecutionIsAcceptedInAnyCase() throws Exception {
+    String[] args = {
+      "stream",
+      "--execution",
+      "LOCAL",
+      "-s",
+      getSolrConnection().toString(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "echo(Hello)"
+    };
+    assertEquals(0, runTool(args, StreamTool.class));
+  }
+
+  @Test
+  public void testUnknownExecutionIsAUsageError() throws Exception {
+    String[] args = {
+      "stream",
+      "--execution",
+      "elsewhere",
+      "-s",
+      getSolrConnection().toString(),
+      "--credentials",
+      SecurityJson.USER_PASS,
+      "echo(Hello)"
+    };
+    assertEquals(2, runTool(args, StreamTool.class));
   }
 }

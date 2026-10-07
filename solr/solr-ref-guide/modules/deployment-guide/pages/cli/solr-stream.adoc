@@ -44,7 +44,7 @@ bin/solr stream [-hv] [--header] [--array-delimiter=CHARACTER] [-c=name]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Runs a streaming expression in Solr and prints the results, using the bin/solr CLI.
+The Stream command runs a streaming expression in Solr or in the CLI process and prints the results.
 
 // end::picocli-generated-man-section-description[]
 
@@ -61,7 +61,7 @@ Runs a streaming expression in Solr and prints the results, using the bin/solr C
   The output delimiter. Default to using three spaces.
 
 *--execution*=_ENVIRONMENT_::
-  Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr server. Default environment is 'remote'.
+  Where to run the expression, one of: local, remote. 'local' is the CLI process, 'remote' is a Solr server. Default is 'remote'.
 
 *--fields*=_FIELDS_::
   The fields in the tuples to output. Defaults to fields in the first tuple of result set.

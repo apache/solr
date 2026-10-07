@@ -63,7 +63,8 @@ import org.apache.solr.handler.CatStream;
 @picocli.CommandLine.Command(
     name = "stream",
     description =
-        "Runs a streaming expression in Solr and prints the results, using the bin/solr CLI.",
+        "The Stream command runs a streaming expression in Solr or in the CLI process and prints"
+            + " the results.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  # Run a streaming expression against the techproducts collection",
@@ -99,14 +100,34 @@ public class StreamTool extends ToolBase {
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
+  /** Where {@code --execution} runs the expression: in the CLI process or on a Solr node. */
+  enum Execution {
+    local,
+    remote
+  }
+
+  /** Accepts the values of {@link Execution} in any case, as the commons-cli path does. */
+  static class ExecutionConverter implements picocli.CommandLine.ITypeConverter<Execution> {
+    @Override
+    public Execution convert(String value) {
+      try {
+        return Execution.valueOf(value.toLowerCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new picocli.CommandLine.TypeConversionException(
+            "expected one of " + Arrays.toString(Execution.values()) + " but was '" + value + "'");
+      }
+    }
+  }
+
   @picocli.CommandLine.Option(
       names = "--execution",
       defaultValue = "remote",
       paramLabel = "ENVIRONMENT",
+      converter = ExecutionConverter.class,
       description =
-          "Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr"
-              + " server. Default environment is 'remote'.")
-  private String executionOpt;
+          "Where to run the expression, one of: ${COMPLETION-CANDIDATES}. 'local' is the CLI"
+              + " process, 'remote' is a Solr server. Default is '${DEFAULT-VALUE}'.")
+  private Execution executionOpt;
 
   @picocli.CommandLine.Option(
       names = {"-c", "--name"},
@@ -639,7 +660,7 @@ public class StreamTool extends ToolBase {
     StreamParams params =
         new StreamParams(
             exprArgs,
-            executionOpt,
+            executionOpt.name(),
             arrayDelimiterOpt,
             delimiterOpt,
             headerOpt,
