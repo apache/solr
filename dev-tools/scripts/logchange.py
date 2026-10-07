@@ -130,6 +130,29 @@ def recover_cherry_pick(git_root, version):
     return True
 
 
+def require_clean_tree(git_root):
+    """Exit unless the working tree has no uncommitted changes to tracked files."""
+    r = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=git_root, capture_output=True, text=True, check=True,
+    )
+    if r.stdout.strip():
+        print("Error: the working tree has uncommitted changes. Commit or stash them first:",
+              file=sys.stderr)
+        print(r.stdout, file=sys.stderr, end="")
+        sys.exit(1)
+
+
+def discard_generated_changelog_files(git_root, dry_run=False):
+    """Drop what logchangeGenerate left under changelog/ once the wanted files are committed.
+
+    Generation rewrites every version's version-summary.md; a modified or
+    untracked copy for another version would block the next checkout.
+    """
+    git(["restore", "changelog/"], cwd=git_root, dry_run=dry_run)
+    git(["clean", "--force", "--", "changelog/*/version-summary.md"], cwd=git_root, dry_run=dry_run)
+
+
 def strip_unreleased_block(changelog_path: Path, dry_run=False):
     """Remove the [unreleased] block that logchangeGenerate emits.
 
@@ -365,6 +388,10 @@ def cmd_forward_port(args, git_root):
         print("    (push disabled — run with --push when ready)")
     print()
 
+    # The script checks out several branches and discards generated files with
+    # git restore, so refuse to run on top of uncommitted work.
+    require_clean_tree(git_root)
+
     # Step 1: checkout release branch and write release-date.txt
     print(f"[1] Checking out {release_branch} and writing release-date.txt")
     git(["checkout", release_branch], cwd=git_root, dry_run=dry_run)
@@ -405,7 +432,7 @@ def cmd_forward_port(args, git_root):
         msg_b = f"Regenerate CHANGELOG.md for v{version}"
         print(f"  Committing: {msg_b!r}")
         git(["commit", "-m", msg_b], cwd=git_root, dry_run=dry_run)
-    git(["restore", "changelog/"], cwd=git_root, dry_run=dry_run)
+    discard_generated_changelog_files(git_root, dry_run=dry_run)
 
     # Steps 4+5: for each target branch, find commits on release_branch not yet on
     #            that target, cherry-pick them, then regenerate CHANGELOG.md fresh.
@@ -508,9 +535,7 @@ def cmd_forward_port(args, git_root):
         if not dry_run and has_staged_changes(git_root, ["CHANGELOG.md", version_summary]):
             git(["commit", "-m", f"Regenerate CHANGELOG.md with v{version} entries on {target}"],
                 cwd=git_root, dry_run=dry_run)
-        # Generation may also rewrite other versions' summaries; leaving them
-        # modified would block the next checkout.
-        git(["restore", "changelog/"], cwd=git_root, dry_run=dry_run)
+        discard_generated_changelog_files(git_root, dry_run=dry_run)
 
     # Step 6: push (optional)
     if do_push:
