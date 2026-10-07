@@ -76,25 +76,6 @@ Writing a new v2 API may appear daunting, but additions in reality are actually 
 
 A good example for each of these steps can be seen in Solr's v2 "add-replica-property" API, which has a defining interface https://github.com/apache/solr/blob/9426902acb7081a2e9a1fa29699c5286459e1365/solr/api/src/java/org/apache/solr/client/api/endpoint/AddReplicaPropertyApi.java[AddReplicaPropertyApi], an implementing class https://github.com/apache/solr/blob/9426902acb7081a2e9a1fa29699c5286459e1365/solr/core/src/java/org/apache/solr/handler/admin/api/AddReplicaProperty.java[AddReplicaProperty], and the two POJOs https://github.com/apache/solr/blob/main/solr/api/src/java/org/apache/solr/client/api/model/AddReplicaPropertyRequestBody.java[AddReplicaPropertyRequestBody] and https://github.com/apache/solr/blob/main/solr/api/src/java/org/apache/solr/client/api/model/SolrJerseyResponse.java[SolrJerseyResponse].
 
-==== HTTP QUERY spike
-
-Use `QUERY` for safe, idempotent queries whose inputs belong in a request body, as defined by https://www.rfc-editor.org/rfc/rfc10008.html[RFC 10008].
-For example, a search with a structured JSON body containing filters, facets, and sorting is a candidate when expressing those inputs as URL parameters would be cumbersome or exceed URL length limits.
-The operation must not request changes to documents, schemas, or cluster configuration, and retrying it must not cause additional mutations.
-Results can still change between requests as the underlying index changes; idempotence does not require identical results.
-
-Prefer `GET` for simple reads or searches that fit naturally in the URL.
-Use `POST`, `PUT`, or `DELETE` for operations that request state changes, even if their inputs contain a query (such as delete-by-query).
-For body-based reads, `QUERY` communicates safe retry semantics that `POST` does not; retain `POST` where client or intermediary compatibility requires it.
-Only use `QUERY` on endpoints that explicitly support it, with a `Content-Type` matching the query body, such as `application/json`.
-
-The `QUERY` annotation in the `api` module uses JAX-RS's `@HttpMethod("QUERY")` extension mechanism.
-Jetty can carry the method as a string without an entry in its `HttpMethod` enum.
-
-The AngularJS Admin UI's SQL screen offers a GET/POST/QUERY selector for testing against the read-only V1 `/sql` handler; POST is the default.
-GET sends the SQL statement as a URL parameter; POST and QUERY send it in a form-encoded body.
-Other SolrJ transports, distributed forwarding, authorization policies, OpenAPI generation, and QUERY cache semantics still need validation before adopting it for a public API.
-
 === Relationship Between V1 and V2 Implementations
 
 Most v2 APIs have a corresponding legacy v1 API (e.g. `/admin/cores?action=RELOAD` backs `POST /api/cores/coreName/reload`).

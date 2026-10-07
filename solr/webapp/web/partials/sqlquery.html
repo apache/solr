@@ -22,12 +22,6 @@ limitations under the License.
         SQL Query Statement
       </label>
       <textarea name="stmt" ng-model="stmt" id="sqlexp"></textarea>
-      <label for="httpMethod">HTTP method</label>
-      <select id="httpMethod" name="httpMethod" ng-model="httpMethod">
-        <option value="GET">GET</option>
-        <option value="POST">POST</option>
-        <option value="QUERY">QUERY</option>
-      </select>
       <button type="submit" ng-click="doQuery()">Execute</button>
       <span><a href="https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html" target="_out">syntax help</a></span>
     </form>
