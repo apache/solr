@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, Zookeeper, Constants, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
+    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
 
         $scope.showDebug = false;
 
@@ -31,13 +31,13 @@ solrAdminApp.controller('CloudController',
         var view = $location.search().view ? $location.search().view : "nodes";
         if (view === "tree") {
             $scope.resetMenu("cloud-tree", Constants.IS_ROOT_PAGE);
-            treeSubController($scope, Zookeeper);
+            treeSubController($scope, $q, ZookeeperReadV2);
         } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, Zookeeper, ClusterV2, ApiErrorHandler);
+            graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
+            nodesSubController($scope, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
+var nodesSubController = function($scope, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -178,66 +178,76 @@ var nodesSubController = function($scope, $timeout, Collections, SystemV2, Metri
     var live_nodes = [];
 
     // We build a node-centric view of the cluster state which we can easily consume to render the table
-    Collections.status(function (data) {
-      // Fetch cluster state from collections API and invert to a nodes structure
-      for (var name in data.cluster.collections) {
-        var collection = data.cluster.collections[name];
-        collection.name = name;
-        var shards = collection.shards;
-        collection.shards = [];
-        for (var shardName in shards) {
-          var shard = shards[shardName];
-          shard.name = shardName;
-          shard.collection = collection.name;
-          var replicas = shard.replicas;
-          shard.replicas = [];
-          for (var replicaName in replicas) {
-            var core = replicas[replicaName];
-            core.name = replicaName;
-            core.replica = core['core'].replace(/.*_(replica_.*)$/, '\$1');
-            core.collection = collection.name;
-            core.shard = shard.name;
-            core.shard_state = shard.state;
-            core.label = core['collection'] + "_"
-              + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
-              + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
+    CollectionsV2.listCollections({detailed: true}, function (error, data, response) {
+      $timeout(function() {
+        if (error) { ApiErrorHandler.handle(response); return; }
 
-            var node_name = core['node_name'];
-            var node = getOrCreateObj(node_name, nodes);
-            var cores = getOrCreateList("cores", node);
-            cores.push(core);
-            node['base_url'] = core.base_url;
-            node['id'] = core.base_url.replace(/[^\w\d]/g, '');
-            node['host'] = node_name.split(":")[0];
-            var collections = getOrCreateList("collections", node);
-            ensureInList(core.collection, collections);
-            ensureNodeInHosts(node_name, hosts);
+        // Fetch cluster state from CollectionsApi and invert to a nodes structure
+        for (var name in data.collectionsDetail) {
+          var collection = data.collectionsDetail[name];
+          collection.name = name;
+          var shards = collection.shards;
+          collection.shards = [];
+          for (var shardName in shards) {
+            var shard = shards[shardName];
+            shard.name = shardName;
+            shard.collection = collection.name;
+            var replicas = shard.replicas;
+            shard.replicas = [];
+            for (var replicaName in replicas) {
+              var core = replicas[replicaName];
+              core.name = replicaName;
+              core.replica = core['core'].replace(/.*_(replica_.*)$/, '\$1');
+              core.collection = collection.name;
+              core.shard = shard.name;
+              core.shard_state = shard.state;
+              core.label = core['collection'] + "_"
+                + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
+                + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
+
+              var node_name = core['node_name'];
+              var node = getOrCreateObj(node_name, nodes);
+              var cores = getOrCreateList("cores", node);
+              cores.push(core);
+              node['base_url'] = core.base_url;
+              node['id'] = core.base_url.replace(/[^\w\d]/g, '');
+              node['host'] = node_name.split(":")[0];
+              var collections = getOrCreateList("collections", node);
+              ensureInList(core.collection, collections);
+              ensureNodeInHosts(node_name, hosts);
+            }
           }
         }
-      }
 
-      live_nodes = data.cluster.live_nodes;
-      for (n in data.cluster.live_nodes) {
-        node = data.cluster.live_nodes[n];
-        if (!(node in nodes)) {
-          var hostName = node.split(":")[0];
-          nodes[node] = {};
-          nodes[node]['host'] = hostName;
-        }
-        ensureNodeInHosts(node, hosts);
-      }
+        ClusterV2.listClusterNodes(function (error, nodesData, response) {
+          $timeout(function() {
+            if (error) { ApiErrorHandler.handle(response); return; }
 
-      // Make sure nodes are sorted alphabetically to align with rowspan in table
-      for (var host in hosts) {
-        hosts[host].nodes.sort();
-      }
+            live_nodes = nodesData.nodes;
+            for (n in live_nodes) {
+              node = live_nodes[n];
+              if (!(node in nodes)) {
+                var hostName = node.split(":")[0];
+                nodes[node] = {};
+                nodes[node]['host'] = hostName;
+              }
+              ensureNodeInHosts(node, hosts);
+            }
 
-      $scope.nodes = nodes;
-      $scope.hosts = hosts;
-      $scope.live_nodes = live_nodes;
+            // Make sure nodes are sorted alphabetically to align with rowspan in table
+            for (var host in hosts) {
+              hosts[host].nodes.sort();
+            }
 
-      $scope.Math = window.Math;
-      $scope.reload();
+            $scope.nodes = nodes;
+            $scope.hosts = hosts;
+            $scope.live_nodes = live_nodes;
+
+            $scope.Math = window.Math;
+            $scope.reload();
+          });
+        });
+      });
     });
   };
 
@@ -681,7 +691,25 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
     $scope.initZookeeper();
 };
 
-var treeSubController = function($scope, Zookeeper) {
+function zkStatToProp(stat) {
+    stat = stat || {};
+    var time = function(ms) { return new Date(ms) + " (" + ms + ")"; };
+    return {
+        version: stat.version,
+        aversion: stat.aversion,
+        children_count: stat.children,
+        ctime: time(stat.ctime),
+        cversion: stat.cversion,
+        czxid: stat.czxid,
+        ephemeralOwner: stat.ephemeralOwner,
+        mtime: time(stat.mtime),
+        mzxid: stat.mzxid,
+        pzxid: stat.pzxid,
+        dataLength: stat.dataLength
+    };
+}
+
+var treeSubController = function($scope, $q, ZookeeperReadV2) {
     $scope.showZkStatus = false;
     $scope.showTree = true;
     $scope.showGraph = false;
@@ -694,29 +722,72 @@ var treeSubController = function($scope, Zookeeper) {
           // TODO: Set proper data here to display a warning in right panel "You lack the required role to see this file"
           $scope.znode = {};
           $scope.showData = false;
-        } else {
-          Zookeeper.detail({path: path}, function(data) {
-              $scope.znode = data.znode;
-              if (data.znode.path.endsWith("/managed-schema") || data.znode.path.endsWith(".xml.bak")) {
-                $scope.lang = "xml";
-              } else {
-                var lastPathElement = data.znode.path.split( '/' ).pop();
-                var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
-                $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
-              }
-              $scope.showData = true;
-          });
+          return;
         }
+        $q.all([
+            ZookeeperReadV2.listNodes(path, {children: false}),
+            ZookeeperReadV2.readNode(path)
+        ]).then(function(results) {
+            $scope.znode = {
+                path: path,
+                prop: zkStatToProp(results[0].data.stat),
+                data: results[1].data
+            };
+            if (path.endsWith("/managed-schema") || path.endsWith(".xml.bak")) {
+              $scope.lang = "xml";
+            } else {
+              var lastPathElement = path.split( '/' ).pop();
+              var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
+              $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
+            }
+            $scope.showData = true;
+        });
+        // A failure here surfaces through the global httpInterceptor (unlike the superagent-based
+        // generated clients, plain $http calls are already covered by it), so no local handling
+        // is needed beyond leaving showData/znode unchanged.
     };
 
     $scope.hideData = function() {
         $scope.showData = false;
     };
 
+    // Recursively walks the whole ZK namespace client-side and builds the same nested array
+    // jstree's static "data" expects, mirroring v1's admin/zookeeper (which did this same walk
+    // server-side in one call) -- v2's listNodes only returns one level of children at a time.
+    function buildZkSubtree(path) {
+        return ZookeeperReadV2.listNodes(path, {}).then(function(response) {
+            // The per-child stat map is flattened onto the JSON body under the requested path
+            // (server-side @JsonAnyGetter), not nested under a well-known property.
+            var childStats = (response.data && response.data[path]) || {};
+            var names = Object.keys(childStats).sort();
+            return $q.all(names.map(function(name) {
+                var childPath = (path === '/' ? '' : path) + '/' + name;
+                var node = {
+                    text: name,
+                    a_attr: {href: "admin/zookeeper?detail=true&path=" + encodeURIComponent(childPath)}
+                };
+                var stat = childStats[name];
+                if (stat && stat.children > 0) {
+                    return buildZkSubtree(childPath).then(function(children) {
+                        node.children = children;
+                        return node;
+                    });
+                }
+                return node;
+            }));
+        });
+    }
+
     $scope.initTree = function() {
-      Zookeeper.simple(function(data) {
-        $scope.tree = data.tree;
-      });
+        buildZkSubtree('/').then(function(children) {
+            $scope.tree = [{
+                text: '/',
+                a_attr: {href: "admin/zookeeper?detail=true&path=%2F"},
+                children: children
+            }];
+        });
+        // A failure here surfaces through the global httpInterceptor, same as any other plain
+        // $http call.
     };
 
     $scope.initTree();
@@ -744,7 +815,7 @@ function secondsForHumans ( seconds ) {
     return returntext.trim() === '' ? '0m' : returntext.trim();
 }
 
-var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler) {
+var graphSubController = function ($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler) {
     $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
@@ -782,10 +853,12 @@ var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler
 
     $scope.initGraph = function() {
         ClusterV2.listClusterNodes(function (error, data, response) {
-            if (error) { ApiErrorHandler.handle(response); return; }
-            var live_nodes = {};
-            for (var i = 0; i < data.nodes.length; i++) {
-                live_nodes[data.nodes[i]] = true;
+            $timeout(function() {
+                if (error) { ApiErrorHandler.handle(response); return; }
+
+                var live_nodes = {};
+                for (var i = 0; i < data.nodes.length; i++) {
+                    live_nodes[data.nodes[i]] = true;
             }
 
             var params = {view: "graph"};
@@ -942,6 +1015,7 @@ var graphSubController = function ($scope, Zookeeper, ClusterV2, ApiErrorHandler
                     $scope.graphData = graph_data;
                     $scope.leafCount = leaf_count;
                 });
+          });
         });
     };
 

@@ -1,0 +1,12 @@
+title: >
+  An experimental re-implementation of the `bin/solr` command line interface, built on picocli,
+  is now included. It is disabled by default and is enabled with `SOLR_PICOCLI=true`. Only some
+  commands have been migrated so far, and its options may change between releases. See the
+  "Experimental picocli Command Line Interface" page in the Reference Guide.
+type: added
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-17697
+    url: https://issues.apache.org/jira/browse/SOLR-17697

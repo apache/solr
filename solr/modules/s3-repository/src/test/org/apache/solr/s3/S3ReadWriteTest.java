@@ -99,7 +99,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     assertThat(exception.getMessage(), exception.getMessage(), containsString("Path is Directory"));
   }
 
-  /** Check various method throws the expected exception of a missing S3 key. */
+  /** Check various methods throw the expected exception for a missing S3 key. */
   @Test
   public void testNotFound() {
     assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
@@ -166,7 +166,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
               break;
           }
           // Initiate a connection loss at the beginning of every "bytesPerException" cycle.
-          // The input stream will not immediately see an error, it will have pre-loaded some data.
+          // The input stream will not immediately see an error, it will have preloaded some data.
           if ((byteCount % bytesPerException <= maxBuffer)) {
             initiateS3ConnectionLoss();
           }

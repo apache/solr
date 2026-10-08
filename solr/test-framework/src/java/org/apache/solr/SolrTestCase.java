@@ -36,10 +36,13 @@ import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
+import org.apache.solr.util.QueryLimitsTestInjectionRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
@@ -54,12 +57,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * All Solr test cases should derive from this class eventually. This is originally a result of
- * async logging, see: SOLR-12055 and associated. To enable async logging, we must gracefully shut
- * down logging. Many Solr tests subclass LuceneTestCase.
+ * All Solr test cases should derive from this class.
  *
- * <p>Rather than add the cruft from SolrTestCaseJ4 to all the Solr tests that currently subclass
- * LuceneTestCase, we'll add the shutdown to this class and subclass it.
+ * <p><em>Be conservative in what's here; avoid arbitrary/misc utilities.</em>
  *
  * <p>Other changes that should affect every Solr test case may go here if they don't require the
  * added capabilities in SolrTestCaseJ4.
@@ -91,6 +91,7 @@ public class SolrTestCase extends LuceneTestCase {
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(new LogLevelTestRule())
+          .around(new QueryLimitsTestInjectionRule(LuceneTestCase::rarely))
           .around(
               new TestRuleAdapter() {
                 @Override
@@ -159,6 +160,22 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.forceSync", "no");
       System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
+
+    injectRandomTraceRecordingFlag();
+  }
+
+  /**
+   * Randomizes the tracing {@link TraceUtils#ifNotNoop(io.opentelemetry.api.trace.Span,
+   * java.util.function.Consumer)} check.
+   *
+   * <p>Rationale: to have better coverage of all methods that deal with span creation without
+   * having to enable tracing.
+   */
+  private static void injectRandomTraceRecordingFlag() {
+    TraceUtils.IS_RECORDING =
+        LuceneTestCase.rarely()
+            ? (ignored) -> true
+            : TraceUtils.DEFAULT_IS_RECORDING; // honors Span::isRecording
   }
 
   /**
@@ -175,11 +192,14 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   @AfterClass
-  public static void afterClassShutdownLogging() {
+  public static void afterClassSolrTestCase() {
     StartupLoggingUtils.shutdown();
+    OpenTelemetryConfigurator.resetForTest();
   }
 
-  @Rule public TestRule methodRules = new LogLevelTestRule();
+  @Rule
+  public TestRule solrTestRules =
+      RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(new LogLevelTestRule());
 
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
@@ -194,6 +214,7 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   //              UTILITY METHODS FOLLOW
+  // NOTE: be very conservative in what we add!
 
   public static void assertJSONEquals(String expected, String actual) {
     Object json1 = fromJSONString(expected);

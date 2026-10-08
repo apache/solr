@@ -20,9 +20,11 @@ package org.apache.solr.client.api.endpoint;
 import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import org.apache.solr.client.api.model.CancelTaskResponse;
 import org.apache.solr.client.api.model.ListActiveTaskResponse;
 import org.apache.solr.client.api.model.TaskStatusResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
@@ -47,5 +49,15 @@ public interface TasksApi {
         summary = "Status of a specific task",
         tags = {"tasks"})
     TaskStatusResponse getTaskStatus(@PathParam("taskID") String taskID) throws Exception;
+  }
+
+  @Path(INDEX_PATH_PREFIX + "/tasks/{taskID}")
+  interface Cancel {
+    @DELETE
+    @StoreApiParameters
+    @Operation(
+        summary = "Cancel any specific task",
+        tags = {"tasks"})
+    CancelTaskResponse cancelRunningTask(@PathParam("taskID") String taskID) throws Exception;
   }
 }
