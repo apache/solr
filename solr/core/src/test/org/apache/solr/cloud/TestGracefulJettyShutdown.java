@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.SolrTestCaseJ4.params;
+import static org.apache.solr.SolrTestCaseJ4.sdoc;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -44,11 +48,12 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
+@Nightly
+public class TestGracefulJettyShutdown extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testSingleShardInFlightRequestsDuringShutDown() throws Exception {
-    final String collection = getSaferTestName();
+    final String collection = "graceful";
     final String handler = "/foo";
 
     final Semaphore handlerGate = new Semaphore(0);
