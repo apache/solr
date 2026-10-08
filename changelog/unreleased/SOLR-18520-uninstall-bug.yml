@@ -1,5 +1,5 @@
 title:
-  Package Uninstall should work in absence of clusterprops.json file- #5052
+  Package Uninstall should work in absence of clusterprops.json file
 type: fixed
 authors:
   - name: Jalaz Kumar
