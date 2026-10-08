@@ -29,6 +29,8 @@
 *** xref:cli/solr-delete.adoc[delete]
 *** xref:cli/solr-export.adoc[export]
 *** xref:cli/solr-healthcheck.adoc[healthcheck]
+*** xref:cli/solr-post.adoc[post]
+*** xref:cli/solr-postlogs.adoc[postlogs]
 *** xref:cli/solr-start.adoc[start]
 *** xref:cli/solr-status.adoc[status]
 *** xref:cli/solr-stop.adoc[stop]

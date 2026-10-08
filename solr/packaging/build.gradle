@@ -367,6 +367,8 @@ task integrationTestsPicocli(type: BatsTask) {
       'test/test_modules.bats',
       'test/test_security_manager.bats',
       'test/test_healthcheck.bats',
+      'test/test_postlogs.bats',
+      'test/test_extraction.bats',
   ]
 }
 
