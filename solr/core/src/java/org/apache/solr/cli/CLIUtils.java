@@ -225,7 +225,7 @@ public final class CLIUtils {
    * @deprecated Only used by the commons-cli parser. Picocli tools resolve the URL from their own
    *     annotated connection options and call {@link #normalizeSolrUrl(String)}.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 

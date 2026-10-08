@@ -87,7 +87,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option NO_PROMPT_OPTION =
       Option.builder("y")
           .longOpt("no-prompt")
@@ -99,7 +99,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SCRIPT_INPUTS_OPTION =
       Option.builder()
           .longOpt("script-inputs")
@@ -114,7 +114,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option EXAMPLE_OPTION =
       Option.builder("e")
           .longOpt("example")
@@ -128,7 +128,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SCRIPT_OPTION =
       Option.builder()
           .longOpt("script")
@@ -141,7 +141,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SERVER_DIR_OPTION =
       Option.builder("d")
           .longOpt("server-dir")
@@ -155,7 +155,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
@@ -167,7 +167,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option EXAMPLE_DIR_OPTION =
       Option.builder()
           .longOpt("example-dir")
@@ -181,7 +181,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SOLR_HOME_OPTION =
       Option.builder()
           .longOpt("solr-home")
@@ -196,7 +196,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option URL_SCHEME_OPTION =
       Option.builder()
           .longOpt("url-scheme")
@@ -209,7 +209,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
@@ -222,7 +222,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option HOST_OPTION =
       Option.builder()
           .longOpt("host")
@@ -235,7 +235,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option USER_MANAGED_OPTION =
       Option.builder().longOpt("user-managed").desc("Start Solr in User Managed mode.").get();
 
@@ -243,7 +243,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option MEMORY_OPTION =
       Option.builder("m")
           .longOpt("memory")
@@ -257,7 +257,7 @@ public class RunExampleTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option JVM_OPTS_OPTION =
       Option.builder()
           .longOpt("jvm-opts")

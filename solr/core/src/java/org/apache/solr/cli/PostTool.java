@@ -117,7 +117,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -131,7 +131,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SKIP_COMMIT_OPTION =
       Option.builder()
           .longOpt("skip-commit")
@@ -142,7 +142,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option OPTIMIZE_OPTION =
       Option.builder("o")
           .longOpt("optimize")
@@ -153,7 +153,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option MODE_OPTION =
       Option.builder()
           .longOpt("mode")
@@ -167,7 +167,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option RECURSIVE_OPTION =
       Option.builder("r")
           .longOpt("recursive")
@@ -181,7 +181,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option DELAY_OPTION =
       Option.builder("d")
           .longOpt("delay")
@@ -196,7 +196,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option TYPE_OPTION =
       Option.builder("t")
           .longOpt("type")
@@ -209,7 +209,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FILE_TYPES_OPTION =
       Option.builder("ft")
           .longOpt("filetypes")
@@ -222,7 +222,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option PARAMS_OPTION =
       Option.builder()
           .longOpt("params")
@@ -235,7 +235,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
@@ -247,7 +247,7 @@ public class PostTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option DRY_RUN_OPTION =
       Option.builder()
           .longOpt("dry-run")

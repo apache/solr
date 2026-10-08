@@ -100,7 +100,7 @@ public class StatusTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option MAX_WAIT_SECS_OPTION =
       Option.builder()
           .longOpt("max-wait-secs")
@@ -115,7 +115,7 @@ public class StatusTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
@@ -129,7 +129,7 @@ public class StatusTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static final Option SHORT_OPTION =
       Option.builder()
           .longOpt("short")

@@ -192,7 +192,7 @@ public class StreamTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option EXECUTION_OPTION =
       Option.builder()
           .longOpt("execution")
@@ -206,7 +206,7 @@ public class StreamTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COLLECTION_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -229,7 +229,7 @@ public class StreamTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option HEADER_OPTION =
       Option.builder().longOpt("header").desc("Specify to include a header line.").get();
 
@@ -237,7 +237,7 @@ public class StreamTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option DELIMITER_OPTION =
       Option.builder()
           .longOpt("delimiter")
@@ -250,7 +250,7 @@ public class StreamTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option ARRAY_DELIMITER_OPTION =
       Option.builder()
           .longOpt("array-delimiter")
