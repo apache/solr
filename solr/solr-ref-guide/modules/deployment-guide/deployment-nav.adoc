@@ -20,6 +20,8 @@
 * xref:solr-control-script-reference.adoc[]
 ** xref:cli/index.adoc[Experimental picocli CLI]
 // CLI-DOCS-START
+*** xref:cli/solr-api.adoc[api]
+*** xref:cli/solr-assert.adoc[assert]
 *** xref:cli/solr-auth.adoc[auth]
 *** xref:cli/solr-cluster.adoc[cluster]
 *** xref:cli/solr-create.adoc[create]

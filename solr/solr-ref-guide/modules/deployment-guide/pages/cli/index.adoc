@@ -59,6 +59,8 @@ Any command not listed here is unavailable when the picocli implementation is en
 |===
 |Command
 
+|xref:cli/solr-api.adoc[bin/solr api]
+|xref:cli/solr-assert.adoc[bin/solr assert]
 |xref:cli/solr-auth.adoc[bin/solr auth]
 |xref:cli/solr-cluster.adoc[bin/solr cluster]
 |xref:cli/solr-create.adoc[bin/solr create]
