@@ -47,6 +47,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
@@ -156,7 +157,7 @@ public class PackageManager implements Closeable {
     del.pkg = packageName;
 
     V2Request req =
-        new V2Request.Builder(PackageUtils.PACKAGE_PATH)
+        new V2Request.Builder("/cluster/package")
             .forceV2(true)
             .withMethod(SolrRequest.METHOD.POST)
             .withPayload(Collections.singletonMap("delete", del))
@@ -280,18 +281,18 @@ public class PackageManager implements Closeable {
     Map<String, String> packageVersions = new HashMap<>();
     // map of package name to multiple values of pluginMeta(Map<String, String>)
     Map<String, Set<PluginMeta>> packagePlugins = new HashMap<>();
-    Map<String, Object> result;
+    Map<String, Object> result = Collections.emptyMap();
     try {
       NamedList<Object> response =
           solrClient.request(
               new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
       Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
-      if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
-        // Cluster props doesn't exist, that means there are no cluster level plugins installed.
-        result = Collections.emptyMap();
-      } else {
+      if (statusCode != null && statusCode != ErrorCode.NOT_FOUND.code) {
+        // Cluster props exists, that means there are cluster level plugins installed.
         result = response.asShallowMap();
       }
+    } catch (RemoteSolrException ex) {
+      log.debug("Unable to fetch clusterprops for package plugins", ex);
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
