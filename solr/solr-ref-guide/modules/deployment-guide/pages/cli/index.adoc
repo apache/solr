@@ -59,9 +59,14 @@ Any command not listed here is unavailable when the picocli implementation is en
 |===
 |Command
 
+|xref:cli/solr-api.adoc[bin/solr api]
+|xref:cli/solr-assert.adoc[bin/solr assert]
 |xref:cli/solr-auth.adoc[bin/solr auth]
+|xref:cli/solr-cluster.adoc[bin/solr cluster]
+|xref:cli/solr-config.adoc[bin/solr config]
 |xref:cli/solr-create.adoc[bin/solr create]
 |xref:cli/solr-delete.adoc[bin/solr delete]
+|xref:cli/solr-export.adoc[bin/solr export]
 |xref:cli/solr-healthcheck.adoc[bin/solr healthcheck]
 |xref:cli/solr-start.adoc[bin/solr start]
 |xref:cli/solr-status.adoc[bin/solr status]
@@ -84,6 +89,8 @@ Any command not listed here is unavailable when the picocli implementation is en
 In addition to the commands that have not been migrated yet:
 
 * On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
+* `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
+  The default implementation accepts `-v` for it.
 * `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
   This matches the default implementation, but means `--fail-on-exists false` does not disable the check.
 * Error messages for invalid or mutually exclusive options are worded differently from the default implementation.
