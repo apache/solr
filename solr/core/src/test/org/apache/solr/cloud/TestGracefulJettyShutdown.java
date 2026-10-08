@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.SolrTestCaseJ4.params;
-import static org.apache.solr.SolrTestCaseJ4.sdoc;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +34,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -83,16 +82,17 @@ public class TestGracefulJettyShutdown extends SolrTestCase {
       final CloudSolrClient cloudClient = cluster.getSolrClient();
 
       // add a few docs...
-      cloudClient.add(collection, sdoc("id", "xxx", "foo_s", "aaa"));
-      cloudClient.add(collection, sdoc("id", "yyy", "foo_s", "bbb"));
-      cloudClient.add(collection, sdoc("id", "zzz", "foo_s", "aaa"));
+      cloudClient.add(collection, new SolrInputDocument("id", "xxx", "foo_s", "aaa"));
+      cloudClient.add(collection, new SolrInputDocument("id", "yyy", "foo_s", "bbb"));
+      cloudClient.add(collection, new SolrInputDocument("id", "zzz", "foo_s", "aaa"));
       cloudClient.commit(collection);
 
       final List<Future<QueryResponse>> results = new ArrayList<>(13);
 
       try (SolrClient jettyClient =
           new HttpJettySolrClient.Builder(nodeToStop.getBaseUrl().toString()).build()) {
-        final QueryRequest req = new QueryRequest(handler, params("q", "foo_s:aaa"));
+        final QueryRequest req =
+            new QueryRequest(handler, new ModifiableSolrParams().set("q", "foo_s:aaa"));
 
         // check inflight requests using both clients...
         for (SolrClient client : Arrays.asList(cloudClient, jettyClient)) {
