@@ -116,24 +116,28 @@ class ConnectionOptions {
 
   static String resolveZkHost(
       ConnectionOptions connectionOptions, String solrUrl, String credentials) throws Exception {
+    boolean resolveFromSolrUrl = false;
     if (connectionOptions != null) {
       String zkHost = connectionOptions.effectiveZkHost();
       if (zkHost != null) {
         return zkHost;
       }
+      resolveFromSolrUrl = connectionOptions.effectiveSolrUrl() != null;
     }
 
-    String solrConnectionProp = EnvUtils.getProperty("solr.connection");
-    if (solrConnectionProp != null && !solrConnectionProp.isBlank()) {
-      var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionProp);
-      if (connection.isZookeeper()) {
-        return solrConnectionProp;
+    if (!resolveFromSolrUrl) {
+      String solrConnectionProp = EnvUtils.getProperty("solr.connection");
+      if (solrConnectionProp != null && !solrConnectionProp.isBlank()) {
+        var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnectionProp);
+        if (connection.isZookeeper()) {
+          return solrConnectionProp;
+        }
       }
-    }
 
-    String zkHostProp = EnvUtils.getProperty("zkHost");
-    if (zkHostProp != null && !zkHostProp.isBlank()) {
-      return zkHostProp;
+      String zkHostProp = EnvUtils.getProperty("zkHost");
+      if (zkHostProp != null && !zkHostProp.isBlank()) {
+        return zkHostProp;
+      }
     }
 
     try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
