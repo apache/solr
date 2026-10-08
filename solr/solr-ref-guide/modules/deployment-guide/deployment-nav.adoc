@@ -40,6 +40,7 @@
 *** xref:cli/solr-start.adoc[start]
 *** xref:cli/solr-status.adoc[status]
 *** xref:cli/solr-stop.adoc[stop]
+*** xref:cli/solr-stream.adoc[stream]
 *** xref:cli/solr-version.adoc[version]
 *** xref:cli/solr-zk.adoc[zk]
 **** xref:cli/solr-zk-cp.adoc[cp]

@@ -89,6 +89,7 @@ import org.slf4j.LoggerFactory;
       HealthcheckTool.class,
       PostTool.class,
       PostLogsTool.class,
+      StreamTool.class,
       SnapshotTool.class,
       SnapshotCreateShim.class,
       SnapshotDeleteShim.class,
