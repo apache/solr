@@ -68,7 +68,7 @@ public final class CLIUtils {
       CommandLine cli) throws IOException {
     String solrConnection =
         getCliOptionOrPropValue(
-            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr-connection", null);
+            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr.connection", null);
     if (solrConnection != null && !solrConnection.isBlank()) {
       return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
     }
