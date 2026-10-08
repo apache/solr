@@ -111,6 +111,11 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.ClusterPropertyApis;
+import org.apache.solr.client.api.endpoint.ListAliasesApi;
+import org.apache.solr.client.api.endpoint.ListClusterNodesApi;
+import org.apache.solr.client.api.endpoint.ListCollectionsApi;
+import org.apache.solr.client.api.endpoint.RenameCollectionApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
@@ -157,6 +162,7 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
@@ -311,7 +317,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext =
-        new AdminCmdContext(operation.action, req.getParams().get(ASYNC), req);
+        new AdminCmdContext(
+            operation.action,
+            req.getParams().get(ASYNC),
+            (String) req.getContext().get(CALLING_LOCK_ID_HEADER));
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
@@ -530,6 +539,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
 
+    /**
+     * V2 equivalent: {@link RenameCollectionApi} ({@code POST
+     * /collections/{collectionName}/rename}).
+     */
     RENAME_OP(
         RENAME,
         (req, rsp, h) -> {
@@ -538,6 +551,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return copy(req.getParams(), map, FOLLOW_ALIASES);
         }),
 
+    /** No V2 equivalent yet. */
     REINDEXCOLLECTION_OP(
         REINDEXCOLLECTION,
         (req, rsp, h) -> {
@@ -623,6 +637,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link SplitShardAPI} ({@code POST /collections/{collection}/shards} with the
+     * {@code split} command).
+     */
     SPLITSHARD_OP(
         SPLITSHARD,
         DEFAULT_COLLECTION_OP_TIMEOUT * 5,
@@ -700,6 +718,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DeleteReplica.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link MigrateDocsAPI} ({@code POST /collections/{collection}} with the {@code
+     * migrate-docs} command).
+     */
     MIGRATE_OP(
         MIGRATE,
         (req, rsp, h) -> {
@@ -766,7 +788,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link ClusterAPI#getOverseerStatus} ({@code GET /cluster/overseer}), which
+     * calls this operation.
+     */
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
+    /** No V2 equivalent yet. */
     DISTRIBUTEDAPIPROCESSING_OP(
         DISTRIBUTEDAPIPROCESSING,
         (req, rsp, h) -> {
@@ -790,6 +817,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     /**
      * Handle cluster status request. Can return status per specific collection/shard or per all
      * collections.
+     */
+    /**
+     * Superseded by V2, which splits it up: {@link ListCollectionsApi} ({@code GET
+     * /collections?detailed=true}) for the collections tree, {@link ListClusterNodesApi} ({@code
+     * GET /cluster/nodes}), {@link ListAliasesApi} ({@code GET /aliases}) and {@link
+     * ClusterPropertyApis} ({@code GET /cluster/properties}).
      */
     CLUSTERSTATUS_OP(
         CLUSTERSTATUS,
@@ -839,6 +872,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           BalanceShardUnique.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link RebalanceLeadersAPI} ({@code POST /collections/{collection}} with the
+     * {@code rebalance-leaders} command).
+     */
     REBALANCELEADERS_OP(
         REBALANCELEADERS,
         (req, rsp, h) -> {
@@ -846,6 +883,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
     // XXX should this command support followAliases?
+    /**
+     * V2 equivalent: {@link ModifyCollectionAPI} ({@code POST /collections/{collection}} with the
+     * {@code modify} command).
+     */
     MODIFYCOLLECTION_OP(
         MODIFYCOLLECTION,
         (req, rsp, h) -> {
@@ -1000,6 +1041,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link MoveReplicaAPI} ({@code POST /collections/{collection}} with the {@code
+     * move-replica} command).
+     */
     MOVEREPLICA_OP(
         MOVEREPLICA,
         (req, rsp, h) -> {

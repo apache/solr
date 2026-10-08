@@ -146,6 +146,8 @@ public class JoinQParserPlugin extends QParserPlugin {
       final String v = qparser.localParams.get(QueryParsing.V);
       final String coreName;
 
+      ScoreJoinQParserPlugin.requireFromAndTo(fromField, toField);
+
       Query fromQuery;
       long fromCoreOpenTime = 0;
 

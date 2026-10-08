@@ -59,7 +59,7 @@ import org.apache.solr.core.ConfigSetService;
       "  bin/solr create -c myCollection",
       "",
       "  # Create a collection with 2 shards and 2 replicas",
-      "  bin/solr create -c myCollection -s 2 -rf 2",
+      "  bin/solr create -c myCollection -sh 2 -rf 2",
       "",
       "  # Create a collection using an existing configset",
       "  bin/solr create -c myCollection -d myconfig"
