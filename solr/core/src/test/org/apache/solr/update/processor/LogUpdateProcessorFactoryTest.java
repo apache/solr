@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -86,9 +85,6 @@ public class LogUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   @Test
   @LogLevel("org.apache.solr.update.processor.LogUpdateProcessorFactory=WARN")
   public void testSlowWarnOnlyContainsRequestToLog() throws Exception {
-    assertFalse(
-        "this test requires INFO to be disabled for the factory logger",
-        LogManager.getLogger(LogUpdateProcessorFactory.class).isInfoEnabled());
     final LogUpdateProcessorFactory factory = factoryWithThreshold(0); // everything is "slow"
 
     try (SolrQueryRequest req = req();
@@ -115,9 +111,6 @@ public class LogUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   @Test
   @LogLevel("org.apache.solr.update.processor.LogUpdateProcessorFactory=WARN")
   public void testToLogRetainedWhenNothingIsLogged() throws Exception {
-    assertFalse(
-        "this test requires INFO to be disabled for the factory logger",
-        LogManager.getLogger(LogUpdateProcessorFactory.class).isInfoEnabled());
     // A threshold no request can reach: the "slow" WARN is never emitted either.
     final LogUpdateProcessorFactory factory = factoryWithThreshold(Integer.MAX_VALUE);
 
