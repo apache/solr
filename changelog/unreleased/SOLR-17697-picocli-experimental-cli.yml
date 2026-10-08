@@ -7,6 +7,10 @@ type: added
 authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
+  - name: Jalaz Kumar
+    nick: jaykay12
 links:
   - name: SOLR-17697
     url: https://issues.apache.org/jira/browse/SOLR-17697
+  - name: SOLR-18515
+    url: https://issues.apache.org/jira/browse/SOLR-18515
