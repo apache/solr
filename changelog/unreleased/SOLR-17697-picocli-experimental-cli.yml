@@ -8,6 +8,8 @@ authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
   - name: Serhiy Bzhezytskyy
+  - name: Jalaz Kumar
+    nick: jaykay12
 links:
   - name: SOLR-17697
     url: https://issues.apache.org/jira/browse/SOLR-17697
@@ -31,3 +33,5 @@ links:
     url: https://issues.apache.org/jira/browse/SOLR-18518
   - name: SOLR-18517
     url: https://issues.apache.org/jira/browse/SOLR-18517
+  - name: SOLR-18515
+    url: https://issues.apache.org/jira/browse/SOLR-18515
