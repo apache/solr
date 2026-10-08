@@ -36,7 +36,7 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 bin/solr start [-fhqy] [--force] [--user-managed] [--verbose]
                [--data-home=<dataHome>] [-e=<example>] [--example-dir=<exampleDir>]
                [--host=<host>] [-j=<jettyParams>] [--jvm-opts=<jvmOpts>]
-               [-m=<memory>] [-p=<port>] [--prompt-inputs=<values>]
+               [-m=<memory>] [-p=<port>] [--script-inputs=<values>]
                [--server-dir=<serverDir>] [--solr-home=<solrHome>] [-z=<zkHost>]
 ....
 
@@ -85,11 +85,11 @@ Starts Solr
 *-p*, *--port*=_<port>_::
   Specify the Solr HTTP port; default is 8983. STOP_PORT=($SOLR_PORT-1000), RMI_PORT=($SOLR_PORT+10000)
 
-*--prompt-inputs*=_<values>_::
-  Don't prompt for input; comma-delimited list of inputs to use when running examples that accept user input
-
 *-q*, *--quiet*::
   Set log level to WARN (quiet); default is INFO
+
+*--script-inputs*=_<values>_::
+  Don't prompt for input; comma-delimited list of inputs to use when running examples that accept user input
 
 *--server-dir*=_<serverDir>_::
   Specify the Solr server directory; default is 'server'

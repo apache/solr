@@ -2,6 +2,14 @@ name: Validate Changelog
 
 on:
   pull_request:
+    # 'labeled'/'unlabeled' are included so that adding or removing the
+    # 'no-changelog' label re-runs this check on an already-failed PR.
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
     branches:
       - '*'
 
@@ -12,8 +20,15 @@ concurrency:
 jobs:
   validate-changelog:
     name: Check changelog entry
-    # Skip validation for Renovate PRs (solrbot) - they get changelog entries automatically
-    if: github.event.pull_request.user.login != 'solrbot'
+    # Skip validation for Renovate PRs (solrbot) - they get changelog entries automatically.
+    # On label events, only re-run for the 'no-changelog' label; other label churn
+    # (e.g. from the labeler workflow) leaves the existing check result untouched.
+    if: |
+      github.event.pull_request.user.login != 'solrbot' &&
+      (
+        (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+        github.event.label.name == 'no-changelog'
+      )
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +39,13 @@ jobs:
 
     - name: Check for no-changelog label
       id: check-label
+      env:
+        HAS_NO_CHANGELOG_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
       run: |
-        LABELS='${{ toJson(github.event.pull_request.labels) }}'
-        if echo "$LABELS" | grep -q '"no-changelog"'; then
-          echo "skip=true" >> $GITHUB_OUTPUT
+        if [ "$HAS_NO_CHANGELOG_LABEL" = "true" ]; then
+          echo "skip=true" >> "$GITHUB_OUTPUT"
         else
-          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "skip=false" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Check for changelog entry
@@ -47,8 +63,8 @@ jobs:
         # Check if only docs/tests/comments were changed (common exceptions)
         HAS_NON_DOCS_CHANGES=false
         while IFS= read -r file; do
-          # Skip changelog, docs, tests, and certain config files
-          if ! echo "$file" | grep -qE "(^changelog/|^solr/solr-ref-guide/|^dev-docs/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
+          # Skip changelog, docs, tests, CI config and certain config files
+          if ! echo "$file" | grep -qE "(^changelog/|^solr/solr-ref-guide/|^dev-docs/|^\.github/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
             HAS_NON_DOCS_CHANGES=true
             break
           fi
@@ -69,7 +85,8 @@ jobs:
         echo "For more information, see: dev-docs/changelog.adoc"
         echo ""
         echo "If this PR should not have a changelog entry (e.g., refactoring, internal cleanup),"
-        echo "add the 'no-changelog' label to this PR."
+        echo "comment '/no-changelog' on the PR (or add the 'no-changelog' label)."
+        echo "This check then re-runs automatically. To undo, comment '/needs-changelog'."
         exit 1
 
     - name: Validate changelog YAML structure
