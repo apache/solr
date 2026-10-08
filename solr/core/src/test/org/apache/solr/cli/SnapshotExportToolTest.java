@@ -29,6 +29,13 @@ import org.junit.Test;
  */
 public class SnapshotExportToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(
+      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
+      throws Exception {
+    return CLITestHelper.runTool(args, runtime, clazz);
+  }
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.security.allow.paths", "*");
@@ -64,8 +71,22 @@ public class SnapshotExportToolTest extends SolrCloudTestCase {
     assertEquals(10, client.query(collection, params("q", "*:*")).getResults().getNumFound());
 
     String backupLocation = createTempDir().toString();
-    SnapshotExportTool tool = new SnapshotExportTool(new DefaultToolRuntime());
-    tool.exportSnapshot(client, collection, snapshotName, backupLocation, null, null);
+    int exitCode =
+        runTool(
+            new String[] {
+              "snapshot-export",
+              "-c",
+              collection,
+              "--snapshot-name",
+              snapshotName,
+              "--dest-dir",
+              backupLocation,
+              "--solr-url",
+              cluster.getJettySolrRunner(0).getBaseUrl().toString()
+            },
+            new CLITestHelper.TestingRuntime(false),
+            SnapshotExportTool.class);
+    assertEquals(0, exitCode);
 
     String restoredCollection = collection + "_restored";
     CollectionAdminRequest.Restore restore =
