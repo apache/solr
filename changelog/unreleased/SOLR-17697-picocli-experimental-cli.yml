@@ -17,3 +17,5 @@ links:
     url: https://issues.apache.org/jira/browse/SOLR-18509
   - name: SOLR-18511
     url: https://issues.apache.org/jira/browse/SOLR-18511
+  - name: SOLR-18512
+    url: https://issues.apache.org/jira/browse/SOLR-18512
