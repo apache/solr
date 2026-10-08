@@ -74,7 +74,6 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -290,17 +289,11 @@ public class PostTool extends ToolBase {
   // fileTypes, params, commit, optimize, dryRun, args), which postDocuments() still populates from
   // whichever parser ran.
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "name",
-      description = "Name of the collection.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   @picocli.CommandLine.Option(
       names = "--skip-commit",
@@ -1570,8 +1563,9 @@ public class PostTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String resolvedSolrUrl = resolveSolrUrl(credentialsOptions.credentials);
-    URI updateUrl = new URI(resolvedSolrUrl + "/solr/" + nameOpt + "/update");
+    String resolvedSolrUrl =
+        connectionOptions.resolveSolrUrl(credentialsOptions.credentials, false);
+    URI updateUrl = new URI(resolvedSolrUrl + "/solr/" + collectionNameOptions.name + "/update");
     int defaultDelay = modeOpt.equals(DATA_MODE_WEB) ? DEFAULT_WEB_DELAY : 0;
 
     PostToolParams postParams =
@@ -1587,20 +1581,6 @@ public class PostTool extends ToolBase {
             new UpdateOptions(!skipCommitOpt, optimizeOpt));
     postDocuments(postParams);
     return 0;
-  }
-
-  /** As under commons-cli, a missing connection option falls back to the default URL silently. */
-  private String resolveSolrUrl(String credentials) throws Exception {
-    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
-    if (solrUrlArg != null) {
-      return CLIUtils.normalizeSolrUrl(solrUrlArg);
-    }
-    String zkHostArg = (connectionOptions != null) ? connectionOptions.effectiveZkHost() : null;
-    if (zkHostArg != null) {
-      return CLIUtils.solrUrlFromConnection(
-          CloudSolrClient.CloudSolrClientConnection.parse(zkHostArg), credentials);
-    }
-    return CLIUtils.getDefaultSolrUrl();
   }
 
   /** Utility class to hold the result form a page fetch */

@@ -20,19 +20,16 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -43,7 +40,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.EnvUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -96,17 +92,11 @@ public class HealthcheckTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "COLLECTION",
-      description = "Name of the collection to check.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   public HealthcheckTool() {
     this(new DefaultToolRuntime());
@@ -249,12 +239,13 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    var solrConnection = resolveSolrConnection(credentialsOptions.credentials);
+    var solrConnection = connectionOptions.resolveSolrConnection(credentialsOptions.credentials);
     if (solrConnection == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       return 1;
     }
-    HealthcheckParams params = new HealthcheckParams(nameOpt, credentialsOptions.credentials);
+    HealthcheckParams params =
+        new HealthcheckParams(collectionNameOptions.name, credentialsOptions.credentials);
     var builder =
         new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(params.credentials());
     try (var cloudSolrClient = CLIUtils.getCloudSolrClient(solrConnection, builder)) {
@@ -262,52 +253,6 @@ public class HealthcheckTool extends ToolBase {
       runCloudTool(cloudSolrClient, params);
     }
     return 0;
-  }
-
-  /**
-   * Mirrors {@link CLIUtils#getSolrConnection(CommandLine)}: an explicit {@code --solr-connection}
-   * or {@code --zk-host} (or the matching property) wins, otherwise a running Solr is asked for its
-   * ZooKeeper, and null means it is not in SolrCloud mode.
-   */
-  private CloudSolrClient.CloudSolrClientConnection resolveSolrConnection(String credentials)
-      throws Exception {
-    String solrConnection =
-        (connectionOptions != null && connectionOptions.solrConnection != null)
-            ? connectionOptions.solrConnection
-            : EnvUtils.getProperty("solr.connection");
-    if (solrConnection != null && !solrConnection.isBlank()) {
-      return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
-    }
-    String zkHost =
-        (connectionOptions != null && connectionOptions.zkHost != null)
-            ? connectionOptions.zkHost
-            : EnvUtils.getProperty("zkHost");
-    if (zkHost != null && !zkHost.isBlank()) {
-      var zkConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-      if (!zkConnection.isZookeeper()) {
-        throw new IOException(
-            String.format(
-                Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
-      }
-      return zkConnection;
-    }
-    String solrUrl =
-        (connectionOptions != null && connectionOptions.solrUrl != null)
-            ? CLIUtils.normalizeSolrUrl(connectionOptions.solrUrl)
-            : CLIUtils.getDefaultSolrUrl();
-    try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
-      Map<String, Object> status = StatusTool.reportStatus(solrClient);
-      @SuppressWarnings("unchecked")
-      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
-      if (cloud == null) {
-        return null;
-      }
-      String zookeeper = (String) cloud.get("ZooKeeper");
-      if (zookeeper.endsWith("(embedded)")) {
-        zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
-      }
-      return CloudSolrClient.CloudSolrClientConnection.parse(zookeeper);
-    }
   }
 }
 

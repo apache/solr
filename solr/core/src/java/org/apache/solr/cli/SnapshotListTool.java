@@ -53,8 +53,7 @@ public class SnapshotListTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
@@ -125,7 +124,7 @@ public class SnapshotListTool extends ToolBase {
   public int callTool() throws Exception {
     SnapshotListParams params =
         new SnapshotListParams(
-            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            connectionOptions.resolveSolrUrl(credentialsOptions.credentials),
             credentialsOptions.credentials,
             collection.name);
     listSnapshots(params);

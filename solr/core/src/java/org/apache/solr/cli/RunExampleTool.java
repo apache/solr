@@ -376,10 +376,9 @@ public class RunExampleTool extends ToolBase {
       description = "Solr URL scheme: http or https, defaults to http if not specified.")
   private String urlSchemeOpt;
 
-  // No explicit paramLabel: the default "<port>" is what CliDefaultValueProvider keys on, giving
-  // the solr.port.listen property / SOLR_PORT_LISTEN, else 8983, as under commons-cli.
   @picocli.CommandLine.Option(
       names = {"-p", "--port"},
+      paramLabel = "PORT",
       description = "Specify the port to start the Solr HTTP listener on; default is 8983.")
   private int port;
 

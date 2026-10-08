@@ -69,8 +69,7 @@ public class SnapshotCreateTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
@@ -148,7 +147,7 @@ public class SnapshotCreateTool extends ToolBase {
   public int callTool() throws Exception {
     SnapshotCreateParams params =
         new SnapshotCreateParams(
-            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            connectionOptions.resolveSolrUrl(credentialsOptions.credentials),
             credentialsOptions.credentials,
             collection.name,
             snapshot.name);
