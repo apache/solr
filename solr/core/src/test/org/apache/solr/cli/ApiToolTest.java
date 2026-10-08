@@ -32,12 +32,31 @@ import org.junit.Test;
 public class ApiToolTest extends SolrCloudTestCase {
   static String COLLECTION_NAME = "globalLoaderColl";
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+  }
+
+  @Test
+  public void testApiCommandSucceedsOnAnOkResponse() throws Exception {
+    String url = cluster.getJettySolrRunner(0).getBaseUrl() + "/admin/info/system";
+
+    assertEquals(0, runTool(new String[] {"api", "-s", url}, ApiTool.class));
+  }
+
+  @Test
+  public void testApiCommandFailsOnANon2xxResponse() throws Exception {
+    String url = cluster.getJettySolrRunner(0).getBaseUrl() + "/admin/no-such-handler";
+
+    assertEquals(1, runTool(new String[] {"api", "-s", url}, ApiTool.class));
   }
 
   @Test
