@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -874,6 +875,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         });
     // Ensure field, etc. data not provided
     assertNull(segmentData.segments.get("_0").fields);
+  }
+
+  @Test
+  public void testV2CollectionStatusForNonExistentCollectionReturns404() {
+    var req = new CollectionsApi.GetCollectionStatus("doesNotExist");
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> req.process(cluster.getSolrClient()));
+    assertEquals(404, ex.code());
   }
 
   private static final int NUM_DOCS = 10;

@@ -39,6 +39,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
     - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
     - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
     - Avoid SolrTestCaseJ4 for new tests
+- System properties set in a test are restored after each test by the base classes (`SystemPropertiesRestoreRule`); do not add `try/finally` + `System.clearProperty` cleanup
 - For BATS shell integration tests in `solr/packaging/test/`:
     - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
     - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
@@ -46,7 +47,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 ## Documentation
 
 - For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
-- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user
+- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user. To write or edit a page, see `dev-docs/ref-guide/` and the "About This Guide" page (`solr/solr-ref-guide/modules/getting-started/pages/about-this-guide.adoc`), which says how examples are presented to readers
 - For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
 - Keep all documentation including javadoc concise
 - New classes should have some javadocs
@@ -62,7 +63,7 @@ Internals:
 - `dev-docs/shard-split/shard-split.adoc` — SPLITSHARD: shard/replica states, tlog buffering during split
 - `dev-docs/distributed-update-internals.adoc` — SolrCloud update path: routing, `_version_`/optimistic concurrency, tlog durability, replication acks, shard terms (user-facing consistency model: ref-guide page `solrcloud-update-consistency.adoc`)
 - `dev-docs/plugins-modules-packages.adoc` — plugin/module/package concepts
-- `dev-docs/apis.adoc`, `dev-docs/v2-api-conventions.adoc` — API design and v2 conventions
+- `dev-docs/apis.adoc`, `dev-docs/apis-v2-conventions.adoc` — API design and v2 conventions
 - `dev-docs/ui/` — new Admin UI architecture, component development, testing
 
 Process & tooling:

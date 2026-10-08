@@ -18,13 +18,10 @@
 package org.apache.solr.gcs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly
 @ThreadLeakLingering(linger = 10)
@@ -32,7 +29,6 @@ import org.slf4j.LoggerFactory;
   "SimpleText"
 }) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String SOLR_XML =
       "<solr>\n"
           + "\n"
@@ -73,8 +69,6 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  \n"
           + "</solr>\n";
 
-  private static String backupLocation;
-
   @BeforeClass
   public static void setupClass() throws Exception {
     // Enable parallel backup/restore for cloud storage tests
@@ -88,7 +82,7 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
   }
 
   @AfterClass
-  public static void tearDownClass() throws Exception {
+  public static void tearDownClass() {
     LocalStorageGCSBackupRepository.clearStashedStorage();
   }
 

@@ -297,7 +297,7 @@ public class StreamTool extends ToolBase {
       streamContext.getSolrClientCache().close();
     }
 
-    echoIfVerbose("StreamTool -- Done.");
+    echoIfVerbose("Done.");
   }
 
   private StreamContext createStreamContext(
@@ -530,6 +530,11 @@ public class StreamTool extends ToolBase {
     }
 
     return buf.toString();
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
   }
 
   static String readExpression(LineNumberReader bufferedReader, String[] args) throws IOException {

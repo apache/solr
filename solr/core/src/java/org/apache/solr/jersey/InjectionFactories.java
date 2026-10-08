@@ -17,12 +17,14 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -43,6 +45,20 @@ public class InjectionFactories {
 
     @Override
     public void dispose(SolrQueryRequest instance) {}
+  }
+
+  /** Provides the calling lock id header value, or null if absent or blank. */
+  public static class CallingLockIdFactory extends RequestContextBasedFactory
+      implements Factory<String> {
+
+    @Override
+    public String provide() {
+      String id = getRequestContext().getHeaderString(CALLING_LOCK_ID_HEADER);
+      return StrUtils.isBlank(id) ? null : id;
+    }
+
+    @Override
+    public void dispose(String instance) {}
   }
 
   public static class SolrQueryResponseFactory extends RequestContextBasedFactory

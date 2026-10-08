@@ -38,18 +38,18 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 [width="100%",options="header",]
 |===
 |Path prefix |Some Supported Operations
-|`/api/collections` |Create, alias, backup, and restore a collection.
-|`/api/c/_collection-name_/update` |Update requests.
-|`/api/c/_collection-name_/config` |Configuration requests.
-|`/api/c/_collection-name_/schema` |Schema requests.
-|`/api/c/_collection-name_/_handler-name_` |Handler-specific requests.
-|`/api/c/_collection-name_/shards` |Split a shard, create a shard, add a replica.
-|`/api/c/_collection-name_/shards/_shard-name_` |Delete a shard, force leader election
-|`/api/c/_collection-name_/shards/_shard-name_/_replica-name_` |Delete a replica.
+|`/api/collections` |Create, alias, backup, and restore a collection. Fetch the collections, shards, and replicas tree (`?detailed=true`).
+|`/api/c/\{collectionName}/update` |Update requests.
+|`/api/c/\{collectionName}/config` |Configuration requests.
+|`/api/c/\{collectionName}/schema` |Schema requests.
+|`/api/c/\{collectionName}/\{handlerName}` |Handler-specific requests.
+|`/api/c/\{collectionName}/shards` |Split a shard, create a shard, add a replica.
+|`/api/c/\{collectionName}/shards/\{shardName}` |Delete a shard, force leader election
+|`/api/c/\{collectionName}/shards/\{shardName}/\{replicaName}` |Delete a replica.
 |`/api/cores` |Create a core.
-|`/api/cores/_core-name_` |Reload, rename, delete, and unload a core.
+|`/api/cores/\{coreName}` |Reload, rename, delete, and unload a core.
 |`/api/node` |Perform overseer operation, rejoin leader election.
-|`/api/cluster` |List live nodes, add role, remove role, set cluster property.
+|`/api/cluster` |List live nodes, manage node roles, set cluster property. `POST` sets the cluster rate limiter.
 |===
 
 == Introspect
@@ -143,26 +143,26 @@ For the "gettingstarted" collection, set the replication factor and whether to a
 
 [source,bash]
 ----
-$ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
+curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
 { modify: { replicationFactor: "3" } }'
 
 {"responseHeader":{"status":0,"QTime":842}}
 ----
 
-See the state of the cluster:
+See the collections, shards, and replicas in the cluster:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/api/cluster
+curl http://localhost:8983/api/collections?detailed=true
 
-{"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted"]}
+{"responseHeader":{"status":0,"QTime":1},"collectionsDetail":{"gettingstarted":{"health":"GREEN","shards":{"shard1":{"state":"active"}}}}}
 ----
 
 Set a cluster property:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/api/cluster -H 'Content-type: application/json' -d '
+curl http://localhost:8983/api/cluster -H 'Content-type: application/json' -d '
 { set-property: { name: maxCoresPerNode, val: "100" } }'
 
 {"responseHeader":{"status":0,"QTime":4}}
