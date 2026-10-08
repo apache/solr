@@ -1,0 +1,8 @@
+title: >
+  INSTALLSHARD now ignores 'write.lock' file if present in offline index data.
+type: changed
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18502
+    url: https://issues.apache.org/jira/browse/SOLR-18502

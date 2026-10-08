@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -144,6 +145,11 @@ public class RestoreCore implements Callable<Boolean> {
       // Move all files from backupDir to restoreIndexDir
       for (String filename : repository.listAllFiles()) {
         checkInterrupted();
+
+        // Lock files only make sense for the process that created them, and carry no checksum
+        if (IndexWriter.WRITE_LOCK_NAME.equals(filename)) {
+          continue;
+        }
 
         // Capture variables for lambda
         final String filenameFinal = filename;
