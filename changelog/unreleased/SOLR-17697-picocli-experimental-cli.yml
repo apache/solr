@@ -11,5 +11,7 @@ authors:
 links:
   - name: SOLR-17697
     url: https://issues.apache.org/jira/browse/SOLR-17697
+  - name: SOLR-18510
+    url: https://issues.apache.org/jira/browse/SOLR-18510
   - name: SOLR-18509
     url: https://issues.apache.org/jira/browse/SOLR-18509
