@@ -1,0 +1,11 @@
+title: >
+  Faster {!auxIndexJoin} confirmation: join columns whose to-doc range doesn't cover the candidate doc are skipped or dropped without being read.
+
+  Diagnostic logging now reports empty and skipped columns.
+type: changed
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhl
+links:
+  - name: SOLR-18508
+    url: https://issues.apache.org/jira/browse/SOLR-18508
