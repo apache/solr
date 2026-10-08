@@ -19,12 +19,12 @@ package org.apache.solr.handler.admin;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /** Tests that cluster health reflects replica states corrected against live nodes. */
-public class ClusterStatusTest extends SolrTestCaseJ4 {
+public class ClusterStatusTest extends SolrTestCase {
 
   @Test
   @SuppressWarnings("unchecked")
