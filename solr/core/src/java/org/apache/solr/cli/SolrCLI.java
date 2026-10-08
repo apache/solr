@@ -83,7 +83,8 @@ import org.slf4j.LoggerFactory;
       CreateTool.class,
       DeleteTool.class,
       AssertTool.class,
-      ApiTool.class
+      ApiTool.class,
+      ClusterTool.class
     })
 public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
