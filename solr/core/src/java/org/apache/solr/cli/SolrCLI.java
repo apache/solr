@@ -233,7 +233,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @param args the original command-line arguments
    * @deprecated Please use picocli
    */
-  @Deprecated(since = "10.1")
+  @Deprecated(since = "10.2")
   public static int parseWithCommonsCli(String[] args) throws Exception {
     ToolRuntime runtime = new DefaultToolRuntime();
     final boolean hasNoCommand =
@@ -302,7 +302,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
    *     command line itself.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static CommandLine parseCmdLine(Tool tool, String[] args) throws IOException {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<>();
@@ -361,7 +361,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli instantiates
    *     subcommands itself.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static Tool newTool(String toolType, ToolRuntime runtime) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool(runtime);
     else if ("status".equals(toolType)) return new StatusTool(runtime);
@@ -427,7 +427,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   /**
    * @deprecated Part of the commons-cli code path, which picocli replaces.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static void deprecatedHandlerStdErr(Option o) {
     // Deprecated options without a description act as "stealth" options
     if (o.isDeprecated() && !o.getDeprecated().getDescription().isBlank()) {
@@ -447,7 +447,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli parses the
    *     command line itself.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) throws IOException {
     Options options = tool.getOptions();
     ToolRuntime runtime = tool.getRuntime();
@@ -494,7 +494,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
    *     help from the command's annotations.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static void printToolHelp(Tool tool) throws IOException {
     HelpFormatter formatter = getFormatter();
     Options nonDeprecatedOptions = new Options();
@@ -517,7 +517,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders usage
    *     help from the command's annotations.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   @SuppressForbidden(reason = "System.out for formatting")
   public static HelpFormatter getFormatter() {
     TextHelpAppendable helpAppendable =
@@ -559,7 +559,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Picocli resolves subcommands from the {@code @Command(subcommands = ...)}
    *     declaration on {@link SolrCLI}, so no classpath scanning is needed.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static List<Class<? extends Tool>> findToolClassesInPackage(String packageName) {
     List<Class<? extends Tool>> toolClasses = new ArrayList<>();
     try {
@@ -586,7 +586,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   /**
    * @deprecated Part of the commons-cli code path, which picocli replaces.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static Set<String> findClasses(String path, String packageName) throws Exception {
     Set<String> classes = new TreeSet<>();
     if (path.startsWith("file:") && path.contains("!")) {
@@ -647,7 +647,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
    * @deprecated Part of the commons-cli code path, which picocli replaces. Picocli renders the
    *     top-level usage help from annotations.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static void printHelp() {
 
     print("Usage: solr COMMAND OPTIONS");

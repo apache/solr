@@ -99,7 +99,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -112,7 +112,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option OUTPUT_OPTION =
       Option.builder()
           .longOpt("output")
@@ -126,7 +126,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
@@ -139,7 +139,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COMPRESS_OPTION =
       Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").get();
 
@@ -147,7 +147,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option LIMIT_OPTION =
       Option.builder()
           .longOpt("limit")
@@ -160,7 +160,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option QUERY_OPTION =
       Option.builder()
           .longOpt("query")
@@ -173,7 +173,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FIELDS_OPTION =
       Option.builder()
           .longOpt("fields")
