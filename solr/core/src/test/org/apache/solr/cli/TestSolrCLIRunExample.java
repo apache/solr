@@ -57,6 +57,11 @@ import org.slf4j.LoggerFactory;
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(RunExampleTool tool, String[] args) throws Exception {
+    return tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -350,7 +355,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
       try {
-        int status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+        int status = runTool(tool, toolArgs);
 
         if (status == -1) {
           // maybe it's the port, try again
@@ -358,7 +363,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             bindPort = socket.getLocalPort();
           }
           Thread.sleep(100);
-          status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+          status = runTool(tool, toolArgs);
         }
 
         assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
@@ -452,7 +457,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, userInputSim, runtime);
     try {
-      tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+      runTool(tool, toolArgs);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -565,7 +570,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     try {
-      tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+      runTool(tool, toolArgs);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -665,7 +670,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
-    int code = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+    int code = runTool(tool, toolArgs);
     assertEquals("Execution should have failed with return code 1", 1, code);
   }
 }
