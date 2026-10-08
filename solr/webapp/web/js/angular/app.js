@@ -429,6 +429,9 @@ solrAdminApp.config([
     // Schema Designer and Security panels handle errors internally to provide a better user experience than the global error handler
     var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
     var isHandledBySecurity = rejection.config.url && rejection.config.url.startsWith("/api/cluster/security/");
+    // HTTP 510 means a feature is switched off in solr.xml, e.g. metrics collection. The screen
+    // asking for that data explains it in place, so skip the global error banner.
+    var isDisabledFeature = rejection.status === 510 && rejection.config.url && rejection.config.url.endsWith("admin/metrics");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -463,7 +466,7 @@ solrAdminApp.config([
     } else if (isHandledBySecurity) {
       // Let the security panel surface the detailed error in its own dialog
       $rootScope.$broadcast('securityApiError', rejection);
-    } else {
+    } else if (!isDisabledFeature) {
       // schema designer prefers to handle errors itself
       if (!isHandledBySchemaDesigner) {
         $rootScope.exceptions[rejection.config.url] = rejection.data.error;
@@ -576,7 +579,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         var currentCollectionName = $route.current.params.core;
         delete $scope.currentCollection;
         if ($scope.isCloudEnabled) {
-          CollectionsV2.listCollections(function (error, cdata, response) {
+          CollectionsV2.listCollections({}, function (error, cdata, response) {
             $timeout(function() {
               if (error) { ApiErrorHandler.handle(response); return; }
               AliasesV2.getAliases(function (error, adata, response) {
