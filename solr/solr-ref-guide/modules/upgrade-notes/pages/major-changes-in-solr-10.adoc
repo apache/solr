@@ -99,6 +99,18 @@ Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer s
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
 
+=== V2 collections tree
+
+In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
+It does not include `live_nodes`, the alias map, or cluster properties.
+Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for those.
+
+There is no `includeAll` parameter.
+A request with no other parameters returns every collection.
+`collection`, `shard`, and `_route_` narrow which part of the tree is returned.
+
+The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
+
 === JWT Authentication
 
 The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
