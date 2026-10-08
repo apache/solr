@@ -22,13 +22,22 @@ limitations under the License.
         SQL Query Statement
       </label>
       <textarea name="stmt" ng-model="stmt" id="sqlexp"></textarea>
+      <label for="httpMethod">HTTP method</label>
+      <select id="httpMethod" name="httpMethod" ng-model="httpMethod">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+        <option value="QUERY">QUERY</option>
+      </select>
       <button type="submit" ng-click="doQuery()">Execute</button>
       <span><a href="https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html" target="_out">syntax help</a></span>
     </form>
   </div>
   <div id="sql-response">
     <a ng-show="sqlData" id="url" class="address-bar" ng-href="{{url}}">{{hostPortContext}}{{url}}</a>
-    <div ng-show="sqlError"> {{sqlError}}</div>
+    <div ng-show="sqlError">
+      {{sqlError}}
+      <span ng-if="sqlModuleMissing">See <a href="https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html" target="_out">SQL documentation</a> for how to enable it.</span>
+    </div>
     <div ng-show="!sqlError" class="grid" ui-grid="gridOptions" id="sql-response"></div>
 
   </div>
