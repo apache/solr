@@ -27,6 +27,10 @@ These API commands work with a SolrCloud cluster at the entire cluster level, or
 
 Fetch the cluster status including collections, shards, replicas, configuration name as well as collection aliases and cluster properties.
 
+NOTE: This is a v1-only command.
+The v2 API splits this information up: see xref:collection-management.adoc#collectionsdetail[Detailed Collections Tree] for the collections, shards, and replicas tree (`detailed=true`), and `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for live nodes, the alias map, and cluster properties, respectively.
+The two collection-tree responses overlap in content -- same `health` states, same shard/replica fields -- because they cover the same underlying data; they're documented separately because the parameters and response shape otherwise differ between v1 and v2 here.
+
 Additionally, this command reports a `health` status of each collection and shard, in
 order to make it easier to monitor the operational state of the collections.
 The
@@ -44,28 +48,10 @@ No active replicas *OR* there's no shard leader.
 
 The collection health state is reported as the worst state of any shard, e.g., for a collection with all shards GREEN except for one YELLOW the collection health will be reported as YELLOW.
 
-[tabs#clusterstatus-request]
-======
-V1 API::
-+
-====
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
-
 ----
-====
-
-V2 API::
-+
-====
-[source,bash]
-----
-curl -X GET http://localhost:8983/api/cluster
-
-----
-====
-======
 
 === CLUSTERSTATUS Parameters
 
@@ -106,6 +92,7 @@ This can be used if you need the details of the shard where a particular documen
 |Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
+If set to true, returns the cluster alias map.
 
 `liveNodes`::
 +
@@ -114,7 +101,7 @@ This can be used if you need the details of the shard where a particular documen
 |Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
-If set to true, returns the status of live nodes in the cluster.
+If set to true, returns the live nodes in the cluster.
 
 `clusterProperties`::
 +
@@ -226,7 +213,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/nodes
+curl http://localhost:8983/api/cluster/nodes
 ----
 ====
 ======
@@ -430,7 +417,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties
+curl http://localhost:8983/api/cluster/properties
 ----
 ====
 ======
@@ -439,7 +426,7 @@ curl -X GET http://localhost:8983/api/cluster/properties
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties
+curl http://localhost:8983/api/cluster/properties
 ----
 
 *Output*
@@ -474,7 +461,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
+curl http://localhost:8983/api/cluster/properties/urlScheme
 ----
 ====
 ======
@@ -483,7 +470,7 @@ curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/properties/urlScheme
+curl http://localhost:8983/api/cluster/properties/urlScheme
 ----
 
 *Output*
@@ -958,7 +945,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/overseer
+curl http://localhost:8983/api/cluster/overseer
 ----
 ====
 ======

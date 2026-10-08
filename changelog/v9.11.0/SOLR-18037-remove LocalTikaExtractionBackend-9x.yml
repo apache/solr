@@ -1,0 +1,9 @@
+title: Removed LocalTikaExtractionBackend from the extraction module (SolrCell). Extraction
+  using a remote Tika Server is now the only and default option. Tika-core is upgraded
+  to v3.2.3 and still used for some SAX parsing
+type: removed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18037
+    url: https://issues.apache.org/jira/browse/SOLR-18037
