@@ -73,8 +73,11 @@ configure(project(':solr:documentation')) {
 
   // Javadoc references are validated at compile time by DocLint
   // (gradle/java/javac.gradle). Building the full documentation is costly, so
-  // check builds it only on CI, where it also exercises references that only the
-  // javadoc tool sees, such as those in overview files.
+  // this project's check builds it only on CI, where it also exercises
+  // references that only the javadoc tool sees, such as those in overview
+  // files, and the missing-doclet checks. The gate covers this project's
+  // check path only; a root check still builds the site through the ref
+  // guide's checkSiteLinks task.
   if (isCIBuild) {
     check.dependsOn 'documentation'
   }
