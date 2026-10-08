@@ -39,6 +39,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
     - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
     - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
     - Use SolrTestCase instead of SolrTestCaseJ4 for new tests
+- System properties set in a test are restored after each test by the base classes (`SystemPropertiesRestoreRule`); do not add `try/finally` + `System.clearProperty` cleanup
 - For BATS shell integration tests in `solr/packaging/test/`:
     - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
     - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
