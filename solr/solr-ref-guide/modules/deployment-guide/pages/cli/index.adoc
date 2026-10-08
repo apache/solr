@@ -66,6 +66,7 @@ Any command not listed here is unavailable when the picocli implementation is en
 |xref:cli/solr-config.adoc[bin/solr config]
 |xref:cli/solr-create.adoc[bin/solr create]
 |xref:cli/solr-delete.adoc[bin/solr delete]
+|xref:cli/solr-export.adoc[bin/solr export]
 |xref:cli/solr-start.adoc[bin/solr start]
 |xref:cli/solr-status.adoc[bin/solr status]
 |xref:cli/solr-stop.adoc[bin/solr stop]
