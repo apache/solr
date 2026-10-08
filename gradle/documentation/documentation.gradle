@@ -71,6 +71,12 @@ configure(project(':solr:documentation')) {
         'markdownToHtml', 'createDocumentationIndex'
   }
 
+  // Javadoc references are validated at compile time by DocLint
+  // (gradle/java/javac.gradle). Building the documentation as part of
+  // check also exercises references only visible to the javadoc tool
+  // (for example in overview files) and the documentation build itself.
+  check.dependsOn 'documentation'
+
   task copyDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
     from(project.assets)
