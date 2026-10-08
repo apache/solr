@@ -17,11 +17,8 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
-
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.request.SolrQueryRequest;
 
 public class AdminCmdContext {
   private final CollectionParams.CollectionAction action;
@@ -40,10 +37,10 @@ public class AdminCmdContext {
   }
 
   public AdminCmdContext(
-      CollectionParams.CollectionAction action, String asyncId, SolrQueryRequest req) {
+      CollectionParams.CollectionAction action, String asyncId, String callingLockId) {
     this.action = action;
     this.asyncId = asyncId;
-    this.withCallingLockId((String) req.getContext().get(CALLING_LOCK_ID_HEADER));
+    this.callingLockId = callingLockId;
   }
 
   public CollectionParams.CollectionAction getAction() {
