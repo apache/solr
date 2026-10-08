@@ -141,9 +141,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   public static void main(String[] args) throws Exception {
     if (EnvUtils.getPropertyAsBool("solr.picocli", false)) {
       SSLConfigurationsFactory.current().init();
-      picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
-      propagateCommandSettings(commandLine);
-      exit(commandLine.execute(stripEmptyLeadingArg(args)));
+      exit(rootCommandLine(null).execute(stripEmptyLeadingArg(args)));
     } else {
       exit(parseWithCommonsCli(args));
     }
@@ -188,6 +186,19 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   }
 
   /** Propagates common settings to all subcommands. */
+  /**
+   * The fully configured root command, as {@code bin/solr} runs it; tests that drive a tool through
+   * the real root should use this too. A null factory means picocli's default factory.
+   */
+  static picocli.CommandLine rootCommandLine(picocli.CommandLine.IFactory factory) {
+    picocli.CommandLine commandLine =
+        factory == null
+            ? new picocli.CommandLine(new SolrCLI())
+            : new picocli.CommandLine(new SolrCLI(), factory);
+    propagateCommandSettings(commandLine);
+    return commandLine;
+  }
+
   private static void propagateCommandSettings(picocli.CommandLine cmd) {
     installFirstLineOnlyHelpFactory(cmd);
     for (picocli.CommandLine subcommand : cmd.getSubcommands().values()) {

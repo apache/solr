@@ -25,8 +25,6 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -115,17 +113,11 @@ public class ConfigTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   /** The values of {@code --action}, spelled on the command line as {@link #toString()} says. */
   enum Action {
@@ -259,7 +251,7 @@ public class ConfigTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String solrUrl = resolveSolrUrl(credentialsOptions.credentials);
+    String solrUrl = connectionOptions.resolveSolrUrl(credentialsOptions.credentials);
 
     // value is required unless the property is one of the "unset-" type.
     String action = actionOpt.toString();
@@ -269,29 +261,13 @@ public class ConfigTool extends ToolBase {
 
     ConfigParams params =
         new ConfigParams(
-            solrUrl, action, nameOpt, propertyOpt, valueOpt, credentialsOptions.credentials);
+            solrUrl,
+            action,
+            collectionNameOptions.name,
+            propertyOpt,
+            valueOpt,
+            credentialsOptions.credentials);
     updateConfig(params);
     return 0;
-  }
-
-  private String resolveSolrUrl(String credentials) throws Exception {
-    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
-    if (solrUrlArg != null) {
-      return CLIUtils.normalizeSolrUrl(solrUrlArg);
-    }
-    String zkHostArg =
-        (connectionOptions != null)
-            ? connectionOptions.effectiveZkHost()
-            : EnvUtils.getProperty("zkHost");
-    if (zkHostArg != null) {
-      return CLIUtils.solrUrlFromConnection(
-          CloudSolrClient.CloudSolrClientConnection.parse(zkHostArg), credentials);
-    }
-    String defaultSolrUrl = CLIUtils.getDefaultSolrUrl();
-    CLIO.err(
-        "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
-            + defaultSolrUrl
-            + ".");
-    return defaultSolrUrl;
   }
 }

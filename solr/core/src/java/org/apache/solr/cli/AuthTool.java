@@ -197,7 +197,9 @@ public class AuthTool extends ToolBase {
           "This is where any authentication related configuration files, if any, would be placed. Defaults to $SOLR_HOME.")
   private String authConfDir;
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   public AuthTool() {
     this(new DefaultToolRuntime());
@@ -595,7 +597,7 @@ public class AuthTool extends ToolBase {
     String zkHost = null;
     if (!updateIncludeFileOnlyBool) {
       try {
-        zkHost = zkOpts.resolveZkHost();
+        zkHost = connectionOptions.resolveZkHost(credentialsOptions.credentials);
       } catch (Exception e) {
         echoIfVerbose("Could not resolve ZooKeeper host: " + e.getMessage());
       }
@@ -603,12 +605,12 @@ public class AuthTool extends ToolBase {
     AuthParams params =
         new AuthParams(
             Boolean.parseBoolean(promptOption),
-            zkOpts.credentials,
+            credentialsOptions.credentials,
             blockUnknown,
             updateIncludeFileOnlyBool,
             solrIncludeFile,
             authConfDir,
-            zkOpts.zkHost != null || zkOpts.solrConnection != null,
+            connectionOptions.zkHost != null || connectionOptions.solrConnection != null,
             zkHost);
     handleCommand(authCommand, params);
     return 0;

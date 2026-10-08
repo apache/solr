@@ -248,48 +248,6 @@ public final class CLIUtils {
   }
 
   /**
-   * The picocli counterpart of {@link #normalizeSolrUrl(CommandLine)}: {@code --solr-url}, else the
-   * connection named by {@code --solr-connection} or {@code --zk-host} (or the matching property
-   * when the option is absent), else the default URL with the same warning.
-   *
-   * @param connectionOptions the parsed connection group, or null if none of its options was given
-   */
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
-      throws Exception {
-    String solrUrl = connectionOptions != null ? connectionOptions.solrUrl : null;
-    if (solrUrl == null) {
-      String solrConnection =
-          (connectionOptions != null && connectionOptions.solrConnection != null)
-              ? connectionOptions.solrConnection
-              : EnvUtils.getProperty("solr.connection");
-      String zkHost =
-          (connectionOptions != null && connectionOptions.zkHost != null)
-              ? connectionOptions.zkHost
-              : EnvUtils.getProperty("zkHost");
-      if (solrConnection != null && !solrConnection.isBlank()) {
-        solrUrl =
-            solrUrlFromConnection(
-                CloudSolrClient.CloudSolrClientConnection.parse(solrConnection), credentials);
-      } else if (zkHost != null && !zkHost.isBlank()) {
-        var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-        if (!zkSolrConnection.isZookeeper()) {
-          throw new IOException(
-              String.format(
-                  Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
-        }
-        solrUrl = solrUrlFromConnection(zkSolrConnection, credentials);
-      } else {
-        solrUrl = getDefaultSolrUrl();
-        CLIO.err(
-            "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
-                + solrUrl
-                + ".");
-      }
-    }
-    return normalizeSolrUrl(solrUrl);
-  }
-
-  /**
    * Resolves a base Solr URL from a parsed connection. The HTTP form (e.g. {@code -s
    * http://host:port}) already names a Solr URL, so it is used directly without spinning up a
    * CloudSolrClient; the ZooKeeper form queries the cluster for a live node's base URL.

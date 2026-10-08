@@ -37,7 +37,6 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -54,7 +53,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.CatStream;
 
@@ -95,8 +93,7 @@ public class StreamTool extends ToolBase {
   // --- picocli fields ---
   // Named distinctly from the record accessors above where a bare name would shadow one.
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
@@ -675,97 +672,22 @@ public class StreamTool extends ToolBase {
     boolean local = params.execution().equalsIgnoreCase("local");
     validateExpressionArgs(local, params.collection(), expr);
 
-    // Mirrors the commons-cli path's call structure exactly, including which calls are skipped in
-    // local mode: resolveSolrUrl() is only invoked when actually needed, since (like
-    // CLIUtils.normalizeSolrUrl(cli)) it prints a stderr warning when no connection option was
-    // given.
-    var solrConnection = resolveSolrConnection();
-    String solrUrl = local ? null : resolveSolrUrl();
+    // Mirrors the commons-cli path's call structure, including which calls are skipped in local
+    // mode: the base URL is only resolved when needed, since that prints a stderr warning when no
+    // connection option was given.
+    String credentials = credentialsOptions.credentials;
+    var solrConnection = connectionOptions.resolveSolrConnection(credentials);
+    String solrUrl = local ? null : connectionOptions.resolveSolrUrl(credentials);
     if (solrConnection == null) {
       // No connection option given and none discoverable from a running Solr; fall back to the
       // resolved base URL so expressions that need a Solr connection get a usable default.
       solrConnection =
           CloudSolrClient.CloudSolrClientConnection.parse(
-              solrUrl != null ? solrUrl : resolveSolrUrl());
+              solrUrl != null ? solrUrl : connectionOptions.resolveSolrUrl(credentials));
     }
 
     runStream(params, expr, solrConnection, solrUrl);
     return 0;
-  }
-
-  /**
-   * The connection named by {@code --solr-connection} or {@code --zk-host}, or by the matching
-   * property when the option is absent, as {@link CLIUtils#getSolrConnection(CommandLine)} reads
-   * it; null if neither is set.
-   */
-  private CloudSolrClient.CloudSolrClientConnection connectionFromOptions() throws IOException {
-    String solrConnection =
-        (connectionOptions != null && connectionOptions.solrConnection != null)
-            ? connectionOptions.solrConnection
-            : EnvUtils.getProperty("solr.connection");
-    if (solrConnection != null && !solrConnection.isBlank()) {
-      return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
-    }
-    String zkHost =
-        (connectionOptions != null && connectionOptions.zkHost != null)
-            ? connectionOptions.zkHost
-            : EnvUtils.getProperty("zkHost");
-    if (zkHost != null && !zkHost.isBlank()) {
-      var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-      if (!zkSolrConnection.isZookeeper()) {
-        throw new IOException(
-            String.format(
-                Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
-      }
-      return zkSolrConnection;
-    }
-    return null;
-  }
-
-  /**
-   * Resolves the base Solr URL used for remote execution and for probing whether Solr is running in
-   * cloud mode; mirrors {@link CLIUtils#normalizeSolrUrl(CommandLine)}, including its warning when
-   * no connection was given.
-   */
-  private String resolveSolrUrl() throws Exception {
-    if (connectionOptions != null && connectionOptions.solrUrl != null) {
-      return CLIUtils.normalizeSolrUrl(connectionOptions.solrUrl);
-    }
-    var connection = connectionFromOptions();
-    if (connection != null) {
-      return CLIUtils.solrUrlFromConnection(connection, credentialsOptions.credentials);
-    }
-    String defaultSolrUrl = CLIUtils.getDefaultSolrUrl();
-    CLIO.err(
-        "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
-            + defaultSolrUrl
-            + ".");
-    return defaultSolrUrl;
-  }
-
-  /**
-   * Mirrors {@link CLIUtils#getSolrConnection(CommandLine)}: an explicit connection wins, otherwise
-   * a running Solr is asked for its ZooKeeper, and null means it is not in SolrCloud mode.
-   */
-  private CloudSolrClient.CloudSolrClientConnection resolveSolrConnection() throws Exception {
-    var connection = connectionFromOptions();
-    if (connection != null) {
-      return connection;
-    }
-    try (SolrClient solrClient =
-        CLIUtils.getSolrClient(resolveSolrUrl(), credentialsOptions.credentials)) {
-      Map<String, Object> status = StatusTool.reportStatus(solrClient);
-      @SuppressWarnings("unchecked")
-      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
-      if (cloud == null) {
-        return null;
-      }
-      String zookeeper = (String) cloud.get("ZooKeeper");
-      if (zookeeper.endsWith("(embedded)")) {
-        zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
-      }
-      return CloudSolrClient.CloudSolrClientConnection.parse(zookeeper);
-    }
   }
 
   static String readExpression(LineNumberReader bufferedReader, String[] args) throws IOException {

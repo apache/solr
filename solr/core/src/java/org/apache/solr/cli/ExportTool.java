@@ -194,21 +194,12 @@ public class ExportTool extends ToolBase {
       String limit) {}
 
   // --- picocli fields ---
-  // The connection group is mandatory (multiplicity "1"): the commons-cli path throws
-  // IllegalArgumentException when no connection target is given, so ArgGroup enforces the same
-  // requirement declaratively.
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   @picocli.CommandLine.Option(
       names = "--output",
@@ -841,7 +832,14 @@ public class ExportTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String url = resolveSolrUrl(credentialsOptions.credentials) + "/solr/" + nameOpt;
+    if (!connectionOptions.hasExplicitConnection()) {
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
+    }
+    String url =
+        connectionOptions.resolveSolrUrl(credentialsOptions.credentials)
+            + "/solr/"
+            + collectionNameOptions.name;
     ExportParams params =
         new ExportParams(
             url,
@@ -854,15 +852,5 @@ public class ExportTool extends ToolBase {
             String.valueOf(limitOpt));
     export(params);
     return 0;
-  }
-
-  private String resolveSolrUrl(String credentials) throws Exception {
-    String solrUrlArg = connectionOptions.effectiveSolrUrl();
-    if (solrUrlArg != null) {
-      return CLIUtils.normalizeSolrUrl(solrUrlArg);
-    }
-    return CLIUtils.solrUrlFromConnection(
-        CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.effectiveZkHost()),
-        credentials);
   }
 }

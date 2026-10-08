@@ -33,9 +33,9 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 == Synopsis
 
 ....
-bin/solr status [-hv] [--short] [--max-wait-secs=<maxWaitSecs>] [-u=<credentials>]
-                [-p=<port> | -s=<solrConnection> | --solr-url=<solrUrl> |
-                -z=<zkHost>]
+bin/solr status [-hv] [--short] [--max-wait-secs=<maxWaitSecs>] [-p=PORT]
+                [-s=<solrConnection>] [--solr-url=<solrUrl>] [-u=<credentials>]
+                [-z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -56,7 +56,7 @@ Get the status of a Solr server.
 *--max-wait-secs*=_<maxWaitSecs>_::
   Wait up to the specified number of seconds to see Solr running.
 
-*-p*, *--port*=_<port>_::
+*-p*, *--port*=_PORT_::
   Port on localhost to check status for
 
 *-s*, *--solr-connection*=_<solrConnection>_::
@@ -66,7 +66,7 @@ Get the status of a Solr server.
   Short format. Prints one URL per line for running instances
 
 *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if that's not known
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks
