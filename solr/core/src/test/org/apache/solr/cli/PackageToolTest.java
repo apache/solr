@@ -68,6 +68,9 @@ public class PackageToolTest extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig(
             "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "conf-validation",
+            TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
 
@@ -364,7 +367,8 @@ public class PackageToolTest extends SolrCloudTestCase {
   public void testDeployValidationMessages() throws Exception {
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    withBasicAuth(CollectionAdminRequest.createCollection("validation-test", "conf1", 1, 1))
+    withBasicAuth(
+            CollectionAdminRequest.createCollection("validation-test", "conf-validation", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
 
     CLITestHelper.TestingRuntime captureRuntime = new CLITestHelper.TestingRuntime(true);
