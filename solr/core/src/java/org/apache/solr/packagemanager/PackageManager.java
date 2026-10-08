@@ -290,9 +290,7 @@ public class PackageManager implements Closeable {
         pluginsValue = response.get(ContainerPluginsApi.PLUGIN);
       }
     } catch (RemoteSolrException ex) {
-      if (log.isDebugEnabled()) {
         log.debug("Unable to fetch clusterprops for package plugins", ex);
-      }
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }
