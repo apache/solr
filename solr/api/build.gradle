@@ -79,6 +79,30 @@ dependencies {
   swaggerBuild libs.swagger3.jaxrs2.jakarta
 }
 
+// OpenAPI treats templated paths that differ only in parameter name as the same path, so
+// such a collision silently hides operations from consumers of the spec.
+tasks.register('validateOpenApiSpec') {
+  dependsOn resolve
+  def specFile = file(project.openApiSpecFile)
+  def marker = layout.buildDirectory.file("openapi-spec-validated.txt").get().asFile
+  inputs.file(specFile)
+  outputs.file(marker)
+  doLast {
+    def collisions = new groovy.json.JsonSlurper().parse(specFile).paths.keySet()
+        .groupBy { it.replaceAll(/\{[^}]*\}/, '{}') }
+        .findAll { it.value.size() > 1 }
+    if (!collisions.isEmpty()) {
+      throw new GradleException(
+          "OpenAPI spec declares paths that differ only in path-parameter name:\n"
+              + collisions.values().flatten().collect { "  " + it }.join("\n") + "\n"
+              + "Make the @PathParam names agree so the operations merge into a single path.")
+    }
+    marker.text = "ok"
+  }
+}
+
+check.dependsOn validateOpenApiSpec
+
 // Non-Java client generation tasks below:
 task buildJSClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
   generatorName.set("javascript")

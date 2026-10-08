@@ -33,6 +33,8 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.TLOG_FILE;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,6 +117,7 @@ import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -497,9 +500,28 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private volatile IndexFetcher currentIndexFetcher;
 
+  public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
+    final Span span = TraceUtils.getGlobalTracer().spanBuilder("replication").startSpan();
+    TraceUtils.setDbInstance(span, core.getName());
+    try (var scope = span.makeCurrent()) {
+      assert scope != null; // prevent javac warning about scope being unused
+      IndexFetchResult result = doFetchInternal(solrParams, forceReplication);
+      span.setAttribute("replication.result", result.getMessage());
+      if (!result.getSuccessful()) {
+        span.setStatus(StatusCode.ERROR);
+      }
+      if (result.getException() != null) {
+        span.recordException(result.getException());
+      }
+      return result;
+    } finally {
+      span.end();
+    }
+  }
+
   @SuppressWarnings(
       "ReferenceEquality") // detecting the shared pollingIndexFetcher vs. a one-off, by identity
-  public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
+  private IndexFetchResult doFetchInternal(SolrParams solrParams, boolean forceReplication) {
     String leaderUrl = solrParams.get(LEADER_URL, null);
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
