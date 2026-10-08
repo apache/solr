@@ -165,9 +165,28 @@ solrAdminApp.controller('LoggingController',
       // broadcast the level change to every live node. The v2 NodeLoggingApis endpoint is
       // single-node only until SOLR-16738 wires it up to the new V2SolrRequestBasedProxy (see the
       // TODO in NodeLogging.java). Move this to LoggingV2.modifyLocalLogLevel once that lands.
-      Logging.setLevel({set: setString}, function(data) {
-        $scope.refresh();
-      });
+      var doSetLevel = function() {
+        var params = {set: setString};
+        // "nodes=all" only makes sense in SolrCloud mode; in standalone (user-managed) mode the
+        // request is handled locally, so the param is omitted entirely.
+        if ($scope.isCloudEnabled) {
+          params.nodes = "all";
+        }
+        Logging.setLevel(params, function(data) {
+          $scope.refresh();
+        });
+      };
+      // isCloudEnabled populates asynchronously via resetMenu(), so wait for it to settle
+      // before deciding whether to broadcast (same pattern as in paramsets.js).
+      if ($scope.isCloudEnabled === undefined) {
+        var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+          if (value === undefined) return;
+          unwatchCloudEnabled();
+          doSetLevel();
+        });
+      } else {
+        doSetLevel();
+      }
     };
 
     $scope.refresh();

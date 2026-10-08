@@ -367,13 +367,13 @@ You can use the HTTP commands below to control the ReplicationHandler's operatio
 Enable replication on the "leader" for all its followers.
 +
 [source,bash]
-http://_leader_host:port_/solr/_core_name_/replication?command=enablereplication
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=enablereplication
 
 `disablereplication`::
 Disable replication on the leader for all its followers.
 +
 [source,bash]
-http://_leader_host:port_/solr/_core_name_/replication?command=disablereplication
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=disablereplication
 
 `indexversion`::
 Return the version of the latest replicatable index on the specified leader or follower.
@@ -383,7 +383,7 @@ Return the version of the latest replicatable index on the specified leader or f
 
 [source,bash]
 ----
-http://_host:port_/solr/_core_name_/replication?command=indexversion
+http://{host}:{port}/solr/{coreName}/replication?command=indexversion
 
 ----
 ====
@@ -393,7 +393,7 @@ http://_host:port_/solr/_core_name_/replication?command=indexversion
 
 [source,bash]
 ----
-http://_host:port_/api/cores/_core_name_/replication/indexversion
+http://{host}:{port}/api/cores/{coreName}/replication/indexversion
 
 ----
 ====
@@ -402,7 +402,7 @@ http://_host:port_/api/cores/_core_name_/replication/indexversion
 Force the specified follower to fetch a copy of the index from its leader.
 +
 [source.bash]
-http://_follower_host:port_/solr/_core_name_/replication?command=fetchindex
+http://{followerHost}:{port}/solr/{coreName}/replication?command=fetchindex
 +
 You can pass an extra attribute such as `leaderUrl` or `compression` (or any other parameter described in <<Configuring a Follower Server>>) to do a one time replication from a leader.
 This removes the need for hard-coding the leader URL in the follower configuration.
@@ -411,25 +411,25 @@ This removes the need for hard-coding the leader URL in the follower configurati
 Abort copying an index from a leader to the specified follower.
 +
 [source,bash]
-http://_follower_host:port_/solr/_core_name_/replication?command=abortfetch
+http://{followerHost}:{port}/solr/{coreName}/replication?command=abortfetch
 
 `enablepoll`::
 Enable the specified follower to poll for changes on the leader.
 +
 [source,bash]
-http://_follower_host:port_/solr/_core_name_/replication?command=enablepoll
+http://{followerHost}:{port}/solr/{coreName}/replication?command=enablepoll
 
 `disablepoll`::
 Disable the specified follower from polling for changes on the leader.
 +
 [source,bash]
-http://_follower_host:port_/solr/_core_name_/replication?command=disablepoll
+http://{followerHost}:{port}/solr/{coreName}/replication?command=disablepoll
 
 `details`::
 Retrieve configuration details and current status.
 +
 [source,bash]
-http://_follower_host:port_/solr/_core_name_/replication?command=details
+http://{followerHost}:{port}/solr/{coreName}/replication?command=details
 
 `filelist`::
 Retrieve a list of Lucene files present in the specified host's index.
@@ -440,7 +440,7 @@ Retrieve a list of Lucene files present in the specified host's index.
 
 [source,bash]
 ----
-http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_generation-number_>
+http://{host}:{port}/solr/{coreName}/replication?command=filelist&generation={generationNumber}
 
 ----
 ====
@@ -450,7 +450,7 @@ http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_ge
 
 [source,bash]
 ----
-http://_host:port_/api/cores/_core_name_/replication/files?generation=<_generation-number_>
+http://{host}:{port}/api/cores/{coreName}/replication/files?generation={generationNumber}
 
 ----
 ====
@@ -466,7 +466,7 @@ Retrieve a stream of a specific file path of a core.
 
 [source,bash]
 ----
-http://_host:port_/solr/_core_name_/replication?command=filecontent&<_directory-type_>=<_file-path_>&wt=filestream
+http://{host}:{port}/solr/{coreName}/replication?command=filecontent&{directoryType}={filePath}&wt=filestream
 
 ----
 ====
@@ -476,7 +476,7 @@ http://_host:port_/solr/_core_name_/replication?command=filecontent&<_directory-
 
 [source,bash]
 ----
-http://_host:port_/api/cores/_core_name_/replication/files/<_file-path_>&dirType=<_directory-type_>
+http://{host}:{port}/api/cores/{coreName}/replication/files/{filePath}&dirType={directoryType}
 
 ----
 ====
@@ -506,7 +506,7 @@ There are several optional parameters:
 Create a backup on leader if there are committed index data in the server; otherwise, does nothing.
 +
 [source,bash]
-http://_leader_host:port_/solr/_core_name_/replication?command=backup
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=backup
 +
 This command is useful for making periodic backups.
 There are several supported request parameters:
@@ -529,7 +529,7 @@ For file system repository, location defaults to the core's dataDir (data direct
 Restore a backup from a backup repository.
 +
 [source,bash]
-http://_leader_host:port_/solr/_core_name_/replication?command=restore
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=restore
 +
 This command is used to restore a backup.
 There are several supported request parameters:
@@ -550,7 +550,7 @@ For file system repository, location defaults to core's dataDir (data directory)
 Check the status of a running restore operation.
 +
 [source,bash]
-http://_leader_host:port_/solr/_core_name_/replication?command=restorestatus
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=restorestatus
 +
 This command is used to check the status of a restore operation.
 This command takes no parameters.
@@ -562,7 +562,7 @@ If it failed then an "exception" will also be sent in the response.
 Delete any backup created using the `backup` command.
 +
 [source,bash]
-http://_leader_host:port_ /solr/_core_name_/replication?command=deletebackup
+http://{leaderHost}:{port} /solr/{coreName}/replication?command=deletebackup
 +
 There are two supported parameters:
 
@@ -599,7 +599,7 @@ Use the health endpoint as follows:
 
 [source,bash]
 ----
-http://_follower_host:port_/solr/admin/info/health?maxGenerationLag=<_max_lag_>
+http://{followerHost}:{port}/solr/admin/info/health?maxGenerationLag={maxLag}
 ----
 ====
 
@@ -608,7 +608,7 @@ http://_follower_host:port_/solr/admin/info/health?maxGenerationLag=<_max_lag_>
 
 [source,bash]
 ----
-http://_follower_host:port_/api/node/health?maxGenerationLag=<_max_lag_>
+http://{followerHost}:{port}/api/node/health?maxGenerationLag={maxLag}
 ----
 ====
 

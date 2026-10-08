@@ -84,7 +84,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/info/logging?set=root:WARN"
+curl "http://localhost:8983/solr/admin/info/logging?set=root:WARN"
 ----
 ====
 
