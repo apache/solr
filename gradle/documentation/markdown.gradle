@@ -102,8 +102,8 @@ configure(project(':solr:documentation')) {
   }
 }
 
-// Renders the page chrome shared by every generated documentation page: the
-// head, and the sticky masthead with the Solr wordmark and the nav links.
+// The HTML every generated documentation page shares: the head, and the sticky
+// masthead with the Solr wordmark and the nav links.
 class SolrDocsPage {
 
   // The ink the wordmark is drawn in, swapped for currentColor when inlining so

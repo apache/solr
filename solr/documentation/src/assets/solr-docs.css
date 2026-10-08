@@ -177,8 +177,7 @@ code {
 }
 
 /* Injected into the masthead by solr-javadoc-bar.js on the Javadocs page.
-   Shaped as a tinted pill so it reads as a control to pick from, rather than
-   as another text field next to the search box. */
+   A tinted pill, distinct from the search box's text field. */
 .masthead-nav .solr-docs-modules {
   /* A select sizes itself to its widest option -- 'modules-opentelemetry' is
      wider than a phone -- so it has to be allowed to shrink. */

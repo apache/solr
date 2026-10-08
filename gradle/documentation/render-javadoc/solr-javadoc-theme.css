@@ -121,8 +121,7 @@
   color: #6f6b66;
 }
 
-/* A tinted pill, so it reads as a control to pick from rather than as a
-   text field beside javadoc's own search box. */
+/* A tinted pill, distinct from the text field of javadoc's search box. */
 .solr-docs-bar .solr-docs-modules {
   flex: 0 1 auto;
   min-width: 0;

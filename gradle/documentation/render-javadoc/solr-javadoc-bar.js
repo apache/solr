@@ -101,8 +101,7 @@ function loadScripts(doc, tag) {
    * reach the others, so offer them as a jump list.
    */
   function buildModulePicker(docsRoot) {
-    // Wrapped in a label: on its own a select showing the no-selection dash is
-    // just a bordered box, indistinguishable from a search field.
+    // Labelled, so the select is recognisable as a picker and not a text field.
     var wrapper = document.createElement('label');
     wrapper.className = 'solr-docs-module-picker';
     var caption = document.createElement('span');
