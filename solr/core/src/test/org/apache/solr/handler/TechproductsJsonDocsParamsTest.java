@@ -28,7 +28,7 @@ import org.apache.solr.util.ExternalPaths;
 public class TechproductsJsonDocsParamsTest extends SolrTestCase {
 
   public void testUpdateJsonDocsParamSetDoesNotDropFields() throws Exception {
-    Path paramsJson = ExternalPaths.TECHPRODUCTS_CONFIGSET.resolve("conf").resolve("params.json");
+    Path paramsJson = ExternalPaths.TECHPRODUCTS_CONFIGSET.resolve("params.json");
     Object parsed = Utils.fromJSON(Files.readAllBytes(paramsJson));
     @SuppressWarnings("unchecked")
     Map<String, Object> paramSet =
