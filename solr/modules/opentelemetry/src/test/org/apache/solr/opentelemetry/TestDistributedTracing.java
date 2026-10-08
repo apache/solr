@@ -29,14 +29,17 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -49,6 +52,7 @@ import org.junit.Test;
 public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
+  private static final String TLOG_COLLECTION = "tlogCollection";
 
   @ClassRule public static OpenTelemetryRule otelRule = OpenTelemetryRule.create();
 
@@ -92,6 +96,18 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .setNode(node3)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
+
+    // A single-shard, single-TLOG-replica collection for testing real-time GET routing. A lone
+    // replica is the leader, so there's no follower replication polling to add nondeterministic
+    // spans. Its leader lives on node0.
+    CollectionAdminRequest.createCollection(TLOG_COLLECTION, "config", 1, 0, 1, 0)
+        .setCreateNodeSet("EMPTY")
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.addReplicaToShard(TLOG_COLLECTION, "shard1")
+        .setType(Replica.Type.TLOG)
+        .setNode(node0)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(TLOG_COLLECTION, 1, 1);
   }
 
   @Before
@@ -116,6 +132,30 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     client.query(COLLECTION, new SolrQuery("*:*"));
     verifier.verifyPhase();
 
+    verifier.done();
+  }
+
+  /**
+   * A real-time GET against a TLOG collection must be served by the shard leader. When the request
+   * lands on the leader (as here), it is served locally with no self-hop to itself; the gold file
+   * therefore has a single span. Were the leader not short-circuited, a child {@code /{core}/get}
+   * span would appear.
+   */
+  @Test
+  public void testRealTimeGetTlogLeaderShortCircuit() throws Exception {
+    var verifier = new GoldFileTraceVerifier(getClass(), "testRealTimeGetTlogLeaderShortCircuit");
+    var leaderClient = cluster.getJettySolrRunner(0).getSolrClient();
+
+    new UpdateRequest().add(sdoc("id", "1")).commit(leaderClient, TLOG_COLLECTION);
+    getAndClearSpans(); // ignore indexing spans
+
+    var req = new QueryRequest(params("ids", "1"));
+    req.setPath("/get");
+    QueryResponse rsp = req.process(leaderClient, TLOG_COLLECTION);
+    assertEquals(1, rsp.getResults().size());
+    assertEquals("1", rsp.getResults().get(0).getFieldValue("id"));
+
+    verifier.verifyPhase();
     verifier.done();
   }
 
