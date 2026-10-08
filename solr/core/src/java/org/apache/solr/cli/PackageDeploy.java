@@ -46,17 +46,7 @@ public class PackageDeploy extends PackageSubCommand {
       description = "Package name, optionally with :version.")
   private String packageNameAndVersion;
 
-  @picocli.CommandLine.Option(
-      names = {"--cluster"},
-      description = "Specifies that this action should affect cluster-level plugins only.")
-  private boolean cluster;
-
-  @picocli.CommandLine.Option(
-      names = {"--collections"},
-      paramLabel = "COLLECTIONS",
-      description =
-          "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-  private String collections;
+  @picocli.CommandLine.Mixin private PackageTargetOptions target;
 
   @picocli.CommandLine.Option(
       names = {"-p", "--param"},
@@ -76,9 +66,9 @@ public class PackageDeploy extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
-    if (!cluster && collections == null) {
-      printRed(
-          "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
+    String missingTarget = target.missingTargetMessage("deploy");
+    if (missingTarget != null) {
+      printRed(missingTarget);
       return 1;
     }
     return runWithManagers(
@@ -86,8 +76,8 @@ public class PackageDeploy extends PackageSubCommand {
             packageTool.deploy(
                 packageManager,
                 packageNameAndVersion,
-                cluster,
-                collections,
+                target.cluster,
+                target.collections,
                 params,
                 update,
                 noPrompt));

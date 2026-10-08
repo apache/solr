@@ -43,28 +43,18 @@ public class PackageUndeploy extends PackageSubCommand {
       description = "Package name")
   private String packageName;
 
-  @picocli.CommandLine.Option(
-      names = {"--cluster"},
-      description = "Specifies that this action should affect cluster-level plugins only.")
-  private boolean cluster;
-
-  @picocli.CommandLine.Option(
-      names = {"--collections"},
-      paramLabel = "COLLECTIONS",
-      description =
-          "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-  private String collections;
+  @picocli.CommandLine.Mixin private PackageTargetOptions target;
 
   @Override
   public int callTool() throws Exception {
-    if (!cluster && collections == null) {
-      printRed(
-          "Either specify --cluster to undeploy cluster level plugins or --collections <list-of-collections> to undeploy collection level plugins");
+    String missingTarget = target.missingTargetMessage("undeploy");
+    if (missingTarget != null) {
+      printRed(missingTarget);
       return 1;
     }
     return runWithManagers(
         (packageManager, repositoryManager) ->
-            packageTool.undeploy(packageManager, packageName, cluster, collections));
+            packageTool.undeploy(packageManager, packageName, target.cluster, target.collections));
   }
 
   @Override
