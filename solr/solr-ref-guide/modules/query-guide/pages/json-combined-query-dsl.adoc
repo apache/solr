@@ -92,7 +92,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "queries": {
         "lexical1": {
