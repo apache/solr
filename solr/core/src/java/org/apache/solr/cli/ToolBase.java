@@ -154,7 +154,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
     int toolExitStatus = 0;
     try {
       toolExitStatus = callTool();
-    } catch (picocli.CommandLine.ParameterException exc) {
+    } catch (CommandLine.ParameterException exc) {
       // a usage error found while running: let picocli report it like any other invalid input
       throw exc;
     } catch (Exception exc) {
