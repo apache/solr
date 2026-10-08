@@ -428,6 +428,11 @@ public class ClusterStatus {
     byte[] bytes = Utils.toJSON(clusterStateCollection);
     @SuppressWarnings("unchecked")
     Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+
+    // Replicas on dead nodes can still be marked active in state.json.
+    // Correct their states before computing health.
+    crossCheckReplicaStateWithLiveNodes(liveNodes, docCollection);
+
     collectionStatus = getCollectionStatus(docCollection, name, shards);
 
     collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
@@ -443,9 +448,6 @@ public class ClusterStatus {
       PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
       collectionStatus.put("PRS", prs);
     }
-
-    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionStatus);
 
     return collectionStatus;
   }
