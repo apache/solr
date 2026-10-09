@@ -1,7 +1,0 @@
-title: Upgrade google-java-format to 1.35.0 (fixes JDK 24/25 build break)
-type: dependency_update
-authors:
-  - name: Serhiy Bzhezytskyy
-links:
-- name: SOLR-18296
-  url: https://issues.apache.org/jira/browse/SOLR-18296

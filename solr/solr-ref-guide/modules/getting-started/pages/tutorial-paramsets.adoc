@@ -40,7 +40,7 @@ We'll specify the specific schema for a couple of fields that Solr would otherwi
 
 [,console]
 ----
-$ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
+curl http://localhost:8983/solr/films/schema -H 'Content-type:application/json' --data-binary '{
   "add-field" : [
     {
       "name":"name",
@@ -89,14 +89,14 @@ Show me all 'Super hero' movies:
 
 [,console]
 ----
-$ curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
+curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
 ----
 
 Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
 
 [,console]
 ----
-$ curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
+curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
 ----
 
 === Time for relevancy tuning with ParamSets :
@@ -115,7 +115,7 @@ Algorithm *A* will specify using `dismax` and a `qf` parameter, while Algorithm 
 
 [,console]
 ----
-curl http://localhost:8983/solr/films/config/params -X POST -H 'Content-type:application/json' --data-binary '{
+curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json' --data-binary '{
 "set": {
     "algo_a":{
       "defType":"dismax",

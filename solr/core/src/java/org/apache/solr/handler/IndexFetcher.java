@@ -37,6 +37,7 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 
+import io.opentelemetry.api.trace.Span;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -499,6 +500,9 @@ public class IndexFetcher {
 
       log.info("Leader's generation: {}", latestGeneration);
       log.info("Leader's version: {}", latestVersion);
+      Span.current()
+          .setAttribute("replication.leader", leaderCoreUrl)
+          .setAttribute("replication.leaderGeneration", latestGeneration);
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no
       // side-car indexes)
@@ -576,6 +580,7 @@ public class IndexFetcher {
       if (log.isInfoEnabled()) {
         log.info("Number of files in latest index in leader: {}", filesToDownload.size());
       }
+      Span.current().setAttribute("replication.leaderFiles", filesToDownload.size());
 
       // Create the sync service
       fsyncService =
@@ -687,6 +692,9 @@ public class IndexFetcher {
               timeTakenSeconds,
               bytesDownloadedPerSecond,
               tmpIndexDir);
+          Span.current()
+              .setAttribute("replication.fullCopy", isFullCopyNeeded)
+              .setAttribute("replication.bytesDownloaded", bytesDownloaded);
 
           Collection<Map<String, Object>> modifiedConfFiles =
               getModifiedConfFiles(confFilesToDownload);

@@ -302,6 +302,30 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
+  public void testLegacyNumericToLegacyNumericJoin() throws Exception {
+    clearIndex();
+
+    // Both sides are legacy (non-Point) Trie int fields without docValues. Such a pair can't use
+    // the point-based numeric join, but it has always worked through the term-based join, which
+    // reads the uninverted SortedSetDocValues of the "from" field, so it must keep working.
+    assertU(add(doc("name", "name1", idField, "1", "cat_trie_is", "100", "cat_trie_is", "300")));
+    assertU(add(doc("name", "name2", idField, "4", "cat_trie_is", "200")));
+
+    assertU(add(doc("price_s", "10.0", idField, "2", "prodRef_trie_is", "100")));
+    assertU(add(doc("price_s", "20.0", idField, "3", "prodRef_trie_is", "300")));
+    assertU(add(doc("price_s", "10.0", idField, "5", "prodRef_trie_is", "200")));
+
+    assertU(commit());
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_is to=prodRef_trie_is score=None}name:name1", "fl", "id"),
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+
+    assertJQ(
+        req("q", "{!join from=cat_trie_is to=prodRef_trie_is score=None}name:name2", "fl", "id"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'5'}]}");
+  }
+
   public void testDeleteByScoreJoinQuery() throws Exception {
     indexDataForScoring();
     String joinQuery = "{!join from=" + toField + " to=" + idField + " score=Max}title:random";

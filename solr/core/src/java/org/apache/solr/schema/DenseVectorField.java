@@ -507,6 +507,13 @@ public class DenseVectorField extends FloatPointField {
               + fieldName
               + "' uses "
               + vectorEncoding);
+  /** Throws if this field type does not support the KNN query parsers. */
+  public void checkKnnQueryParsersSupported() throws SolrException {
+    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "KNN vector queries are not supported for fields using knnAlgorithm=\"flat\". "
+              + "Use vectorSimilarity() function queries instead.");
     }
   }
 
@@ -542,12 +549,7 @@ public class DenseVectorField extends FloatPointField {
       Integer filteredSearchThreshold,
       int rerankOversample) {
 
-    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "KNN vector queries are not supported for fields using knnAlgorithm=\"flat\". "
-              + "Use vectorSimilarity() function queries instead.");
-    }
+    checkKnnQueryParsersSupported();
 
     checkRerankOversampleSupported(fieldName, rerankOversample);
 

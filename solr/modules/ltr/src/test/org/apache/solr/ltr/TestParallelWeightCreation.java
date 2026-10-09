@@ -51,14 +51,13 @@ public class TestParallelWeightCreation extends TestRerankBase {
   }
 
   @Test
-  public void testLTRQParserThreadInitialization() throws Exception {
+  public void testLTRQParserThreadInitialization() {
     // setting the value of number of threads to -ve should throw an exception
     String msg1 = null;
     try {
       new LTRThreadModule(1, -1);
     } catch (IllegalArgumentException iae) {
       msg1 = iae.getMessage();
-      ;
     }
     assertEquals("numThreadsPerRequest cannot be less than 1", msg1);
 

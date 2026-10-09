@@ -19,6 +19,8 @@
 Changelog release helper for Apache Solr release managers.
 
 Normally invoked by the Release Wizard; see dev-docs/changelog.adoc for details.
+
+Requires git 2.23 or later (git restore).
 """
 
 import argparse
@@ -78,13 +80,83 @@ def has_staged_changes(git_root, paths=None):
     return bool(r.stdout.strip())
 
 
-def commit_touches_unreleased(sha, git_root):
-    """Return True if the given commit modifies any file under changelog/unreleased/."""
+def git_paths(args, git_root):
+    """Run a git command that lists paths, NUL-separated so non-ASCII names are not quoted."""
     r = subprocess.run(
-        ["git", "diff-tree", "--no-commit-id", "-r", "--name-only", sha],
+        ["git"] + args + ["-z"],
         cwd=git_root, capture_output=True, text=True, check=True,
     )
-    return any(f.startswith("changelog/unreleased/") for f in r.stdout.splitlines())
+    return [p for p in r.stdout.split("\0") if p]
+
+
+def commit_touches_unreleased(sha, git_root):
+    """Return True if the given commit modifies any file under changelog/unreleased/."""
+    files = git_paths(["diff-tree", "--no-commit-id", "-r", "--name-only", sha], git_root)
+    return any(f.startswith("changelog/unreleased/") for f in files)
+
+
+def unmerged_paths(git_root):
+    return git_paths(["diff", "--name-only", "--diff-filter=U"], git_root)
+
+
+def recover_cherry_pick(git_root, version, dry_run=False):
+    """Try to finish a cherry-pick that stopped. Return True if it was resolved.
+
+    Handles two cases: conflicts confined to changelog/unreleased/ entries that
+    are being released (a counterpart exists in changelog/v{version}/, so the
+    unreleased entry is removed), and a pick that is empty because its changes
+    are already on this branch.  Any other conflict is left for the user.
+    """
+    if dry_run:
+        return False
+    in_progress = subprocess.run(
+        ["git", "rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD"],
+        cwd=git_root, capture_output=True,
+    ).returncode == 0
+    if not in_progress:
+        return False
+    conflicts = unmerged_paths(git_root)
+    version_dir = git_root / "changelog" / f"v{version}"
+    for p in conflicts:
+        if not p.startswith("changelog/unreleased/"):
+            return False
+        if not (version_dir / Path(p).name).exists():
+            print(f"  {p} conflicts but has no counterpart in {version_dir.relative_to(git_root)}/ — "
+                  f"not removing it.")
+            return False
+    if conflicts:
+        print(f"  Removing {len(conflicts)} conflicting unreleased file(s): "
+              f"{', '.join(Path(p).name for p in conflicts)}")
+        git(["rm", "--quiet", "--"] + conflicts, cwd=git_root)
+    if has_staged_changes(git_root):
+        git(["-c", "core.editor=true", "cherry-pick", "--continue"], cwd=git_root)
+    else:
+        print("  Nothing left to apply — skipping.")
+        git(["cherry-pick", "--skip"], cwd=git_root)
+    return True
+
+
+def require_clean_tree(git_root):
+    """Exit unless the working tree has no uncommitted changes to tracked files."""
+    r = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=git_root, capture_output=True, text=True, check=True,
+    )
+    if r.stdout.strip():
+        print("Error: the working tree has uncommitted changes. Commit or stash them first:",
+              file=sys.stderr)
+        print(r.stdout, file=sys.stderr, end="")
+        sys.exit(1)
+
+
+def discard_generated_changelog_files(git_root, dry_run=False):
+    """Drop what logchangeGenerate left under changelog/ once the wanted files are committed.
+
+    Generation rewrites every version's version-summary.md; a modified or
+    untracked copy for another version would block the next checkout.
+    """
+    git(["restore", "changelog/"], cwd=git_root, dry_run=dry_run)
+    git(["clean", "--force", "--", "changelog/*/version-summary.md"], cwd=git_root, dry_run=dry_run)
 
 
 def strip_unreleased_block(changelog_path: Path, dry_run=False):
@@ -322,9 +394,14 @@ def cmd_forward_port(args, git_root):
         print("    (push disabled — run with --push when ready)")
     print()
 
-    # Step 1: checkout release branch and write release-date.txt
-    print(f"[1] Checking out {release_branch} and writing release-date.txt")
+    # The script checks out several branches and discards generated files with
+    # git restore, so refuse to run on top of uncommitted work.
+    require_clean_tree(git_root)
+
+    # Step 1: checkout and update release branch, write release-date.txt
+    print(f"[1] Checking out and updating {release_branch}, writing release-date.txt")
     git(["checkout", release_branch], cwd=git_root, dry_run=dry_run)
+    git(["pull", "--ff-only", args.git_remote, release_branch], cwd=git_root, dry_run=dry_run)
 
     if not dry_run and not version_dir.exists():
         print(f"Error: version folder {version_dir} does not exist. "
@@ -362,31 +439,41 @@ def cmd_forward_port(args, git_root):
         msg_b = f"Regenerate CHANGELOG.md for v{version}"
         print(f"  Committing: {msg_b!r}")
         git(["commit", "-m", msg_b], cwd=git_root, dry_run=dry_run)
+    discard_generated_changelog_files(git_root, dry_run=dry_run)
 
     # Steps 4+5: for each target branch, find commits on release_branch not yet on
     #            that target, cherry-pick them, then regenerate CHANGELOG.md fresh.
+    #            Only commits touching the version folder are considered: the
+    #            release branch may have diverged from the target long ago (e.g.
+    #            a 9.x release vs main), so other changelog/ commits are feature
+    #            commits that don't belong on the target.
     #            CHANGELOG.md is never cherry-picked — it is always regenerated so
     #            each branch gets a correct full-history version (avoids cross-major
     #            conflicts).  version-summary.md is also excluded from cherry-picks
     #            for the same reason; it is regenerated alongside CHANGELOG.md.
-    #            --cherry-pick with the symmetric-difference range (three dots) omits
-    #            commits whose patch is already present on the target, making
-    #            forward-port idempotent when re-run after an initial no-push run.
+    #            --cherry-pick is deliberately not used: git would compute patch-ids
+    #            for the whole symmetric difference (thousands of commits across
+    #            majors) before path limiting, taking minutes per target.  A commit
+    #            already applied to the target instead cherry-picks to an empty
+    #            change, which recover_cherry_pick skips, so re-running after an
+    #            initial no-push run remains idempotent.
     targets = [stable_branch, "main"]
     if latest_lts_stable_branch:
         targets.append(latest_lts_stable_branch)
 
+    version_pathspec = f"changelog/v{version}/"
     for target in targets:
-        print(f"\n[4] Finding changelog/ commits on {release_branch} not yet on {target}")
+        print(f"\n[4] Updating {target} and finding {version_pathspec} commits on {release_branch} not yet on it")
+        git(["checkout", target], cwd=git_root, dry_run=dry_run)
+        git(["pull", "--ff-only", args.git_remote, target], cwd=git_root, dry_run=dry_run)
         if dry_run:
-            print(f"  (dry-run) would run: git log --cherry-pick --right-only {target}...{release_branch} -- changelog/ :(exclude)changelog/*/version-summary.md")
+            print(f"  (dry-run) would run: git log --right-only {target}...{release_branch} -- {version_pathspec} :(exclude)changelog/*/version-summary.md")
             commits = []
         else:
             result = subprocess.run(
-                ["git", "log", "--oneline", "--reverse",
-                 "--cherry-pick", "--right-only",
+                ["git", "log", "--oneline", "--reverse", "--right-only",
                  f"{target}...{release_branch}",
-                 "--", "changelog/", ":(exclude)changelog/*/version-summary.md"],
+                 "--", version_pathspec, ":(exclude)changelog/*/version-summary.md"],
                 cwd=git_root, capture_output=True, text=True, check=True,
             )
             commits = [line.split()[0] for line in result.stdout.strip().splitlines() if line]
@@ -397,13 +484,12 @@ def cmd_forward_port(args, git_root):
             print(f"  Found {len(commits)} commit(s) to cherry-pick: {', '.join(commits)}")
 
         print(f"\n[5] Cherry-picking {len(commits)} commit(s) to {target}")
-        git(["checkout", target], cwd=git_root, dry_run=dry_run)
         for sha in commits:
-            # Commits that touch changelog/unreleased/ are deletions of files
-            # that exist under different names on stable/main — use -X ours so
-            # git keeps the target branch's own unreleased entries rather than
-            # trying to delete them.  Commits that only add to the version
-            # folder are clean additions and cherry-pick without strategy options.
+            # Commits that touch changelog/unreleased/ move entries into the
+            # version folder.  -X no-renames makes those plain adds + deletes;
+            # -X ours settles content conflicts in favour of the target.  A
+            # deletion of an entry that differs on the target still conflicts
+            # (modify/delete), which recover_cherry_pick resolves.
             if commit_touches_unreleased(sha, git_root):
                 cp_args = ["cherry-pick", "-X", "ours", "-X", "no-renames", sha]
             else:
@@ -411,6 +497,8 @@ def cmd_forward_port(args, git_root):
             try:
                 git(cp_args, cwd=git_root, dry_run=dry_run)
             except subprocess.CalledProcessError:
+                if recover_cherry_pick(git_root, version, dry_run=dry_run):
+                    continue
                 print(f"\nError: cherry-pick of {sha} failed on {target}.",
                       file=sys.stderr)
                 print("  Resolve the conflict, then run: git cherry-pick --continue",
@@ -427,8 +515,7 @@ def cmd_forward_port(args, git_root):
                 cwd=git_root, dry_run=dry_run)
 
         # Remove any v{version} YAML files that still linger in unreleased/ on this
-        # target branch.  Cherry-pick uses -X ours, so a "we modified / they deleted"
-        # conflict silently keeps the local copy; this explicit pass fixes that.
+        # target branch, e.g. entries the release branch never had in unreleased/.
         version_dir = git_root / f"changelog/v{version}"
         stale = (
             [
@@ -455,6 +542,7 @@ def cmd_forward_port(args, git_root):
         if not dry_run and has_staged_changes(git_root, ["CHANGELOG.md", version_summary]):
             git(["commit", "-m", f"Regenerate CHANGELOG.md with v{version} entries on {target}"],
                 cwd=git_root, dry_run=dry_run)
+        discard_generated_changelog_files(git_root, dry_run=dry_run)
 
     # Step 6: push (optional)
     if do_push:
@@ -522,7 +610,8 @@ def build_parser():
                         help="Set release date and forward-port changelog post-vote",
                         description="Run once after a successful vote.\n"
                                     "Writes the release date to the version folder and regenerates CHANGELOG.md.\n"
-                                    "Then cherry-picks all changelog commits from the release branch to the stable branch and main.\n"
+                                    "Then cherry-picks the commits touching changelog/v<version>/ from the release branch to the stable branch and main.\n"
+                                    "Requires a clean working tree; each local branch is fast-forwarded from the remote before committing.\n"
                                     "By default nothing is pushed; review first and pass --push when satisfied.",
                         formatter_class=fmt)
     fp.add_argument("--stable-branch", required=True,
