@@ -65,7 +65,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   protected static Map<String, Object> createLayerParams(
       double[][] matrix, double[] bias, String activation) {
 
-    final ArrayList<ArrayList<Double>> matrixList = new ArrayList<ArrayList<Double>>();
+    final ArrayList<ArrayList<Double>> matrixList = new ArrayList<>();
     for (int row = 0; row < matrix.length; row++) {
       matrixList.add(new ArrayList<Double>());
       for (int col = 0; col < matrix[row].length; col++) {
@@ -140,7 +140,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     final List<Feature> featuresInModel = new ArrayList<>(allFeaturesInStore);
     Collections.shuffle(featuresInModel, random()); // store and model order of features can vary
-    featuresInModel.remove(0); // models need not use all the store's features
+    featuresInModel.removeFirst(); // models need not use all the store's features
     assertEquals(4, featuresInModel.size()); // the test model uses four features
 
     final List<Normalizer> norms =
@@ -251,7 +251,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   }
 
   @Test
-  public void badActivationTest() throws Exception {
+  public void badActivationTest() {
     final ModelException expectedException =
         new ModelException(
             "Invalid activation function (\"sig\") in layer 0 of model \"neuralnetworkmodel_bad_activation\".");
@@ -267,7 +267,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   }
 
   @Test
-  public void biasDimensionMismatchTest() throws Exception {
+  public void biasDimensionMismatchTest() {
     final ModelException expectedException =
         new ModelException(
             "Dimension mismatch in model \"neuralnetworkmodel_mismatch_bias\". "
@@ -284,7 +284,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   }
 
   @Test
-  public void inputDimensionMismatchTest() throws Exception {
+  public void inputDimensionMismatchTest() {
     final ModelException expectedException =
         new ModelException(
             "Dimension mismatch in model \"neuralnetworkmodel_mismatch_input\". The input has "
@@ -301,7 +301,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   }
 
   @Test
-  public void layerDimensionMismatchTest() throws Exception {
+  public void layerDimensionMismatchTest() {
     final ModelException expectedException =
         new ModelException(
             "Dimension mismatch in model \"neuralnetworkmodel_mismatch_layers\". The weight matrix "
@@ -318,7 +318,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   }
 
   @Test
-  public void tooManyRowsTest() throws Exception {
+  public void tooManyRowsTest() {
     final ModelException expectedException =
         new ModelException(
             "Dimension mismatch in model \"neuralnetworkmodel_too_many_rows\". "
@@ -343,7 +343,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
 
     final float[] featureValues = {1.2f, 3.4f, 5.6f, 7.8f};
 
-    final List<Explanation> explanations = new ArrayList<Explanation>();
+    final List<Explanation> explanations = new ArrayList<>();
     for (int ii = 0; ii < featureValues.length; ++ii) {
       explanations.add(Explanation.match(featureValues[ii], ""));
     }
@@ -416,7 +416,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     float actualScore = model.score(featureValues);
     assertEquals(expectedScore, actualScore, 0.001);
 
-    final List<Explanation> explanations = new ArrayList<Explanation>();
+    final List<Explanation> explanations = new ArrayList<>();
     for (int ii = 0; ii < featureValues.length; ++ii) {
       explanations.add(Explanation.match(featureValues[ii], ""));
     }

@@ -168,7 +168,10 @@ public class PackageUtils {
           new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
               .setRequiresCollection(isCollectionApi);
       request.setResponseParser(new InputStreamResponseParser("json"));
-      return InputStreamResponseParser.consumeResponseToString(client.request(request));
+      var response = client.request(request);
+      String body = InputStreamResponseParser.consumeResponseToString(response);
+      InputStreamResponseParser.checkHttpStatus(response, path + ": " + body);
+      return body;
     } catch (IOException | SolrServerException e) {
       throw new RuntimeException(e);
     }

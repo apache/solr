@@ -27,8 +27,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
@@ -56,6 +58,21 @@ import org.noggit.JSONWriter;
  * <p>Enhances start command by providing an interactive session with the user to launch (or
  * relaunch the -e cloud example)
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "run_example",
+    hidden = true,
+    description =
+        "Enhances the start command by providing an interactive session with the user to launch"
+            + " (or relaunch) one of the bundled examples.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Launch the interactive SolrCloud example",
+      "  bin/solr start -e cloud",
+      "",
+      "  # Launch the techproducts example, accepting all prompt defaults",
+      "  bin/solr start -e techproducts --no-prompt"
+    })
 public class RunExampleTool extends ToolBase {
 
   private static final String PROMPT_FOR_NUMBER = "Please enter %s [%d]: ";
@@ -66,6 +83,11 @@ public class RunExampleTool extends ToolBase {
   private static final String PROMPT_NUMBER_TOO_LARGE =
       "%d is too large! " + PROMPT_FOR_NUMBER_IN_RANGE;
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option NO_PROMPT_OPTION =
       Option.builder("y")
           .longOpt("no-prompt")
@@ -73,16 +95,26 @@ public class RunExampleTool extends ToolBase {
               "Don't prompt for input; accept all defaults when running examples that accept user input.")
           .get();
 
-  private static final Option PROMPT_INPUTS_OPTION =
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
+  private static final Option SCRIPT_INPUTS_OPTION =
       Option.builder()
-          .longOpt("prompt-inputs")
+          .longOpt("script-inputs")
           .hasArg()
           .argName("VALUES")
           .desc(
-              "Provide comma-separated values for prompts. Same as --no-prompt but uses provided values instead of defaults. "
-                  + "Example: --prompt-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+              "Provide comma-separated values for the interactive session's prompts. Same as --no-prompt but uses provided values instead of defaults. "
+                  + "Example: --script-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
           .build();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option EXAMPLE_OPTION =
       Option.builder("e")
           .longOpt("example")
@@ -92,6 +124,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SCRIPT_OPTION =
       Option.builder()
           .longOpt("script")
@@ -100,6 +137,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Path to the bin/solr script.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SERVER_DIR_OPTION =
       Option.builder("d")
           .longOpt("server-dir")
@@ -109,6 +151,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Path to the Solr server directory.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
@@ -116,6 +163,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Force option in case Solr is run as root.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option EXAMPLE_DIR_OPTION =
       Option.builder()
           .longOpt("example-dir")
@@ -125,6 +177,11 @@ public class RunExampleTool extends ToolBase {
               "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SOLR_HOME_OPTION =
       Option.builder()
           .longOpt("solr-home")
@@ -135,6 +192,11 @@ public class RunExampleTool extends ToolBase {
               "Path to the Solr home directory; if not provided, ${serverDir}/solr is expected to exist.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option URL_SCHEME_OPTION =
       Option.builder()
           .longOpt("url-scheme")
@@ -143,6 +205,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Solr URL scheme: http or https, defaults to http if not specified.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
@@ -151,6 +218,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option HOST_OPTION =
       Option.builder()
           .longOpt("host")
@@ -159,9 +231,19 @@ public class RunExampleTool extends ToolBase {
           .desc("Specify the hostname for this Solr instance.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option USER_MANAGED_OPTION =
       Option.builder().longOpt("user-managed").desc("Start Solr in User Managed mode.").get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option MEMORY_OPTION =
       Option.builder("m")
           .longOpt("memory")
@@ -171,6 +253,11 @@ public class RunExampleTool extends ToolBase {
               "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option JVM_OPTS_OPTION =
       Option.builder()
           .longOpt("jvm-opts")
@@ -186,7 +273,7 @@ public class RunExampleTool extends ToolBase {
   protected Path exampleDir;
   protected Path solrHomeDir;
   protected String urlScheme;
-  private boolean usingPromptInputs = false;
+  private boolean usingScriptInputs = false;
 
   /**
    * Parameters consumed when starting a single Solr node via the bin/solr script, common to all
@@ -214,12 +301,138 @@ public class RunExampleTool extends ToolBase {
   /**
    * Parameters for running the multi-node cloud example, independent of the command line parser.
    *
-   * @param promptInputs comma-separated prompt answers, or null when prompting interactively
+   * @param scriptInputs comma-separated answers to the example's prompts, or null to run the
+   *     interactive session instead
    * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
    * @param basePort first node port; remaining nodes use basePort+1..+3 unless prompted otherwise
    */
   record CloudExampleParams(
-      boolean noPrompt, String promptInputs, String zkHost, int basePort, StartSolrParams start) {}
+      boolean noPrompt, String scriptInputs, String zkHost, int basePort, StartSolrParams start) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = {"-y", "--no-prompt"},
+      description =
+          "Don't prompt for input; accept all defaults when running examples that accept user"
+              + " input.")
+  private boolean noPromptOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--script-inputs",
+      paramLabel = "VALUES",
+      description =
+          "Provide comma-separated values for prompts. Same as --no-prompt but uses provided"
+              + " values instead of defaults. Example: --script-inputs"
+              + " 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+  private String scriptInputsOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-e", "--example"},
+      required = true,
+      paramLabel = "NAME",
+      description =
+          "Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
+  private String exampleOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--script",
+      paramLabel = "PATH",
+      description = "Path to the bin/solr script.")
+  private String scriptOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-d", "--server-dir"},
+      required = true,
+      paramLabel = "DIR",
+      description = "Path to the Solr server directory.")
+  private String serverDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-f", "--force"},
+      description = "Force option in case Solr is run as root.")
+  private boolean forceOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--example-dir",
+      paramLabel = "DIR",
+      description =
+          "Path to the Solr example directory; if not provided, ${serverDir}/../example is"
+              + " expected to exist.")
+  private String exampleDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--solr-home",
+      paramLabel = "SOLR_HOME_DIR",
+      description =
+          "Path to the Solr home directory; if not provided, ${serverDir}/solr is expected to"
+              + " exist.")
+  private String solrHomeOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--url-scheme",
+      defaultValue = "http",
+      paramLabel = "SCHEME",
+      description = "Solr URL scheme: http or https, defaults to http if not specified.")
+  private String urlSchemeOpt;
+
+  // No explicit paramLabel: the default "<port>" is what CliDefaultValueProvider keys on, giving
+  // the solr.port.listen property / SOLR_PORT_LISTEN, else 8983, as under commons-cli.
+  @picocli.CommandLine.Option(
+      names = {"-p", "--port"},
+      description = "Specify the port to start the Solr HTTP listener on; default is 8983.")
+  private int port;
+
+  @picocli.CommandLine.Option(
+      names = "--host",
+      paramLabel = "HOSTNAME",
+      description = "Specify the hostname for this Solr instance.")
+  private String hostOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--user-managed",
+      description = "Start Solr in User Managed mode.")
+  private boolean userManagedOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-m", "--memory"},
+      paramLabel = "MEM",
+      description =
+          "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in:"
+              + " -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
+  private String memoryOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--jvm-opts",
+      paramLabel = "OPTS",
+      description =
+          "Additional options to be passed to the JVM when starting example Solr server(s).")
+  private String jvmOptsOpt;
+
+  // Likewise "<zkHost>": the zkHost property / ZK_HOST, else null.
+  @picocli.CommandLine.Option(
+      names = {"-z", "--zk-host"},
+      description = "Zookeeper connection string.")
+  private String zkHost;
+
+  @picocli.CommandLine.Parameters(
+      arity = "0..*",
+      paramLabel = "ARG",
+      description = "Extra arguments passed through to the underlying bin/solr start command.")
+  private String[] extraArgsOpt = new String[0];
+
+  /**
+   * Options picocli does not know. {@code bin/solr start -e <example> -Dfoo=bar} forwards the
+   * {@code -D} system properties here; they are kept as extra arguments, as {@code
+   * SolrCLI.parseCmdLine} does for commons-cli, and anything else is an unknown option.
+   */
+  @picocli.CommandLine.Unmatched private List<String> unmatchedOpts = new ArrayList<>();
+
+  @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
+
+  public RunExampleTool() {
+    this(new DefaultToolRuntime());
+  }
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
@@ -241,7 +454,7 @@ public class RunExampleTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(NO_PROMPT_OPTION)
-        .addOption(PROMPT_INPUTS_OPTION)
+        .addOption(SCRIPT_INPUTS_OPTION)
         .addOption(EXAMPLE_OPTION)
         .addOption(SCRIPT_OPTION)
         .addOption(SERVER_DIR_OPTION)
@@ -259,10 +472,10 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(PROMPT_INPUTS_OPTION)) {
+    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(SCRIPT_INPUTS_OPTION)) {
       throw new IllegalArgumentException(
-          "Cannot use both --no-prompt and --prompt-inputs options together. "
-              + "Use --no-prompt to accept defaults, or --prompt-inputs to provide specific values.");
+          "Cannot use both --no-prompt and --script-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --script-inputs to provide specific values.");
     }
 
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
@@ -315,7 +528,7 @@ public class RunExampleTool extends ToolBase {
       runCloudExample(
           new CloudExampleParams(
               cli.hasOption(NO_PROMPT_OPTION),
-              cli.getOptionValue(PROMPT_INPUTS_OPTION),
+              cli.getOptionValue(SCRIPT_INPUTS_OPTION),
               zkHost,
               port,
               startParams));
@@ -608,7 +821,7 @@ public class RunExampleTool extends ToolBase {
 
   void runCloudExample(CloudExampleParams params) throws Exception {
 
-    usingPromptInputs = params.promptInputs() != null;
+    usingScriptInputs = params.scriptInputs() != null;
     boolean prompt = !params.noPrompt();
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
@@ -622,20 +835,20 @@ public class RunExampleTool extends ToolBase {
     echo("\nWelcome to the SolrCloud example!\n");
 
     Scanner readInput = null;
-    if (usingPromptInputs) {
-      // Create a scanner from the provided prompts
-      String promptsValue = params.promptInputs();
-      InputStream promptsStream =
-          new ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
-      readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
+    if (usingScriptInputs) {
+      // Create a scanner from the provided script inputs
+      String scriptInputsValue = params.scriptInputs();
+      InputStream scriptInputsStream =
+          new ByteArrayInputStream(scriptInputsValue.getBytes(StandardCharsets.UTF_8));
+      readInput = new Scanner(scriptInputsStream, StandardCharsets.UTF_8);
       readInput.useDelimiter(",");
-      prompt = true; // Enable prompting code path, but reading from prompts instead of user
+      prompt = true; // Enable prompting code path, but reading from script inputs instead of user
     } else if (prompt) {
       readInput = new Scanner(userInput, StandardCharsets.UTF_8);
     }
 
     if (prompt) {
-      if (!usingPromptInputs) {
+      if (!usingScriptInputs) {
         echo(
             "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
       }
@@ -1138,6 +1351,77 @@ public class RunExampleTool extends ToolBase {
       throw new IllegalStateException("Required file " + dest.toAbsolutePath() + " not found!");
   }
 
+  /** The unknown options that are not {@code -D} system properties; picocli would reject these. */
+  List<String> unknownOptions() {
+    return unmatchedOpts.stream().filter(opt -> !opt.startsWith("-D")).toList();
+  }
+
+  /**
+   * The positional arguments followed by the {@code -D} options, the order commons-cli gives them.
+   */
+  String[] picocliExtraArgs() {
+    List<String> extra = new ArrayList<>(Arrays.asList(extraArgsOpt));
+    unmatchedOpts.stream().filter(opt -> opt.startsWith("-D")).forEach(extra::add);
+    return extra.toArray(new String[0]);
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    List<String> unknown = unknownOptions();
+    if (!unknown.isEmpty()) {
+      // What picocli does for an unknown option it parses itself; thrown from here it would be a
+      // stack trace and exit code 1 instead.
+      java.io.PrintWriter err = spec.commandLine().getErr();
+      err.println("Unknown option: '" + unknown.getFirst() + "'");
+      spec.commandLine().usage(err);
+      err.flush();
+      return picocli.CommandLine.ExitCode.USAGE;
+    }
+    String[] extraArgs = picocliExtraArgs();
+    if (noPromptOpt && scriptInputsOpt != null) {
+      throw new IllegalArgumentException(
+          "Cannot use both --no-prompt and --script-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --script-inputs to provide specific values.");
+    }
+
+    this.urlScheme = urlSchemeOpt;
+    String exampleType = exampleOpt;
+
+    initDirs(serverDirOpt, scriptOpt, exampleDirOpt, solrHomeOpt, exampleType);
+
+    echoIfVerbose(
+        "Running with\nserverDir="
+            + serverDir.toAbsolutePath()
+            + ",\nexampleDir="
+            + exampleDir.toAbsolutePath()
+            + ",\nsolrHomeDir="
+            + solrHomeDir.toAbsolutePath()
+            + "\nscript="
+            + script);
+
+    if (!"cloud".equals(exampleType)
+        && !"techproducts".equals(exampleType)
+        && !"schemaless".equals(exampleType)
+        && !"films".equals(exampleType)) {
+      throw new IllegalArgumentException(
+          "Unsupported example "
+              + exampleType
+              + "! Please choose one of: cloud, schemaless, techproducts, or films");
+    }
+
+    StartSolrParams startParams =
+        new StartSolrParams(
+            exampleType, hostOpt, memoryOpt, jvmOptsOpt, forceOpt, null, readExtraArgs(extraArgs));
+
+    if ("cloud".equals(exampleType)) {
+      runCloudExample(
+          new CloudExampleParams(noPromptOpt, scriptInputsOpt, zkHost, port, startParams));
+    } else {
+      runExample(new RunExampleParams(!userManagedOpt, zkHost, port, startParams));
+    }
+    return 0;
+  }
+
   protected boolean isPortAvailable(int port) {
     try (Socket s = new Socket("localhost", port)) {
       assert s != null; // To allow compilation.
@@ -1225,10 +1509,10 @@ public class RunExampleTool extends ToolBase {
   protected String prompt(Scanner s, String prompt, String defaultValue) {
     echo(prompt);
     String nextInput;
-    if (usingPromptInputs) {
-      // Reading from prompts option - use next() instead of nextLine()
+    if (usingScriptInputs) {
+      // Reading from script-inputs option - use next() instead of nextLine()
       nextInput = s.hasNext() ? s.next() : null;
-      // Echo the value being used from prompts
+      // Echo the value being used from script inputs
       if (nextInput != null) {
         echo(nextInput);
       }

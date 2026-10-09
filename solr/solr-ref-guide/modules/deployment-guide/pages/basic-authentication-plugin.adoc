@@ -177,8 +177,26 @@ The API provides an endpoint with specific commands to set user details or delet
 
 === API Entry Point
 
-* v1: `\http://localhost:8983/solr/admin/authentication`
-* v2: `\http://localhost:8983/api/cluster/security/authentication`
+[tabs#authentication-entry-point]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/authentication
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/api/cluster/security/authentication
+----
+====
+======
 
 This endpoint is not collection-specific, so users are created for the entire Solr cluster.
 If users need to be restricted to a specific collection, that can be done with the authorization rules.

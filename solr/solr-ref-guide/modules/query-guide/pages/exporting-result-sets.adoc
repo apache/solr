@@ -58,10 +58,26 @@ The default output format is `json`.
 
 Here is an example of an export request of some indexed log data:
 
+[tabs#export-basic]
+======
+V1 API::
++
+====
 [source,text]
 ----
-http://localhost:8983/solr/core_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
 ----
+====
+
+V2 API::
++
+====
+[source,text]
+----
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+----
+====
+======
 
 === Specifying the Sort Criteria
 
@@ -100,20 +116,53 @@ Only stream xref:stream-decorator-reference.adoc[decorators] and xref:stream-eva
 Using stream expressions with the `/export` handler may result in dramatic performance improvements due to the local in-memory reduction of the number of documents to be returned.
 
 Here's an example of using `top` decorator for returning only top N results:
+
+[tabs#export-top]
+======
+V1 API::
++
+====
 [source,text]
 ----
-http://localhost:8983/solr/core_name/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
 ----
+====
+
+V2 API::
++
+====
+[source,text]
+----
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+----
+====
+======
 
 (Note that the sort spec in the `top` decorator must match the sort spec in the
 handler parameter).
 
 Here's an example of using `unique` decorator:
 
+[tabs#export-unique]
+======
+V1 API::
++
+====
 [source,text]
 ----
-http://localhost:8983/solr/core_name/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
 ----
+====
+
+V2 API::
++
+====
+[source,text]
+----
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+----
+====
+======
 
 (Note that the `over` parameter must use one of the fields requested in the `fl` parameter).
 
