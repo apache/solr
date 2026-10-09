@@ -77,7 +77,13 @@ configure(project(':solr:documentation')) {
   // references that only the javadoc tool sees, such as those in overview
   // files, and the missing-doclet checks. The gate covers this project's
   // check path only; a root check still builds the site through the ref
-  // guide's checkSiteLinks task.
+  // guide's checkSiteLinks task, when the ref guide is included
+  // (refguide.include, on by default when a .git directory exists).
+  //
+  // Overview references are checked when the render tasks run. overview.html
+  // is not a declared input of the render task, so in a reused workspace an
+  // overview-only change can leave the task up-to-date and unchecked. A
+  // fresh CI checkout runs it: the build cache is off on CI.
   if (isCIBuild) {
     check.dependsOn 'documentation'
   }
