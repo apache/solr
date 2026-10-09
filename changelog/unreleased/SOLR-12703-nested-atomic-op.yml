@@ -1,5 +1,5 @@
 title: >
-  An atomic update whose operation value is itself an atomic operation map (for example set inside set) is rejected with a clear 400 error instead of surfacing as a confusing RunUpdateProcessor failure.
+  An atomic update whose operation value is itself an atomic operation map (for example set inside set) is rejected with a clear 400 error instead of being stored as a field value.
 type: changed
 authors:
   - name: Nick Shanin
