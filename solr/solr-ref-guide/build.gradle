@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-
 import groovy.json.JsonOutput
 import javax.inject.Inject
+import org.gradle.process.ExecOperations
 import org.apache.tools.ant.util.TeeOutputStream
 
 apply plugin: 'java'
