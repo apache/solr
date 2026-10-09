@@ -608,10 +608,16 @@ def DO_NOT_EDIT_NOTICE = """\
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
 """
 
+// Convert a generated filename stem (e.g. "solr-zk-ls") to an Antora page title
+// A dash separated commands only when that prefix is itself a generated page,
+// so a hyphen inside the leaf name is kept
+// e.g. "solr-zk-ls" -> "bin/solr zk ls". "solr-package-add-key" -> "bin/solr package add-key"
 String cliFileNameToTitle(String baseName, Set stems) {
   return "bin/solr " + cliCommandPath(baseName, stems).join(' ')
 }
 
+// Tokens of the title after "solr". That last token is the nav label.
+// e.g. "solr-zk-ls" -> [zk, ls], "solr-package-add-key" -> [package, add-key]
 List<String> cliCommandPath(String baseName, Set stems) {
   def cuts = [baseName.indexOf('-')]
   for (def i = baseName.indexOf('-', cuts[0] + 1); i >= 0; i = baseName.indexOf('-', i + 1)) {
