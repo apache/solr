@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 
@@ -89,6 +90,52 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     // slightly more interesting
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
+  }
+
+  public void testTrimAllRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("child_s", " grandchild ");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("child_s", " child ");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("root_s", " root ");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("trim-all", root);
+
+    assertNotNull(d);
+    assertEquals("root", root.getFieldValue("root_s"));
+    assertEquals("child", child.getFieldValue("child_s"));
+    assertEquals("grandchild", grandChild.getFieldValue("child_s"));
+  }
+
+  public void testTrimFieldsRecurseIntoNestedDocumentsOnlyWhenParentSelected() throws Exception {
+    // The "trim-fields" chain selects only name and foo_t. A child document given
+    // as the value of the unselected child_doc field is left untouched, even for
+    // fields the selector names, while a child document under the selected foo_t
+    // field is mutated like any other selected field's value.
+    final SolrInputDocument childUnderUnselected = new SolrInputDocument();
+    childUnderUnselected.addField("name", " unselected child ");
+    childUnderUnselected.addField("foo_t", " unselected text ");
+
+    final SolrInputDocument childUnderSelected = new SolrInputDocument();
+    childUnderSelected.addField("name", " selected child ");
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("name", " root ");
+    root.addField("child_doc", childUnderUnselected);
+    root.addField("foo_t", childUnderSelected);
+
+    final SolrInputDocument d = processAdd("trim-fields", root);
+
+    assertNotNull(d);
+    assertEquals("root", root.getFieldValue("name"));
+    assertEquals(" unselected child ", childUnderUnselected.getFieldValue("name"));
+    assertEquals(" unselected text ", childUnderUnselected.getFieldValue("foo_t"));
+    assertEquals("selected child", childUnderSelected.getFieldValue("name"));
   }
 
   public void testUniqValues() throws Exception {
@@ -317,6 +364,33 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
   }
 
+  public void testRemoveBlanksRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grandchild");
+    grandChild.addField("yak_t", "");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("foo_s", "");
+    child.addField("yak_t", "child");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "1111");
+    root.addField("foo_s", "root");
+    root.addField("yak_t", "");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("remove-all-blanks", root);
+
+    assertNotNull(d);
+    assertEquals(List.of("root"), List.copyOf(root.getFieldValues("foo_s")));
+    assertFalse(root.containsKey("yak_t"));
+    assertFalse(child.containsKey("foo_s"));
+    assertEquals(List.of("child"), List.copyOf(child.getFieldValues("yak_t")));
+    assertEquals(List.of("grandchild"), List.copyOf(grandChild.getFieldValues("foo_s")));
+    assertFalse(grandChild.containsKey("yak_t"));
+  }
+
   public void testStrLength() throws Exception {
     SolrInputDocument d = null;
     d =
@@ -424,6 +498,39 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertEquals("Let's <try> this one", d.getFieldValue("content"));
     assertEquals("Let's <try> <try> this one", d.getFieldValue("title"));
+  }
+
+  public void testRegexReplaceRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("content", "grand child text");
+    grandChild.addField("title", "grand child title");
+    grandChild.addField("other_s", "grand child other");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("content", "child text");
+    child.addField("title", "child title");
+    child.addField("other_s", "child other");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "regex-root");
+    root.addField("content", "root text");
+    root.addField("title", "root title");
+    root.addField("other_s", "root other");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("regex-replace", root);
+
+    assertNotNull(d);
+    assertEquals("rootXtext", root.getFieldValue("content"));
+    assertEquals("rootXtitle", root.getFieldValue("title"));
+    assertEquals("root other", root.getFieldValue("other_s"));
+    assertEquals("childXtext", child.getFieldValue("content"));
+    assertEquals("childXtitle", child.getFieldValue("title"));
+    assertEquals("child other", child.getFieldValue("other_s"));
+    assertEquals("grandXchildXtext", grandChild.getFieldValue("content"));
+    assertEquals("grandXchildXtitle", grandChild.getFieldValue("title"));
+    assertEquals("grand child other", grandChild.getFieldValue("other_s"));
   }
 
   public void testFirstValue() throws Exception {
@@ -584,6 +691,191 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));
   }
 
+  public void testSubsetValueProcessorsRecurseIntoNestedDocuments() throws Exception {
+    SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grand first");
+    grandChild.addField("foo_s", "grand second");
+    grandChild.addField("foo_i", 9);
+    grandChild.addField("foo_i", 3);
+    grandChild.addField("foo_i", 7);
+    grandChild.addField("bar_s", "grand bar first");
+    grandChild.addField("bar_s", "grand bar second");
+    grandChild.addField("other_s", "grand untouched");
+
+    SolrInputDocument child = new SolrInputDocument();
+    child.addField("foo_s", "child first");
+    child.addField("foo_s", "child second");
+    child.addField("foo_i", 6);
+    child.addField("foo_i", 2);
+    child.addField("foo_i", 8);
+    child.addField("bar_s", "child bar first");
+    child.addField("bar_s", "child bar second");
+    child.addField("other_s", "child untouched");
+    child.addChildDocument(grandChild);
+
+    SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "subset-root");
+    root.addField("foo_s", "root first");
+    root.addField("foo_s", "root second");
+    root.addField("foo_i", 4);
+    root.addField("foo_i", 1);
+    root.addField("foo_i", 5);
+    root.addField("bar_s", "root bar first");
+    root.addField("bar_s", "root bar second");
+    root.addField("other_s", "root untouched");
+    root.addChildDocument(child);
+
+    SolrInputDocument d = processAdd("first-value", root);
+    assertNotNull(d);
+    assertEquals(List.of("root first"), List.copyOf(root.getFieldValues("foo_s")));
+    assertEquals(List.of("child first"), List.copyOf(child.getFieldValues("foo_s")));
+    assertEquals(List.of("grand first"), List.copyOf(grandChild.getFieldValues("foo_s")));
+    assertEquals(List.of("root bar first"), List.copyOf(root.getFieldValues("bar_s")));
+    assertEquals(List.of("child bar first"), List.copyOf(child.getFieldValues("bar_s")));
+    assertEquals(List.of("grand bar first"), List.copyOf(grandChild.getFieldValues("bar_s")));
+    assertEquals(List.of("root untouched"), List.copyOf(root.getFieldValues("other_s")));
+    assertEquals(List.of("child untouched"), List.copyOf(child.getFieldValues("other_s")));
+    assertEquals(List.of("grand untouched"), List.copyOf(grandChild.getFieldValues("other_s")));
+
+    grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grand first");
+    grandChild.addField("foo_s", "grand second");
+    grandChild.addField("foo_i", 9);
+    grandChild.addField("foo_i", 3);
+    grandChild.addField("foo_i", 7);
+    grandChild.addField("bar_s", "grand bar first");
+    grandChild.addField("bar_s", "grand bar second");
+    grandChild.addField("other_s", "grand untouched");
+
+    child = new SolrInputDocument();
+    child.addField("foo_s", "child first");
+    child.addField("foo_s", "child second");
+    child.addField("foo_i", 6);
+    child.addField("foo_i", 2);
+    child.addField("foo_i", 8);
+    child.addField("bar_s", "child bar first");
+    child.addField("bar_s", "child bar second");
+    child.addField("other_s", "child untouched");
+    child.addChildDocument(grandChild);
+
+    root = new SolrInputDocument();
+    root.addField("id", "subset-root");
+    root.addField("foo_s", "root first");
+    root.addField("foo_s", "root second");
+    root.addField("foo_i", 4);
+    root.addField("foo_i", 1);
+    root.addField("foo_i", 5);
+    root.addField("bar_s", "root bar first");
+    root.addField("bar_s", "root bar second");
+    root.addField("other_s", "root untouched");
+    root.addChildDocument(child);
+
+    d = processAdd("last-value", root);
+    assertNotNull(d);
+    assertEquals(List.of("root second"), List.copyOf(root.getFieldValues("foo_s")));
+    assertEquals(List.of("child second"), List.copyOf(child.getFieldValues("foo_s")));
+    assertEquals(List.of("grand second"), List.copyOf(grandChild.getFieldValues("foo_s")));
+    assertEquals(List.of("root bar second"), List.copyOf(root.getFieldValues("bar_s")));
+    assertEquals(List.of("child bar second"), List.copyOf(child.getFieldValues("bar_s")));
+    assertEquals(List.of("grand bar second"), List.copyOf(grandChild.getFieldValues("bar_s")));
+
+    grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grand zzz");
+    grandChild.addField("foo_s", "grand aaa");
+    grandChild.addField("foo_s", "grand mmm");
+    grandChild.addField("foo_i", 9);
+    grandChild.addField("foo_i", 3);
+    grandChild.addField("foo_i", 7);
+    grandChild.addField("bar_s", "grand zzz");
+    grandChild.addField("bar_s", "grand aaa");
+    grandChild.addField("bar_s", "grand mmm");
+
+    child = new SolrInputDocument();
+    child.addField("foo_s", "child zzz");
+    child.addField("foo_s", "child aaa");
+    child.addField("foo_s", "child mmm");
+    child.addField("foo_i", 6);
+    child.addField("foo_i", 2);
+    child.addField("foo_i", 8);
+    child.addField("bar_s", "child zzz");
+    child.addField("bar_s", "child aaa");
+    child.addField("bar_s", "child mmm");
+    child.addChildDocument(grandChild);
+
+    root = new SolrInputDocument();
+    root.addField("id", "subset-root");
+    root.addField("foo_s", "root zzz");
+    root.addField("foo_s", "root aaa");
+    root.addField("foo_s", "root mmm");
+    root.addField("foo_i", 4);
+    root.addField("foo_i", 1);
+    root.addField("foo_i", 5);
+    root.addField("bar_s", "root zzz");
+    root.addField("bar_s", "root aaa");
+    root.addField("bar_s", "root mmm");
+    root.addChildDocument(child);
+
+    d = processAdd("min-value", root);
+    assertNotNull(d);
+    assertEquals(List.of("root aaa"), List.copyOf(root.getFieldValues("foo_s")));
+    assertEquals(List.of("child aaa"), List.copyOf(child.getFieldValues("foo_s")));
+    assertEquals(List.of("grand aaa"), List.copyOf(grandChild.getFieldValues("foo_s")));
+    assertEquals(List.of(1), List.copyOf(root.getFieldValues("foo_i")));
+    assertEquals(List.of(2), List.copyOf(child.getFieldValues("foo_i")));
+    assertEquals(List.of(3), List.copyOf(grandChild.getFieldValues("foo_i")));
+    assertEquals(List.of("root aaa"), List.copyOf(root.getFieldValues("bar_s")));
+    assertEquals(List.of("child aaa"), List.copyOf(child.getFieldValues("bar_s")));
+    assertEquals(List.of("grand aaa"), List.copyOf(grandChild.getFieldValues("bar_s")));
+
+    grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grand zzz");
+    grandChild.addField("foo_s", "grand aaa");
+    grandChild.addField("foo_s", "grand mmm");
+    grandChild.addField("foo_i", 9);
+    grandChild.addField("foo_i", 3);
+    grandChild.addField("foo_i", 7);
+    grandChild.addField("bar_s", "grand zzz");
+    grandChild.addField("bar_s", "grand aaa");
+    grandChild.addField("bar_s", "grand mmm");
+
+    child = new SolrInputDocument();
+    child.addField("foo_s", "child zzz");
+    child.addField("foo_s", "child aaa");
+    child.addField("foo_s", "child mmm");
+    child.addField("foo_i", 6);
+    child.addField("foo_i", 2);
+    child.addField("foo_i", 8);
+    child.addField("bar_s", "child zzz");
+    child.addField("bar_s", "child aaa");
+    child.addField("bar_s", "child mmm");
+    child.addChildDocument(grandChild);
+
+    root = new SolrInputDocument();
+    root.addField("id", "subset-root");
+    root.addField("foo_s", "root zzz");
+    root.addField("foo_s", "root aaa");
+    root.addField("foo_s", "root mmm");
+    root.addField("foo_i", 4);
+    root.addField("foo_i", 1);
+    root.addField("foo_i", 5);
+    root.addField("bar_s", "root zzz");
+    root.addField("bar_s", "root aaa");
+    root.addField("bar_s", "root mmm");
+    root.addChildDocument(child);
+
+    d = processAdd("max-value", root);
+    assertNotNull(d);
+    assertEquals(List.of("root zzz"), List.copyOf(root.getFieldValues("foo_s")));
+    assertEquals(List.of("child zzz"), List.copyOf(child.getFieldValues("foo_s")));
+    assertEquals(List.of("grand zzz"), List.copyOf(grandChild.getFieldValues("foo_s")));
+    assertEquals(List.of(5), List.copyOf(root.getFieldValues("foo_i")));
+    assertEquals(List.of(8), List.copyOf(child.getFieldValues("foo_i")));
+    assertEquals(List.of(9), List.copyOf(grandChild.getFieldValues("foo_i")));
+    assertEquals(List.of("root zzz"), List.copyOf(root.getFieldValues("bar_s")));
+    assertEquals(List.of("child zzz"), List.copyOf(child.getFieldValues("bar_s")));
+    assertEquals(List.of("grand zzz"), List.copyOf(grandChild.getFieldValues("bar_s")));
+  }
+
   public void testHtmlStrip() throws Exception {
     SolrInputDocument d = null;
 
@@ -601,6 +893,33 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("<body>hi &amp; bye", d.getFieldValue("bar_s"));
   }
 
+  public void testHtmlStripRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("html_s", "<i>grand</i> child");
+    grandChild.addField("bar_s", "<i>grand</i> untouched");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("html_s", "<p>child</p>");
+    child.addField("bar_s", "<p>child untouched</p>");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "html-root");
+    root.addField("html_s", "<b>root</b>");
+    root.addField("bar_s", "<b>root untouched</b>");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("html-strip", root);
+
+    assertNotNull(d);
+    assertEquals("root", root.getFieldValue("html_s"));
+    assertEquals("<b>root untouched</b>", root.getFieldValue("bar_s"));
+    assertEquals("child", child.getFieldValue("html_s"));
+    assertEquals("<p>child untouched</p>", child.getFieldValue("bar_s"));
+    assertEquals("grand child", grandChild.getFieldValue("html_s"));
+    assertEquals("<i>grand</i> untouched", grandChild.getFieldValue("bar_s"));
+  }
+
   public void testTruncate() throws Exception {
     SolrInputDocument d = null;
 
@@ -609,6 +928,64 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull(d);
 
     assertEquals(List.of("12345", "", 42, "abcd"), List.copyOf(d.getFieldValues("trunc")));
+  }
+
+  public void testTruncateRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("trunc", "grandchild");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("trunc", "child");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "trunc-root");
+    root.addField("trunc", "root-value");
+    root.addField("other_s", "root-value");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("truncate", root);
+
+    assertNotNull(d);
+    assertEquals("root-", root.getFieldValue("trunc"));
+    assertEquals("root-value", root.getFieldValue("other_s"));
+    assertEquals("child", child.getFieldValue("trunc"));
+    assertEquals("grand", grandChild.getFieldValue("trunc"));
+  }
+
+  public void testStrLengthRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grandchild");
+    grandChild.addField("yak_t", "grand yak");
+    grandChild.addField("bar_dt", "grand bar");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("foo_s", "child");
+    child.addField("yak_t", "");
+    child.addField("bar_dt", "child bar");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "length-root");
+    root.addField("foo_s", "root");
+    root.addField("yak_t", "yak");
+    root.addField("bar_dt", "root bar");
+    root.addField("foo_d", 42);
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("length-some", root);
+
+    assertNotNull(d);
+    assertEquals(List.of(4), List.copyOf(root.getFieldValues("foo_s")));
+    assertEquals(List.of(3), List.copyOf(root.getFieldValues("yak_t")));
+    assertEquals("root bar", root.getFieldValue("bar_dt"));
+    assertEquals(42, root.getFieldValue("foo_d"));
+    assertEquals(List.of(5), List.copyOf(child.getFieldValues("foo_s")));
+    assertEquals(List.of(0), List.copyOf(child.getFieldValues("yak_t")));
+    assertEquals("child bar", child.getFieldValue("bar_dt"));
+    assertEquals(List.of(10), List.copyOf(grandChild.getFieldValues("foo_s")));
+    assertEquals(List.of(9), List.copyOf(grandChild.getFieldValues("yak_t")));
+    assertEquals("grand bar", grandChild.getFieldValue("bar_dt"));
   }
 
   public void testIgnore() throws Exception {
@@ -759,6 +1136,31 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertFalse(d.containsKey("foo_s"));
   }
 
+  public void testIgnoreRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("grand_giberish", "ignore me");
+    grandChild.addField("foo_s", "grandchild");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("child_giberish", "ignore me too");
+    child.addField("foo_s", "child");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "1111");
+    root.addField("foo_s", "root");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("ignore-not-in-schema", root);
+
+    assertNotNull(d);
+    assertEquals("root", root.getFieldValue("foo_s"));
+    assertEquals("child", child.getFieldValue("foo_s"));
+    assertEquals("grandchild", grandChild.getFieldValue("foo_s"));
+    assertFalse(child.containsKey("child_giberish"));
+    assertFalse(grandChild.containsKey("grand_giberish"));
+  }
+
   public void testCountValues() throws Exception {
 
     SolrInputDocument d = null;
@@ -831,6 +1233,91 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
   public void testConcatExplicitWithDelim() throws Exception {
     doSimpleDelimTest("concat-type-delim", "; ");
+  }
+
+  public void testConcatFieldRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("foo_s", "grandchild-a");
+    grandChild.addField("foo_s", "grandchild-b");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("foo_s", "child-a");
+    child.addField("foo_s", "child-b");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("foo_s", "root-a");
+    root.addField("foo_s", "root-b");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("concat-field", root);
+
+    assertNotNull(d);
+    assertEquals("root-a, root-b", root.getFieldValue("foo_s"));
+    assertEquals("child-a, child-b", child.getFieldValue("foo_s"));
+    assertEquals("grandchild-a, grandchild-b", grandChild.getFieldValue("foo_s"));
+  }
+
+  public void testCountRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("count_field", "grandchild-a");
+    grandChild.addField("count_field", "grandchild-b");
+    grandChild.addField("count_field", "grandchild-c");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("count_field", "child-a");
+    child.addField("count_field", "child-b");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("id", "1111");
+    root.addField("count_field", "root-a");
+    root.addField("count_field", "root-b");
+    root.addField("count_field", "root-c");
+    root.addField("count_field", "root-d");
+    root.addChildDocument(child);
+
+    final SolrInputDocument d = processAdd("count", root);
+
+    assertNotNull(d);
+    assertEquals(4, root.getFieldValue("count_field"));
+    assertEquals(2, child.getFieldValue("count_field"));
+    assertEquals(3, grandChild.getFieldValue("count_field"));
+  }
+
+  public void testMutatingProcessorsRecurseIntoNestedDocuments() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("child_s", "grandchild");
+
+    final SolrInputDocument child = new SolrInputDocument();
+    child.addField("child_s", "child");
+    child.addChildDocument(grandChild);
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("root_s", "root");
+    root.addChildDocument(child);
+
+    final UpdateRequestProcessor noOpNext = new UpdateRequestProcessor(null) {};
+    final FieldMutatingUpdateProcessor processor =
+        new FieldMutatingUpdateProcessor(fname -> fname.endsWith("_s"), noOpNext) {
+          @Override
+          protected SolrInputField mutate(SolrInputField src) {
+            final SolrInputField dest = new SolrInputField(src.getName());
+            for (Object value : src.getValues()) {
+              dest.addValue("mutated-" + value);
+            }
+            return dest;
+          }
+        };
+
+    final AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = root;
+
+    processor.processAdd(cmd);
+
+    assertEquals("mutated-root", root.getFieldValue("root_s"));
+    assertEquals("mutated-child", child.getFieldValue("child_s"));
+    assertEquals("mutated-grandchild", grandChild.getFieldValue("child_s"));
   }
 
   private void doSimpleDelimTest(final String chain, final String delim) throws Exception {
