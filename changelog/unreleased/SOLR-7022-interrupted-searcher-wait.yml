@@ -1,5 +1,5 @@
 title: >
-  An interrupt while a commit waits for the new searcher (for example an autocommit during core reload) is logged at INFO and the interrupt status is restored, instead of an ERROR with a stack trace.
+  An interrupt while a commit waits for the new searcher is logged at INFO and the interrupt status is restored, instead of an ERROR with a stack trace.
 type: fixed
 authors:
   - name: Nick Shanin
