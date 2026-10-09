@@ -246,6 +246,9 @@ public class SolrCmdDistributor implements Closeable {
       RollupRequestReplicationTracker rollupTracker,
       LeaderRequestReplicationTracker leaderTracker)
       throws IOException {
+    // callers (e.g. the javabin loader) reuse and clear one command for every document of a
+    // request, while the requests created here outlive that and report the command on failure
+    final UpdateCommand reqCmd = cmd.clone();
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       if (cmd.isLastDocInBatch) uReq.lastDocInBatch();
@@ -256,7 +259,7 @@ public class SolrCmdDistributor implements Closeable {
             DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION,
             String.valueOf(cmd.prevVersion));
       }
-      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker), false);
+      submit(new Req(reqCmd, node, uReq, synchronous, rollupTracker, leaderTracker), false);
     }
   }
 
