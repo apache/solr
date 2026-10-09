@@ -58,6 +58,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
+import org.junit.After;
 import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,18 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String intField = "integer_i";
+
+  /**
+   * The subclasses create a fresh cluster in every test method (their {@code @Before} calls {@code
+   * configureCluster}), because each class routes to a fixed alias name whose collections cannot be
+   * shared between methods. The framework only shuts down the cluster still referenced when the
+   * class ends, so each method's cluster is shut down here; otherwise the earlier clusters stay
+   * open and their cores, clients and directories fail the suite's resource tracking checks.
+   */
+  @After
+  public void shutdownMethodCluster() throws Exception {
+    shutdownCluster();
+  }
 
   void waitColAndAlias(String alias, String separator, final String suffix, int slices)
       throws InterruptedException {
