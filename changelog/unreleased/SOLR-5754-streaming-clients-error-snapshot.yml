@@ -1,5 +1,5 @@
-title: "StreamingSolrClients.getErrors() returns a snapshot instead of the live synchronized list, and the retry pass drains errors atomically so an error reported meanwhile is not cleared unseen"
-type: fixed
+title: "Hardening: StreamingSolrClients.getErrors() returns a snapshot copy instead of the live list, and the retry pass takes and clears the errors in one atomic drain under the list's lock"
+type: changed
 authors:
   - name: Nick Shanin
     nick: nick-boss-tech
