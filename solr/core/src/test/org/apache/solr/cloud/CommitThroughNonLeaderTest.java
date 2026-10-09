@@ -97,8 +97,7 @@ public class CommitThroughNonLeaderTest extends SolrCloudTestCase {
           "doc visible on " + replica.getName() + " before any commit", 0, queryCore(replica));
     }
 
-    try (HttpSolrClient nonLeaderClient =
-        new HttpSolrClient.Builder(notLeader.getCoreUrl()).build()) {
+    try (HttpSolrClient nonLeaderClient = HttpSolrClient.builder(notLeader.getCoreUrl()).build()) {
       nonLeaderClient.commit();
     }
 
@@ -111,7 +110,7 @@ public class CommitThroughNonLeaderTest extends SolrCloudTestCase {
   }
 
   private static long queryCore(Replica replica) throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (HttpSolrClient client = HttpSolrClient.builder(replica.getCoreUrl()).build()) {
       return client.query(new SolrQuery("*:*")).getResults().getNumFound();
     }
   }
