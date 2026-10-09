@@ -94,6 +94,19 @@ public class ConnectionOptions {
     return names;
   }
 
+  /**
+   * Fails with a usage error unless one of the three options was passed on the command line, for
+   * tools that have no meaningful default target.
+   */
+  public void requireExplicitConnection() {
+    if (!hasExplicitConnection()) {
+      throw new CommandLine.ParameterException(
+          mixee.commandLine(),
+          "Missing required connection target: specify one of "
+              + String.join(", ", SOLR_CONNECTION, ZK_HOST, SOLR_URL));
+    }
+  }
+
   /** The usage error for {@code given} options that may not be combined, e.g. "-s, -z or -p". */
   static String mutuallyExclusiveMessage(List<String> given, String allowed) {
     return "Options "

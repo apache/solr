@@ -39,6 +39,18 @@ public class ConnectionOptionsTest extends SolrTestCase {
     }
   }
 
+  /** Mirrors the tools that have no meaningful default target, e.g. {@code export}. */
+  @CommandLine.Command(name = "requiring-probe")
+  static class RequiringProbe implements Callable<Integer> {
+    @CommandLine.Mixin ConnectionOptions connection;
+
+    @Override
+    public Integer call() {
+      connection.requireExplicitConnection();
+      return 0;
+    }
+  }
+
   private static Probe parse(String... args) {
     Probe probe = new Probe();
     new CommandLine(probe).setDefaultValueProvider(new CliDefaultValueProvider()).parseArgs(args);
@@ -111,6 +123,25 @@ public class ConnectionOptionsTest extends SolrTestCase {
             .execute("--zk-host", "zk1:2181", "--solr-url", "http://host:8983");
     assertEquals(CommandLine.ExitCode.USAGE, exitCode);
     assertTrue(err.toString(), err.toString().contains("mutually exclusive"));
+  }
+
+  @Test
+  public void testMissingConnectionIsAUsageError() {
+    System.clearProperty("solr.connection");
+    System.clearProperty("zkHost");
+    System.clearProperty("solr.url");
+    StringWriter err = new StringWriter();
+    int exitCode =
+        new CommandLine(new RequiringProbe())
+            .setErr(new PrintWriter(err))
+            .execute("--solr-url", "http://host:8983");
+    assertEquals(CommandLine.ExitCode.OK, exitCode);
+
+    err = new StringWriter();
+    exitCode = new CommandLine(new RequiringProbe()).setErr(new PrintWriter(err)).execute();
+    assertEquals(CommandLine.ExitCode.USAGE, exitCode);
+    assertTrue(err.toString(), err.toString().contains("Missing required connection target"));
+    assertTrue(err.toString(), err.toString().contains("Usage:"));
   }
 
   @Test
