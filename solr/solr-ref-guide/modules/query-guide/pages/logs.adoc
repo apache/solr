@@ -46,7 +46,7 @@ The `postlogs` command reads in Solr's log format and indexes it in a Solr colle
 Address of the collection, example http://localhost:8983/solr/\{collectionName}/.
 +
 
-`-rootdir <directory>`::
+`--rootdir <directory>`::
 +
 [%autowidth,frame=none]
 |===

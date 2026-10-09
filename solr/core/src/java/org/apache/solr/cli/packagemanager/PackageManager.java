@@ -45,6 +45,7 @@ import org.apache.solr.cli.packagemanager.SolrPackage.Command;
 import org.apache.solr.cli.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.cli.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -154,7 +155,7 @@ public class PackageManager implements Closeable {
     del.pkg = packageName;
 
     V2Request req =
-        new V2Request.Builder(PackageUtils.PACKAGE_PATH)
+        new V2Request.Builder("/cluster/package")
             .forceV2(true)
             .withMethod(SolrRequest.METHOD.POST)
             .withPayload(Map.of("delete", del))
@@ -278,18 +279,18 @@ public class PackageManager implements Closeable {
     Map<String, String> packageVersions = new HashMap<>();
     // map of package name to multiple values of pluginMeta(Map<String, String>)
     Map<String, Set<PluginMeta>> packagePlugins = new HashMap<>();
-    Object pluginsValue;
+    Object pluginsValue = null;
     try {
       NamedList<Object> response =
           solrClient.request(
               new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
       Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
-      if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
-        // Cluster props doesn't exist, that means there are no cluster level plugins installed.
-        pluginsValue = null;
-      } else {
+      if (statusCode != null && statusCode != ErrorCode.NOT_FOUND.code) {
+        // Cluster props exists, that means there are cluster level plugins installed.
         pluginsValue = response.get(ContainerPluginsApi.PLUGIN);
       }
+    } catch (RemoteSolrException ex) {
+      log.debug("Unable to fetch clusterprops for package plugins", ex);
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }

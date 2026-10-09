@@ -1,0 +1,10 @@
+title: >
+  Fixed a race in the Tika Server extraction backend where closing or reloading one core could leave
+  another core using a stopped HTTP client.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18472
+    url: https://issues.apache.org/jira/browse/SOLR-18472
