@@ -1,4 +1,4 @@
-title: "Javadoc link validation now happens at compile time via DocLint; the checkJavadocLinks documentation crawl is removed"
+title: "Remove the checkJavadocLinks crawl from the documentation build"
 type: other
 authors:
   - name: Nick Shanin
