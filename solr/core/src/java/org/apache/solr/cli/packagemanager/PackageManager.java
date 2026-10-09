@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
-import static org.apache.solr.packagemanager.PackageUtils.getMapper;
+import static org.apache.solr.cli.packagemanager.PackageUtils.getMapper;
 
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
@@ -41,6 +41,9 @@ import java.util.stream.Collectors;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.cli.packagemanager.SolrPackage.Command;
+import org.apache.solr.cli.packagemanager.SolrPackage.Manifest;
+import org.apache.solr.cli.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -64,9 +67,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
-import org.apache.solr.packagemanager.SolrPackage.Command;
-import org.apache.solr.packagemanager.SolrPackage.Manifest;
-import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;

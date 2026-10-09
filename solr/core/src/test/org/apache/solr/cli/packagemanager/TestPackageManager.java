@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
 import com.jayway.jsonpath.InvalidPathException;
 import java.io.IOException;

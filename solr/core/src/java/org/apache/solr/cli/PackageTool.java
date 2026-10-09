@@ -18,8 +18,8 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.cli.SolrCLI.printGreen;
 import static org.apache.solr.cli.SolrCLI.printRed;
-import static org.apache.solr.packagemanager.PackageUtils.format;
-import static org.apache.solr.packagemanager.PackageUtils.formatGreen;
+import static org.apache.solr.cli.packagemanager.PackageUtils.format;
+import static org.apache.solr.cli.packagemanager.PackageUtils.formatGreen;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -33,16 +33,16 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.cli.packagemanager.PackageManager;
+import org.apache.solr.cli.packagemanager.PackageUtils;
+import org.apache.solr.cli.packagemanager.RepositoryManager;
+import org.apache.solr.cli.packagemanager.SolrPackage;
+import org.apache.solr.cli.packagemanager.SolrPackage.SolrPackageRelease;
+import org.apache.solr.cli.packagemanager.SolrPackageInstance;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.packagemanager.PackageManager;
-import org.apache.solr.packagemanager.PackageUtils;
-import org.apache.solr.packagemanager.RepositoryManager;
-import org.apache.solr.packagemanager.SolrPackage;
-import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
-import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

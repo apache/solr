@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
 import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validateCollectionName;
 
@@ -35,6 +35,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cli.CLIUtils;
+import org.apache.solr.cli.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -50,7 +51,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
-import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
