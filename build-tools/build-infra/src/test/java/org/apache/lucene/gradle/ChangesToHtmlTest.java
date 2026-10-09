@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-/** Checks rendered Changes.html output against what changes2html.py produces for the same input. */
+/** Checks that ChangesToHtml renders changelog markdown to the expected Changes.html output. */
 public class ChangesToHtmlTest {
 
   @Test
