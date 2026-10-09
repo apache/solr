@@ -678,10 +678,7 @@ public class PostLogsTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    if (!connectionOptions.hasExplicitConnection()) {
-      throw new IllegalArgumentException(
-          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
-    }
+    connectionOptions.requireExplicitConnection();
     String url =
         connectionOptions.resolveSolrUrl(credentialsOptions.credentials)
             + "/solr/"

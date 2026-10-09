@@ -185,7 +185,6 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
             });
   }
 
-  /** Propagates common settings to all subcommands. */
   /**
    * The fully configured root command, as {@code bin/solr} runs it; tests that drive a tool through
    * the real root should use this too. A null factory means picocli's default factory.
@@ -199,6 +198,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
     return commandLine;
   }
 
+  /** Propagates common settings to all subcommands. */
   private static void propagateCommandSettings(picocli.CommandLine cmd) {
     installFirstLineOnlyHelpFactory(cmd);
     for (picocli.CommandLine subcommand : cmd.getSubcommands().values()) {
