@@ -57,6 +57,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -231,6 +232,73 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testHiddenFileInBackupDir() throws Exception {
+    setTestSuffix("testHiddenFileInBackupDir");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      RequestStatusState state =
+          CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+              .setLocation(backupLocation)
+              .setRepositoryName(BACKUP_REPO_NAME)
+              .processAndWait(solrClient, 100);
+      assertEquals(RequestStatusState.COMPLETED, state);
+
+      URI backupNameUri =
+          repository.resolveDirectory(repository.createDirectoryURI(backupLocation), backupName);
+      try (OutputStream out =
+          repository.createOutput(repository.resolve(backupNameUri, ".DS_Store"))) {
+        out.write(1);
+      }
+
+      state =
+          CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+              .setLocation(backupLocation)
+              .setRepositoryName(BACKUP_REPO_NAME)
+              .processAndWait(solrClient, 500);
+      assertEquals(RequestStatusState.COMPLETED, state);
+
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+          restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
+      assertEquals(
+          numDocs,
+          solrClient.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound());
+
+      CollectionAdminResponse response =
+          CollectionAdminRequest.listBackup(backupName)
+              .setBackupLocation(backupLocation)
+              .setBackupRepository(BACKUP_REPO_NAME)
+              .process(solrClient);
+      assertEquals(1, ((List<Map<String, Object>>) response.getResponse().get("backups")).size());
+
+      expectThrows(
+          SolrException.class,
+          () ->
+              CollectionAdminRequest.backupCollection(restoreCollectionName, backupName)
+                  .setLocation(backupLocation)
+                  .setRepositoryName(BACKUP_REPO_NAME)
+                  .process(solrClient));
+
+      response =
+          CollectionAdminRequest.deleteBackupById(backupName, 0)
+              .setRepositoryName(BACKUP_REPO_NAME)
+              .setLocation(backupLocation)
+              .process(solrClient);
+      assertEquals(0, response.getResponse()._get("deleted[0]/backupId"));
+    }
   }
 
   @SuppressWarnings("unchecked")

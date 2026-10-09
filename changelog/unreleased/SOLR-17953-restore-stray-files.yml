@@ -1,0 +1,7 @@
+title: RESTORE, LISTBACKUP and DELETEBACKUP no longer fail when an incremental backup directory contains hidden files such as .DS_Store.
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-17953
+    url: https://issues.apache.org/jira/browse/SOLR-17953
