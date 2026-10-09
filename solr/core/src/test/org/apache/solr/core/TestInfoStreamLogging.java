@@ -16,9 +16,12 @@
  */
 package org.apache.solr.core;
 
+import static org.hamcrest.Matchers.containsString;
+
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.LoggingInfoStream;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 
 public class TestInfoStreamLogging extends SolrTestCaseJ4 {
@@ -32,5 +35,14 @@ public class TestInfoStreamLogging extends SolrTestCaseJ4 {
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
 
     assertTrue(iwc.getInfoStream() instanceof LoggingInfoStream);
+  }
+
+  public void testMessagesNameTheCore() throws Exception {
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
+
+    try (LogListener listener = LogListener.info(LoggingInfoStream.class)) {
+      iwc.getInfoStream().message("IW", "hello from the stream");
+      assertThat(listener.pollMessage(), containsString("[" + h.getCore().getName() + "][IW]"));
+    }
   }
 }
