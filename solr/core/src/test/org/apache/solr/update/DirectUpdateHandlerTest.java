@@ -20,7 +20,9 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,8 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -81,6 +85,57 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     // No id should fail
     try (ErrorLogMuter ignored = ErrorLogMuter.regex("id")) {
       assertFailedU(adoc("text", "foo"));
+    }
+  }
+
+  /**
+   * Sets Lucene's per-index document limit for the duration of a test. {@code
+   * IndexWriter.setMaxDocs} is a test-only setter that Lucene keeps package-private, so it is
+   * reached through a method handle.
+   */
+  private static void setMaxDocs(int maxDocs) throws Exception {
+    MethodHandle setter =
+        MethodHandles.privateLookupIn(IndexWriter.class, MethodHandles.lookup())
+            .findStatic(
+                IndexWriter.class, "setMaxDocs", MethodType.methodType(void.class, int.class));
+    try {
+      setter.invoke(maxDocs);
+    } catch (Throwable t) {
+      throw new Exception("could not set the Lucene max-docs limit for this test", t);
+    }
+  }
+
+  @Test
+  @SuppressWarnings("try")
+  public void testMaxDocsExceededGivesClearError() throws Exception {
+    setMaxDocs(3);
+    try {
+      deleteCore();
+      initCore("solrconfig.xml", "schema12.xml");
+      assertU(adoc("id", "1"));
+      assertU(adoc("id", "2"));
+      assertU(adoc("id", "3"));
+      assertU(commit());
+
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                try (ErrorLogMuter ignored = ErrorLogMuter.regex("maximum number of documents")) {
+                  h.update(adoc("id", "4"));
+                }
+              });
+      // a full index is a server-side capacity limit, not a malformed request
+      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
+      assertTrue(e.getMessage(), e.getMessage().contains("maximum number of documents"));
+      assertFalse(e.getMessage(), e.getMessage().contains("analysis error"));
+
+      // the index must stay usable
+      assertQ(req("q", "*:*"), "//*[@numFound='3']");
+    } finally {
+      setMaxDocs(IndexWriter.MAX_DOCS);
+      deleteCore();
+      initCore("solrconfig.xml", "schema12.xml");
     }
   }
 
