@@ -1248,7 +1248,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
       SolrCmdDistributor.Node node = error.req.node;
       StringBuilder sb = new StringBuilder(String.valueOf(msg));
-      sb.append(" (while sending to ").append(node.getUrl());
+      sb.append(" (while sending to ");
+      // A remote error already names the server ("Error from server at <baseUrl>"), so
+      // there the core name is enough; the full URL would name the host a second time.
+      if (msg != null
+          && node.getBaseUrl() != null
+          && node.getCoreName() != null
+          && msg.contains(node.getBaseUrl())) {
+        sb.append(node.getCoreName());
+      } else {
+        sb.append(node.getUrl());
+      }
       if (node.getCollection() != null) {
         sb.append(", collection=").append(node.getCollection());
       }

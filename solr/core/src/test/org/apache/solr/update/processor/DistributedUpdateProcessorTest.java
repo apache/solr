@@ -23,14 +23,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.request.SolrQueryRequest;
@@ -204,6 +207,34 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         new DistributedUpdateProcessor.DistributedUpdatesAsyncException(List.of(e)).getMessage();
     assertTrue(msg, msg.startsWith("Async exception during distributed update: Read timed out"));
     assertTrue(msg, msg.contains("http://host:8983/solr/coll_shard1_replica_n1/"));
+    assertTrue(msg, msg.contains("collection=coll"));
+    assertTrue(msg, msg.contains("shard=shard1"));
+  }
+
+  @Test
+  public void testDistribErrorMessageNamesTheHostOnce() {
+    // SOLR-12245: a remote error already names the server ("Error from server at
+    // <baseUrl>"), so the composed message must not name the host a second time.
+    SolrCmdDistributor.SolrError e = new SolrCmdDistributor.SolrError();
+    e.e = new RemoteSolrException("http://host:8983/solr", 409, "version conflict for doc1", null);
+    e.req =
+        new SolrCmdDistributor.Req(
+            null,
+            new SolrCmdDistributor.StdNode(
+                new ZkCoreNodeProps(
+                    new ZkNodeProps(
+                        Map.of(
+                            "core", "coll_shard1_replica_n1",
+                            "base_url", "http://host:8983/solr"))),
+                "coll",
+                "shard1"),
+            null,
+            false);
+
+    String msg =
+        new DistributedUpdateProcessor.DistributedUpdatesAsyncException(List.of(e)).getMessage();
+    assertEquals(msg, 1, msg.split("host:8983", -1).length - 1);
+    assertTrue(msg, msg.contains("coll_shard1_replica_n1"));
     assertTrue(msg, msg.contains("collection=coll"));
     assertTrue(msg, msg.contains("shard=shard1"));
   }
