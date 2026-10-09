@@ -126,15 +126,19 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
       }
 
       // Descend into child documents given as the value (or one of the values) of this
-      // field. This runs after any mutation of the field itself, using the field as it
-      // now stands, so a mutation that removed the field leaves nothing to descend into.
-      final SolrInputField field = doc.get(fname);
-      if (field != null) {
-        final Collection<Object> values = field.getValues();
-        if (values != null) {
-          for (final Object value : values) {
-            if (value instanceof SolrInputDocument childDoc) {
-              mutateDocument(childDoc, seen);
+      // field, but only when the selector selects this field; child documents under a
+      // field the selector does not name are left untouched. This runs after any
+      // mutation of the field itself, using the field as it now stands, so a mutation
+      // that removed the field leaves nothing to descend into.
+      if (selector.shouldMutate(fname)) {
+        final SolrInputField field = doc.get(fname);
+        if (field != null) {
+          final Collection<Object> values = field.getValues();
+          if (values != null) {
+            for (final Object value : values) {
+              if (value instanceof SolrInputDocument childDoc) {
+                mutateDocument(childDoc, seen);
+              }
             }
           }
         }

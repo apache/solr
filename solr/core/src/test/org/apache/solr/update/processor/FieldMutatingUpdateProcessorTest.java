@@ -112,6 +112,32 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("grandchild", grandChild.getFieldValue("child_s"));
   }
 
+  public void testTrimFieldsRecurseIntoNestedDocumentsOnlyWhenParentSelected() throws Exception {
+    // The "trim-fields" chain selects only name and foo_t. A child document given
+    // as the value of the unselected child_doc field is left untouched, even for
+    // fields the selector names, while a child document under the selected foo_t
+    // field is mutated like any other selected field's value.
+    final SolrInputDocument childUnderUnselected = new SolrInputDocument();
+    childUnderUnselected.addField("name", " unselected child ");
+    childUnderUnselected.addField("foo_t", " unselected text ");
+
+    final SolrInputDocument childUnderSelected = new SolrInputDocument();
+    childUnderSelected.addField("name", " selected child ");
+
+    final SolrInputDocument root = new SolrInputDocument();
+    root.addField("name", " root ");
+    root.addField("child_doc", childUnderUnselected);
+    root.addField("foo_t", childUnderSelected);
+
+    final SolrInputDocument d = processAdd("trim-fields", root);
+
+    assertNotNull(d);
+    assertEquals("root", root.getFieldValue("name"));
+    assertEquals(" unselected child ", childUnderUnselected.getFieldValue("name"));
+    assertEquals(" unselected text ", childUnderUnselected.getFieldValue("foo_t"));
+    assertEquals("selected child", childUnderSelected.getFieldValue("name"));
+  }
+
   public void testUniqValues() throws Exception {
     final String chain = "uniq-values";
     SolrInputDocument d = null;
