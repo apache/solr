@@ -37,13 +37,13 @@ public class ConnectionOptions {
           "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
               + CommonCLIOptions.DefaultValues.ZK_HOST
               + ".")
-  String solrConnection;
+  public String solrConnection;
 
   @CommandLine.Option(
       names = {"--solr-url"},
       description =
           "Base Solr URL, which can be used to determine the zk-host if that's not known.")
-  String solrUrl;
+  public String solrUrl;
 
   @CommandLine.Option(
       names = {"-z", "--zk-host"},
@@ -51,7 +51,7 @@ public class ConnectionOptions {
           "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
               + CommonCLIOptions.DefaultValues.ZK_HOST
               + ".")
-  String zkHost;
+  public String zkHost;
 
   /**
    * The effective ZooKeeper connection string, taking {@code --solr-connection} into account, or
@@ -77,7 +77,7 @@ public class ConnectionOptions {
     return solrUrl;
   }
 
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+  public static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
       throws Exception {
     if (connectionOptions != null) {
       String solrUrl = connectionOptions.effectiveSolrUrl();
@@ -114,7 +114,7 @@ public class ConnectionOptions {
     return defaultUrl;
   }
 
-  static String resolveZkHost(
+  public static String resolveZkHost(
       ConnectionOptions connectionOptions, String solrUrl, String credentials) throws Exception {
     boolean resolveFromSolrUrl = false;
     if (connectionOptions != null) {

@@ -33,8 +33,12 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.cli.CLIO;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.CommonCLIOptions;
+import org.apache.solr.cli.ConnectionOptions;
+import org.apache.solr.cli.CredentialsOptions;
+import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
@@ -147,7 +151,8 @@ public class PackageTool extends ToolBase {
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   ConnectionOptions connectionOptions;
 
-  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
+  @picocli.CommandLine.Mixin
+  CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 

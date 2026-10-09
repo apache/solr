@@ -31,6 +31,8 @@ import org.apache.commons.cli.Options;
 import org.apache.solr.cli.CLIO;
 import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.CommonCLIOptions;
+import org.apache.solr.cli.CredentialsOptions;
+import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.cli.tools.cluster.StatusTool;

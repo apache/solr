@@ -21,12 +21,12 @@ import picocli.CommandLine;
 /**
  * Picocli mixin for the {@code -c} / {@code --name} option naming the collection a command acts on.
  */
-class CollectionNameOptions {
+public class CollectionNameOptions {
 
   @CommandLine.Option(
       names = {"-c", "--name"},
       required = true,
       paramLabel = "NAME",
       description = "Name of the collection.")
-  String name;
+  public String name;
 }

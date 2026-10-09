@@ -255,7 +255,7 @@ public final class CLIUtils {
    *
    * @param connectionOptions the parsed connection group, or null if none of its options was given
    */
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+  public static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
       throws Exception {
     String solrUrl = connectionOptions != null ? connectionOptions.solrUrl : null;
     if (solrUrl == null) {
