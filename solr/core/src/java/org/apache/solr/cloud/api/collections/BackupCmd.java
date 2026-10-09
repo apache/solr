@@ -191,7 +191,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     if (!repository.exists(backupNamePath)) {
       repository.createDirectory(backupNamePath);
     } else {
-      final String[] directoryContents = repository.listAll(backupNamePath);
+      final String[] directoryContents =
+          BackupFilePaths.findCollectionDirs(repository.listAll(backupNamePath));
       if (directoryContents.length == 1) {
         String directoryContentsName = directoryContents[0];
         // Strip the trailing '/' if it exists

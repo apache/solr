@@ -157,6 +157,8 @@ public class BackupFilePaths {
    * @param repository the backup repository, used to list files and resolve URI's.
    * @param location a URI representing the repository location holding each backup name
    * @param backupName the specific backup name to create a URI for
+   * @throws IllegalStateException if an incremental backup does not hold exactly one collection
+   *     directory, after ignoring entries as described in {@link #findCollectionDirs(String[])}
    */
   public static URI buildExistingBackupLocationURI(
       BackupRepository repository, URI location, String backupName) throws IOException {
@@ -168,18 +170,32 @@ public class BackupFilePaths {
     if (incremental) {
       // Incremental backups have an additional URI path component representing the collection that
       // was backed up. This collection directory is the path assumed by other backup code.
-      if (entries.length != 1) {
+      final String[] collectionDirs = findCollectionDirs(entries);
+      if (collectionDirs.length != 1) {
         throw new IllegalStateException(
             "Incremental backup URI ["
                 + backupNameUri
                 + "] expected to hold a single directory. Number found: "
-                + entries.length);
+                + collectionDirs.length);
       }
-      final String collectionName = entries[0];
-      return repository.resolveDirectory(backupNameUri, entries[0]);
+      return repository.resolveDirectory(backupNameUri, collectionDirs[0]);
     } else {
       return backupNameUri;
     }
+  }
+
+  /**
+   * Returns the entries of a backup name directory that may be collection directories, ignoring
+   * dot-prefixed entries such as .DS_Store. A lone dot-prefixed entry is kept, since collection
+   * names may start with a dot.
+   *
+   * @param entries the listing of a backup name directory
+   */
+  public static String[] findCollectionDirs(String[] entries) {
+    if (entries.length <= 1) {
+      return entries;
+    }
+    return Arrays.stream(entries).filter(entry -> !entry.startsWith(".")).toArray(String[]::new);
   }
 
   private static String getBackupPropsName(int id) {
