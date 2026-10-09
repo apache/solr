@@ -89,7 +89,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private final SolrParams outParamsToLeader;
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
-    if (req.getParams().getBool(COMMIT_END_POINT, false)) {
+    if ("true".equals(req.getParams().get(COMMIT_END_POINT))) {
       // A commit marked as an end point, such as an auto commit, applies to the core it was
       // issued on only; it must not be routed to the leaders of the aliased collections.
       return next;
