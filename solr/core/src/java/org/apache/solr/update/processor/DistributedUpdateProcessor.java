@@ -1182,6 +1182,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               ulog.getState(),
               ((cmd.getFlags() & UpdateCommand.REPLAY) != 0));
         }
+        // tell the client the commit did nothing, otherwise it looks like a successful commit
+        final NamedList<Object> responseHeader = rsp.getResponseHeader();
+        if (responseHeader != null) {
+          responseHeader.add("commitIgnored", ulog.getState().toString());
+        }
       }
 
     } finally {
