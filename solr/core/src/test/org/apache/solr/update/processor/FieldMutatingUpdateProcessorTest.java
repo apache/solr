@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -800,6 +801,29 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals(0, d.getFieldValue("category_count"));
     assertEquals(List.of("Anonymous"), List.copyOf(d.getFieldValues("editors")));
     assertEquals(1000, d.getFieldValue("list_price"));
+  }
+
+  public void testCountValuesAtomicUpdate() throws Exception {
+
+    // The count considers the values of a field as a whole, so the operand of
+    // an atomic operation is not counted on its own: the operation map is
+    // mutated exactly like any other single value, and the result is the
+    // plain count of the values the update carries (the map itself).
+    SolrInputDocument d = null;
+
+    d = processAdd("count", doc(f("id", "1111"), f("count_field", Map.of("add", "aaa"))));
+    assertNotNull(d);
+    assertEquals(1, d.getFieldValue("count_field"));
+
+    d = processAdd("count", doc(f("id", "1111"), f("count_field", Map.of("remove", "aaa"))));
+    assertNotNull(d);
+    assertEquals(1, d.getFieldValue("count_field"));
+
+    d =
+        processAdd(
+            "count", doc(f("id", "1111"), f("count_field", Map.of("set", List.of("aaa", "bbb")))));
+    assertNotNull(d);
+    assertEquals(1, d.getFieldValue("count_field"));
   }
 
   public void testConcatDefaults() throws Exception {
