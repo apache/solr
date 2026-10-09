@@ -575,22 +575,6 @@ groups:
       - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
       - https://ci-builds.apache.org/job/Solr/
   - !Todo
-    id: old_jenkins_builds
-    title: Remove old Jenkins tasks for the decommissioned branch
-    description: |
-      This will make sure we aren't using resources to test branches no longer in development.
-      The previous stable branch (branch_{{latest_version_major}}x) is now the LTS branch and keeps its jobs.
-      Consult the JenkinsReleaseBuilds page for more information.
-
-      Job Suffixes to delete:
-        *-{{latest_lts_version_major}}.x (The previous LTS branch)
-    depends: new_jenkins_builds
-    types:
-      - major
-    links:
-      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
-      - https://ci-builds.apache.org/job/Solr/
-  - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch
     description: |-
@@ -1923,3 +1907,16 @@ groups:
           svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-solr.log
         comment: Delete from new Solr dist area
+  - !Todo
+    id: discuss_old_lts_retirement
+    title: Discuss retiring the old LTS branch
+    description: |
+      With this major release, the previous stable branch becomes the LTS branch.
+      Start a discussion on dev@ about retiring the older LTS branch, branch_{{ release_version_major - 2 }}x.
+
+      Retiring it includes removing its Jenkins jobs (*-{{ release_version_major - 2 }}.x),
+      so that we aren't using resources to test a branch no longer in development.
+    types:
+    - major
+    links:
+    - https://ci-builds.apache.org/job/Solr/
