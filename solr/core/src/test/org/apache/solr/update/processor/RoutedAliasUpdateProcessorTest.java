@@ -344,14 +344,14 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       CloudSolrClient solrClient = cluster.getSolrClient();
       assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments)));
     }
-    // The docs may have been routed to any collection of the alias, so commit every one of them.
-    // This is an explicit commit rather than commitWithin: each replica opens its searcher on its
-    // own timer then, and a query could see the docs on one replica but not on another.
+    // The docs may have been routed to any collection of the alias, so commit each of them.
+    // A commit waits for every replica to open a new searcher. commitWithin does not.
     List<String> aliasCollections =
         new CollectionAdminRequest.ListAliases()
             .process(getSolrClient())
             .getAliasesAsLists()
             .get(getAlias());
+    assertNotNull("alias " + getAlias() + " is not listed", aliasCollections);
     for (String col : aliasCollections) {
       getSolrClient().commit(col);
     }
