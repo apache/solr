@@ -1562,8 +1562,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(SolrException.class, () -> merger.merge(invalidDoc, existingDoc));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(), containsString("is itself an atomic update operation map"));
+    assertThat(
+        e.getMessage(),
+        containsString("is itself an atomic update operation map with operation(s): [set]"));
     assertThat(e.getMessage(), containsString("'cat'"));
+    // the message names the nested operation but must not echo the operand's value
+    assertFalse(e.getMessage().contains("bbb"));
 
     // the rejected update leaves the existing document's field untouched
     assertEquals(1, existingDoc.getField("cat").getValueCount());

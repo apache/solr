@@ -160,6 +160,8 @@ public class AtomicUpdateDocumentMerger {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
           if (isNestedAtomicOperation(fieldVal)) {
+            // Name the nested operation(s) only; the operand's value must not be echoed into
+            // the error response (or any log that records it).
             throw new SolrException(
                 ErrorCode.BAD_REQUEST,
                 "Error:"
@@ -168,8 +170,8 @@ public class AtomicUpdateDocumentMerger {
                     + key
                     + "' on field '"
                     + sif.getName()
-                    + "' is itself an atomic update operation map: "
-                    + fieldVal);
+                    + "' is itself an atomic update operation map with operation(s): "
+                    + ((Map<?, ?>) fieldVal).keySet());
           }
           switch (key) {
             case "add":
