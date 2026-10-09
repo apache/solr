@@ -1,5 +1,5 @@
 title: "Documentation build: Changes.html generation runs as a Java task instead of the changes2html.py script, so it no longer requires python3"
-type: changed
+type: other
 authors:
   - name: Nick Shanin
 links:
