@@ -674,18 +674,22 @@ groups:
   - !Todo
     id: dependency_updates_changes
     title: Add dependency updates to changelog
-    description: Bulk add all 'solrbot' dependency updates since last release
+    description: |
+      Add changelog entries summarizing third-party dependencies added, upgraded, and removed since the
+      previous release, derived from the jar checksum files in `solr/licenses/`.
+      Re-running it overwrites the entries, e.g. if dependencies changed before a respin.
+      Run the script without `--write` to just print the summary.
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: We call out to a helper script that compiles SolrBot changes into `changelog/unreleased`
+      commands_text: We call out to a helper script that writes `changelog/unreleased/dependency-changes-*.yml`
       confirm_each_command: true
       commands:
       - !Command
         cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
+        cmd: python3 -u dev-tools/scripts/dependencyChanges.py --write
         tee: true
       - !Command
         cmd: git add changelog  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
