@@ -612,7 +612,7 @@ String cliFileNameToTitle(String baseName, Set stems) {
   return "bin/solr " + cliCommandPath(baseName, stems).join(' ')
 }
 
-String cliCommandPath(String baseName, Set stems) {
+List<String> cliCommandPath(String baseName, Set stems) {
   def cuts = [baseName.indexOf('-')]
   for (def i = baseName.indexOf('-', cuts[0] + 1); i >= 0; i = baseName.indexOf('-', i + 1)) {
     if (stems.contains(baseName.substring(0, i))) {
@@ -624,7 +624,7 @@ String cliCommandPath(String baseName, Set stems) {
   for (def c = 0; c < cuts.size() - 1; c++) {
     segments.add(baseName.substring(cuts[c] + 1, cuts[c + 1]))
   }
-  return segments;
+  return segments
 }
 
 // Strip "[...]" (optional groups) and "(...)" (required groups whose members
@@ -798,7 +798,7 @@ List<String> buildCliNavEntries(File cliDir) {
     .findAll { it.name.startsWith('solr-') && it.name.endsWith('.adoc') }
     .sort { (it.name.replace('.adoc', '') + '\u0000') }
   def stems = files.collect { it.name.replace('.adoc', '') } as Set
-  return files.collect {
+  return files.collect { file ->
     def path = cliCommandPath(file.name.replace('.adoc', ''), stems)
     def label = path.last()
     def depth = path.size() - 1
