@@ -1,7 +1,9 @@
 title: >-
   A TLOG replica taking over leadership no longer stalls for up to 60 seconds when the previous
   leader has stopped responding without going down: the in-progress index fetch from the old
-  leader is now aborted instead of waited out.
+  leader is now aborted instead of waited out. To support this, HttpJettySolrClient gains
+  abort(Throwable) and isAborted(), enabled with Builder.withAbortableRequests(true); abort fails
+  the client's in-flight and subsequent requests without waiting for them.
 type: fixed
 authors:
   - name: Luke Kot-Zaniewski
