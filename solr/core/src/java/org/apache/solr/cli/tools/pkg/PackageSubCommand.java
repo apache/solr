@@ -36,8 +36,7 @@ abstract class PackageSubCommand extends ToolBase {
 
   @picocli.CommandLine.ParentCommand PackageTool packageTool;
 
-  @picocli.CommandLine.Mixin
-  CredentialsOptions credentialsOptions;
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   ConnectionOptions connectionOptions;

@@ -17,7 +17,6 @@
 package org.apache.solr.cli.tools.snapshot;
 
 import java.util.concurrent.Callable;
-
 import org.apache.solr.cli.CLIO;
 import org.apache.solr.cli.HelpMixin;
 import picocli.CommandLine;
@@ -38,8 +37,7 @@ import picocli.CommandLine;
       SnapshotListTool.class
     })
 public class SnapshotTool implements Callable<Integer> {
-  @CommandLine.Mixin
-  HelpMixin helpMixin;
+  @CommandLine.Mixin HelpMixin helpMixin;
   @CommandLine.Spec CommandLine.Model.CommandSpec spec;
 
   @Override

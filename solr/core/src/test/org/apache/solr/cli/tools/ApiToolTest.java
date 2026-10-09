@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

@@ -14,11 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.CliDefaultValueProvider;
+import org.apache.solr.cli.TestSolrCLIRunExample;
 import org.junit.Test;
 import picocli.CommandLine;
 

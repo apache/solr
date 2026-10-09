@@ -28,7 +28,7 @@ public class SnapshotExportToolPicocliTest extends SnapshotExportToolTest {
 
   @Override
   protected int runTool(
-          String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
+      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
       throws Exception {
     return SnapshotToolsPicocliTest.runAsGroup(args, runtime);
   }

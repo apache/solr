@@ -19,7 +19,6 @@ package org.apache.solr.cli.tools;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;

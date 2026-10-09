@@ -18,6 +18,7 @@ package org.apache.solr.cli;
 
 import java.io.IOException;
 import java.util.Map;
+import org.apache.solr.cli.tools.cluster.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.EnvUtils;

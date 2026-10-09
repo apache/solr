@@ -17,7 +17,6 @@
 package org.apache.solr.cli.tools;
 
 import java.util.Arrays;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.CliDefaultValueProvider;
 import org.apache.solr.cli.ToolBase;

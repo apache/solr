@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

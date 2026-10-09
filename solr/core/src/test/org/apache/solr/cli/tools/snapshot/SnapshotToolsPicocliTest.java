@@ -18,7 +18,6 @@ package org.apache.solr.cli.tools.snapshot;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolBase;

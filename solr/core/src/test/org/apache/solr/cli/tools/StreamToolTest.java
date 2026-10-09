@@ -34,6 +34,7 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;

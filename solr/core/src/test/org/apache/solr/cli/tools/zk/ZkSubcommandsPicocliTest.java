@@ -21,6 +21,7 @@ import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.CliDefaultValueProvider;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.cli.tools.cluster.ClusterTool;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.junit.Test;
 import picocli.CommandLine;

@@ -18,7 +18,6 @@ package org.apache.solr.cli.tools.snapshot;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -33,7 +32,7 @@ public class SnapshotToolsTest extends SolrCloudTestCase {
 
   /** Runs the tool. Overridden by the picocli variant of this test. */
   protected int runTool(
-          String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
+      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
       throws Exception {
     return CLITestHelper.runTool(args, runtime, clazz);
   }

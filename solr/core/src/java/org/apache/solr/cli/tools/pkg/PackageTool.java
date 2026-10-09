@@ -151,8 +151,7 @@ public class PackageTool extends ToolBase {
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   ConnectionOptions connectionOptions;
 
-  @picocli.CommandLine.Mixin
-  CredentialsOptions credentialsOptions;
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 
