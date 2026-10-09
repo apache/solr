@@ -38,21 +38,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.MultiAuthPlugin;
 
-/**
- * V2 API for managing Basic Authentication users.
- *
- * <p>A resource-oriented alternative to the "set-user"/"delete-user" commands accepted by {@link
- * ModifyBasicAuthConfigAPI}. Both act on the same underlying {@code
- * org.apache.solr.security.Sha256AuthenticationProvider}, via {@link
- * SecurityConfHandler#editSecurityConfig}.
- *
- * <p>When {@link MultiAuthPlugin} is configured, its {@code edit()} requires every command's data
- * wrapped as {@code {"<scheme>": {...}}} to route it to the right sub-plugin, and its config stores
- * each scheme's users under {@code schemes[].credentials} rather than a top-level "credentials"
- * map. {@link #buildCommand} and {@link #fetchCredentials} handle both shapes transparently based
- * on which plugin is actually configured; the {@code scheme} path parameter is simply ignored for a
- * plain (non-multi) {@code BasicAuthPlugin}.
- */
+/** V2 APIs for Basic Authentication users, using the existing security configuration commands. */
 public class Users extends AdminAPIBase implements AuthenticationUsersApi {
   private static final String AUTHENTICATION_KEY = "authentication";
 
@@ -122,8 +108,7 @@ public class Users extends AdminAPIBase implements AuthenticationUsersApi {
 
   @SuppressWarnings("unchecked")
   private Map<String, Object> fetchCredentials(String scheme) {
-    // Read fresh - see SecurityConfHandler#getSecurityConfig's javadoc - so a GET immediately
-    // following one of this class's own writes is guaranteed to observe it.
+    // Bypass the ZooKeeper cache so reads observe completed writes.
     Map<String, Object> authenticationConf =
         (Map<String, Object>)
             securityConfHandler.getSecurityConfig(true).getData().get(AUTHENTICATION_KEY);

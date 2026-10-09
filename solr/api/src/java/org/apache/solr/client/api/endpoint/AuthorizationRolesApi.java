@@ -30,18 +30,10 @@ import org.apache.solr.client.api.model.SetUserRolesRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
- * Definitions for v2 JAX-RS APIs mapping roles to users under Rule-Based Authorization.
+ * V2 APIs for user role assignments.
  *
- * <p>Resource-oriented alternative to the {@code set-user-role} command accepted by the {@code
- * /cluster/security/authorization} API. A {@code DELETE} replaces that command's {@code null} value
- * idiom for revoking a user's roles.
- *
- * <p>The {@code scheme} path segment names the authentication scheme these role mappings belong to
- * (e.g. "basic"), as configured under {@code MultiAuthRuleBasedAuthorizationPlugin}'s "schemes"
- * list. It is ignored when that plugin isn't in use - a plain {@code RuleBasedAuthorizationPlugin}
- * setup has only one set of role mappings, and any value may be supplied (conventionally "basic").
- * Unlike roles, permissions are shared across every scheme, so {@link AuthorizationPermissionsApi}
- * has no such segment.
+ * <p>The scheme selects a MultiAuthRuleBasedAuthorizationPlugin configuration. Otherwise, it is
+ * ignored. Permissions are shared across schemes.
  */
 @Path("/cluster/security/authorization/{scheme}/roles")
 public interface AuthorizationRolesApi {

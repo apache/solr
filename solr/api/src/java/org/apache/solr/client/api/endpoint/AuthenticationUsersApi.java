@@ -29,16 +29,9 @@ import org.apache.solr.client.api.model.SetUserRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
- * Definitions for v2 JAX-RS APIs managing Basic Authentication users.
+ * V2 APIs for Basic Authentication users.
  *
- * <p>These APIs are a resource-oriented alternative to the "set-user"/"delete-user" commands
- * accepted by the {@code /cluster/security/authentication} API - both operate on the same
- * underlying plugin configuration.
- *
- * <p>The {@code scheme} path segment names the authentication scheme these users belong to (e.g.
- * "basic"), as configured under {@code MultiAuthPlugin}'s "schemes" list. It is ignored when {@code
- * MultiAuthPlugin} isn't in use - a plain {@code BasicAuthPlugin} setup has only one set of users,
- * and any value may be supplied (conventionally "basic").
+ * <p>The scheme selects a MultiAuthPlugin configuration. Without MultiAuthPlugin, it is ignored.
  */
 @Path("/cluster/security/authentication/{scheme}/users")
 public interface AuthenticationUsersApi {

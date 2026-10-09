@@ -21,6 +21,7 @@ import org.apache.solr.client.api.model.CreatePermissionResponse;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
 import org.apache.solr.client.api.model.ListPermissionsResponse;
 import org.apache.solr.client.api.model.ListUserRolesResponse;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.AuthorizationApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
@@ -29,27 +30,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * SolrCloud-mode coverage for {@link Permissions}/{@link Roles}. Both read via {@code
- * SecurityConfHandler#getSecurityConfig(true)} (fresh, bypassing {@code SecurityConfHandlerZk}'s
- * cached ZK snapshot) specifically so a GET immediately following one of their own writes is
- * guaranteed to observe it, without any client-side polling for propagation - see {@code
- * SecurityConfHandler#getSecurityConfig}'s javadoc for why a cached ({@code getFresh=false}) read
- * can otherwise lag a write briefly. Standalone mode ({@code SecurityConfHandlerLocal}) always
- * reads security.json fresh from disk regardless of this flag, so this behavior needs cloud
- * coverage specifically to mean anything.
- *
- * <p>This also incidentally guards against a real bug this suite caught during development: the
- * cached path's snapshot is rebuilt via {@code Utils.getDeepCopy(..., mutable=false)}, which wraps
- * nested lists (e.g. "permissions") in {@code Collections.unmodifiableCollection(...)} rather than
- * {@code Collections.unmodifiableList(...)} - an object that implements {@code Collection} but not
- * {@code List}, which a naive {@code (List<...>) ...} cast would throw a {@code ClassCastException}
- * on. {@link Permissions}/{@link Roles} guard against that defensively regardless of which read
- * path is in use (see their {@code instanceof Collection} checks).
- *
- * <p>This plugin is a plain (non-multi) {@code RuleBasedAuthorizationPlugin}, so the {@code scheme}
- * path segment is ignored server-side; "basic" is used here purely by convention. See {@link
- * MultiAuthUsersAndRolesApiCloudTest} for coverage of the scheme actually being honored under
- * {@code MultiAuthPlugin}/{@code MultiAuthRuleBasedAuthorizationPlugin}.
+ * Tests that security API reads observe completed writes without polling in SolrCloud. Standalone
+ * mode always reads from disk, so it cannot exercise the ZooKeeper cache behavior.
  */
 public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
 
@@ -68,7 +50,7 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
     cluster.shutdown();
   }
 
-  private static <T extends org.apache.solr.client.solrj.SolrRequest<?>> T authed(T request) {
+  private static <T extends SolrRequest<?>> T authed(T request) {
     request.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return request;
   }
@@ -83,8 +65,6 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
     CreatePermissionResponse createResponse = create.process(client);
     int index = createResponse.index;
 
-    // Reads fresh - see the class javadoc - so this is expected to see the create above
-    // immediately, with no propagation delay.
     ListPermissionsResponse afterCreate =
         authed(new AuthorizationApi.ListPermissions()).process(client);
     assertTrue(
@@ -96,8 +76,6 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
 
     authed(new AuthorizationApi.DeletePermission(index)).process(client);
 
-    // Reads fresh - see the class javadoc - so this is expected to see the delete immediately,
-    // with no propagation delay or polling required.
     ListPermissionsResponse afterDelete =
         authed(new AuthorizationApi.ListPermissions()).process(client);
     assertTrue(
@@ -113,13 +91,10 @@ public class SecurityV2ApiCloudTest extends SolrCloudTestCase {
     setRoles.setRoles(List.of("dev"));
     setRoles.process(client);
 
-    // Reads fresh - see the class javadoc - so this is expected to see the write above
-    // immediately, with no propagation delay.
     GetUserRolesResponse roles =
         authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry")).process(client);
     assertEquals(List.of("dev"), roles.roles);
 
-    // The bulk listing reads the same fresh path as the single-user GET above.
     ListUserRolesResponse allRoles =
         authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(client);
     assertEquals(List.of("dev"), allRoles.userRoles.get("harry"));

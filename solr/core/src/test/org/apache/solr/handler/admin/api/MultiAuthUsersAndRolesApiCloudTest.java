@@ -34,13 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * Proves the {@code scheme} path segment on {@link Users}/{@link Roles} actually reaches the right
- * sub-plugin under {@link MultiAuthPlugin}/{@link MultiAuthRuleBasedAuthorizationPlugin} - two
- * configured schemes ("basic" and "other", both real {@code BasicAuthPlugin}/{@code
- * RuleBasedAuthorizationPlugin} instances) must stay fully isolated from each other: writing to one
- * scheme's users/roles must not appear under the other.
- */
+/** Tests that user and role changes stay isolated between authentication schemes. */
 public class MultiAuthUsersAndRolesApiCloudTest extends SolrCloudTestCase {
 
   private static final String ADMIN_USER = "solr";
@@ -128,7 +122,6 @@ public class MultiAuthUsersAndRolesApiCloudTest extends SolrCloudTestCase {
         asAdmin(new AuthenticationApi.ListUsers("other")).process(client);
     assertEquals(List.of(SEED_USER), otherUsers.users);
 
-    // Create a user under the "other" scheme only.
     var create = asAdmin(new AuthenticationApi.CreateOrUpdateUser("other", "newuser"));
     create.setPassword("NewUserPass123");
     create.process(client);
@@ -136,7 +129,6 @@ public class MultiAuthUsersAndRolesApiCloudTest extends SolrCloudTestCase {
     otherUsers = asAdmin(new AuthenticationApi.ListUsers("other")).process(client);
     assertEquals(List.of("newuser", SEED_USER), sorted(otherUsers.users));
 
-    // "basic" scheme is untouched.
     basicUsers = asAdmin(new AuthenticationApi.ListUsers("basic")).process(client);
     assertEquals(List.of(ADMIN_USER), basicUsers.users);
 
@@ -157,12 +149,10 @@ public class MultiAuthUsersAndRolesApiCloudTest extends SolrCloudTestCase {
         asAdmin(new AuthorizationApi.GetUserRoles("other", SEED_USER)).process(client);
     assertEquals(List.of("dev"), otherRoles.roles);
 
-    // Same username looked up under "basic" is unaffected - "seed" isn't even a basic-scheme user.
     GetUserRolesResponse basicRoles =
         asAdmin(new AuthorizationApi.GetUserRoles("basic", SEED_USER)).process(client);
     assertTrue(basicRoles.roles.isEmpty());
 
-    // The bulk listing is scheme-isolated the same way: "seed"/"dev" only shows up under "other".
     ListUserRolesResponse otherList =
         asAdmin(new AuthorizationApi.ListUserRoles("other")).process(client);
     assertEquals(List.of("dev"), otherList.userRoles.get(SEED_USER));

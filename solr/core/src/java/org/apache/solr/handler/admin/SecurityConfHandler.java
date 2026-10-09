@@ -109,13 +109,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     editSecurityConfig(req, key, ops);
   }
 
-  /**
-   * Applies the given commands to the named security plugin's configuration ("authentication" or
-   * "authorization"), retrying up to 3 times if persisting the result races with a concurrent edit,
-   * then persists it. Shared by the legacy command-batch {@code /admin/authentication} and {@code
-   * /admin/authorization} handling above and by the resource-oriented v2 Jersey APIs (e.g. {@code
-   * org.apache.solr.handler.admin.api.Users}).
-   */
+  /** Applies security commands, retrying when a concurrent edit prevents persistence. */
   public void editSecurityConfig(SolrQueryRequest req, String key, List<CommandOperation> ops)
       throws IOException {
     Object plugin = getPlugin(key);
@@ -210,16 +204,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
   }
 
   /**
-   * Gets security.json from source.
-   *
-   * <p>{@code getFresh=true} reads the source directly - ZooKeeper for {@link
-   * SecurityConfHandlerZk}, the local file for {@link SecurityConfHandlerLocal} (a no-op there; it
-   * always reads the file fresh). {@code getFresh=false} may return a locally cached snapshot: for
-   * {@link SecurityConfHandlerZk} this is refreshed by a ZK watcher that fires asynchronously after
-   * any write, so a {@code getFresh=false} read issued immediately after this handler's own {@link
-   * #editSecurityConfig} call can still observe the pre-write state. Callers that need to read back
-   * a value they (or another request) may have just written - e.g. the v2 Jersey APIs in {@code
-   * org.apache.solr.handler.admin.api} - should pass {@code true}.
+   * Reads security.json. In SolrCloud, pass {@code true} to bypass the asynchronously refreshed
+   * ZooKeeper cache and observe completed writes. Standalone mode always reads from disk.
    */
   public abstract SecurityConfig getSecurityConfig(boolean getFresh);
 

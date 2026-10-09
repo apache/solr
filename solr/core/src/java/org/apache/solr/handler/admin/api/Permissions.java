@@ -39,14 +39,7 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * V2 API for managing Rule-Based Authorization permissions.
- *
- * <p>A resource-oriented alternative to the {@code set-permission}/{@code update-permission}/
- * {@code delete-permission} commands accepted by {@link ModifyRuleBasedAuthConfigAPI}, via {@link
- * SecurityConfHandler#editSecurityConfig}. A permission's {@code index} - its position in the
- * evaluated-top-down list - moves from a body field to a path parameter.
- */
+/** V2 APIs for permissions, using the existing security configuration commands. */
 public class Permissions extends AdminAPIBase implements AuthorizationPermissionsApi {
   private static final String AUTHORIZATION_KEY = "authorization";
 
@@ -80,10 +73,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
-    // Computed before the edit below, rather than by re-reading and matching content afterwards:
-    // a fresh permissions list can contain more than one entry with identical fields, so a
-    // straight positional count avoids the ambiguity that would come from trying to find "the one
-    // we just added" by content.
+    // Identical permissions cannot be distinguished by their fields.
     int existingCount = fetchPermissions().size();
 
     Map<String, Object> dataMap = toDataMap(requestBody, /* includeBefore= */ true);
@@ -93,9 +83,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
         List.of(new CommandOperation("set-permission", dataMap)));
 
     final var response = instantiateJerseyResponse(CreatePermissionResponse.class);
-    // A create with no "before" is always appended at the end of the (freshly re-numbered)
-    // list, so it ends up one past the pre-edit count; a create with "before: N" always takes
-    // over index N directly, since renumbering starts fresh at 1 and preserves relative order.
+    // Permission indexes start at 1; insertion shifts later entries.
     response.index = requestBody.before != null ? requestBody.before : existingCount + 1;
     return response;
   }
@@ -145,21 +133,14 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
 
   @SuppressWarnings("unchecked")
   private List<Map<String, Object>> fetchPermissions() {
-    // Read fresh (bypassing SecurityConfHandler's cached ZK snapshot) so a GET immediately
-    // following one of this class's own writes is guaranteed to observe it - see
-    // SecurityConfHandler#getSecurityConfig's javadoc for why the cache can otherwise lag a write
-    // briefly.
+    // Bypass the ZooKeeper cache so reads observe completed writes.
     Map<String, Object> authorizationConf =
         (Map<String, Object>)
             securityConfHandler.getSecurityConfig(true).getData().get(AUTHORIZATION_KEY);
     if (authorizationConf == null) {
       return List.of();
     }
-    // The "permissions" value is always list-shaped in security.json, but it isn't guaranteed to
-    // arrive as a java.util.List: Utils.getDeepCopy(..., mutable=false) - used when building
-    // read-only snapshots of a cached security config - wraps it in
-    // Collections.unmodifiableCollection(), which only implements Collection, not List. Kept as a
-    // defensive fallback even though this method now always reads fresh.
+    // Read-only config snapshots may use Collection wrappers that do not implement List.
     Object rawPermissions = authorizationConf.get("permissions");
     if (!(rawPermissions instanceof Collection)) {
       return List.of();

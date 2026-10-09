@@ -40,18 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-/**
- * HTTP tests, under Basic Authentication (with {@code blockUnknown: true}, so every request below
- * needs credentials), for the resource-oriented v2 APIs at {@code
- * /api/cluster/security/authentication/{scheme}/users} and {@code
- * /api/cluster/security/authorization/{scheme}/roles} and {@code .../permissions}, via the
- * generated {@link AuthenticationApi} and {@link AuthorizationApi} SolrJ client classes.
- *
- * <p>The plugin under test here is a plain (non-multi) {@code BasicAuthPlugin}, so the {@code
- * scheme} path segment is ignored server-side; "basic" is used here purely by convention. See
- * {@link org.apache.solr.security.MultiAuthPluginTest} for coverage of the scheme actually being
- * honored under {@code MultiAuthPlugin}.
- */
+/** HTTP tests for user, role, and permission APIs with Basic Authentication in standalone mode. */
 public class SecurityV2ApiStandaloneTest extends SolrTestCase {
 
   private static final String SCHEME = "basic";
@@ -84,7 +73,6 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
     users = authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
     assertThat(users.users, containsInAnyOrder(SecurityJson.USER, "tom"));
 
-    // Unauthenticated mutation is rejected - deliberately NOT using authed() here
     final RemoteSolrException unauth =
         expectThrows(
             RemoteSolrException.class,
@@ -93,7 +81,6 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
                     .process(solrTestRule.getAdminClient()));
     assertEquals(401, unauth.code());
 
-    // Deleting an unknown user is a 404
     final RemoteSolrException notFound =
         expectThrows(
             RemoteSolrException.class,
@@ -107,7 +94,6 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
     users = authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
     assertThat(users.users, containsInAnyOrder(SecurityJson.USER));
 
-    // Deleting the last remaining user is a conflict, not silently allowed
     final RemoteSolrException conflict =
         expectThrows(
             RemoteSolrException.class,
@@ -192,7 +178,6 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
         authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
     assertEquals(initialCount, afterDelete.permissions.size());
 
-    // Deleting an already-removed index is a 404
     final RemoteSolrException notFound =
         expectThrows(
             RemoteSolrException.class,

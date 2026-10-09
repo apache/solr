@@ -30,14 +30,7 @@ import org.apache.solr.client.api.model.ListPermissionsResponse;
 import org.apache.solr.client.api.model.PermissionDefinition;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
-/**
- * Definitions for v2 JAX-RS APIs managing Rule-Based Authorization permissions.
- *
- * <p>Resource-oriented alternative to the {@code set-permission}/{@code update-permission}/{@code
- * delete-permission} commands accepted by the {@code /cluster/security/authorization} API. A
- * permission's {@code index} - its position in the evaluated-top-down list - moves from a body
- * field to a path parameter.
- */
+/** V2 APIs for Rule-Based Authorization permissions. Permission indexes follow evaluation order. */
 @Path("/cluster/security/authorization/permissions")
 public interface AuthorizationPermissionsApi {
   @GET

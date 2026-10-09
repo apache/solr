@@ -41,21 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.MultiAuthRuleBasedAuthorizationPlugin;
 
-/**
- * V2 API for mapping roles to users under Rule-Based Authorization.
- *
- * <p>A resource-oriented alternative to the {@code set-user-role} command accepted by {@link
- * ModifyRuleBasedAuthConfigAPI}, via {@link SecurityConfHandler#editSecurityConfig}. {@link
- * #deleteUserRoles} replaces that command's {@code null}-value idiom for revoking a user's roles.
- *
- * <p>When {@link MultiAuthRuleBasedAuthorizationPlugin} is configured, its {@code edit()} requires
- * "set-user-role" commands wrapped as {@code {"<scheme>": {...}}} to route them to the right
- * sub-plugin, and its config stores each scheme's role mappings under {@code schemes[].user-role}
- * rather than a top-level "user-role" map. {@link #buildCommand} and {@link #fetchUserRoleMap}
- * handle both shapes transparently; the {@code scheme} path parameter is simply ignored for a plain
- * (non-multi) {@code RuleBasedAuthorizationPlugin}. Permissions, unlike roles, are shared across
- * every scheme (see {@link Permissions}), so no such handling is needed there.
- */
+/** V2 APIs for user role assignments, using the existing security configuration commands. */
 public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
   private static final String AUTHORIZATION_KEY = "authorization";
 
@@ -128,8 +114,7 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
 
   @SuppressWarnings("unchecked")
   private Map<String, Object> fetchUserRoleMap(String scheme) {
-    // Read fresh - see SecurityConfHandler#getSecurityConfig's javadoc - so a GET immediately
-    // following one of this class's own writes is guaranteed to observe it.
+    // Bypass the ZooKeeper cache so reads observe completed writes.
     Map<String, Object> authorizationConf =
         (Map<String, Object>)
             securityConfHandler.getSecurityConfig(true).getData().get(AUTHORIZATION_KEY);

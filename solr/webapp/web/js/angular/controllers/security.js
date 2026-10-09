@@ -23,10 +23,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
   var strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*\-_()[\]])[a-zA-Z0-9!@#$%^&*\-_()[\]]{8,30}$/;
 
-  // The Users/Roles v2 APIs address the authentication/authorization scheme they operate on via
-  // this path segment - this panel only ever manages the "basic" scheme (see multiAuthWithBasic
-  // below), so it's a constant here rather than something the user picks. The server ignores it
-  // entirely when MultiAuthPlugin/MultiAuthRuleBasedAuthorizationPlugin isn't configured.
+  // This panel manages the basic scheme. Single-plugin configurations ignore the scheme.
   var BASIC_SCHEME = "basic";
 
   function toList(str) {
@@ -113,12 +110,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     return cause;
   }
 
-  /**
-   * Security config updates are persisted to ZooKeeper and reloaded by the nodes
-   * asynchronously, so a GET issued right after an update may still return the
-   * previous config. Polls the given endpoint until check(data) sees the update
-   * (giving up after ~10s), then invokes done.
-   */
+  /** Polls until the node reloads a security change, with a timeout of about 10 seconds. */
   function whenReflected(path, check, done) {
     var attemptsLeft = 40;
     function poll() {
@@ -230,8 +222,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     }
   };
 
-  // Security API command errors (HTTP 4xx/5xx) are broadcast by the global httpInterceptor;
-  // show them in this panel's error dialog rather than the generic page-header banner.
+  // Show security API errors in the panel dialog instead of the page banner.
   $scope.$on('securityApiError', function (event, rejection) {
     $scope.errorHandler(rejection);
   });
@@ -731,8 +722,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         }, $scope.refreshSecurityPanel);
       }
 
-      // Permissions are shared across every scheme (unlike users/roles), so no scheme parameter
-      // is needed here even under MultiAuthPlugin.
+      // Permissions are shared across schemes.
       AuthorizationV2.deletePermission(index, function (error, data, response) {
         if (error) { ApiErrorHandler.handle(response); return; }
         afterDeleted();
@@ -1229,7 +1219,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       perms = $scope.upsertRole.grantedPerms;
     }
 
-    // Assigns `name` to one user, replacing their role list.
     function assignRoleToUser(user, done) {
       AuthorizationV2.getUserRoles(BASIC_SCHEME, user, function (error, data, response) {
         if (error) { ApiErrorHandler.handle(response); done(); return; }
@@ -1241,8 +1230,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       });
     }
 
-    // Grants `name` to one permission - updating it if it already exists, creating it (only if
-    // predefined) otherwise.
     function grantPermissionToRole(permName, existingPerms, done) {
       var existingPerm = existingPerms.find(p => p.name === permName);
 
@@ -1281,9 +1268,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       }));
     }
 
-    // Once every write above has returned, this is the same single whenReflected("authorization",
-    // ...) poll the legacy command-batch code used - just checking the users/perms this dialog
-    // actually touched, rather than re-inventing per-resource polling against the new v2 GETs.
+    // Wait for the node to reload its security configuration before refreshing the panel.
     function finishUp(attemptedPerms) {
       $scope.toggleRoleDialog();
       whenReflected("authorization", function (data) {
@@ -1305,9 +1290,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       AuthorizationV2.listPermissions(function (error, permsData, response) {
         if (error) { ApiErrorHandler.handle(response); runTasks(userTasks, () => finishUp([])); return; }
         var existingPerms = permsData.permissions;
-        // Only wait on permissions we actually attempted to touch - a custom (non-predefined)
-        // permission that doesn't exist yet is silently skipped by grantPermissionToRole, and
-        // would otherwise look permanently "unreflected" to the check above.
+        // Missing custom permissions are skipped, so do not wait for them to appear.
         var attemptedPerms = perms.filter(p => existingPerms.some(ep => ep.name === p) || $scope.predefinedPermissions.includes(p));
         var permTasks = attemptedPerms.map(p => cb => grantPermissionToRole(p, existingPerms, cb));
         runTasks(userTasks.concat(permTasks), () => finishUp(attemptedPerms));
