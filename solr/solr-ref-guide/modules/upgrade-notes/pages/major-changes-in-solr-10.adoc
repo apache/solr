@@ -34,6 +34,22 @@ This compatibility safeguard can be disabled via the environment variable `SOLR_
 
 Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
+== Solr 10.2
+
+=== Snapshot commands are now `bin/solr snapshot` sub-commands
+
+The `snapshot-create`, `snapshot-delete`, `snapshot-describe`, `snapshot-export` and `snapshot-list` commands of the experimental picocli command line interface are replaced by the sub-commands of `bin/solr snapshot`:
+
+[source,bash]
+----
+bin/solr snapshot create -c mycollection --snapshot-name snap1
+bin/solr snapshot list -c mycollection
+----
+
+The old spellings still work and are hidden from the help and from this guide.
+They are deprecated in Solr 10.2 and are removed in Solr 11.0.
+The default command line interface is not changed.
+
 == Solr 10.1
 
 === Misc
@@ -120,6 +136,9 @@ Because Solr serves a single, statically-known webapp, that webapp is now deploy
 
 Advanced users who relied on Jetty scanning the `server/contexts/` directory to auto-deploy additional context descriptors will find that this no longer happens.
 To deploy an extra context, or to customize how the Solr webapp itself is deployed, edit `server/etc/jetty.xml` directly and add the context there.
+
+=== Testing Framework
+Standard `solr.xml` configuration used by `MiniSolrCloudCluster` turns off metrics by default (`metricsEnabled=false`) unlike the previous versions of Solr where metrics were enabled by default. Tests that need to access metrics should enable them by setting `System.setProperty("metricsEnabled", "true")` in test suite initialization.
 
 == Solr 10.0
 

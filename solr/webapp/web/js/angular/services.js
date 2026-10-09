@@ -166,16 +166,6 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.ConfigApi();
     })
-.factory('Collections',
-  ['$resource', function ($resource) {
-    // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
-    // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
-    // generated solrApi client class exists for it (old-style @EndPoint API, predates the
-    // OpenAPI-based v2 framework), so this stays a plain $resource, like ParamSet.
-    return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
-      "status": {}
-    });
-  }])
 .factory('ConfigSetFiles',
  ['$http', function ($http) {
     // Fetches a single file from a configset via V2 /api/configsets/{name}/files/{path}.
@@ -195,11 +185,13 @@ solrAdminServices.factory('Metrics',
  }])
 .factory('Logging',
   ['$resource', function($resource) {
-    // This v1 factory only covers "setLevel", which needs the "nodes=all" broadcast-to-every-node
-    // behavior that the v2 NodeLoggingApis endpoint doesn't support yet (see SOLR-16738). Retire
-    // this factory once setLevel moves to LoggingV2.
+    // This v1 factory only covers "setLevel", which in SolrCloud mode needs the "nodes=all"
+    // broadcast-to-every-node behavior that the v2 NodeLoggingApis endpoint doesn't support yet
+    // (see SOLR-16738). The caller (LoggingLevelController) passes nodes:'all' only when
+    // SolrCloud is enabled; in standalone mode the param is omitted entirely. Retire this
+    // factory once setLevel moves to LoggingV2.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "setLevel": {params: {nodes:'all'}}
+      "setLevel": {}
       });
   }])
 .factory('Zookeeper',
@@ -274,7 +266,7 @@ solrAdminServices.factory('Metrics',
     // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
     // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
     // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
-    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Collections.
+    // predates the OpenAPI-based v2 framework), so this stays a plain $resource.
     // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
     // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
     // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
@@ -363,25 +355,40 @@ solrAdminServices.factory('Metrics',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
-           "query": {
-             method: "GET",
-             transformResponse: function (data) {
-               return {data: data}
-             },
-             headers: {doNotIntercept: "true"}
-           }
-       });
-       resource.url = function(params) {
+       var toQueryString = function(params) {
            var qs = [];
-           for (key in params) {
+           for (var key in params) {
                if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
                        qs.push(key + "=" + encodeURIComponent(params[key][i]));
                    }
                }
            }
-           return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
+           return qs.sort().join("&");
+       }
+       var wrapRawResponse = function(data) {
+           return {data: data}
+       }
+       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
+           "query": {
+             method: "GET",
+             transformResponse: wrapRawResponse,
+             headers: {doNotIntercept: "true"}
+           },
+           // Same request as "query" above, but as a form-encoded POST body instead of a query
+           // string - for request params (e.g. a streaming expression) too large for a URL/header.
+           "queryPost": {
+             method: "POST",
+             transformRequest: toQueryString,
+             transformResponse: wrapRawResponse,
+             headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               doNotIntercept: "true"
+             }
+           }
+       });
+       resource.url = function(params) {
+           return "" + params.core + "/" + params.handler + "?" + toQueryString(params);
        }
        return resource;
 }])
@@ -393,7 +400,7 @@ solrAdminServices.factory('Metrics',
      // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
      // rather than a formal parameter) and query() takes no query params at all (the server
      // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
-     // Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
+     // ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
      return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},
