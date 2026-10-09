@@ -154,7 +154,7 @@ You can also specify 'soft' autoCommits with the `autoSoftCommit` tag.
 
 AutoCommits are processed by the core's default update request processor chain, in the same way as a commit requested by a client.
 Update processors in the default chain therefore receive autoCommits through their `processCommit` method, and may act on them or reject them.
-The request an update processor sees for an autoCommit is synthetic: it has no user and no request parameters beyond the commit itself.
+The request an update processor sees for an autoCommit is synthetic: it has no user, and its only request parameter is `commit_end_point=true`, which marks the commit as an end point for this core.
 An autoCommit applies only to the core it was triggered on; in SolrCloud it is not distributed to other replicas.
 
 === AutoCommit Best Practices
