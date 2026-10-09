@@ -561,40 +561,32 @@ groups:
     - https://projects.apache.org/doap.html
   - !Todo
     id: new_jenkins_builds
-    title: Add Jenkins tasks for new branch(es)
+    title: Add Jenkins tasks for the new stable branch
     description: |
-      This will make sure we are continuously testing the new branch(es) we have created.
+      This will make sure we are continuously testing the new stable branch we have created.
+      Release branches are short-lived and don't get Jenkins jobs of their own.
       Consult the JenkinsReleaseBuilds page for more information.
-      
+
       Job Suffixes to create:
-        {% if release_type == 'major' %}
         *-{{release_version_major}}.x (The new stable branch)
-        {% endif %}
-        *-{{release_version_major}}.{{release_version_minor}} (The new release branch)
     types:
     - major
-    - minor
     links:
       - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
       - https://ci-builds.apache.org/job/Solr/
   - !Todo
     id: old_jenkins_builds
-    title: Remove old Jenkins tasks for decommissioned branches
+    title: Remove old Jenkins tasks for the decommissioned branch
     description: |
       This will make sure we aren't using resources to test branches no longer in development.
+      The previous stable branch (branch_{{latest_version_major}}x) is now the LTS branch and keeps its jobs.
       Consult the JenkinsReleaseBuilds page for more information.
-      
+
       Job Suffixes to delete:
-        {% if release_type == 'major' %}
-        *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
-        *-{{latest_version_major}}.x (The previous stable branch)
-        {% else %}
-        *-{{latest_version_major}}.{{latest_version_minor}} (The previous release branch)
-        {% endif %}
+        *-{{latest_lts_version_major}}.x (The previous LTS branch)
     depends: new_jenkins_builds
     types:
       - major
-      - minor
     links:
       - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
       - https://ci-builds.apache.org/job/Solr/
