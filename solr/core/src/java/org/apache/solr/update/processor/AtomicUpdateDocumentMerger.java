@@ -106,7 +106,12 @@ public class AtomicUpdateDocumentMerger {
    * a plain value can come first.
    */
   private static boolean containsOperationMap(SolrInputField sif) {
-    for (Object val : sif.getValues()) {
+    Collection<Object> values = sif.getValues();
+    if (values == null) {
+      // getValues() returns null when the field's value is null; such a field has no values.
+      return false;
+    }
+    for (Object val : values) {
       if (isOperationMap(val)) {
         return true;
       }
