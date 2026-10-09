@@ -493,7 +493,10 @@ For a query to a collection called `collection1` on the other hand, the most spe
 
 === Authorization API Endpoint
 
-`/admin/authorization`: takes a set of commands to create permissions, map permissions to roles, and map roles to users.
+* v1: `\http://localhost:8983/solr/admin/authorization`
+* v2: `\http://localhost:8983/api/cluster/security/authorization`
+
+This endpoint takes a set of commands to create permissions, map permissions to roles, and map roles to users.
 
 === Manage Permissions
 
@@ -511,43 +514,128 @@ The following creates a new permission named "collection-mgr" that is allowed to
 The permission will be placed before the "read" permission.
 Note also that we have defined `collection` as `null` because requests to the Collections API are never collection-specific.
 
+[tabs#set-permission-collection-mgr]
+======
+V1 API::
++
+====
 [source,bash]
-curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authorization -H 'Content-type:application/json' -d '{
   "set-permission": {"collection": null,
                      "path":"/admin/collections",
                      "params":{"action":["LIST", "CREATE"]},
                      "before": 3,
                      "role": "admin"}
-}' http://localhost:8983/solr/admin/authorization
+}'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization -H 'Content-type:application/json' -d '{
+  "set-permission": {"collection": null,
+                     "path":"/admin/collections",
+                     "params":{"action":["LIST", "CREATE"]},
+                     "before": 3,
+                     "role": "admin"}
+}'
+----
+====
+======
 
 Apply an update permission on all collections to a role called `dev` and read permissions to a role called `guest`:
 
+[tabs#set-permission-dev-guest]
+======
+V1 API::
++
+====
 [source,bash]
-curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authorization -H 'Content-type:application/json' -d '{
   "set-permission": {"name": "update", "role":"dev"},
   "set-permission": {"name": "read", "role":"guest"}
-}' http://localhost:8983/solr/admin/authorization
+}'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization -H 'Content-type:application/json' -d '{
+  "set-permission": {"name": "update", "role":"dev"},
+  "set-permission": {"name": "read", "role":"guest"}
+}'
+----
+====
+======
 
 === Update or Delete Permissions
 
 Permissions can be accessed using their index in the list.
-Use the `/admin/authorization` API to see the existing permissions and their indices.
+Use the Authorization API to see the existing permissions and their indices.
 
 The following example updates the `'role'` attribute of permission at index `3`:
 
+[tabs#update-permission]
+======
+V1 API::
++
+====
 [source,bash]
-curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authorization -H 'Content-type:application/json' -d '{
   "update-permission": {"index": 3,
                        "role": ["admin", "dev"]}
-}' http://localhost:8983/solr/admin/authorization
+}'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization -H 'Content-type:application/json' -d '{
+  "update-permission": {"index": 3,
+                       "role": ["admin", "dev"]}
+}'
+----
+====
+======
 
 The following example deletes permission at index `3`:
 
+[tabs#delete-permission]
+======
+V1 API::
++
+====
 [source,bash]
-curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+----
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authorization -H 'Content-type:application/json' -d '{
   "delete-permission": 3
-}' http://localhost:8983/solr/admin/authorization
+}'
+----
+====
 
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization -H 'Content-type:application/json' -d '{
+  "delete-permission": 3
+}'
+----
+====
+======
 
 === Map Roles to Users
 
@@ -562,8 +650,272 @@ The values supplied to the command are simply a user ID and one or more roles th
 
 For example, the following would grant a user "solr" the "admin" and "dev" roles, and remove all roles from the user ID "harry":
 
+[tabs#set-user-role]
+======
+V1 API::
++
+====
 [source,bash]
-curl -u solr:SolrRocks -H 'Content-type:application/json' -d '{
+----
+curl -u solr:SolrRocks http://localhost:8983/solr/admin/authorization -H 'Content-type:application/json' -d '{
    "set-user-role" : {"solr": ["admin","dev"],
                       "harry": null}
-}' http://localhost:8983/solr/admin/authorization
+}'
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -u solr:SolrRocks http://localhost:8983/api/cluster/security/authorization -H 'Content-type:application/json' -d '{
+   "set-user-role" : {"solr": ["admin","dev"],
+                      "harry": null}
+}'
+----
+====
+======
+
+== Managing Roles and Permissions with Resource-Oriented APIs
+
+In addition to the `set-user-role`/`set-permission`/`update-permission`/`delete-permission` commands above, Solr provides resource-oriented v2 APIs for managing roles and permissions, addressing each user or permission directly in the URL path instead of batching commands into the shared `/cluster/security/authorization` endpoint.
+
+=== Roles API
+
+==== Roles API Entry Point
+
+* v2: `\http://localhost:8983/api/cluster/security/authorization/\{scheme}/roles`
+
+The `scheme` path segment names the authentication scheme these role mappings belong to, as configured under `MultiAuthRuleBasedAuthorizationPlugin`'s `schemes` list (e.g. `basic`). It is ignored when that plugin isn't in use - a plain `RuleBasedAuthorizationPlugin` setup has only one set of role mappings, and any value may be supplied; the examples below use `basic` by convention. Unlike roles, permissions are shared across every scheme, so the Permissions API below has no such segment.
+
+==== List Every User's Roles
+
+Lists every user's role assignments at once - useful for building a UI table without one request per user.
+
+[tabs#list-user-roles]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/roles
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {"status": 0, "QTime": 1},
+  "userRoles": {"solr": ["admin"], "harry": ["dev"]}
+}
+----
+
+==== Get a User's Roles
+
+[tabs#get-user-roles]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/roles/solr
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {"status": 0, "QTime": 1},
+  "roles": ["admin", "dev"]
+}
+----
+
+A user with no roles assigned returns an empty `roles` array, rather than a 404 - the roles map is independent of whether the username exists as a Basic Authentication user.
+
+==== Assign Roles to a User
+
+Replaces all of a user's roles with the ones supplied. This is the resource-oriented equivalent of the `set-user-role` command above.
+
+[tabs#set-roles-for-user]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X PUT http://localhost:8983/api/cluster/security/authorization/basic/roles/solr \
+    -H 'Content-type:application/json' \
+    -d '{"roles": ["admin", "dev"]}'
+----
+====
+======
+
+==== Revoke a User's Roles
+
+Removes all roles from a user. This replaces the `set-user-role`-with-`null` idiom above with a real `DELETE`.
+
+[tabs#delete-user-roles]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X DELETE http://localhost:8983/api/cluster/security/authorization/basic/roles/harry
+----
+====
+======
+
+=== Permissions API
+
+==== Permissions API Entry Point
+
+* v2: `\http://localhost:8983/api/cluster/security/authorization/permissions`
+
+A permission's `index` - its position in the evaluated-top-down list - is addressed as a path parameter (`/permissions/\{index}`) rather than a body field.
+
+==== List Permissions
+
+[tabs#list-permissions-request]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/permissions
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {"status": 0, "QTime": 1},
+  "permissions": [
+    {"index": 1, "name": "security-edit", "role": ["admin"]},
+    {"index": 2, "name": "read", "role": ["guest"]}
+  ]
+}
+----
+
+==== Create a Permission
+
+Creates a new permission, appending it at the end of the list unless `before` is supplied to place it immediately before an existing index. The server assigns and returns the new permission's `index`.
+
+[tabs#create-permission]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X POST http://localhost:8983/api/cluster/security/authorization/permissions \
+    -H 'Content-type:application/json' \
+    -d '{"name": "read", "role": ["guest"]}'
+----
+====
+======
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {"status": 0, "QTime": 2},
+  "index": 2
+}
+----
+
+==== Update a Permission
+
+Updates the permission at the given index. This is the resource-oriented equivalent of the `update-permission` command above; the index moves from a body field to the URL path.
+
+[tabs#update-permission-v2]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X PUT http://localhost:8983/api/cluster/security/authorization/permissions/2 \
+    -H 'Content-type:application/json' \
+    -d '{"role": ["guest", "dev"]}'
+----
+====
+======
+
+==== Delete a Permission
+
+Deletes the permission at the given index, then re-numbers the remaining permissions. Returns a 404 if no permission exists at that index.
+
+[tabs#delete-permission-v2]
+======
+V1 API::
++
+====
+There is no V1 equivalent of this action.
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl --user solr:SolrRocks -X DELETE http://localhost:8983/api/cluster/security/authorization/permissions/2
+----
+====
+======
