@@ -784,6 +784,15 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertTrue(error.getMessage(), error.getMessage().contains("'add'"));
   }
 
+  public void testCountValuesNullValue() throws Exception {
+    // a counted field whose value is null has no values to count: the stored count is 0,
+    // as it was before the atomic update detection started looking at the values
+    SolrInputDocument d =
+        processAdd("count", doc(f("id", "1111"), f("count_field", (Object) null)));
+    assertNotNull(d);
+    assertEquals(0, d.getFieldValue("count_field"));
+  }
+
   public void testCountValuesAtomicUpdateUnsupportedOperations() throws Exception {
     for (Map<String, Object> operations :
         List.of(

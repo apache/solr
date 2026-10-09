@@ -75,9 +75,12 @@ public final class CountFieldValuesUpdateProcessorFactory
         next,
         src -> {
           SolrInputField result = new SolrInputField(src.getName());
-          for (Object value : src.getValues()) {
-            if (value instanceof Map && !(value instanceof SolrDocumentBase)) {
-              return countAtomicUpdate(src, result);
+          Collection<Object> values = src.getValues();
+          if (values != null) {
+            for (Object value : values) {
+              if (value instanceof Map && !(value instanceof SolrDocumentBase)) {
+                return countAtomicUpdate(src, result, values);
+              }
             }
           }
           result.setValue(src.getValueCount());
@@ -94,17 +97,18 @@ public final class CountFieldValuesUpdateProcessorFactory
    * does when the operations are applied to the stored document. The result stays an atomic {@code
    * set} of the counted operand.
    */
-  private static SolrInputField countAtomicUpdate(SolrInputField src, SolrInputField result) {
+  private static SolrInputField countAtomicUpdate(
+      SolrInputField src, SolrInputField result, Collection<Object> values) {
     boolean seenSet = false;
     Object setOperand = null;
-    for (Object value : src.getValues()) {
+    for (Object value : values) {
       if (!(value instanceof Map) || value instanceof SolrDocumentBase) {
         throw new SolrException(
             BAD_REQUEST,
             "Field "
                 + src.getName()
                 + " mixes atomic update operations with plain values: "
-                + src.getValues());
+                + values);
       }
       for (Map.Entry<?, ?> operation : ((Map<?, ?>) value).entrySet()) {
         if (!"set".equals(operation.getKey())) {
