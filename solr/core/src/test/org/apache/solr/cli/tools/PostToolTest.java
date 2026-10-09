@@ -57,6 +57,11 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
     configureCluster(2)
@@ -94,7 +99,7 @@ public class PostToolTest extends SolrCloudTestCase {
       SecurityJson.USER_PASS,
       jsonDoc.toString(),
     };
-    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
+    assertEquals(0, runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -132,7 +137,7 @@ public class PostToolTest extends SolrCloudTestCase {
     String[] args = {
       "post", "-c", collection, "--credentials", SecurityJson.USER_PASS, jsonDoc.toString(),
     };
-    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
+    assertEquals(0, runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -173,12 +178,12 @@ public class PostToolTest extends SolrCloudTestCase {
       "--credentials",
       SecurityJson.USER_PASS,
       "--params",
-      "\"separator=%09&header=false&fieldnames=id,title_s\"",
+      "separator=%09&header=false&fieldnames=id,title_s",
       "--type",
       "text/csv",
       tsvDoc.toString(),
     };
-    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
+    assertEquals(0, runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;

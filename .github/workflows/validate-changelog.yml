@@ -20,7 +20,7 @@ concurrency:
 jobs:
   validate-changelog:
     name: Check changelog entry
-    # Skip validation for Renovate PRs (solrbot) - they get changelog entries automatically.
+    # Skip validation for Renovate PRs (solrbot); dependency changes are summarized at release time.
     # On label events, only re-run for the 'no-changelog' label; other label churn
     # (e.g. from the labeler workflow) leaves the existing check result untouched.
     if: |

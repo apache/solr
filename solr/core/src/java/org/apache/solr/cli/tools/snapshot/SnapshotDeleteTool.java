@@ -28,8 +28,22 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 
 /** Supports snapshot-delete command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "delete",
+    description = "Deletes a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Delete a snapshot",
+      "  bin/solr snapshot delete -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotDeleteTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -39,6 +53,11 @@ public class SnapshotDeleteTool extends ToolBase {
           .desc("Name of collection to manage.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -51,6 +70,21 @@ public class SnapshotDeleteTool extends ToolBase {
   /** Parameters for the snapshot-delete command, independent of the command line parser. */
   record SnapshotDeleteParams(
       String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
+
+  public SnapshotDeleteTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotDeleteTool(ToolRuntime runtime) {
     super(runtime);
@@ -116,6 +150,13 @@ public class SnapshotDeleteTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    SnapshotDeleteParams params =
+        new SnapshotDeleteParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name,
+            snapshot.name);
+    deleteSnapshot(params);
+    return 0;
   }
 }

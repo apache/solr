@@ -29,6 +29,11 @@ import org.junit.Test;
 
 public class AssertToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
@@ -43,7 +48,7 @@ public class AssertToolTest extends SolrCloudTestCase {
         System.getSecurityManager() != null);
     final String[] args = new String[] {"assert", "--exitcode", "--exists", "/tmp"};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals("Expected AssertTool to raise an error", 100, numAssertionsFailed);
   }
@@ -53,7 +58,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     Path tempDir = Files.createTempDirectory("myTempDir");
     final String[] args = new String[] {"assert", "--exitcode", "--exists", tempDir.toString()};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to pass assertion that directory exists", 0, numAssertionsFailed);
@@ -67,7 +72,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final String[] args =
         new String[] {"assert", "--exitcode", "--exists", tempDir.toString() + "/foo/bar/baz"};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory exists", 1, numAssertionsFailed);
@@ -78,7 +83,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     Path tempDir = Files.createTempDirectory("myTempDir");
     final String[] args = new String[] {"assert", "--exitcode", "--not-exists", tempDir.toString()};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
@@ -92,7 +97,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final String[] args =
         new String[] {"assert", "--exitcode", "--not-exists", tempDir.toString() + "/foo/bar/baz"};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
@@ -105,7 +110,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final String baseUrl = getRealSolrBaseUrl();
     final String[] args = new String[] {"assert", "--exitcode", "--started", baseUrl};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to pass assertion when Solr is running on provided URL",
@@ -118,7 +123,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final String[] args =
         new String[] {"assert", "--exitcode", "--started", "http://www.google.com"};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to fail assertion when Solr isn't running on provided URL",
@@ -131,7 +136,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final String baseUrl = getRealSolrBaseUrl();
     final String[] args = new String[] {"assert", "--exitcode", "--not-started", baseUrl};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to fail assertion when Solr is running on provided URL",
@@ -144,7 +149,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final String[] args =
         new String[] {"assert", "--exitcode", "--not-started", "http://www.google.com"};
 
-    final int numAssertionsFailed = CLITestHelper.runTool(args, AssertTool.class);
+    final int numAssertionsFailed = runTool(args, AssertTool.class);
 
     assertEquals(
         "Expected AssertTool to pass assertion when Solr isn't running on provided URL",

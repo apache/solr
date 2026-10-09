@@ -21,6 +21,8 @@ import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.CliDefaultValueProvider;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.junit.Test;
 import picocli.CommandLine;
 
 /**
@@ -51,5 +53,17 @@ public class ZkSubcommandsPicocliTest extends ZkSubcommandsTest {
     return new CommandLine(tool)
         .setDefaultValueProvider(new CliDefaultValueProvider())
         .execute(toolArgs);
+  }
+
+  @Test
+  public void testSetClusterPropertyWithSolrConnection() throws Exception {
+    // picocli only: the picocli tool takes the shared connection options, commons-cli has -z alone
+    ClusterProperties properties = new ClusterProperties(zkClient);
+    String[] args =
+        new String[] {
+          "cluster", "--property", "urlScheme", "--value", "https", "-s", zkServer.getZkAddress()
+        };
+    assertEquals(0, runTool(args, ClusterTool.class));
+    assertEquals("https", properties.getClusterProperty("urlScheme", "none"));
   }
 }

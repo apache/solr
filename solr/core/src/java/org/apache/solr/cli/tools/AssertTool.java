@@ -45,21 +45,55 @@ import org.slf4j.LoggerFactory;
  * Supports assert command in the bin/solr script. Asserts various conditions and exists with error
  * code if there are failures, else continues with no output.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "assert",
+    description =
+        "Asserts various conditions and exits with an error code if there are failures, else"
+            + " continues with no output.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Assert Solr is running before continuing",
+      "  bin/solr assert --started http://localhost:8983 --timeout 5000",
+      "",
+      "  # Assert we are not running as root",
+      "  bin/solr assert --not-root"
+    })
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String message = null;
   private boolean useExitCode = false;
   private Long timeoutMs = 1000L;
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option IS_NOT_ROOT_OPTION =
       Option.builder().desc("Asserts that we are NOT the root user.").longOpt("not-root").get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option IS_ROOT_OPTION =
       Option.builder().desc("Asserts that we are the root user.").longOpt("root").get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final OptionGroup ROOT_OPTION =
       new OptionGroup().addOption(IS_NOT_ROOT_OPTION).addOption(IS_ROOT_OPTION);
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option IS_NOT_RUNNING_ON_OPTION =
       Option.builder()
           .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
@@ -68,6 +102,11 @@ public class AssertTool extends ToolBase {
           .argName("url")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option IS_RUNNING_ON_OPTION =
       Option.builder()
           .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
@@ -76,9 +115,19 @@ public class AssertTool extends ToolBase {
           .argName("url")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final OptionGroup RUNNING_OPTION =
       new OptionGroup().addOption(IS_NOT_RUNNING_ON_OPTION).addOption(IS_RUNNING_ON_OPTION);
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SAME_USER_OPTION =
       Option.builder()
           .desc("Asserts that we run as same user that owns <directory>.")
@@ -87,6 +136,11 @@ public class AssertTool extends ToolBase {
           .argName("directory")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option DIRECTORY_EXISTS_OPTION =
       Option.builder()
           .desc("Asserts that directory <directory> exists.")
@@ -95,6 +149,11 @@ public class AssertTool extends ToolBase {
           .argName("directory")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option DIRECTORY_NOT_EXISTS_OPTION =
       Option.builder()
           .desc("Asserts that directory <directory> does NOT exist.")
@@ -103,9 +162,19 @@ public class AssertTool extends ToolBase {
           .argName("directory")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final OptionGroup DIRECTORY_OPTION =
       new OptionGroup().addOption(DIRECTORY_EXISTS_OPTION).addOption(DIRECTORY_NOT_EXISTS_OPTION);
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option IS_CLOUD_OPTION =
       Option.builder()
           .desc(
@@ -115,6 +184,11 @@ public class AssertTool extends ToolBase {
           .argName("url")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option IS_NOT_CLOUD_OPTION =
       Option.builder()
           .desc(
@@ -124,9 +198,19 @@ public class AssertTool extends ToolBase {
           .argName("url")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final OptionGroup CLOUD_OPTION =
       new OptionGroup().addOption(IS_CLOUD_OPTION).addOption(IS_NOT_CLOUD_OPTION);
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option MESSAGE_OPTION =
       Option.builder()
           .desc("Exception message to be used in place of the default error message.")
@@ -135,6 +219,11 @@ public class AssertTool extends ToolBase {
           .argName("message")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option TIMEOUT_OPTION =
       Option.builder()
           .desc("Timeout in ms for commands supporting a timeout.")
@@ -144,6 +233,11 @@ public class AssertTool extends ToolBase {
           .argName("ms")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option EXIT_CODE_OPTION =
       Option.builder()
           .desc("Return an exit code instead of printing error message on assert fail.")
@@ -193,6 +287,109 @@ public class AssertTool extends ToolBase {
       boolean useExitCode,
       String credentials,
       List<Assertion> assertions) {}
+
+  // --- picocli fields ---
+
+  static class RootOptions {
+    @picocli.CommandLine.Option(
+        names = "--root",
+        description = "Asserts that we are the root user.")
+    boolean isRoot;
+
+    @picocli.CommandLine.Option(
+        names = "--not-root",
+        description = "Asserts that we are NOT the root user.")
+    boolean isNotRoot;
+  }
+
+  static class RunningOptions {
+    @picocli.CommandLine.Option(
+        names = "--started",
+        paramLabel = "url",
+        description = "Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+    String startedUrl;
+
+    @picocli.CommandLine.Option(
+        names = "--not-started",
+        paramLabel = "url",
+        description =
+            "Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+    String notStartedUrl;
+  }
+
+  static class DirectoryOptions {
+    @picocli.CommandLine.Option(
+        names = "--exists",
+        paramLabel = "directory",
+        description = "Asserts that directory <directory> exists.")
+    String existsDir;
+
+    @picocli.CommandLine.Option(
+        names = "--not-exists",
+        paramLabel = "directory",
+        description = "Asserts that directory <directory> does NOT exist.")
+    String notExistsDir;
+  }
+
+  static class CloudOptions {
+    @picocli.CommandLine.Option(
+        names = "--cloud",
+        paramLabel = "url",
+        description =
+            "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL"
+                + " should be for root Solr path.")
+    String cloudUrl;
+
+    @picocli.CommandLine.Option(
+        names = "--not-cloud",
+        paramLabel = "url",
+        description =
+            "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running. "
+                + " URL should be for root Solr path.")
+    String notCloudUrl;
+  }
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private RootOptions rootOptions;
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private RunningOptions runningOptions;
+
+  @picocli.CommandLine.Option(
+      names = "--same-user",
+      paramLabel = "directory",
+      description = "Asserts that we run as same user that owns <directory>.")
+  private String sameUserOpt;
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private DirectoryOptions directoryOptions;
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private CloudOptions cloudOptions;
+
+  @picocli.CommandLine.Option(
+      names = "--message",
+      paramLabel = "message",
+      description = "Exception message to be used in place of the default error message.")
+  private String messageOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--timeout",
+      paramLabel = "ms",
+      defaultValue = "1000",
+      description = "Timeout in ms for commands supporting a timeout.")
+  private long timeoutOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--exitcode",
+      description = "Return an exit code instead of printing error message on assert fail.")
+  private boolean exitCodeOpt;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  public AssertTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public AssertTool(ToolRuntime runtime) {
     super(runtime);
@@ -502,7 +699,57 @@ public class AssertTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    List<Assertion> assertions = new ArrayList<>();
+    if (rootOptions != null && rootOptions.isRoot) {
+      assertions.add(new Assertion.RootUser());
+    }
+    if (rootOptions != null && rootOptions.isNotRoot) {
+      assertions.add(new Assertion.NotRootUser());
+    }
+    if (directoryOptions != null && directoryOptions.existsDir != null) {
+      assertions.add(new Assertion.DirExists(directoryOptions.existsDir));
+    }
+    if (directoryOptions != null && directoryOptions.notExistsDir != null) {
+      assertions.add(new Assertion.DirNotExists(directoryOptions.notExistsDir));
+    }
+    if (sameUserOpt != null) {
+      assertions.add(new Assertion.SameUser(sameUserOpt));
+    }
+    if (runningOptions != null && runningOptions.startedUrl != null) {
+      assertions.add(new Assertion.SolrRunning(runningOptions.startedUrl));
+    }
+    if (runningOptions != null && runningOptions.notStartedUrl != null) {
+      assertions.add(new Assertion.SolrNotRunning(runningOptions.notStartedUrl));
+    }
+    if (cloudOptions != null && cloudOptions.cloudUrl != null) {
+      assertions.add(new Assertion.CloudMode(cloudOptions.cloudUrl));
+    }
+    if (cloudOptions != null && cloudOptions.notCloudUrl != null) {
+      assertions.add(new Assertion.NotCloudMode(cloudOptions.notCloudUrl));
+    }
+
+    try {
+      return runAssert(
+          new AssertParams(
+              messageOpt,
+              timeoutOpt,
+              exitCodeOpt,
+              credentialsOptions.credentials,
+              List.copyOf(assertions)));
+    } catch (Exception exc) {
+      // Mirrors the commons-cli path's runTool() override: an assertion failure or other error
+      // with a message becomes exit code 100, not the ToolBase default of 1.
+      String excMsg = exc.getMessage();
+      if (excMsg == null) {
+        throw exc;
+      }
+      if (isVerbose()) {
+        CLIO.err("\nERROR: " + exc + "\n");
+      } else {
+        CLIO.err("\nERROR: " + excMsg + "\n");
+      }
+      return 100;
+    }
   }
 
   public static class AssertionFailureException extends Exception {

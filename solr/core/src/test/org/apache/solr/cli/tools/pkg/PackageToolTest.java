@@ -72,6 +72,9 @@ public class PackageToolTest extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig(
             "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "conf-validation",
+            TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
 
@@ -93,21 +96,21 @@ public class PackageToolTest extends SolrCloudTestCase {
     return req;
   }
 
+  protected int runTool(String[] args, ToolRuntime runtime) throws Exception {
+    PackageTool tool = new PackageTool(runtime);
+    return tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
+  }
+
   @Test
   public void testPackageTool() throws Exception {
-    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
-    PackageTool tool = new PackageTool(runtime);
-
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(
-        tool,
         new String[] {
           "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
         });
 
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -119,13 +122,11 @@ public class PackageToolTest extends SolrCloudTestCase {
         });
 
     run(
-        tool,
         new String[] {
           "--solr-url", solrUrl, "list-available", "--credentials", SecurityJson.USER_PASS
         });
 
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -136,7 +137,6 @@ public class PackageToolTest extends SolrCloudTestCase {
         });
 
     run(
-        tool,
         new String[] {
           "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
         });
@@ -149,7 +149,6 @@ public class PackageToolTest extends SolrCloudTestCase {
     String rhPath = "/mypath2";
 
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -161,7 +160,6 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     // Leaving -p in for --param to test the deprecated value continues to work.
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -179,7 +177,6 @@ public class PackageToolTest extends SolrCloudTestCase {
         "abc", "question-answer", "1.0.0", rhPath, "1.0.0", SecurityJson.USER_PASS);
 
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -190,7 +187,6 @@ public class PackageToolTest extends SolrCloudTestCase {
         });
 
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -210,7 +206,6 @@ public class PackageToolTest extends SolrCloudTestCase {
 
       // This command pegs the version to the latest available
       run(
-          tool,
           new String[] {
             "--solr-url",
             solrUrl,
@@ -226,7 +221,6 @@ public class PackageToolTest extends SolrCloudTestCase {
           "abc", "question-answer", "$LATEST", rhPath, "1.0.0", SecurityJson.USER_PASS);
 
       run(
-          tool,
           new String[] {
             "--solr-url",
             solrUrl,
@@ -241,7 +235,6 @@ public class PackageToolTest extends SolrCloudTestCase {
       log.info("Testing explicit deployment to a different/newer version");
 
       run(
-          tool,
           new String[] {
             "--solr-url",
             solrUrl,
@@ -256,7 +249,6 @@ public class PackageToolTest extends SolrCloudTestCase {
       // even if parameters are not passed in, they should be picked up from previous deployment
       if (random().nextBoolean()) {
         run(
-            tool,
             new String[] {
               "--solr-url",
               solrUrl,
@@ -273,7 +265,6 @@ public class PackageToolTest extends SolrCloudTestCase {
             });
       } else {
         run(
-            tool,
             new String[] {
               "--solr-url",
               solrUrl,
@@ -293,7 +284,6 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     log.info("Running undeploy...");
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -306,7 +296,6 @@ public class PackageToolTest extends SolrCloudTestCase {
         });
 
     run(
-        tool,
         new String[] {
           "--solr-url",
           solrUrl,
@@ -382,27 +371,26 @@ public class PackageToolTest extends SolrCloudTestCase {
   public void testDeployValidationMessages() throws Exception {
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    withBasicAuth(CollectionAdminRequest.createCollection("validation-test", "conf1", 1, 1))
+    withBasicAuth(
+            CollectionAdminRequest.createCollection("validation-test", "conf-validation", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
 
     CLITestHelper.TestingRuntime captureRuntime = new CLITestHelper.TestingRuntime(true);
-    PackageTool tool = new PackageTool(captureRuntime);
 
     // Collection exists but package does not — collection validation should pass,
     // package lookup should fail.
-    tool.runTool(
-        SolrCLI.processCommandLineArgs(
-            tool,
-            new String[] {
-              "--solr-url",
-              solrUrl,
-              "deploy",
-              "NONEXISTENT_PKG",
-              "--collections",
-              "validation-test",
-              "--credentials",
-              SecurityJson.USER_PASS
-            }));
+    runTool(
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "deploy",
+          "NONEXISTENT_PKG",
+          "--collections",
+          "validation-test",
+          "--credentials",
+          SecurityJson.USER_PASS
+        },
+        captureRuntime);
     String deployOut = captureRuntime.getOutput();
     assertFalse(
         "Should not complain about invalid collection", deployOut.contains("Invalid collection"));
@@ -413,19 +401,18 @@ public class PackageToolTest extends SolrCloudTestCase {
     captureRuntime.clearOutput();
 
     // Undeploy of a package that was never deployed should give a clear message.
-    tool.runTool(
-        SolrCLI.processCommandLineArgs(
-            tool,
-            new String[] {
-              "--solr-url",
-              solrUrl,
-              "undeploy",
-              "NONEXISTENT_PKG",
-              "--collections",
-              "validation-test",
-              "--credentials",
-              SecurityJson.USER_PASS
-            }));
+    runTool(
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "undeploy",
+          "NONEXISTENT_PKG",
+          "--collections",
+          "validation-test",
+          "--credentials",
+          SecurityJson.USER_PASS
+        },
+        captureRuntime);
     String undeployOut = captureRuntime.getOutput();
     assertFalse(
         "Should not complain about invalid collection", undeployOut.contains("Invalid collection"));
@@ -434,8 +421,8 @@ public class PackageToolTest extends SolrCloudTestCase {
         undeployOut.contains("Package NONEXISTENT_PKG not deployed on collection validation-test"));
   }
 
-  private void run(PackageTool tool, String[] args) throws Exception {
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
+  private void run(String[] args) throws Exception {
+    int res = runTool(args, new CLITestHelper.TestingRuntime(false));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 

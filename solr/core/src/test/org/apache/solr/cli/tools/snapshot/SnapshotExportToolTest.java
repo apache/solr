@@ -39,6 +39,13 @@ import org.junit.Test;
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class SnapshotExportToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(
+      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
+      throws Exception {
+    return CLITestHelper.runTool(args, runtime, clazz);
+  }
+
   private static final String COLLECTION = "snapshot_export_coll";
 
   @BeforeClass
@@ -126,6 +133,29 @@ public class SnapshotExportToolTest extends SolrCloudTestCase {
         Arrays.stream(cli.getOptions()).anyMatch(o -> "snapshot-name".equals(o.getLongOpt())));
   }
 
+  /** Whichever parser runs, the option is refused with an error exit and nothing is written. */
+  @Test
+  public void testSnapshotNameIsRefusedWithAnErrorExit() throws Exception {
+    Path destDir = newDestDir();
+    int exitCode =
+        runTool(
+            new String[] {
+              "snapshot-export",
+              "-c",
+              COLLECTION,
+              "--dest-dir",
+              destDir.toString(),
+              "--solr-url",
+              solrUrl(),
+              "--snapshot-name",
+              "snap1"
+            },
+            new CLITestHelper.TestingRuntime(false),
+            SnapshotExportTool.class);
+    assertEquals(1, exitCode);
+    assertEquals(List.of(), backupDirs(destDir));
+  }
+
   @Test
   public void testBackupNameIsDerivedFromCollectionAndTime() {
     assertEquals(
@@ -139,7 +169,7 @@ public class SnapshotExportToolTest extends SolrCloudTestCase {
     Path destDir = newDestDir();
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     int exitCode =
-        CLITestHelper.runTool(
+        runTool(
             new String[] {
               "snapshot-export",
               "-c",
