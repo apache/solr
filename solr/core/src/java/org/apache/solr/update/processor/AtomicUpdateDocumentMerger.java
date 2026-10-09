@@ -104,7 +104,7 @@ public class AtomicUpdateDocumentMerger {
   private static List<Entry<String, Object>> atomicOperations(SolrInputField sif) {
     List<Entry<String, Object>> operations = new ArrayList<>();
     for (Object operation : sif.getValues()) {
-      if (!(operation instanceof Map)) {
+      if (!(operation instanceof Map) || operation instanceof SolrDocumentBase) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Field "
@@ -176,7 +176,7 @@ public class AtomicUpdateDocumentMerger {
       final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
       Object val = sif.getFirstValue();
-      if (val instanceof Map) {
+      if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
         for (Entry<String, Object> entry : atomicOperations(sif)) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();

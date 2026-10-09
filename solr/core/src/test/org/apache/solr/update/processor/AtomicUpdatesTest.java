@@ -1801,4 +1801,56 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "//result[@numFound = '1']",
         "//doc/arr[@name='cat']/str[.='new_value']");
   }
+
+  @Test
+  public void testAtomicUpdateWithChildDocuments() throws Exception {
+    // A field holding child documents is a plain value, not a set of atomic update
+    // operations: a child document is a Map (SolrDocumentBase), so without a guard the
+    // merger reads the child's own field names as operation names and fails the update
+    // with "Unknown operation". Child document fields must be set as-is, as they were
+    // before repeated operation maps were recognized.
+    SolrInputDocument childA = new SolrInputDocument();
+    childA.setField("id", "7a");
+    childA.setField("name", "child-a");
+    SolrInputDocument childB = new SolrInputDocument();
+    childB.setField("id", "7b");
+    childB.setField("name", "child-b");
+
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("add", "ddd"));
+    update.addField("children", childA);
+    update.addField("children", childB);
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      AtomicUpdateDocumentMerger merger = new AtomicUpdateDocumentMerger(req);
+      SolrInputDocument merged = merger.merge(update, existing);
+      assertEquals(
+          List.of("aaa", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
+      assertEquals(2, merged.getField("children").getValues().size());
+      assertSame(childA, merged.getField("children").getFirstValue());
+
+      // a single child document in a field is likewise a plain set, not an operation map
+      SolrInputDocument singleUpdate = new SolrInputDocument();
+      singleUpdate.setField("id", "9");
+      singleUpdate.addField("cat", Map.of("set", "zzz"));
+      singleUpdate.setField("child", childA);
+
+      SolrInputDocument singleExisting = new SolrInputDocument();
+      singleExisting.setField("id", "9");
+      singleExisting.setField("cat", new String[] {"aaa"});
+
+      SolrInputDocument singleMerged = merger.merge(singleUpdate, singleExisting);
+      assertEquals(List.of("zzz"), new ArrayList<Object>(singleMerged.getField("cat").getValues()));
+      assertSame(childA, singleMerged.getField("child").getFirstValue());
+    }
+  }
 }
