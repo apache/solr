@@ -1,4 +1,4 @@
-title: The Parse{Int,Long,Float,Double}FieldUpdateProcessorFactory classes no longer fail with a NullPointerException on an empty string value, which also made the Schema Designer fail on sample documents with empty values
+title: The Parse{Int,Long,Float,Double}FieldUpdateProcessorFactory classes no longer fail with a NullPointerException on an empty string value
 type: fixed
 authors:
   - name: Nick Shanin
