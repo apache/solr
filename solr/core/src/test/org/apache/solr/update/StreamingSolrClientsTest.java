@@ -16,13 +16,20 @@
  */
 package org.apache.solr.update;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
+import org.junit.BeforeClass;
 
 public class StreamingSolrClientsTest extends SolrTestCase {
+
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
 
   private static SolrError error(int statusCode) {
     SolrError error = new SolrError();
