@@ -18,8 +18,8 @@ package org.apache.solr.cli.tools.pkg;
 
 import static org.apache.solr.cli.SolrCLI.printGreen;
 import static org.apache.solr.cli.SolrCLI.printRed;
-import static org.apache.solr.packagemanager.PackageUtils.format;
-import static org.apache.solr.packagemanager.PackageUtils.formatGreen;
+import static org.apache.solr.cli.packagemanager.PackageUtils.format;
+import static org.apache.solr.cli.packagemanager.PackageUtils.formatGreen;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -41,16 +41,16 @@ import org.apache.solr.cli.CredentialsOptions;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.cli.packagemanager.PackageManager;
+import org.apache.solr.cli.packagemanager.PackageUtils;
+import org.apache.solr.cli.packagemanager.RepositoryManager;
+import org.apache.solr.cli.packagemanager.SolrPackage;
+import org.apache.solr.cli.packagemanager.SolrPackage.SolrPackageRelease;
+import org.apache.solr.cli.packagemanager.SolrPackageInstance;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.packagemanager.PackageManager;
-import org.apache.solr.packagemanager.PackageUtils;
-import org.apache.solr.packagemanager.RepositoryManager;
-import org.apache.solr.packagemanager.SolrPackage;
-import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
-import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,7 +151,7 @@ public class PackageTool extends ToolBase {
   @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
   ConnectionOptions connectionOptions;
 
-  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
+  @picocli.CommandLine.Mixin public CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 

@@ -22,8 +22,8 @@ import org.apache.solr.cli.ConnectionOptions;
 import org.apache.solr.cli.CredentialsOptions;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
-import org.apache.solr.packagemanager.PackageManager;
-import org.apache.solr.packagemanager.RepositoryManager;
+import org.apache.solr.cli.packagemanager.PackageManager;
+import org.apache.solr.cli.packagemanager.RepositoryManager;
 
 /** Shared picocli wiring for {@code bin/solr package <subcommand> leaves} */
 @SuppressWarnings("UnnecessarilyFullyQualified")

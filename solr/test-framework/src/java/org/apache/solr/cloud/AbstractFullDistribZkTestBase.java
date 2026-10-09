@@ -49,10 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.cli.DefaultToolRuntime;
-import org.apache.solr.cli.SolrCLI;
-import org.apache.solr.cli.ToolRuntime;
-import org.apache.solr.cli.tools.zk.ConfigSetUploadTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -100,6 +96,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
@@ -2224,19 +2221,16 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr)
       throws Exception {
 
-    Path fullConfDir = configSetDir.resolve(srcConfigSet);
-    String[] args =
-        new String[] {
-          "--conf-name", dstConfigName,
-          "--conf-dir", fullConfDir.toAbsolutePath().toString(),
-          "-z", zkAddr
-        };
-
-    ToolRuntime runtime = new DefaultToolRuntime();
-    ConfigSetUploadTool tool = new ConfigSetUploadTool(runtime);
-
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
-    assertEquals("Tool should have returned 0 for success, returned: " + res, 0, res);
+    Path confPath =
+        ConfigSetService.getConfigsetPath(
+            configSetDir.resolve(srcConfigSet).toString(), configSetDir.toString());
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkAddr)
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      zkClient.upConfig(confPath, dstConfigName);
+    }
   }
 
   @Override

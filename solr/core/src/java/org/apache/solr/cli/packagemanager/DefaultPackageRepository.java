@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;

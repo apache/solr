@@ -16,4 +16,4 @@
  */
 
 /** This package contains Package Manager (CLI) implementation */
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
