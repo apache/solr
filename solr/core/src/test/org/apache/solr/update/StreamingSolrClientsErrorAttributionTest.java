@@ -32,6 +32,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,6 +54,11 @@ public class StreamingSolrClientsErrorAttributionTest extends SolrTestCase {
   public static void beforeClass() {
     // keep the client's merge window short so a drained stream closes quickly
     System.setProperty("solr.cloud.client.pollQueueTime", "500");
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.cloud.client.pollQueueTime");
   }
 
   @Override

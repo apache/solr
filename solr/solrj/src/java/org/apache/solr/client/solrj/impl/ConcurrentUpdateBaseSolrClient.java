@@ -371,7 +371,8 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
               handleError(solrExc, requestsInStream(update), docIds, collection);
             } else {
-              onSuccess(responseListener.getUnderlyingResponse(), rspBody);
+              onSuccess(
+                  responseListener.getUnderlyingResponse(), rspBody, requestsInStream(update));
             }
             stallDetection.incrementProcessedCount();
 
@@ -705,6 +706,24 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
    */
   public void onSuccess(Object responseMetadata, InputStream respBody) {
     // no-op by design, override to add functionality
+  }
+
+  /**
+   * Called when a stream of updates completes successfully. {@code requests} holds the update
+   * requests that were written into the stream, in the order they were written, mirroring {@link
+   * #handleError(Throwable, List, List, String)}; when none were reported, {@code requests} holds
+   * only the request the stream was started with.
+   *
+   * <p>The default implementation delegates to {@link #onSuccess(Object, InputStream)}.
+   *
+   * @param responseMetadata implementation-specific response object (e.g., Jetty Response), may be
+   *     null
+   * @param respBody the body of the response, subclasses must not close this stream
+   * @param requests the update requests written into the successful stream
+   */
+  public void onSuccess(
+      Object responseMetadata, InputStream respBody, List<UpdateRequest> requests) {
+    onSuccess(responseMetadata, respBody);
   }
 
   @Override

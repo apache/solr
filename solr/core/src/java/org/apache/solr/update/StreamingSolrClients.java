@@ -53,9 +53,9 @@ public class StreamingSolrClients {
   private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
   // Maps each UpdateRequest handed to a streaming client back to the distributor request it
-  // belongs to, so a failed stream can be attributed to the requests that were in it. Entries
-  // for failed requests are removed as their errors are reported; the rest live only as long
-  // as this object, which is a single distribution round.
+  // belongs to, so a stream's outcome can be attributed to the requests that were in it. An
+  // entry is removed when its stream completes, on failure as its error is reported and on
+  // success as its result is tracked, so no request outlives its stream.
   private final Map<UpdateRequest, SolrCmdDistributor.Req> reqByUpdateRequest =
       Collections.synchronizedMap(new IdentityHashMap<>());
 
@@ -148,6 +148,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
 
   @Override
   public void handleError(Throwable ex) {
+    reqByUpdateRequest.remove(req.uReq);
     recordError(ex, req);
   }
 
@@ -186,6 +187,18 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   public void onSuccess(Object responseMetadata, InputStream respBody) {
     Response jettyResponse = (Response) responseMetadata;
     req.trackRequestResult(jettyResponse, respBody, true);
+  }
+
+  @Override
+  public void onSuccess(
+      Object responseMetadata, InputStream respBody, List<UpdateRequest> requests) {
+    // The stream succeeded, so its requests need no error attribution; drop their registry
+    // entries rather than keeping the requests, and the documents they carry, reachable until
+    // the update request that submitted them ends.
+    for (UpdateRequest updateRequest : requests) {
+      reqByUpdateRequest.remove(updateRequest);
+    }
+    onSuccess(responseMetadata, respBody);
   }
 
   static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
