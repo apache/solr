@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
+
 import groovy.json.JsonOutput
 import javax.inject.Inject
-import org.gradle.process.ExecOperations
 import org.apache.tools.ant.util.TeeOutputStream
 
 apply plugin: 'java'
@@ -608,17 +608,23 @@ def DO_NOT_EDIT_NOTICE = """\
 //   ./gradlew :solr:solr-ref-guide:generateCliDocs
 """
 
-// Convert a generated filename stem (e.g. "solr-zk-ls") to an Antora page title
-// e.g. "solr-zk-ls" -> "bin/solr zk ls"
-String cliFileNameToTitle(String baseName) {
-  def parts = baseName.split('-')
-  return "bin/solr " + parts.drop(1).join(' ')
+String cliFileNameToTitle(String baseName, Set stems) {
+  return "bin/solr " + cliCommandPath(baseName, stems).join(' ')
 }
 
-// Return the short nav label for a command file (last segment of dash-separated name)
-// e.g. "solr-zk-ls" -> "ls"
-String cliFileNameToNavLabel(String baseName) {
-  return baseName.split('-').last()
+String cliCommandPath(String baseName, Set stems) {
+  def cuts = [baseName.indexOf('-')]
+  for (def i = baseName.indexOf('-', cuts[0] + 1); i >= 0; i = baseName.indexOf('-', i + 1)) {
+    if (stems.contains(baseName.substring(0, i))) {
+      cuts.add(i)
+    }
+  }
+  cuts.add(baseName.length())
+  def segments = []
+  for (def c = 0; c < cuts.size() - 1; c++) {
+    segments.add(baseName.substring(cuts[c] + 1, cuts[c + 1]))
+  }
+  return segments;
 }
 
 // Strip "[...]" (optional groups) and "(...)" (required groups whose members
@@ -707,10 +713,10 @@ String markRequiredOptionsAndArgs(String content) {
 // Post-process a raw ManPageGenerator AsciiDoc file for Antora compatibility.
 // The title lives inside the man-section-header block, so we replace the whole
 // header block with an Antora-compatible page title + attributes.
-String postProcessCliManPage(File rawFile, String asfHeader, String doNotEditNotice, String experimentalNotice) {
+String postProcessCliManPage(File rawFile, Set stems, String asfHeader, String doNotEditNotice, String experimentalNotice) {
   def content = rawFile.text
   def baseName = rawFile.name.replace('.adoc', '')
-  def newTitle = cliFileNameToTitle(baseName)
+  def newTitle = cliFileNameToTitle(baseName, stems)
 
   // Replace the entire man-section-header block (which contains :doctype:manpage, the page title
   // "= solr-start(1)", etc.) with our Antora-compatible title and page attributes.
@@ -776,9 +782,10 @@ String buildCliCommandTable(File cliDir) {
   def files = ((cliDir.listFiles() ?: []) as List<File>)
     .findAll { it.name.startsWith('solr-') && it.name.endsWith('.adoc') }
     .sort { it.name }
+  def stems = files.collect { it.name.replace('.adoc', '') } as Set
   def rows = files.collect { file ->
     def baseName = file.name.replace('.adoc', '')
-    "|xref:cli/${file.name}[${cliFileNameToTitle(baseName)}]"
+    "|xref:cli/${file.name}[${cliFileNameToTitle(baseName, stems)}]"
   }
   return "[cols=\"1\",options=\"header\"]\n|===\n|Command\n\n" + rows.join('\n') + "\n|==="
 }
@@ -791,19 +798,10 @@ List<String> buildCliNavEntries(File cliDir) {
     .findAll { it.name.startsWith('solr-') && it.name.endsWith('.adoc') }
     .sort { (it.name.replace('.adoc', '') + '\u0000') }
   def stems = files.collect { it.name.replace('.adoc', '') } as Set
-  return files.collect { file ->
-    def baseName = file.name.replace('.adoc', '')
-    def label = cliFileNameToNavLabel(baseName)
-    // Nest under the deepest ancestor that is itself a generated page. Counting dashes instead
-    // would mis-nest a command whose own name contains one, e.g. a future "snapshot-create"
-    // would be filed under a "solr-snapshot" page that does not exist.
-    def depth = 0
-    for (def stem = baseName; stem.contains('-'); ) {
-      stem = stem.substring(0, stem.lastIndexOf('-'))
-      if (stems.contains(stem)) {
-        depth++
-      }
-    }
+  return files.collect {
+    def path = cliCommandPath(file.name.replace('.adoc', ''), stems)
+    def label = path.last()
+    def depth = path.size() - 1
     // Generated pages hang off cli/index.adoc, which itself sits under the control script page,
     // so the shallowest generated page is already three levels deep.
     def stars = '*' * (depth + 3)
@@ -855,9 +853,10 @@ task generateCliDocs {
     destDir.mkdirs()
 
     def rawFiles = runManPageGenerator(rawOutputDir)
+    def stems = rawFiles.collect { it.name.replace('.adoc', '') } as Set
 
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
+      def processed = postProcessCliManPage(rawFile, stems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
       new File(destDir, rawFile.name).text = processed
     }
 
@@ -910,10 +909,11 @@ task checkCliDocsUpToDate {
     rawOutputDir.mkdirs()
 
     def rawFiles = runManPageGenerator(rawOutputDir)
+    def stems = rawFiles.collect { it.name.replace('.adoc', '') } as Set
     def issues = []
 
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
+      def processed = postProcessCliManPage(rawFile, stems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
       def committed = new File(committedDir, rawFile.name)
       if (!committed.exists()) {
         issues << "MISSING committed file (new command): ${rawFile.name}"
