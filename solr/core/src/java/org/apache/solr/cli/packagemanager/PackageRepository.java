@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.packagemanager;
+package org.apache.solr.cli.packagemanager;
 
 import java.io.IOException;
 import java.nio.file.Path;
