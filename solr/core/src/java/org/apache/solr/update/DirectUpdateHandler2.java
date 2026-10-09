@@ -945,9 +945,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
   }
 
   /**
-   * Waits for a new searcher to be registered. An interrupt (for example the core closing during a
-   * reload while an autocommit waits) is not an error: the interrupt status is restored and the
-   * wait is abandoned.
+   * Waits for a new searcher to be registered. If the wait is interrupted, that is not an error:
+   * the interrupt status is restored and the wait is abandoned.
    */
   static void awaitSearcher(Future<?> searcherRegistered) {
     try {
