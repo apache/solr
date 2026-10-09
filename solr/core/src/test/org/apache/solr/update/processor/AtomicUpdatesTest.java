@@ -1339,6 +1339,95 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "//arr[@name='cat']/str[2][.='ddd']");
   }
 
+  @Test
+  public void testMixedFieldPlainValueFirstIsRejected() throws Exception {
+    // A field that mixes a plain value with an operation map is rejected whichever value
+    // comes first. Here the plain value comes first: before the merger scanned every
+    // value, the field was not recognized as atomic at all and the operation map was
+    // indexed as a plain value.
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", "plain");
+    update.addField("cat", Map.of("add", "ddd"));
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> new AtomicUpdateDocumentMerger(req).merge(update, existing));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("mixes atomic update operations"));
+    }
+  }
+
+  @Test
+  public void testMixedFieldOperationMapFirstIsRejected() throws Exception {
+    // The same mixed field with the operation map first: the merger already rejected
+    // this order, and it keeps the same error shape as the plain-first order.
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", "plain");
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> new AtomicUpdateDocumentMerger(req).merge(update, existing));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("mixes atomic update operations"));
+    }
+  }
+
+  @Test
+  public void testRepeatedOperationsWithPlainFieldStillMerge() throws Exception {
+    // Control for the mixed-field rejection: repeated operation maps on one field still
+    // apply, and a separate field holding only plain values is still set as-is. Only
+    // mixing within one field is rejected.
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", Map.of("add", "ddd"));
+    update.addField("title", "aaa");
+    update.addField("title", "ccc");
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      SolrInputDocument merged = new AtomicUpdateDocumentMerger(req).merge(update, existing);
+      assertEquals(
+          List.of("bbb", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
+      assertEquals(
+          List.of("aaa", "ccc"), new ArrayList<Object>(merged.getField("title").getValues()));
+
+      // a document with no operation maps at all is not an atomic update
+      SolrInputDocument plainDoc = new SolrInputDocument();
+      plainDoc.setField("id", "8");
+      plainDoc.addField("cat", "plain");
+      AddUpdateCommand plainCmd = new AddUpdateCommand(req);
+      plainCmd.solrDoc = plainDoc;
+      assertFalse(AtomicUpdateDocumentMerger.isAtomicUpdate(plainCmd));
+    }
+  }
+
   public void testAtomicUpdatesOnDateFields() {
     String[] dateFieldNames = {"simple_tdt1", "simple_tdts", "simple_tdtdv1", "simple_tdtdvs"};
 

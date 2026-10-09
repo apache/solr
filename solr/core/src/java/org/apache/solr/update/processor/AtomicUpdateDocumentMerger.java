@@ -87,12 +87,30 @@ public class AtomicUpdateDocumentMerger {
 
   private static boolean isAtomicUpdate(SolrInputDocument sdoc) {
     for (SolrInputField sif : sdoc.values()) {
-      Object val = sif.getFirstValue();
-      if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
+      if (containsOperationMap(sif)) {
         return true;
       }
     }
 
+    return false;
+  }
+
+  /** Whether the value is an atomic update operation map (a child document is not one). */
+  private static boolean isOperationMap(Object val) {
+    return val instanceof Map && !(val instanceof SolrDocumentBase);
+  }
+
+  /**
+   * Whether the field carries at least one operation map among its values. An operation map does
+   * not have to be the first value: repeated {@code addField} calls append values in call order, so
+   * a plain value can come first.
+   */
+  private static boolean containsOperationMap(SolrInputField sif) {
+    for (Object val : sif.getValues()) {
+      if (isOperationMap(val)) {
+        return true;
+      }
+    }
     return false;
   }
 
@@ -104,7 +122,7 @@ public class AtomicUpdateDocumentMerger {
   private static List<Entry<String, Object>> atomicOperations(SolrInputField sif) {
     List<Entry<String, Object>> operations = new ArrayList<>();
     for (Object operation : sif.getValues()) {
-      if (!(operation instanceof Map) || operation instanceof SolrDocumentBase) {
+      if (!isOperationMap(operation)) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Field "
@@ -175,8 +193,7 @@ public class AtomicUpdateDocumentMerger {
   private SolrInputDocument mergeDocHavingSameId(
       final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
-      Object val = sif.getFirstValue();
-      if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
+      if (containsOperationMap(sif)) {
         for (Entry<String, Object> entry : atomicOperations(sif)) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();

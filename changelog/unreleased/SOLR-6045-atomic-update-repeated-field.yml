@@ -1,5 +1,5 @@
 title: >
-  Atomic updates that add the same field more than once in one SolrInputDocument (several operation maps) are recognized and applied instead of being indexed as the maps' toString().
+  Atomic updates that add the same field more than once in one SolrInputDocument (several operation maps) are recognized and applied instead of being indexed as the maps' toString(). A field that mixes a plain value with operation maps is rejected with a bad request error, whichever value comes first, instead of the operation map being indexed as a plain value.
 type: fixed
 authors:
   - name: Nick Shanin
