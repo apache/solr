@@ -362,6 +362,37 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   /**
    * @see org.apache.solr.handler.component.CombinedQuerySolrCloudTest#testForcedDistrib()
    */
+  /**
+   * The unique key is renamed in {@code fields} and not requested as itself, in a single-pass
+   * request: merging the shard responses must find it under the new name.
+   */
+  @Test
+  @ShardsFixed(num = 2)
+  public void testSinglePassWithRenamedUniqueKey() throws Exception {
+    prepareIndexDocs();
+
+    QueryResponse rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)"}}
+                  },
+                  "limit": 5,
+                  "fields": ["key:id", "score"],
+                  "params": {
+                    "combiner": true,
+                    "combiner.query": ["lexical1", "lexical2"],
+                    "distrib.singlePass": true
+                  }
+                }"""));
+    assertFieldValues(rsp.getResults(), "key", "5", "7", "2", "6", "3");
+  }
+
   @Test
   @ShardsFixed(num = 2)
   public void testForcedDistrib() throws Exception {
