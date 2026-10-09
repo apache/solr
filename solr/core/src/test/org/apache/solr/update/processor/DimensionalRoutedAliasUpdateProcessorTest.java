@@ -279,18 +279,22 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap("shorthair", "tabby", "calico"));
 
     // verify that all the documents ended up in the right collections.
+    // [shard] is requested with style='urls' because the replica core URLs
+    // contain the collection name, which encodes the category and the day
+    // each document should have been routed to. The default [shard] style
+    // returns only the shard id, which names neither.
     QueryResponse resp =
         solrClient.query(
             getAlias(),
             params(
                 "q", "*:*",
                 "rows", "100",
-                "fl", "*,[shard]",
+                "fl", "*,shard:[shard style='urls']",
                 "sort", "id asc"));
     SolrDocumentList results = resp.getResults();
     assertEquals(18, results.getNumFound());
     for (SolrDocument result : results) {
-      String shard = String.valueOf(result.getFieldValue("[shard]"));
+      String shard = String.valueOf(result.getFieldValue("shard"));
       String cat = String.valueOf(result.getFieldValue("cat_s"));
       Date date = (Date) result.getFieldValue("timestamp_dt");
       String day = date.toInstant().toString().split("T")[0];
@@ -503,18 +507,22 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap("shorthair", "tabby", "calico"));
 
     // verify that all the documents ended up in the right collections.
+    // [shard] is requested with style='urls' because the replica core URLs
+    // contain the collection name, which encodes the category and the day
+    // each document should have been routed to. The default [shard] style
+    // returns only the shard id, which names neither.
     QueryResponse resp =
         solrClient.query(
             getAlias(),
             params(
                 "q", "*:*",
                 "rows", "100",
-                "fl", "*,[shard]",
+                "fl", "*,shard:[shard style='urls']",
                 "sort", "id asc"));
     SolrDocumentList results = resp.getResults();
     assertEquals(18, results.getNumFound());
     for (SolrDocument result : results) {
-      String shard = String.valueOf(result.getFieldValue("[shard]"));
+      String shard = String.valueOf(result.getFieldValue("shard"));
       String cat = String.valueOf(result.getFieldValue("cat_s"));
       Date date = (Date) result.getFieldValue("timestamp_dt");
       String day = date.toInstant().toString().split("T")[0];
