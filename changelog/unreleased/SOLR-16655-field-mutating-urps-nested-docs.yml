@@ -1,5 +1,5 @@
 title: Field mutating update processors, such as the date, number and boolean parsers, trim, regex-replace and remove-blank, now also apply to child documents, both anonymous child documents and child documents given as field values, instead of only the root document
-type: fixed
+type: changed
 authors:
   - name: Nick Shanin
 links:
