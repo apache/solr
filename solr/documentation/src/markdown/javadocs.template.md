@@ -8,15 +8,31 @@
   </div>
 </div>
 
-<script>var pathtoroot = "./";</script>
-<script src="script.js"></script>
-<script src="script-dir/jquery-3.7.1.min.js"></script>
-<script src="script-dir/jquery-ui.min.js"></script>
-<script>loadScripts(document, 'script');</script>
-<script src="search-page.js"></script>
+<script>var pathtoroot = "javadocs/api/";</script>
+<script src="javadocs/api/script.js"></script>
+<script src="javadocs/api/script-dir/jquery-3.7.1.min.js"></script>
+<script src="javadocs/api/script-dir/jquery-ui.min.js"></script>
+<script src="javadocs/api/search.js"></script>
+<script>
+  // javadoc builds result links relative to its own tree root, and this page
+  // sits one level above it. getURL caches the unprefixed path on the item and
+  // returns it on later calls, so prefixing the return value stays correct.
+  var solrTreeGetURL = getURL;
+  getURL = function(item, category) {
+    return pathtoroot + solrTreeGetURL(item, category);
+  };
+</script>
+<script src="javadocs/api/module-search-index.js"></script>
+<script src="javadocs/api/package-search-index.js"></script>
+<script src="javadocs/api/type-search-index.js"></script>
+<script src="javadocs/api/member-search-index.js"></script>
+<script src="javadocs/api/tag-search-index.js"></script>
+<script src="javadocs/api/search-page.js"></script>
 
-Searches every module below at once.
+Searches every Solr module at once.
 
-## Modules
+## Javadoc sets
 
-${projectList}
+* [Solr Javadocs](javadocs/api/index.html): every Solr module in one place
+* [Solr Test Framework Javadocs](javadocs/test-framework/index.html): the helpers for writing tests against Solr
+* [Lucene ${project.luceneDocVersion} Javadocs](${project.luceneDocUrl}/index.html): the Lucene libraries that Solr is built on

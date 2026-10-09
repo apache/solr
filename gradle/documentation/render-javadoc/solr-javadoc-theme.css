@@ -108,39 +108,6 @@
   color: #262130;
 }
 
-.solr-docs-module-picker {
-  flex: 0 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #6f6b66;
-}
-
-/* A tinted pill, distinct from the text field of javadoc's search box. */
-.solr-docs-bar .solr-docs-modules {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: min(12rem, 100%);
-  padding: 0.25rem 0.3rem 0.25rem 0.65rem;
-  background-color: #f3f1ee;
-  border: 1px solid #d3cec6;
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  color: #262130;
-  cursor: pointer;
-}
-
-.solr-docs-bar .solr-docs-modules:hover,
-.solr-docs-bar .solr-docs-modules:focus {
-  border-color: #d9411e;
-}
-
 .solr-docs-bar nav {
   flex: none;
   display: flex;

@@ -22,6 +22,10 @@ import org.gradle.internal.jvm.Jvm
 
 def resources = scriptResources(buildscript)
 
+// Where the two published javadoc trees land under the documentation root.
+ext.UNIFIED_DOC_PATH = 'javadocs/api'
+ext.TEST_FRAMEWORK_DOC_PATH = 'javadocs/test-framework'
+
 allprojects {
   plugins.withType(JavaPlugin) {
     configurations {
@@ -30,10 +34,6 @@ allprojects {
 
     dependencies {
       missingdoclet "org.apache.solr.tools:missing-doclet"
-    }
-
-    project.ext {
-      relativeDocPath = project.path.replaceFirst(/:\w+:/, "").replace(':', '/')
     }
 
     // We disable the default javadoc task and have our own
@@ -58,37 +58,9 @@ allprojects {
       outputDir = project.javadoc.destinationDir
     }
 
-    task renderSiteJavadoc(type: RenderJavadocTask) {
-      description "Generates Javadoc API documentation for the site (relative links)."
-      group "documentation"
-
-      taskResources = resources
-      dependsOn sourceSets.main.compileClasspath
-      classpath = sourceSets.main.compileClasspath;
-      srcDirSet = sourceSets.main.java;
-      releaseVersion = project.minJavaVersion
-
-      relativeProjectLinks = true
-
-      enableSearch = true
-
-      // Place the documentation under Lucene or Solr's documentation directory.
-      // docroot is defined in 'documentation.gradle'
-      outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
-
-      // Climbs from this javadoc tree's root back to docroot, so the injected
-      // Solr bar can resolve the documentation index and the wordmark.
-      docsRootPrefix = '../' * (project.relativeDocPath.split('/').length)
-      docsModulePath = project.relativeDocPath
-      // Every javadoc tree published alongside this one, for the bar's module
-      // picker. Resolved lazily: the sibling tasks do not exist yet here.
-      docsModules.set(project.providers.provider {
-        project.rootProject.project(':solr').subprojects
-            .findAll {it.tasks.findByName('renderSiteJavadoc')?.enabled}
-            .collect {it.relativeDocPath}
-            .sort()
-      })
-    }
+    // The site is rendered as one unified tree (plus test-framework, which
+    // shares a dozen packages with core and would otherwise put test utilities
+    // on the public API pages). Both are declared further down.
   }
 }
 
@@ -309,34 +281,25 @@ class RenderJavadocTask extends DefaultTask {
   @Input
   String docsRootPrefix = ''
 
-  /** This tree's own path below docroot, e.g. 'modules/ltr'. */
-  @Input
-  String docsModulePath = ''
+  /**
+   * The unified javadoc tree, for the one -link/-linkoffline a tree still needs.
+   * Null for the tree that is itself the unified one.
+   */
+  @Internal
+  File unifiedJavadocDir
 
-  /** Every javadoc tree under the same docroot, for the bar's module picker. */
+  /**
+   * Whether the site's Javadocs page indexes this tree. Only then may its
+   * search links hand off to that page; a tree it does not index has to keep
+   * its own, or the reader's results would silently lose that tree.
+   */
   @Input
-  final ListProperty<String> docsModules = project.objects.listProperty(String)
+  boolean sitewideSearch = false
 
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
   @IgnoreEmptyDirectories
   File taskResources
-
-  /** Utility method to recursively collect all tasks with same name like this one that we depend on */
-  Set findRenderTasksInDependencies() {
-    Set found = []
-    def collectDeps
-    collectDeps = {task ->
-      task.taskDependencies.getDependencies(task)
-          .findAll {it.name == this.name && it.enabled && !found.contains(it)}
-          .each {
-            found << it
-            collectDeps(it)
-          }
-    }
-    collectDeps(this)
-    return found
-  }
 
   @TaskAction
   public void render() {
@@ -403,37 +366,35 @@ class RenderJavadocTask extends DefaultTask {
     def allOfflineLinks = [:]
     allOfflineLinks.putAll(offlineLinks)
 
-    // Resolve inter-project links:
-    // - find all (enabled) tasks this tasks depends on (with same name), calling findRenderTasksInDependencies()
-    // - sort the tasks preferring those whose project name equals 'core', then lexigraphical by path
-    // - for each task get output dir to create relative or absolute link
-    // NOTE: explicitly exclude solr/test-framework, or attempting to link to lucene-test-framework because if we did javadoc would
-    // attempt to link class refs in in org.apache.lucene, causing broken links. (either broken links to things like "Directory" if
-    // lucene-test-framework was first, or broken links to things like LuceneTestCase if lucene-core was first)
-    if (project.path != ':solr:test-framework') {  //
-      findRenderTasksInDependencies()
-          .findAll({it.project.path != ':solr:solrj' && it.project.path != ':solr:solrj-zookeeper'}) // split packages
-          .sort(false,
-              Comparator.comparing {(it.project.name != 'core') as Boolean}
-                  .thenComparing(Comparator.comparing {it.path}))
-          .each {otherTask ->
-            def otherProject = otherTask.project
-            // For relative links we compute the actual relative link between projects.
-            def crossLuceneSolr = (otherProject.docroot != project.docroot)
-            if (relativeProjectLinks && !crossLuceneSolr) {
-              def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
-              def pathFrom = outputDir.toPath().toAbsolutePath()
-              def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
-              opts << ['-link', relative]
-            } else {
-              // For absolute links, we determine the target URL by assembling the full URL.
-              def value = solrDocUrl.getOrElse(null)
-              if (value) {
-                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(),
-                    otherTask.outputDir)
-              }
-            }
-          }
+    // Every Solr class now lives in one tree, so a module never has to link to
+    // a sibling. Only the per-module renderJavadoc output, which is what the
+    // Maven javadoc jars package, still needs a pointer at the published tree.
+    if (!relativeProjectLinks) {
+      def value = solrDocUrl.getOrElse(null)
+      if (value && unifiedJavadocDir) {
+        allOfflineLinks.put("${value}/${UNIFIED_DOC_PATH}/".toString(), unifiedJavadocDir)
+      }
+    } else if (unifiedJavadocDir) {
+      def relative = outputDir.toPath().toAbsolutePath()
+          .relativize(unifiedJavadocDir.toPath().toAbsolutePath()).toString()
+          .replace(File.separator, '/')
+
+      // This tree and the unified one share packages (SOLR-15604), and a plain
+      // -link would send references to a shared package to the other tree even
+      // when the target is defined right here. Link against a copy of the
+      // element list with those packages removed, so they resolve locally.
+      def ourPackages = srcDirSet.srcDirs.collectMany {root ->
+        !root.exists() ? [] : project.fileTree(root) {include '**/*.java'}.files.collect {
+          root.toPath().relativize(it.toPath().parent).toString().replace(File.separator, '.')
+        }
+      } as Set
+      def elementList = new File(unifiedJavadocDir, 'element-list')
+      def linkDir = project.file("${getTemporaryDir()}/unified-element-list")
+      project.mkdir linkDir
+      new File(linkDir, 'element-list').setText(
+          elementList.readLines().findAll {!ourPackages.contains(it.trim())}.join('\n') + '\n',
+          'UTF-8')
+      allOfflineLinks.put(relative, linkDir)
     }
 
     // Add offline links.
@@ -509,21 +470,18 @@ class RenderJavadocTask extends DefaultTask {
     if (!docsRootPrefix.isEmpty()) {
       project.file("${outputDir}/stylesheet.css") << '\n' +
           project.file("${taskResources}/solr-javadoc-theme.css").getText('UTF-8')
-      // javadoc hardcodes its own per-tree search page in the "Go to search page"
-      // link under each search box; the site-wide one is javadocs.html.
-      def searchScript = project.file("${outputDir}/search.js")
-      if (searchScript.exists()) {
-        searchScript.setText(
-            searchScript.getText('UTF-8').replace('"search.html?q="', '"javadocs.html?q="'), 'UTF-8')
-      }
 
+      // The site's Javadocs page searches this tree, so send the "Go to search
+      // page" link there. search.js builds it as pathtoroot + the literal, and
+      // pathtoroot reaches this tree's root, so climb to the documentation root.
+      def searchScript = project.file("${outputDir}/search.js")
+      if (sitewideSearch && searchScript.exists()) {
+        searchScript.setText(searchScript.getText('UTF-8')
+            .replace('"search.html?q="', '"' + docsRootPrefix + 'javadocs.html?q="'), 'UTF-8')
+      }
       def barConfig = [
           'var solrDocsRootUp = ' + groovy.json.JsonOutput.toJson(docsRootPrefix) + ';',
-          'var solrDocsModule = ' + groovy.json.JsonOutput.toJson(docsModulePath) + ';',
-          'var solrDocsModules = ' + groovy.json.JsonOutput.toJson(docsModules.get()) + ';',
-          // Site builds always publish the merged index alongside these trees,
-          // because unifiedJavadocSearch is part of the documentation task.
-          'var solrDocsGlobalSearch = true;'
+          'var solrDocsSitewideSearch = ' + sitewideSearch + ';'
       ].join('\n')
       project.file("${outputDir}/script.js") << '\n' + barConfig + '\n' +
           project.file("${taskResources}/solr-javadoc-bar.js").getText('UTF-8')
@@ -535,5 +493,95 @@ class RenderJavadocTask extends DefaultTask {
         eol: "lf",
         fixlast: "true",
         encoding: "UTF-8")
+  }
+}
+
+// The documentation site is rendered as two javadoc trees rather than one per
+// module: a unified tree holding every public package, and test-framework,
+// which shares a dozen packages with core and would otherwise put test
+// utilities on the public API pages.
+//
+// Both are hosted on projects that already have the Java plugin, the
+// missing-doclet configuration and minJavaVersion that RenderJavadocTask needs.
+
+// Settings shared by both published trees. Each sits two directories below the
+// documentation root, hence the fixed docsRootPrefix.
+def siteJavadocDefaults = {RenderJavadocTask task ->
+  task.group = "documentation"
+  task.taskResources = resources
+  task.releaseVersion = task.project.minJavaVersion
+  task.enableSearch = true
+  task.docsRootPrefix = '../../'
+}
+
+configure(project(':solr:core')) {
+  // Deferred: the missing-doclet configuration this task type needs is itself
+  // created under plugins.withType(JavaPlugin), after the root script runs.
+  plugins.withType(JavaPlugin) {
+    task renderSiteJavadoc(type: RenderJavadocTask) {
+      description "Generates the unified Javadoc API documentation for the site."
+      siteJavadocDefaults(delegate)
+
+      outputDir = project.docroot.toPath().resolve(UNIFIED_DOC_PATH).toFile()
+      sitewideSearch = true
+
+      // One run means one doclet configuration, so every split package that any
+      // module used to excuse individually has to be excused here. Removing
+      // these is SOLR-15604.
+      javadocMissingIgnore = [
+          "org.apache.solr.schema",
+          "org.apache.solr.update.processor",
+          "org.apache.solr.common",
+          "org.apache.solr.common.cloud",
+          "org.apache.solr.client.solrj.cloud",
+          "org.apache.solr.client.solrj.embedded",
+          "org.apache.solr.client.solrj.impl"
+      ]
+    }
+  }
+}
+
+configure(project(':solr:test-framework')) {
+  plugins.withType(JavaPlugin) {
+    task renderSiteJavadoc(type: RenderJavadocTask) {
+      description "Generates the test-framework Javadoc API documentation for the site."
+      siteJavadocDefaults(delegate)
+
+      dependsOn sourceSets.main.compileClasspath
+      classpath = sourceSets.main.compileClasspath
+      srcDirSet = sourceSets.main.java
+      relativeProjectLinks = true
+      outputDir = project.docroot.toPath().resolve(TEST_FRAMEWORK_DOC_PATH).toFile()
+      unifiedJavadocDir = project.docroot.toPath().resolve(UNIFIED_DOC_PATH).toFile()
+    }
+  }
+}
+
+// The unified tree's sources are every module's but test-framework's, which can
+// only be collected once the subprojects have been evaluated.
+gradle.projectsEvaluated {
+  def host = project(':solr:core')
+  def modules = project(':solr').subprojects.findAll {
+    it.plugins.hasPlugin(JavaPlugin) &&
+        it.tasks.findByName('renderJavadoc')?.enabled &&
+        it.path != ':solr:test-framework'
+  }
+
+  def sources = host.objects.sourceDirectorySet('unifiedJavadoc', 'All Solr module sources')
+  modules.each {mod -> mod.sourceSets.main.java.srcDirs.each {sources.srcDir(it)}}
+
+  host.tasks.renderSiteJavadoc.configure {
+    srcDirSet = sources
+    classpath = host.files(modules.collect {it.sourceSets.main.compileClasspath})
+    dependsOn modules.collect {it.tasks.named('compileJava')}
+    title = "Solr ${host.version} API"
+  }
+
+  // The per-module renderJavadoc output is what the Maven javadoc jars package;
+  // point its external links at the unified tree.
+  project(':solr').subprojects.each {prj ->
+    prj.tasks.matching {it.name == 'renderJavadoc'}.configureEach {
+      unifiedJavadocDir = host.tasks.renderSiteJavadoc.outputDir
+    }
   }
 }

@@ -339,7 +339,7 @@ s|Required |Default: none
 |===
 +
 The span of each range expressed as a value to be added to the lower bound.
-For date fields, this should be expressed using the {solr-javadocs}/core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`).
+For date fields, this should be expressed using the {solr-javadocs}/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`).
 +
 You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`.
 For example:

@@ -24,16 +24,16 @@ The trade-off is that documents which score very low using the simple query A ma
 == Specifying a Ranking Query
 
 A Ranking query can be specified using the `rq` request parameter.
-The `rq` parameter must specify a query string that when parsed, produces a {solr-javadocs}/core/org/apache/solr/search/RankQuery.html[RankQuery].
+The `rq` parameter must specify a query string that when parsed, produces a {solr-javadocs}/org/apache/solr/search/RankQuery.html[RankQuery].
 
 Three rank queries are currently included in the Solr distribution.
-You can also configure a custom {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] you have written, but most users can just use a parser provided with Solr.
+You can also configure a custom {solr-javadocs}/org/apache/solr/search/QParserPlugin.html[QParserPlugin] you have written, but most users can just use a parser provided with Solr.
 
 [%autowidth.stretch,options="header"]
 |===
 |Parser |QParserPlugin class
-|rerank |{solr-javadocs}/core/org/apache/solr/search/ReRankQParserPlugin.html[ReRankQParserPlugin]
-|xport |{solr-javadocs}/core/org/apache/solr/search/ExportQParserPlugin.html[ExportQParserPlugin]
+|rerank |{solr-javadocs}/org/apache/solr/search/ReRankQParserPlugin.html[ReRankQParserPlugin]
+|xport |{solr-javadocs}/org/apache/solr/search/ExportQParserPlugin.html[ExportQParserPlugin]
 |ltr |LTRQParserPlugin
 |===
 

@@ -25,6 +25,22 @@ This page highlights the most important changes including new features and chang
 Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
 For example, if you are currently using Solr 10.1, you should review changes made in all subsequent 10.x releases in addition to the 11.0-specific changes on this page.
 
+== Javadoc URLs Have Changed
+
+The Javadocs for every Solr module are now published as one combined set, rather than one tree per module.
+A class that used to live under its module's directory now sits under `javadocs/api`:
+
+[source,text]
+----
+before:  https://solr.apache.org/docs/10_0_0/core/org/apache/solr/core/SolrCore.html
+now:     https://solr.apache.org/docs/11_0_0/javadocs/api/org/apache/solr/core/SolrCore.html
+----
+
+The test framework keeps a tree of its own, which moves from `test-framework` to `javadocs/test-framework`.
+Javadocs published for earlier releases are unaffected, so existing links to those versions continue to work.
+
+Searching from any Javadoc page now covers the whole API rather than the one module.
+
 == Removed Features
 
 === Overseer Roles API

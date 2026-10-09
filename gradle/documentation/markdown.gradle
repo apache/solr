@@ -82,8 +82,6 @@ configure(project(':solr:documentation')) {
     // list all properties used by the template here to allow uptodate checks to be correct:
     inputs.property('version', project.version)
     inputs.property('solrRefguideUrl', project.solrRefguideUrl)
-    inputs.property('luceneDocUrl', project.luceneDocUrl)
-    inputs.property('luceneDocVersion', project.luceneDocVersion)
   }
 
   task createJavadocsIndex(type: MarkdownTemplateTask) {
@@ -98,7 +96,8 @@ configure(project(':solr:documentation')) {
     navLinks = ['Home': project.solrHomeUrl, 'Docs': 'index.html']
 
     // list all properties used by the template here to allow uptodate checks to be correct:
-    withProjectList()
+    inputs.property('luceneDocUrl', project.luceneDocUrl)
+    inputs.property('luceneDocVersion', project.luceneDocVersion)
   }
 }
 
@@ -307,25 +306,6 @@ class MarkdownTemplateTask extends DefaultTask {
   @Input
   @Optional
   final MapProperty<String, Object> binding = project.objects.mapProperty(String, Object)
-
-  /** adds a property "projectList" containing all subprojects with javadocs as markdown bullet list */
-  void withProjectList() {
-    binding.put('projectList', project.providers.provider {
-      def projects = productProject
-          .subprojects.findAll {it.tasks.findByName('renderSiteJavadoc')?.enabled}
-          .sort(false, Comparator.comparing {(it.name != 'core') as Boolean}
-              .thenComparing(Comparator.comparing {(!it.name.startsWith('solrj')) as Boolean})
-              .thenComparing(Comparator.comparing {(it.name == 'test-framework') as Boolean})
-              .thenComparing(Comparator.comparing {it.path}));
-      return projects.collect {project ->
-        def text = "**[${project.relativeDocPath.replace('/', '-')}](${project.relativeDocPath}/index.html):** ${project.description}"
-        if (project.name == 'core') {
-          text = text.concat(' {style="font-size:larger; margin-bottom:.5em"}')
-        }
-        return '* ' + text;
-      }.join('\n')
-    })
-  }
 
   @TaskAction
   void transform() {

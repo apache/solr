@@ -18,7 +18,7 @@
 
 The following table lists the field types that are available in Solr and are recommended.
 The page further down, lists all the deprecated types for those migrating from older version of Solr.
-The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table, unless otherwise specified.
+The {solr-javadocs}/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table, unless otherwise specified.
 
 == Recommended Field Types
 

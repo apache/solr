@@ -72,8 +72,7 @@ configure(project(':solr:documentation')) {
       prj.tasks.matching {it.name == 'renderSiteJavadoc'}
     }
     dependsOn 'changesToHtml', 'copyDocumentationAssets',
-        'markdownToHtml', 'createDocumentationIndex', 'createJavadocsIndex',
-        'unifiedJavadocSearch'
+        'markdownToHtml', 'createDocumentationIndex', 'createJavadocsIndex'
   }
 
   task copyDocumentationAssets(type: Copy) {

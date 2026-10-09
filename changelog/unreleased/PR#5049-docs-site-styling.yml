@@ -1,7 +1,8 @@
 title: >
   The per-version documentation at solr.apache.org/docs/ now follows Solr's branding, with a
   common header linking the documentation index, the changelog and the Javadocs.
-  The Javadocs are now tied together with a common search and a module dropdown.
+  The Javadocs for every module are now published as one searchable set, which
+  changes their URLs.
 type: other
 authors:
   - name: Jan Høydahl

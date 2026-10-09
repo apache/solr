@@ -25,12 +25,12 @@ In fact, a surprisingly large number of features in Solr are implemented as Upda
 
 == URP Anatomy and Lifecycle
 
-An Update Request Processor is created as part of a {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[chain] of one or more update processors.
+An Update Request Processor is created as part of a {solr-javadocs}/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[chain] of one or more update processors.
 Solr creates a default update request processor chain comprising of a few update request processors which enable essential Solr features.
 This default chain is used to process every update request unless a user chooses to configure and specify a different custom update request processor chain.
 
-The easiest way to describe an Update Request Processor is to look at the Javadocs of the abstract class {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessor.html[UpdateRequestProcessor].
-Every UpdateRequestProcessor must have a corresponding factory class which extends {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorFactory.html[UpdateRequestProcessorFactory].
+The easiest way to describe an Update Request Processor is to look at the Javadocs of the abstract class {solr-javadocs}/org/apache/solr/update/processor/UpdateRequestProcessor.html[UpdateRequestProcessor].
+Every UpdateRequestProcessor must have a corresponding factory class which extends {solr-javadocs}/org/apache/solr/update/processor/UpdateRequestProcessorFactory.html[UpdateRequestProcessorFactory].
 This factory class is used by Solr to create a new instance of this plugin.
 Such a design provides two benefits:
 
@@ -43,7 +43,7 @@ Each `UpdateRequestProcessorFactory` specified in the chain is also instantiated
 
 When an update request is received by Solr, it looks up the update chain to be used for this request.
 A new instance of each UpdateRequestProcessor specified in the chain is created using the corresponding factory.
-The update request is parsed into corresponding {solr-javadocs}/core/org/apache/solr/update/UpdateCommand.html[UpdateCommand] objects which are run through the chain.
+The update request is parsed into corresponding {solr-javadocs}/org/apache/solr/update/UpdateCommand.html[UpdateCommand] objects which are run through the chain.
 Each UpdateRequestProcessor instance is responsible for invoking the next plugin in the chain.
 It can choose to short circuit the chain by not invoking the next processor and even abort further processing by throwing an exception.
 
@@ -311,27 +311,27 @@ You are strongly urged to examine the Javadocs for these classes; these descript
 
 === General Use UpdateProcessorFactories
 
-{solr-javadocs}/core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]:: This processor will dynamically add fields to the schema if an input document contains one or more fields that don't match any field or dynamic field in the schema.
+{solr-javadocs}/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]:: This processor will dynamically add fields to the schema if an input document contains one or more fields that don't match any field or dynamic field in the schema.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/AtomicUpdateProcessorFactory.html[AtomicUpdateProcessorFactory]:: This processor will convert conventional field-value documents to atomic update documents.
+{solr-javadocs}/org/apache/solr/update/processor/AtomicUpdateProcessorFactory.html[AtomicUpdateProcessorFactory]:: This processor will convert conventional field-value documents to atomic update documents.
 This processor can be used at runtime (without defining it in `solrconfig.xml`), see the section <<atomicupdateprocessorfactory>> below.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ClassificationUpdateProcessorFactory.html[ClassificationUpdateProcessorFactory]:: This processor uses Lucene's classification module to provide simple document classification.
+{solr-javadocs}/org/apache/solr/update/processor/ClassificationUpdateProcessorFactory.html[ClassificationUpdateProcessorFactory]:: This processor uses Lucene's classification module to provide simple document classification.
 See https://cwiki.apache.org/confluence/display/solr/SolrClassification for more details on how to use this processor.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
+{solr-javadocs}/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/DefaultValueUpdateProcessorFactory.html[DefaultValueUpdateProcessorFactory]:: A simple processor that adds a default value to any document which does not already have a value in fieldName.
+{solr-javadocs}/org/apache/solr/update/processor/DefaultValueUpdateProcessorFactory.html[DefaultValueUpdateProcessorFactory]:: A simple processor that adds a default value to any document which does not already have a value in fieldName.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory]:: This Factory generates an UpdateProcessor that helps to enforce version constraints on documents based on per-document version numbers using a configured name of a versionField.
+{solr-javadocs}/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory]:: This Factory generates an UpdateProcessor that helps to enforce version constraints on documents based on per-document version numbers using a configured name of a versionField.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/DocExpirationUpdateProcessorFactory.html[DocExpirationUpdateProcessorFactory]:: Update Processor Factory for managing automatic "expiration" of documents.
+{solr-javadocs}/org/apache/solr/update/processor/DocExpirationUpdateProcessorFactory.html[DocExpirationUpdateProcessorFactory]:: Update Processor Factory for managing automatic "expiration" of documents.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]:: Modifies field names by replacing all matches to the configured `pattern` with the configured `replacement`.
+{solr-javadocs}/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]:: Modifies field names by replacing all matches to the configured `pattern` with the configured `replacement`.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/IgnoreCommitOptimizeUpdateProcessorFactory.html[IgnoreCommitOptimizeUpdateProcessorFactory]:: Allows you to ignore commit and/or optimize requests from client applications when running in SolrCloud mode, for more information, see: Shards and Indexing Data in SolrCloud
+{solr-javadocs}/org/apache/solr/update/processor/IgnoreCommitOptimizeUpdateProcessorFactory.html[IgnoreCommitOptimizeUpdateProcessorFactory]:: Allows you to ignore commit and/or optimize requests from client applications when running in SolrCloud mode, for more information, see: Shards and Indexing Data in SolrCloud
 
-{solr-javadocs}/core/org/apache/solr/update/processor/IgnoreLargeDocumentProcessorFactory.html[IgnoreLargeDocumentProcessorFactory]:: Allows you to prevent large documents with size more than `limit` (in KB) from getting indexed.
+{solr-javadocs}/org/apache/solr/update/processor/IgnoreLargeDocumentProcessorFactory.html[IgnoreLargeDocumentProcessorFactory]:: Allows you to prevent large documents with size more than `limit` (in KB) from getting indexed.
 It can help to prevent unexpected problems on indexing as well as on recovering because of very large documents.
 +
 By default, this processor will abort the update request and send an error back to users if it encounters a document that exceed its configured limit.
@@ -339,78 +339,78 @@ Documents processed prior to the offender are indexed by Solr; documents followi
 +
 Alternatively, the processor offers a "permissive" mode (`permissiveMode=true`) which skips the offending document and logs a warning, but doesn't abort the remainder of the batch or return an error to users.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/NumFieldLimitingUpdateRequestProcessorFactory.html[NumFieldLimitingUpdateRequestProcessorFactory]:: Fails update requests once a core has exceeded a configurable "maximum" number of fields.
+{solr-javadocs}/org/apache/solr/update/processor/NumFieldLimitingUpdateRequestProcessorFactory.html[NumFieldLimitingUpdateRequestProcessorFactory]:: Fails update requests once a core has exceeded a configurable "maximum" number of fields.
 +
 Solr performance can degrade and even become unstable if cores accumulate too many (e.g. more than 500) fields.  The "NumFieldLimiting" URP is offered as a safeguard that helps users notice potentially-dangerous schema design and/or misuse of dynamic fields, before these performance and stability problems would manifest.
 Note that the field count an index reports can be influenced by deleted (but not yet purged) documents, and may vary from replica to replica.
 In order to avoid these sort of discrepancies between replicas, use of this URP should almost always precede DistributedUpdateProcessor in when running in SolrCloud mode.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
+{solr-javadocs}/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document.
+{solr-javadocs}/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document.
 Useful for only indexing one copy of "similar" documents.
 
-{solr-javadocs}/modules/scripting/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory]:: A processor that enables the use of update processors implemented as scripts.
+{solr-javadocs}/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory]:: A processor that enables the use of update processors implemented as scripts.
 Learn more in the section xref:script-update-processor.adoc[].
 
-{solr-javadocs}/core/org/apache/solr/update/processor/TemplateUpdateProcessorFactory.html[TemplateUpdateProcessorFactory]:: Allows adding new fields to documents based on a template pattern.
+{solr-javadocs}/org/apache/solr/update/processor/TemplateUpdateProcessorFactory.html[TemplateUpdateProcessorFactory]:: Allows adding new fields to documents based on a template pattern.
 This update processor can also be used at runtime (without defining it in `solrconfig.xml`), see the section <<templateupdateprocessorfactory>> below.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/TimestampUpdateProcessorFactory.html[TimestampUpdateProcessorFactory]:: An update processor that adds a newly generated date value of "NOW" to any document being added that does not already have a value in the specified field.
+{solr-javadocs}/org/apache/solr/update/processor/TimestampUpdateProcessorFactory.html[TimestampUpdateProcessorFactory]:: An update processor that adds a newly generated date value of "NOW" to any document being added that does not already have a value in the specified field.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/URLClassifyProcessorFactory.html[URLClassifyProcessorFactory]:: Update processor which examines a URL and outputs to various other fields with characteristics of that URL, including length, number of path levels, whether it is a top level URL (levels==0), whether it looks like a landing/index page, a canonical representation of the URL (e.g., stripping index.html), the domain and path parts of the URL, etc.
+{solr-javadocs}/org/apache/solr/update/processor/URLClassifyProcessorFactory.html[URLClassifyProcessorFactory]:: Update processor which examines a URL and outputs to various other fields with characteristics of that URL, including length, number of path levels, whether it is a top level URL (levels==0), whether it looks like a landing/index page, a canonical representation of the URL (e.g., stripping index.html), the domain and path parts of the URL, etc.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]:: An update processor that adds a newly generated UUID value to any document being added that does not already have a value in the specified field.
+{solr-javadocs}/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]:: An update processor that adds a newly generated UUID value to any document being added that does not already have a value in the specified field.
 This processor can also be used at runtime (without defining it in `solrconfig.xml`), see the section <<uuidupdateprocessorfactory>> below.
 
 === FieldMutatingUpdateProcessorFactory Derived Factories
 
 These factories all provide functionality to _modify_ fields in a document as they're being indexed.
-When using any of these factories, please consult the {solr-javadocs}/core/org/apache/solr/update/processor/FieldMutatingUpdateProcessorFactory.html[FieldMutatingUpdateProcessorFactory javadocs] for details on the common options they all support for configuring which fields are modified.
+When using any of these factories, please consult the {solr-javadocs}/org/apache/solr/update/processor/FieldMutatingUpdateProcessorFactory.html[FieldMutatingUpdateProcessorFactory javadocs] for details on the common options they all support for configuring which fields are modified.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ConcatFieldUpdateProcessorFactory.html[ConcatFieldUpdateProcessorFactory]:: Concatenates multiple values for fields matching the specified conditions using a configurable delimiter.
+{solr-javadocs}/org/apache/solr/update/processor/ConcatFieldUpdateProcessorFactory.html[ConcatFieldUpdateProcessorFactory]:: Concatenates multiple values for fields matching the specified conditions using a configurable delimiter.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/CountFieldValuesUpdateProcessorFactory.html[CountFieldValuesUpdateProcessorFactory]:: Replaces any list of values for a field matching the specified conditions with the count of the number of values for that field.
+{solr-javadocs}/org/apache/solr/update/processor/CountFieldValuesUpdateProcessorFactory.html[CountFieldValuesUpdateProcessorFactory]:: Replaces any list of values for a field matching the specified conditions with the count of the number of values for that field.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/FieldLengthUpdateProcessorFactory.html[FieldLengthUpdateProcessorFactory]:: Replaces any CharSequence values found in fields matching the specified conditions with the lengths of those CharSequences (as an Integer).
+{solr-javadocs}/org/apache/solr/update/processor/FieldLengthUpdateProcessorFactory.html[FieldLengthUpdateProcessorFactory]:: Replaces any CharSequence values found in fields matching the specified conditions with the lengths of those CharSequences (as an Integer).
 
-{solr-javadocs}/core/org/apache/solr/update/processor/FirstFieldValueUpdateProcessorFactory.html[FirstFieldValueUpdateProcessorFactory]:: Keeps only the first value of fields matching the specified conditions.
+{solr-javadocs}/org/apache/solr/update/processor/FirstFieldValueUpdateProcessorFactory.html[FirstFieldValueUpdateProcessorFactory]:: Keeps only the first value of fields matching the specified conditions.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/HTMLStripFieldUpdateProcessorFactory.html[HTMLStripFieldUpdateProcessorFactory]:: Strips all HTML Markup in any CharSequence values found in fields matching the specified conditions.
+{solr-javadocs}/org/apache/solr/update/processor/HTMLStripFieldUpdateProcessorFactory.html[HTMLStripFieldUpdateProcessorFactory]:: Strips all HTML Markup in any CharSequence values found in fields matching the specified conditions.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/IgnoreFieldUpdateProcessorFactory.html[IgnoreFieldUpdateProcessorFactory]:: Ignores and removes fields matching the specified conditions from any document being added to the index.
+{solr-javadocs}/org/apache/solr/update/processor/IgnoreFieldUpdateProcessorFactory.html[IgnoreFieldUpdateProcessorFactory]:: Ignores and removes fields matching the specified conditions from any document being added to the index.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/LastFieldValueUpdateProcessorFactory.html[LastFieldValueUpdateProcessorFactory]:: Keeps only the last value of fields matching the specified conditions.
+{solr-javadocs}/org/apache/solr/update/processor/LastFieldValueUpdateProcessorFactory.html[LastFieldValueUpdateProcessorFactory]:: Keeps only the last value of fields matching the specified conditions.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/MaxFieldValueUpdateProcessorFactory.html[MaxFieldValueUpdateProcessorFactory]:: An update processor that keeps only the maximum value from any selected fields where multiple values are found.
+{solr-javadocs}/org/apache/solr/update/processor/MaxFieldValueUpdateProcessorFactory.html[MaxFieldValueUpdateProcessorFactory]:: An update processor that keeps only the maximum value from any selected fields where multiple values are found.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/MinFieldValueUpdateProcessorFactory.html[MinFieldValueUpdateProcessorFactory]:: An update processor that keeps only the minimum value from any selected fields where multiple values are found.
+{solr-javadocs}/org/apache/solr/update/processor/MinFieldValueUpdateProcessorFactory.html[MinFieldValueUpdateProcessorFactory]:: An update processor that keeps only the minimum value from any selected fields where multiple values are found.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Boolean values.
+{solr-javadocs}/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Boolean values.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Date values.
+{solr-javadocs}/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Date values.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseNumericFieldUpdateProcessorFactory.html[ParseNumericFieldUpdateProcessorFactory] derived classes::
+{solr-javadocs}/org/apache/solr/update/processor/ParseNumericFieldUpdateProcessorFactory.html[ParseNumericFieldUpdateProcessorFactory] derived classes::
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Double values.
+{solr-javadocs}/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Double values.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseFloatFieldUpdateProcessorFactory.html[ParseFloatFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Float values.
+{solr-javadocs}/org/apache/solr/update/processor/ParseFloatFieldUpdateProcessorFactory.html[ParseFloatFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Float values.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseIntFieldUpdateProcessorFactory.html[ParseIntFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Integer values.
+{solr-javadocs}/org/apache/solr/update/processor/ParseIntFieldUpdateProcessorFactory.html[ParseIntFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Integer values.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Long values.
+{solr-javadocs}/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Long values.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/RegexReplaceProcessorFactory.html[RegexReplaceProcessorFactory]:: An updated processor that applies a configured regex to any CharSequence values found in the selected fields, and replaces any matches with the configured replacement string.
+{solr-javadocs}/org/apache/solr/update/processor/RegexReplaceProcessorFactory.html[RegexReplaceProcessorFactory]:: An updated processor that applies a configured regex to any CharSequence values found in the selected fields, and replaces any matches with the configured replacement string.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0 (i.e., empty strings).
+{solr-javadocs}/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0 (i.e., empty strings).
 
-{solr-javadocs}/core/org/apache/solr/update/processor/TrimFieldUpdateProcessorFactory.html[TrimFieldUpdateProcessorFactory]:: Trims leading and trailing whitespace from any CharSequence values found in fields matching the specified conditions.
+{solr-javadocs}/org/apache/solr/update/processor/TrimFieldUpdateProcessorFactory.html[TrimFieldUpdateProcessorFactory]:: Trims leading and trailing whitespace from any CharSequence values found in fields matching the specified conditions.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/TruncateFieldUpdateProcessorFactory.html[TruncateFieldUpdateProcessorFactory]:: Truncates any CharSequence values found in fields matching the specified conditions to a maximum character length.
+{solr-javadocs}/org/apache/solr/update/processor/TruncateFieldUpdateProcessorFactory.html[TruncateFieldUpdateProcessorFactory]:: Truncates any CharSequence values found in fields matching the specified conditions to a maximum character length.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/UniqFieldsUpdateProcessorFactory.html[UniqFieldsUpdateProcessorFactory]:: Removes duplicate values found in fields matching the specified conditions.
+{solr-javadocs}/org/apache/solr/update/processor/UniqFieldsUpdateProcessorFactory.html[UniqFieldsUpdateProcessorFactory]:: Removes duplicate values found in fields matching the specified conditions.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/ContentHashVersionProcessorFactory.html[ContentHashVersionProcessorFactory]:: Removes duplicate documents detected using a configurable hash of field values.
+{solr-javadocs}/org/apache/solr/update/processor/ContentHashVersionProcessorFactory.html[ContentHashVersionProcessorFactory]:: Removes duplicate documents detected using a configurable hash of field values.
 [WARNING]
 ====
 This URP should be configured to exclude fields that are updated with xref:indexing-guide:partial-document-updates.adoc[in-place updates] from the content hash calculation, as these fields are updated independently and should not affect duplicate detection.
@@ -421,28 +421,28 @@ This URP should be configured to exclude fields that are updated with xref:index
 These processors are included in Solr releases as "module", and require additional jars loaded at runtime.
 See the README files associated with each module for details:
 
-The {solr-javadocs}/modules/language-models/index.html[`language-models`] module provides::
+The {solr-javadocs}/org/apache/solr/languagemodels/package-summary.html[`language-models`] module provides::
 
-{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/update/processor/factory/TextToVectorUpdateProcessorFactory.html[TextToVectorUpdateProcessorFactory]:: Update processor which vectorises a textual field in input and adds the resulting vector as the value of a new field.
+{solr-javadocs}/org/apache/solr/languagemodels/update/processor/factory/TextToVectorUpdateProcessorFactory.html[TextToVectorUpdateProcessorFactory]:: Update processor which vectorises a textual field in input and adds the resulting vector as the value of a new field.
 It uses external text to vectors language models to perform the vectorisation for each processed document.
 For more information: xref:query-guide:text-to-vector.adoc[Update Request Processor]
 
-{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/update/processor/factory/DocumentEnrichmentUpdateProcessorFactory.html[DocumentEnrichmentUpdateProcessorFactory]:: Update processor that takes one or more fields and a given prompt in input and returns the output of an LLM as the value of a new field.
+{solr-javadocs}/org/apache/solr/languagemodels/update/processor/factory/DocumentEnrichmentUpdateProcessorFactory.html[DocumentEnrichmentUpdateProcessorFactory]:: Update processor that takes one or more fields and a given prompt in input and returns the output of an LLM as the value of a new field.
 It uses external Large Language Model services to perform the enrichment of each processed document.
 For more information: xref:indexing-guide:document-enrichment-with-llms.adoc[Document Enrichment documentation]
 
-The {solr-javadocs}/modules/langid/index.html[`langid`] module provides::
+The {solr-javadocs}/org/apache/solr/update/processor/package-summary.html[`langid`] module provides::
 
-{solr-javadocs}/modules/langid/org/apache/solr/update/processor/LangDetectLanguageIdentifierUpdateProcessorFactory.html[LangDetectLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using http://code.google.com/p/language-detection.
+{solr-javadocs}/org/apache/solr/update/processor/LangDetectLanguageIdentifierUpdateProcessorFactory.html[LangDetectLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using http://code.google.com/p/language-detection.
 
-{solr-javadocs}/modules/langid/org/apache/solr/update/processor/OpenNLPLangDetectUpdateProcessorFactory.html[OpenNLPLangDetectUpdateProcessorFactory]::: Identifies the language of a set of input fields using OpenNLP's language detection model.
+{solr-javadocs}/org/apache/solr/update/processor/OpenNLPLangDetectUpdateProcessorFactory.html[OpenNLPLangDetectUpdateProcessorFactory]::: Identifies the language of a set of input fields using OpenNLP's language detection model.
 
-The {solr-javadocs}/modules/analysis-extras/index.html[`analysis-extras`] module provides::
+The {solr-javadocs}/org/apache/solr/update/processor/package-summary.html[`analysis-extras`] module provides::
 
-{solr-javadocs}/modules/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
+{solr-javadocs}/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
 Note that in order to use model files larger than 1MB on SolrCloud, you must xref:deployment-guide:zookeeper-ensemble#increasing-the-file-size-limit[configure both ZooKeeper server and clients].
 
-{solr-javadocs}/modules/analysis-extras/org/apache/solr/update/processor/DocumentCategorizerUpdateProcessorFactory.html[DocumentCategorizerUpdateProcessorFactory]::: Classify text in fields using models.  These models must be in {onnx}[ONNX] format and can be sourced from Huggingface and run directly in Solr via OpenNLP.
+{solr-javadocs}/org/apache/solr/update/processor/DocumentCategorizerUpdateProcessorFactory.html[DocumentCategorizerUpdateProcessorFactory]::: Classify text in fields using models.  These models must be in {onnx}[ONNX] format and can be sourced from Huggingface and run directly in Solr via OpenNLP.
 Learn more by following the xref:getting-started:tutorial-opennlp.adoc[sentiment analysis tutorial with OpenNLP and ONNX models].
 
 
@@ -451,15 +451,15 @@ Learn more by following the xref:getting-started:tutorial-opennlp.adoc[sentiment
 These are listed for completeness, but are part of the Solr infrastructure, particularly SolrCloud.
 Other than insuring you do _not_ remove them when modifying the update request handlers (or any copies you make), you will rarely, if ever, need to change these.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/DistributedUpdateProcessorFactory.html[DistributedUpdateProcessorFactory]:: Used to distribute updates to all necessary nodes.
+{solr-javadocs}/org/apache/solr/update/processor/DistributedUpdateProcessorFactory.html[DistributedUpdateProcessorFactory]:: Used to distribute updates to all necessary nodes.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/NoOpDistributingUpdateProcessorFactory.html[NoOpDistributingUpdateProcessorFactory]::: An alternative No-Op implementation of `DistributingUpdateProcessorFactory` that always returns null.
+{solr-javadocs}/org/apache/solr/update/processor/NoOpDistributingUpdateProcessorFactory.html[NoOpDistributingUpdateProcessorFactory]::: An alternative No-Op implementation of `DistributingUpdateProcessorFactory` that always returns null.
 Designed for experts who want to bypass distributed updates and use their own custom update logic.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/LogUpdateProcessorFactory.html[LogUpdateProcessorFactory]:: A logging processor.
+{solr-javadocs}/org/apache/solr/update/processor/LogUpdateProcessorFactory.html[LogUpdateProcessorFactory]:: A logging processor.
 This keeps track of all commands that have passed through the chain and prints them on finish().
 
-{solr-javadocs}/core/org/apache/solr/update/processor/RunUpdateProcessorFactory.html[RunUpdateProcessorFactory]:: Executes the update commands using the underlying UpdateHandler.
+{solr-javadocs}/org/apache/solr/update/processor/RunUpdateProcessorFactory.html[RunUpdateProcessorFactory]:: Executes the update commands using the underlying UpdateHandler.
 Almost all processor chains should end with an instance of `RunUpdateProcessorFactory` unless the user is explicitly executing the update commands in an alternative custom `UpdateRequestProcessorFactory`.
 
 === Update Processors That Can Be Used at Runtime
