@@ -849,6 +849,21 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertTrue(error.getMessage(), error.getMessage().contains("mixes atomic update operations"));
   }
 
+  public void testCountValuesAtomicUpdatePlainValueFirst() throws Exception {
+    // a plain value ahead of an operation map is rejected as well: the detection looks at
+    // every value, not only the first one, so the operation map is not silently dropped
+    // while a plain count is stored
+    SolrException error =
+        expectCountFailure(
+            doc(f("id", "1111"), f("count_field", "zzz", Map.of("set", List.of("aaa")))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("mixes atomic update operations"));
+
+    error = expectCountFailure(doc(f("id", "1111"), f("count_field", "zzz", Map.of("add", "bbb"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("mixes atomic update operations"));
+  }
+
   public void testCountValuesAtomicUpdateArrayOperand() throws Exception {
     SolrInputDocument d =
         processAdd(

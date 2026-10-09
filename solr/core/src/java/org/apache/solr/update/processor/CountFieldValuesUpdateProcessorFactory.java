@@ -75,9 +75,10 @@ public final class CountFieldValuesUpdateProcessorFactory
         next,
         src -> {
           SolrInputField result = new SolrInputField(src.getName());
-          Object firstValue = src.getFirstValue();
-          if (firstValue instanceof Map && !(firstValue instanceof SolrDocumentBase)) {
-            return countAtomicUpdate(src, result);
+          for (Object value : src.getValues()) {
+            if (value instanceof Map && !(value instanceof SolrDocumentBase)) {
+              return countAtomicUpdate(src, result);
+            }
           }
           result.setValue(src.getValueCount());
           return result;
@@ -97,7 +98,7 @@ public final class CountFieldValuesUpdateProcessorFactory
     boolean seenSet = false;
     Object setOperand = null;
     for (Object value : src.getValues()) {
-      if (!(value instanceof Map)) {
+      if (!(value instanceof Map) || value instanceof SolrDocumentBase) {
         throw new SolrException(
             BAD_REQUEST,
             "Field "

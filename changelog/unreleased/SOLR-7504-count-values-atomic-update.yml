@@ -1,5 +1,5 @@
 title: >
-  CountFieldValuesUpdateProcessorFactory no longer counts an atomic update map as one value: a set is counted (across several operation maps, with array operands counted by their elements), and any other atomic operation on the counted field is rejected with a BAD_REQUEST error instead of being silently dropped.
+  CountFieldValuesUpdateProcessorFactory no longer counts an atomic update map as one value when the update carries the counted field: a set is counted (across several operation maps, with array operands counted by their elements), and any other atomic operation on the counted field is rejected with a BAD_REQUEST error instead of being silently dropped.
 type: fixed
 authors:
   - name: Nick Shanin
