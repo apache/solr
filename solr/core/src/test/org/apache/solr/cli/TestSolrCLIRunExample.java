@@ -37,6 +37,7 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -305,6 +306,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testSecureSolrExample() throws Exception {
+    testExample("secure_solr");
+  }
+
+  @Test
   public void testSchemalessExample() throws Exception {
     testExample("schemaless");
   }
@@ -316,7 +322,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   protected void testExample(String exampleName) throws Exception {
     // Occasionally we want to test in User Managed mode, not the default SolrCloud mode.
-    String testStandaloneMode = LuceneTestCase.rarely() ? "--user-managed" : "";
+    String testStandaloneMode =
+        !"secure_solr".equals(exampleName) && LuceneTestCase.rarely() ? "--user-managed" : "";
     Path defaultSolrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(defaultSolrHomeDir)) {
       fail(defaultSolrHomeDir + " not found and is required to run this test!");
@@ -344,6 +351,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             testSolrHomeDir.toString(),
             "-p",
             String.valueOf(bindPort),
+            "secure_solr".equals(exampleName) && pass == 1 ? "" : "--no-prompt",
             testStandaloneMode
           };
 
@@ -353,7 +361,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       RunExampleExecutor executor = new RunExampleExecutor();
       closeables.add(executor);
 
-      RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
+      RunExampleTool tool =
+          new RunExampleTool(
+              executor,
+              "secure_solr".equals(exampleName)
+                  ? new ByteArrayInputStream("\n\n\n\n\n\n\n\n".getBytes(StandardCharsets.UTF_8))
+                  : System.in,
+              runtime);
       try {
         int status = runTool(tool, toolArgs);
 
@@ -380,10 +394,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");
 
-      if ("techproducts".equals(exampleName)) {
+      if ("techproducts".equals(exampleName) || "secure_solr".equals(exampleName)) {
         try (SolrClient solrClient =
             new HttpJettySolrClient.Builder("http://localhost:" + bindPort + "/solr")
-                .withDefaultCollection(exampleName)
+                .withDefaultCollection("techproducts")
+                .withOptionalBasicAuthCredentials(
+                    "secure_solr".equals(exampleName) ? "solr:SolrRocks" : null)
                 .build()) {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
@@ -404,6 +420,26 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                   + toolOutput,
               31,
               numFound);
+        }
+      }
+
+      if ("secure_solr".equals(exampleName)) {
+        String url = "http://localhost:" + bindPort + "/solr";
+        try (SolrClient anonymous = CLIUtils.getSolrClient(url, null);
+            SolrClient search = CLIUtils.getSolrClient(url, "search:SolrRocks")) {
+          assertEquals(
+              401,
+              expectThrows(
+                      RemoteSolrException.class,
+                      () -> anonymous.query("techproducts", new SolrQuery("*:*")))
+                  .code());
+          assertEquals(
+              31, search.query("techproducts", new SolrQuery("*:*")).getResults().getNumFound());
+          assertEquals(
+              403,
+              expectThrows(
+                      RemoteSolrException.class, () -> search.deleteByQuery("techproducts", "*:*"))
+                  .code());
         }
       }
 

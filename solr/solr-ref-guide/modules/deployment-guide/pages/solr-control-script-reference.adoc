@@ -265,6 +265,7 @@ The available options are:
 
 * `cloud`: SolrCloud example
 * `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
+* `secure_solr`: Single-node SolrCloud with Basic Authentication, Rule-Based Authorization, and techproducts data
 * `schemaless`: Schema-less example (schema is inferred from data during indexing)
 * `films`: Example of starting with _default configset and adding explicit fields dynamically
 +
@@ -393,6 +394,28 @@ The film data used can be found in `$SOLR_HOME/example/films/films.json`.
 ====
 The run in-foreground option (`-f`) is not compatible with the `-e` option since the script needs to perform additional tasks after starting the Solr server.
 ====
+
+===== Secure Solr Example
+
+[source,bash]
+----
+bin/solr start -e secure_solr
+----
+
+This example starts one SolrCloud node on port 8983 with embedded ZooKeeper.
+It uses Basic Authentication and Rule-Based Authorization, creates a `techproducts` collection with one shard and one replica, and loads the sample data using `sample_techproducts_configs`.
+The Solr home is `example/secure_solr` unless overridden.
+
+Press Enter at the prompts to create administrator `solr`, indexing user `index`, and search-only user `search`, each with password `SolrRocks`.
+Passwords typed at an interactive terminal are hidden.
+Use `--no-prompt` to accept all defaults.
+These are demonstration credentials; change them before using the example outside your local environment.
+
+Security is installed in ZooKeeper after startup and before collection creation or indexing.
+Existing security settings are preserved on subsequent starts; enter credentials for an existing administrator.
+Open `http://localhost:8983/solr/` and sign in as the administrator.
+The indexing user can search and update documents; the search-only user can search but cannot update documents.
+
 
 === Stop
 

@@ -56,7 +56,7 @@ Starts Solr
   Set solr.data.home system property for index data storage; default is solr.solr.home
 
 *-e*, *--example*=_<example>_::
-  Run an example: cloud, techproducts, schemaless, films
+  Run an example: cloud, techproducts, secure_solr, schemaless, films
 
 *--example-dir*=_<exampleDir>_::
   Override the directory containing example configurations used when running examples with --example
