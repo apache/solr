@@ -18,8 +18,8 @@
 package org.apache.solr.cli;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.solr.packagemanager.PackageManager;
-import org.apache.solr.packagemanager.RepositoryManager;
+import org.apache.solr.cli.packagemanager.PackageManager;
+import org.apache.solr.cli.packagemanager.RepositoryManager;
 
 /** Shared picocli wiring for {@code bin/solr package <subcommand> leaves} */
 @SuppressWarnings("UnnecessarilyFullyQualified")
