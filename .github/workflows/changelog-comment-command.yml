@@ -1,20 +1,15 @@
 name: Changelog Comment Commands
 
-# Lets a PR author (or any committer) toggle the 'no-changelog' label by
-# commenting on the PR, without needing the repo write access that setting a
-# label directly requires:
+# Lets a PR author or a committer toggle the 'no-changelog' label by commenting:
 #
 #   /no-changelog     - mark the PR as not needing a changelog entry
 #   /needs-changelog  - undo that
 #
-# The command applies/removes the label and then re-runs the "Validate Changelog"
-# workflow, so the red check turns green on its own. The re-run has to be explicit:
-# GitHub does not trigger workflows from events caused by the GITHUB_TOKEN, so the
-# 'labeled' event raised by the labels API call below reaches nothing.
+# The label change is followed by an explicit re-run of "Validate Changelog": a
+# label set with the GITHUB_TOKEN triggers no workflow of its own.
 #
-# This workflow deliberately never checks out or executes PR code. The only
-# user-controlled input is the comment body, which is read through 'env' and
-# never interpolated into a script.
+# This workflow never checks out or executes PR code, and the comment body
+# reaches the shell only through 'env'.
 on:
   issue_comment:
     types:
@@ -27,8 +22,7 @@ permissions: {}
 
 jobs:
   handle-command:
-    # Pull request comments only, from a human, that mention one of our commands.
-    # The exact (line-anchored) match happens in the parse step below.
+    # Pull request comments from a human; the exact match happens in the parse step.
     if: |
       github.event.issue.pull_request &&
       github.event.comment.user.type != 'Bot' &&
@@ -50,8 +44,7 @@ jobs:
           BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
-          # A command must be alone on its own line, so that quoted text ("> /no-changelog")
-          # or a mention inside a sentence does not trigger it.
+          # A command must stand alone on its line, so quoted text or prose does not trigger it.
           command=none
           if printf '%s\n' "$BODY" | grep -iE '^[[:space:]]*/no-changelog[[:space:]]*\r?$' > /dev/null; then
             command=add
@@ -75,8 +68,7 @@ jobs:
           ASSOCIATION: ${{ github.event.comment.author_association }}
         run: |
           set -euo pipefail
-          # The PR author may always toggle it on their own PR; otherwise the
-          # commenter needs write access, which author_association reflects.
+          # The PR author may always toggle it; anyone else needs write access.
           if [ "$COMMENTER" = "$PR_AUTHOR" ]; then
             allowed=true
           else
@@ -114,8 +106,7 @@ jobs:
             exit 0
           fi
 
-          # The re-run is asked for even when the label is already set: a PR can carry
-          # the label and still show a red check, which is the state this command fixes.
+          # Re-run even if the label is already set; the check can still be red.
           if [ "$has_label" = "true" ]; then
             echo "::notice::PR#${PR_NUMBER} already has '${LABEL}'"
           else
@@ -160,10 +151,7 @@ jobs:
           fi
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file reply.md
 
-  # Re-running a workflow needs 'actions: write', which also covers approving fork
-  # pull request runs. That is kept in its own job, so the job that handles the
-  # comment body never holds it. This job's only inputs are the PR number from the
-  # event payload and an API lookup, and it runs no code from the PR.
+  # Separate job, so the one handling the comment body never holds 'actions: write'.
   rerun-check:
     name: Re-run the changelog check
     needs: handle-command
@@ -187,9 +175,8 @@ jobs:
 
           head_sha=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq .headRefOid)
 
-          # A run already in flight may have read the labels before this command
-          # touched them, so it is waited out and then re-run as well. Only a
-          # finished run can be re-run, and a redundant re-run costs a minute.
+          # An in-flight run may have read the labels before the change, and only a
+          # completed run can be re-run, so wait it out.
           deadline=$(( $(date +%s) + 600 ))
           while true; do
             run=$(gh api "repos/${REPO}/actions/workflows/${WORKFLOW}/runs?head_sha=${head_sha}&per_page=1" \
