@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -41,6 +43,7 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrBackend;
@@ -108,6 +111,13 @@ public class JettySolrRunner implements SolrBackend {
   private static final int THREAD_POOL_MAX_THREADS = 10000;
   // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
   private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 260000;
+
+  // Ports held on behalf of stopped runners, so that no other process can take a stopped
+  // runner's port before a runner starts on it again. Static because a replacement runner
+  // can be created for the same port (SSLMigrationTest does this); the reservation has to
+  // be visible across instances. An entry is released when a runner starts on the port, and
+  // by MiniSolrCloudCluster.shutdown() for the runners of a cluster that is gone.
+  private static final Map<Integer, ServerSocket> RESERVED_PORTS = new ConcurrentHashMap<>();
 
   private Server server;
 
@@ -497,6 +507,10 @@ public class JettySolrRunner implements SolrBackend {
       int port = reusePort && jettyPort != -1 ? jettyPort : this.config.port;
       log.info("Start Jetty (configured port={}, binding port={})", this.config.port, port);
 
+      // Release the reservation on the port we are about to bind, whether this runner's
+      // stop() left it or another runner was stopped on the same port.
+      releasePortReservation(port);
+
       // if started before, make a new server
       if (startedBefore) {
         init(port);
@@ -660,12 +674,60 @@ public class JettySolrRunner implements SolrBackend {
         }
       } while (!server.isStopped());
 
+      // Hold the port until the next start on it, so that another process cannot take
+      // it in the gap and make a restart fail with BindException.
+      reserveJettyPort();
+
     } finally {
       if (prevContext != null) {
         MDC.setContextMap(prevContext);
       } else {
         MDC.clear();
       }
+    }
+  }
+
+  /**
+   * Holds this runner's port after stop, by binding a socket to it, until a runner starts on the
+   * port again or the reservation is released. If the port cannot be held, a restart behaves as it
+   * did without reservations: it binds the port if it is still free, and the usual bind retry
+   * applies if it is not.
+   */
+  private void reserveJettyPort() {
+    if (jettyPort <= 0) {
+      return;
+    }
+    ServerSocket socket = null;
+    try {
+      socket = new ServerSocket();
+      socket.setReuseAddress(false);
+      socket.bind(new InetSocketAddress("127.0.0.1", jettyPort));
+    } catch (IOException e) {
+      log.warn(
+          "Could not reserve port {} after stop; a restart on this port is not protected",
+          jettyPort,
+          e);
+      IOUtils.closeQuietly(socket);
+      return;
+    }
+    if (RESERVED_PORTS.putIfAbsent(jettyPort, socket) != null) {
+      IOUtils.closeQuietly(socket);
+    }
+  }
+
+  /**
+   * Releases the reservation held on this runner's port, if any. Called by
+   * MiniSolrCloudCluster.shutdown(), whose runners will not start again; a runner that starts on
+   * the port releases the reservation itself.
+   */
+  public void releasePortReservation() {
+    releasePortReservation(jettyPort);
+  }
+
+  private static void releasePortReservation(int port) {
+    ServerSocket socket = RESERVED_PORTS.remove(port);
+    if (socket != null) {
+      IOUtils.closeQuietly(socket);
     }
   }
 

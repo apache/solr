@@ -1,0 +1,10 @@
+title: >-
+  JettySolrRunner in the test framework now holds a stopped runner's port until the next
+  start on that port, so a restart can no longer fail with BindException when another
+  process takes the port during the restart gap
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18531
+    url: https://issues.apache.org/jira/browse/SOLR-18531
