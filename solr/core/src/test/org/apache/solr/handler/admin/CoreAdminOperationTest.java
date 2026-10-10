@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
@@ -25,6 +29,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
@@ -269,6 +275,64 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> CoreAdminOperation.REQUESTSYNCSHARD_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
+  }
+
+  @Test
+  public void testRequestRecoveryCoreLoadingResultsIn503SolrException() {
+    Map<String, String> params = new HashMap<>();
+    params.put("core", "loadingCore");
+    whenCoreAdminOpHasParams(params);
+    CoreContainer mockContainer = mock(CoreContainer.class);
+    when(mockContainer.getCore("loadingCore")).thenReturn(null);
+    when(mockContainer.isCoreLoading("loadingCore")).thenReturn(true);
+    useCoreContainer(mockContainer);
+
+    Exception ex =
+        expectThrows(
+            Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
+    assertSolrExceptionWithCode(ex, ErrorCode.SERVICE_UNAVAILABLE.code);
+    // SyncStrategy retries only this exact response; the message is part of the contract.
+    assertTrue(ex.getMessage().contains("Core loadingCore is still loading"));
+  }
+
+  @Test
+  public void testRequestRecoveryUnknownCoreResultsIn400SolrException() {
+    Map<String, String> params = new HashMap<>();
+    params.put("core", "unknownCore");
+    whenCoreAdminOpHasParams(params);
+    CoreContainer mockContainer = mock(CoreContainer.class);
+    when(mockContainer.getCore("unknownCore")).thenReturn(null);
+    when(mockContainer.isCoreLoading("unknownCore")).thenReturn(false);
+    useCoreContainer(mockContainer);
+
+    Exception ex =
+        expectThrows(
+            Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
+    assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
+  }
+
+  @Test
+  public void testRequestRecoveryRechecksCoreThatFinishedLoadingMeanwhile() throws Exception {
+    Map<String, String> params = new HashMap<>();
+    params.put("core", "lateCore");
+    whenCoreAdminOpHasParams(params);
+    SolrCore core = mock(SolrCore.class, RETURNS_DEEP_STUBS);
+    CoreContainer mockContainer = mock(CoreContainer.class);
+    // the core is not there when first looked up, but is by the time loading is checked
+    when(mockContainer.getCore("lateCore")).thenReturn(null, core);
+    when(mockContainer.isCoreLoading("lateCore")).thenReturn(false);
+    useCoreContainer(mockContainer);
+
+    CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo);
+
+    verify(core.getUpdateHandler().getSolrCoreState()).doRecovery(eq(mockContainer), any());
+  }
+
+  private void useCoreContainer(CoreContainer container) {
+    // CoreAdminHandler's CoreContainer constructor is the injection point: a real handler
+    // carrying the container under test, so the op reads it without any reflection.
+    callInfo =
+        new CoreAdminHandler.CallInfo(new CoreAdminHandler(container), mockRequest, null, null);
   }
 
   @Test
