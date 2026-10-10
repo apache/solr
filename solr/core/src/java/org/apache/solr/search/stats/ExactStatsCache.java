@@ -114,14 +114,14 @@ public class ExactStatsCache extends StatsCache {
       // response's "shard" is really a shardURL, or even a list of URLs
       String shard = r.getShard();
       SolrResponse res = r.getSolrResponse();
-      if (res.getException() != null) {
-        log.debug("Exception response={}", res);
-        continue;
-      }
       NamedList<Object> nl = res.getResponse();
       if (nl == null) {
         // no server answered for this shard (not all cores are up)
         log.debug("Empty response from shard={}", shard);
+        continue;
+      }
+      if (res.getException() != null) {
+        log.debug("Exception response={}", res);
         continue;
       }
       if (nl.get(ShardParams.SHARD_NAME) != null) {
