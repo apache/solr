@@ -70,6 +70,7 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
@@ -213,11 +214,23 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
 
-  private final void recoveryFailed(final ZkController zkController, final CoreDescriptor cd)
+  final void recoveryFailed(final ZkController zkController, final CoreDescriptor cd)
       throws Exception {
     log.error("Recovery failed - I give up.");
     setOutcome("failed");
     try {
+      if (replicaType.leaderEligible) {
+        try {
+          zkController
+              .getShardTerms(
+                  cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId())
+              .recoveryFailed(cd.getCloudDescriptor().getCoreNodeName());
+        } catch (Exception e) {
+          // The RECOVERY_FAILED publication below must still happen: a failed shard
+          // terms cleanup must not leave the replica without its terminal state.
+          log.error("Failed to update shard terms for the failed recovery", e);
+        }
+      }
       zkController.publish(cd, Replica.State.RECOVERY_FAILED);
     } finally {
       close();
@@ -516,12 +529,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
       Span.current().addEvent("retry", Attributes.of(RETRY_ATTR, (long) retries));
 
       retries++;
-      if (retries >= maxRetries) {
+      int effectiveMaxRetries =
+          TestInjection.recoveryMaxRetriesOverride != null
+              ? TestInjection.recoveryMaxRetriesOverride
+              : maxRetries;
+      if (retries >= effectiveMaxRetries) {
         log.error("Recovery failed - max retries exceeded ({}).", retries);
         try {
           recoveryFailed(zkController, this.coreDescriptor);
         } catch (Exception e) {
-          log.error("Could not publish that recovery failed", e);
+          log.error("Could not finalize recovery failure", e);
         }
         return true;
       }
@@ -694,6 +711,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
         sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getCoreName(), slice);
+
+        // test-only hook to force recovery failure deterministically
+        assert TestInjection.injectFailRecovery();
 
         if (isClosed()) {
           log.info("RecoveryStrategy has been closed");
