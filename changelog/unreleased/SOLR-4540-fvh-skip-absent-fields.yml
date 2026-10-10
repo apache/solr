@@ -1,4 +1,4 @@
-title: "FastVectorHighlighter no longer does per-field work for fields a document does not have, which made wildcard hl.fl (many sparse fields) slow."
+title: "FastVectorHighlighter no longer does per-field work for fields a document does not have."
 type: fixed
 authors:
   - name: Nick Shanin
