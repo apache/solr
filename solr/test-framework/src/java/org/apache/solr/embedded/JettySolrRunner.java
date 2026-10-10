@@ -702,6 +702,13 @@ public class JettySolrRunner implements SolrBackend {
     if (jettyPort <= 0) {
       return;
     }
+    if (RESERVED_PORTS.containsKey(jettyPort)) {
+      // A reservation for this port is already held: a second stop() on this runner
+      // (close() after stop(), or a stop followed by cluster shutdown), or another
+      // runner stopped on the same port. Binding again would fail against the held
+      // socket and log a warning claiming the port is unprotected when it is not.
+      return;
+    }
     ServerSocket socket = null;
     try {
       socket = new ServerSocket();
@@ -709,7 +716,8 @@ public class JettySolrRunner implements SolrBackend {
       // left in TIME_WAIT (its connectors bind with reuse set as well); without it, a
       // runner that served traffic before stopping could not reserve its port at all.
       // The listening socket held here still refuses every later bind, with or without
-      // reuse, so the port stays protected.
+      // reuse, on Linux; address-reuse bind semantics differ on Windows, where the
+      // same exclusion is not verified.
       socket.setReuseAddress(true);
       socket.bind(new InetSocketAddress("127.0.0.1", jettyPort));
     } catch (IOException e) {
