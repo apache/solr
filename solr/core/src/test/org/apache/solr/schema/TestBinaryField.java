@@ -137,7 +137,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
         assertArrayEquals(expected_bytes, (byte[]) d.getFieldValue("rev_data"));
         assertArrayEquals(expected_bytes, (byte[]) d.getFieldValue("rev_data_dv"));
 
-        assertEquals(expected_string, d.getFieldValue("str_data"));
+        assertArrayEquals(expected_bytes, (byte[]) d.getFieldValue("str_data"));
         assertEquals(expected_string, d.getFieldValue("str_data_dv"));
       }
       for (Bean d : beans) {
@@ -151,7 +151,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
         assertArrayEquals(expected_bytes, d.rev_data);
         assertArrayEquals(expected_bytes, d.rev_data_dv);
 
-        assertEquals(expected_string, d.str_data);
+        assertArrayEquals(expected_bytes, d.str_data);
         assertEquals(expected_string, d.str_data_dv);
       }
     }
@@ -170,7 +170,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
     @Field byte[] data_dv;
     @Field byte[] rev_data;
     @Field byte[] rev_data_dv;
-    @Field String str_data;
+    @Field byte[] str_data;
     @Field String str_data_dv;
   }
 }
