@@ -638,7 +638,9 @@ public class MiniSolrCloudCluster implements SolrBackend {
           checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
       // A stopped runner holds its port in reserve for a restart; this cluster will not
       // restart its runners, so release the reservations instead of keeping the ports
-      // until the JVM exits.
+      // until the JVM exits. This covers only the runners still in the cluster: a runner
+      // removed earlier by stopJettySolrRunner is not in this list, and its reservation
+      // stays in place until that runner is closed or the JVM exits.
       for (final JettySolrRunner jetty : stoppedJettys) {
         jetty.releasePortReservation();
       }

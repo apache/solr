@@ -150,6 +150,20 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
       runner.start();
       running = true;
       assertEquals(port, runner.getLocalPort());
+
+      // Closing a stopped runner gives the port back. close() ends the runner's life,
+      // so nothing keeps the reservation afterwards, unlike stop(), which is one half
+      // of the stop and restart cycle.
+      runner.stop();
+      running = false;
+      runner.close();
+      try (ServerSocket foreign = new ServerSocket()) {
+        foreign.setReuseAddress(false);
+        foreign.bind(new InetSocketAddress("127.0.0.1", port));
+        // the bind succeeded, so the reservation is gone
+      } catch (BindException e) {
+        fail("close() should release the stopped runner's port reservation");
+      }
     } finally {
       if (running) {
         runner.stop();

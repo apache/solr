@@ -1,7 +1,6 @@
 title: >-
-  JettySolrRunner in the test framework now holds a stopped runner's port until the next
-  start on that port, so a restart can no longer fail with BindException when another
-  process takes the port during the restart gap
+  JettySolrRunner in the test framework now holds a stopped runner's port in reserve until
+  the next start on that port
 type: fixed
 authors:
   - name: Nick Shanin

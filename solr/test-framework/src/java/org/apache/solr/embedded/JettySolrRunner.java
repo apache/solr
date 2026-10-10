@@ -115,8 +115,13 @@ public class JettySolrRunner implements SolrBackend {
   // Ports held on behalf of stopped runners, so that no other process can take a stopped
   // runner's port before a runner starts on it again. Static because a replacement runner
   // can be created for the same port (SSLMigrationTest does this); the reservation has to
-  // be visible across instances. An entry is released when a runner starts on the port, and
-  // by MiniSolrCloudCluster.shutdown() for the runners of a cluster that is gone.
+  // be visible across instances. An entry is released in exactly three ways: a runner
+  // starts on the port; MiniSolrCloudCluster.shutdown() releases the runners still in the
+  // cluster at shutdown; or the runner holding the entry is closed. In every other case
+  // the entry is held until the JVM exits. That includes a runner stopped and removed
+  // from its cluster and never closed, and a runner restarted on a different port than
+  // the one it reserved: a release only ever names the port a runner starts on or the
+  // port it currently holds, never a port it held earlier.
   private static final Map<Integer, ServerSocket> RESERVED_PORTS = new ConcurrentHashMap<>();
 
   private Server server;
@@ -688,10 +693,10 @@ public class JettySolrRunner implements SolrBackend {
   }
 
   /**
-   * Holds this runner's port after stop, by binding a socket to it, until a runner starts on the
-   * port again or the reservation is released. If the port cannot be held, a restart behaves as it
-   * did without reservations: it binds the port if it is still free, and the usual bind retry
-   * applies if it is not.
+   * Holds this runner's port after stop, by binding a socket to it, until the reservation is
+   * released; see {@link #RESERVED_PORTS} for the exact release rules. If the port cannot be held,
+   * a restart behaves as it did without reservations: it binds the port if it is still free, and
+   * the usual bind retry applies if it is not.
    */
   private void reserveJettyPort() {
     if (jettyPort <= 0) {
@@ -716,9 +721,13 @@ public class JettySolrRunner implements SolrBackend {
   }
 
   /**
-   * Releases the reservation held on this runner's port, if any. Called by
-   * MiniSolrCloudCluster.shutdown(), whose runners will not start again; a runner that starts on
-   * the port releases the reservation itself.
+   * Releases the reservation held on this runner's current port, if any. Called by
+   * MiniSolrCloudCluster.shutdown() for the runners still in the cluster at shutdown, whose runners
+   * will not start again, and by {@link #close()}, after which this runner will not start again
+   * either. A runner removed from its cluster by {@code stopJettySolrRunner} is not covered by the
+   * shutdown call: if it is never closed, its reservation stays in place until a runner starts on
+   * the port or the JVM exits. The same applies to the old port of a runner restarted on a
+   * different port, because this method names only the port the runner currently holds.
    */
   public void releasePortReservation() {
     releasePortReservation(jettyPort);
@@ -949,5 +958,10 @@ public class JettySolrRunner implements SolrBackend {
     } catch (Exception e) {
       log.error(e.toString(), e); // nowarn
     }
+    // close() is the end of this runner's life, unlike stop(), which is one half of the
+    // stop and restart cycle the reservation protects. Give the port back instead of
+    // leaving stop()'s reservation in place until the JVM exits. Runners still in a
+    // MiniSolrCloudCluster get the same release from its shutdown().
+    releasePortReservation();
   }
 }
