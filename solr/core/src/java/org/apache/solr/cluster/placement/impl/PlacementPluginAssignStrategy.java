@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica.ReplicaType;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
@@ -67,11 +68,21 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     List<PlacementRequest> placementRequests = new ArrayList<>(assignRequests.size());
     for (Assign.AssignRequest assignRequest : assignRequests) {
+      SolrCollection solrCollection =
+          placementContext.getCluster().getCollection(assignRequest.collectionName);
+      if (solrCollection == null) {
+        // The collection can be missing from cluster state here (race between
+        // CreateCollectionCmd.waitForState and getClusterState). Fail with
+        // AssignmentException so the collection create is cleaned up instead of
+        // NPEing and leaving a zombie collection with no replicas.
+        throw new Assign.AssignmentException(
+            "Collection "
+                + assignRequest.collectionName
+                + " not found in cluster state; cannot assign replicas");
+      }
       placementRequests.add(
           PlacementRequestImpl.toPlacementRequest(
-              placementContext.getCluster(),
-              placementContext.getCluster().getCollection(assignRequest.collectionName),
-              assignRequest));
+              placementContext.getCluster(), solrCollection, assignRequest));
     }
 
     final List<ReplicaPosition> replicaPositions = new ArrayList<>();
