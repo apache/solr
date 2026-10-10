@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-def resources = scriptResources(buildscript)
+package org.apache.lucene.gradle;
 
-configure(project(':solr:documentation')) {
-  task changesToHtml(type: buildinfra.changesToHtmlTaskClass()) {
-    siteDir.set(resources)
-    changesFile.set(rootProject.file('CHANGELOG.md'))
-    targetDir.fileProvider(project.providers.provider {project.file("${project.docroot}/changes")})
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
+/** Checks the Python-semantics helpers against the Python results they reproduce. */
+public class PythonCompatTest {
+  @Test
+  public void stripRemovesNonBreakingAndLineSeparatorSpaces() {
+    assertEquals("x", PythonCompat.strip("  x  "));
   }
 
-  // Make the rendered HTML of changes available as a separate
-  // artifact for the distribution.
-  configurations {
-    changesHtml
+  @Test
+  public void stripKeepsZeroWidthSpace() {
+    assertEquals("​x​", PythonCompat.strip("​x​"));
   }
 
-  artifacts {
-    changesHtml changesToHtml.targetDir, {
-      builtBy changesToHtml
-    }
+  @Test
+  public void escapeRegexEscapesPythonSpecialCharacters() {
+    assertEquals("v9\\.0\\-rc1\\ \\(a\\)", PythonCompat.escapeRegex("v9.0-rc1 (a)"));
   }
 }
