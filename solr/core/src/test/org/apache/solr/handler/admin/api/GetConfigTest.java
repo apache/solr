@@ -56,4 +56,18 @@ public class GetConfigTest extends SolrTestCase {
     assertTrue(response.config.containsKey("searchComponent"));
     assertTrue(response.config.containsKey("updateProcessor"));
   }
+
+  @Test
+  public void testGetConfigComponentFromCore() throws Exception {
+    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
+      var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
+      var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+      assertNotNull(component, response);
+      assertNull(component, response.error);
+      assertNotNull(component, response.config);
+      assertTrue(component, response.config.containsKey(component));
+      assertEquals(component, 1, response.config.size());
+    }
+  }
 }

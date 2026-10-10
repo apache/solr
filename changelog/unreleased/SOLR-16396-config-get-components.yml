@@ -1,0 +1,10 @@
+title:
+  Migrate GET config sections query, updateHandler, directoryFactory, indexConfig, and
+  codecFactory to JAX-RS.
+type: changed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-16396
+    url: https://issues.apache.org/jira/browse/SOLR-16396
