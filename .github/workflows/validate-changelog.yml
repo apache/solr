@@ -2,9 +2,8 @@ name: Validate Changelog
 
 on:
   pull_request:
-    # 'labeled'/'unlabeled' let a human toggling the 'no-changelog' label re-run
-    # this check. A label set by a workflow raises no run at all, so that path
-    # re-runs this workflow explicitly; see changelog-comment-command.yml.
+    # 'labeled'/'unlabeled' re-run this check when a human toggles 'no-changelog';
+    # the comment command re-runs it explicitly, see changelog-comment-command.yml.
     types:
       - opened
       - reopened
@@ -23,9 +22,8 @@ permissions: {}
 jobs:
   validate-changelog:
     name: Check changelog entry
-    # Skip validation for Renovate PRs (solrbot); dependency changes are summarized at release time.
-    # On label events, only re-run for the 'no-changelog' label; other label
-    # churn leaves the existing check result untouched.
+    # Renovate PRs (solrbot) are summarized at release time, and of the label
+    # events only 'no-changelog' is of interest here.
     if: |
       github.event.pull_request.user.login != 'solrbot' &&
       (
@@ -39,9 +37,8 @@ jobs:
       issues: read         # the PR's labels
       pull-requests: read  # the PR's changed files
 
-    # This job never executes code from the pull request. It reads the PR as data
-    # through the API, writes that data outside the workspace, and the only thing
-    # it runs is the validator script as it exists on the base commit.
+    # This job runs no PR code: it reads the PR through the API, keeps that data
+    # outside the workspace, and only runs the validator from the base commit.
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
@@ -53,8 +50,7 @@ jobs:
       id: check-label
       run: |
         set -euo pipefail
-        # Ask the API rather than reading github.event.pull_request.labels: a re-run
-        # replays the original event payload, which predates the label we care about.
+        # Not github.event.pull_request.labels: a re-run replays the original payload.
         has_label=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" \
           --jq '[.[].name] | index("no-changelog") != null')
         if [ "$has_label" = "true" ]; then
@@ -83,8 +79,7 @@ jobs:
           exit 0
         fi
 
-        # Docs, tests, build files and CI config are exempt, so a PR touching
-        # nothing else needs no entry.
+        # Docs, tests, build files and CI config need no entry.
         if ! cut -f2 "$files" | grep -qvE "(^changelog/|^solr/solr-ref-guide/|^dev-docs/|^\.github/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
           echo "✓ No code changes detected (docs/tests only)"
           exit 0
@@ -122,8 +117,7 @@ jobs:
         yamls="$RUNNER_TEMP/entries"
         mkdir -p "$yamls"
 
-        # The entries are PR-authored data, so they are fetched outside the
-        # workspace and only ever parsed, never run.
+        # PR-authored data: fetched outside the workspace and only ever parsed.
         while IFS= read -r file; do
           echo "Fetching $file"
           gh api -H "Accept: application/vnd.github.raw" \
