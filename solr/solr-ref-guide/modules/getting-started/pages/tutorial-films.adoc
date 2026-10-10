@@ -30,17 +30,17 @@ Then go ahead to the next section.
 
 If you did, though, and need to restart Solr, issue these commands:
 
-[,console]
+[,bash]
 ----
-$ bin/solr start -p 8983 --solr-home example/cloud/node1/solr
+bin/solr start -p 8983 --solr-home example/cloud/node1/solr
 ----
 
 This starts the first node.
 When it's done start the second node, and tell it how to connect to ZooKeeper:
 
-[,console]
+[,bash]
 ----
-$ bin/solr start -p 7574 --solr-home example/cloud/node2/solr -z localhost:9983
+bin/solr start -p 7574 --solr-home example/cloud/node2/solr -z localhost:9983
 ----
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:deployment-guide:zookeeper-ensemble#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.
@@ -73,9 +73,9 @@ This time, we're going to use a configset that has a very minimal schema and let
 
 The data you're going to index is related to movies, so start by creating a collection named "films" that uses the `_default` configset:
 
-[,console]
+[,bash]
 ----
-$ bin/solr create -c films --shards 2 --replication-factor 2
+bin/solr create -c films --shards 2 --replication-factor 2
 ----
 
 Whoa, wait.
@@ -88,7 +88,7 @@ This is equivalent to the options we had during the interactive example from the
 
 You should see output like:
 
-[,console]
+[,text]
 ----
 WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is
          NOT RECOMMENDED for production use.
@@ -166,7 +166,7 @@ That's not going to get us very far.
 What we can do is set up the "name" field in Solr before we index the data to be sure Solr always interprets it as a string.
 At the command line, enter this curl command:
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/films/schema' -H 'Content-type:application/json' --data-binary '{"add-field": {"name":"name", "type":"text_general", "multiValued":false, "stored":true}}'
 ----
@@ -195,7 +195,7 @@ You can use either the Admin UI or the Schema API for this.
 
 At the command line, use the Schema API again to define a copy field:
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/films/schema' -H 'Content-type:application/json' --data-binary '{"add-copy-field" : {"source":"*","dest":"_text_"}}'
 ----
@@ -217,34 +217,36 @@ OK, now we're ready to index the data and start playing around with it.
 
 The films data we will index is located in the `example/films` directory of your installation.
 It comes in three formats: JSON, XML and CSV.
-Pick one of the formats and index it into the "films" collection (in each example, one command is for Unix/MacOS and the other is for Windows):
+Pick one of the formats and index it into the "films" collection:
 
-.To Index JSON Format
-[tabs#index-json]
+[tabs#index-film-data]
 ======
+JSON::
++
+====
+[source,bash]
 ----
-$ bin/solr post -c films example/films/films.json
+bin/solr post -c films example/films/films.json
 ----
-======
+====
 
+XML::
++
+====
+[source,bash]
+----
+bin/solr post -c films example/films/films.xml
+----
+====
 
-.To Index XML Format
-[tabs#index-xml]
-======
-[,console]
+CSV::
++
+====
+[source,bash]
 ----
-$ bin/solr post -c films example/films/films.xml
+bin/solr post -c films example/films/films.csv --params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 ----
-======
-
-
-.To Index CSV Format
-[tabs#index-csv]
-======
-[,console]
-----
-$ bin/solr post -c films example/films/films.csv --params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
-----
+====
 ======
 
 Each command includes these main parameters:
@@ -299,7 +301,7 @@ To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true
 If you only want facets, and no document contents, specify `rows=0`.
 The `curl` command below will return facet counts for the `genre_str` field:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"
 ----
@@ -340,7 +342,7 @@ Or, perhaps you do want all the facets, and you'll let your application's front-
 
 If you wanted to control the number of items in a bucket, you could do something like this:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/films/select?=&q=\*:*&facet.field=genre_str&facet.mincount=200&facet=on&rows=0"
 ----
@@ -360,7 +362,7 @@ The Solr Admin UI doesn't yet support range facet options, so you will need to u
 
 If we construct a query that looks like this:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/films/select?q=*:*&rows=0\
 &facet=true\
@@ -430,7 +432,7 @@ Another faceting type is pivot facets, also known as "decision trees", allowing 
 Using the films data, pivot facets can be used to see how many of the films in the "Drama" category (the `genre_str` field) are directed by a director.
 Here's how to get at the raw data for this scenario:
 
-[,console]
+[,bash]
 ----
 curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=on&facet.pivot=genre_str,directed_by_str"
 ----
@@ -486,7 +488,7 @@ Like our previous exercise, this data may not be relevant to your needs.
 We can clean up our work by deleting the collection.
 To do that, issue this command at the command line:
 
-[,console]
+[,bash]
 ----
-$ bin/solr delete -c films
+bin/solr delete -c films
 ----

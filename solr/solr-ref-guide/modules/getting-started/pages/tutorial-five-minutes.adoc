@@ -24,9 +24,9 @@ To launch Solr, run: `bin/solr start` on Unix or MacOS; `bin\solr.cmd start` on 
 
 To start another Solr node and have it join the cluster alongside the first node,
 
-[,console]
+[,bash]
 ----
-$ bin/solr start -z localhost:9983 -p 8984
+bin/solr start -z localhost:9983 -p 8984
 ----
 
 
@@ -34,7 +34,7 @@ $ bin/solr start -z localhost:9983 -p 8984
 
 Like a database system holds data in tables, Solr holds data in collections. A collection can be created as follows:
 
-[,console]
+[,bash]
 ----
 curl --request POST \
 --url http://localhost:8983/api/collections \
@@ -50,7 +50,7 @@ curl --request POST \
 
 Let us define some of the fields that our documents will contain.
 
-[,console]
+[,bash]
 ----
 curl --request POST \
   --url http://localhost:8983/api/collections/techproducts/schema \
@@ -74,7 +74,7 @@ curl --request POST \
 
 A single document can be indexed as:
 
-[,console]
+[,bash]
 ----
 curl --request POST \
   --url 'http://localhost:8983/api/collections/techproducts/update' \
@@ -95,7 +95,7 @@ curl --request POST \
 
 Multiple documents can be indexed in the same request:
 
-[,console]
+[,bash]
 ----
 curl --request POST \
   --url 'http://localhost:8983/api/collections/techproducts/update' \
@@ -131,7 +131,7 @@ curl --request POST \
 
 A file containing the documents can be indexed as follows:
 
-[,console]
+[,bash]
 ----
 curl -H "Content-Type: application/json" \
        -X POST \
@@ -142,7 +142,7 @@ curl -H "Content-Type: application/json" \
 == Commit the Changes
 After documents are indexed into a collection, they are not immediately available for searching. In order to have them searchable, a commit operation (also called `refresh` in other search engines like OpenSearch etc.) is needed. Commits can be scheduled at periodic intervals using auto-commits as follows.
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}'
 ----
@@ -150,7 +150,7 @@ curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-typ
 == Make some Basic search queries
 You can now try searching your documents like:
 
-[source]
+[source,bash]
 ----
 curl 'http://localhost:8983/solr/techproducts/select?q=name%3Alightning'
 ----
