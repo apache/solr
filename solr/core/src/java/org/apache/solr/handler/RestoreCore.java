@@ -16,10 +16,12 @@
  */
 package org.apache.solr.handler;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.net.URI;
+import java.nio.file.NoSuchFileException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +39,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -204,6 +207,10 @@ public class RestoreCore implements Callable<Boolean> {
         throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Restore interrupted", e);
       }
       log.debug("Switching directories");
+      // Capture index.properties before switching it, so that a failed switch can put the
+      // previous content back exactly. Deleting the file on rollback instead would lose the
+      // pointer when the current index directory is not the default one.
+      byte[] previousIndexProps = readIndexProperties();
       core.modifyIndexProps(restoreIndexName);
 
       boolean success;
@@ -216,20 +223,7 @@ public class RestoreCore implements Callable<Boolean> {
         // Rollback to the old index directory. Delete the restore index directory and mark the
         // restore as failed.
         log.warn("Could not switch to restored index. Rolling back to the current index", e);
-        Directory dir = null;
-        try {
-          dir =
-              core.getDirectoryFactory()
-                  .get(
-                      core.getDataDir(),
-                      DirectoryFactory.DirContext.META_DATA,
-                      core.getSolrConfig().indexConfig.lockType);
-          dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
-        } finally {
-          if (dir != null) {
-            core.getDirectoryFactory().release(dir);
-          }
-        }
+        restoreIndexProperties(previousIndexProps);
 
         core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
         core.getDirectoryFactory().remove(restoreIndexDir);
@@ -251,6 +245,70 @@ public class RestoreCore implements Callable<Boolean> {
       }
       if (indexDir != null) {
         core.getDirectoryFactory().release(indexDir);
+      }
+    }
+  }
+
+  /**
+   * Returns the current content of the core's index.properties file, or null when the core has no
+   * such file and therefore uses the default index directory.
+   */
+  private byte[] readIndexProperties() throws IOException {
+    Directory dir = null;
+    try {
+      dir =
+          core.getDirectoryFactory()
+              .get(
+                  core.getDataDir(),
+                  DirectoryFactory.DirContext.META_DATA,
+                  core.getSolrConfig().indexConfig.lockType);
+      IndexInput input;
+      try {
+        input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, IOContext.DEFAULT);
+      } catch (FileNotFoundException | NoSuchFileException e) {
+        return null;
+      }
+      try (input) {
+        byte[] bytes = new byte[Math.toIntExact(input.length())];
+        input.readBytes(bytes, 0, bytes.length);
+        return bytes;
+      }
+    } finally {
+      if (dir != null) {
+        core.getDirectoryFactory().release(dir);
+      }
+    }
+  }
+
+  /**
+   * Puts index.properties back to the state captured by {@link #readIndexProperties()}: rewrites
+   * the previous content when there was a file, and deletes the file when the restore created it
+   * (the core was using the default index directory).
+   */
+  private void restoreIndexProperties(byte[] previousIndexProps) throws IOException {
+    Directory dir = null;
+    try {
+      dir =
+          core.getDirectoryFactory()
+              .get(
+                  core.getDataDir(),
+                  DirectoryFactory.DirContext.META_DATA,
+                  core.getSolrConfig().indexConfig.lockType);
+      if (previousIndexProps == null) {
+        dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
+      } else {
+        String tmpPropsName = IndexFetcher.INDEX_PROPERTIES + "." + System.nanoTime();
+        try (IndexOutput out =
+            dir.createOutput(tmpPropsName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+          out.writeBytes(previousIndexProps, previousIndexProps.length);
+        }
+        dir.sync(Set.of(tmpPropsName));
+        core.getDirectoryFactory()
+            .renameWithOverwrite(dir, tmpPropsName, IndexFetcher.INDEX_PROPERTIES);
+      }
+    } finally {
+      if (dir != null) {
+        core.getDirectoryFactory().release(dir);
       }
     }
   }
