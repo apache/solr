@@ -27,7 +27,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FilterMergePolicy;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeTrigger;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -40,6 +45,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -479,28 +485,56 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExpungeDeletes() {
-    assertU(adoc("id", "1"));
-    assertU(adoc("id", "2"));
-    assertU(commit());
+  public void testExpungeDeletes() throws Exception {
+    // Wrap the live writer's merge policy for the duration of this test so no natural
+    // merge can run: a background merge admitted by the deletes budget could drop the
+    // deletion created below before the first sample reads it (SOLR-18505). The
+    // wrapper returns no merges from findMerges and findFullFlushMerges but delegates
+    // findForcedDeletesMerges, so the expungeDeletes commit below still expunges.
+    RefCounted<IndexWriter> iw = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
+    MergePolicy savedPolicy = iw.get().getConfig().getMergePolicy();
+    MergePolicy noNaturalMerges =
+        new FilterMergePolicy(savedPolicy) {
+          @Override
+          public MergePolicy.MergeSpecification findMerges(
+              MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+            return null;
+          }
 
-    assertU(adoc("id", "3"));
-    assertU(adoc("id", "2")); // dup, triggers delete
-    assertU(adoc("id", "4"));
-    assertU(commit());
+          @Override
+          public MergePolicy.MergeSpecification findFullFlushMerges(
+              MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+            return null;
+          }
+        };
+    try {
+      iw.get().getConfig().setMergePolicy(noNaturalMerges);
 
-    SolrQueryRequest sr = req("q", "foo");
-    DirectoryReader r = sr.getSearcher().getIndexReader();
-    assertTrue("maxDoc !> numDocs ... expected some deletions", r.maxDoc() > r.numDocs());
-    sr.close();
+      assertU(adoc("id", "1"));
+      assertU(adoc("id", "2"));
+      assertU(commit());
 
-    assertU(commit("expungeDeletes", "true"));
+      assertU(adoc("id", "3"));
+      assertU(adoc("id", "2")); // dup, triggers delete
+      assertU(adoc("id", "4"));
+      assertU(commit());
 
-    sr = req("q", "foo");
-    r = sr.getSearcher().getIndexReader();
-    assertEquals(r.maxDoc(), r.numDocs()); // no deletions
-    assertEquals(4, r.maxDoc()); // no dups
-    sr.close();
+      try (SolrQueryRequest sr = req("q", "foo")) {
+        DirectoryReader r = sr.getSearcher().getIndexReader();
+        assertTrue("maxDoc !> numDocs ... expected some deletions", r.maxDoc() > r.numDocs());
+      }
+
+      assertU(commit("expungeDeletes", "true"));
+
+      try (SolrQueryRequest sr = req("q", "foo")) {
+        DirectoryReader r = sr.getSearcher().getIndexReader();
+        assertEquals(r.maxDoc(), r.numDocs()); // no deletions
+        assertEquals(4, r.maxDoc()); // no dups
+      }
+    } finally {
+      iw.get().getConfig().setMergePolicy(savedPolicy);
+      iw.decref();
+    }
   }
 
   @Test
