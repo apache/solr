@@ -75,7 +75,7 @@ public class LoggingHandler extends RequestHandlerBase {
     String[] set = params.getParams("set");
     if (set != null) {
       final List<LogLevelChange> changes = NodeLogging.parseLogLevelChanges(set);
-      squashV2Response(rsp, loggingApi.modifyLocalLogLevel(changes));
+      squashV2Response(rsp, loggingApi.modifyLocalLogLevel(null, changes));
     }
 
     String since = req.getParams().get("since");

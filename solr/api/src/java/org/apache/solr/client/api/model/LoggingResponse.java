@@ -16,10 +16,42 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Generic logging response that includes the name of the log watcher (e.g. "Log4j2") */
 public class LoggingResponse extends SolrJerseyResponse {
   @JsonProperty("watcher")
   public String watcherName;
+
+  /**
+   * Per-node results of a request broadcast with the 'nodes' parameter, keyed by node name in "live
+   * node" format (e.g. "someHost:8983_solr"). Serialized inline, as top-level fields named by node,
+   * mirroring {@link NodeSystemResponse#remoteNodeData}. Empty for requests that were not
+   * broadcast.
+   */
+  // Object, not LoggingResponse, since @JsonAnySetter below also feeds this map raw values.
+  public Map<String, Object> remoteNodeData = new LinkedHashMap<>();
+
+  @JsonAnyGetter
+  public Map<String, Object> remoteNodeData() {
+    return remoteNodeData;
+  }
+
+  @JsonAnySetter
+  public void setRemoteNodeResponse(String field, Object value) {
+    remoteNodeData.put(field, value);
+  }
+
+  /**
+   * Nodes that were asked to apply a broadcast request (via the 'nodes' parameter) but did not
+   * return a response, e.g. because they timed out or errored. Null for requests that were not
+   * broadcast, and empty when every requested node responded.
+   */
+  @JsonProperty("failedNodes")
+  public List<String> failedNodes;
 }
