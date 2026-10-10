@@ -35,15 +35,24 @@ public interface NodeLoggingApis {
   @Path("/levels")
   @Operation(
       summary = "List all log-levels for the target node.",
+      description =
+          "If the 'nodes' parameter is provided, the listing is instead collected from "
+              + "each of the named nodes (or from every live node, if 'nodes' is 'all'), and "
+              + "the response reports the per-node results.",
       tags = {"logging"})
-  ListLevelsResponse listAllLoggersAndLevels();
+  ListLevelsResponse listAllLoggersAndLevels(@QueryParam("nodes") String nodes);
 
   @PUT
   @Path("/levels")
   @Operation(
       summary = "Set one or more logger levels on the target node.",
+      description =
+          "If the 'nodes' parameter is provided, the level changes are instead applied to "
+              + "each of the named nodes (or to every live node, if 'nodes' is 'all'), and the "
+              + "response reports the per-node results.",
       tags = {"logging"})
-  LoggingResponse modifyLocalLogLevel(List<LogLevelChange> requestBody);
+  LoggingResponse modifyLocalLogLevel(
+      @QueryParam("nodes") String nodes, List<LogLevelChange> requestBody);
 
   @GET
   @Path("/messages")

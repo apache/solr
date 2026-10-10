@@ -102,6 +102,27 @@ curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: appl
 ====
 ======
 
+In SolrCloud mode, the V2 request above changes only the node that receives it.
+Add the `nodes` query parameter to apply the same changes on other nodes: `nodes=all` targets every live node, or provide a comma-separated list of node names (in `host:port_solr` form).
+The response then reports the result from each node, and names any requested nodes that did not respond under `failedNodes`.
+
+[source,bash]
+----
+curl -X PUT "http://localhost:8983/api/node/logging/levels?nodes=all" -H 'Content-Type: application/json' -d '
+  [
+    {"logger": "root", "level": "WARN"}
+  ]
+'
+----
+
+The `nodes` parameter works the same way on the V2 log level listing, `GET /api/node/logging/levels`.
+The response then carries each node's listing under its node name instead of a single top-level listing, and names any requested nodes that did not respond under `failedNodes`.
+
+[source,bash]
+----
+curl "http://localhost:8983/api/node/logging/levels?nodes=all"
+----
+
 === Choosing Log Level at Startup
 
 You can temporarily choose a different logging level as you start Solr.
