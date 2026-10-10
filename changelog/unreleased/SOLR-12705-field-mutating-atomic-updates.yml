@@ -1,0 +1,8 @@
+title: >
+  Field mutating update processors, such as ParseDateFieldUpdateProcessorFactory, now also mutate the value of the set, add, add-distinct and remove operations of an atomic update.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-12705
+    url: https://issues.apache.org/jira/browse/SOLR-12705
