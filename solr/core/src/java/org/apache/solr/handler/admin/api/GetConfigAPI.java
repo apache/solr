@@ -54,9 +54,40 @@ public class GetConfigAPI {
     configHandler.handleRequest(req, rsp);
   }
 
-  // This endpoint currently covers a whole list of paths by using the "component" placeholder
+  // GET /config/... sections still via SolrConfigHandler.
+  // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
-      path = {"/config/{component}"},
+      path = {
+          // Special GET shapes
+          "/config/overlay",
+          "/config/znodeVersion",
+          // Documented top-level sections
+          "/config/query",
+          "/config/requestHandler",
+          "/config/searchComponent",
+          "/config/updateHandler",
+          "/config/queryResponseWriter",
+          "/config/initParams",
+          "/config/listener",
+          "/config/directoryFactory",
+          "/config/indexConfig",
+          "/config/codecFactory",
+          // Other top-level config tags fetchable the same way
+          "/config/queryParser",
+          "/config/valueSourceParser",
+          "/config/transformer",
+          "/config/updateProcessor",
+          "/config/updateRequestProcessorChain",
+          "/config/queryConverter",
+          "/config/cache",
+          "/config/circuitBreaker",
+          "/config/expressible",
+          "/config/schemaFactory",
+          "/config/restManager",
+          "/config/statsCache",
+          "/config/recoveryStrategy",
+          "/config/indexReaderFactory"
+      },
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getComponentConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
