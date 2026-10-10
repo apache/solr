@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: The DetectedLanguage constructor in the langid module is now public, so custom LanguageIdentifierUpdateProcessor subclasses can return results.
-type: added
+type: changed
 authors:
   - name: Nick Shanin
 links:
