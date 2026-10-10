@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.exec.OS;
+import org.apache.solr.cli.tools.cluster.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -254,7 +255,7 @@ public final class CLIUtils {
    *
    * @param connectionOptions the parsed connection group, or null if none of its options was given
    */
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+  public static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
       throws Exception {
     String solrUrl = connectionOptions != null ? connectionOptions.solrUrl : null;
     if (solrUrl == null) {

@@ -14,19 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.snapshot;
 
-import picocli.CommandLine;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 
 /**
- * Picocli mixin for the {@code -c} / {@code --name} option naming the collection a command acts on.
+ * Runs the {@link SnapshotExportToolTest} tests that go through {@code runTool} using the {@code
+ * bin/solr snapshot export} sub-command; the tests that call the commons-cli parser directly are
+ * inherited and run unchanged.
  */
-public class CollectionNameOptions {
+public class SnapshotExportToolPicocliTest extends SnapshotExportToolTest {
 
-  @CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  public String name;
+  @Override
+  protected int runTool(
+      String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
+      throws Exception {
+    return SnapshotToolsPicocliTest.runAsGroup(args, runtime);
+  }
 }

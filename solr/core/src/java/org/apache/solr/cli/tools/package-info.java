@@ -14,19 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
 
-import picocli.CommandLine;
-
-/**
- * Picocli mixin for the {@code -c} / {@code --name} option naming the collection a command acts on.
- */
-public class CollectionNameOptions {
-
-  @CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  public String name;
-}
+/** General-purpose Solr CLI tool implementations. */
+package org.apache.solr.cli.tools;

@@ -14,19 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.snapshot;
 
 import picocli.CommandLine;
 
-/**
- * Picocli mixin for the {@code -c} / {@code --name} option naming the collection a command acts on.
- */
-public class CollectionNameOptions {
+/** Picocli mixin for the {@code --snapshot-name} option shared by the snapshot sub-commands. */
+class SnapshotNameOptions {
 
   @CommandLine.Option(
-      names = {"-c", "--name"},
+      names = "--snapshot-name",
       required = true,
       paramLabel = "NAME",
-      description = "Name of the collection.")
-  public String name;
+      description = "Name of the snapshot.")
+  String name;
 }

@@ -14,19 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
 
+package org.apache.solr.cli.tools.pkg;
+
+import org.apache.solr.cli.CliDefaultValueProvider;
+import org.apache.solr.cli.ToolRuntime;
 import picocli.CommandLine;
 
-/**
- * Picocli mixin for the {@code -c} / {@code --name} option naming the collection a command acts on.
- */
-public class CollectionNameOptions {
+/** Runs all {@link PackageToolTest} tests through the picocli invocation path. */
+public class PackageToolPicocliTest extends PackageToolTest {
 
-  @CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  public String name;
+  @Override
+  protected int runTool(String[] args, ToolRuntime runtime) throws Exception {
+    PackageTool tool = new PackageTool(runtime);
+    return new CommandLine(tool)
+        .setDefaultValueProvider(new CliDefaultValueProvider())
+        .execute(args);
+  }
 }
