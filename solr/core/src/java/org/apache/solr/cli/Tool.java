@@ -27,7 +27,7 @@ public interface Tool {
    * @deprecated Only used by the commons-cli parser. Tools built on picocli take their name from
    *     the {@code @Command} annotation instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   String getName();
 
   /**
@@ -38,7 +38,7 @@ public interface Tool {
    * @deprecated Only used by the commons-cli parser. Picocli generates the synopsis from the
    *     command's annotations.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   default String getUsage() {
     return null;
   }
@@ -48,7 +48,7 @@ public interface Tool {
    *
    * @deprecated Only used by the commons-cli parser. Picocli uses {@code @Command(header = ...)}.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   default String getHeader() {
     return "List of options:";
   }
@@ -59,7 +59,7 @@ public interface Tool {
    *
    * @deprecated Only used by the commons-cli parser. Picocli uses {@code @Command(footer = ...)}.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   default String getFooter() {
     return "\nPlease see the Reference Guide for more tools documentation: https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html";
   }
@@ -74,7 +74,7 @@ public interface Tool {
    * @deprecated Only used by the commons-cli parser. Picocli tools declare their options as
    *     annotated fields instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   Options getOptions();
 
   /**
@@ -82,6 +82,6 @@ public interface Tool {
    *
    * @deprecated Implement {@link ToolBase#callTool()} instead, which picocli invokes.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   int runTool(CommandLine cli) throws Exception;
 }

@@ -62,7 +62,9 @@ public class ConfigSetDownloadTool extends ToolBase {
           .desc("Local directory with configs.")
           .get();
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
 
@@ -147,7 +149,7 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHost = zkOpts.resolveZkHost();
+    String zkHost = connectionOptions.resolveZkHost(credentialsOptions.credentials);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient =

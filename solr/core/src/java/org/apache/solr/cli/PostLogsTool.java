@@ -37,7 +37,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -62,7 +61,7 @@ public class PostLogsTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -76,7 +75,7 @@ public class PostLogsTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option ROOT_DIR_OPTION =
       Option.builder()
           .longOpt("rootdir")
@@ -90,20 +89,12 @@ public class PostLogsTool extends ToolBase {
   record PostLogsParams(String url, String rootDir, String credentials) {}
 
   // --- picocli fields ---
-  // The connection group is mandatory (multiplicity "1"), mirroring the commons-cli path's
-  // manual IllegalArgumentException when no connection target is given.
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   @picocli.CommandLine.Option(
       names = "--rootdir",
@@ -687,19 +678,13 @@ public class PostLogsTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String url = resolveSolrUrl(credentialsOptions.credentials) + "/solr/" + nameOpt;
+    connectionOptions.requireExplicitConnection();
+    String url =
+        connectionOptions.resolveSolrUrl(credentialsOptions.credentials)
+            + "/solr/"
+            + collectionNameOptions.name;
     PostLogsParams params = new PostLogsParams(url, rootDirOpt, credentialsOptions.credentials);
     runCommand(params);
     return 0;
-  }
-
-  private String resolveSolrUrl(String credentials) throws Exception {
-    String solrUrlArg = connectionOptions.effectiveSolrUrl();
-    if (solrUrlArg != null) {
-      return CLIUtils.normalizeSolrUrl(solrUrlArg);
-    }
-    return CLIUtils.solrUrlFromConnection(
-        CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.effectiveZkHost()),
-        credentials);
   }
 }

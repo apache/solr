@@ -34,8 +34,7 @@ import org.apache.solr.client.solrj.response.SystemInfoResponse;
 @picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
 public class VersionTool extends ToolBase {
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
@@ -74,11 +73,10 @@ public class VersionTool extends ToolBase {
   public int callTool() throws Exception {
     echo("Client version: " + SolrVersion.LATEST);
 
-    String solrUrl = connectionOptions == null ? null : connectionOptions.effectiveSolrUrl();
-    if (solrUrl != null) {
+    if (connectionOptions.hasExplicitConnection()) {
       echoServerVersion(
-          CLIUtils.normalizeSolrUrl(solrUrl),
-          credentialsOptions == null ? null : credentialsOptions.credentials);
+          connectionOptions.resolveSolrUrl(credentialsOptions.credentials),
+          credentialsOptions.credentials);
     }
     return 0;
   }

@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +32,6 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
@@ -72,37 +72,17 @@ public class StatusTool extends ToolBase {
       description = "Wait up to the specified number of seconds to see Solr running.")
   private Integer maxWaitSecs;
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private TargetOptions targetOptions;
+  @picocli.CommandLine.Option(
+      names = {"-p", "--port"},
+      paramLabel = "PORT",
+      description = "Port on localhost to check status for")
+  private Integer portOpt;
 
-  static class TargetOptions {
-    @picocli.CommandLine.Option(
-        names = {"-p", "--port"},
-        description = "Port on localhost to check status for")
-    private Integer port;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
-    @picocli.CommandLine.Option(
-        names = {"-s", "--solr-connection"},
-        description =
-            "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
-                + CommonCLIOptions.DefaultValues.ZK_HOST
-                + '.')
-    private String solrConnection;
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-    @picocli.CommandLine.Option(
-        names = {"--solr-url"},
-        description =
-            "Base Solr URL, which can be used to determine the zk-host if that's not known")
-    private String solrUrl;
-
-    @picocli.CommandLine.Option(
-        names = {"-z", "--zk-host"},
-        description =
-            "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                + CommonCLIOptions.DefaultValues.ZK_HOST
-                + '.')
-    private String zkHost;
-  }
+  @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 
   private Integer port;
 
@@ -114,17 +94,13 @@ public class StatusTool extends ToolBase {
       description = "Short format. Prints one URL per line for running instances")
   private boolean shortFormat;
 
-  @picocli.CommandLine.Option(
-      names = {"-u", "--credentials"},
-      description =
-          "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
   private String credentials;
 
   /**
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option MAX_WAIT_SECS_OPTION =
       Option.builder()
           .longOpt("max-wait-secs")
@@ -139,7 +115,7 @@ public class StatusTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
@@ -153,7 +129,7 @@ public class StatusTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static final Option SHORT_OPTION =
       Option.builder()
           .longOpt("short")
@@ -439,22 +415,22 @@ public class StatusTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    if (targetOptions != null) {
-      port = targetOptions.port;
-      if (targetOptions.solrUrl != null) {
-        solrUrl = targetOptions.solrUrl;
-      } else {
-        String connectionString =
-            targetOptions.solrConnection != null
-                ? targetOptions.solrConnection
-                : targetOptions.zkHost;
-        if (connectionString != null) {
-          solrUrl =
-              CLIUtils.solrUrlFromConnection(
-                  CloudSolrClient.CloudSolrClientConnection.parse(connectionString), credentials);
-        }
-      }
+    credentials = credentialsOptions.credentials;
+    // Only an explicit --port counts: the environment default would otherwise suppress the scan
+    // for running instances
+    boolean portGiven = spec.commandLine().getParseResult().hasMatchedOption("--port");
+    if (portGiven && connectionOptions.hasExplicitConnection()) {
+      List<String> given = new ArrayList<>(List.of("--port"));
+      given.addAll(connectionOptions.explicitOptionNames());
+      throw new picocli.CommandLine.ParameterException(
+          spec.commandLine(),
+          ConnectionOptions.mutuallyExclusiveMessage(given, "-p, -s, -z or --solr-url"));
     }
+    port = portGiven ? portOpt : null;
+    solrUrl =
+        connectionOptions.hasExplicitConnection()
+            ? connectionOptions.resolveSolrUrl(credentials, false)
+            : null;
     return runTool();
   }
 }

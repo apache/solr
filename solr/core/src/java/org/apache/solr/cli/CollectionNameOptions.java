@@ -18,15 +18,12 @@ package org.apache.solr.cli;
 
 import picocli.CommandLine;
 
-/**
- * Picocli mixin for the {@code -c} / {@code --name} option naming the collection a command acts on.
- */
-class CollectionNameOptions {
-
+/** The required {@code -c/--name} option shared by picocli commands that act on a collection. */
+public class CollectionNameOptions {
   @CommandLine.Option(
       names = {"-c", "--name"},
       required = true,
       paramLabel = "NAME",
-      description = "Name of the collection.")
-  String name;
+      description = "Name of the collection or core.")
+  public String name;
 }

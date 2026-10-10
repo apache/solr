@@ -51,7 +51,9 @@ import org.slf4j.LoggerFactory;
 public class ZkMvTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -142,7 +144,7 @@ public class ZkMvTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHost = zkOpts.resolveZkHost();
+    String zkHost = connectionOptions.resolveZkHost(credentialsOptions.credentials);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

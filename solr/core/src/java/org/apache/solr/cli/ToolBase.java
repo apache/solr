@@ -92,7 +92,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
    * @deprecated Only used by the commons-cli parser. Picocli tools mix in {@code ConnectionOptions}
    *     instead.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public OptionGroup getConnectionOptions() {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
@@ -134,7 +134,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
   /**
    * @deprecated Implement {@link #callTool()} instead, which picocli invokes.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public abstract void runImpl(org.apache.commons.cli.CommandLine cli) throws Exception;
 
   /**
@@ -154,6 +154,9 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
     int toolExitStatus = 0;
     try {
       toolExitStatus = callTool();
+    } catch (CommandLine.ParameterException exc) {
+      // a usage error found while running: let picocli report it like any other invalid input
+      throw exc;
     } catch (Exception exc) {
       // since this is a CLI, spare the user the stacktrace
       String excMsg = exc.getMessage();

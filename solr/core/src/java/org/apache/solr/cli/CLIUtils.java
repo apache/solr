@@ -225,7 +225,7 @@ public final class CLIUtils {
    * @deprecated Only used by the commons-cli parser. Picocli tools resolve the URL from their own
    *     annotated connection options and call {@link #normalizeSolrUrl(String)}.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 
@@ -245,48 +245,6 @@ public final class CLIUtils {
     }
     solrUrl = normalizeSolrUrl(solrUrl);
     return solrUrl;
-  }
-
-  /**
-   * The picocli counterpart of {@link #normalizeSolrUrl(CommandLine)}: {@code --solr-url}, else the
-   * connection named by {@code --solr-connection} or {@code --zk-host} (or the matching property
-   * when the option is absent), else the default URL with the same warning.
-   *
-   * @param connectionOptions the parsed connection group, or null if none of its options was given
-   */
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
-      throws Exception {
-    String solrUrl = connectionOptions != null ? connectionOptions.solrUrl : null;
-    if (solrUrl == null) {
-      String solrConnection =
-          (connectionOptions != null && connectionOptions.solrConnection != null)
-              ? connectionOptions.solrConnection
-              : EnvUtils.getProperty("solr.connection");
-      String zkHost =
-          (connectionOptions != null && connectionOptions.zkHost != null)
-              ? connectionOptions.zkHost
-              : EnvUtils.getProperty("zkHost");
-      if (solrConnection != null && !solrConnection.isBlank()) {
-        solrUrl =
-            solrUrlFromConnection(
-                CloudSolrClient.CloudSolrClientConnection.parse(solrConnection), credentials);
-      } else if (zkHost != null && !zkHost.isBlank()) {
-        var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
-        if (!zkSolrConnection.isZookeeper()) {
-          throw new IOException(
-              String.format(
-                  Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
-        }
-        solrUrl = solrUrlFromConnection(zkSolrConnection, credentials);
-      } else {
-        solrUrl = getDefaultSolrUrl();
-        CLIO.err(
-            "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
-                + solrUrl
-                + ".");
-      }
-    }
-    return normalizeSolrUrl(solrUrl);
   }
 
   /**
