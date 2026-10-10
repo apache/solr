@@ -137,6 +137,9 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     RandomIndexWriter w =
         new RandomIndexWriter(
             random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    // The two segments must stay separate: a random force merge inside getReader()
+    // would collapse them into one leaf and the caching checks below would test nothing.
+    w.setDoRandomForceMerge(false);
     for (int i = 0; i < 2; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", "id" + i, Field.Store.NO));
