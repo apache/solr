@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import java.util.Set;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,6 +34,10 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // Disable the URL allow-list check so a request using the 'shards' parameter is not
+    // rejected with 403 by HttpShardHandler.prepDistributed before it reaches the search
+    // components in this standalone (non-ZooKeeper) setup.
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     initCore("solr/collection1/conf/solrconfig.xml", "solr/collection1/conf/schema-minimal.xml");
 
     /* make sure some misguided soul doesn't inadvertently give us
