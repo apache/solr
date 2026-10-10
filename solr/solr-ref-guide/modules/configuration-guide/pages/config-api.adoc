@@ -230,6 +230,7 @@ _Query Sizing and Warming_
 
 * `query.maxBooleanClauses`
 * `query.enableLazyFieldLoading`
+* `query.enableDocValuesIteratorCache`
 * `query.useFilterForSortedQuery`
 * `query.queryResultWindowSize`
 * `query.queryResultMaxDocCached`
