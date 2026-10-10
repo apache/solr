@@ -62,6 +62,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertNull(response.error);
     assertNotNull(response.overlay);
     assertTrue(response.overlay.containsKey("znodeVersion"));
+    assertEquals(-1, response.overlay.get("znodeVersion"));
   }
 
   @Test
