@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The {solr-javadocs}/modules/scripting/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory] allows Java scripting engines to be used during Solr document update processing, allowing dramatic flexibility in expressing custom document processing logic before being indexed.
+The {solr-javadocs}/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory] allows Java scripting engines to be used during Solr document update processing, allowing dramatic flexibility in expressing custom document processing logic before being indexed.
 
 It has hooks to the commit, delete, rollback, etc indexing actions, however add is the most common usage.
 It is implemented as an UpdateProcessor to be placed in an UpdateChain.
@@ -106,10 +106,10 @@ Logger (org.slf4j.Logger) instance.
 This is useful for logging information from the script.
 
 `req`::
-{solr-javadocs}/core/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] instance.
+{solr-javadocs}/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] instance.
 
 `rsp`::
-{solr-javadocs}/core/org/apache/solr/response/SolrQueryResponse.html[SolrQueryResponse] instance.
+{solr-javadocs}/org/apache/solr/response/SolrQueryResponse.html[SolrQueryResponse] instance.
 
 `params`::
 The "params" object, if any specified, from the configuration.

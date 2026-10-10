@@ -226,7 +226,7 @@ Using the `MultiDestinationAuditLogger` multiple audit logger plugins can be con
 ----
 
 Note that logging to alternate destinations would need to be defined with a custom audit logging plugin.
-See the javadocs for the base class at {solr-javadocs}/core/org/apache/solr/security/AuditLoggerPlugin.html[AuditLoggerPlugin].
+See the javadocs for the base class at {solr-javadocs}/org/apache/solr/security/AuditLoggerPlugin.html[AuditLoggerPlugin].
 
 == Metrics
 

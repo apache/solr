@@ -28,6 +28,10 @@ configure(rootProject) {
     luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url',
         "https://lucene.apache.org/core/${-> luceneBaseVersionProvider.get().replace('.', '_')}")
 
+    // Same version, for naming the Lucene docs rather than linking them.
+    luceneDocVersion = "${-> luceneBaseVersionProvider.get()}"
+
+
     solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
       if (project.version != project.baseVersion) {
         // non-release build does not cross-link between modules.
@@ -68,7 +72,7 @@ configure(project(':solr:documentation')) {
       prj.tasks.matching {it.name == 'renderSiteJavadoc'}
     }
     dependsOn 'changesToHtml', 'copyDocumentationAssets',
-        'markdownToHtml', 'createDocumentationIndex'
+        'markdownToHtml', 'createDocumentationIndex', 'createJavadocsIndex'
   }
 
   task copyDocumentationAssets(type: Copy) {

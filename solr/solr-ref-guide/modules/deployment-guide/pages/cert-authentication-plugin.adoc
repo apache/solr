@@ -48,9 +48,9 @@ This plugin will configure the user `principal` for the request based on the con
 
 *Simple Resolution*: Uses the full X500 subject name from the client certificate. This is the default behavior.
 
-*Path Based Resolution*: Offers greater flexibility by allowing to extract specific fields or patterns using the {solr-javadocs}/core/org/apache/solr/security/cert/PathBasedCertPrincipalResolver.html[PathBasedCertPrincipalResolver]. Here "`paths`" refers to the fields ("`.`" separated) defined in the certificate.
+*Path Based Resolution*: Offers greater flexibility by allowing to extract specific fields or patterns using the {solr-javadocs}/org/apache/solr/security/cert/PathBasedCertPrincipalResolver.html[PathBasedCertPrincipalResolver]. Here "`paths`" refers to the fields ("`.`" separated) defined in the certificate.
 
-*Custom Resolution*: If the built-in options do not meet your needs, you can add a custom class by implementing the {solr-javadocs}/core/org/apache/solr/security/cert/CertPrincipalResolver.html[`CertPrincipalResolver`]interface. This allows you to define your own logic for extracting and processing the `principal`. The custom implementation can then be referenced in your `security.json` configuration.
+*Custom Resolution*: If the built-in options do not meet your needs, you can add a custom class by implementing the {solr-javadocs}/org/apache/solr/security/cert/CertPrincipalResolver.html[`CertPrincipalResolver`]interface. This allows you to define your own logic for extracting and processing the `principal`. The custom implementation can then be referenced in your `security.json` configuration.
 
 === Simple Principal Resolution
 
@@ -388,7 +388,7 @@ List of supported SAN fields is compatible with https://tools.ietf.org/html/rfc5
 
 === Custom Principal Resolution
 
-To use a custom `principal` resolver, implement the {solr-javadocs}/core/org/apache/solr/security/cert/CertPrincipalResolver.html[`CertPrincipalResolver`]  interface in your class. The interface requires you to define how to resolve a principal from an `X.509` certificate. Here's an example of a basic custom implementation:
+To use a custom `principal` resolver, implement the {solr-javadocs}/org/apache/solr/security/cert/CertPrincipalResolver.html[`CertPrincipalResolver`]  interface in your class. The interface requires you to define how to resolve a principal from an `X.509` certificate. Here's an example of a basic custom implementation:
 
 [source,java]
 ----

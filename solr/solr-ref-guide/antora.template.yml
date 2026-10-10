@@ -39,8 +39,9 @@ asciidoc:
     idseparator: '-'
     idprefix: ''
     # 'patch-version' is the 'z' part of x.y.z semantic version
-    page-solr-javadocs: '${solr_javadocs_link}'
-    solr-javadocs: '${solr_javadocs_link}'
+    page-solr-javadocs: '${solr_docs_link}'
+    solr-docs: '${solr_docs_link}'
+    solr-javadocs: '${solr_docs_link}/javadocs/api'
     lucene-javadocs: '${lucene_javadocs_link}'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     solr-docs-version: '${solr_version_major}.${solr_version_minor}'

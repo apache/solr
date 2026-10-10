@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-{solr-javadocs}/solrj/[SolrJ] is an API that makes it easy for applications written in Java (or any language based on the JVM) to talk to Solr.
+{solr-javadocs}/org/apache/solr/client/solrj/package-summary.html[SolrJ] is an API that makes it easy for applications written in Java (or any language based on the JVM) to talk to Solr.
 SolrJ hides a lot of the details of connecting to Solr and allows your application to interact with Solr with simple high-level methods.
 SolrJ supports most Solr APIs, and is highly configurable.
 
@@ -112,23 +112,23 @@ If you are worried about the SolrJ libraries expanding the size of your client a
 
 For all its flexibility, SolrJ is built around a few simple interfaces.
 
-All requests to Solr are sent by a {solr-javadocs}/solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`].  SolrClient's are the main workhorses at the core of SolrJ.
+All requests to Solr are sent by a {solr-javadocs}/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`].  SolrClient's are the main workhorses at the core of SolrJ.
 They handle the work of connecting to and communicating with Solr, and are where most of the user configuration happens.
 
-Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/solrj/SolrRequest.html[`SolrRequests`], and are returned as {solr-javadocs}/solrj/org/apache/solr/client/solrj/SolrResponse.html[`SolrResponses`].
+Requests are sent in the form of {solr-javadocs}/org/apache/solr/client/solrj/SolrRequest.html[`SolrRequests`], and are returned as {solr-javadocs}/org/apache/solr/client/solrj/SolrResponse.html[`SolrResponses`].
 
 === Types of SolrClients
 
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - a general purpose client whose builder creates a `HttpJettySolrClient` if available, or `HttpJdkSolrClient` otherwise.
-- {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.html[`HttpJettySolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBSolrClient.html[`LBSolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.  Its builder will create a `CloudJettySolrClient` if available, or `CloudJdkSolrClient` otherwise.
-- {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
+- {solr-javadocs}/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - a general purpose client whose builder creates a `HttpJettySolrClient` if available, or `HttpJdkSolrClient` otherwise.
+- {solr-javadocs}/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.html[`HttpJettySolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
+- {solr-javadocs}/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
+- {solr-javadocs}/org/apache/solr/client/solrj/impl/LBSolrClient.html[`LBSolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
+- {solr-javadocs}/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.  Its builder will create a `CloudJettySolrClient` if available, or `CloudJdkSolrClient` otherwise.
+- {solr-javadocs}/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateJdkSolrClient.html[`ConcurrentUpdateJdkSolrClient`] - similar to `ConcurrentUpdateJettySolrClient` but delegates to `HttpJdkSolrClient` and has no dependencies.
+- {solr-javadocs}/org/apache/solr/client/solrj/impl/ConcurrentUpdateJdkSolrClient.html[`ConcurrentUpdateJdkSolrClient`] - similar to `ConcurrentUpdateJettySolrClient` but delegates to `HttpJdkSolrClient` and has no dependencies.
 
 === Common Configuration Options
 
@@ -228,7 +228,7 @@ It is also suggested that Solr administrators commit documents using Solr's auto
 
 == Java Object Binding
 While the `UpdateResponse` and `QueryResponse` interfaces that SolrJ provides are useful, it is often more convenient to work with domain-specific objects that can more easily be understood by your application.
-Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/solrj/org/apache/solr/client/solrj//beans/Field.html[`Field`] annotations.
+Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/org/apache/solr/client/solrj//beans/Field.html[`Field`] annotations.
 
 Each instance variable in a Java object can be mapped to a corresponding Solr field, using the `Field` annotation.
 The Solr field shares the name of the annotated variable by default, however, this can be overridden by providing the annotation with an explicit field name.

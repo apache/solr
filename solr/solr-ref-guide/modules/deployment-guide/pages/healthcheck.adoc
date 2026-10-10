@@ -46,7 +46,7 @@ Confusing them is easy, since both are casually called a "healthcheck", so this 
 
 == Node Healthcheck
 
-The `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
+The `api/node/health` endpoint ({solr-javadocs}/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
 It is designed to be cheap enough to poll frequently from a load balancer or an orchestrator like Kubernetes.
 
 [IMPORTANT]

@@ -63,7 +63,7 @@ xref:indexing-guide:partial-document-updates.adoc#in-place-updates[In-place upda
 
 There are no multi-document transactions.
 A batch of documents is processed as independent operations: some may succeed while others fail, and there is no rollback of the documents that succeeded.
-By default a document error fails the request at that point; the {solr-javadocs}/core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`] can be configured to instead continue past per-document failures and report them all in the response.
+By default a document error fails the request at that point; the {solr-javadocs}/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`] can be configured to instead continue past per-document failures and report them all in the response.
 Similarly, a delete-by-query spanning multiple shards is not atomic across those shards.
 The xref:indexing-guide:indexing-with-update-handlers.adoc#rollback-operations[rollback command] is not supported in SolrCloud.
 
