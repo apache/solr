@@ -174,7 +174,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
-  private class Command {
+  private static class Command {
     private final SolrQueryRequest req;
     private final SolrQueryResponse resp;
     private final String method;
@@ -202,7 +202,7 @@ public class SolrConfigHandler extends RequestHandlerBase
             resp, new GetConfig(req).getConfig(req.getParams().getBool("expandParams", false)));
       } else {
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
-          resp.add(ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay());
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
           if (parts.size() == 3) {
             RequestParams params = req.getCore().getSolrConfig().getRequestParams();
@@ -219,66 +219,12 @@ public class SolrConfigHandler extends RequestHandlerBase
 
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
-            resp.add(
-                ZNODEVER,
-                Map.of(
-                    ConfigOverlay.NAME,
-                    req.getCore().getSolrConfig().getOverlay().getVersion(),
-                    RequestParams.NAME,
-                    req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
-            boolean isStale = false;
-            int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
-            int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();
-            if (expectedVersion > actualVersion) {
-              log.info(
-                  "expecting overlay version {} but my version is {}",
-                  expectedVersion,
-                  actualVersion);
-              isStale = true;
-            } else if (expectedVersion != -1) {
-              log.info("I already have the expected version {} of config", expectedVersion);
-            }
-            expectedVersion = req.getParams().getInt(RequestParams.NAME, -1);
-            actualVersion = req.getCore().getSolrConfig().getRequestParams().getZnodeVersion();
-            if (expectedVersion > actualVersion) {
-              log.info(
-                  "expecting params version {} but my version is {}",
-                  expectedVersion,
-                  actualVersion);
-              isStale = true;
-            } else if (expectedVersion != -1) {
-              log.info("I already have the expected version {} of params", expectedVersion);
-            }
-            if (isStale && req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
-              new Thread(
-                      () -> {
-                        if (!reloadLock.tryLock()) {
-                          log.info("Another reload is in progress . Not doing anything");
-                          return;
-                        }
-                        try {
-                          log.info("Trying to update my configs");
-                          SolrCore.getConfListener(
-                                  req.getCore(),
-                                  (ZkSolrResourceLoader) req.getCore().getResourceLoader())
-                              .run();
-                        } catch (Exception e) {
-                          log.error("Unable to refresh conf ", e);
-                        } finally {
-                          reloadLock.unlock();
-                        }
-                      },
-                      SolrConfigHandler.class.getSimpleName() + "-refreshconf")
-                  .start();
-            } else {
-              if (log.isInfoEnabled()) {
-                log.info(
-                    "isStale {} , resourceloader {}",
-                    isStale,
-                    req.getCore().getResourceLoader().getClass().getName());
-              }
-            }
-
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                resp,
+                new GetConfig(req)
+                    .getZnodeVersion(
+                        req.getParams().getInt(ConfigOverlay.NAME, -1),
+                        req.getParams().getInt(RequestParams.NAME, -1)));
           } else {
             Map<String, Object> m = getConfigDetails(parts.get(1), req);
             Map<String, Object> val = new LinkedHashMap<>();
@@ -968,6 +914,58 @@ public class SolrConfigHandler extends RequestHandlerBase
       }
     }
     return activeReplicas;
+  }
+
+  public static void maybeRefreshStaleConfig(
+      SolrCore core, int expectedOverlayVersion, int expectedParamsVersion) {
+    boolean isStale =
+        isExpectedVersionStale(
+                "overlay", expectedOverlayVersion, core.getSolrConfig().getOverlay().getVersion())
+            | isExpectedVersionStale(
+                "params",
+                expectedParamsVersion,
+                core.getSolrConfig().getRequestParams().getZnodeVersion());
+    if (isStale && core.getResourceLoader() instanceof ZkSolrResourceLoader) {
+      final Lock reloadLock =
+          ((SolrConfigHandler) core.getRequestHandler("/config")).getReloadLock();
+      new Thread(
+              () -> {
+                if (!reloadLock.tryLock()) {
+                  log.info("Another reload is in progress . Not doing anything");
+                  return;
+                }
+                try {
+                  log.info("Trying to update my configs");
+                  SolrCore.getConfListener(core, (ZkSolrResourceLoader) core.getResourceLoader())
+                      .run();
+                } catch (Exception e) {
+                  log.error("Unable to refresh conf ", e);
+                } finally {
+                  reloadLock.unlock();
+                }
+              },
+              SolrConfigHandler.class.getSimpleName() + "-refreshconf")
+          .start();
+    } else {
+      if (log.isInfoEnabled()) {
+        log.info(
+            "isStale {} , resourceloader {}",
+            isStale,
+            core.getResourceLoader().getClass().getName());
+      }
+    }
+  }
+
+  private static boolean isExpectedVersionStale(String label, int expected, int actual) {
+    if (expected == -1) {
+      return false;
+    }
+    if (expected > actual) {
+      log.info("expecting {} version {} but my version is {}", label, expected, actual);
+      return true;
+    }
+    log.info("I already have the expected version {} of {}", expected, label);
+    return false;
   }
 
   @Override
