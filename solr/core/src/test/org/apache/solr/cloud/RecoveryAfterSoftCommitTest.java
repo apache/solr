@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -98,12 +99,21 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     proxy.close();
 
     // add more than ULOG_NUM_RECORDS_TO_KEEP docs so that peer sync cannot be used for recovery
+    // Use a leaders-only client for these adds: closing the proxy also cuts the client's pooled
+    // connections to the replica, and an add routed to the cut replica can fail with a
+    // ClosedChannelException after the write has committed, which no client layer retries
+    // (SOLR-18530). The leader forwards to the cut replica, which is the partition path this
+    // test exercises.
     int MAX_DOCS = 2 + MAX_BUFFERED_DOCS + ULOG_NUM_RECORDS_TO_KEEP;
-    for (; i < MAX_DOCS; i++) {
-      SolrInputDocument document = new SolrInputDocument();
-      document.addField("id", String.valueOf(i));
-      document.addField("a_t", "text_" + i);
-      cloudClient.add(document);
+    try (CloudSolrClient leaderClient =
+        createNewCloudSolrClient(
+            zkServer.getZkAddress(), DEFAULT_COLLECTION, true, 30000, 120000)) {
+      for (; i < MAX_DOCS; i++) {
+        SolrInputDocument document = new SolrInputDocument();
+        document.addField("id", String.valueOf(i));
+        document.addField("a_t", "text_" + i);
+        leaderClient.add(document);
+      }
     }
 
     // Have the partition last at least 1 sec
