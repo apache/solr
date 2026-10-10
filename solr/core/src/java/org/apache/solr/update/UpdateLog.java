@@ -226,6 +226,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected final int numDeletesToKeep = 1000;
   protected final int numDeletesByQueryToKeep = 100;
+  static final int DEFAULT_MAX_NUM_LOGS_TO_KEEP = 10;
+  static final int DEFAULT_MAX_NUM_LOGS_TO_KEEP_WITH_RECORDS = 1000;
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
   protected boolean existOldBufferLog = false;
@@ -384,7 +386,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     defaultSyncLevel = SyncLevel.getSyncLevel((String) info.initArgs.get("syncLevel"));
 
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
-    maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
+    // A larger numRecordsToKeep is only honored if enough tlog files may be kept, so when the user
+    // sets it explicitly and not maxNumLogsToKeep, allow many more files (SOLR-11483).
+    maxNumLogsToKeep =
+        objToInt(
+            info.initArgs.get("maxNumLogsToKeep"),
+            info.initArgs.get("numRecordsToKeep") != null
+                ? DEFAULT_MAX_NUM_LOGS_TO_KEEP_WITH_RECORDS
+                : DEFAULT_MAX_NUM_LOGS_TO_KEEP);
     if (info.initArgs.get("numVersionBuckets") != null) {
       log.warn("numVersionBuckets is obsolete");
     }
