@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Admin UI's SQL screen no longer crashes with an uncaught JS error (and silently shows a blank result grid) when the response isn't a SQL result-set - e.g. when the sql module/handler isn't installed. It now shows the server's error message instead.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-16640
+    url: https://issues.apache.org/jira/browse/SOLR-16640

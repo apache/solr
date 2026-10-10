@@ -16,17 +16,16 @@
  */
 package org.apache.solr.webapp;
 
+import java.util.Locale;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
-/**
- * Tests the SQL screen: executing a SQL query through the form. Requires the sql module on the
- * server classpath, provided by the webapp test dependencies.
- */
+/** Browser tests for the SQL screen. The test classpath includes the sql module. */
 public class AdminUiSqlScreenTest extends AdminUiTestBase {
 
   private static final String COLLECTION = "sqlcoll";
@@ -51,10 +50,53 @@ public class AdminUiSqlScreenTest extends AdminUiTestBase {
     stmt.sendKeys("SELECT id FROM " + COLLECTION + " LIMIT 10");
     click(By.xpath("//div[@id='sqlquery']//button[@type='submit']"));
 
-    // the result grid lists all documents
     for (int i = 1; i <= 3; i++) {
       waitForPageContains("sql-doc-" + i);
     }
     assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testFailedRequestShowsErrorInsteadOfCrashing() {
+    // A missing collection produces an error response without a result-set.
+    openPage("nonexistentcoll/sqlquery", By.id("sqlquery"));
+    WebElement stmt = waitFor(By.id("sqlexp"));
+    stmt.clear();
+    stmt.sendKeys("SELECT id FROM " + COLLECTION + " LIMIT 10");
+    click(By.xpath("//div[@id='sqlquery']//button[@type='submit']"));
+    waitForTextContains(By.id("sql-response"), "no handler, collection, or core");
+    assertNoSevereConsoleErrors("404 (Not Found)");
+  }
+
+  @Test
+  public void testSqlModuleNotEnabledShowsFriendlyMessage() {
+    // Use a captured missing-module response because the test classpath includes the sql module.
+    openPage(COLLECTION + "/sqlquery", By.id("sqlquery"));
+    waitFor(By.id("sqlexp"));
+    String classNotFoundResponse =
+        "{\"error\":{\"metadata\":{\"error-class\":\"org.apache.solr.common.SolrException\","
+            + "\"root-error-class\":\"java.lang.ClassNotFoundException\"},"
+            + "\"errorClass\":\"org.apache.solr.common.SolrException\","
+            + "\"msg\":\" Error loading class 'solr.SQLHandler'\",\"code\":500}}";
+    String sqlError =
+        (String)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "var scope = angular.element(document.getElementById('sqlquery')).scope();"
+                        + "scope.showResult(arguments[0]);"
+                        + "scope.$apply();"
+                        + "return scope.sqlError;",
+                    classNotFoundResponse);
+    assertTrue(
+        "should show a friendly message, got: " + sqlError,
+        sqlError != null && sqlError.toLowerCase(Locale.ROOT).contains("sql module"));
+    assertTrue(
+        "should say how to fix it: " + sqlError,
+        sqlError.toLowerCase(Locale.ROOT).contains("enable"));
+    WebElement documentation = waitFor(By.cssSelector("#sql-response span a"));
+    assertEquals(
+        "https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html",
+        documentation.getDomAttribute("href"));
+    assertEquals("_out", documentation.getDomAttribute("target"));
   }
 }

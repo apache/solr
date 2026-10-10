@@ -1026,7 +1026,7 @@ public class RunExampleTool extends ToolBase {
 
     final var syspropArg =
         ("techproducts".equals(params.example()))
-            ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
+            ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting,sql -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
 
     String startCmdStr =
