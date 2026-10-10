@@ -150,6 +150,13 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
     assertNull(lfuCache.get(1)); // first item put in should be the first out
 
+    // Warming and the put below used to run against a full backing cache, so each put evicted
+    // an entry. Which entry is evicted depends on key hashes, and the scopes here hash by
+    // identity, so occasionally the victim was one of the second cache's own entries and its
+    // evictions metric read 1 instead of 0 (SOLR-18506). Size the backing above everything
+    // this test puts so that nothing is evicted from here on.
+    backing.setMaxSize(200);
+
     // Test autowarming
     newLFUCache.init(Map.of("autowarmCount", "25"), initObj, regenerator);
     newLFUCache.warm(null, lfuCache);
@@ -167,6 +174,8 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertEquals(7L, newhits + newmiss);
     assertEquals(4L, newhits);
     assertEquals(102L, newinserts);
+    // 0: the first cache is never registered for removals, and nothing is evicted after the
+    // resize.
     assertEquals(0L, evictions);
 
     solrMetricsContext.close();
