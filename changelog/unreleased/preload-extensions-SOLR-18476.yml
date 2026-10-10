@@ -1,0 +1,8 @@
+title: StandardDirectoryFactory and implementing classes honor `preload=true` and the new
+  `preloadExtensions`
+type: added
+authors:
+- name: Kevin Liang
+links:
+- name: SOLR-18476
+  url: https://issues.apache.org/jira/browse/SOLR-18476
