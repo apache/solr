@@ -1,4 +1,4 @@
-title: "The original highlighter now extracts terms from a query nested inside a function query, e.g. {!func}query($q)."
+title: "The original highlighter now extracts terms from the query inside a top-level query(...) function query."
 type: fixed
 authors:
   - name: Nick Shanin
