@@ -7,13 +7,14 @@ name: Changelog Comment Commands
 #   /no-changelog     - mark the PR as not needing a changelog entry
 #   /needs-changelog  - undo that
 #
-# The command applies/removes the label, and the label change re-triggers the
-# "Validate Changelog" workflow (which listens for labeled/unlabeled events),
-# so the red check turns green on its own.
+# The command applies/removes the label and then re-runs the "Validate Changelog"
+# workflow, so the red check turns green on its own. The re-run has to be explicit:
+# GitHub does not trigger workflows from events caused by the GITHUB_TOKEN, so the
+# 'labeled' event raised by the labels API call below reaches nothing.
 #
-# This workflow deliberately never checks out or executes PR code: it only
-# reads the comment payload and calls the labels API, so running with a
-# write-scoped token is safe.
+# This workflow deliberately never checks out or executes PR code. The only
+# user-controlled input is the comment body, which is read through 'env' and
+# never interpolated into a script.
 on:
   issue_comment:
     types:
@@ -22,9 +23,7 @@ on:
 concurrency:
   group: changelog-comment-command-${{ github.event.issue.number }}
 
-permissions:
-  issues: write        # add/remove labels, add a reaction, post a reply
-  pull-requests: write
+permissions: {}
 
 jobs:
   handle-command:
@@ -36,6 +35,13 @@ jobs:
       (contains(github.event.comment.body, '/no-changelog') ||
        contains(github.event.comment.body, '/needs-changelog'))
     runs-on: ubuntu-latest
+
+    permissions:
+      issues: write        # add/remove labels, add a reaction, post a reply
+      pull-requests: write
+
+    outputs:
+      changed: ${{ steps.apply.outputs.changed }}
 
     steps:
       - name: Parse command
@@ -83,6 +89,7 @@ jobs:
           echo "Commenter '${COMMENTER}' (${ASSOCIATION}) allowed: ${allowed}"
 
       - name: Apply label change
+        id: apply
         if: steps.authz.outputs.allowed == 'true' && (steps.parse.outputs.command == 'add' || steps.parse.outputs.command == 'remove')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,6 +106,7 @@ jobs:
           if [ "$COMMAND" = "remove" ]; then
             if [ "$has_label" = "true" ]; then
               gh api -X DELETE "repos/${REPO}/issues/${PR_NUMBER}/labels/${LABEL}" --silent
+              echo "changed=true" >> "$GITHUB_OUTPUT"
               echo "::notice::Removed '${LABEL}' from PR#${PR_NUMBER}"
             else
               echo "::notice::PR#${PR_NUMBER} does not have '${LABEL}'; nothing to do"
@@ -111,6 +119,7 @@ jobs:
             exit 0
           fi
           gh api -X POST "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${LABEL}" --silent
+          echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "::notice::Added '${LABEL}' to PR#${PR_NUMBER}"
 
       - name: Acknowledge with a reaction
@@ -148,3 +157,50 @@ jobs:
               > reply.md
           fi
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file reply.md
+
+  # Re-running a workflow needs 'actions: write', which also covers approving fork
+  # pull request runs. That is kept in its own job, so the job that handles the
+  # comment body never holds it. This job's only inputs are the PR number from the
+  # event payload and an API lookup, and it runs no code from the PR.
+  rerun-check:
+    name: Re-run the changelog check
+    needs: handle-command
+    if: needs.handle-command.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    permissions:
+      actions: write       # re-run the Validate Changelog workflow
+      pull-requests: read  # read the PR's head SHA
+
+    steps:
+      - name: Re-run the latest Validate Changelog run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          WORKFLOW=validate-changelog.yml
+
+          head_sha=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq .headRefOid)
+          run=$(gh api "repos/${REPO}/actions/workflows/${WORKFLOW}/runs?head_sha=${head_sha}&per_page=1" \
+            --jq '.workflow_runs[0] // empty | "\(.id) \(.status) \(.conclusion)"')
+
+          if [ -z "$run" ]; then
+            echo "::notice::No ${WORKFLOW} run found for ${head_sha}; nothing to re-run"
+            exit 0
+          fi
+          read -r run_id run_status run_conclusion <<< "$run"
+          echo "Latest ${WORKFLOW} run for ${head_sha}: ${run_id} (${run_status}/${run_conclusion})"
+
+          # Approval starts a fresh run, and an in-flight run reads the label itself;
+          # only a finished run needs pushing.
+          if [ "$run_conclusion" = "action_required" ]; then
+            echo "::notice::Run ${run_id} awaits workflow approval; the label applies once approved"
+          elif [ "$run_status" != "completed" ]; then
+            echo "::notice::Run ${run_id} is still ${run_status}; letting it finish"
+          else
+            gh api -X POST "repos/${REPO}/actions/runs/${run_id}/rerun" --silent
+            echo "::notice::Re-ran ${WORKFLOW} run ${run_id} for PR#${PR_NUMBER}"
+          fi

@@ -2,8 +2,9 @@ name: Validate Changelog
 
 on:
   pull_request:
-    # 'labeled'/'unlabeled' are included so that adding or removing the
-    # 'no-changelog' label re-runs this check on an already-failed PR.
+    # 'labeled'/'unlabeled' let a human toggling the 'no-changelog' label re-run
+    # this check. A label set by a workflow raises no run at all, so that path
+    # re-runs this workflow explicitly; see changelog-comment-command.yml.
     types:
       - opened
       - reopened
@@ -17,12 +18,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   validate-changelog:
     name: Check changelog entry
     # Skip validation for Renovate PRs (solrbot); dependency changes are summarized at release time.
-    # On label events, only re-run for the 'no-changelog' label; other label churn
-    # (e.g. from the labeler workflow) leaves the existing check result untouched.
+    # On label events, only re-run for the 'no-changelog' label; other label
+    # churn leaves the existing check result untouched.
     if: |
       github.event.pull_request.user.login != 'solrbot' &&
       (
@@ -31,46 +34,58 @@ jobs:
       )
     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        fetch-depth: 0
+    permissions:
+      contents: read
+      issues: read         # the PR's labels
+      pull-requests: read  # the PR's changed files
 
+    # This job never executes code from the pull request. It reads the PR as data
+    # through the API, writes that data outside the workspace, and the only thing
+    # it runs is the validator script as it exists on the base commit.
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+    steps:
     - name: Check for no-changelog label
       id: check-label
-      env:
-        HAS_NO_CHANGELOG_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
       run: |
-        if [ "$HAS_NO_CHANGELOG_LABEL" = "true" ]; then
-          echo "skip=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "skip=false" >> "$GITHUB_OUTPUT"
+        set -euo pipefail
+        # Ask the API rather than reading github.event.pull_request.labels: a re-run
+        # replays the original event payload, which predates the label we care about.
+        has_label=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" \
+          --jq '[.[].name] | index("no-changelog") != null')
+        if [ "$has_label" = "true" ]; then
+          echo "::notice::PR#${PR_NUMBER} has the 'no-changelog' label; skipping validation"
         fi
+        echo "skip=${has_label}" >> "$GITHUB_OUTPUT"
 
     - name: Check for changelog entry
+      id: entry
       if: steps.check-label.outputs.skip == 'false'
       run: |
-        # Get the list of changed files
-        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+        set -euo pipefail
+        files="$RUNNER_TEMP/pr-files.tsv"
+        entries="$RUNNER_TEMP/entry-paths.txt"
 
-        # Check if any files were added to changelog/unreleased/
-        if echo "$CHANGED_FILES" | grep -q "^changelog/unreleased/"; then
+        gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+          --jq '.[] | [.status, .filename] | @tsv' > "$files"
+
+        # Entries that are still there to validate; a deleted one has nothing to read.
+        awk -F'\t' '$1 != "removed" && $2 ~ /^changelog\/unreleased\/.+\.ya?ml$/ { print $2 }' \
+          "$files" > "$entries"
+
+        if [ -s "$entries" ]; then
           echo "✓ Changelog entry found"
+          echo "validate=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
-        # Check if only docs/tests/comments were changed (common exceptions)
-        HAS_NON_DOCS_CHANGES=false
-        while IFS= read -r file; do
-          # Skip changelog, docs, tests, CI config and certain config files
-          if ! echo "$file" | grep -qE "(^changelog/|^solr/solr-ref-guide/|^dev-docs/|^\.github/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
-            HAS_NON_DOCS_CHANGES=true
-            break
-          fi
-        done <<< "$CHANGED_FILES"
-
-        if [ "$HAS_NON_DOCS_CHANGES" = false ]; then
+        # Docs, tests, build files and CI config are exempt, so a PR touching
+        # nothing else needs no entry.
+        if ! cut -f2 "$files" | grep -qvE "(^changelog/|^solr/solr-ref-guide/|^dev-docs/|^\.github/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
           echo "✓ No code changes detected (docs/tests only)"
           exit 0
         fi
@@ -89,41 +104,31 @@ jobs:
         echo "This check then re-runs automatically. To undo, comment '/needs-changelog'."
         exit 1
 
+    # Only the validator script, only from the base commit, only one commit deep.
+    - name: Checkout the validator
+      if: steps.entry.outputs.validate == 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        sparse-checkout: dev-tools/scripts
+        fetch-depth: 1
+        persist-credentials: false
+
     - name: Validate changelog YAML structure
-      if: steps.check-label.outputs.skip == 'false'
+      if: steps.entry.outputs.validate == 'true'
       run: |
-        # Get the list of changed files
-        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+        set -euo pipefail
+        entries="$RUNNER_TEMP/entry-paths.txt"
+        yamls="$RUNNER_TEMP/entries"
+        mkdir -p "$yamls"
 
-        # Find all YAML files added to changelog/unreleased/
-        YAML_FILES=$(echo "$CHANGED_FILES" | grep "^changelog/unreleased/.*\.ya\?ml$" || true)
-
-        if [ -z "$YAML_FILES" ]; then
-          exit 0
-        fi
-
-        echo "Validating changelog YAML files..."
-        VALIDATION_FAILED=false
-
+        # The entries are PR-authored data, so they are fetched outside the
+        # workspace and only ever parsed, never run.
         while IFS= read -r file; do
-          if [ -z "$file" ] || [ ! -f "$file" ]; then
-            continue
-          fi
+          echo "Fetching $file"
+          gh api -H "Accept: application/vnd.github.raw" \
+            "repos/${REPO}/contents/${file}?ref=${HEAD_SHA}" > "${yamls}/$(basename "$file")"
+        done < "$entries"
 
-          echo ""
-          echo "Validating: $file"
-
-          # Validate using a Python script
-          python3 dev-tools/scripts/validate-changelog-yaml.py "$file"
-
-          if [ $? -ne 0 ]; then
-            VALIDATION_FAILED=true
-          fi
-
-        done <<< "$YAML_FILES"
-
-        if [ "$VALIDATION_FAILED" = true ]; then
-          echo "Please see dev-docs/changelog.adoc for more info."
-
-          exit 1
-        fi
+        python3 dev-tools/scripts/validate-changelog-yaml.py "$yamls" \
+          || { echo "Please see dev-docs/changelog.adoc for more info."; exit 1; }
