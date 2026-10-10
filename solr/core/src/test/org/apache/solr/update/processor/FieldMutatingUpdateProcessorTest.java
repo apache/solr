@@ -16,8 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -757,6 +759,149 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertFalse(d.containsKey("id"));
     assertFalse(d.containsKey("t_raw"));
     assertFalse(d.containsKey("foo_s"));
+  }
+
+  public void testCountValuesAtomicUpdate() throws Exception {
+    SolrInputDocument d =
+        processAdd(
+            "count", doc(f("id", "1111"), f("count_field", Map.of("set", List.of("aaa", "bbb")))));
+    assertEquals(Map.of("set", 2), d.getFieldValue("count_field"));
+
+    Map<String, Object> setNull = new HashMap<>();
+    setNull.put("set", null);
+    d = processAdd("count", doc(f("id", "1111"), f("count_field", setNull)));
+    assertEquals(Map.of("set", 0), d.getFieldValue("count_field"));
+
+    d = processAdd("count", doc(f("id", "1111"), f("count_field", Map.of("set", "aaa"))));
+    assertEquals(Map.of("set", 1), d.getFieldValue("count_field"));
+
+    // the count after an add depends on the stored document, so the operation is rejected
+    // instead of being silently dropped (which would leave the stored count stale)
+    SolrException error =
+        expectCountFailure(doc(f("id", "1111"), f("count_field", Map.of("add", "aaa"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("count_field"));
+    assertTrue(error.getMessage(), error.getMessage().contains("'add'"));
+  }
+
+  public void testCountValuesNullValue() throws Exception {
+    // a counted field whose value is null has no values to count: the stored count is 0,
+    // as it was before the atomic update detection started looking at the values
+    SolrInputDocument d =
+        processAdd("count", doc(f("id", "1111"), f("count_field", (Object) null)));
+    assertNotNull(d);
+    assertEquals(0, d.getFieldValue("count_field"));
+  }
+
+  public void testCountValuesAtomicUpdateUnsupportedOperations() throws Exception {
+    for (Map<String, Object> operations :
+        List.of(
+            Map.<String, Object>of("remove", "aaa"),
+            Map.<String, Object>of("inc", 1),
+            Map.<String, Object>of("add-distinct", "aaa"),
+            Map.<String, Object>of("removeregex", "a.*"))) {
+      String operation = operations.keySet().iterator().next();
+      SolrException error = expectCountFailure(doc(f("id", "1111"), f("count_field", operations)));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+      assertTrue(error.getMessage(), error.getMessage().contains("'" + operation + "'"));
+    }
+
+    // an unsupported operation sharing one map with a set is rejected as well
+    Map<String, Object> setAndAdd = new HashMap<>();
+    setAndAdd.put("set", List.of("aaa"));
+    setAndAdd.put("add", "bbb");
+    SolrException error = expectCountFailure(doc(f("id", "1111"), f("count_field", setAndAdd)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("'add'"));
+
+    // an operation map without any operation cannot be counted either
+    error = expectCountFailure(doc(f("id", "1111"), f("count_field", Map.of())));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+  }
+
+  public void testCountValuesAtomicUpdateMultipleMaps() throws Exception {
+    // operations from several maps apply in order, so the last set decides the values
+    SolrInputDocument d =
+        processAdd(
+            "count",
+            doc(
+                f("id", "1111"),
+                f(
+                    "count_field",
+                    Map.of("set", List.of("aaa", "bbb")),
+                    Map.of("set", List.of("ccc")))));
+    assertEquals(Map.of("set", 1), d.getFieldValue("count_field"));
+
+    Map<String, Object> setNull = new HashMap<>();
+    setNull.put("set", null);
+    d =
+        processAdd(
+            "count",
+            doc(f("id", "1111"), f("count_field", Map.of("set", List.of("aaa", "bbb")), setNull)));
+    assertEquals(Map.of("set", 0), d.getFieldValue("count_field"));
+
+    // an unsupported operation anywhere in the flattened operations is rejected
+    SolrException error =
+        expectCountFailure(
+            doc(
+                f("id", "1111"),
+                f("count_field", Map.of("set", List.of("aaa")), Map.of("add", "bbb"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("'add'"));
+
+    // a plain value mixed in with operation maps is rejected, as the atomic update merger
+    // rejects the same field shape
+    error =
+        expectCountFailure(
+            doc(f("id", "1111"), f("count_field", Map.of("set", List.of("aaa")), "zzz")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("mixes atomic update operations"));
+  }
+
+  public void testCountValuesAtomicUpdatePlainValueFirst() throws Exception {
+    // a plain value ahead of an operation map is rejected as well: the detection looks at
+    // every value, not only the first one, so the operation map is not silently dropped
+    // while a plain count is stored
+    SolrException error =
+        expectCountFailure(
+            doc(f("id", "1111"), f("count_field", "zzz", Map.of("set", List.of("aaa")))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("mixes atomic update operations"));
+
+    error = expectCountFailure(doc(f("id", "1111"), f("count_field", "zzz", Map.of("add", "bbb"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertTrue(error.getMessage(), error.getMessage().contains("mixes atomic update operations"));
+  }
+
+  public void testCountValuesAtomicUpdateArrayOperand() throws Exception {
+    SolrInputDocument d =
+        processAdd(
+            "count",
+            doc(f("id", "1111"), f("count_field", Map.of("set", new String[] {"a", "b", "c"}))));
+    assertEquals(Map.of("set", 3), d.getFieldValue("count_field"));
+
+    d =
+        processAdd(
+            "count", doc(f("id", "1111"), f("count_field", Map.of("set", new int[] {1, 2}))));
+    assertEquals(Map.of("set", 2), d.getFieldValue("count_field"));
+
+    d =
+        processAdd(
+            "count",
+            doc(f("id", "1111"), f("count_field", Map.of("set", new Object[] {"a", "b"}))));
+    assertEquals(Map.of("set", 2), d.getFieldValue("count_field"));
+  }
+
+  @SuppressWarnings("try")
+  private SolrException expectCountFailure(SolrInputDocument docIn) throws Exception {
+    SolrException error = null;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*Unable to mutate field.*")) {
+      processAdd("count", docIn);
+    } catch (SolrException e) {
+      error = e;
+    }
+    assertNotNull("no error from the count chain", error);
+    return error;
   }
 
   public void testCountValues() throws Exception {
