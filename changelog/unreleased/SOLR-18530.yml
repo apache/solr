@@ -1,0 +1,7 @@
+title: RecoveryAfterSoftCommitTest no longer routes the writes made after a replica is cut off to that replica, where a committed add could fail with ClosedChannelException
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18530
+    url: https://issues.apache.org/jira/browse/SOLR-18530
