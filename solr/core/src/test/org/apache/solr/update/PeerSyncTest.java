@@ -447,6 +447,37 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     testHandleVersionsWithRangesMissingOneRange(false /* duplicateMiddle */);
     testHandleVersionsWithRangesMissingOneRange(true /* duplicateMiddle */);
     testHandleVersionsWithRangesMissingTwoRanges();
+    testHandleVersionsWithRangesSameVersionDifferentSign();
+  }
+
+  private static void testHandleVersionsWithRangesSameVersionDifferentSign() {
+    // SOLR-11475: we have version 42 and the other has -42; this used to loop forever.
+    // The matching 50 and 10 versions around the pair matter: the walk starts at the
+    // lowest versions. With the pair as the only entry, the old code also loops
+    // endlessly, adding the same range string on every pass until memory runs out.
+    for (boolean completeList : new boolean[] {false, true}) {
+      List<Long> otherVersions = List.of(50L, -42L, 10L);
+      List<Long> ourUpdates = List.of(50L, 42L, 10L);
+      long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
+      MissedUpdatesRequest[] result = new MissedUpdatesRequest[1];
+      Thread t =
+          new Thread(
+              () ->
+                  result[0] =
+                      PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
+                          otherVersions, completeList, ourUpdates, ourLowThreshold));
+      t.setDaemon(true);
+      t.start();
+      try {
+        t.join(30_000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        fail("interrupted");
+      }
+      assertFalse("handleVersionsWithRanges did not terminate", t.isAlive());
+      assertEquals(0L, result[0].totalRequestedUpdates);
+      assertNull(result[0].versionsAndRanges);
+    }
   }
 
   private static void testHandleVersionsWithRangesNoOther() {
