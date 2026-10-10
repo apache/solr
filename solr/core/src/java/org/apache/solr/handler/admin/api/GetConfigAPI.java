@@ -55,13 +55,13 @@ public class GetConfigAPI {
   }
 
   // GET /config/... sections still via SolrConfigHandler.
+  // Every name SolrConfig.writeMap can emit.
   // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
       path = {
-        // Special GET shapes
         "/config/overlay",
         "/config/znodeVersion",
-        // Documented top-level sections
+        "/config/luceneMatchVersion",
         "/config/query",
         "/config/requestHandler",
         "/config/searchComponent",
@@ -72,7 +72,8 @@ public class GetConfigAPI {
         "/config/directoryFactory",
         "/config/indexConfig",
         "/config/codecFactory",
-        // Other top-level config tags fetchable the same way
+        "/config/requestDispatcher",
+        "/config/jmx",
         "/config/queryParser",
         "/config/valueSourceParser",
         "/config/transformer",
@@ -86,7 +87,9 @@ public class GetConfigAPI {
         "/config/restManager",
         "/config/statsCache",
         "/config/recoveryStrategy",
-        "/config/indexReaderFactory"
+        "/config/indexReaderFactory",
+        "/config/indexConfigdeletionPolicy",
+        "/config/updateHandlerupdateLog"
       },
       method = GET,
       permission = CONFIG_READ_PERM)
