@@ -137,15 +137,18 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     RandomIndexWriter w =
         new RandomIndexWriter(
             random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
-    // The two segments must stay separate: a random force merge inside getReader()
-    // would collapse them into one leaf and the caching checks below would test nothing.
-    w.setDoRandomForceMerge(false);
-    for (int i = 0; i < 2; i++) {
+    // Index id0 and id1 into the first segment and id2 into the second. The delete
+    // below must not empty a segment: getReader() applies pending deletes before
+    // building the reader, and a segment with no live docs left is dropped from
+    // the reader, which would leave a single leaf for the caching checks below.
+    for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", "id" + i, Field.Store.NO));
       doc.add(new StringField("f", "v" + i, Field.Store.NO));
       w.addDocument(doc);
-      w.commit();
+      if (i != 0) {
+        w.commit();
+      }
     }
     w.deleteDocuments(new Term("id", "id0"));
     IndexReader reader = w.getReader();
