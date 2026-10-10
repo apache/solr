@@ -1,4 +1,4 @@
-title: A failed restore or install now rolls back to the previous index.properties instead of deleting it, so the pointer to a non-default index directory is no longer lost.
+title: A failed restore or install now rolls back to the previous index.properties, so the pointer to a non-default index directory is no longer lost.
 type: fixed
 authors:
   - name: Nick Shanin
