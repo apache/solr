@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Show collection and shard health (GREEN/YELLOW/ORANGE/RED, from SOLR-15300) as a colored dot in the Admin UI's Collections screen.
+type: added
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-15395
+    url: https://issues.apache.org/jira/browse/SOLR-15395
