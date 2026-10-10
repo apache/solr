@@ -187,12 +187,15 @@ JSON::
 ====
 [source,json]
 ----
-[{ "id": "1",
-"vector": [1.0, 2.5, 3.7, 4.1]
-},
-{ "id": "2",
-"vector": [1.5, 5.5, 6.7, 65.1]
-}
+[
+  { 
+    "id": "1",
+    "vector": [1.0, 2.5, 3.7, 4.1]
+  },
+  { 
+    "id": "2",
+    "vector": [1.5, 5.5, 6.7, 65.1]
+  }
 ]
 ----
 ====
@@ -203,20 +206,20 @@ XML::
 [source,xml]
 ----
 <add>
-<doc>
-<field name="id">1</field>
-<field name="vector">1.0</field>
-<field name="vector">2.5</field>
-<field name="vector">3.7</field>
-<field name="vector">4.1</field>
-</doc>
-<doc>
-<field name="id">2</field>
-<field name="vector">1.5</field>
-<field name="vector">5.5</field>
-<field name="vector">6.7</field>
-<field name="vector">65.1</field>
-</doc>
+  <doc>
+    <field name="id">1</field>
+    <field name="vector">1.0</field>
+    <field name="vector">2.5</field>
+    <field name="vector">3.7</field>
+    <field name="vector">4.1</field>
+  </doc>
+  <doc>
+    <field name="id">2</field>
+    <field name="vector">1.5</field>
+    <field name="vector">5.5</field>
+    <field name="vector">6.7</field>
+    <field name="vector">65.1</field>
+  </doc>
 </add>
 ----
 ====
@@ -251,12 +254,15 @@ JSON::
 ====
 [source,json]
 ----
-[{ "id": "1",
- "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
-},
-{ "id": "2",
- "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
-}
+[
+  { 
+    "id": "1",
+    "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+  },
+  { 
+    "id": "2",
+    "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+  }
 ]
 ----
 ====
@@ -966,12 +972,15 @@ JSON::
 ====
 [source,json]
 ----
-[{ "id": "1",
-"my_late_vector": "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]",
-},
-{ "id": "2",
-"my_late_vector": "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"
-}
+[
+  {
+    "id": "1",
+    "my_late_vector": "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]"
+  },
+  {
+    "id": "2",
+    "my_late_vector": "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"
+  }
 ]
 ----
 ====
@@ -982,14 +991,14 @@ XML::
 [source,xml]
 ----
 <add>
-<doc>
-<field name="id">1</field>
-<field name="my_late_vector">[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]</field>
-</doc>
-<doc>
-<field name="id">2</field>
-<field name="my_late_vector">[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]</field>
-</doc>
+  <doc>
+    <field name="id">1</field>
+    <field name="my_late_vector">[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]</field>
+  </doc>
+  <doc>
+    <field name="id">2</field>
+    <field name="my_late_vector">[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]</field>
+  </doc>
 </add>
 ----
 ====
@@ -1246,21 +1255,21 @@ EOF
 
 . Start Solr
 +
-[source,sh]
+[source,bash]
 ----
 ./bin/solr start
 ----
 
 . Upload the configset and create a collection
 +
-[source,sh]
+[source,bash]
 ----
 ./bin/solr zk upconfig -n cuvs_vectors -d cuvs_configset/conf && ./bin/solr create -c vectors -n cuvs_vectors
 ----
 
 . Index documents
 +
-[source,sh]
+[source,bash]
 ----
 curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
      -H "Content-Type: application/json" \
@@ -1275,7 +1284,7 @@ curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
 
 . Query the index
 +
-[source,sh]
+[source,bash]
 ----
 curl -s 'http://localhost:8983/solr/vectors/select?q=%7B!knn%20f=article_vector%20topK=1%7D%5B0.84393,0.50073,0.57059,0.89899,-0.08722,0.26803,0.00807,0.09877%5D&fl=id,score&rows=3&omitHeader=true'
 ----

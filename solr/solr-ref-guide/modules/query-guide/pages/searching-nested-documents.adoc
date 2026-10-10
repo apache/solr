@@ -41,9 +41,9 @@ For a detailed explanation of this transformer, and specifics on its syntax & li
 
 A simple query matching all documents with a description that includes "staplers":
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers'
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers'
 {
   "response":{"numFound":1,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -57,9 +57,9 @@ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descrip
 The same query with the addition of the `[child]` transformer is shown below.
 Note that the `numFound` has not changed, we are still matching the same set of documents, but when returning those documents the nested children are also returned as pseudo-fields.
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers&fl=*,[child]'
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers&fl=*,[child]'
 {
   "response":{"numFound":1,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -110,9 +110,9 @@ For a detailed explanation of this parser, see the section xref:block-join-query
 
 Let's consider again the `description_t:staplers` query used above -- if we wrap that query in a `{!child}` query parser with `parentPath="/"` then instead of "matching" & returning the product level documents, we instead match all of the _descendent_ child documents of the original query:
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/"}description_t:staplers'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/"}description_t:staplers'
 {
   "response":{"numFound":5,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -151,9 +151,9 @@ In this example `parentPath="/"` indicates we want to consider all root-level do
 By changing the `parentPath` to a specific `_nest_path_` level, we can narrow down the list of children we return.
 In the query below, we search for all children of `skus` with a `price_i` less than `50`:
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/skus"}price_i:[* TO 50]'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/skus"}price_i:[* TO 50]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
       {
@@ -172,9 +172,9 @@ For a detailed explanation of this parser, see the section xref:block-join-query
 
 Let's first consider this example of searching for all "manual" type documents that have exactly `1` page:
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
 {
   "response":{"numFound":3,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
       {
@@ -200,9 +200,9 @@ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i
 
 We can wrap that query in a `{!parent}` query with `parentPath="/"` to return the details of all root-level products that are ancestors of these manuals:
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/"}pages_i:1'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -224,9 +224,9 @@ By changing `parentPath` to a specific path, we can change the type of ancestors
 In the query below, we search for the `skus` that are the ancestors of `manuals` with exactly `1` page.
 Adding `childPath="manuals"` constrains the child query to only docs nested at `/skus/manuals`, preventing pages from other child types from matching:
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus" childPath="manuals"}pages_i:1'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus" childPath="manuals"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -254,9 +254,9 @@ Here for example is a query where:
 *** "lifetime guarantee" in their content
 * each return (sku) document also includes any descendent (manuals) documents it has
 
-[source,text]
+[source,console]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child parentPath="/" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent parentPath="/"}content_t:"lifetime guarantee"' -d 'fl=*,[child]'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child parentPath="/" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent parentPath="/"}content_t:"lifetime guarantee"' -d 'fl=*,[child]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
