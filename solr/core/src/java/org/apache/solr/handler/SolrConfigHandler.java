@@ -174,7 +174,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
-  private class Command {
+  private static class Command {
     private final SolrQueryRequest req;
     private final SolrQueryResponse resp;
     private final String method;
