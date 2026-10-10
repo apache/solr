@@ -705,7 +705,12 @@ public class JettySolrRunner implements SolrBackend {
     ServerSocket socket = null;
     try {
       socket = new ServerSocket();
-      socket.setReuseAddress(false);
+      // Address reuse lets this bind succeed over connection sockets the stopped server
+      // left in TIME_WAIT (its connectors bind with reuse set as well); without it, a
+      // runner that served traffic before stopping could not reserve its port at all.
+      // The listening socket held here still refuses every later bind, with or without
+      // reuse, so the port stays protected.
+      socket.setReuseAddress(true);
       socket.bind(new InetSocketAddress("127.0.0.1", jettyPort));
     } catch (IOException e) {
       log.warn(
