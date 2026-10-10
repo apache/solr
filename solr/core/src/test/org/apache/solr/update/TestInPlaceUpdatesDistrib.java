@@ -59,7 +59,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.NoMergePolicyFactory;
@@ -343,9 +342,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -418,9 +415,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
             "inplace_updatable_float:" + (newinplace_updatable_float + 1), version0 + 3));
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
 
     // re-order the updates by swapping the last two
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -932,9 +927,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // Reordering needs to happen using parallel threads, since some of these updates will
     // be blocking calls, waiting for some previous update operations to arrive on which it depends.
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -1036,9 +1029,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -1143,9 +1134,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
     // re-order the last two updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
     Collections.swap(reorderedUpdates, 2, 3);
@@ -1248,9 +1237,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         .getFilter(ServletFixtures.DelayServlet.class)
         .addDelay("Waiting for dependant update to timeout", 1, 6000);
 
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task =
           new AsyncUpdateWithRandomCommit(update, cloudClient, random().nextLong());
@@ -1353,9 +1340,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           .getFilter(ServletFixtures.DelayServlet.class)
           .addDelay("Waiting for dependant update to timeout", 4, 5998); // the delete update
 
-      threadpool =
-          ExecutorUtil.newMDCAwareFixedThreadPool(
-              updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+      threadpool = newThreadPerUpdatePool(updates);
       for (UpdateRequest update : updates) {
         AsyncUpdateWithRandomCommit task =
             new AsyncUpdateWithRandomCommit(update, cloudClient, random().nextLong());
@@ -1417,6 +1402,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertNotNull("Field Null Response: " + fieldName, rsp);
     assertEquals("Field Status: " + fieldName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("Field: " + fieldName, expected, rsp.getField());
+  }
+
+  private ExecutorService newThreadPerUpdatePool(List<?> updates) {
+    return ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, 1, getTestName());
   }
 
   private class AsyncUpdateWithRandomCommit implements Callable<UpdateResponse> {
@@ -1650,9 +1639,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         .getFilter(ServletFixtures.DelayServlet.class)
         .addDelay("Waiting for dependant update to timeout", 2, 8000);
 
-    ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+    ExecutorService threadpool = newThreadPerUpdatePool(updates);
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task =
           new AsyncUpdateWithRandomCommit(update, cloudClient, random().nextLong());
