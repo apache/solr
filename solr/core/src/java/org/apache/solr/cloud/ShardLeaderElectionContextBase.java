@@ -18,11 +18,8 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -51,7 +48,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected LeaderElector leaderElector;
   protected ZkStateReader zkStateReader;
   protected ZkController zkController;
-  protected Integer leaderZkNodeParentVersion;
 
   // Prevents a race between cancelling and becoming leader.
   private final Object lock = new Object();
@@ -76,11 +72,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.shardId = shardId;
     this.collection = collection;
 
-    String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
     // only if /collections/{collection} exists already do we succeed in creating this path
-    log.info("make sure parent is created {}", parent);
+    log.info("make sure parent is created {}", leaderParentPath);
     try {
-      ZkMaintenanceUtils.ensureExists(parent, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      ZkMaintenanceUtils.ensureExists(
+          leaderParentPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
     } catch (KeeperException e) {
       throw new RuntimeException(e);
     } catch (InterruptedException e) {
@@ -104,10 +100,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
               "Removing leader registration node on cancel: {} {}",
               leaderPath,
               leaderZkNodeParentVersion);
-          String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
-          zkClient.multi(
-              op -> op.check().withVersion(leaderZkNodeParentVersion).forPath(parent),
-              op -> op.delete().withVersion(-1).forPath(leaderPath));
+          deleteLeaderNode();
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           throw e;
@@ -126,7 +119,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
-    String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
     try {
       RetryUtil.retryOnException(
           NodeExistsException.class,
@@ -138,30 +130,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   "Creating leader registration node {} after winning as {}",
                   leaderPath,
                   leaderSeqPath);
-
-              // We use a multi operation to get the parent nodes version, which will
-              // be used to make sure we only remove our own leader registration node.
-              // The setData call used to get the parent version is also the trigger to
-              // increment the version. We also do a sanity check that our leaderSeqPath exists.
-              List<CuratorTransactionResult> results =
-                  zkClient.multi(
-                      op -> op.check().withVersion(-1).forPath(leaderSeqPath),
-                      op ->
-                          op.create()
-                              .withMode(CreateMode.EPHEMERAL)
-                              .forPath(leaderPath, Utils.toJSON(leaderProps)),
-                      op -> op.setData().withVersion(-1).forPath(parent, null));
-              leaderZkNodeParentVersion =
-                  results.stream()
-                      .filter(
-                          CuratorTransactionResult.ofTypeAndPath(OperationType.SET_DATA, parent))
-                      .findFirst()
-                      .orElseThrow(
-                          () ->
-                              new RuntimeException(
-                                  "Could not set data for parent path in ZK: " + parent))
-                      .getResultStat()
-                      .getVersion();
+              registerLeaderNode(Utils.toJSON(leaderProps));
             }
           });
     } catch (NoNodeException e) {
