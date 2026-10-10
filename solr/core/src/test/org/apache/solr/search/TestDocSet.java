@@ -613,6 +613,36 @@ public class TestDocSet extends SolrTestCase {
     }
   }
 
+  /**
+   * Per-segment iteration of a {@link BitDocSet} whose bitset is shorter than maxDoc, as produced
+   * by {@link SortedIntDocSet#union}, must not read beyond the bitset.
+   */
+  public void testIteratorWithBitSetShorterThanMaxDoc() throws IOException {
+    IndexReader r = new MultiReader(dummyIndexReader(2000), dummyIndexReader(5000));
+    List<LeafReaderContext> leaves = r.leaves();
+    // union of SortedIntDocSets yields a BitDocSet sized to the largest doc, not maxDoc
+    DocSet union =
+        new SortedIntDocSet(new int[] {10, 100}).union(new SortedIntDocSet(new int[] {100, 300}));
+    assertTrue(union instanceof BitDocSet);
+
+    DocIdSetIterator it = union.iterator(leaves.get(0));
+    assertEquals(10, it.nextDoc());
+    assertEquals(100, it.advance(50));
+    assertEquals(300, it.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, it.nextDoc());
+
+    it = union.iterator(leaves.get(1));
+    assertTrue(it == null || it.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+
+    // bitset ends mid-segment
+    DocSet midSeg = new SortedIntDocSet(new int[] {5}).union(new SortedIntDocSet(new int[] {2100}));
+    it = midSeg.iterator(leaves.get(1));
+    assertEquals(100, it.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, it.nextDoc());
+    it = midSeg.iterator(leaves.get(1));
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, it.advance(101));
+  }
+
   public void testFilter() throws IOException {
     // keeping these numbers smaller help hit more edge cases
     int maxSeg = 4;

@@ -17,8 +17,10 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
 
 @Path("/collections")
@@ -27,5 +29,37 @@ public interface ListCollectionsApi {
   @Operation(
       summary = "List all collections in this Solr cluster",
       tags = {"collections"})
-  ListCollectionsResponse listCollections();
+  ListCollectionsResponse listCollections(
+      @Parameter(
+              description =
+                  "When true, return the collections, shards, and replicas tree (in"
+                      + " 'collectionsDetail') instead of the plain collection name list.")
+          @QueryParam("detailed")
+          Boolean detailed,
+      @Parameter(
+              description =
+                  "Only used when 'detailed' is true. Collection or alias to return. Omit to"
+                      + " return every collection. An alias returns the collections it points"
+                      + " at.")
+          @QueryParam("collection")
+          String collection,
+      @Parameter(
+              description =
+                  "Only used when 'detailed' is true. Shard or comma-separated shards to return."
+                      + " Applied to each selected collection.")
+          @QueryParam("shard")
+          String shard,
+      @Parameter(
+              description =
+                  "Only used when 'detailed' is true. Route key of a document. Limits the tree to"
+                      + " the shard that would hold that document.")
+          @QueryParam("_route_")
+          String routeKey,
+      @Parameter(
+              description =
+                  "Only used when 'detailed' is true. Include per-replica state when the"
+                      + " collection uses it.")
+          @QueryParam("prs")
+          Boolean prs)
+      throws Exception;
 }

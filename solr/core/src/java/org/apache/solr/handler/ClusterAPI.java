@@ -38,8 +38,6 @@ import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
@@ -208,13 +206,6 @@ public class ClusterAPI {
     DefaultSolrParams dsp = new DefaultSolrParams(req.getParams(), solrParams);
     req.setParams(dsp);
     return req;
-  }
-
-  @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
-  public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params =
-        Map.of(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
   private CoreContainer getCoreContainer() {

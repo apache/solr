@@ -1,0 +1,9 @@
+title: Tracing (spans) for replication, recovery, and updatelog replay.
+type: changed
+authors:
+  - name: Gaurav Singh
+    nick: gsingh-code
+  - name: David Smiley
+links:
+  - name: SOLR-18124
+    url: https://issues.apache.org/jira/browse/SOLR-18124

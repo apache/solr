@@ -1,0 +1,9 @@
+title:
+  Move packagemanager under CLI and stop test-framework from depending on CLI
+type: other
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-18234
+    url: https://issues.apache.org/jira/browse/SOLR-18234
