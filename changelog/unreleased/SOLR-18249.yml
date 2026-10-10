@@ -1,0 +1,7 @@
+title: Stage shard backup metadata before publication and fail rather than fall back to a non-atomic local move.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18249
+    url: https://issues.apache.org/jira/browse/SOLR-18249

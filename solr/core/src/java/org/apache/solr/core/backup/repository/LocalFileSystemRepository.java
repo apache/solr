@@ -25,8 +25,11 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.UUID;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -113,6 +116,41 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
   @Override
   public OutputStream createOutput(URI path) throws IOException {
     return Files.newOutputStream(Path.of(path));
+  }
+
+  /**
+   * Stage the bytes in a sibling file and publish them by moving the staged file onto {@code path}
+   * atomically, replacing any existing file.
+   *
+   * <p>This method does not fall back to a non-atomic move. If the provider cannot perform the
+   * atomic move, the failure is propagated and cleanup of the staged file is attempted.
+   *
+   * <p>A purge running during a backup can remove the staged file before it is published and so
+   * fail the write, just as it could already remove an unreferenced metadata file mid-write before
+   * this change.
+   *
+   * @throws IOException if writing or the requested atomic move fails
+   */
+  @Override
+  public void writeBytes(URI path, byte[] data) throws IOException {
+    Path dest = Path.of(path);
+    Path temp = dest.resolveSibling(dest.getFileName().toString() + ".tmp." + UUID.randomUUID());
+    try {
+      Files.write(temp, data, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+      moveAtomically(temp, dest);
+    } catch (IOException | RuntimeException e) {
+      try {
+        Files.deleteIfExists(temp);
+      } catch (IOException | RuntimeException cleanupFailure) {
+        e.addSuppressed(cleanupFailure);
+      }
+      throw e;
+    }
+  }
+
+  /** Performs the atomic move used by {@link #writeBytes(URI, byte[])}. */
+  protected void moveAtomically(Path temp, Path dest) throws IOException {
+    Files.move(temp, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
   }
 
   @Override
