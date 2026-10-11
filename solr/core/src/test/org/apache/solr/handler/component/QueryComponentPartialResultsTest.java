@@ -78,6 +78,77 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
     testPartialResultsForSortSpec(sortSpec, false);
   }
 
+  @Test
+  public void skippedPartialShardDocsAreAbsent() {
+    MockResponseBuilder responseBuilder = mergeWithSkippedPartialShard();
+    assertEquals(shard2Size, responseBuilder.getResponseDocs().size());
+  }
+
+  @Test
+  public void mergedNumFoundCountsOnlyMergedShards() {
+    MockResponseBuilder responseBuilder = mergeWithSkippedPartialShard();
+    SolrDocumentList responseDocs = responseBuilder.getResponseDocs();
+    // the skipped shard contributes nothing to the merged totals: they describe
+    // exactly the shard whose documents were merged
+    assertEquals(shard2Size, responseDocs.getNumFound());
+    assertEquals(Boolean.TRUE, responseDocs.getNumFoundExact());
+  }
+
+  @Test
+  public void mergedMaxScoreComesFromMergedShards() {
+    MockResponseBuilder responseBuilder = mergeWithSkippedPartialShard();
+    assertEquals(Float.valueOf(3.0f), responseBuilder.getResponseDocs().getMaxScore());
+  }
+
+  @Test
+  public void mergedApproximateTotalHitsExcludesSkippedShard() {
+    MockResponseBuilder responseBuilder = mergeWithSkippedPartialShard();
+    assertEquals(
+        3L,
+        responseBuilder
+            .rsp
+            .getResponseHeader()
+            .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
+  }
+
+  private MockResponseBuilder mergeWithSkippedPartialShard() {
+    SortField sortField = new SortField(SORT_FIELD_NAME, SortField.Type.INT);
+    SortSpec sortSpec =
+        MockSortSpecBuilder.create()
+            .withSortFields(new SortField[] {sortField})
+            .withIncludesNonScoreOrDocSortField(true)
+            .build();
+    MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
+
+    // shard1 answers with partial results and no sort_values, so its documents are
+    // skipped at merge time; it still reports its own totals in its response
+    final NamedList<Object> shard1ResponseHeader = new NamedList<>();
+    shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    shard1ResponseHeader.add(
+        SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE);
+    shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, 7L);
+    SolrDocumentList shard1Docs = createSolrDocumentList(shard1Size);
+    shard1Docs.setNumFound(shard1Size);
+    shard1Docs.setNumFoundExact(true);
+    shard1Docs.setMaxScore(99.0f);
+
+    final NamedList<Object> shard2ResponseHeader = new NamedList<>();
+    shard2ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, 3L);
+    SolrDocumentList shard2Docs = createSolrDocumentList(shard2Size);
+    shard2Docs.setNumFound(shard2Size);
+    shard2Docs.setNumFoundExact(true);
+    shard2Docs.setMaxScore(3.0f);
+
+    ShardRequest shardRequest =
+        MockShardRequest.create()
+            .withShardResponse(shard1ResponseHeader, shard1Docs)
+            .withShardResponse(shard2ResponseHeader, shard2Docs);
+
+    QueryComponent queryComponent = new QueryComponent();
+    queryComponent.mergeIds(responseBuilder, shardRequest);
+    return responseBuilder;
+  }
+
   private void testPartialResultsForSortSpec(
       SortSpec sortSpec, boolean shouldIncludePartialShardResult) {
 
