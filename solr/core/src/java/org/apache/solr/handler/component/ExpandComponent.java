@@ -434,7 +434,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     if (groupQuery != null) {
       // Limits the results to documents that are in the same group as the documents in the page.
-      // The groups depend on the page, so this filter is rarely reused; keep it out of the filter
+      // The groups depend on the page, so no other page can reuse it; keep it out of the filter
       // cache rather than filling the cache with entries of little value.
       WrappedQuery wrappedGroupQuery = new WrappedQuery(groupQuery);
       wrappedGroupQuery.setCache(false);
