@@ -1029,6 +1029,8 @@ public class QueryComponent extends SearchComponent {
     boolean maxHitsTerminatedEarly = false;
     long approximateTotalHits = 0;
     int failedShardCount = 0;
+    boolean anyShardMerged = false;
+    boolean skippedShardReportedHits = false;
     int failedShardCountForReRankCutoff = 0;
     NamedList<Object> reRankCutoffByShard = null;
     for (ShardResponse srsp : sreq.responses) {
@@ -1176,8 +1178,12 @@ public class QueryComponent extends SearchComponent {
       // before the shard's totals are folded into the merged totals below, so a skipped shard
       // contributes nothing to them.
       if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
+        if (docs.getNumFound() > 0) {
+          skippedShardReportedHits = true;
+        }
         continue;
       }
+      anyShardMerged = true;
 
       Object ath = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
       if (ath == null) {
@@ -1228,6 +1234,13 @@ public class QueryComponent extends SearchComponent {
         }
       } // end for-each-doc-in-response
     } // end for-each-response
+
+    // A merged count of zero is not exact when it is zero only because every
+    // shard was skipped and a skipped shard reported hits: the query did match
+    // documents, they are just not part of this result.
+    if (!anyShardMerged && skippedShardReportedHits) {
+      hitCountIsExact = false;
+    }
 
     // Add hits for distributed requests
     // https://issues.apache.org/jira/browse/SOLR-3518
