@@ -59,8 +59,6 @@ public class GetConfigAPI {
   // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
       path = {
-        "/config/overlay",
-        "/config/znodeVersion",
         "/config/luceneMatchVersion",
         "/config/query",
         "/config/requestHandler",
