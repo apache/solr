@@ -1,0 +1,8 @@
+title: SignatureUpdateProcessorFactory no longer adds an empty signature to (or deletes duplicates for) a partial update that contains none of the signature fields.
+type: fixed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-6973
+    url: https://issues.apache.org/jira/browse/SOLR-6973
