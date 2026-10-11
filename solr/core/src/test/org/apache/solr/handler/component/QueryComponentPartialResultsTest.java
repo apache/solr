@@ -111,6 +111,44 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
             .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
   }
 
+  @Test
+  public void approximateTotalHitsFallsBackToEachShardsNumFound() {
+    SortSpec sortSpec =
+        MockSortSpecBuilder.create().withIncludesNonScoreOrDocSortField(false).build();
+    MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
+
+    // neither shard sends an approximateTotalHits header, so the merge falls back
+    // to each shard's numFound; shard1 flags maxHitsTerminatedEarly so the merged
+    // approximate total is written to the response header
+    final NamedList<Object> shard1ResponseHeader = new NamedList<>();
+    shard1ResponseHeader.add(
+        SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE);
+    SolrDocumentList shard1Docs = createSolrDocumentList(shard1Size);
+    shard1Docs.setNumFound(shard1Size);
+    shard1Docs.setNumFoundExact(true);
+
+    final NamedList<Object> shard2ResponseHeader = new NamedList<>();
+    SolrDocumentList shard2Docs = createSolrDocumentList(shard2Size);
+    shard2Docs.setNumFound(shard2Size);
+    shard2Docs.setNumFoundExact(true);
+
+    ShardRequest shardRequest =
+        MockShardRequest.create()
+            .withShardResponse(shard1ResponseHeader, shard1Docs)
+            .withShardResponse(shard2ResponseHeader, shard2Docs);
+
+    QueryComponent queryComponent = new QueryComponent();
+    queryComponent.mergeIds(responseBuilder, shardRequest);
+
+    assertEquals(shard1Size + shard2Size, responseBuilder.getResponseDocs().getNumFound());
+    assertEquals(
+        (long) (shard1Size + shard2Size),
+        responseBuilder
+            .rsp
+            .getResponseHeader()
+            .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
+  }
+
   private MockResponseBuilder mergeWithSkippedPartialShard() {
     SortField sortField = new SortField(SORT_FIELD_NAME, SortField.Type.INT);
     SortSpec sortSpec =

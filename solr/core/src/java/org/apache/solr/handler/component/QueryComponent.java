@@ -1181,7 +1181,7 @@ public class QueryComponent extends SearchComponent {
 
       Object ath = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
       if (ath == null) {
-        approximateTotalHits += numFound;
+        approximateTotalHits += docs.getNumFound();
       } else {
         approximateTotalHits += ((Number) ath).longValue();
       }
