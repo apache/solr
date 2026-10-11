@@ -1,0 +1,7 @@
+title: "The original highlighter now extracts terms from the query inside a top-level query(...) function query."
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-2681
+    url: https://issues.apache.org/jira/browse/SOLR-2681
