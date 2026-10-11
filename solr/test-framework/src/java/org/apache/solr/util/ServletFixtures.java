@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -119,12 +120,33 @@ public class ServletFixtures {
     }
   }
 
+  /**
+   * Sends nothing for {@link #DELAY_MS}: a server gone quiet. With {@link #FIRST_BYTE_PARAM} it
+   * sends and flushes one byte of body first, so the silence is mid-response. A request carrying
+   * {@link #ARRIVAL_PARAM} completes the matching future in {@link #ARRIVALS} once it is parked
+   * here, so a test can act on it without guessing how long it takes to arrive.
+   */
   public static class SlowServlet extends HttpServlet {
+
+    public static final int DELAY_MS = 5000;
+    public static final String FIRST_BYTE_PARAM = "firstByte";
+    public static final String ARRIVAL_PARAM = "arrivalId";
+    public static final Map<String, CompletableFuture<Void>> ARRIVALS = new ConcurrentHashMap<>();
+
+    @SuppressForbidden(reason = "forbiddenApis: getParameter is fine in tests")
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      if (Boolean.parseBoolean(req.getParameter(FIRST_BYTE_PARAM))) {
+        resp.getOutputStream().write('0');
+        resp.getOutputStream().flush();
+      }
+      String arrivalId = req.getParameter(ARRIVAL_PARAM);
+      CompletableFuture<Void> arrival = arrivalId == null ? null : ARRIVALS.remove(arrivalId);
+      if (arrival != null) {
+        arrival.complete(null);
+      }
       try {
-        Thread.sleep(5000);
+        Thread.sleep(DELAY_MS);
       } catch (InterruptedException ignored) {
       }
     }
