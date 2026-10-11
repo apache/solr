@@ -54,9 +54,43 @@ public class GetConfigAPI {
     configHandler.handleRequest(req, rsp);
   }
 
-  // This endpoint currently covers a whole list of paths by using the "component" placeholder
+  // GET /config/... sections still via SolrConfigHandler.
+  // Every name SolrConfig.writeMap can emit.
+  // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
-      path = {"/config/{component}"},
+      path = {
+        "/config/overlay",
+        "/config/znodeVersion",
+        "/config/luceneMatchVersion",
+        "/config/query",
+        "/config/requestHandler",
+        "/config/searchComponent",
+        "/config/updateHandler",
+        "/config/queryResponseWriter",
+        "/config/initParams",
+        "/config/listener",
+        "/config/directoryFactory",
+        "/config/indexConfig",
+        "/config/codecFactory",
+        "/config/requestDispatcher",
+        "/config/jmx",
+        "/config/queryParser",
+        "/config/valueSourceParser",
+        "/config/transformer",
+        "/config/updateProcessor",
+        "/config/updateRequestProcessorChain",
+        "/config/queryConverter",
+        "/config/cache",
+        "/config/circuitBreaker",
+        "/config/expressible",
+        "/config/schemaFactory",
+        "/config/restManager",
+        "/config/statsCache",
+        "/config/recoveryStrategy",
+        "/config/indexReaderFactory",
+        "/config/indexConfigdeletionPolicy",
+        "/config/updateHandlerupdateLog"
+      },
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getComponentConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
