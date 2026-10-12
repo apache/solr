@@ -172,13 +172,17 @@ limitations under the License.
                   <a ng-show="!showDetails[h.host]">show details...</a>
                 </div>
               </td>
-              <td ng-class="{'dead-node': n.dead}"><div class="node-name"><a href="{{n.base_url}}">{{key.replace(n.host+':', '')}}</a></div>
+              <td ng-class="{'dead-node': n.dead}"><div class="node-name">
+                  <a ng-show="!n.dead" href="" ng-click="openNodeDashboard(key); $event.preventDefault()">{{key.replace(n.host+':', '')}}</a>
+                  <span ng-show="n.dead">{{key.replace(n.host+':', '')}}</span>
+                </div>
                 <div ng-show="n.dead" class="node-down">(DEAD)</div>
                 <div ng-show="!n.dead">
                   Uptime: {{n.jvmUptime}}<br/>
                   <div class="node-spec" ng-show="showDetails[key]">
                     Java <span title="{{n.system.jvm.jre.vendor}}">{{n.system.jvm.jre.version}}</span><br/>
                     Solr {{n.system.lucene['solr-impl-version'].split(" ")[0]}}<br>
+                    <a class="node-admin-link" ng-href="{{n.base_url}}" target="_blank" rel="noopener">Open node Admin UI</a>
                   </div>
                   <div class="node-spec" ng-click="toggleDetails(key)">
                     <a ng-show="showDetails[key]">hide details...</a>

@@ -16,12 +16,29 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Response body for the {@code /api/node/threads} endpoint. */
 public class NodeThreadsResponse extends SolrJerseyResponse {
+
+  // Object, not NodeThreadsResponse, since @JsonAnySetter below also feeds this map raw values.
+  public Map<String, Object> remoteNodeData = new LinkedHashMap<>();
+
+  @JsonAnyGetter
+  public Map<String, Object> remoteNodeData() {
+    return remoteNodeData;
+  }
+
+  @JsonAnySetter
+  public void setRemoteNodeResponse(String field, Object value) {
+    remoteNodeData.put(field, value);
+  }
 
   @Schema(description = "Thread information for the receiving JVM.")
   @JsonProperty("system")

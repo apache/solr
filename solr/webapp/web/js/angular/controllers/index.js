@@ -15,17 +15,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-solrAdminApp.controller('IndexController', function($scope, $timeout, SystemV2, Constants, ApiErrorHandler) {
+solrAdminApp.controller('IndexController', function($scope, $timeout, SystemV2, Constants, ApiErrorHandler, NodeTarget) {
   $scope.resetMenu("index", Constants.IS_ROOT_PAGE);
   $scope.reload = function() {
-    SystemV2.getNodeSystemInfo({}, function(error, data, response) {
+    SystemV2.getNodeSystemInfo(NodeTarget.withNodes({}), function(error, data, response) {
       $timeout(function() {
         if (error) { ApiErrorHandler.handle(response); return; }
+        data = NodeTarget.unwrap(data, response);
+        if (!data || !data.jvm || !data.system) {
+          return;
+        }
         $scope.system = data;
         const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
         $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
 
-        if (data.security.authenticationPlugin) {
+        if (data.security && data.security.authenticationPlugin) {
           $scope.isSecurityEnabled = true
         }
 

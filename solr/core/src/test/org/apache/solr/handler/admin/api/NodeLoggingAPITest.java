@@ -64,7 +64,7 @@ public class NodeLoggingAPITest extends SolrTestCase {
         .thenReturn(List.of("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
     when(mockLogWatcher.getAllLoggers())
         .thenReturn(List.of(logInfo("org.a.s.Foo", "WARN", true), logInfo("org", null, false)));
-    final var responseBody = new NodeLogging(mockCoreContainer).listAllLoggersAndLevels();
+    final var responseBody = new NodeLogging(mockCoreContainer).listAllLoggersAndLevels(null);
 
     assertEquals(5, responseBody.levels.size());
     assertThat(responseBody.levels, containsInAnyOrder("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
@@ -108,7 +108,7 @@ public class NodeLoggingAPITest extends SolrTestCase {
     when(mockLogWatcher.getLastEvent()).thenReturn(123456L);
     when(mockLogWatcher.getHistorySize()).thenReturn(321);
 
-    final var responseBody = new NodeLogging(mockCoreContainer).fetchLocalLogMessages(123L);
+    final var responseBody = new NodeLogging(mockCoreContainer).fetchLocalLogMessages(123L, null);
 
     assertNotNull(responseBody);
     assertNull("Expected error to be null but was " + responseBody.error, responseBody.error);

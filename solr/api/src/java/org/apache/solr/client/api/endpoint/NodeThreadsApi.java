@@ -19,6 +19,7 @@ package org.apache.solr.client.api.endpoint;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.NodeThreadsResponse;
 
 /** V2 API for retrieving thread information from the receiving node. */
@@ -27,7 +28,8 @@ public interface NodeThreadsApi {
 
   @GET
   @Operation(
-      summary = "Retrieve thread information for the receiving node.",
+      summary =
+          "Retrieve thread information for the receiving node, or for other live nodes when 'nodes' is set.",
       tags = {"system"})
-  NodeThreadsResponse getThreadDump();
+  NodeThreadsResponse getThreadDump(@QueryParam("nodes") String nodes);
 }

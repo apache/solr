@@ -16,15 +16,16 @@
 */
 
 solrAdminApp.controller('CoreAdminController',
-    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Update, Constants, ApiErrorHandler){
+    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Update, Constants, ApiErrorHandler, NodeTarget){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
       $scope.selectedCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {
-        CoresV2.getAllCoreStatus({}, function(error, data, response) {
+        CoresV2.getAllCoreStatus(NodeTarget.withNodes({}), function(error, data, response) {
           $timeout(function() {
             if (error) { ApiErrorHandler.handle(response); return; }
+            var payload = NodeTarget.unwrap(data, response) || {};
             var coreCount = 0;
-            var cores = data.status;
+            var cores = payload.status || {};
             for (var _obj in cores) coreCount++;
             $scope.hasCores = coreCount >0;
             if (!$scope.selectedCore && coreCount==0) {
@@ -78,7 +79,7 @@ solrAdminApp.controller('CoreAdminController',
             schema: $scope.newCore.schema,
             dataDir: $scope.newCore.dataDir
           };
-          if ($scope.isCloud) {
+          if ($scope.isCloudEnabled) {
             createCoreParams.collection = $scope.newCore.collection;
             createCoreParams.shard = $scope.newCore.shard;
           }

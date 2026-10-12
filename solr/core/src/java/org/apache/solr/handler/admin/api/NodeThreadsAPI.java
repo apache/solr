@@ -34,18 +34,61 @@ import org.apache.solr.client.api.model.NodeThreadsResponse.LockWaiting;
 import org.apache.solr.client.api.model.NodeThreadsResponse.SystemInfo;
 import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadCount;
 import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadEntry;
+import org.apache.solr.client.solrj.request.SystemApi;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 
 /** Implementation of {@link NodeThreadsApi}. */
 public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
 
+  private final CoreContainer coreContainer;
+
   @Inject
-  public NodeThreadsAPI() {}
+  public NodeThreadsAPI(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+  }
+
+  /** Used by the v1 {@code ThreadDumpHandler} which does not go through Jersey injection. */
+  public NodeThreadsAPI() {
+    this(null);
+  }
 
   @Override
   @PermissionName(METRICS_READ_PERM)
-  public NodeThreadsResponse getThreadDump() {
+  public NodeThreadsResponse getThreadDump(String nodes) {
     final var response = instantiateJerseyResponse(NodeThreadsResponse.class);
+    if (proxyToNodes(response, nodes)) {
+      return response;
+    }
+    populateLocalThreadDump(response);
+    return response;
+  }
+
+  private boolean proxyToNodes(NodeThreadsResponse response, String nodes) {
+    try {
+      if (coreContainer != null) {
+        final var req = new SystemApi.GetThreadDump();
+        req.setNodes(nodes);
+        final var reqProxy =
+            new V2SolrRequestBasedProxy<NodeThreadsResponse>(coreContainer, req) {
+              @Override
+              public void processTypedProxiedResponse(
+                  String nodeName, NodeThreadsResponse proxiedResponse) {
+                response.remoteNodeData.put(nodeName, proxiedResponse);
+              }
+            };
+        return reqProxy.proxyRequest();
+      }
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+    return false;
+  }
+
+  private static void populateLocalThreadDump(NodeThreadsResponse response) {
     final var tmbean = ManagementFactory.getThreadMXBean();
     response.system = new SystemInfo();
     final var counts = new ThreadCount();
@@ -59,7 +102,6 @@ public class NodeThreadsAPI extends JerseyResource implements NodeThreadsApi {
           toThreadEntries(tmbean.getThreadInfo(deadlockedThreads, Integer.MAX_VALUE), tmbean);
     }
     response.system.threadDump = toThreadEntries(tmbean.dumpAllThreads(true, true), tmbean);
-    return response;
   }
 
   private static List<ThreadEntry> toThreadEntries(ThreadInfo[] threads, ThreadMXBean tmbean) {

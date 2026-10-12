@@ -201,6 +201,9 @@ ul
   padding-bottom: 10px;
   position: fixed;
   z-index: 42;
+  left: 0;
+  right: 0;
+  pointer-events: none;
 }
 
 .scroll #header
@@ -211,15 +214,61 @@ ul
 #header #solr
 {
   background-image: url( ../../img/solr.svg );
+  background-repeat: no-repeat;
+  background-position: left center;
   background-size: 128px;
   display: block;
   height: 78px;
   width: 150px;
+  margin: 0 0 0 30px;
+  pointer-events: auto;
 }
 
 #header #solr span
 {
   display: none;
+}
+
+#header #selected-node-badge
+{
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  max-width: 55%;
+  padding: 8px 14px;
+  border: 1px solid #c0c0c0;
+  border-radius: 4px;
+  background: #f7f7f7;
+  color: #333;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: right;
+  pointer-events: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#header #selected-node-badge.remote
+{
+  border-color: #e0a800;
+  background: #fff8e6;
+}
+
+#header #selected-node-badge .badge-label
+{
+  display: block;
+  color: #888;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#header #selected-node-badge .badge-value
+{
+  display: block;
+  font-weight: bold;
 }
 
 #main

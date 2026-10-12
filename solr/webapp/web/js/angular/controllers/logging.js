@@ -24,16 +24,17 @@ var format_time_content = function( time, timeZone ) {
 }
 
 solrAdminApp.controller('LoggingController',
-  function($scope, $timeout, $cookies, LoggingV2, Constants, ApiErrorHandler){
+  function($scope, $timeout, $cookies, LoggingV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
     $scope.refresh = function() {
-      LoggingV2.fetchLocalLogMessages({since: 0}, function(error, data, response) {
+      LoggingV2.fetchLocalLogMessages(NodeTarget.withNodes({since: 0}), function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
+          var payload = NodeTarget.unwrap(data, response) || {};
           $scope.since = new Date();
           $scope.sinceDisplay = format_time_content($scope.since, "Local");
-          var events = data.history;
+          var events = payload.history || [];
           for (var i=0; i<events.length; i++) {
             var event = events[i];
             var time = new Date(event.time);
@@ -52,26 +53,7 @@ solrAdminApp.controller('LoggingController',
             event.showTrace = false;
           }
           $scope.events = events;
-          $scope.watcher = data.watcher;
-          /* @todo sticky_mode
-          // state element is in viewport
-          sticky_mode = ( state.position().top <= $( window ).scrollTop() + $( window ).height() - ( $( 'body' ).height() - state.position().top ) );
-          // initial request
-          if( 0 === since ) {
-            sticky_mode = true;
-          }
-          $scope.loggingEvents = events;
-
-          if( sticky_mode )
-          {
-            $( 'body' )
-              .animate
-              (
-                  { scrollTop: state.position().top },
-                  1000
-              );
-          }
-        */
+          $scope.watcher = payload.watcher;
         });
       });
       $scope.timeout = $timeout($scope.refresh, 10000);
@@ -126,10 +108,10 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      LoggingV2.listAllLoggersAndLevels(function(error, data, response) {
+      LoggingV2.listAllLoggersAndLevels({}, function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
-          $scope.logging = makeTree(data.loggers, "");
+          $scope.logging = makeTree(data.loggers || [], "");
           $scope.watcher = data.watcher;
           $scope.levels = [];
           for (var level in data.levels) {
@@ -161,23 +143,15 @@ solrAdminApp.controller('LoggingController',
       }
       var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
-      // Intentionally still v1 (Logging, not LoggingV2): this relies on the "nodes=all" param to
-      // broadcast the level change to every live node. The v2 NodeLoggingApis endpoint is
-      // single-node only until SOLR-16738 wires it up to the new V2SolrRequestBasedProxy (see the
-      // TODO in NodeLogging.java). Move this to LoggingV2.modifyLocalLogLevel once that lands.
       var doSetLevel = function() {
         var params = {set: setString};
-        // "nodes=all" only makes sense in SolrCloud mode; in standalone (user-managed) mode the
-        // request is handled locally, so the param is omitted entirely.
-        if ($scope.isCloudEnabled) {
+        if ($scope.isCloudEnabled && $scope.liveNodes && $scope.liveNodes.length > 1) {
           params.nodes = "all";
         }
         Logging.setLevel(params, function(data) {
           $scope.refresh();
         });
       };
-      // isCloudEnabled populates asynchronously via resetMenu(), so wait for it to settle
-      // before deciding whether to broadcast (same pattern as in paramsets.js).
       if ($scope.isCloudEnabled === undefined) {
         var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
           if (value === undefined) return;

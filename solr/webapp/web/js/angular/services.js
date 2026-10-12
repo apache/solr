@@ -88,6 +88,105 @@ solrAdminServices.factory('Metrics',
       }
       return {handle: handle};
     }])
+.factory('NodeTarget',
+    ['$rootScope', function($rootScope) {
+      var STORAGE_KEY = 'adminui.selectedNode';
+      var state = {
+        localNode: null,
+        selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
+        liveNodes: []
+      };
+
+      function isRemote() {
+        return !!(state.selectedNode && state.localNode && state.selectedNode !== state.localNode);
+      }
+
+      function nodesParam() {
+        return isRemote() ? state.selectedNode : undefined;
+      }
+
+      function withNodes(opts) {
+        opts = opts || {};
+        var nodes = nodesParam();
+        if (nodes) {
+          opts.nodes = nodes;
+        }
+        return opts;
+      }
+
+      function unwrap(data, response) {
+        if (!isRemote()) {
+          return data;
+        }
+        var body = (response && response.body) || data || {};
+        var nodePayload = body[state.selectedNode];
+        if (nodePayload) {
+          return nodePayload;
+        }
+        if (data && data.remoteNodeData && data.remoteNodeData[state.selectedNode]) {
+          return data.remoteNodeData[state.selectedNode];
+        }
+        return data;
+      }
+
+      function publish() {
+        $rootScope.localNode = state.localNode;
+        $rootScope.selectedNode = state.selectedNode;
+        $rootScope.liveNodes = state.liveNodes;
+        $rootScope.viewingRemoteNode = isRemote();
+      }
+
+      function setLocalNode(nodeName) {
+        state.localNode = nodeName;
+        if (!state.selectedNode) {
+          state.selectedNode = nodeName;
+        }
+        publish();
+      }
+
+      function setLiveNodes(nodes) {
+        state.liveNodes = (nodes || []).slice().sort();
+        if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+          state.selectedNode = state.localNode || state.liveNodes[0] || null;
+          if (state.selectedNode) {
+            sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
+          } else {
+            sessionStorage.removeItem(STORAGE_KEY);
+          }
+        }
+        publish();
+      }
+
+      function selectNode(nodeName) {
+        if (!nodeName || nodeName === state.selectedNode) {
+          return false;
+        }
+        state.selectedNode = nodeName;
+        sessionStorage.setItem(STORAGE_KEY, nodeName);
+        publish();
+        return true;
+      }
+
+      function clear() {
+        state.localNode = null;
+        state.selectedNode = null;
+        state.liveNodes = [];
+        sessionStorage.removeItem(STORAGE_KEY);
+        publish();
+      }
+
+      return {
+        state: state,
+        isRemote: isRemote,
+        nodesParam: nodesParam,
+        withNodes: withNodes,
+        unwrap: unwrap,
+        setLocalNode: setLocalNode,
+        setLiveNodes: setLiveNodes,
+        selectNode: selectNode,
+        clear: clear
+      };
+    }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
@@ -185,11 +284,6 @@ solrAdminServices.factory('Metrics',
  }])
 .factory('Logging',
   ['$resource', function($resource) {
-    // This v1 factory only covers "setLevel", which in SolrCloud mode needs the "nodes=all"
-    // broadcast-to-every-node behavior that the v2 NodeLoggingApis endpoint doesn't support yet
-    // (see SOLR-16738). The caller (LoggingLevelController) passes nodes:'all' only when
-    // SolrCloud is enabled; in standalone mode the param is omitted entirely. Retire this
-    // factory once setLevel moves to LoggingV2.
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "setLevel": {}
       });
