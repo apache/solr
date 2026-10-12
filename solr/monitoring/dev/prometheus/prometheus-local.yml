@@ -31,6 +31,11 @@ global:
 rule_files:
   - /etc/prometheus/rules/solr-alerts.yml
 
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   - job_name: solr
     # The v1 endpoint, which every Solr 10.x build serves. Solr 10.1 and later
