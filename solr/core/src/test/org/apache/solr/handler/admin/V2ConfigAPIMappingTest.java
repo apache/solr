@@ -52,6 +52,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
     assertAnnotatedApiExistsFor("GET", "/config/jmx");
     assertAnnotatedApiExistsFor("GET", "/config/requestDispatcher");
     assertAnnotatedApiExistsFor("GET", "/config/luceneMatchVersion");
+    assertAnnotatedApiExistsFor("GET", "/config/indexConfigdeletionPolicy");
     assertAnnotatedApiExistsFor("GET", "/config/updateHandlerupdateLog");
   }
 
