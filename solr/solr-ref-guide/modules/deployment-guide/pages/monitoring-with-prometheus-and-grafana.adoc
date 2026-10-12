@@ -1,0 +1,164 @@
+= Monitoring Solr with Prometheus and Grafana
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Solr ships two monitoring artifacts in `solr/monitoring/`:
+
+* `grafana-solr-dashboard.json` — a Grafana dashboard
+* `prometheus-solr-alerts.yml` — a set of Prometheus alert rules
+
+Import these into your own Prometheus + Grafana installation.
+Solr exposes all metrics natively, so no exporter process is required.
+For the full list of available metrics see xref:metrics-reporting.adoc[].
+
+[WARNING]
+====
+Both artifacts are currently placeholders — a two-panel dashboard and a single alert — that exist to prove the build pipeline works.
+The dashboard worth deploying arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534] and the alert rules in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535].
+====
+
+.Solr monitoring architecture — Prometheus pull path and OTLP push path
+image::monitoring-with-prometheus-and-grafana/solr-monitoring-diagram.png[Solr monitoring architecture diagram,800]
+
+== The Grafana Dashboard
+
+Import the dashboard by going to *Dashboards → Import* in Grafana and uploading `grafana-solr-dashboard.json`.
+
+.The placeholder dashboard, running against two Solr nodes
+image::monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[Grafana dashboard screenshot,800]
+
+Dropdowns at the top of the dashboard scope what the panels show.
+The placeholder has two: `datasource`, so one import can serve several Prometheus instances, and `interval`, which sets the window for rate calculations.
+
+[[metrics-collection]]
+== Getting Metrics into Prometheus
+
+There are two ways to get Solr metrics into Prometheus.
+
+[[prometheus-scrape]]
+=== Option 1: Prometheus Pull (recommended)
+
+Prometheus scrapes each Solr node directly — no extra process needed.
+Add a scrape job to your `prometheus.yml`:
+
+[source,yaml]
+----
+scrape_configs:
+  - job_name: solr                        # <1>
+    metrics_path: /solr/admin/metrics     # <2>
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['solr-node1:8983', 'solr-node2:8983']
+----
+<1> The dashboard and alert rules select on this job name.
+    If you use another, set `solrSelector` to match — see <<customizing>>.
+<2> Solr 10.1 and later also serve this at the shorter v2 alias `/api/metrics`.
+
+Scrape every node rather than one: each reports its own JVM and the cores it hosts.
+If metrics collection is switched off for a node, both endpoints answer `HTTP 510` and Prometheus marks the target down.
+
+[[otlp-push]]
+=== Option 2: OTLP Push via OpenTelemetry Collector
+
+When Solr's xref:opentelemetry.adoc[OpenTelemetry module] is enabled, Solr can push metrics (and traces) via OTLP to an https://opentelemetry.io/docs/collector/[OpenTelemetry Collector], which can forward them to Prometheus or to any other OTLP-compatible backend.
+
+NOTE: An example Collector configuration, and the labelling needed to make both paths produce identical series, will be documented here as part of https://issues.apache.org/jira/browse/SOLR-18536[SOLR-18536].
+
+[[alert-rules]]
+== Alert Rules
+
+Reference `prometheus-solr-alerts.yml` from your `prometheus.yml`:
+
+[source,yaml]
+----
+rule_files:
+  - /path/to/prometheus-solr-alerts.yml
+----
+
+Validate the file before deploying it, and after any edit:
+
+[source,bash]
+----
+promtool check rules prometheus-solr-alerts.yml
+----
+
+Rules carry a `severity` label for routing in Alertmanager.
+One placeholder rule is included today:
+
+[cols="2,1,3",options="header"]
+|===
+| Alert | Severity | Fires when
+| `SolrNodeDown` | warning | A Solr target has failed to scrape for 2 minutes
+|===
+
+NOTE: The rules covering heap, GC, disk, latency, error rate and SolrCloud health arrive in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535].
+
+[[customizing]]
+== Customizing the Artifacts
+
+Both artifacts are generated from a https://jsonnet.org/[jsonnet] mixin source in `solr/monitoring/mixin/`, following the conventions of the https://github.com/monitoring-mixins/docs[monitoring-mixins] community.
+Edit the jsonnet, not the generated output.
+
+Tunable settings are centralized in `mixin/config.libsonnet`:
+
+[source,jsonnet]
+----
+{
+  _config:: {
+    solrSelector: 'job="solr"',   // label selector identifying Solr targets
+    rateInterval: '5m',           // window for rate() queries
+  },
+}
+----
+
+`solrSelector` is applied to every dashboard query and alert expression, so JVM metrics scraped from other Java services are not read as Solr's.
+Either edit the file and regenerate, or leave this tree untouched and patch the configuration from your own jsonnet:
+
+[source,jsonnet]
+----
+(import 'mixin.libsonnet') + { _config+:: { solrSelector: 'job="my-solr"' } }
+----
+
+Regenerating requires `jsonnet`, `jsonnet-bundler` and `gojsontoyaml`, or the included Docker wrapper that supplies all three:
+
+[source,bash]
+----
+cd solr/monitoring/mixin
+./make.sh install   # fetch jsonnet dependencies
+./make.sh all       # regenerate both artifacts
+----
+
+See `solr/monitoring/README.md` for the remaining build targets and the local toolchain alternative.
+
+[[dev-stack]]
+== Trying It Locally
+
+The Solr source tree carries a docker-compose stack that runs Solr, Prometheus, Grafana and Alertmanager together with the generated artifacts already wired in.
+It exists to make changes to those artifacts easy to see, and is contributor tooling rather than a deployment to model yours on — it is not part of the Solr release.
+
+[source,bash]
+----
+cd solr/monitoring/dev
+./stack.sh
+----
+
+Grafana is then on `http://localhost:3000`, opening directly on the provisioned dashboard, with Prometheus on `:9090` and Alertmanager on `:9093`.
+`./stack.sh --local-solr` skips the bundled Solr nodes and scrapes a Solr you are already running.
+
+[[distributed-tracing]]
+== Metrics and Tracing Together
+
+The same xref:opentelemetry.adoc[OpenTelemetry] instrumentation that produces these metrics also emits xref:distributed-tracing.adoc[distributed traces], so a latency spike on the dashboard can be followed into the traces of the requests that caused it.
+Both signals are exported via OTLP and can flow through the same Collector pipeline to a unified observability backend, or independently to specialized ones.

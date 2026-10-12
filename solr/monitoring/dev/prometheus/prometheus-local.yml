@@ -1,0 +1,41 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# prometheus-local.yml — scrape config for a Solr you run yourself.
+#
+# Used by: ./stack.sh --local-solr
+#
+# 'host.docker.internal' resolves to the host machine from inside Docker (Mac,
+# Windows, and Linux with Docker 20.10+). docker-compose.yml adds the matching
+# extra_hosts entry so this also works on Linux.
+#
+# A single node on :8983 is scraped by default. Add further ports to the targets
+# list to match a multi-node local SolrCloud setup.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/solr-alerts.yml
+
+scrape_configs:
+  - job_name: solr
+    # The v1 endpoint, which every Solr 10.x build serves. Solr 10.1 and later
+    # also serve the shorter v2 alias /api/metrics.
+    metrics_path: /solr/admin/metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['host.docker.internal:8983']
