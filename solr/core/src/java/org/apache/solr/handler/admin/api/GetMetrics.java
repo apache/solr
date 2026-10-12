@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -122,18 +123,44 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
     }
 
     // Should handle 'Accept' header only, but a lot of code still expects 'wt'.
-    if (acceptHeader == null) {
-      solrQueryRequest.setParams(
-          SolrParams.wrapDefaults(
-              solrQueryRequest.getParams(),
-              SolrParams.of(CommonParams.WT, MetricUtils.PROMETHEUS_METRICS_WT)));
-    } else if (!PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS.equals(acceptHeader)
-        && !PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS.equals(acceptHeader)) {
+    String wt = metricsFormat(acceptHeader);
+    if (wt == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Only Prometheus and OpenMetrics metric formats supported. Unsupported format requested: "
               + acceptHeader);
     }
+    solrQueryRequest.setParams(
+        SolrParams.wrapDefaults(solrQueryRequest.getParams(), SolrParams.of(CommonParams.WT, wt)));
+  }
+
+  /**
+   * Resolves the {@code wt} to answer an {@code Accept} header with. The header is a comma
+   * separated list of media ranges, each with optional parameters, so it cannot be compared against
+   * a content type directly. Returns null when the client accepts no format this endpoint produces.
+   */
+  static String metricsFormat(String acceptHeader) {
+    if (acceptHeader == null || acceptHeader.isBlank()) {
+      return MetricUtils.PROMETHEUS_METRICS_WT;
+    }
+    boolean prometheusAccepted = false;
+    for (String mediaRange : acceptHeader.split(",")) {
+      String[] parts = mediaRange.trim().split(";");
+      String mediaType = parts[0].trim().toLowerCase(Locale.ROOT);
+      if (PrometheusResponseWriter.MEDIA_TYPE_OPEN_METRICS.equals(mediaType)) {
+        for (int i = 1; i < parts.length; i++) {
+          if (parts[i].replace(" ", "").equalsIgnoreCase("version=1.0.0")) {
+            return MetricUtils.OPEN_METRICS_WT;
+          }
+        }
+        prometheusAccepted = true;
+      } else if (PrometheusResponseWriter.MEDIA_TYPE_PROMETHEUS.equals(mediaType)
+          || "text/*".equals(mediaType)
+          || "*/*".equals(mediaType)) {
+        prometheusAccepted = true;
+      }
+    }
+    return prometheusAccepted ? MetricUtils.PROMETHEUS_METRICS_WT : null;
   }
 
   private boolean proxyToNodes() {
