@@ -47,6 +47,7 @@
 **** xref:cli/solr-snapshot-describe.adoc[describe]
 **** xref:cli/solr-snapshot-export.adoc[export]
 **** xref:cli/solr-snapshot-list.adoc[list]
+*** xref:cli/solr-ssl.adoc[ssl]
 *** xref:cli/solr-start.adoc[start]
 *** xref:cli/solr-status.adoc[status]
 *** xref:cli/solr-stop.adoc[stop]

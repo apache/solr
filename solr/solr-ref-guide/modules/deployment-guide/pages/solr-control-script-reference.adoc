@@ -1098,6 +1098,11 @@ Defines the location of `solr.solr.home`, which by default is `server/solr`.
 If you have multiple instances of Solr on the same host, or if you have customized the `$SOLR_HOME` directory path, you likely need to define this.
 This is where any credentials or authentication configuration files (e.g. basicAuth.conf) would be placed.
 
+The `auth` and `ssl` commands back up existing files before replacing them and print the backup paths.
+Both update the include file; `auth` also writes `basicAuth.conf`, while `ssl` installs a keystore and truststore.
+On Unix and macOS, these files and their backups are restricted to owner access (`0600`).
+Run these commands as the Solr service user, and protect the backups because they may contain credentials.
+
 === Disabling Basic Authentication
 
 You can disable Basic Authentication with `bin/solr auth disable`.

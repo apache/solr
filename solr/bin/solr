@@ -599,6 +599,17 @@ else
   exit
 fi
 
+if [[ "$SCRIPT_CMD" == "ssl" ]]; then
+  SSL_INCLUDE_ARGS=(--solr-include-file "${SOLR_INCLUDE:-$SOLR_TIP/bin/solr.in.sh}")
+  for arg in "$@"; do
+    case "$arg" in
+      --solr-include-file|--solr-include-file=*) SSL_INCLUDE_ARGS=(); break ;;
+    esac
+  done
+  run_tool ssl "${SSL_INCLUDE_ARGS[@]}" "$@"
+  exit $?
+fi
+
 # configure authentication
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
   : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
