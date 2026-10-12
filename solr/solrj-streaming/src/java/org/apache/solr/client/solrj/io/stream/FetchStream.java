@@ -150,6 +150,14 @@ public class FetchStream extends TupleStream implements Expressible {
       leftKey = rightKey = on;
     }
 
+    if (rightKey.matches(".*[\\s{}!'\"\\\\].*")) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "fetch on parameter has an invalid join field name [%s]: whitespace, braces, '!', quotes and backslashes are not allowed",
+              rightKey));
+    }
+
     for (int i = 0; i < fields.length; i++) {
       fields[i] = fields[i].trim();
       if (fields[i].equals(VERSION_FIELD)) {

@@ -1006,6 +1006,39 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFetchStreamRejectsJoinFieldNameThatBreaksLocalParams() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      IOException e =
+          assertThrows(
+              IOException.class,
+              () -> {
+                TupleStream stream =
+                    factory.constructStream(
+                        "fetch("
+                            + COLLECTIONORALIAS
+                            + ", search("
+                            + COLLECTIONORALIAS
+                            + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a i\","
+                            + " batchSize=\"2\", fl=\"subject\")");
+                StreamContext context = new StreamContext();
+                context.setSolrClientCache(solrClientCache);
+                stream.setStreamContext(context);
+                getTuples(stream);
+              });
+      assertTrue(e.getMessage(), e.getMessage().contains("invalid join field name [a i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
   public void testFetchStream() throws Exception {
 
     SolrClientCache solrClientCache =
