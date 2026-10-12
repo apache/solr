@@ -43,7 +43,11 @@ groups:
         Check heap usage (SolrHighHeapUsage), consider tuning GC or increasing heap.
       summary: Solr instance {{ $labels.instance }} is experiencing GC thrashing
     expr: |
-      sum by (instance) (rate(jvm_gc_duration_seconds_sum{job="solr"}[1m]))
+      sum by (instance) (
+        max by (instance, jvm_gc_name, jvm_gc_action) (
+          rate(jvm_gc_duration_seconds_sum{job="solr"}[1m])
+        )
+      )
       > 10
     for: 3m
     labels:
@@ -90,9 +94,9 @@ groups:
         core loading failures, or network connectivity issues.
       summary: Solr instance {{ $labels.instance }} has a high error rate
     expr: |
-      sum by (instance) (rate(solr_node_requests_total{category=~"(?i)error"}[5m]))
+      sum by (instance) (rate(solr_core_requests_errors_total{job="solr"}[5m]))
       /
-      sum by (instance) (rate(solr_node_requests_total[5m]))
+      sum by (instance) (rate(solr_core_requests_total{job="solr"}[5m]))
       > 0.01
     for: 5m
     labels:

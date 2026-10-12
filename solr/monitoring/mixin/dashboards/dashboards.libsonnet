@@ -333,31 +333,31 @@ local jvmPanels = [
   ts(
     'GC Pause p99',
     [prom(
-      'histogram_quantile(0.99, sum by (le, jvm_gc_name, instance)(rate(jvm_gc_duration_seconds_bucket{%s,%s,%s}[$interval])))' % [envSel, clusterSel, instSel],
+      'histogram_quantile(0.99, sum by (le, jvm_gc_name, instance)(max by (le, jvm_gc_name, jvm_gc_action, instance)(rate(jvm_gc_duration_seconds_bucket{%s,%s,%s}[$interval]))))' % [envSel, clusterSel, instSel],
       '{{instance}} {{jvm_gc_name}}'
     )],
     unit='s',
-    desc='p99 GC pause duration per collector and instance. Alert fires when total GC time > 10s/min for 3 minutes (SolrJvmGcThrashing).'
+    desc='p99 GC pause duration per collector and instance. Alert fires when total GC time > 10s/min for 3 minutes (SolrJvmGcThrashing). The inner max keeps collectors reported by more than one OTel instrumentation scope from being added together.'
   ) + { gridPos: { x: 0, y: 34, w: 8, h: 8 } },
 
   ts(
     'GC Collection Rate',
     [prom(
-      'sum by (jvm_gc_name, instance)(rate(jvm_gc_duration_seconds_count{%s,%s,%s}[$interval]))' % [envSel, clusterSel, instSel],
+      'sum by (jvm_gc_name, instance)(max by (jvm_gc_name, jvm_gc_action, instance)(rate(jvm_gc_duration_seconds_count{%s,%s,%s}[$interval])))' % [envSel, clusterSel, instSel],
       '{{instance}} {{jvm_gc_name}}'
     )],
     unit='cps',
-    desc='GC collection frequency per collector and instance. Frequent major GC indicates memory pressure.'
+    desc='GC collection frequency per collector and instance. Frequent major GC indicates memory pressure. The inner max deduplicates collectors reported by more than one OTel instrumentation scope.'
   ) + { gridPos: { x: 8, y: 34, w: 8, h: 8 } },
 
   ts(
     'JVM Threads',
     [prom(
-      'sum by (jvm_thread_state, instance)(jvm_thread_count{%s,%s,%s})' % [envSel, clusterSel, instSel],
+      'sum by (jvm_thread_state, instance)(max by (jvm_thread_state, jvm_thread_daemon, instance)(jvm_thread_count{%s,%s,%s,jvm_thread_state!=""}))' % [envSel, clusterSel, instSel],
       '{{instance}} {{jvm_thread_state}}'
     )],
     unit='short',
-    desc='JVM thread count by state per instance. Large BLOCKED or WAITING counts indicate lock contention or stalled I/O.'
+    desc='JVM thread count by state per instance. Large BLOCKED or WAITING counts indicate lock contention or stalled I/O. Only series carrying a thread state are counted — one OTel scope reports a state-less total that would otherwise be added on top.'
   ) + { gridPos: { x: 16, y: 34, w: 8, h: 8 } },
 
   ts(

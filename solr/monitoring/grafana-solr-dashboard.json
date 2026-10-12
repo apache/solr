@@ -508,7 +508,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "p99 GC pause duration per collector and instance. Alert fires when total GC time > 10s/min for 3 minutes (SolrJvmGcThrashing).",
+         "description": "p99 GC pause duration per collector and instance. Alert fires when total GC time > 10s/min for 3 minutes (SolrJvmGcThrashing). The inner max keeps collectors reported by more than one OTel instrumentation scope from being added together.",
          "fieldConfig": {
             "defaults": {
                "unit": "s"
@@ -536,7 +536,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.99, sum by (le, jvm_gc_name, instance)(rate(jvm_gc_duration_seconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}[$interval])))",
+               "expr": "histogram_quantile(0.99, sum by (le, jvm_gc_name, instance)(max by (le, jvm_gc_name, jvm_gc_action, instance)(rate(jvm_gc_duration_seconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}[$interval]))))",
                "interval": "$interval",
                "legendFormat": "{{instance}} {{jvm_gc_name}}"
             }
@@ -549,7 +549,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "GC collection frequency per collector and instance. Frequent major GC indicates memory pressure.",
+         "description": "GC collection frequency per collector and instance. Frequent major GC indicates memory pressure. The inner max deduplicates collectors reported by more than one OTel instrumentation scope.",
          "fieldConfig": {
             "defaults": {
                "unit": "cps"
@@ -577,7 +577,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum by (jvm_gc_name, instance)(rate(jvm_gc_duration_seconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}[$interval]))",
+               "expr": "sum by (jvm_gc_name, instance)(max by (jvm_gc_name, jvm_gc_action, instance)(rate(jvm_gc_duration_seconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}[$interval])))",
                "interval": "$interval",
                "legendFormat": "{{instance}} {{jvm_gc_name}}"
             }
@@ -590,7 +590,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "JVM thread count by state per instance. Large BLOCKED or WAITING counts indicate lock contention or stalled I/O.",
+         "description": "JVM thread count by state per instance. Large BLOCKED or WAITING counts indicate lock contention or stalled I/O. Only series carrying a thread state are counted — one OTel scope reports a state-less total that would otherwise be added on top.",
          "fieldConfig": {
             "defaults": {
                "unit": "short"
@@ -618,7 +618,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum by (jvm_thread_state, instance)(jvm_thread_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
+               "expr": "sum by (jvm_thread_state, instance)(max by (jvm_thread_state, jvm_thread_daemon, instance)(jvm_thread_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_thread_state!=\"\"}))",
                "interval": "$interval",
                "legendFormat": "{{instance}} {{jvm_thread_state}}"
             }

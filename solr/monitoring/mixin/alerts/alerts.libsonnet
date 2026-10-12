@@ -62,11 +62,17 @@ local cfg = config._config;
         // CRITICAL: SolrJvmGcThrashing
         // Fires when the sum of GC wall-clock time across all collectors exceeds
         // cfg.gcThrashThresholdSecsPerMin seconds per minute for 3 minutes.
+        // The inner max collapses collectors that are reported by more than one OTel
+        // instrumentation scope (Solr 10.0 emits two), which would otherwise double the sum.
         // ---------------------------------------------------------------
         {
           alert: 'SolrJvmGcThrashing',
           expr: |||
-            sum by (instance) (rate(jvm_gc_duration_seconds_sum{%(solrSelector)s}[1m]))
+            sum by (instance) (
+              max by (instance, jvm_gc_name, jvm_gc_action) (
+                rate(jvm_gc_duration_seconds_sum{%(solrSelector)s}[1m])
+              )
+            )
             > %(threshold)s
           ||| % { threshold: cfg.gcThrashThresholdSecsPerMin, solrSelector: cfg.solrSelector },
           'for': '3m',
@@ -136,21 +142,19 @@ local cfg = config._config;
 
         // ---------------------------------------------------------------
         // WARNING: SolrHighErrorRate
-        // Fires when error requests exceed 1% of total requests for 5 minutes.
+        // Fires when failed requests exceed 1% of total requests for 5 minutes.
         //
-        // NOTE: Verify the category label value for errors on your Solr 10.x instance.
-        // The regex "(?i)error" is a best-effort match. If solr_node_requests_total
-        // does not carry an error category, consider a handler-based proxy metric or
-        // check solr_core_requests_total with status=error (if available).
+        // Both client (4xx) and server (5xx) failures are counted; add source="server"
+        // to the errors selector to ignore malformed client requests.
         // ---------------------------------------------------------------
         {
           alert: 'SolrHighErrorRate',
           expr: |||
-            sum by (instance) (rate(solr_node_requests_total{category=~"(?i)error"}[5m]))
+            sum by (instance) (rate(solr_core_requests_errors_total{%(solrSelector)s}[5m]))
             /
-            sum by (instance) (rate(solr_node_requests_total[5m]))
+            sum by (instance) (rate(solr_core_requests_total{%(solrSelector)s}[5m]))
             > %(threshold)s
-          ||| % { threshold: cfg.errorRateThreshold },
+          ||| % { threshold: cfg.errorRateThreshold, solrSelector: cfg.solrSelector },
           'for': '5m',
           labels: { severity: 'warning' },
           annotations: {

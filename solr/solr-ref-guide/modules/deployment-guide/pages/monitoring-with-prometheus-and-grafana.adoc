@@ -104,9 +104,13 @@ Set `OTEL_RESOURCE_ATTRIBUTES=deployment.environment=prod,service.namespace=my-c
 
 [NOTE]
 ====
-Solr 10.x emits JVM metrics under two OTel instrumentation scopes.
-Do *not* filter on `otel_scope_name` in PromQL expressions — the dashboard handles
-deduplication internally using `max by (instance, ...)` aggregation.
+How many OTel instrumentation scopes emit the JVM metrics depends on the Solr version:
+Solr 10.0 reports them under both `io.opentelemetry.runtime-telemetry-java8` and
+`io.opentelemetry.runtime-telemetry-java17`, while Solr 10.1 and later report a single
+`io.opentelemetry.runtime-telemetry` scope.
+Do *not* filter on `otel_scope_name` in PromQL expressions.
+The dashboard instead aggregates with `max by (...)` over the scope dimension, which yields
+the same result on either version; a plain `sum` would double the values on Solr 10.0.
 ====
 
 [[alert-rules]]
