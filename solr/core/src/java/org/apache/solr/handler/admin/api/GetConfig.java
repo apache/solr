@@ -33,7 +33,6 @@ import org.apache.solr.client.api.endpoint.ConfigApi;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.model.ConfigOverlayResponse;
 import org.apache.solr.client.api.model.ConfigZnodeVersionResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -99,10 +98,6 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @Override
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfigComponent(String componentName) {
-    if (!MIGRATED_CONFIG_COMPONENTS.contains(componentName)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Invalid component name: " + componentName);
-    }
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
     Map<String, Object> section = new LinkedHashMap<>();
     section.put(componentName, solrConfigAsMap().get(componentName));
