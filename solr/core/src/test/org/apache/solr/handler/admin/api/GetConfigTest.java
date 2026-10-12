@@ -58,6 +58,30 @@ public class GetConfigTest extends SolrTestCase {
   }
 
   @Test
+  public void testGetOverlayFromCore() throws Exception {
+    var request = new ConfigApi.GetOverlay(IndexType.CORE, CORE_NAME);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.overlay);
+    assertTrue(response.overlay.containsKey("znodeVersion"));
+    assertEquals(-1, response.overlay.get("znodeVersion"));
+  }
+
+  @Test
+  public void testGetZnodeVersionFromCore() throws Exception {
+    var request = new ConfigApi.GetZnodeVersion(IndexType.CORE, CORE_NAME);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.znodeVersion);
+    assertTrue(response.znodeVersion.overlay >= -1);
+    assertTrue(response.znodeVersion.params >= -1);
+  }
+
+  @Test
   public void testGetConfigComponentFromCore() throws Exception {
     for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
       var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
