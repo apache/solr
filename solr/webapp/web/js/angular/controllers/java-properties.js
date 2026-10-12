@@ -50,5 +50,5 @@ solrAdminApp.controller('JavaPropertiesController',
       });
     };
 
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh);
   });

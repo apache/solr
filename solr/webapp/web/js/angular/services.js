@@ -94,7 +94,9 @@ solrAdminServices.factory('Metrics',
       var state = {
         localNode: null,
         selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
-        liveNodes: []
+        liveNodes: [],
+        // Set after mode detection and (in cloud) live-node discovery so withNodes() is correct.
+        ready: false
       };
 
       function isRemote() {
@@ -136,6 +138,28 @@ solrAdminServices.factory('Metrics',
         $rootScope.viewingRemoteNode = isRemote();
       }
 
+      function markReady() {
+        if (!state.ready) {
+          state.ready = true;
+          publish();
+        }
+      }
+
+      function whenReady(fn) {
+        if (state.ready) {
+          fn();
+          return angular.noop;
+        }
+        var unwatch = $rootScope.$watch(function() { return state.ready; }, function(ready) {
+          if (!ready) {
+            return;
+          }
+          unwatch();
+          fn();
+        });
+        return unwatch;
+      }
+
       function setLocalNode(nodeName) {
         state.localNode = nodeName;
         if (!state.selectedNode) {
@@ -155,6 +179,7 @@ solrAdminServices.factory('Metrics',
           }
         }
         publish();
+        markReady();
       }
 
       function selectNode(nodeName) {
@@ -173,6 +198,7 @@ solrAdminServices.factory('Metrics',
         state.liveNodes = [];
         sessionStorage.removeItem(STORAGE_KEY);
         publish();
+        markReady();
       }
 
       return {
@@ -184,7 +210,10 @@ solrAdminServices.factory('Metrics',
         setLocalNode: setLocalNode,
         setLiveNodes: setLiveNodes,
         selectNode: selectNode,
-        clear: clear
+        clear: clear,
+        markReady: markReady,
+        whenReady: whenReady,
+        isReady: function() { return state.ready; }
       };
     }])
 .factory('CollectionsV2',

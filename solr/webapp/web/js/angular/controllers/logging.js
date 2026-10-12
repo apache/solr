@@ -62,7 +62,7 @@ solrAdminApp.controller('LoggingController',
         onRouteChangeOff();
       });
     };
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh);
     $scope.toggleRefresh = function() {
       if(!$scope.stopped) {
         $scope.stopped = true;
@@ -145,7 +145,7 @@ solrAdminApp.controller('LoggingController',
       logger.showOptions = false;
       var doSetLevel = function() {
         var params = {set: setString};
-        if ($scope.isCloudEnabled && $scope.liveNodes && $scope.liveNodes.length > 1) {
+        if ($scope.isCloudEnabled) {
           params.nodes = "all";
         }
         Logging.setLevel(params, function(data) {

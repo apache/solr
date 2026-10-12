@@ -526,7 +526,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.collections = [];
       $scope.aliases = [];
       $scope.liveNodes = [];
-      $scope.isCloudEnabled = false;
   }
 
   $scope.permissions = permissions;
@@ -573,6 +572,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
           // pages waiting for isCloudEnabled to settle (e.g. the logging page) fall
           // back to local-only behavior instead of waiting forever.
           $scope.isCloudEnabled = false;
+          NodeTarget.clear();
           return;
         }
         $scope.isCloudEnabled = !!(data.mode && data.mode.match(/solrcloud/i));
@@ -601,10 +601,15 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         if ($scope.isCloudEnabled) {
           ClusterV2.listClusterNodes(function(error, nodesData, response) {
             $timeout(function() {
-              if (error) { ApiErrorHandler.handle(response); return; }
+              if (error) {
+                ApiErrorHandler.handle(response);
+                NodeTarget.markReady();
+                return;
+              }
               NodeTarget.setLiveNodes(nodesData.nodes || []);
               $scope.liveNodes = NodeTarget.state.liveNodes;
               $scope.selectedNode = NodeTarget.state.selectedNode;
+              $scope.viewingRemoteNode = NodeTarget.isRemote();
               loadCoresForSelectedNode(pageType);
             });
           });

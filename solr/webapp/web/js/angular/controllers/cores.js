@@ -29,7 +29,9 @@ solrAdminApp.controller('CoreAdminController',
             for (var _obj in cores) coreCount++;
             $scope.hasCores = coreCount >0;
             if (!$scope.selectedCore && coreCount==0) {
-              $scope.showAddCore();
+              if (!NodeTarget.isRemote()) {
+                $scope.showAddCore();
+              }
               return;
             } else if (!$scope.selectedCore) {
               var firstCore;
@@ -53,6 +55,9 @@ solrAdminApp.controller('CoreAdminController',
         });
       };
       $scope.showAddCore = function() {
+        if (NodeTarget.isRemote()) {
+          return;
+        }
         $scope.hideAll();
         $scope.showAdd = true;
         $scope.newCore = {
@@ -67,6 +72,10 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.addCore = function() {
+        if (NodeTarget.isRemote()) {
+          $scope.addMessage = "Core mutations run on this node only. Select the local node first.";
+          return;
+        }
         if (!$scope.newCore.name) {
           $scope.addMessage = "Please provide a core name";
         } else if (false) { //@todo detect whether core exists
@@ -103,6 +112,9 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.unloadCore = function() {
+        if (NodeTarget.isRemote()) {
+          return;
+        }
         var answer = confirm( 'Do you really want to unload Core "' + $scope.selectedCore + '"?' );
         if( !answer ) return;
         CoresV2.unloadCore($scope.selectedCore, {}, function(error, data, response) {
@@ -114,11 +126,18 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.showRenameCore = function() {
+        if (NodeTarget.isRemote()) {
+          return;
+        }
         $scope.hideAll();
         $scope.showRename = true;
       };
 
       $scope.renameCore = function() {
+        if (NodeTarget.isRemote()) {
+          $scope.renameMessage = "Core mutations run on this node only. Select the local node first.";
+          return;
+        }
         if (!$scope.other) {
           $scope.renameMessage = "Please provide a new name for the " + $scope.selectedCore + " core";
         } else if ($scope.other == $scope.selectedCore) {
@@ -145,11 +164,18 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.showSwapCores = function() {
+        if (NodeTarget.isRemote()) {
+          return;
+        }
         $scope.hideAll();
         $scope.showSwap = true;
       };
 
       $scope.swapCores = function() {
+        if (NodeTarget.isRemote()) {
+          $scope.swapMessage = "Core mutations run on this node only. Select the local node first.";
+          return;
+        }
         if (!$scope.swapOther) {
           $scope.swapMessage = "Please select a core to swap with";
         } else if ($scope.swapOther == $scope.selectedCore) {
@@ -176,6 +202,9 @@ solrAdminApp.controller('CoreAdminController',
       }
 
       $scope.reloadCore = function() {
+        if (NodeTarget.isRemote()) {
+          return;
+        }
         if ($scope.initFailures[$scope.selectedCore]) {
           delete $scope.initFailures[$scope.selectedCore];
           $scope.showInitFailures = Object.keys($scope.initFailures).length>0;
@@ -206,6 +235,6 @@ solrAdminApp.controller('CoreAdminController',
         $scope.showSwap = false;
       };
 
-      $scope.refresh();
+      NodeTarget.whenReady($scope.refresh);
     }
 );

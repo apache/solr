@@ -220,18 +220,21 @@ limitations under the License.
 
               <li class="menu-section" id="menu-section-node">Node</li>
 
-              <li id="node-selector-item" class="menu-control" ng-show="isCloudEnabled && liveNodes.length > 1">
+              <li id="node-selector-item" class="menu-control" ng-if="isCloudEnabled && liveNodes.length > 1">
                 <div id="node-selector">
+                  <label id="node-selector-label" for="node_selector_select">Node</label>
                   <div id="has-nodes">
-                    <select placeholder-text-single="'Select node'"
-                            ng-model="selectedNode"
+                    <select id="node_selector_select"
+                            aria-labelledby="node-selector-label"
+                            placeholder-text-single="'Select node'"
+                            ng-model="$parent.selectedNode"
                             chosen
                             search-contains="true"
                             ng-change="onSelectedNodeChange()"
                             ng-options="node as nodeLabel(node) for node in liveNodes"></select>
                   </div>
                   <p id="node-selector-hint" ng-class="{remote: viewingRemoteNode}">
-                    {{ viewingRemoteNode ? 'Viewing remote node' : 'This node (default)' }}
+                    {{ viewingRemoteNode ? 'Remote node (Node screens only)' : 'This node (Node screens only)' }}
                   </p>
                 </div>
               </li>

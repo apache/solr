@@ -54,5 +54,5 @@ solrAdminApp.controller('ThreadsController',
         $scope.threads[i].showStackTrace = $scope.showAllStacktraces;
       }
     };
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh);
 });

@@ -140,7 +140,7 @@ solrAdminApp.controller('IndexController', function($scope, $timeout, SystemV2, 
       $scope.commandLineArgs = $scope.commandLineArgsUnsorted;
     }
   }
-$scope.reload();
+NodeTarget.whenReady($scope.reload);
 });
 
 var parse_memory_value = function( value ) {
