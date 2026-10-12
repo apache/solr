@@ -15,26 +15,22 @@
 
 // mixin.libsonnet — root entry point for the Solr monitoring mixin.
 //
+// Composes the configuration with the dashboards and alerts, so that both read
+// their settings from the merged root. That late binding is what lets a caller
+// override settings without editing this tree:
+//
+//   (import 'mixin.libsonnet') + { _config+:: { solrSelector: 'job="my-solr"' } }
+//
 // Exposes:
 //   grafanaDashboards::  — map of filename -> Grafana dashboard JSON object
-//   prometheusAlerts::   — Prometheus alert groups object (for -S / YAML output)
+//   prometheusAlerts::   — Prometheus alert groups object
 //
 // Usage:
 //   jsonnet -J vendor -e '(import "mixin.libsonnet").grafanaDashboards["grafana-solr-dashboard.json"]' \
 //     > ../grafana-solr-dashboard.json
-//   jsonnet -J vendor -S -e '(import "mixin.libsonnet").prometheusAlerts' \
+//   jsonnet -J vendor -e '(import "mixin.libsonnet").prometheusAlerts' \
 //     | gojsontoyaml > ../prometheus-solr-alerts.yml
 
-local alerts = import 'alerts/alerts.libsonnet';
-local config = import 'config.libsonnet';
-local dashboards = import 'dashboards/dashboards.libsonnet';
-
-config {
-  // grafanaDashboards is a map from output filename to dashboard JSON.
-  // The Makefile uses the key "grafana-solr-dashboard.json" to generate the output file.
-  grafanaDashboards:: dashboards,
-
-  // prometheusAlerts is the Prometheus alert rule groups structure.
-  // Pipe through gojsontoyaml to produce the YAML file.
-  prometheusAlerts:: alerts,
-}
+(import 'config.libsonnet')
++ (import 'dashboards/dashboards.libsonnet')
++ (import 'alerts/alerts.libsonnet')

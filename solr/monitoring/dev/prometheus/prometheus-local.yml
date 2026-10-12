@@ -31,6 +31,8 @@ global:
 rule_files:
   - /etc/prometheus/rules/solr-alerts.yml
 
+# Hand firing alerts to the Alertmanager container in this stack; without this
+# the rules evaluate but nothing is ever delivered.
 alerting:
   alertmanagers:
     - static_configs:

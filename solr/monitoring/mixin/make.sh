@@ -55,6 +55,13 @@ fi
 TTY_FLAG=""
 [ -t 0 ] && TTY_FLAG="-t"
 
+# Run as the invoking user, so that the regenerated artifacts and vendor/ end up
+# owned by you rather than by root. Without this, a build on native Linux leaves
+# files you cannot edit or clean without sudo. The tools are static binaries and
+# do not need the user to exist in the image's passwd database, but they do need
+# a writable HOME.
 docker run --rm -i $TTY_FLAG \
+  --user "$(id -u):$(id -g)" \
+  -e HOME=/tmp \
   -v "$MONITORING_DIR:/work" \
   "$IMAGE" "${MAKE_ARGS[@]:-all}"

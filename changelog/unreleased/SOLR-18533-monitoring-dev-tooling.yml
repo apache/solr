@@ -3,7 +3,8 @@
 title: >
   Add tooling for building Solr's Grafana dashboard and Prometheus alert rules from jsonnet sources,
   under `solr/monitoring`, together with a docker-compose stack for testing them locally. The
-  dashboard and alert rules shipped so far are placeholders; the real ones follow in SOLR-18147.
+  dashboard and alert rules shipped so far are placeholders: the real dashboard follows in
+  SOLR-18534 and the real alert rules in SOLR-18535.
 type: other
 authors:
   - name: Jan Høydahl

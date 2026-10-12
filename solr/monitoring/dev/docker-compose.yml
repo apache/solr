@@ -33,6 +33,9 @@
 #   ./stack.sh --local-solr        # Monitoring only — point at your locally-running Solr
 #   ./stack.sh --help              # All options
 #
+# Ports are published on loopback only: the stack runs Solr and ZooKeeper without
+# authentication, so it must not be reachable from other hosts on the network.
+#
 # Services (full stack):
 #   solr1        http://localhost:8983  (SolrCloud node 1, embedded ZooKeeper)
 #   solr2        http://localhost:8984  (SolrCloud node 2)
@@ -58,8 +61,8 @@ services:
     image: ${SOLR_IMAGE:-solr:10}
     profiles: [bundled-solr]
     ports:
-      - "8983:8983"
-      - "9983:9983"   # embedded ZooKeeper (Solr 10 default: ZK_PORT = SOLR_PORT + 1000)
+      - "127.0.0.1:8983:8983"
+      - "127.0.0.1:9983:9983"   # embedded ZooKeeper (Solr 10 default: ZK_PORT = SOLR_PORT + 1000)
     # No ZK_HOST set: Solr 10 defaults to SolrCloud with embedded ZooKeeper on port 9983.
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/admin/info/system || exit 1"]
@@ -72,7 +75,7 @@ services:
     image: ${SOLR_IMAGE:-solr:10}
     profiles: [bundled-solr]
     ports:
-      - "8984:8983"
+      - "127.0.0.1:8984:8983"
     environment:
       ZK_HOST: "solr1:9983"
     depends_on:
@@ -88,7 +91,7 @@ services:
   prometheus:
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.15.0}
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -110,7 +113,7 @@ services:
   grafana:
     image: ${GRAFANA_IMAGE:-grafana/grafana:13.2.3}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
@@ -131,7 +134,7 @@ services:
   alertmanager:
     image: ${ALERTMANAGER_IMAGE:-prom/alertmanager:v0.34.1}
     ports:
-      - "9093:9093"
+      - "127.0.0.1:9093:9093"
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     restart: unless-stopped

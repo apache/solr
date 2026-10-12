@@ -17,12 +17,13 @@
 //
 // One rule, enough to show that the mixin build produces a file promtool
 // accepts and Prometheus loads. The real rule set replaces this wholesale;
-// see SOLR-18147.
+// see SOLR-18535.
+//
+// The rules are built from the configuration of the merged mixin root
+// ($._config), not from a direct import, so that callers can override settings
+// without editing this tree.
 
-local config = import '../config.libsonnet';
-local cfg = config._config;
-
-{
+local alertsFor(cfg) = {
   groups: [
     {
       name: 'SolrExampleAlerts',
@@ -43,4 +44,8 @@ local cfg = config._config;
       ],
     },
   ],
+};
+
+{
+  prometheusAlerts+:: alertsFor($._config),
 }
