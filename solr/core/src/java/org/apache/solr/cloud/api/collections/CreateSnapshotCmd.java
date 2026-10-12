@@ -166,26 +166,20 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
           "Unable to create a snapshot with name {} for following cores {}",
           commitName,
           shardByCoreName.keySet());
+    }
 
-      // Count number of failures per shard.
-      Map<String, Integer> failuresByShardId = new HashMap<>();
-      for (Map.Entry<String, Slice> entry : shardByCoreName.entrySet()) {
-        int f = 0;
-        if (failuresByShardId.get(entry.getValue().getName()) != null) {
-          f = failuresByShardId.get(entry.getValue().getName());
-        }
-        failuresByShardId.put(entry.getValue().getName(), f + 1);
-      }
-
-      // Now that we know number of failures per shard, we can figure out
-      // if at-least one replica per shard was able to create a snapshot or not.
-      DocCollection collectionStatus =
-          ccc.getZkStateReader().getClusterState().getCollection(collectionName);
-      for (Map.Entry<String, Integer> entry : failuresByShardId.entrySet()) {
-        int replicaCount = collectionStatus.getSlice(entry.getKey()).getReplicas().size();
-        if (replicaCount <= entry.getValue()) {
-          failedShards.add(entry.getKey());
-        }
+    // A shard counts as captured only if at least one of its replicas reported a snapshot. Shards
+    // whose replicas were all skipped as inactive never received a request, so they must be
+    // checked against the cluster state rather than against the requests that were sent.
+    Set<String> shardsWithSnapshot = new HashSet<>();
+    for (CoreSnapshotMetaData replica : replicas) {
+      shardsWithSnapshot.add(replica.getShardId());
+    }
+    DocCollection collectionStatus =
+        ccc.getZkStateReader().getClusterState().getCollection(collectionName);
+    for (Slice slice : collectionStatus.getActiveSlices()) {
+      if (!shardsWithSnapshot.contains(slice.getName())) {
+        failedShards.add(slice.getName());
       }
     }
 
