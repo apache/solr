@@ -363,7 +363,7 @@ local jvmPanels = [
   ts(
     'JVM CPU Utilization',
     [prom(
-      'max by (instance)(jvm_cpu_recent_utilization_ratio{%s,%s,%s})' % [envSel, clusterSel, instSel],
+      'max by (instance)(jvm_cpu_recent_utilization{%s,%s,%s})' % [envSel, clusterSel, instSel],
       '{{instance}}'
     )],
     unit='percentunit',

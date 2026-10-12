@@ -659,7 +659,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "max by (instance)(jvm_cpu_recent_utilization_ratio{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
+               "expr": "max by (instance)(jvm_cpu_recent_utilization{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"})",
                "interval": "$interval",
                "legendFormat": "{{instance}}"
             }

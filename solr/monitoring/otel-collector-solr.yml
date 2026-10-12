@@ -33,7 +33,9 @@
 receivers:
   # Option A: Solr pushes metrics via OTLP (recommended when the OTel module is
   # enabled in Solr). Configure Solr with:
-  #   OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+  #   OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+  # Solr defaults to the http/protobuf protocol (port 4318); use port 4317 if you
+  # configure Solr with OTEL_EXPORTER_OTLP_PROTOCOL=grpc instead.
   otlp:
     protocols:
       grpc:

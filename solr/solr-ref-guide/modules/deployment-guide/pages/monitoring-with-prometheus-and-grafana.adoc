@@ -75,7 +75,7 @@ Both labels are optional — the dashboard works without them (dropdowns default
 [[otlp-push]]
 === Option 2: OTLP Push via OpenTelemetry Collector
 
-When Solr's xref:distributed-tracing.adoc[OpenTelemetry module] is enabled, Solr can push
+When Solr's xref:opentelemetry.adoc[OpenTelemetry module] is enabled, Solr can push
 metrics (and traces) via OTLP to an https://opentelemetry.io/docs/collector/[OpenTelemetry Collector].
 The Collector can then forward to Prometheus, but also to any other OTLP-compatible backend —
 including hosted SaaS observability platforms.
