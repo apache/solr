@@ -46,7 +46,8 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("unchecked")
-  private static Map<String, Object> remotePayload(Map<String, Object> remoteNodeData, String node) {
+  private static Map<String, Object> remotePayload(
+      Map<String, Object> remoteNodeData, String node) {
     assertNotNull(remoteNodeData);
     assertTrue(remoteNodeData.containsKey(node));
     Object payload = remoteNodeData.get(node);
