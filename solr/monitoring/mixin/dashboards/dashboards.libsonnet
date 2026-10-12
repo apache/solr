@@ -414,7 +414,7 @@ local solrCoreRow =
       ts(
         'Commit Rate',
         [prom(
-          'sum by (core)(rate(solr_core_update_handler_commits_total{%s,%s,%s,%s}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          'sum by (core)(rate(solr_core_update_commit_ops_total{%s,%s,%s,%s,ops="commits"}[$interval]))' % [envSel, clusterSel, instSel, colSel],
           '{{core}}'
         )],
         unit='ops',
@@ -424,7 +424,7 @@ local solrCoreRow =
       ts(
         'Optimize Rate',
         [prom(
-          'sum by (core)(rate(solr_core_update_handler_optimizes_total{%s,%s,%s,%s}[$interval]))' % [envSel, clusterSel, instSel, colSel],
+          'sum by (core)(rate(solr_core_update_commit_ops_total{%s,%s,%s,%s,ops="optimize"}[$interval]))' % [envSel, clusterSel, instSel, colSel],
           '{{core}}'
         )],
         unit='ops',

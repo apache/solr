@@ -833,7 +833,7 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum by (core)(rate(solr_core_update_handler_commits_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\"}[$interval]))",
+                     "expr": "sum by (core)(rate(solr_core_update_commit_ops_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",ops=\"commits\"}[$interval]))",
                      "interval": "$interval",
                      "legendFormat": "{{core}}"
                   }
@@ -874,7 +874,7 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum by (core)(rate(solr_core_update_handler_optimizes_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\"}[$interval]))",
+                     "expr": "sum by (core)(rate(solr_core_update_commit_ops_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",collection=~\"$collection\",shard=~\"$shard\",replica_type=~\"$replica_type\",ops=\"optimize\"}[$interval]))",
                      "interval": "$interval",
                      "legendFormat": "{{core}}"
                   }
