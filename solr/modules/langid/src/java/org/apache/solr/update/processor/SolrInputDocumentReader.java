@@ -114,7 +114,7 @@ public class SolrInputDocumentReader extends Reader {
       nextDocChunk(sb, targetLen);
     }
 
-    if (sb.length() == 0) {
+    if (sb.isEmpty()) {
       eod = true;
       return eodReturnValue;
     } else {
@@ -133,7 +133,7 @@ public class SolrInputDocumentReader extends Reader {
     do {
       SolrInputField f = doc.getField(fields[currentFieldIdx]);
       if (f == null) {
-        log.debug("Field with name {} did not exist on docuemnt.", fields[currentFieldIdx]);
+        log.debug("Field with name {} did not exist on document.", fields[currentFieldIdx]);
         incField(sb);
         continue;
       }
@@ -144,9 +144,9 @@ public class SolrInputDocumentReader extends Reader {
         String fvStr = String.valueOf(fvIt.next());
         if (currentFieldValueIdx < startFieldValueIdx) continue;
         startFieldValueIdx = 0;
-        if (sb.length() > 0) {
+        if (!sb.isEmpty()) {
           if (maxChunkLength - sb.length() < fieldValueSep.length()) {
-            sb.append(fieldValueSep.substring(0, maxChunkLength - sb.length()));
+            sb.append(fieldValueSep, 0, maxChunkLength - sb.length());
           } else {
             sb.append(fieldValueSep);
           }
@@ -161,7 +161,7 @@ public class SolrInputDocumentReader extends Reader {
         if (endOffset - currentFieldValueOffset > maxCharsPerFieldValue) {
           endOffset = maxCharsPerFieldValue - currentFieldValueOffset;
         }
-        sb.append(fvStr.substring(currentFieldValueOffset, endOffset));
+        sb.append(fvStr, currentFieldValueOffset, endOffset);
         currentFieldValueOffset = endOffset == fvStr.length() ? 0 : endOffset;
       }
       if (sb.length() >= maxChunkLength) {
@@ -170,7 +170,7 @@ public class SolrInputDocumentReader extends Reader {
         incField(sb);
       }
     } while (currentFieldIdx <= fields.length - 1 && sb.length() < maxChunkLength);
-    return sb.length() == 0 ? eodReturnValue : sb.length();
+    return sb.isEmpty() ? eodReturnValue : sb.length();
   }
 
   private int returnEod() {
@@ -179,7 +179,7 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   private int returnValue(StringBuilder sb) {
-    if (sb.length() == 0) {
+    if (sb.isEmpty()) {
       return returnEod();
     } else {
       return sb.length();

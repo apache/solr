@@ -67,7 +67,7 @@ public interface FieldCache {
      * @throws IOException if an {@link IOException} occurs
      * @deprecated index with Points instead
      */
-    @Deprecated
+    @Deprecated(since = "7.0")
     public TermsEnum termsEnum(Terms terms) throws IOException;
 
     /** Parse's this field's value */
@@ -167,7 +167,7 @@ public interface FieldCache {
    *
    * @deprecated Index with points and use {@link #INT_POINT_PARSER} instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public static final Parser LEGACY_INT_PARSER =
       new Parser() {
         @Override
@@ -194,7 +194,7 @@ public interface FieldCache {
    *
    * @deprecated Index with points and use {@link #FLOAT_POINT_PARSER} instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public static final Parser LEGACY_FLOAT_PARSER =
       new Parser() {
         @Override
@@ -222,7 +222,7 @@ public interface FieldCache {
    *
    * @deprecated Index with points and use {@link #LONG_POINT_PARSER} instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public static final Parser LEGACY_LONG_PARSER =
       new Parser() {
         @Override
@@ -249,7 +249,7 @@ public interface FieldCache {
    *
    * @deprecated Index with points and use {@link #DOUBLE_POINT_PARSER} instead.
    */
-  @Deprecated
+  @Deprecated(since = "7.0")
   public static final Parser LEGACY_DOUBLE_PARSER =
       new Parser() {
         @Override

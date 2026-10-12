@@ -33,6 +33,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -69,7 +71,7 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     solrTestRule.startSolr(createSolrHome());
 
     collection1 = solrTestRule.getSolrClient("collection1");
@@ -113,11 +115,9 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
   public static void destroyThings() throws Exception {
     collection1 = null;
     collection2 = null;
-    resetExceptionIgnores();
-    systemClearPropertySolrEnableUrlAllowList();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "try"})
   public void testGetFieldsPhaseError() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetFields = true;
     BadResponseWriter.failOnGetTopIds = false;
@@ -141,33 +141,32 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
     query.addFacetField("id");
     query.setFacet(true);
 
-    ignoreException("Dummy exception in BadResponseWriter");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Dummy exception in BadResponseWriter")) {
+      expectThrows(SolrException.class, () -> collection1.query(query));
 
-    expectThrows(SolrException.class, () -> collection1.query(query));
-
-    query.set(ShardParams.SHARDS_TOLERANT, "true");
-    QueryResponse response = collection1.query(query);
-    assertTrue(
-        response
-            .getResponseHeader()
-            .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-    NamedList<Object> shardsInfo =
-        ((NamedList<Object>) response.getResponse().get(ShardParams.SHARDS_INFO));
-    boolean foundError = false;
-    for (var infoEntry : shardsInfo) {
-      if (infoEntry.getKey().contains("collection2")) {
-        assertNotNull(((NamedList<Object>) infoEntry.getValue()).get("error"));
-        foundError = true;
-        break;
+      query.set(ShardParams.SHARDS_TOLERANT, "true");
+      QueryResponse response = collection1.query(query);
+      assertTrue(
+          response
+              .getResponseHeader()
+              .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      NamedList<Object> shardsInfo =
+          ((NamedList<Object>) response.getResponse().get(ShardParams.SHARDS_INFO));
+      boolean foundError = false;
+      for (var infoEntry : shardsInfo) {
+        if (infoEntry.getKey().contains("collection2")) {
+          assertNotNull(((NamedList<Object>) infoEntry.getValue()).get("error"));
+          foundError = true;
+          break;
+        }
       }
+      assertTrue(foundError);
+      assertEquals("1", response.getResults().get(0).getFieldValue("id"));
+      assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
     }
-    assertTrue(foundError);
-    assertEquals("1", response.getResults().get(0).getFieldValue("id"));
-    assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
-    unIgnoreException("Dummy exception in BadResponseWriter");
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "try"})
   public void testGetTopIdsPhaseError() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetTopIds = true;
     BadResponseWriter.failOnGetFields = false;
@@ -191,34 +190,33 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
     query.addFacetField("id");
     query.setFacet(true);
 
-    ignoreException("Dummy exception in BadResponseWriter");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Dummy exception in BadResponseWriter")) {
+      expectThrows(Exception.class, () -> collection1.query(query));
 
-    expectThrows(Exception.class, () -> collection1.query(query));
-
-    query.set(ShardParams.SHARDS_TOLERANT, "true");
-    QueryResponse response = collection1.query(query);
-    assertTrue(
-        response
-            .getResponseHeader()
-            .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-    NamedList<Object> shardsInfo =
-        ((NamedList<Object>) response.getResponse().get(ShardParams.SHARDS_INFO));
-    boolean foundError = false;
-    for (var infoEntry : shardsInfo) {
-      if (infoEntry.getKey().contains("collection2")) {
-        assertNotNull(((NamedList<Object>) infoEntry.getValue()).get("error"));
-        foundError = true;
-        break;
+      query.set(ShardParams.SHARDS_TOLERANT, "true");
+      QueryResponse response = collection1.query(query);
+      assertTrue(
+          response
+              .getResponseHeader()
+              .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      NamedList<Object> shardsInfo =
+          ((NamedList<Object>) response.getResponse().get(ShardParams.SHARDS_INFO));
+      boolean foundError = false;
+      for (var infoEntry : shardsInfo) {
+        if (infoEntry.getKey().contains("collection2")) {
+          assertNotNull(((NamedList<Object>) infoEntry.getValue()).get("error"));
+          foundError = true;
+          break;
+        }
       }
+      assertTrue(foundError);
+      assertFalse("" + response, response.getResults().isEmpty());
+      assertEquals("1", response.getResults().get(0).getFieldValue("id"));
+      assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
     }
-    assertTrue(foundError);
-    assertFalse("" + response, response.getResults().isEmpty());
-    assertEquals("1", response.getResults().get(0).getFieldValue("id"));
-    assertEquals("batman", response.getResults().get(0).getFirstValue("subject"));
-    unIgnoreException("Dummy exception in BadResponseWriter");
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "try"})
   public void testAllShardsFail() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetTopIds = false;
     BadResponseWriter.failOnGetFields = false;
@@ -242,13 +240,13 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
     query.addFacetField("id");
     query.setFacet(true);
 
-    ignoreException("Dummy exception in BadResponseWriter");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("Dummy exception in BadResponseWriter")) {
+      expectThrows(SolrException.class, () -> collection1.query(query));
 
-    expectThrows(SolrException.class, () -> collection1.query(query));
+      query.set(ShardParams.SHARDS_TOLERANT, "true");
 
-    query.set(ShardParams.SHARDS_TOLERANT, "true");
-
-    expectThrows(SolrException.class, () -> collection1.query(query));
+      expectThrows(SolrException.class, () -> collection1.query(query));
+    }
   }
 
   public static class BadResponseWriter extends JavaBinResponseWriter {

@@ -170,6 +170,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
     }
 
     private static long primitiveEstimate(Object obj, long def) {
+      if (obj == null) return def;
       Class<?> clazz = obj.getClass();
       if (clazz.isPrimitive()) {
         return primitiveSizes.get(clazz);

@@ -21,10 +21,11 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
 import org.apache.solr.client.api.model.NodeSystemResponse;
+import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.AdminHandlersProxy;
 import org.apache.solr.handler.admin.SystemInfoProvider;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -50,14 +51,15 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
   public NodeSystemResponse getNodeSystemInfo(String nodes) {
+    NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     solrQueryResponse.setHttpCaching(false);
 
-    if (proxyToNodes()) {
-      return null; // Request handled via proxying
+    if (proxyToNodes(response, nodes)) {
+      return response; // Request handled via proxying
     }
 
+    // No proxying done; populate data for this node.
     SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
-    NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     provider.getNodeSystemInfo(response);
     if (log.isTraceEnabled()) {
       log.trace("Node {}, core root: {}", response.node, response.coreRoot);
@@ -65,12 +67,20 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     return response;
   }
 
-  private boolean proxyToNodes() {
+  private boolean proxyToNodes(NodeSystemResponse response, String nodes) {
     try {
-      if (coreContainer != null
-          && AdminHandlersProxy.maybeProxyToNodes(
-              "V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
-        return true; // Request was proxied to other node
+      if (coreContainer != null) {
+        final var req = new SystemApi.GetNodeSystemInfo();
+        req.setNodes(nodes);
+        final var reqProxy =
+            new V2SolrRequestBasedProxy<NodeSystemResponse>(coreContainer, req) {
+              @Override
+              public void processTypedProxiedResponse(
+                  String nodeName, NodeSystemResponse proxiedResponse) {
+                response.remoteNodeData.put(nodeName, proxiedResponse);
+              }
+            };
+        return reqProxy.proxyRequest();
       }
     } catch (Exception e) {
       throw new SolrException(

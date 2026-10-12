@@ -78,11 +78,6 @@ public final class DefaultSolrCoreState extends SolrCoreState
 
   private final ReentrantLock commitLock = new ReentrantLock();
 
-  @Deprecated
-  public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
-    this(directoryFactory, new RecoveryStrategy.Builder());
-  }
-
   public DefaultSolrCoreState(
       DirectoryFactory directoryFactory, RecoveryStrategy.Builder recoveryStrategyBuilder) {
     this.directoryFactory = directoryFactory;
@@ -108,7 +103,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
   @Override
   public RefCounted<IndexWriter> getIndexWriter(SolrCore core, boolean failOnReadOnly)
       throws IOException {
-    if (core != null && (!core.indexEnabled || (core.readOnly && failOnReadOnly))) {
+    if (core != null && (core.readOnly && failOnReadOnly)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Indexing is temporarily disabled");
     }

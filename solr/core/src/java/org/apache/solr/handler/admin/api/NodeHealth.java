@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.api.JerseyResource;
@@ -140,7 +141,6 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
 
   private void healthCheckStandaloneMode(NodeHealthResponse response, Integer maxGenerationLag) {
     List<String> laggingCoresInfo = new ArrayList<>();
-    boolean allCoresAreInSync = true;
 
     if (maxGenerationLag != null) {
       if (maxGenerationLag < 0) {
@@ -151,17 +151,20 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
         return;
       }
 
-      for (SolrCore core : coreContainer.getCores()) {
-        ReplicationHandler replicationHandler =
-            (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
-        if (replicationHandler.isFollower()) {
-          boolean isCoreInSync =
-              isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
-          allCoresAreInSync &= isCoreInSync;
-        }
-      }
+      AtomicBoolean allCoresAreInSync = new AtomicBoolean(true);
+      coreContainer.forEachLoadedCore(
+          core -> {
+            ReplicationHandler replicationHandler =
+                (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+            if (replicationHandler.isFollower()) {
+              boolean isCoreInSync =
+                  isWithinGenerationLag(
+                      core, replicationHandler, maxGenerationLag, laggingCoresInfo);
+              allCoresAreInSync.set(allCoresAreInSync.get() & isCoreInSync);
+            }
+          });
 
-      if (allCoresAreInSync) {
+      if (allCoresAreInSync.get()) {
         response.message =
             String.format(
                 Locale.ROOT,

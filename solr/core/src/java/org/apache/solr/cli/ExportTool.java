@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -85,8 +84,22 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
 /** Supports export command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "export",
+    description = "Exports documents from a collection to a local file.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Export a collection's documents to gettingstarted.json",
+      "  bin/solr export -c gettingstarted --solr-url http://localhost:8983"
+    })
 public class ExportTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -95,6 +108,11 @@ public class ExportTool extends ToolBase {
           .desc("Name of the collection.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option OUTPUT_OPTION =
       Option.builder()
           .longOpt("output")
@@ -104,6 +122,11 @@ public class ExportTool extends ToolBase {
               "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
@@ -112,9 +135,19 @@ public class ExportTool extends ToolBase {
           .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COMPRESS_OPTION =
       Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option LIMIT_OPTION =
       Option.builder()
           .longOpt("limit")
@@ -123,6 +156,11 @@ public class ExportTool extends ToolBase {
           .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option QUERY_OPTION =
       Option.builder()
           .longOpt("query")
@@ -131,6 +169,11 @@ public class ExportTool extends ToolBase {
           .desc("A custom query, default is '*:*'.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option FIELDS_OPTION =
       Option.builder()
           .longOpt("fields")
@@ -138,6 +181,85 @@ public class ExportTool extends ToolBase {
           .argName("FIELDA,FIELDB")
           .desc("Comma separated list of fields to export. By default all fields are fetched.")
           .get();
+
+  /** Parameters for the export command, independent of the command line parser. */
+  record ExportParams(
+      String url,
+      String credentials,
+      String query,
+      String output,
+      String format,
+      boolean compress,
+      String fields,
+      String limit) {}
+
+  // --- picocli fields ---
+  // The connection group is mandatory (multiplicity "1"): the commons-cli path throws
+  // IllegalArgumentException when no connection target is given, so ArgGroup enforces the same
+  // requirement declaratively.
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--output",
+      paramLabel = "PATH",
+      description =
+          "Path to output the exported data, and optionally the file name, defaults to"
+              + " 'collection-name'.")
+  private String outputOpt;
+
+  /** The values of {@code --format}; each constant is spelled as it is on the command line. */
+  enum Format {
+    json,
+    jsonl,
+    javabin
+  }
+
+  @picocli.CommandLine.Option(
+      names = "--format",
+      paramLabel = "FORMAT",
+      description =
+          "Output format for exported docs (${COMPLETION-CANDIDATES}), defaulting to json.")
+  private Format formatOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--compress",
+      description = "Compress the output. Defaults to false.")
+  private boolean compressOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--limit",
+      defaultValue = "100",
+      paramLabel = "#",
+      description = "Maximum number of docs to download. Default is 100, use -1 for all docs.")
+  private long limitOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--query",
+      defaultValue = "*:*",
+      paramLabel = "QUERY",
+      description = "A custom query, default is '*:*'.")
+  private String queryOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--fields",
+      paramLabel = "FIELDA,FIELDB",
+      description = "Comma separated list of fields to export. By default all fields are fetched.")
+  private String fieldsOpt;
+
+  public ExportTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ExportTool(ToolRuntime runtime) {
     super(runtime);
@@ -158,8 +280,8 @@ public class ExportTool extends ToolBase {
         .addOption(LIMIT_OPTION)
         .addOption(QUERY_OPTION)
         .addOption(FIELDS_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   public abstract static class Info {
@@ -247,9 +369,7 @@ public class ExportTool extends ToolBase {
       var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
-              .withHttpClientBuilder(builder)
-              .build();
+          new CloudSolrClient.Builder(List.of(baseurl)).withHttpClientBuilder(builder).build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
@@ -284,27 +404,36 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+    if (CLIUtils.hasConnectionOption(cli)) {
       if (!cli.hasOption(COLLECTION_NAME_OPTION)) {
         throw new IllegalArgumentException(
-            "Must specify -c / --name parameter with --solr-url to post documents.");
+            "Must specify -c / --name parameter with a connection target to export documents.");
       }
       url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
-      // think about support --zk-host someday.
-      throw new IllegalArgumentException("Must specify --solr-url.");
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    Info info = new MultiThreadedRunner(runtime, url, credentials);
-    info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
+    ExportParams params =
+        new ExportParams(
+            url,
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(QUERY_OPTION, "*:*"),
+            cli.getOptionValue(OUTPUT_OPTION),
+            cli.getOptionValue(FORMAT_OPTION),
+            cli.hasOption(COMPRESS_OPTION),
+            cli.getOptionValue(FIELDS_OPTION),
+            cli.getOptionValue(LIMIT_OPTION, "100"));
+    export(params);
+  }
 
-    info.setOutFormat(
-        cli.getOptionValue(OUTPUT_OPTION),
-        cli.getOptionValue(FORMAT_OPTION),
-        cli.hasOption(COMPRESS_OPTION));
-    info.fields = cli.getOptionValue(FIELDS_OPTION);
-    info.setLimit(cli.getOptionValue(LIMIT_OPTION, "100"));
+  void export(ExportParams params) throws Exception {
+    Info info = new MultiThreadedRunner(runtime, params.url(), params.credentials());
+    info.query = params.query();
+    info.setOutFormat(params.output(), params.format(), params.compress());
+    info.fields = params.fields();
+    info.setLimit(params.limit());
     info.exportDocs();
   }
 
@@ -597,6 +726,8 @@ public class ExportTool extends ToolBase {
       }
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // EOFDOC is a unique sentinel; identity check is intentional
     private void addConsumer(CountDownLatch consumerlatch) {
       consumerThreadpool.execute(
           () -> {
@@ -706,5 +837,32 @@ public class ExportTool extends ToolBase {
     NamedList<Object> res = client.request(request, coreName);
     SolrDocumentList sdl = (SolrDocumentList) res.get("response");
     return sdl.getNumFound();
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    String url = resolveSolrUrl(credentialsOptions.credentials) + "/solr/" + nameOpt;
+    ExportParams params =
+        new ExportParams(
+            url,
+            credentialsOptions.credentials,
+            queryOpt,
+            outputOpt,
+            formatOpt == null ? null : formatOpt.name(),
+            compressOpt,
+            fieldsOpt,
+            String.valueOf(limitOpt));
+    export(params);
+    return 0;
+  }
+
+  private String resolveSolrUrl(String credentials) throws Exception {
+    String solrUrlArg = connectionOptions.effectiveSolrUrl();
+    if (solrUrlArg != null) {
+      return CLIUtils.normalizeSolrUrl(solrUrlArg);
+    }
+    return CLIUtils.solrUrlFromConnection(
+        CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.effectiveZkHost()),
+        credentials);
   }
 }

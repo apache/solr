@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
@@ -85,8 +84,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    // can help to hide this when testing and looking at logs
-    // ignoreException("shard update error");
     useFactory("solr.StandardDirectoryFactory");
   }
 
@@ -133,7 +130,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
 
-    return getCloudSolrClient(
+    return createNewCloudSolrClient(
         zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, socketTimeout);
   }
 
@@ -183,13 +180,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                ((CloudLegacySolrClient) cloudClient).getHttpClient(),
-                controlClient,
-                cloudClient,
-                clients,
-                "ft1",
-                true,
-                this.clientSoTimeout);
+                controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         ftIndexThread.start();
       }
 

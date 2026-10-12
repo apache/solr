@@ -32,7 +32,6 @@ import static org.apache.solr.handler.admin.ConfigSetsHandler.getSuffixedNameFor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -200,11 +199,22 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
             new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, m);
-        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+        byte[] data = Utils.toJSON(Map.of(collectionName, command.collection));
         ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
+
+        // ensure the local ZkStateReader sees the collection before returning, so callers get the
+        // same "collection exists" guarantee as the non-PRS path
+        try {
+          zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, Objects::nonNull);
+        } catch (TimeoutException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Could not fully create collection: " + collectionName,
+              e);
+        }
       } else {
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and
@@ -374,9 +384,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // Update the state.json for PRS collection in a single operation
       if (isPRS) {
         byte[] data =
-            Utils.toJSON(
-                Collections.singletonMap(
-                    collectionName, clusterState.getCollection(collectionName)));
+            Utils.toJSON(Map.of(collectionName, clusterState.getCollection(collectionName)));
         zkStateReader.getZkClient().setData(collectionPath, data);
       }
 

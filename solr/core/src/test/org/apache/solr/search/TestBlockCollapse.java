@@ -62,7 +62,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
         Arrays.asList(
             params(),
             // QEC boosting shouldn't impact what impl we get in any situation
-            params("qt", "/elevate", "elevateIds", "42"))) {
+            params("elevateIds", "42"))) {
 
       try (SolrQueryRequest req = req()) {
         // non-block based collapse situations, regardless of nullPolicy...
@@ -347,12 +347,16 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
 
             // same query, but boosting a diff p1 sku to change group head (and result order)
             assertQ(
-                req(
-                    "q", q,
-                    "qt", "/elevate",
-                    "elevateIds", "p1s1",
-                    "fq", "{!collapse " + opt + nullPolicy + "}",
-                    "sort", "score desc, num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    q,
+                    "elevateIds",
+                    "p1s1",
+                    "fq",
+                    "{!collapse " + opt + nullPolicy + "}",
+                    "sort",
+                    "score desc, num_i asc"),
                 "*[count(//doc)=3]",
                 "//result/doc[1]/str[@name='id'][.='p1s1']",
                 "//result/doc[2]/str[@name='id'][.='p2s4']",
@@ -360,12 +364,16 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
 
             // same query, but boosting multiple skus from p1
             assertQ(
-                req(
-                    "q", q,
-                    "qt", "/elevate",
-                    "elevateIds", "p1s1,p1s2",
-                    "fq", "{!collapse " + opt + nullPolicy + "}",
-                    "sort", "score desc, num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    q,
+                    "elevateIds",
+                    "p1s1,p1s2",
+                    "fq",
+                    "{!collapse " + opt + nullPolicy + "}",
+                    "sort",
+                    "score desc, num_i asc"),
                 "*[count(//doc)=4]",
                 "//result/doc[1]/str[@name='id'][.='p1s1']",
                 "//result/doc[2]/str[@name='id'][.='p1s2']",
@@ -386,26 +394,36 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 "//result/doc[3][str[@name='id'][.='p2s3'] and float[@name='score'][.=141.0]]");
             // same query, but boosting a diff child to change group head (and result order)
             assertQ(
-                req(
-                    "q", "{!func}sum(42, num_i)",
-                    "qt", "/elevate",
-                    "elevateIds", "p1s1",
-                    "fq", "{!collapse " + opt + nullPolicy + "}",
-                    "fl", "score,id",
-                    "sort", "score desc, num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "{!func}sum(42, num_i)",
+                    "elevateIds",
+                    "p1s1",
+                    "fq",
+                    "{!collapse " + opt + nullPolicy + "}",
+                    "fl",
+                    "score,id",
+                    "sort",
+                    "score desc, num_i asc"),
                 "*[count(//doc)=3]",
                 "//result/doc[1][str[@name='id'][.='p1s1'] and float[@name='score'][.=84.0]]",
                 "//result/doc[2][str[@name='id'][.='p3s3'] and float[@name='score'][.=1276.0]]",
                 "//result/doc[3][str[@name='id'][.='p2s3'] and float[@name='score'][.=141.0]]");
             // same query, but boosting multiple skus from p1
             assertQ(
-                req(
-                    "q", "{!func}sum(42, num_i)",
-                    "qt", "/elevate",
-                    "elevateIds", "p1s2,p1s1",
-                    "fq", "{!collapse " + opt + nullPolicy + "}",
-                    "fl", "score,id",
-                    "sort", "score desc, num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "{!func}sum(42, num_i)",
+                    "elevateIds",
+                    "p1s2,p1s1",
+                    "fq",
+                    "{!collapse " + opt + nullPolicy + "}",
+                    "fl",
+                    "score,id",
+                    "sort",
+                    "score desc, num_i asc"),
                 "*[count(//doc)=4]",
                 "//result/doc[1][str[@name='id'][.='p1s2'] and float[@name='score'][.=52.0]]",
                 "//result/doc[2][str[@name='id'][.='p1s1'] and float[@name='score'][.=84.0]]",
@@ -467,24 +485,32 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 "//result/doc[3]/str[@name='id'][.='p2s2']");
             // same query, but boosting skus to change group head (and result order)
             assertQ(
-                req(
-                    "q", "txt_t:* txt_t:XX",
-                    "qt", "/elevate",
-                    "elevateIds", "p2s3,p1s1",
-                    "fq", "{!collapse " + opt + selector + nullPolicy + "}",
-                    "sort", "score desc, num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "txt_t:* txt_t:XX",
+                    "elevateIds",
+                    "p2s3,p1s1",
+                    "fq",
+                    "{!collapse " + opt + selector + nullPolicy + "}",
+                    "sort",
+                    "score desc, num_i asc"),
                 "*[count(//doc)=3]",
                 "//result/doc[1]/str[@name='id'][.='p2s3']",
                 "//result/doc[2]/str[@name='id'][.='p1s1']",
                 "//result/doc[3]/str[@name='id'][.='p3s4']");
             // same query, but boosting multiple skus from p1
             assertQ(
-                req(
-                    "q", "txt_t:* txt_t:XX",
-                    "qt", "/elevate",
-                    "elevateIds", "p2s3,p1s4,p1s3",
-                    "fq", "{!collapse " + opt + selector + nullPolicy + "}",
-                    "sort", "score desc, num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "txt_t:* txt_t:XX",
+                    "elevateIds",
+                    "p2s3,p1s4,p1s3",
+                    "fq",
+                    "{!collapse " + opt + selector + nullPolicy + "}",
+                    "sort",
+                    "score desc, num_i asc"),
                 "*[count(//doc)=4]",
                 "//result/doc[1]/str[@name='id'][.='p2s3']",
                 "//result/doc[2]/str[@name='id'][.='p1s4']",
@@ -525,13 +551,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 "//result/doc[3][str[@name='id'][.='p3s3'] and float[@name='score'][.=1276.0]]");
             // same query, but boosting multiple skus from p1
             assertQ(
-                req(
-                    "q", "{!func}sum(42, num_i)",
-                    "qt", "/elevate",
-                    "elevateIds", "p1s2,p1s1",
-                    "fq", "{!collapse " + opt + selector + nullPolicy + "}",
-                    "fl", "score,id",
-                    "sort", "num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "{!func}sum(42, num_i)",
+                    "elevateIds",
+                    "p1s2,p1s1",
+                    "fq",
+                    "{!collapse " + opt + selector + nullPolicy + "}",
+                    "fl",
+                    "score,id",
+                    "sort",
+                    "num_i asc"),
                 "*[count(//doc)=4]",
                 "//result/doc[1][str[@name='id'][.='p1s2'] and float[@name='score'][.=52.0]]",
                 "//result/doc[2][str[@name='id'][.='p1s1'] and float[@name='score'][.=84.0]]",
@@ -565,13 +596,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             // NOTE: this causes each boosted doc to be returned, but top level sort is not score,
             // so QEC doesn't hijack order
             assertQ(
-                req(
-                    "q", "*:* txt_t:XX",
-                    "qt", "/elevate",
-                    "elevateIds", "p3s3,p3s2",
-                    "fq", "{!collapse " + opt + selector + nullPolicy + "}",
-                    "fl", "id",
-                    "sort", "num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "*:* txt_t:XX",
+                    "elevateIds",
+                    "p3s3,p3s2",
+                    "fq",
+                    "{!collapse " + opt + selector + nullPolicy + "}",
+                    "fl",
+                    "id",
+                    "sort",
+                    "num_i asc"),
                 "*[count(//doc)=4]",
                 "//result/doc[1][str[@name='id'][.='p2s4']]", // 13
                 // 100 (boosted so treated as own group)
@@ -581,14 +617,20 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 "//result/doc[4][str[@name='id'][.='p3s3']]");
             // same query, w/forceElevation to change top level order
             assertQ(
-                req(
-                    "q", "*:* txt_t:XX",
-                    "qt", "/elevate",
-                    "elevateIds", "p3s3,p3s2",
-                    "forceElevation", "true",
-                    "fq", "{!collapse " + opt + selector + nullPolicy + "}",
-                    "fl", "id",
-                    "sort", "num_i asc"),
+                reqWithPath(
+                    "/elevate",
+                    "q",
+                    "*:* txt_t:XX",
+                    "elevateIds",
+                    "p3s3,p3s2",
+                    "forceElevation",
+                    "true",
+                    "fq",
+                    "{!collapse " + opt + selector + nullPolicy + "}",
+                    "fl",
+                    "id",
+                    "sort",
+                    "num_i asc"),
                 "*[count(//doc)=4]",
                 // 1234 (boosted so treated as own group)
                 "//result/doc[1][str[@name='id'][.='p3s3']]",
@@ -654,12 +696,16 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             "//result/doc[7]/str[@name='id'][.='z100']");
         // same query, but boosting docs to change group heads (and result order)
         assertQ(
-            req(
-                "q", "*:* txt_t:XX",
-                "qt", "/elevate",
-                "elevateIds", "z2,p3s3",
-                "fq", "{!collapse " + opt + " nullPolicy=expand}",
-                "sort", "score desc, num_i asc"),
+            reqWithPath(
+                "/elevate",
+                "q",
+                "*:* txt_t:XX",
+                "elevateIds",
+                "z2,p3s3",
+                "fq",
+                "{!collapse " + opt + " nullPolicy=expand}",
+                "sort",
+                "score desc, num_i asc"),
             "*[count(//doc)=7]",
             "//result/doc[1]/str[@name='id'][.='z2']",
             "//result/doc[2]/str[@name='id'][.='p3s3']",
@@ -686,13 +732,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             "//result/doc[7][str[@name='id'][.='z1']   and float[@name='score'][.=43.0]]");
         // same query, but boosting docs to change group heads (and result order)
         assertQ(
-            req(
-                "q", "{!func}sum(42, num_i)",
-                "qt", "/elevate",
-                "elevateIds", "p2s4,z2,p2s1",
-                "fq", "{!collapse " + opt + " nullPolicy=expand}",
-                "fl", "score,id",
-                "sort", "score desc, num_i asc"),
+            reqWithPath(
+                "/elevate",
+                "q",
+                "{!func}sum(42, num_i)",
+                "elevateIds",
+                "p2s4,z2,p2s1",
+                "fq",
+                "{!collapse " + opt + " nullPolicy=expand}",
+                "fl",
+                "score,id",
+                "sort",
+                "score desc, num_i asc"),
             "*[count(//doc)=8]",
             "//result/doc[1][str[@name='id'][.='p2s4'] and float[@name='score'][.=55.0]]",
             "//result/doc[2][str[@name='id'][.='z2']   and float[@name='score'][.=44.0]]",
@@ -758,12 +809,16 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           // NOTE: this causes each boosted doc to be returned, but top level sort is not score, so
           // QEC doesn't hijack order
           assertQ(
-              req(
-                  "q", "num_i:* txt_t:XX",
-                  "qt", "/elevate",
-                  "elevateIds", "p3s3,z3,p3s1",
-                  "fq", "{!collapse " + opt + selector + " nullPolicy=expand}",
-                  "sort", "num_i asc"),
+              reqWithPath(
+                  "/elevate",
+                  "q",
+                  "num_i:* txt_t:XX",
+                  "elevateIds",
+                  "p3s3,z3,p3s1",
+                  "fq",
+                  "{!collapse " + opt + selector + " nullPolicy=expand}",
+                  "sort",
+                  "num_i asc"),
               "*[count(//doc)=8]",
               "//result/doc[1]/str[@name='id'][.='z1']",
               "//result/doc[2]/str[@name='id'][.='z2']",
@@ -775,13 +830,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "//result/doc[8]/str[@name='id'][.='p3s3']");
           // same query, w/forceElevation to change top level order
           assertQ(
-              req(
-                  "q", "num_i:* txt_t:XX",
-                  "qt", "/elevate",
-                  "elevateIds", "p3s3,z3,p3s1",
-                  "forceElevation", "true",
-                  "fq", "{!collapse " + opt + selector + " nullPolicy=expand}",
-                  "sort", "num_i asc"),
+              reqWithPath(
+                  "/elevate",
+                  "q",
+                  "num_i:* txt_t:XX",
+                  "elevateIds",
+                  "p3s3,z3,p3s1",
+                  "forceElevation",
+                  "true",
+                  "fq",
+                  "{!collapse " + opt + selector + " nullPolicy=expand}",
+                  "sort",
+                  "num_i asc"),
               "*[count(//doc)=8]",
               "//result/doc[1]/str[@name='id'][.='p3s3']",
               "//result/doc[2]/str[@name='id'][.='z3']",
@@ -832,13 +892,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           // NOTE: this causes each boosted doc to be returned, but top level sort is not score, so
           // QEC doesn't hijack order
           assertQ(
-              req(
-                  "q", "{!func}sum(42, num_i)",
-                  "qt", "/elevate",
-                  "elevateIds", "p3s1,z3,p3s4",
-                  "fq", "{!collapse " + opt + selector + " nullPolicy=expand}",
-                  "fl", "score,id",
-                  "sort", "num_i asc"),
+              reqWithPath(
+                  "/elevate",
+                  "q",
+                  "{!func}sum(42, num_i)",
+                  "elevateIds",
+                  "p3s1,z3,p3s4",
+                  "fq",
+                  "{!collapse " + opt + selector + " nullPolicy=expand}",
+                  "fl",
+                  "score,id",
+                  "sort",
+                  "num_i asc"),
               "*[count(//doc)=8]",
               "//result/doc[1][str[@name='id'][.='z1']   and float[@name='score'][.=43.0]]",
               "//result/doc[2][str[@name='id'][.='z2']   and float[@name='score'][.=44.0]]",
@@ -850,14 +915,20 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "//result/doc[8][str[@name='id'][.='p1s3'] and float[@name='score'][.=819.0]]");
           // same query, w/forceElevation to change top level order
           assertQ(
-              req(
-                  "q", "{!func}sum(42, num_i)",
-                  "qt", "/elevate",
-                  "elevateIds", "p3s1,z3,p3s4",
-                  "forceElevation", "true",
-                  "fq", "{!collapse " + opt + selector + " nullPolicy=expand}",
-                  "fl", "score,id",
-                  "sort", "num_i asc"),
+              reqWithPath(
+                  "/elevate",
+                  "q",
+                  "{!func}sum(42, num_i)",
+                  "elevateIds",
+                  "p3s1,z3,p3s4",
+                  "forceElevation",
+                  "true",
+                  "fq",
+                  "{!collapse " + opt + selector + " nullPolicy=expand}",
+                  "fl",
+                  "score,id",
+                  "sort",
+                  "num_i asc"),
               "*[count(//doc)=8]",
               "//result/doc[1][str[@name='id'][.='p3s1'] and float[@name='score'][.=57.0]]",
               "//result/doc[2][str[@name='id'][.='z3']   and float[@name='score'][.=45.0]]",
@@ -901,13 +972,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           // NOTE: this causes each boosted doc to be returned, but top level sort is not score, so
           // QEC doesn't hijack order
           assertQ(
-              req(
-                  "q", "*:* txt_t:XX",
-                  "qt", "/elevate",
-                  "elevateIds", "p3s3,z3,p3s4",
-                  "fq", "{!collapse " + opt + selector + " nullPolicy=expand}",
-                  "fl", "id",
-                  "sort", "num_i asc"),
+              reqWithPath(
+                  "/elevate",
+                  "q",
+                  "*:* txt_t:XX",
+                  "elevateIds",
+                  "p3s3,z3,p3s4",
+                  "fq",
+                  "{!collapse " + opt + selector + " nullPolicy=expand}",
+                  "fl",
+                  "id",
+                  "sort",
+                  "num_i asc"),
               "*[count(//doc)=8]",
               "//result/doc[1][str[@name='id'][.='z1']]",
               "//result/doc[2][str[@name='id'][.='z2']]",
@@ -920,14 +996,20 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               );
           // same query, w/forceElevation to change top level order
           assertQ(
-              req(
-                  "q", "*:* txt_t:XX",
-                  "qt", "/elevate",
-                  "elevateIds", "p3s3,z3,p3s4",
-                  "forceElevation", "true",
-                  "fq", "{!collapse " + opt + selector + " nullPolicy=expand}",
-                  "fl", "id",
-                  "sort", "num_i asc"),
+              reqWithPath(
+                  "/elevate",
+                  "q",
+                  "*:* txt_t:XX",
+                  "elevateIds",
+                  "p3s3,z3,p3s4",
+                  "forceElevation",
+                  "true",
+                  "fq",
+                  "{!collapse " + opt + selector + " nullPolicy=expand}",
+                  "fl",
+                  "id",
+                  "sort",
+                  "num_i asc"),
               "*[count(//doc)=8]",
               "//result/doc[1][str[@name='id'][.='p3s3']]", // 1234
               "//result/doc[2][str[@name='id'][.='z3']]",
@@ -999,14 +1081,21 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
 
         // score based collapse with boost to change p1 group head
         assertQ(
-            req(
-                "q", "txt_t:XX", // only child docs with XX match
-                "expand", "true",
-                "qt", "/elevate",
-                "elevateIds", "p1s1",
-                "fl", "id",
-                "fq", "{!collapse " + opt + nullPolicy + "}",
-                "sort", "score desc, num_i asc"),
+            reqWithPath(
+                "/elevate",
+                "q",
+                "txt_t:XX",
+                // only child docs with XX match
+                "expand",
+                "true",
+                "elevateIds",
+                "p1s1",
+                "fl",
+                "id",
+                "fq",
+                "{!collapse " + opt + nullPolicy + "}",
+                "sort",
+                "score desc, num_i asc"),
             "*[count(/response/result/doc)=3]",
             "/response/result/doc[1]/str[@name='id'][.='p1s1']",
             "/response/result/doc[2]/str[@name='id'][.='p2s4']",

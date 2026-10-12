@@ -26,7 +26,7 @@ import static org.apache.solr.bench.generators.SourceDSL.longs;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -61,7 +61,7 @@ public class SolrBenchStateTest extends SolrTestCaseJ4 {
             true,
             1,
             new int[] {1},
-            Collections.singletonList("label"),
+            List.of("label"),
             0,
             0,
             new IterationParams(IterationType.WARMUP, 1, TimeValue.milliseconds(10), 1),
@@ -71,7 +71,7 @@ public class SolrBenchStateTest extends SolrTestCaseJ4 {
             TimeUnit.SECONDS,
             1,
             "jvm",
-            Collections.singletonList("jvmArg"),
+            List.of("jvmArg"),
             "jdkVersion",
             "vmName",
             "vmVersion",

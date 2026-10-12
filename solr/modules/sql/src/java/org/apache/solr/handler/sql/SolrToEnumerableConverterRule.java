@@ -26,14 +26,18 @@ import org.apache.calcite.rel.convert.ConverterRule;
  * EnumerableConvention}.
  */
 class SolrToEnumerableConverterRule extends ConverterRule {
-  static final ConverterRule INSTANCE = new SolrToEnumerableConverterRule();
+  static final ConverterRule INSTANCE =
+      new SolrToEnumerableConverterRule(
+          ConverterRule.Config.INSTANCE
+              .withConversion(
+                  RelNode.class,
+                  SolrRel.CONVENTION,
+                  EnumerableConvention.INSTANCE,
+                  "SolrToEnumerableConverterRule")
+              .withRuleFactory(SolrToEnumerableConverterRule::new));
 
-  private SolrToEnumerableConverterRule() {
-    super(
-        RelNode.class,
-        SolrRel.CONVENTION,
-        EnumerableConvention.INSTANCE,
-        "SolrToEnumerableConverterRule");
+  private SolrToEnumerableConverterRule(ConverterRule.Config config) {
+    super(config);
   }
 
   @Override

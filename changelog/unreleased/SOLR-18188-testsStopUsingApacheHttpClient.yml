@@ -1,0 +1,9 @@
+title: >
+  Tests updated to NOT use org.apache.solr.client.solrj.apache which is now also removed.
+  solr-test-framework doesn't use/depend on Apache HttpClient/httpcomponents anymore.
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18188
+    url: https://issues.apache.org/jira/browse/SOLR-18188

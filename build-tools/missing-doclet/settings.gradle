@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+pluginManagement {
+  apply from: file("../build-infra/declare-repositories.gradle"), to: delegate
+}
+
 rootProject.name = "missing-doclet"
 
 // Use project's version catalog for centralized dependency management

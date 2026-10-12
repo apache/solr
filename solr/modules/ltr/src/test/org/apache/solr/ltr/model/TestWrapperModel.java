@@ -20,7 +20,6 @@ package org.apache.solr.ltr.model;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.ltr.TestRerankBase;
@@ -60,21 +59,19 @@ public class TestWrapperModel extends TestRerankBase {
   }
 
   @Test
-  public void testValidate() throws Exception {
+  public void testValidate() {
     WrapperModel wrapperModel = new StubWrapperModel("testModel");
     wrapperModel.validate();
 
     // wrapper model with features
     WrapperModel wrapperModelWithFeatures =
-        new StubWrapperModel(
-            "testModel", Collections.singletonList(new ValueFeature("val", Map.of())), List.of());
+        new StubWrapperModel("testModel", List.of(new ValueFeature("val", Map.of())), List.of());
     ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
     assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
     // wrapper model with norms
     WrapperModel wrapperModelWithNorms =
-        new StubWrapperModel(
-            "testModel", List.of(), Collections.singletonList(IdentityNormalizer.INSTANCE));
+        new StubWrapperModel("testModel", List.of(), List.of(IdentityNormalizer.INSTANCE));
     e = expectThrows(ModelException.class, wrapperModelWithNorms::validate);
     assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
 
@@ -127,18 +124,19 @@ public class TestWrapperModel extends TestRerankBase {
   }
 
   @Test
-  public void testMethodOverridesAndDelegation() throws Exception {
+  public void testMethodOverridesAndDelegation() {
     assumeWorkingMockito();
     final int overridableMethodCount = testOverwrittenMethods();
     final int methodCount = testDelegateMethods();
     assertEquals("method count mismatch", overridableMethodCount, methodCount);
   }
 
-  private int testOverwrittenMethods() throws Exception {
+  private int testOverwrittenMethods() {
     int overridableMethodCount = 0;
     for (final Method superClassMethod : LTRScoringModel.class.getDeclaredMethods()) {
       final int modifiers = superClassMethod.getModifiers();
       if (Modifier.isFinal(modifiers)) continue;
+      if (Modifier.isPrivate(modifiers)) continue;
       if (Modifier.isStatic(modifiers)) continue;
 
       ++overridableMethodCount;
@@ -175,7 +173,7 @@ public class TestWrapperModel extends TestRerankBase {
     return overridableMethodCount;
   }
 
-  private int testDelegateMethods() throws Exception {
+  private int testDelegateMethods() {
     int methodCount = 0;
     WrapperModel wrapperModel = Mockito.spy(new StubWrapperModel("testModel"));
 

@@ -19,14 +19,17 @@ package org.apache.solr.update;
 
 import static org.hamcrest.core.StringContains.containsString;
 
+import jakarta.servlet.Filter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.SequencedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -37,7 +40,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -62,6 +65,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -116,8 +120,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     fixShardCount(3);
   }
 
-  private SolrClient LEADER = null;
-  private List<SolrClient> NONLEADERS = null;
+  private HttpSolrClient LEADER = null;
+  private List<HttpSolrClient> NONLEADERS = null;
 
   @Test
   @ShardsFixed(num = 3)
@@ -202,9 +206,14 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // reorderedDBQsUsingUpdatedValueFromADroppedUpdate();
   }
 
+  @Override
+  public SequencedMap<Class<? extends Filter>, String> getExtraRequestFilters() {
+    return new LinkedHashMap<>(Map.of(ServletFixtures.DelayServlet.class, "/*"));
+  }
+
   private void resetDelays() {
     for (JettySolrRunner j : jettys) {
-      j.getDebugFilter().unsetDelay();
+      j.getFilter(ServletFixtures.DelayServlet.class).unsetDelay();
     }
   }
 
@@ -217,8 +226,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     leader = shard1.getLeader();
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-    for (SolrClient solrClient : clients) {
-      if (((HttpSolrClient) solrClient).getBaseURL().startsWith(leaderBaseUrl)) {
+    for (HttpSolrClient solrClient : clients) {
+      if (solrClient.getBaseURL().startsWith(leaderBaseUrl)) {
         LEADER = solrClient;
       }
     }
@@ -229,8 +238,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         continue;
       }
       String baseUrl = zkStateReader.getBaseUrlForNodeName(rep.getNodeName());
-      for (SolrClient client : clients) {
-        if (((HttpSolrClient) client).getBaseURL().startsWith(baseUrl)) {
+      for (HttpSolrClient client : clients) {
+        if (client.getBaseURL().startsWith(baseUrl)) {
           NONLEADERS.add(client);
         }
       }
@@ -258,7 +267,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals("title0", sdoc.get("title_s"));
     long version0 = (long) sdoc.get("_version_");
 
-    for (SolrClient client : NONLEADERS) {
+    for (HttpSolrClient client : NONLEADERS) {
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertEquals(inplace_updatable_float, doc.get("inplace_updatable_float"));
       assertEquals(version0, doc.get("_version_"));
@@ -272,7 +281,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals("title0", sdoc.get("title_s"));
     long version1 = (long) sdoc.get("_version_");
 
-    for (SolrClient client : NONLEADERS) {
+    for (HttpSolrClient client : NONLEADERS) {
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNull(doc.get("inplace_updatable_float"));
       assertEquals(version1, doc.get("_version_"));
@@ -363,7 +372,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // assert both replicas have same effect
-    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNull("This doc was supposed to have been deleted, but was: " + doc, doc);
     }
@@ -653,7 +663,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals(luceneDocids.size(), valuesList.size());
     final long numFoundExpected = luceneDocids.size();
 
-    for (SolrClient client : clients) {
+    for (HttpSolrClient client : clients) {
       final String clientDebug =
           client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
       final String msg = "'" + debug + "' results against client: " + clientDebug;
@@ -829,7 +839,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // RTG from tlog(s)
-    for (SolrClient client : clients) {
+    for (HttpSolrClient client : clients) {
       final String clientDebug =
           client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
       sdoc = client.getById("100", params("distrib", "false"));
@@ -859,7 +869,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private List<Integer> getInternalDocIds(String id) throws SolrServerException, IOException {
     List<Integer> ret = new ArrayList<>(clients.size());
-    for (SolrClient client : clients) {
+    for (HttpSolrClient client : clients) {
       SolrDocument doc = client.getById(id, params("distrib", "false", "fl", "[docid]"));
       Object docid = doc.get("[docid]");
       assertNotNull(docid);
@@ -951,23 +961,23 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // assert both replicas have same effect
-    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       if (log.isInfoEnabled()) {
-        log.info("Testing client: {}", ((HttpSolrClient) client).getBaseURL());
+        log.info("Testing client: {}", client.getBaseURL());
       }
       assertReplicaValue(
           client,
           0,
           "inplace_updatable_float",
           (newinplace_updatable_float + (float) (updates.size() - 1)),
-          "inplace_updatable_float didn't match for replica at client: "
-              + ((HttpSolrClient) client).getBaseURL());
+          "inplace_updatable_float didn't match for replica at client: " + client.getBaseURL());
       assertReplicaValue(
           client,
           0,
           "title_s",
           "title0_new",
-          "Title didn't match for replica at client: " + ((HttpSolrClient) client).getBaseURL());
+          "Title didn't match for replica at client: " + client.getBaseURL());
       assertEquals(version0 + updates.size(), getReplicaValue(client, 0, "_version_"));
     }
 
@@ -1055,7 +1065,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     // assert both replicas have same effect
-    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
       assertNull("This doc was supposed to have been deleted, but was: " + doc, doc);
     }
@@ -1145,9 +1156,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // the resurrection can happen from there (instead of the leader)
       update.setParam(
           DistributedUpdateProcessor.DISTRIB_FROM,
-          ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()
-              + "/"
-              + NONLEADERS.get(1).getDefaultCollection());
+          (NONLEADERS.get(1)).getBaseURL() + "/" + NONLEADERS.get(1).getDefaultCollection());
       AsyncUpdateWithRandomCommit task =
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
@@ -1187,8 +1196,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertEquals(updateResponses.size(), successful);
 
     if (log.isInfoEnabled()) {
-      log.info("Non leader 0: {}", ((HttpSolrClient) NONLEADERS.get(0)).getBaseURL());
-      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // nowarn
+      log.info("Non leader 0: {}", NONLEADERS.get(0).getBaseURL());
+      log.info("Non leader 1: {}", NONLEADERS.get(1).getBaseURL()); // nowarn
     }
 
     SolrDocument doc0 = NONLEADERS.get(0).getById(String.valueOf(0), params("distrib", "false"));
@@ -1197,11 +1206,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     log.info("Doc in both replica 0: {}", doc0);
     log.info("Doc in both replica 1: {}", doc1);
     // assert both replicas have same effect
-    for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
+    for (HttpSolrClient client :
+        NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
-      assertNotNull("Client: " + ((HttpSolrClient) client).getBaseURL(), doc);
-      assertEquals(
-          "Client: " + ((HttpSolrClient) client).getBaseURL(), 5, doc.getFieldValue(field));
+      assertNotNull("Client: " + client.getBaseURL(), doc);
+      assertEquals("Client: " + client.getBaseURL(), 5, doc.getFieldValue(field));
     }
 
     log.info("reorderedDBQsResurrectionTest: This test passed fine...");
@@ -1214,7 +1223,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     commit();
 
     float inplace_updatable_float = 1F;
-    buildRandomIndex(inplace_updatable_float, Collections.singletonList(1));
+    buildRandomIndex(inplace_updatable_float, List.of(1));
 
     float newinplace_updatable_float = 100F;
     List<UpdateRequest> updates = new ArrayList<>();
@@ -1236,7 +1245,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         .get(SHARD1)
         .get(1)
         .jetty
-        .getDebugFilter()
+        .getFilter(ServletFixtures.DelayServlet.class)
         .addDelay("Waiting for dependant update to timeout", 1, 6000);
 
     ExecutorService threadpool =
@@ -1275,7 +1284,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           "The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
     }
 
-    for (SolrClient client : clients) {
+    for (HttpSolrClient client : clients) {
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       try {
         timeout.waitFor(
@@ -1295,27 +1304,25 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       }
     }
 
-    for (SolrClient client : clients) {
+    for (HttpSolrClient client : clients) {
+      String baseURL = client.getBaseURL();
       if (log.isInfoEnabled()) {
-        log.info("Testing client (Fetch missing test): {}", ((HttpSolrClient) client).getBaseURL());
+        log.info("Testing client (Fetch missing test): {}", baseURL);
         log.info(
-            "Version at {} is: {}",
-            ((HttpSolrClient) client).getBaseURL(),
-            getReplicaValue(client, 1, "_version_")); // nowarn
+            "Version at {} is: {}", baseURL, getReplicaValue(client, 1, "_version_")); // nowarn
       }
       assertReplicaValue(
           client,
           1,
           "inplace_updatable_float",
           (newinplace_updatable_float + 2.0f),
-          "inplace_updatable_float didn't match for replica at client: "
-              + ((HttpSolrClient) client).getBaseURL());
+          "inplace_updatable_float didn't match for replica at client: " + baseURL);
       assertReplicaValue(
           client,
           1,
           "title_s",
           "title1_new",
-          "Title didn't match for replica at client: " + ((HttpSolrClient) client).getBaseURL());
+          "Title didn't match for replica at client: " + baseURL);
     }
 
     // Try another round of these updates, this time with a delete request at the end.
@@ -1324,7 +1331,12 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     {
       clearIndex();
       commit();
-      shardToJetty.get(SHARD1).get(1).jetty.getDebugFilter().unsetDelay();
+      shardToJetty
+          .get(SHARD1)
+          .getFirst()
+          .jetty
+          .getFilter(ServletFixtures.DelayServlet.class)
+          .unsetDelay();
 
       updates.add(regularDeleteRequest(1));
 
@@ -1332,13 +1344,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           .get(SHARD1)
           .get(1)
           .jetty
-          .getDebugFilter()
+          .getFilter(ServletFixtures.DelayServlet.class)
           .addDelay("Waiting for dependant update to timeout", 1, 5999); // the first update
       shardToJetty
           .get(SHARD1)
           .get(1)
           .jetty
-          .getDebugFilter()
+          .getFilter(ServletFixtures.DelayServlet.class)
           .addDelay("Waiting for dependant update to timeout", 4, 5998); // the delete update
 
       threadpool =
@@ -1474,7 +1486,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   UpdateRequest simulatedDeleteRequest(String query, long version) {
-    String baseUrl = getBaseUrl((HttpSolrClient) LEADER);
+    String baseUrl = getBaseUrl(LEADER);
 
     UpdateRequest ur = new UpdateRequest();
     ur.deleteByQuery(query);
@@ -1617,7 +1629,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     commit();
 
     float inplace_updatable_float = 1F;
-    buildRandomIndex(inplace_updatable_float, Collections.singletonList(1));
+    buildRandomIndex(inplace_updatable_float, List.of(1));
 
     List<UpdateRequest> updates = new ArrayList<>();
     updates.add(
@@ -1635,7 +1647,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         .get(SHARD1)
         .get(1)
         .jetty
-        .getDebugFilter()
+        .getFilter(ServletFixtures.DelayServlet.class)
         .addDelay("Waiting for dependant update to timeout", 2, 8000);
 
     ExecutorService threadpool =
@@ -1674,14 +1686,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           "The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
     }
 
-    for (SolrClient client : clients) {
+    for (HttpSolrClient client : clients) {
       if (log.isInfoEnabled()) {
         log.info(
-            "Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}",
-            ((HttpSolrClient) client).getBaseURL());
+            "Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}", client.getBaseURL());
         log.info(
             "Version at {} is: {}",
-            ((HttpSolrClient) client).getBaseURL(),
+            client.getBaseURL(),
             getReplicaValue(client, 1, "_version_")); // nowarn
       }
       assertNull(client.getById("1", params("distrib", "false")));

@@ -88,7 +88,8 @@ public class Util {
           for (TopicPartition topicPartition : topicPartitions) {
             if (topicPartition.topic().equals(topic)) {
               long endOffset = consumer.position(topicPartition);
-              long committedOffset = consumer.committed(topicPartition).offset();
+              long committedOffset =
+                  consumer.committed(Set.of(topicPartition)).get(topicPartition).offset();
               long updatesInQueue = endOffset - committedOffset;
 
               log.info("Topic: {}", topic);

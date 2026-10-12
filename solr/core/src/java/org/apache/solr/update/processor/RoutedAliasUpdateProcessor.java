@@ -23,7 +23,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -199,9 +198,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       SolrCmdDistributor.Node targetLeaderNode =
           routeDocToSlice(targetCollection, cmd.getSolrInputDocument());
       cmdDistrib.distribAdd(
-          cmd,
-          Collections.singletonList(targetLeaderNode),
-          new ModifiableSolrParams(outParamsToLeader));
+          cmd, List.of(targetLeaderNode), new ModifiableSolrParams(outParamsToLeader));
     }
   }
 

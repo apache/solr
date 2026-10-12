@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated pre-QueryCommand SolrIndexSearcher methods - search(QueryResult, QueryCommand), three getDocList overloads and five getDocListAndSet overloads. Build a QueryCommand and call search(searcher) instead, using setNeedDocSet(true) where getDocListAndSet was used.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18371
+    url: https://issues.apache.org/jira/browse/SOLR-18371

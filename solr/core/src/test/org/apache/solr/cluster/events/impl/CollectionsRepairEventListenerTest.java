@@ -20,7 +20,7 @@ package org.apache.solr.cluster.events.impl;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
@@ -107,7 +107,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
             .withMethod(POST)
-            .withPayload(Collections.singletonMap("add", plugin))
+            .withPayload(Map.of("add", plugin))
             .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp);

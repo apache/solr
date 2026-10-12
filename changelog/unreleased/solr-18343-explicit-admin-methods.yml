@@ -1,0 +1,8 @@
+title: >
+  SolrJ v1 admin requests now use appropriate HTTP verbs -- mostly POST, some GET
+type: changed
+authors:
+  - name: Xinyao Zhang
+links:
+  - name: SOLR-18343
+    url: https://issues.apache.org/jira/browse/SOLR-18343

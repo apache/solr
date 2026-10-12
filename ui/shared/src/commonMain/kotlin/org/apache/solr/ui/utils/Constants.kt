@@ -1,0 +1,30 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.ui.utils
+
+/**
+ * The default Solr URL that may be used in various places.
+ */
+const val DEFAULT_SOLR_URL = "http://127.0.0.1:8983/"
+
+/**
+ * Returns the default Solr URL for the current platform. On web, this is derived from
+ * the browser's current origin so the URL is always same-origin and avoids CORS issues.
+ * On desktop, falls back to [DEFAULT_SOLR_URL].
+ */
+expect fun defaultSolrUrl(): String

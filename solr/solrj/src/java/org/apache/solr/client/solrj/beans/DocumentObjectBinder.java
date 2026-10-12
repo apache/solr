@@ -28,7 +28,6 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -476,7 +475,7 @@ public class DocumentObjectBinder {
         } else if (val instanceof List) {
           list = (List<?>) val;
         } else {
-          list = Collections.singletonList(val);
+          list = List.of(val);
         }
         set(obj, list.toArray((Object[]) Array.newInstance(type, list.size())));
       } else if (isList && !isContainedInMap) {

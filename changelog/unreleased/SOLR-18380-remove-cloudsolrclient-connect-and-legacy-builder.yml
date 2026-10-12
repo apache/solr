@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated CloudSolrClient.connect() and connect(long, TimeUnit) methods, and ClusterStateProvider.connect(). Call ClusterStateProvider.getLiveNodes() to force a connection instead.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18380
+    url: https://issues.apache.org/jira/browse/SOLR-18380

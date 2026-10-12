@@ -1,0 +1,121 @@
+= Matched Queries Component
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Matched Queries component enriches search responses with named-match information:
+for each top-N hit it reports which named sub-queries matched that document,
+and provides a summary across all hits.
+
+This is useful when a query is composed of multiple named logical conditions and you want to know, per document, which conditions fired.
+
+== Activation
+
+Add `matched_queries=true` (or the short alias `mq=true`) as a request parameter.
+Without this parameter the component is a no-op and adds nothing to the response.
+
+== Naming queries with `name`
+
+Any query parser accepts the `name` local parameter.
+When present, every document matched by that sub-query is tagged with the given name.
+
+[source,text]
+----
+{!term name=fantasy_cat f=cat}fantasy
+----
+
+Named queries may be freely composed:
+
+[source,text]
+----
+({!term name=fantasy_cat f=cat}fantasy) OR ({!term name=scifi_cat f=cat}scifi)
+----
+
+[source,text]
+----
+{!bool name=all_genres
+  should='{!term name=fantasy_cat f=cat}fantasy'
+  should='{!term name=scifi_cat  f=cat}scifi'}
+----
+
+== Response
+
+When the component is active and at least one named query matches, two top-level keys are added to the response:
+
+`matched_queries_per_hit`::
+A map from each matching document's unique-key value to the list of names that matched it.
+Documents that matched no named query are absent from this map.
+
+`matched_queries_summary`::
+A map from each name that fired to the ordered list of unique-key values of documents it matched.
+
+=== Example Response
+
+Request:
+
+[source,text]
+----
+q=({!term name=fantasy_cat f=cat}fantasy) OR ({!term name=scifi_cat f=cat}scifi)
+&matched_queries=true&rows=3&sort=id asc
+----
+
+Response (abbreviated):
+
+[source,json]
+----
+{
+  "response": { "numFound": 7, "docs": [ ... ] },
+  "matched_queries_per_hit": {
+    "1": ["fantasy_cat"],
+    "2": ["fantasy_cat"],
+    "5": ["scifi_cat"]
+  },
+  "matched_queries_summary": {
+    "fantasy_cat": ["1", "2", "3", "4"],
+    "scifi_cat":   ["5", "6", "7"]
+  }
+}
+----
+
+Documents that matched only an unnamed clause (e.g., a plain MUST filter) appear in `response/docs` as normal but are absent from both output maps.
+
+== Parameters
+
+`matched_queries` (or `mq`)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Set to `true` to activate the component for this request.
+Both `matched_queries=true` and `mq=true` are equivalent.
+
+== Configuration
+
+Register the component in the request handler in `solrconfig.xml`:
+
+[source,xml]
+----
+<requestHandler name="/matched-queries" class="solr.SearchHandler">
+  <arr name="components">
+    <str>query</str>
+    <str>matched_queries</str>
+  </arr>
+</requestHandler>
+----
+
+The component name `matched_queries` is pre-registered by Solr and does not require an explicit `<searchComponent>` declaration.

@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -299,8 +298,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     return DocCollection.create(
         "collection1",
         slices,
-        Collections.singletonMap(
-            ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+        Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
         router,
         Integer.MAX_VALUE,
         Instant.EPOCH,

@@ -24,7 +24,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
-@ThreadLeakLingering(linger = 0)
+@ThreadLeakLingering()
 public class OpenNLPLangDetectUpdateProcessorFactoryTest
     extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   private static final String TEST_MODEL = "opennlp-langdetect.eng-swe-spa-rus-deu.bin";

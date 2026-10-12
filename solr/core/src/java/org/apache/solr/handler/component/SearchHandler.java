@@ -274,6 +274,10 @@ public class SearchHandler extends RequestHandlerBase
     DebugComponent dbgCmp = null;
     for (String c : list) {
       SearchComponent comp = core.getSearchComponent(c);
+      if (comp == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unknown search component: " + c);
+      }
       if (comp instanceof DebugComponent && makeDebugLast == true) {
         dbgCmp = (DebugComponent) comp;
       } else {
@@ -509,6 +513,9 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   /** Distributed request processing (AKA coordinator). */
+  @SuppressWarnings(
+      "ReferenceEquality") // ShardRequest.ALL_SHARDS is a unique sentinel; identity check is
+  // intentional
   protected void processComponentsDistrib(
       SolrQueryRequest req,
       SolrQueryResponse rsp,
@@ -764,7 +771,7 @@ public class SearchHandler extends RequestHandlerBase
         return "EXECUTE_QUERY";
       case STAGE_GET_FIELDS:
         return "GET_FIELDS";
-        // nobody wants to think it was DONE and canceled after it completed...
+      // nobody wants to think it was DONE and canceled after it completed...
       case STAGE_DONE:
         return "FINISHING";
       default:

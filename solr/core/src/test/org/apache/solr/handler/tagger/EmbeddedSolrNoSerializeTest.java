@@ -23,11 +23,8 @@
 package org.apache.solr.handler.tagger;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import org.apache.lucene.document.Field;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -39,8 +36,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -95,14 +90,6 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
       this.input = input;
     }
 
-    // Deprecated in 7.2 but should live on until 8.x
-    @SuppressWarnings("deprecation")
-    @Override
-    public Collection<ContentStream> getContentStreams() {
-      return Collections.singleton(new ContentStreamBase.StringStream(input));
-    }
-
-    //     As of 7.2.  But won't work until: https://issues.apache.org/jira/browse/SOLR-12142
     @Override
     public RequestWriter.ContentWriter getContentWriter(String expectedType) {
       return new RequestWriter.StringPayloadContentWriter(input, "text/plain; charset=UTF8");
@@ -142,6 +129,6 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     QueryResponse rsp = req.process(solrServer);
     assertNotNull(rsp.getResponse().get("tags"));
     assertNotNull(refDoc.get());
-    assertEquals("Boston", ((Field) refDoc.get().getFieldValue("name")).stringValue());
+    assertEquals("Boston", refDoc.get().getFieldValue("name"));
   }
 }

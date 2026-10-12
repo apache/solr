@@ -19,7 +19,7 @@ package org.apache.solr.search;
 
 import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.document.Document;
@@ -54,7 +54,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     IndexSchema schema = h.getCore().getLatestSchema();
     schema =
         schema.addFieldTypes(
-            Collections.singletonList(
+            List.of(
                 schema.newFieldType(
                     "textType",
                     "solr.TextField", // redundant; TODO improve api

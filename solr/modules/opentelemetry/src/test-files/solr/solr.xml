@@ -29,12 +29,9 @@
   <str name="allowUrls">${solr.tests.security.allow.urls:}</str>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
-    <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:90000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
   </shardHandlerFactory>
-
-  <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.CustomTestOtelTracerConfigurator" />
 
   <solrcloud>
     <str name="host">127.0.0.1</str>

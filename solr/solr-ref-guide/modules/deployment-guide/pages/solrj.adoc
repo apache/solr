@@ -51,7 +51,7 @@ For projects built with Gradle, place the following in your `build.gradle`:
 
 [source,groovy,subs="attributes"]
 ----
-compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-full-version}'
+implementation 'org.apache.solr:solr-solrj:{solr-full-version}'
 ----
 
 ==== Optional Jetty Module
@@ -72,7 +72,7 @@ For Gradle:
 
 [source,groovy,subs="attributes"]
 ----
-compile group: 'org.apache.solr', name: 'solrj-solrj-jetty', version: '{solr-full-version}'
+implementation 'org.apache.solr:solr-solrj-jetty:{solr-full-version}'
 ----
 
 Alternatively, you can use `HttpJdkSolrClient` from the base `solr-solrj` artifact,
@@ -121,10 +121,11 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - a general purpose client whose builder creates a `HttpJettySolrClient` if available, or `HttpJdkSolrClient` otherwise.
 - {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.html[`HttpJettySolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBSolrClient.html[`LBSolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.  Its builder will create a `CloudJettySolrClient` if available, or `CloudJdkSolrClient` otherwise.
 - {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateJdkSolrClient.html[`ConcurrentUpdateJdkSolrClient`] - similar to `ConcurrentUpdateJettySolrClient` but delegates to `HttpJdkSolrClient` and has no dependencies.
@@ -164,7 +165,7 @@ Users can avoid this pattern by specifying a "default" collection when creating 
 If specified on a Builder, the created `SolrClient` will use this default for making requests whenever a collection or core is needed (and no overriding value is specified).
 
 ==== Timeouts
-All `SolrClient` implementations allow users to specify the connection and read timeouts for communicating with Solr.
+All `SolrClient` implementations allow users to specify the connection and idle timeouts for communicating with Solr.
 These are provided at client creation time, as in the example below:
 
 [source,java,indent=0]
@@ -182,8 +183,8 @@ processing time of the largest update request.
 
 === Cloud Request Routing
 
-The SolrJ `CloudSolrClient` implementations (`CloudSolrClient` and `CloudHttp2SolrClient`) respect the xref:solrcloud-distributed-requests.adoc#shards-preference-parameter[shards.preference parameter].
-Therefore requests sent to single-sharded collections, using either of the above clients, will route requests the same way that distributed requests are routed to individual shards.
+SolrJ `CloudSolrClient` respects the xref:solrcloud-distributed-requests.adoc#shards-preference-parameter[shards.preference parameter].
+Therefore requests sent to single-sharded collections will route requests the same way that distributed requests are routed to individual shards.
 If no `shards.preference` parameter is provided, the clients will default to sorting replicas randomly.
 
 For update requests, while the replicas are sorted in the order defined by the request, leader replicas will always be sorted first.

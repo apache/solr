@@ -17,6 +17,8 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
+
 import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
@@ -43,14 +45,14 @@ public class JerseyApplications {
 
       // Request and response serialization/deserialization
       // TODO: could these be singletons to save per-request object creations?
-      register(JacksonJsonProvider.class, 1);
+      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 1);
+      register(JacksonJsonProvider.class, 2);
       register(MessageBodyWriters.JavabinMessageBodyWriter.class, 5);
       register(MessageBodyWriters.XmlMessageBodyWriter.class, 5);
       register(MessageBodyWriters.CsvMessageBodyWriter.class, 5);
       register(MessageBodyWriters.RawMessageBodyWriter.class, 5);
       register(MessageBodyWriters.PrometheusMessageBodyWriter.class, 5);
       register(MessageBodyWriters.OpenmetricsMessageBodyWriter.class, 5);
-      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 2);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
@@ -76,6 +78,17 @@ public class JerseyApplications {
             protected void configure() {
               bindFactory(InjectionFactories.SolrQueryResponseFactory.class)
                   .to(SolrQueryResponse.class)
+                  .in(RequestScoped.class);
+            }
+          });
+
+      register(
+          new AbstractBinder() {
+            @Override
+            protected void configure() {
+              bindFactory(InjectionFactories.CallingLockIdFactory.class)
+                  .to(String.class)
+                  .named(CALLING_LOCK_ID_HEADER)
                   .in(RequestScoped.class);
             }
           });

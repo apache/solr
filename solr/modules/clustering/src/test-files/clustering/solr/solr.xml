@@ -25,8 +25,4 @@
   <str name="coreRootDirectory">cores/</str>
   <str name="configSetBaseDir"></str>
 
-    <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
-     <str name="urlScheme">${urlScheme:}</str>
-     </shardHandlerFactory>
-
 </solr>

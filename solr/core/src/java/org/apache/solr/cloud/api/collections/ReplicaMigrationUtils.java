@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -159,7 +158,7 @@ public class ReplicaMigrationUtils {
                 new ActiveReplicaWatcher(
                     sourceCollection,
                     null,
-                    Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)),
+                    List.of(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)),
                     replicasToRecover);
           } else {
             watcher =

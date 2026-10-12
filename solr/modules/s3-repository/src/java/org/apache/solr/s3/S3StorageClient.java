@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
@@ -57,6 +59,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.DeletedObject;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -227,7 +230,7 @@ public class S3StorageClient {
   }
 
   /**
-   * Delete directory, all the files and sub-directories from S3.
+   * Delete directory, all the files and subdirectories from S3.
    *
    * @param path Path to directory in S3.
    */
@@ -244,10 +247,10 @@ public class S3StorageClient {
   }
 
   /**
-   * List all the files and sub-directories directly under given path.
+   * List all the files and subdirectories directly under given path.
    *
    * @param path Path to directory in S3.
-   * @return Files and sub-directories in path.
+   * @return Files and subdirectories in path.
    */
   String[] listDir(String path) throws S3Exception {
     path = sanitizedDirPath(path);
@@ -374,23 +377,24 @@ public class S3StorageClient {
       GetObjectRequest.Builder getBuilder =
           GetObjectRequest.builder().bucket(bucketName).key(s3Path);
       // This InputStream instance needs to be closed by the caller
-      return s3Client.getObject(
-          getBuilder.build(),
-          ResponseTransformer.unmanaged(
-              (response, inputStream) -> {
-                final long contentLength = response.contentLength();
-                return new ResumableInputStream(
-                    inputStream,
-                    bytesRead -> {
-                      if (contentLength > 0 && bytesRead >= contentLength) {
-                        // No more bytes to read
-                        return null;
-                      } else if (bytesRead > 0) {
-                        getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
-                      }
-                      return s3Client.getObject(getBuilder.build());
-                    });
-              }));
+      // Use Duration.ZERO to disable timeout and prevent response-input-stream-timeout-scheduler
+      // thread leak (see https://github.com/aws/aws-sdk-java-v2/issues/6567)
+      ResponseInputStream<GetObjectResponse> responseStream =
+          s3Client.getObject(getBuilder.build(), ResponseTransformer.toInputStream(Duration.ZERO));
+      final long contentLength = responseStream.response().contentLength();
+      return new ResumableInputStream(
+          responseStream,
+          bytesRead -> {
+            if (contentLength > 0 && bytesRead >= contentLength) {
+              // No more bytes to read
+              return null;
+            } else if (bytesRead > 0) {
+              getBuilder.range(String.format(Locale.ROOT, "bytes=%d-", bytesRead));
+            }
+            // Use Duration.ZERO to disable timeout on resumed streams as well
+            return s3Client.getObject(
+                getBuilder.build(), ResponseTransformer.toInputStream(Duration.ZERO));
+          });
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -428,7 +432,7 @@ public class S3StorageClient {
        * Per the S3 docs:
        * https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/DeleteObjectsResult.html
        * An exception is thrown if there's a client error processing the request or in S3 itself.
-       * However, there's no guarantee the delete did not happen if an exception is thrown.
+       * However, there's no guarantee the delete operation did not happen if an exception is thrown.
        */
       return deleteObjects(paths, MAX_KEYS_PER_BATCH_DELETE);
     } catch (SdkException sdke) {
@@ -544,7 +548,7 @@ public class S3StorageClient {
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
-  String sanitizedPath(String path) throws S3Exception {
+  String sanitizedPath(String path) {
     // Trim space from start and end
     String sanitizedPath = path.trim();
 
@@ -580,7 +584,7 @@ public class S3StorageClient {
    * Ensures directory path adheres to some rules: -Overall Path rules from `sanitizedPath` -Add a
    * trailing slash if one does not exist
    */
-  String sanitizedDirPath(String path) throws S3Exception {
+  String sanitizedDirPath(String path) {
     // Trim space from start and end
     String sanitizedPath = sanitizedPath(path);
 

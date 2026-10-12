@@ -30,12 +30,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -46,13 +46,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -62,9 +62,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  protected String zkHost;
+  protected CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected String collection;
-  protected Map<String, String> params;
+  protected SolrParams params;
   protected String field;
   protected String name;
   protected String outcome;
@@ -88,9 +88,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
   private double lastError = 0;
 
   public TextLogitStream(
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      Map<String, String> params,
+      SolrParams params,
       String name,
       String field,
       TupleStream termsStream,
@@ -102,8 +102,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
       throws IOException {
 
     init(
+        solrConnection,
         collectionName,
-        zkHost,
         params,
         name,
         field,
@@ -116,18 +116,20 @@ public class TextLogitStream extends TupleStream implements Expressible {
         iteration);
   }
 
-  /** logit(collection, zkHost="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  /**
+   * logit(collection, solrConnection="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20")
+   */
   public TextLogitStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     List<StreamExpression> streamExpressions =
         factory.getExpressionOperandsRepresentingTypes(
             expression, Expressible.class, TupleStream.class);
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
-    // need to count it twice
+    // Validate there are no unknown parameters - solrConnection/zkHost and alias are
+    // namedParameter,
+    // so we don't need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size() + streamExpressions.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
@@ -151,12 +153,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
               expression));
     }
 
-    Map<String, String> params = new HashMap<>();
-    for (StreamExpressionNamedParameter namedParam : namedParams) {
-      if (!namedParam.getName().equals("zkHost")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
-      }
-    }
+    ModifiableSolrParams params =
+        buildSolrParamsExcept(namedParams, Set.of("solrConnection", "zkHost"));
 
     String name = params.get("name");
     if (name != null) {
@@ -229,26 +227,11 @@ public class TextLogitStream extends TupleStream implements Expressible {
       params.remove("weights");
     }
 
-    // zkHost, optional - if not provided then will look into factory list to get
-    String zkHost = null;
-    if (null == zkHostExpression) {
-      zkHost = factory.getCollectionZkHost(collectionName);
-    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-    }
-    if (null == zkHost) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - zkHost not found for collection '%s'",
-              expression,
-              collectionName));
-    }
+    var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
-    // We've got all the required items
     init(
+        solrConnection,
         collectionName,
-        zkHost,
         params,
         name,
         feature,
@@ -284,9 +267,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     // parameters
-    for (Entry<String, String> param : params.entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
-    }
+    expression.withMoreParameters(params);
 
     expression.addParameter(new StreamExpressionNamedParameter("field", field));
     expression.addParameter(new StreamExpressionNamedParameter("name", name));
@@ -312,16 +293,16 @@ public class TextLogitStream extends TupleStream implements Expressible {
     expression.addParameter(
         new StreamExpressionNamedParameter("threshold", Double.toString(threshold)));
 
-    // zkHost
-    expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("solrConnection", solrConnection.toString()));
 
     return expression;
   }
 
   private void init(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String collectionName,
-      String zkHost,
-      Map<String, String> params,
+      SolrParams params,
       String name,
       String feature,
       TupleStream termsStream,
@@ -332,7 +313,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
       int maxIterations,
       int iteration)
       throws IOException {
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.collection = collectionName;
     this.params = params;
     this.name = name;
@@ -373,7 +354,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected List<String> getShardUrls() throws IOException {
     try {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+      var cloudSolrClient = clientCache.getCloudSolrClient(solrConnection);
       List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -634,14 +615,14 @@ public class TextLogitStream extends TupleStream implements Expressible {
     private String outcome;
     private int positiveLabel;
     private double learningRate;
-    private Map<String, String> paramsMap;
+    private SolrParams params;
     private double threshold;
     private List<Double> idfs;
     private SolrClientCache clientCache;
 
     public LogitCall(
         String baseUrl,
-        Map<String, String> paramsMap,
+        SolrParams params,
         String feature,
         List<String> terms,
         List<Double> weights,
@@ -661,7 +642,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
       this.outcome = outcome;
       this.positiveLabel = positiveLabel;
       this.learningRate = learningRate;
-      this.paramsMap = paramsMap;
+      this.params = params;
       this.threshold = threshold;
       this.idfs = idfs;
       this.clientCache = clientCache;
@@ -669,30 +650,28 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     @Override
     public Tuple call() throws Exception {
-      ModifiableSolrParams params = new ModifiableSolrParams();
+      ModifiableSolrParams queryRequestParams = new ModifiableSolrParams();
       SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
-      params.add(DISTRIB, "false");
-      params.add("fq", "{!tlogit}");
-      params.add("feature", feature);
-      params.add("terms", TextLogitStream.toString(terms));
-      params.add("idfs", TextLogitStream.toString(idfs));
+      queryRequestParams.add(DISTRIB, "false");
+      queryRequestParams.add("fq", "{!tlogit}");
+      queryRequestParams.add("feature", feature);
+      queryRequestParams.add("terms", TextLogitStream.toString(terms));
+      queryRequestParams.add("idfs", TextLogitStream.toString(idfs));
 
-      for (Entry<String, String> entry : paramsMap.entrySet()) {
-        params.add(entry.getKey(), entry.getValue());
-      }
+      queryRequestParams.add(params);
 
       if (weights != null) {
-        params.add("weights", TextLogitStream.toString(weights));
+        queryRequestParams.add("weights", TextLogitStream.toString(weights));
       }
 
-      params.add("iteration", Integer.toString(iteration));
-      params.add("outcome", outcome);
-      params.add("positiveLabel", Integer.toString(positiveLabel));
-      params.add("threshold", Double.toString(threshold));
-      params.add("alpha", Double.toString(learningRate));
+      queryRequestParams.add("iteration", Integer.toString(iteration));
+      queryRequestParams.add("outcome", outcome);
+      queryRequestParams.add("positiveLabel", Integer.toString(positiveLabel));
+      queryRequestParams.add("threshold", Double.toString(threshold));
+      queryRequestParams.add("alpha", Double.toString(learningRate));
 
-      QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
+      QueryRequest request = new QueryRequest(queryRequestParams, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
       NamedList<?> res = response.getResponse();
 

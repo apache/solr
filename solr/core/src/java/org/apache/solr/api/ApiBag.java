@@ -28,7 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -276,9 +275,9 @@ public class ApiBag {
         if (commands != null) {
           ValidatingJsonMap m = commands.getMap(cmd, null);
           if (m == null) {
-            specCopy.put("commands", Collections.singletonMap(cmd, "Command not found!"));
+            specCopy.put("commands", Map.of(cmd, "Command not found!"));
           } else {
-            specCopy.put("commands", Collections.singletonMap(cmd, m));
+            specCopy.put("commands", Map.of(cmd, m));
           }
         }
         result = specCopy;
@@ -386,7 +385,7 @@ public class ApiBag {
         final ValidatingJsonMap spec = new ValidatingJsonMap();
         spec.put("methods", List.of("GET", "POST"));
         final ValidatingJsonMap urlMap = new ValidatingJsonMap();
-        urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
+        urlMap.put("paths", List.of("$" + HANDLER_NAME));
         spec.put("url", urlMap);
         return spec;
       };
@@ -398,7 +397,7 @@ public class ApiBag {
   public void registerLazy(PluginBag.PluginHolder<SolrRequestHandler> holder, PluginInfo info) {
     register(
         new LazyLoadedApi(HANDLER_NAME_SPEC_PROVIDER, holder),
-        Collections.singletonMap(HANDLER_NAME, info.attributes.get(NAME)));
+        Map.of(HANDLER_NAME, info.attributes.get(NAME)));
   }
 
   public static SpecProvider constructSpec(PluginInfo info) {
@@ -413,12 +412,52 @@ public class ApiBag {
     }
   }
 
+  public static List<CommandOperation> readCommands(
+      Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
+      throws IOException {
+    return readCommands(streams, resp, Set.of());
+  }
+
+  /**
+   * Read commands from request streams
+   *
+   * @param streams the streams
+   * @param resp solr query response
+   * @param singletonCommands , commands that cannot be repeated
+   * @return parsed list of commands
+   * @throws IOException if there is an error while parsing the stream
+   */
+  @SuppressWarnings({"unchecked"})
+  public static List<CommandOperation> readCommands(
+      Iterable<ContentStream> streams,
+      @SuppressWarnings({"rawtypes"}) NamedList resp,
+      Set<String> singletonCommands)
+      throws IOException {
+    if (streams == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
+    }
+    ArrayList<CommandOperation> ops = new ArrayList<>();
+    for (ContentStream stream : streams) {
+
+      if ("application/javabin".equals(stream.getContentType())) {
+        ops.addAll(CommandOperation.parse(stream.getStream(), singletonCommands));
+      } else {
+        ops.addAll(CommandOperation.parse(stream.getReader(), singletonCommands));
+      }
+    }
+    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
+    if (!errList.isEmpty()) {
+      resp.add(CommandOperation.ERR_MSGS, errList);
+      return null;
+    }
+    return ops;
+  }
+
   public static List<CommandOperation> getCommandOperations(
       ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands =
-          CommandOperation.readCommands(Collections.singleton(stream), new NamedList<>());
+      parsedCommands = readCommands(Set.of(stream), new NamedList<>());
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands", e);
     }

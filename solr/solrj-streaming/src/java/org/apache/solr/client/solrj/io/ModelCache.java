@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -31,20 +32,27 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 public class ModelCache {
 
   private LRU models;
-  private String defaultZkHost;
+  private CloudSolrClient.CloudSolrClientConnection solrConnection;
   private SolrClientCache solrClientCache;
 
-  public ModelCache(int size, String defaultZkHost, SolrClientCache solrClientCache) {
+  public ModelCache(
+      int size,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      SolrClientCache solrClientCache) {
     this.models = new LRU(size);
-    this.defaultZkHost = defaultZkHost;
+    this.solrConnection = solrConnection;
     this.solrClientCache = solrClientCache;
   }
 
   public Tuple getModel(String collection, String modelID, long checkMillis) throws IOException {
-    return getModel(defaultZkHost, collection, modelID, checkMillis);
+    return getModel(solrConnection, collection, modelID, checkMillis);
   }
 
-  public Tuple getModel(String zkHost, String collection, String modelID, long checkMillis)
+  public Tuple getModel(
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      String modelID,
+      long checkMillis)
       throws IOException {
     Model model = null;
     long currentTime = new Date().getTime();
@@ -67,7 +75,7 @@ public class ModelCache {
     params.set(SORT, "iteration_i desc");
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
-    CloudSolrStream stream = new CloudSolrStream(zkHost, collection, params);
+    CloudSolrStream stream = new CloudSolrStream(solrConnection, collection, params);
     stream.setStreamContext(streamContext);
     Tuple tuple = null;
     try {

@@ -33,7 +33,7 @@ public interface PlacementContext {
 
   /**
    * Factory used by the plugin to fetch additional attributes from the cluster nodes, such as count
-   * of cores, system properties etc..
+   * of cores, system properties etc.
    */
   AttributeFetcher getAttributeFetcher();
 

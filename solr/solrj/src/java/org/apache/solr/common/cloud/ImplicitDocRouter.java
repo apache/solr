@@ -19,8 +19,8 @@ package org.apache.solr.common.cloud;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -111,7 +111,7 @@ public class ImplicitDocRouter extends DocRouter {
               + collection.getName());
     }
 
-    return Collections.singleton(slice);
+    return Set.of(slice);
   }
 
   @Override

@@ -262,7 +262,7 @@ public class PackageAPI {
             coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
         try {
           var solrClient = coreContainer.getDefaultHttpSolrClient();
-          solrClient.requestWithBaseUrl(baseUrl, request::process);
+          request.processWithBaseUrl(solrClient, baseUrl, null);
         } catch (SolrServerException | IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -402,18 +402,16 @@ public class PackageAPI {
       if (name == null) {
         rsp.add("result", pkgs);
       } else {
-        rsp.add("result", Collections.singletonMap(name, pkgs.packages.get(name)));
+        rsp.add("result", Map.of(name, pkgs.packages.get(name)));
       }
     }
 
     private void syncToVersion(int expectedVersion) {
-      int origVersion = pkgs.znodeVersion;
       for (int i = 0; i < 10; i++) {
         log.debug("my version is {} , and expected version {}", pkgs.znodeVersion, expectedVersion);
         if (pkgs.znodeVersion >= expectedVersion) {
-          if (origVersion < pkgs.znodeVersion) {
-            packageLoader.refreshPackageConf();
-          }
+          // Blocks until any in-flight refresh started by the ZK watcher has been applied
+          packageLoader.refreshPackageConf();
           return;
         }
         try {
@@ -443,7 +441,7 @@ public class PackageAPI {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
-        solrClient.requestWithBaseUrl(baseUrl, request::process);
+        request.processWithBaseUrl(solrClient, baseUrl, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

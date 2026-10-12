@@ -70,12 +70,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   @Test
   @ShardsFixed(num = 2)
   public void test() throws Exception {
-    final boolean isDistributedCollectionApi;
     try (CloudSolrClient client = createCloudClient(null)) {
-      isDistributedCollectionApi =
-          new CollectionAdminRequest.RequestApiDistributedProcessing()
-              .process(client)
-              .getIsCollectionApiDistributed();
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 0, 2, 1);
@@ -99,9 +94,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusWithCollectionHealthState();
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
-    if (!isDistributedCollectionApi) {
-      clusterStatusRolesTest();
-    }
     clusterStatusBadCollectionTest();
     replicaPropTest();
     clusterStatusZNodeVersion();
@@ -381,7 +373,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           TimeUnit.SECONDS,
           docCollection ->
               docCollection != null
-                  && docCollection.getReplicas().stream()
+                  && docCollection
+                      .replicaStream()
                       .anyMatch(r -> r.getState().equals(Replica.State.DOWN) && !r.isLeader()));
       zkStateReader.waitForState(
           COLLECTION_NAME,
@@ -420,7 +413,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
                 TimeUnit.SECONDS,
                 (liveNodes, coll) ->
                     coll != null
-                        && coll.getReplicas().stream()
+                        && coll.replicaStream()
                             .allMatch(r -> r.getState().equals(Replica.State.ACTIVE)));
         rsp = request.process(newClient).getResponse();
         collection =
@@ -685,38 +678,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
 
-  private void clusterStatusRolesTest() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
-      Replica replica = ZkStateReader.from(client).getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
-
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
-      params.set("node", replica.getNodeName());
-      params.set("role", "overseer");
-      var request =
-          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      client.request(request);
-
-      params = new ModifiableSolrParams();
-      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      params.set("collection", DEFAULT_COLLECTION);
-      request =
-          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-
-      NamedList<Object> rsp = client.request(request);
-      NamedList<?> cluster = (NamedList<?>) rsp.get("cluster");
-      assertNotNull("Cluster state should not be null", cluster);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> roles = (Map<String, Object>) cluster.get("roles");
-      assertNotNull("Role information should not be null", roles);
-      List<?> overseer = (List<?>) roles.get("overseer");
-      assertNotNull(overseer);
-      assertEquals(1, overseer.size());
-      assertTrue(overseer.contains(replica.getNodeName()));
-    }
-  }
-
   private void clusterStatusBadCollectionTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -737,7 +698,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void replicaPropTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
       Map<String, Slice> slices =
           client.getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
@@ -1204,7 +1164,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void testShardCreationNameValidation() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
-      client.connect();
       // Create a collection w/ implicit router
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());

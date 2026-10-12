@@ -35,7 +35,7 @@ public class ScriptEngineTest extends SolrTestCase {
   private ScriptEngineManager manager;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     assumeFalse(
         "https://twitter.com/UweSays/status/260487231880433664 / SOLR-4233: OS X bogusly starts AWT!",
         Constants.MAC_OS_X);

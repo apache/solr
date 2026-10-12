@@ -1,0 +1,8 @@
+title: >
+  Solr's 404 page is less generic.  We now log 404s in Solr's log.
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18319
+    url: https://issues.apache.org/jira/browse/SOLR-18319

@@ -113,7 +113,6 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     assertNotNull(amIleader.get("requests"));
     assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
     assertNotNull(amIleader.get("errors"));
-    assertNotNull(amIleader.get("avgTimePerRequest"));
 
     // When cluster state updates are distributed, Overseer doesn't see the updates and doesn't
     // report stats on them.
@@ -123,7 +122,6 @@ public class OverseerStatusTest extends SolrCloudTestCase {
       assertNotNull(amIleader.get("requests"));
       assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
       assertNotNull(amIleader.get("errors"));
-      assertNotNull(amIleader.get("avgTimePerRequest"));
 
       SimpleOrderedMap<Object> updateState =
           (SimpleOrderedMap<Object>) overseer_operations.get("update_state");
@@ -131,7 +129,6 @@ public class OverseerStatusTest extends SolrCloudTestCase {
       assertNotNull(updateState.get("requests"));
       assertTrue(Integer.parseInt(updateState.get("requests").toString()) > 0);
       assertNotNull(updateState.get("errors"));
-      assertNotNull(updateState.get("avgTimePerRequest"));
     }
   }
 }

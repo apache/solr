@@ -48,7 +48,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/techproducts/query?q=name:iPod"
+curl "http://localhost:8983/solr/techproducts/query?q=name:iPod"
 ----
 ====
 SolrJ::
@@ -70,7 +70,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query" : "name:iPod"
 }'
@@ -96,7 +96,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query": "{!lucene df=name v=iPod}"
 }'
@@ -122,7 +122,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query": {
     "lucene": {
@@ -161,7 +161,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}"
+curl "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}"
 ----
 ====
 
@@ -185,7 +185,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query" : {
         "boost": {
@@ -216,7 +216,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "boost": {
@@ -256,7 +256,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
@@ -292,7 +292,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
@@ -321,7 +321,7 @@ Example of referencing <<Additional Queries,additional queries>>, <<Tagging in J
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "queries": {
        "query_filters":[                                            // 1.
@@ -353,7 +353,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "query": {
         "bool": {
@@ -388,9 +388,14 @@ Beware of arity for these references.
 Depending on the context, a reference might be resolved into the first element in the array ignoring the later elements, e.g., if one changes the reference below from `{"param":"electronic"}` to `{"param":"manufacturers"}`, it's equivalent to querying for `manu:apple`, ignoring the later query.
 These queries don't impact the query result until explicit referencing.
 
+[tabs#json-additional-queries]
+======
+curl::
++
+====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/query -d '
+curl http://localhost:8983/solr/techproducts/query -d '
 {
     "queries": {
         "electronic": {"field": {"f":"cat", "query":"electronics"}},
@@ -402,6 +407,16 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
     "query":{"param":"electronic"}
 }'
 ----
+====
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+include::example$JsonRequestApiTest.java[tag=solrj-json-query-with-queries]
+----
+====
+======
 
 Overall this example doesn't make much sense, but just demonstrates the syntax.
 This feature is useful in xref:json-faceting-domain-changes.adoc#adding-domain-filters[filtering domain] in JSON Facet API xref:json-facet-api.adoc#changing-the-domain[domain changes].
@@ -427,7 +442,7 @@ curl::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/solr/techproducts/select -d '
+curl http://localhost:8983/solr/techproducts/select -d '
 {
   "query": "*:*",
   "filter": [

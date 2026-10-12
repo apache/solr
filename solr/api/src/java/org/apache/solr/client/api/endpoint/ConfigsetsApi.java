@@ -16,7 +16,12 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
+import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -24,7 +29,11 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import org.apache.solr.client.api.model.CloneConfigsetRequestBody;
@@ -71,31 +80,92 @@ public interface ConfigsetsApi {
         throws Exception;
   }
 
+  /** V2 API definition for downloading an existing configset as a ZIP archive. */
+  @Path("/configsets/{configSetName}")
+  interface Download {
+    @GET
+    @Path("/files")
+    @Operation(
+        summary = "Download a configset as a ZIP archive.",
+        tags = {"configsets"},
+        extensions = {
+          @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
+        })
+    @Produces("application/zip")
+    Response downloadConfigSet(@PathParam("configSetName") String configSetName) throws Exception;
+  }
+
   /**
-   * V2 API definitions for uploading a configset, in whole or part.
+   * V2 API definition for reading a single file from an existing configset.
+   *
+   * <p>Returns the raw bytes of the file, suitable for both text and binary files.
+   *
+   * <p>Equivalent to GET /api/configsets/{configSetName}/files/{filePath}
+   */
+  @Path("/configsets/{configSetName}")
+  interface GetFile {
+    @GET
+    @Path("/files/{filePath:.+}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Operation(
+        summary = "Get the raw contents of a file in a configset.",
+        tags = {"configsets"},
+        extensions = {
+          @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
+        })
+    StreamingOutput getConfigSetFile(
+        @PathParam("configSetName") String configSetName, @PathParam("filePath") String filePath)
+        throws Exception;
+  }
+
+  /**
+   * V2 API definition for uploading an entire configset as a ZIP archive.
    *
    * <p>Equivalent to the existing v1 API /admin/configs?action=UPLOAD
    */
   @Path("/configsets/{configSetName}")
   interface Upload {
     @PUT
-    @Operation(summary = "Create a new configset.", tags = "configsets")
+    @Operation(summary = "Upload a configset as a ZIP archive.", tags = "configsets")
     SolrJerseyResponse uploadConfigSet(
         @PathParam("configSetName") String configSetName,
         @QueryParam("overwrite") Boolean overwrite,
         @QueryParam("cleanup") Boolean cleanup,
-        @RequestBody(required = true) InputStream requestBody)
+        @RequestBody(
+                required = true,
+                extensions = {
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      })
+                })
+            InputStream requestBody)
         throws IOException;
+  }
 
+  /**
+   * V2 API definition for putting a single file to an existing configset.
+   *
+   * <p>This endpoint allows updating individual configuration files without re-uploading the entire
+   * configset. The file path is specified as part of the URL path.
+   */
+  @Path("/configsets/{configSetName}")
+  interface PutFile {
     @PUT
-    @Path("{filePath:.+}")
-    @Operation(summary = "Create a new configset.", tags = "configsets")
+    @Path("/files/{filePath:.+}")
+    @Operation(summary = "Upload a single file to a configset.", tags = "configsets")
     SolrJerseyResponse uploadConfigSetFile(
         @PathParam("configSetName") String configSetName,
         @PathParam("filePath") String filePath,
-        @QueryParam("overwrite") Boolean overwrite,
-        @QueryParam("cleanup") Boolean cleanup,
-        @RequestBody(required = true) InputStream requestBody)
+        @RequestBody(
+                required = true,
+                extensions = {
+                  @Extension(
+                      properties = {
+                        @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                      })
+                })
+            InputStream requestBody)
         throws IOException;
   }
 }

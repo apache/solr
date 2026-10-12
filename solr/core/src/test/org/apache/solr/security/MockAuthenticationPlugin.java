@@ -27,7 +27,6 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
-import org.apache.http.auth.BasicUserPrincipal;
 
 public class MockAuthenticationPlugin extends AuthenticationPlugin {
   static Predicate<ServletRequest> predicate;
@@ -63,7 +62,7 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
       String user, HttpServletRequest req, ServletResponse rsp, FilterChain chain)
       throws IOException, ServletException {
     if (user != null) {
-      final Principal p = new BasicUserPrincipal(user);
+      final Principal p = new SimplePrincipal(user);
       req = wrapWithPrincipal(req, p);
     }
     chain.doFilter(req, rsp);

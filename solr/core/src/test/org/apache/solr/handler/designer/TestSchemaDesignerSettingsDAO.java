@@ -19,7 +19,6 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -119,7 +118,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
     settings.setDynamicFieldsEnabled(false);
     settings.setNestedDocsEnabled(true);
     settings.setFieldGuessingEnabled(false);
-    settings.setLanguages(Collections.singletonList("en"));
+    settings.setLanguages(List.of("en"));
 
     assertTrue(
         "updated settings should have changed in ZK", dao.persistIfChanged(configSet, settings));
@@ -139,7 +138,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
             DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM,
             true,
             DESIGNER_KEY + LANGUAGES_PARAM,
-            Collections.singletonList("en"));
+            List.of("en"));
     assertDesignerSettings(expSettings, settings);
     assertTrue("should be disabled", dao.isDesignerDisabled(configSet));
 

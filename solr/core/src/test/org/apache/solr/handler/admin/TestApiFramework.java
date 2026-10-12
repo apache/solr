@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -263,7 +262,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
           @Override
           public Iterable<ContentStream> getContentStreams() {
-            return Collections.singletonList(
+            return List.of(
                 new ContentStreamBase() {
                   @Override
                   public InputStream getStream() {
@@ -279,12 +278,14 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     return rsp;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private SolrQueryResponse invoke(
       PluginBag<SolrRequestHandler> reqHandlers,
       String path,
       String fullPath,
       CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
+    // Identity check: is reqHandlers the container's own handler bag, or a substitute?
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;
     path = path == null ? fullPath : path;
     Api api = null;

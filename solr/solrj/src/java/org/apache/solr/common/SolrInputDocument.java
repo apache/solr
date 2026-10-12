@@ -317,10 +317,4 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
     return !isEmpty;
   }
-
-  @Override
-  @Deprecated
-  public int getChildDocumentCount() {
-    return hasChildDocuments() ? _childDocuments.size() : 0;
-  }
 }

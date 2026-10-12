@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.BaseTestHarness;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +43,6 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SUCCESS_XPATH =
       "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    closeRestTestHarnesses();
-  }
 
   public TestCloudSchemaless() {
     schemaString = "schema-add-schema-fields-update-processor.xml";

@@ -72,17 +72,18 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    // this test inspects node level request metrics
+    System.setProperty("metricsEnabled", "true");
     // create one more node than shard, so that we also test the case of proxied requests.
     MiniSolrCloudCluster.Builder clusterBuilder =
         configureCluster(3)
             .addConfig(
                 "conf",
                 TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
-    clusterBuilder.withMetrics(true);
     clusterBuilder.configure();
 
     // pick an arbitrary node to use for our requests
-    client = cluster.getRandomJetty(random()).newClient();
+    client = cluster.getRandomJetty(random()).newSolrClient(null);
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -296,7 +297,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Repeat(iterations = 5)
+  @Repeat(iterations = 1)
   public void testCreepThenBite() throws Exception {
     int creep = 100;
     ModifiableSolrParams params = params("q", "{!cache=false}name:a*");

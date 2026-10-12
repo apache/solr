@@ -23,7 +23,7 @@
 
  <!-- Query parser used to run vector search queries-->
  <queryParser name="knn_text_to_vector"
-  class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin" />
+  class="org.apache.solr.languagemodels.search.TextToVectorQParserPlugin" />
 
  <query>
   <filterCache class="solr.CaffeineCache" size="4096"

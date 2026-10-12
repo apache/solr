@@ -651,9 +651,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     assertQEx(
         "no query param should error",
         "requires a query string",
-        req(
-            "qt", "/phrases",
-            "phrases.fields", "multigrams_title"),
+        reqWithPath("/phrases", "phrases.fields", "multigrams_title"),
         ErrorCode.BAD_REQUEST);
   }
 
@@ -696,7 +694,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     for (String p : Arrays.asList("q", "phrases.q")) {
       // basic request...
       assertQ(
-          req("qt", HANDLER, p, input), // expect no search results...
+          reqWithPath(HANDLER, p, input), // expect no search results...
           "count(//result)=0", // just phrase info...
           "//lst[@name='phrases']/str[@name='input'][.='" + input + "']",
           "//lst[@name='phrases']/str[@name='summary'][.='" + expected + "']",
@@ -712,7 +710,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
       // empty input, empty phrases (and no error)...
       assertQ(
-          req("qt", HANDLER, p, ""), // expect no search results...
+          reqWithPath(HANDLER, p, ""), // expect no search results...
           "count(//result)=0", // just empty phrase info for our empty input...
           "//lst[@name='phrases']/str[@name='input'][.='']",
           "//lst[@name='phrases']/str[@name='summary'][.='']",

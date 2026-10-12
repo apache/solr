@@ -25,7 +25,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +60,7 @@ import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -163,7 +163,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 PerReplicaStatesOps.getZkClientPrsSupplier(
                     fixture.zkClient, DocCollection.getCollectionPath("c1"))));
 
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(c1), null);
     writer.writePendingUpdates();
     reader.forceUpdateCollection("c1");
 
@@ -191,7 +191,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
     reader.waitForState(
@@ -211,7 +211,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     boolean found = false;
@@ -253,7 +253,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
@@ -265,7 +265,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     assertFalse(ref.isLazilyLoaded());
 
     Stat stat = new Stat();
-    fixture.zkClient.getData(ZkStateReader.getCollectionPath("c1"), null, stat);
+    fixture.zkClient.getData(DocCollection.getCollectionPath("c1"), null, stat);
     assertEquals(Instant.ofEpochMilli(stat.getCtime()), ref.get().getCreationTime());
   }
 
@@ -296,7 +296,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
 
     // have to register it here after the updates, otherwise the child node watch will not be
@@ -349,7 +349,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // now delete the collection
     wc = new ZkWriteCommand("c1", null);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
     timeOut.waitFor(
         "Timeout on waiting for c1 to be removed from cluster state",
@@ -358,7 +358,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     reader.unregisterCore("c1");
     // re-add the same collection
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
     // re-register, otherwise the child watch would be missing from collection deletion
     reader.registerCore("c1");
@@ -417,7 +417,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
@@ -440,7 +440,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     reader.forciblyRefreshAllClusterStateSlow();
@@ -504,7 +504,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Instant.now(),
             null);
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
@@ -526,7 +526,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Instant.now(),
             null);
     wc = new ZkWriteCommand("c1", state);
-    writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+    writer.enqueueUpdate(reader.getClusterState(), List.of(wc), null);
     writer.writePendingUpdates();
 
     reader.forciblyRefreshAllClusterStateSlow();
@@ -654,7 +654,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                         PerReplicaStatesOps.getZkClientPrsSupplier(
                             fixture.zkClient, DocCollection.getCollectionPath("c1")));
                 ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-                writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+                writer.enqueueUpdate(clusterState, List.of(wc), null);
                 clusterState = writer.writePendingUpdates();
                 TimeUnit.MILLISECONDS.sleep(100);
               }
@@ -763,7 +763,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
               PerReplicaStatesOps.getZkClientPrsSupplier(
                   fixture.zkClient, DocCollection.getCollectionPath("c1")));
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+      writer.enqueueUpdate(clusterState, List.of(wc), null);
       clusterState = writer.writePendingUpdates();
       barrier.await(250, TimeUnit.MILLISECONDS); // wait for the watch callback to execute
       fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1" + i, true);
@@ -799,14 +799,14 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         DocCollection.create(
             collectionName,
             Map.of(sliceName, slice),
-            Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+            Map.of(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
             DocRouter.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
     ZkWriteCommand wc = new ZkWriteCommand(collectionName, state);
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
 
     TimeOut timeOut = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
@@ -814,12 +814,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         "Timeout on waiting for c1 to show up in cluster state",
         () -> reader.getClusterState().getCollectionOrNull(collectionName) != null);
 
-    String collectionPath = ZkStateReader.getCollectionPath(collectionName);
+    String collectionPath = DocCollection.getCollectionPath(collectionName);
 
     // now create the replica, take note that this has to be done after DocCollection creation with
     // empty slice, otherwise the DocCollection ctor would fetch the PRS entries and throw
     // exceptions
-    String replicaBaseUrl = Utils.getBaseUrlForNodeName(nodeName, "http");
+    String replicaBaseUrl = URLUtil.getBaseUrlForNodeName(nodeName, "http");
 
     String replicaName = "replica1";
     Replica replica =
@@ -842,7 +842,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     wc =
         new ZkWriteCommand(
             collectionName, SliceMutator.updateReplica(state, slice, replica.getName(), replica));
-    writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+    writer.enqueueUpdate(clusterState, List.of(wc), null);
     clusterState = writer.writePendingUpdates();
 
     timeOut.waitFor(
@@ -994,5 +994,15 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     var lowestVersion = reader.fetchLowestSolrVersion();
     assertFalse("Expected no lowest version when no live nodes exist", lowestVersion.isPresent());
+  }
+
+  public void testGetUrlScheme_validSystemProperty() {
+    String expectedUrlScheme = isSSLMode() ? "https" : "http";
+    assertEquals(expectedUrlScheme, fixture.reader.getUrlScheme());
+  }
+
+  public void testGetUrlScheme_noClusterAndSystemProperty() {
+    assumeFalse("Skip the test when ssl is enabled", isSSLMode());
+    assertEquals("http", fixture.reader.getUrlScheme());
   }
 }

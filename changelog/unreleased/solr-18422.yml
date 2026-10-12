@@ -1,0 +1,8 @@
+title: Don't use System.nanoTime as absolute timestamp in CrossDC producer.
+  
+type: fixed
+authors:
+  - name: Andrzej Bialecki
+links:
+  - name: SOLR-18422
+    url: https://issues.apache.org/jira/browse/SOLR-18422

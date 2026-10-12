@@ -17,12 +17,17 @@
 
 package org.apache.solr.util;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -31,12 +36,80 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServletFixtures {
 
   private ServletFixtures() {}
+
+  /** A Servlet {@link Filter} that adds delays. */
+  public static class DelayServlet implements Filter {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    private AtomicLong nRequests = new AtomicLong();
+
+    List<Delay> delays = new ArrayList<>();
+
+    public long getTotalRequests() {
+      return nRequests.get();
+    }
+
+    /**
+     * Introduce a delay of specified milliseconds for the specified request.
+     *
+     * @param reason Info message logged when delay occurs
+     * @param count The count-th request will experience a delay
+     * @param delayMs There will be a delay of this many milliseconds
+     */
+    public void addDelay(String reason, int count, int delayMs) {
+      delays.add(new Delay(reason, count, delayMs));
+    }
+
+    /** Remove any delay introduced before. */
+    public void unsetDelay() {
+      delays.clear();
+    }
+
+    @Override
+    public void doFilter(
+        ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
+        throws IOException, ServletException {
+      nRequests.incrementAndGet();
+      executeDelay();
+      filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    private void executeDelay() {
+      int delayMs = 0;
+      for (Delay delay : delays) {
+        log.info("Delaying {}, for reason: {}", delay.delayMsValue, delay.reason);
+        if (delay.counter.decrementAndGet() == 0) {
+          delayMs += delay.delayMsValue;
+        }
+      }
+
+      if (delayMs > 0) {
+        log.info("Pausing this socket connection for {}ms...", delayMs);
+        try {
+          Thread.sleep(delayMs);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+        log.info("Waking up after the delay of {}ms...", delayMs);
+      }
+    }
+
+    record Delay(String reason, AtomicInteger counter, int delayMsValue) {
+      Delay(String reason, int counter, int delayMsValue) {
+        this(reason, new AtomicInteger(counter), delayMsValue);
+      }
+    }
+  }
 
   public static class RedirectServlet extends HttpServlet {
     @Override

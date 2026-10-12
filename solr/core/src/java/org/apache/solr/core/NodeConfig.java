@@ -120,6 +120,8 @@ public class NodeConfig {
 
   private final String defaultZkHost;
 
+  private final List<String> allowZkHosts;
+
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
@@ -154,6 +156,7 @@ public class NodeConfig {
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
+      List<String> allowZkHosts,
       boolean hideStackTraces,
       String configSetServiceClass,
       String modules,
@@ -192,6 +195,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
+    this.allowZkHosts = allowZkHosts;
     this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
@@ -294,7 +298,7 @@ public class NodeConfig {
    * @return path to install dir or null if solr.install.dir not set.
    */
   public static Path getSolrInstallDir() {
-    String prop = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+    String prop = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
     if (prop == null || prop.isBlank()) {
       log.debug("solr.install.dir property not initialized.");
       return null;
@@ -435,6 +439,15 @@ public class NodeConfig {
   /** Allow-list of Solr nodes URLs. */
   public List<String> getAllowUrls() {
     return allowUrls;
+  }
+
+  /**
+   * Allow-list of remote ZooKeeper connection strings that may be passed to query/streaming
+   * features which accept a {@code zkHost} parameter (e.g. cross-collection join, /stream
+   * expressions). The local cluster's own ZK ensemble is always trusted and need not be listed.
+   */
+  public List<String> getAllowZkHosts() {
+    return allowZkHosts;
   }
 
   public boolean hideStackTraces() {
@@ -600,6 +613,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Set.of();
     private List<String> allowUrls = List.of();
+    private List<String> allowZkHosts = List.of();
     private boolean hideStackTrace =
         !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
@@ -644,7 +658,7 @@ public class NodeConfig {
       this.solrHome = solrHome.toAbsolutePath();
       this.coreRootDirectory = solrHome;
       // always init from sysprop because <solrDataHome> config element may be missing
-      setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
+      setSolrDataHome(EnvUtils.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
       setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
@@ -804,6 +818,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setAllowZkHosts(List<String> zkHosts) {
+      this.allowZkHosts = zkHosts;
+      return this;
+    }
+
     public NodeConfigBuilder setHideStackTrace(boolean hide) {
       this.hideStackTrace = hide;
       return this;
@@ -895,6 +914,7 @@ public class NodeConfig {
           defaultZkHost,
           allowPaths,
           allowUrls,
+          allowZkHosts,
           hideStackTrace,
           configSetServiceClass,
           modules,

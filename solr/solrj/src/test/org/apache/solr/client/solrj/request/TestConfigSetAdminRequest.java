@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.NamedList;
@@ -25,6 +26,14 @@ import org.junit.Test;
 
 /** Basic error checking of ConfigSetAdminRequests. */
 public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testAdminRequestsChooseExplicitHttpMethods() {
+    assertEquals(METHOD.POST, new MyConfigSetAdminRequest().getMethod());
+    assertEquals(METHOD.POST, new ConfigSetAdminRequest.Create().getMethod());
+    assertEquals(METHOD.GET, new ConfigSetAdminRequest.List().getMethod());
+  }
 
   @Test
   public void testNoAction() {
@@ -39,13 +48,11 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(upload, "ConfigSet");
 
     upload.setConfigSetName("name");
-    verifyException(upload, "There must be a ContentStream");
+    verifyException(upload, "There must be content");
 
     upload.setUploadFile(tmpFile, "application/zip");
 
-    assertEquals(1, upload.getContentStreams().size());
-    assertEquals(
-        "application/zip", upload.getContentStreams().stream().findFirst().get().getContentType());
+    assertEquals("application/zip", upload.getContentWriter(null).getContentType());
 
     assertNull(upload.getParams().get(ConfigSetParams.FILE_PATH));
     assertNull(upload.getParams().get(ConfigSetParams.OVERWRITE));
@@ -56,9 +63,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
         .setFilePath("solrconfig.xml")
         .setOverwrite(true);
 
-    assertEquals(1, upload.getContentStreams().size());
-    assertEquals(
-        "application/xml", upload.getContentStreams().stream().findFirst().get().getContentType());
+    assertEquals("application/xml", upload.getContentWriter(null).getContentType());
 
     assertEquals("solrconfig.xml", upload.getParams().get(ConfigSetParams.FILE_PATH));
     assertEquals("true", upload.getParams().get(ConfigSetParams.OVERWRITE));

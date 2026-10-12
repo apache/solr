@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -187,7 +186,7 @@ public class CollectionsRepairEventListener
                       Assign.AssignRequest assignRequest =
                           new Assign.AssignRequestBuilder()
                               .forCollection(coll.getName())
-                              .forShard(Collections.singletonList(shard))
+                              .forShard(List.of(shard))
                               .assignReplicas(types)
                               .build();
                       try {
@@ -196,10 +195,7 @@ public class CollectionsRepairEventListener
                         newPositions.put(coll.getName(), positions);
                       } catch (Exception e) {
                         log.warn(
-                            "Exception computing positions for {}/{}: {}",
-                            coll.getName(),
-                            shard,
-                            e);
+                            "Exception computing positions for {}/{}", coll.getName(), shard, e);
                       }
                     });
               });
@@ -230,8 +226,7 @@ public class CollectionsRepairEventListener
           try {
             solrClient.request(addReplica);
           } catch (Exception e) {
-            log.warn(
-                "Exception calling ADDREPLICA {}: {}", addReplica.getParams().toQueryString(), e);
+            log.warn("Exception calling ADDREPLICA {}", addReplica.getParams().toQueryString(), e);
           }
         });
   }

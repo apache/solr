@@ -43,6 +43,4 @@ public interface BalanceRequest extends ModificationRequest {
    *     the error itself rather than calling the plugin).
    */
   Set<Node> getNodes();
-
-  int getMaximumBalanceSkew();
 }

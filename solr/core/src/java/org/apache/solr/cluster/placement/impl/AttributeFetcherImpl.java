@@ -101,7 +101,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     // In order to match the returned values for the various snitches, we need to keep track of
     // where each received value goes. Given the target maps are of different types (the maps from
     // Node to whatever defined above) we instead pass a function taking two arguments, the node and
-    // the (non null) returned value, that will cast the value into the appropriate type for the
+    // the (non-null) returned value, that will cast the value into the appropriate type for the
     // snitch tag and insert it into the appropriate map with the node as the key.
     for (String sysPropSnitch : requestedNodeSystemSnitchTags) {
       systemSnitchToNodeToValue.put(sysPropSnitch, new HashMap<>());
@@ -207,11 +207,10 @@ public class AttributeFetcherImpl implements AttributeFetcher {
       Map<String, Map<Node, String>> systemSnitchToNodeToValue,
       Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue) {
 
-    Set<String> allRequestedTags = new HashSet<>();
     Map<String, NodeMetric<?>> tagToMetric = new HashMap<>();
 
     // Add system property tags we need to request
-    allRequestedTags.addAll(requestedNodeSystemSnitchTags);
+    Set<String> allRequestedTags = new HashSet<>(requestedNodeSystemSnitchTags);
 
     // Add metric tags we need to request
     for (NodeMetric<?> metric : requestedNodeMetricSnitchTags) {

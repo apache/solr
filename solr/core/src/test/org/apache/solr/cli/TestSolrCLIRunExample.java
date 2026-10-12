@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +39,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -56,6 +56,11 @@ import org.slf4j.LoggerFactory;
 /** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr start -e [example] */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
+
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(RunExampleTool tool, String[] args) throws Exception {
+    return tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
+  }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -350,7 +355,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
       try {
-        int status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+        int status = runTool(tool, toolArgs);
 
         if (status == -1) {
           // maybe it's the port, try again
@@ -358,7 +363,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             bindPort = socket.getLocalPort();
           }
           Thread.sleep(100);
-          status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+          status = runTool(tool, toolArgs);
         }
 
         assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
@@ -377,7 +382,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("techproducts".equals(exampleName)) {
         try (SolrClient solrClient =
-            getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName)) {
+            new HttpJettySolrClient.Builder("http://localhost:" + bindPort + "/solr")
+                .withDefaultCollection(exampleName)
+                .build()) {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
           long numFound = qr.getResults().getNumFound();
@@ -450,7 +457,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, userInputSim, runtime);
     try {
-      tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+      runTool(tool, toolArgs);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -476,9 +483,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // index some docs - to verify all is good for both shards
     try (CloudSolrClient cloudClient =
-        new RandomizingCloudHttp2SolrClientBuilder(
-                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
-                Optional.empty())
+        new RandomizingCloudSolrClientBuilder(
+                List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
 
@@ -521,11 +527,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test the --prompt-inputs option that allows providing all prompt values as a comma-separated
+   * Test the --script-inputs option that allows providing all prompt values as a comma-separated
    * string without requiring interactive input.
    */
   @Test
-  public void testSolrCloudExampleWithPrompts() throws Exception {
+  public void testSolrCloudExampleWithScriptInputs() throws Exception {
     Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
       fail(solrHomeDir + " not found and is required to run this test!");
@@ -538,11 +544,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       bindPort = socket.getLocalPort();
     }
 
-    String collectionName = "testCloudExampleWithPrompts";
+    String collectionName = "testCloudExampleWithScriptInputs";
 
-    // Provide all prompt values via --prompt-inputs option:
+    // Provide all prompt values via --script-inputs option:
     // numNodes, port1, collectionName, numShards, replicationFactor, configName
-    String promptsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
+    String scriptInputsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
 
     String[] toolArgs =
         new String[] {
@@ -552,8 +558,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           solrServerDir.toString(),
           "--example-dir",
           solrExampleDir.toString(),
-          "--prompt-inputs",
-          promptsValue
+          "--script-inputs",
+          scriptInputsValue
         };
 
     // capture tool output to stdout
@@ -564,7 +570,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     try {
-      tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+      runTool(tool, toolArgs);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -580,7 +586,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String solrUrl = "http://localhost:" + bindPort + "/solr";
     if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
-          "After running Solr cloud example with --prompt-inputs, test collection '"
+          "After running Solr cloud example with --script-inputs, test collection '"
               + collectionName
               + "' not found in Solr at: "
               + solrUrl
@@ -591,8 +597,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // verify the collection was created with the specified parameters
     try (CloudSolrClient cloudClient =
         new RandomizingCloudSolrClientBuilder(
-                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
-                Optional.empty())
+                List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
 
@@ -665,7 +670,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
-    int code = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+    int code = runTool(tool, toolArgs);
     assertEquals("Execution should have failed with return code 1", 1, code);
   }
 }

@@ -16,8 +16,7 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -29,19 +28,17 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.OpenTelemetryConfigurator;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP format.
+ * An {@link OpenTelemetryConfigurator} implementation which exports spans to OpenTelemetry in OTLP
+ * format.
  */
 public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, String> currentEnv;
-
-  private OpenTelemetrySdk openTelemetrySdk;
 
   public OtelTracerConfigurator() {
     this(System.getenv());
@@ -52,30 +49,26 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
   }
 
   @Override
-  public Tracer getTracer() {
-    return TraceUtils.getGlobalTracer();
-  }
-
-  @Override
-  public OpenTelemetrySdk getOpenTelemetrySdk() {
-    return this.openTelemetrySdk;
-  }
-
-  @Override
   public void init(NamedList<?> args) {
     prepareConfiguration(args);
-    this.openTelemetrySdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
+  }
+
+  @Override
+  public OpenTelemetry createOpenTelemetry() {
+    // deliberately build() and not initialize(); the latter sets GlobalOpenTelemetry, which is
+    // OpenTelemetryConfigurator's job
+    return AutoConfiguredOpenTelemetrySdk.builder().build().getOpenTelemetrySdk();
   }
 
   void prepareConfiguration(NamedList<?> args) {
     injectPluginSettingsIfNotConfigured(args);
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
-    setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+    setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    if (EnvUtils.getProperty("host") != null) {
-      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("host")));
+    if (EnvUtils.getProperty("solr.host.advertise") != null) {
+      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("solr.host.advertise")));
     }
 
     final String currentConfig = getCurrentOtelConfigAsString();

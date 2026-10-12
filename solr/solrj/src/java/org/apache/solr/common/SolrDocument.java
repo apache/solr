@@ -482,11 +482,4 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
     boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
     return !isEmpty;
   }
-
-  @Override
-  @Deprecated
-  public int getChildDocumentCount() {
-    if (_childDocuments == null) return 0;
-    return _childDocuments.size();
-  }
 }

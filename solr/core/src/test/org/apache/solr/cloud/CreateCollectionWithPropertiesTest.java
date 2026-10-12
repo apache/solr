@@ -57,7 +57,12 @@ public class CreateCollectionWithPropertiesTest extends SolrCloudTestCase {
 
     // Verify that the core was created with user-defined properties
     Replica replica =
-        cloudClient.getClusterState().getCollection(collectionName).getReplicas().get(0);
+        cloudClient
+            .getClusterState()
+            .getCollection(collectionName)
+            .replicaStream()
+            .findFirst()
+            .orElseThrow();
     CoreDescriptor coreDescriptor =
         cluster
             .getReplicaJetty(replica)

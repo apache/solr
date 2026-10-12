@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -421,8 +422,8 @@ public class TermVectorComponent extends SearchComponent {
 
       @SuppressWarnings("unchecked")
       Map.Entry<String, Object>[] arr =
-          (NamedList.NamedListEntry<Object>[])
-              Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
+          (Map.Entry<String, Object>[])
+              Array.newInstance(AbstractMap.SimpleEntry.class, rb.resultIds.size());
 
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0

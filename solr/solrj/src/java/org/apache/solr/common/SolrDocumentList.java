@@ -86,7 +86,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument> implements MapWrit
     return "{numFound="
         + numFound
         + ",numFoundExact="
-        + String.valueOf(numFoundExact)
+        + numFoundExact
         + ",start="
         + start
         + (maxScore != null ? ",maxScore=" + maxScore : "")

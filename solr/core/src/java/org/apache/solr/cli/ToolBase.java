@@ -18,17 +18,31 @@
 package org.apache.solr.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.cli.CommandLine;
+import java.util.concurrent.Callable;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.util.StartupLoggingUtils;
+import picocli.CommandLine;
 
-public abstract class ToolBase implements Tool {
+/**
+ * Base class for {@code bin/solr} tools.
+ *
+ * <p>Two command line parsers are supported while the migration from commons-cli to picocli is in
+ * progress: {@link #runImpl} serves the commons-cli path and {@link #callTool()} serves the picocli
+ * path. {@link #callTool()} is deliberately abstract so that every tool has to state which of the
+ * two it supports; tools that have not been ported yet throw {@link UnsupportedOperationException}
+ * from it, and are not registered as picocli subcommands.
+ */
+public abstract class ToolBase implements Tool, Callable<Integer> {
+  @CommandLine.Mixin private HelpMixin helpMixin;
+
+  @CommandLine.Option(
+      names = {"-v", "--verbose"},
+      description = "Enable verbose mode.")
+  private boolean verbose = false;
 
   protected final ToolRuntime runtime;
-
-  private boolean verbose = false;
 
   protected ToolBase(ToolRuntime runtime) {
     this.runtime = runtime;
@@ -71,19 +85,24 @@ public abstract class ToolBase implements Tool {
   }
 
   /**
-   * Provides the two ways of connecting to Solr for CLI Tools
+   * Provides the connection options for CLI Tools: {@code --solr-url}, {@code --zk-host}, and the
+   * unified {@code --solr-connection} (which accepts either form).
    *
-   * @return OptionGroup validates that only one option is supplied by the caller.
+   * @return OptionGroup that enforces only one of the connection options is supplied.
+   * @deprecated Only used by the commons-cli parser. Picocli tools mix in {@code ConnectionOptions}
+   *     instead.
    */
+  @Deprecated
   public OptionGroup getConnectionOptions() {
     OptionGroup optionGroup = new OptionGroup();
     optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
     optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION);
     return optionGroup;
   }
 
   @Override
-  public int runTool(CommandLine cli) throws Exception {
+  public int runTool(org.apache.commons.cli.CommandLine cli) throws Exception {
     verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
     raiseLogLevelUnlessVerbose();
 
@@ -112,5 +131,42 @@ public abstract class ToolBase implements Tool {
     }
   }
 
-  public abstract void runImpl(CommandLine cli) throws Exception;
+  /**
+   * @deprecated Implement {@link #callTool()} instead, which picocli invokes.
+   */
+  @Deprecated
+  public abstract void runImpl(org.apache.commons.cli.CommandLine cli) throws Exception;
+
+  /**
+   * Called by picocli to execute the tool's logic.
+   *
+   * <p>Every tool must implement this. A tool that has not been ported to picocli yet should throw
+   * {@link UnsupportedOperationException}, and must not be listed in {@link SolrCLI}'s {@code
+   * subcommands}.
+   */
+  public abstract int callTool() throws Exception;
+
+  /** Called by picocli for a tool invocation. Delegates to {@link #callTool()}. */
+  @Override
+  public Integer call() {
+    raiseLogLevelUnlessVerbose();
+
+    int toolExitStatus = 0;
+    try {
+      toolExitStatus = callTool();
+    } catch (Exception exc) {
+      // since this is a CLI, spare the user the stacktrace
+      String excMsg = exc.getMessage();
+      if (excMsg != null) {
+        CLIO.err("\nERROR: " + excMsg + "\n");
+        if (verbose) {
+          exc.printStackTrace(CLIO.getErrStream());
+        }
+        toolExitStatus = 1;
+      } else {
+        throw new RuntimeException(exc);
+      }
+    }
+    return toolExitStatus;
+  }
 }

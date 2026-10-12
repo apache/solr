@@ -47,7 +47,8 @@ class ConnectionImpl implements Connection {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String url;
-  private final SolrClientCache solrClientCache = new SolrClientCache();
+  private final SolrClientCache solrClientCache;
+  private final boolean closeClientCache;
   private final CloudSolrClient client;
   private final Properties properties;
   private final DatabaseMetaData databaseMetaData;
@@ -56,10 +57,17 @@ class ConnectionImpl implements Connection {
   private boolean closed;
   private SQLWarning currentWarning;
 
-  ConnectionImpl(String url, String zkHost, String collection, Properties properties)
+  ConnectionImpl(
+      String url,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
+      String collection,
+      Properties properties,
+      SolrClientCache solrClientCache)
       throws SQLException {
     this.url = url;
-    this.client = this.solrClientCache.getCloudSolrClient(zkHost);
+    this.closeClientCache = solrClientCache == null;
+    this.solrClientCache = closeClientCache ? new SolrClientCache() : solrClientCache;
+    this.client = this.solrClientCache.getCloudSolrClient(solrConnection);
     this.collection = collection;
     this.properties = properties;
     this.connectionStatement = createStatement();
@@ -133,7 +141,7 @@ class ConnectionImpl implements Connection {
         this.connectionStatement.close();
       }
     } finally {
-      if (this.solrClientCache != null) {
+      if (closeClientCache) {
         this.solrClientCache.close();
       }
     }

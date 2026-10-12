@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.hasItem;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -197,9 +197,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
       while (al.size() >= 2) {
         p.add(al.remove(0), al.remove(0));
       }
-      return new MaxScoreQParser(
-              q, p, new MapSolrParams(Collections.singletonMap("df", "text")), req(q))
-          .parse();
+      return new MaxScoreQParser(q, p, new MapSolrParams(Map.of("df", "text")), req(q)).parse();
     } catch (SyntaxError syntaxError) {
       fail("Failed with exception " + syntaxError.getMessage());
     }

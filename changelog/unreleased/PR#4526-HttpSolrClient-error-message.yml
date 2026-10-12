@@ -1,0 +1,9 @@
+title: >
+  HttpSolrClient: made error messages more consistent, avoiding complaining about the content-type
+  when it's text/html
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4526
+    url: https://github.com/apache/solr/pull/4526

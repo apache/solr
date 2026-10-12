@@ -364,9 +364,7 @@ public class DistributedApiAsyncTracker {
         // Unlikely race, but not impossible...
         if (log.isInfoEnabled()) {
           log.info(
-              "AsyncId ephemeral node "
-                  + getPath(asyncId)
-                  + " vanished from underneath us. Funny."); // nowarn
+              "AsyncId ephemeral node {} vanished from underneath us. Funny.", getPath(asyncId));
         }
         return State.NOT_FOUND;
       }
@@ -374,9 +372,8 @@ public class DistributedApiAsyncTracker {
       if (bytes == null) {
         // This is not expected. The ephemeral nodes are always created with content.
         log.error(
-            "AsyncId ephemeral node "
-                + getPath(asyncId)
-                + " has null content. This is unexpected (bug)."); // nowarn
+            "AsyncId ephemeral node {} has null content. This is unexpected (bug).",
+            getPath(asyncId));
         return State.NOT_FOUND;
       }
 
@@ -387,11 +384,9 @@ public class DistributedApiAsyncTracker {
         return State.SUBMITTED;
       } else {
         log.error(
-            "AsyncId ephemeral node "
-                + getPath(asyncId)
-                + " has unexpected content \""
-                + content
-                + "\". This is unexpected (bug)."); // nowarn
+            "AsyncId ephemeral node {} has unexpected content \"{}\". This is unexpected (bug).",
+            getPath(asyncId),
+            content);
         return State.NOT_FOUND;
       }
     }

@@ -108,8 +108,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testContextFilterParamIsIgnoredWhenContextIsNotImplemented() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -128,8 +127,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testContextFilteringIsIgnoredWhenContextIsImplementedButNotConfigured() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -150,9 +148,8 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
             IllegalArgumentException.class,
             () -> {
               h.query(
+                  rh,
                   req(
-                      "qt",
-                      rh,
                       SuggesterParams.SUGGEST_BUILD,
                       "true",
                       SuggesterParams.SUGGEST_DICT,
@@ -164,8 +161,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // When not building, no exception is thrown
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "false",
@@ -179,15 +175,15 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testContextFilterIsTrimmed() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
             SuggesterParams.SUGGEST_DICT,
             "suggest_blended_infix_suggester",
             SuggesterParams.SUGGEST_CONTEXT_FILTER_QUERY,
-            "     ", // trimmed to null... just as if there was no context filter param
+            "     ",
+            // trimmed to null... just as if there was no context filter param
             SuggesterParams.SUGGEST_Q,
             "examp"),
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='examp']/int[@name='numFound'][.='3']");
@@ -195,8 +191,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   public void testExplicitFieldedQuery() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -213,8 +208,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   public void testContextFilterOK() {
     // No filtering
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -229,8 +223,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // TermQuery
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -245,8 +238,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // OR BooleanQuery
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -262,8 +254,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // AND BooleanQuery
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -278,8 +269,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // PrefixQuery
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -294,8 +284,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // RangeQuery
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -311,8 +300,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
     // WildcardQuery
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -330,8 +318,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   public void testStringContext() {
     // Here, the context field is a string, so it's case-sensitive
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -344,8 +331,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester_string']/lst[@name='examp']/int[@name='numFound'][.='0']");
 
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -361,8 +347,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testContextFilterOnInvalidFieldGivesNoSuggestions() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
@@ -378,15 +363,15 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testContextFilterUsesAnalyzer() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",
             SuggesterParams.SUGGEST_DICT,
             "suggest_blended_infix_suggester",
             SuggesterParams.SUGGEST_CONTEXT_FILTER_QUERY,
-            "CTx1", // Will not match due to case
+            "CTx1",
+            // Will not match due to case
             SuggesterParams.SUGGEST_Q,
             "examp"),
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='examp']/int[@name='numFound'][.='0']");
@@ -396,8 +381,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   @Test
   public void testContextFilterWithHighlight() {
     assertQ(
-        req(
-            "qt",
+        reqWithPath(
             rh,
             SuggesterParams.SUGGEST_BUILD,
             "true",

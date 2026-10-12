@@ -1,0 +1,8 @@
+title: Optional reRankCutoff field returned in responseHeader. Used to return main sort value(s) from the lowest ranked document eligible for inclusion in rerank.
+type: added
+authors:
+  - name: Darren Shaw
+    nick: shawdm
+links:
+  - name: SOLR-18245
+    url: https://issues.apache.org/jira/browse/SOLR-18245

@@ -23,7 +23,6 @@ import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -260,7 +259,7 @@ public class CollationField extends FieldType {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value));
+      return List.of(createField(field, value));
     }
   }
 

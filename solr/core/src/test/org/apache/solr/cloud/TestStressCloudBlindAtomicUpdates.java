@@ -17,11 +17,9 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -34,6 +32,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -140,9 +139,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     CLIENTS.clear();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
-      final URL baseUrl = jetty.getBaseUrl();
-      assertNotNull("Jetty has null baseUrl: " + jetty, baseUrl);
-      CLIENTS.add(getHttpSolrClient(baseUrl.toString(), COLLECTION_NAME));
+      CLIENTS.add(new CollectionScopedSolrClient(jetty.getSolrClient(), COLLECTION_NAME));
     }
 
     // sanity check no one broke the assumptions we make about our schema
@@ -167,12 +164,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       IOUtils.closeQuietly(COLLECTION_CLIENT);
       COLLECTION_CLIENT = null;
     }
-    for (SolrClient client : CLIENTS) {
-      if (null == client) {
-        log.error("CLIENTS contains a null SolrClient???");
-      }
-      IOUtils.closeQuietly(client);
-    }
+    // the jettys own these clients
     CLIENTS.clear();
   }
 
@@ -428,8 +420,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       log.info("worker={}, docId={}, delta={}", workerId, docId, delta);
 
       SolrClient client = getRandClient(rand);
-      SolrInputDocument doc =
-          doc(f("id", "" + docId), f(updateField, Collections.singletonMap("inc", delta)));
+      SolrInputDocument doc = doc(f("id", "" + docId), f(updateField, Map.of("inc", delta)));
       UpdateResponse rsp = update(doc).process(client);
       assertEquals(doc + " => " + rsp, 0, rsp.getStatus());
 

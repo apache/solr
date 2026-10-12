@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonList;
-
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
@@ -121,7 +119,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     otherJetties.remove(neverLeader);
 
     // first shutdown a node that will never be a leader
-    forceNodeFailures(singletonList(neverLeader));
+    forceNodeFailures(List.of(neverLeader));
 
     // node failure and recovery via PeerSync
     log.info("Forcing PeerSync");
@@ -143,7 +141,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
     // now shutdown the original leader
     log.info("Now shutting down initial leader");
-    forceNodeFailures(singletonList(initialLeaderJetty));
+    forceNodeFailures(List.of(initialLeaderJetty));
     log.info("Updating mappings from zk");
     waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
     updateMappingsFromZk(jettys, clients, true);

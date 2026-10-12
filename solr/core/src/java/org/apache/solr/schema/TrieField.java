@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -85,10 +84,9 @@ import org.slf4j.LoggerFactory;
  *
  * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
- * @deprecated Trie fields are deprecated as of Solr 7.0
- * @see PointField
+ * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link PointField} instead.
  */
-@Deprecated
+@Deprecated(since = "7.0")
 public class TrieField extends NumericFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
@@ -690,7 +688,7 @@ public class TrieField extends NumericFieldType {
 
       return fields;
     } else {
-      return Collections.singletonList(createField(sf, value));
+      return List.of(createField(sf, value));
     }
   }
 
@@ -721,7 +719,11 @@ public class TrieField extends NumericFieldType {
   }
 }
 
-@Deprecated
+/**
+ * @deprecated Internal helper for {@link TrieDateField}, which is deprecated. Use {@link
+ *     DatePointField} instead.
+ */
+@Deprecated(since = "7.0")
 class TrieDateFieldSource extends LongFieldSource {
 
   public TrieDateFieldSource(String field) {

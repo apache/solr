@@ -18,6 +18,7 @@
 package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN_OR_REMOTEPROXY;
 import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
@@ -212,6 +213,11 @@ public class V2HttpCall extends HttpSolrCall {
     solrReq.getContext().put(CoreContainer.class.getName(), cores);
     requestType = AuthorizationContext.RequestType.ADMIN;
     action = ADMIN;
+
+    String callingLockId = req.getHeader(CALLING_LOCK_ID_HEADER);
+    if (callingLockId != null && !callingLockId.isBlank()) {
+      solrReq.getContext().put(CALLING_LOCK_ID_HEADER, callingLockId);
+    }
   }
 
   protected void parseRequest() throws Exception {
@@ -325,7 +331,8 @@ public class V2HttpCall extends HttpSolrCall {
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
     containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
     containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
-    containerRequest.setProperty(RequestContextKeys.COLLECTION_LIST, collectionsList);
+    containerRequest.setProperty(
+        RequestContextKeys.COLLECTION_LIST, getAuthorizationCollectionsList());
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_RSP, response);
     if (core != null) {
       containerRequest.setProperty(RequestContextKeys.SOLR_CORE, core);

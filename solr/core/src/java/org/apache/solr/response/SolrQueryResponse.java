@@ -258,7 +258,7 @@ public class SolrQueryResponse {
   }
 
   /** Set response header */
-  public void addResponseHeader(NamedList<Object> header) {
+  public void addResponseHeader(SimpleOrderedMap<Object> header) {
     values.add(RESPONSE_HEADER_KEY, header);
   }
 
@@ -268,10 +268,9 @@ public class SolrQueryResponse {
   }
 
   /** Response header to be logged */
-  public NamedList<Object> getResponseHeader() {
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get(RESPONSE_HEADER_KEY);
-    return header;
+  @SuppressWarnings("unchecked")
+  public SimpleOrderedMap<Object> getResponseHeader() {
+    return (SimpleOrderedMap<Object>) values.get(RESPONSE_HEADER_KEY);
   }
 
   /** Set response */

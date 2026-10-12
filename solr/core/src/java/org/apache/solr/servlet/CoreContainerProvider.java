@@ -153,13 +153,13 @@ public class CoreContainerProvider implements ServletContextListener {
 
       logWelcomeBanner(extraProperties);
 
-      String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
+      String muteConsole = EnvUtils.getProperty(SOLR_LOG_MUTECONSOLE);
       if (muteConsole != null
           && !Arrays.asList("false", "0", "off", "no")
               .contains(muteConsole.toLowerCase(Locale.ROOT))) {
         StartupLoggingUtils.muteConsole();
       }
-      String logLevel = System.getProperty(SOLR_LOG_LEVEL);
+      String logLevel = EnvUtils.getProperty(SOLR_LOG_LEVEL);
       if (logLevel != null) {
         log.info("Log level override, property solr.log.level={}", logLevel);
         StartupLoggingUtils.changeLogLevel(logLevel);
@@ -208,7 +208,7 @@ public class CoreContainerProvider implements ServletContextListener {
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
-      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR));
+      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", EnvUtils.getProperty(SOLR_INSTALL_DIR));
     }
     if (log.isInfoEnabled()) {
       log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
@@ -241,7 +241,7 @@ public class CoreContainerProvider implements ServletContextListener {
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
                   + "Unable to get the specific file due to an exception."
                   + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
-              System.getProperty("solr.logs.dir"));
+              EnvUtils.getProperty("solr.logs.dir"));
       log.info(logMessage, e);
     }
   }
@@ -316,7 +316,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // Now try system property
       final String prop = "solr.solr.home";
       source = "system property: " + prop;
-      home = System.getProperty(prop);
+      home = EnvUtils.getProperty(prop);
     }
 
     if (null == home) {

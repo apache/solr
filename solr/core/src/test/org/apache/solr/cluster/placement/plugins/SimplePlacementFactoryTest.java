@@ -157,7 +157,7 @@ public class SimplePlacementFactoryTest extends AbstractPlacementFactoryTest {
                 shard ->
                     new PlacementRequestImpl(
                         solrCollection,
-                        Collections.singleton(shard),
+                        Set.of(shard),
                         new HashSet<>(liveNodes),
                         ReplicaCount.of(1, 0, 0)))
             .collect(Collectors.toList());

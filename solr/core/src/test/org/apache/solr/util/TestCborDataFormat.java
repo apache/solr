@@ -135,8 +135,10 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       request.setResponseParser(new InputStreamResponseParser(wt));
     }
     result = client.request(request, testCollection);
-    InputStream inputStream = (InputStream) result.get("stream");
-    byte[] b = inputStream.readAllBytes();
+    byte[] b;
+    try (InputStream inputStream = (InputStream) result.get("stream")) {
+      b = inputStream.readAllBytes();
+    }
     System.out.println(wt + "_time : " + timer.getTime());
     System.out.println(wt + "_size : " + b.length);
     return b;
