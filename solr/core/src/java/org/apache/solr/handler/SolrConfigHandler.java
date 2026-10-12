@@ -919,6 +919,58 @@ public class SolrConfigHandler extends RequestHandlerBase
     return activeReplicas;
   }
 
+  public static void maybeRefreshStaleConfig(
+      SolrCore core, int expectedOverlayVersion, int expectedParamsVersion) {
+    boolean isStale =
+        isExpectedVersionStale(
+                "overlay", expectedOverlayVersion, core.getSolrConfig().getOverlay().getVersion())
+            | isExpectedVersionStale(
+                "params",
+                expectedParamsVersion,
+                core.getSolrConfig().getRequestParams().getZnodeVersion());
+    if (isStale && core.getResourceLoader() instanceof ZkSolrResourceLoader) {
+      final Lock reloadLock =
+          ((SolrConfigHandler) core.getRequestHandler("/config")).getReloadLock();
+      new Thread(
+              () -> {
+                if (!reloadLock.tryLock()) {
+                  log.info("Another reload is in progress . Not doing anything");
+                  return;
+                }
+                try {
+                  log.info("Trying to update my configs");
+                  SolrCore.getConfListener(core, (ZkSolrResourceLoader) core.getResourceLoader())
+                      .run();
+                } catch (Exception e) {
+                  log.error("Unable to refresh conf ", e);
+                } finally {
+                  reloadLock.unlock();
+                }
+              },
+              SolrConfigHandler.class.getSimpleName() + "-refreshconf")
+          .start();
+    } else {
+      if (log.isInfoEnabled()) {
+        log.info(
+            "isStale {} , resourceloader {}",
+            isStale,
+            core.getResourceLoader().getClass().getName());
+      }
+    }
+  }
+
+  private static boolean isExpectedVersionStale(String label, int expected, int actual) {
+    if (expected == -1) {
+      return false;
+    }
+    if (expected > actual) {
+      log.info("expecting {} version {} but my version is {}", label, expected, actual);
+      return true;
+    }
+    log.info("I already have the expected version {} of {}", expected, label);
+    return false;
+  }
+
   @Override
   public Name getPermissionName(AuthorizationContext ctx) {
     switch (ctx.getHttpMethod()) {
