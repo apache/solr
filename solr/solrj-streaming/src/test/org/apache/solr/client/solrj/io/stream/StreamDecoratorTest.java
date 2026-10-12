@@ -1015,27 +1015,39 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("fetch", FetchStream.class);
 
+      String expression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a i\","
+              + " batchSize=\"2\", fl=\"subject\")";
       IOException e =
           assertThrows(
-              IOException.class,
-              () -> {
-                TupleStream stream =
-                    factory.constructStream(
-                        "fetch("
-                            + COLLECTIONORALIAS
-                            + ", search("
-                            + COLLECTIONORALIAS
-                            + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a i\","
-                            + " batchSize=\"2\", fl=\"subject\")");
-                StreamContext context = new StreamContext();
-                context.setSolrClientCache(solrClientCache);
-                stream.setStreamContext(context);
-                getTuples(stream);
-              });
-      assertTrue(e.getMessage(), e.getMessage().contains("invalid join field name [a i]"));
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, expression));
+      assertTrue(e.getMessage(), causeChainContains(e, "invalid join field name [a i]"));
     } finally {
       solrClientCache.close();
     }
+  }
+
+  private List<Tuple> drainFetchStream(
+      StreamFactory factory, SolrClientCache solrClientCache, String expression)
+      throws IOException {
+    TupleStream stream = factory.constructStream(expression);
+    StreamContext context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    return getTuples(stream);
+  }
+
+  private static boolean causeChainContains(Throwable t, String text) {
+    for (; t != null; t = t.getCause()) {
+      if (t.getMessage() != null && t.getMessage().contains(text)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Test
