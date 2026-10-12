@@ -66,7 +66,6 @@ public class GetConfigAPI {
         "/config/queryResponseWriter",
         "/config/initParams",
         "/config/listener",
-        "/config/indexConfig",
         "/config/requestDispatcher",
         "/config/jmx",
         "/config/queryParser",
