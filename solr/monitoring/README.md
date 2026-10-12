@@ -231,10 +231,28 @@ or a recommended production setup.
 
 ```bash
 cd dev
-docker-compose up -d
+./stack.sh                  # bundled Solr nodes + monitoring + traffic generator
+./stack.sh --local-solr     # monitoring only, scraping a Solr you already run on :8983
+./stack.sh --down           # stop and remove everything
 ```
 
-Services: Solr (`:8983`), Prometheus (`:9090`), Grafana (`:3000`, admin/admin), Alertmanager (`:9093`)
+Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes sit behind the
+`bundled-solr` compose profile, so a plain `docker compose up` starts the monitoring services
+with no Solr to scrape.
+
+Services: Solr (`:8983`, `:8984`), Prometheus (`:9090`), Grafana (`:3000`, admin/admin), Alertmanager (`:9093`)
+
+The bundled nodes run the released `solr:10` image, which predates some of the metrics this
+dashboard uses. Against that image the *System and Heap Memory*, *JVM CPU Utilization* and
+*MMap Efficiency* panels stay empty and `SolrHighMmapRatio` never fires, because
+`jvm_system_memory_bytes` does not exist yet and CPU utilization is still named
+`jvm_cpu_recent_utilization_ratio` there. To exercise those panels, point the stack at a Solr
+built from source:
+
+```bash
+SOLR_IMAGE=solr:10.1 ./stack.sh      # once 10.1 is released
+./stack.sh --local-solr              # or scrape your own source build on :8983
+```
 
 ---
 

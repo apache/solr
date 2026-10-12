@@ -41,14 +41,17 @@
 #   Alertmanager http://localhost:9093
 #   trafficgen   (no port — continuously indexes/searches the 'test' collection)
 #
-# Environment variables (set by start.sh, or override manually):
+# Environment variables (set by stack.sh, or override manually):
 #   PROMETHEUS_CONFIG   Path to the prometheus config to mount (default: ./prometheus/prometheus.yml)
 #   SOLR_URL            Solr base URL for trafficgen (default: http://solr1:8983/solr)
+#   SOLR_IMAGE          Solr image for the bundled nodes (default: solr:10).  The released
+#                       solr:10 (10.0.0) predates some metrics the dashboard uses, so a few
+#                       panels stay empty — see README.md, "Developer Convenience Stack".
 # ============================================================================
 
 services:
   solr1:
-    image: solr:10
+    image: ${SOLR_IMAGE:-solr:10}
     profiles: [bundled-solr]
     ports:
       - "8983:8983"
@@ -62,7 +65,7 @@ services:
       start_period: 40s
 
   solr2:
-    image: solr:10
+    image: ${SOLR_IMAGE:-solr:10}
     profiles: [bundled-solr]
     ports:
       - "8984:8983"

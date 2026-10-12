@@ -15,18 +15,17 @@
 
 # prometheus-local.yml — Prometheus config for scraping a locally-running Solr instance.
 #
-# Used when the monitoring stack is started with: ./start.sh --local-solr
+# Used when the monitoring stack is started with: ./stack.sh --local-solr
 #
 # 'host.docker.internal' resolves to the host machine from inside Docker (Mac, Windows,
 # and Linux with Docker 20.10+).  The docker-compose.yml adds the necessary extra_hosts
 # entry so this works on Linux as well.
 #
-# Both :8983 and :8984 are listed to match a two-node local SolrCloud setup.
-# If you are running only one node, the :8984 target will show scrape errors in Prometheus —
-# that is harmless.  Edit the targets list below to match your actual setup.
+# A single node on :8983 is scraped by default.  Add ':8984' (and further ports) to the
+# targets list below to match a multi-node local SolrCloud setup.
 #
-# metrics_path is /api/metrics (Solr 10.1+ built from source).
-# Change to /solr/admin/metrics for a released Solr 10.0 build.
+# metrics_path is the v1 endpoint /solr/admin/metrics, which every Solr 10.x build serves.
+# The shorter v2 /api/metrics alias exists from Solr 10.1 onwards.
 
 global:
   scrape_interval: 15s

@@ -19,7 +19,7 @@
 # Usage:
 #   ./stack.sh                            Full stack: bundled Solr + monitoring + trafficgen
 #   ./stack.sh --local-solr               Monitoring only; Prometheus scrapes your local Solr
-#                                         at localhost:8983 and :8984 (no bundled Solr started)
+#                                         at localhost:8983 (no bundled Solr started)
 #   ./stack.sh --local-solr URL           Same, but trafficgen is also pointed at URL
 #                                         (implies --trafficgen)
 #   ./stack.sh --local-solr --trafficgen  Local mode + trafficgen at default localhost:8983
@@ -27,9 +27,7 @@
 #   ./stack.sh --help                     Show this help
 #
 # In --local-solr mode Prometheus uses prometheus/prometheus-local.yml which scrapes
-# host.docker.internal:8983 and :8984.  Edit that file to change ports or targets.
-# The metrics_path is /api/metrics (Solr 10.1+ built from source); change to
-# /solr/admin/metrics for released Solr 10.0 builds.
+# host.docker.internal:8983.  Edit that file to add further nodes or change the port.
 
 set -euo pipefail
 
@@ -113,8 +111,7 @@ if $LOCAL_MODE; then
   echo "  Prometheus: http://localhost:9090"
   echo "  Alertmanager: http://localhost:9093"
   echo ""
-  echo "Tip: Prometheus may show scrape errors for :8984 if you are running only one Solr node."
-  echo "     Edit prometheus/prometheus-local.yml to adjust scrape targets."
+  echo "Tip: edit prometheus/prometheus-local.yml to add further nodes or change the port."
 else
   # Bundled mode: activate the bundled-solr profile so solr1 and solr2 start
   COMPOSE_PROFILES=bundled-solr docker compose up -d
