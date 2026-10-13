@@ -127,9 +127,12 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
     shard1Docs.setNumFound(shard1Size);
     shard1Docs.setNumFoundExact(true);
 
+    // shard2 returns fewer documents than it matched, as a shard does for any query with more
+    // hits than rows, so a fallback that added the number of returned documents would be wrong
+    final long shard2NumFound = 8;
     final NamedList<Object> shard2ResponseHeader = new NamedList<>();
     SolrDocumentList shard2Docs = createSolrDocumentList(shard2Size);
-    shard2Docs.setNumFound(shard2Size);
+    shard2Docs.setNumFound(shard2NumFound);
     shard2Docs.setNumFoundExact(true);
 
     ShardRequest shardRequest =
@@ -140,9 +143,9 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
     QueryComponent queryComponent = new QueryComponent();
     queryComponent.mergeIds(responseBuilder, shardRequest);
 
-    assertEquals(shard1Size + shard2Size, responseBuilder.getResponseDocs().getNumFound());
+    assertEquals(shard1Size + shard2NumFound, responseBuilder.getResponseDocs().getNumFound());
     assertEquals(
-        (long) (shard1Size + shard2Size),
+        shard1Size + shard2NumFound,
         responseBuilder
             .rsp
             .getResponseHeader()
@@ -159,13 +162,13 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
             .build();
     MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
 
-    // shard1 is skipped at merge time and reports an inexact count; a skipped
+    // shard1 is skipped at merge time, reports no hits and an inexact count; a skipped
     // shard contributes nothing to the merged totals, so its inexact flag must
     // not make the merged count inexact either
     final NamedList<Object> shard1ResponseHeader = new NamedList<>();
     shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-    SolrDocumentList shard1Docs = createSolrDocumentList(shard1Size);
-    shard1Docs.setNumFound(shard1Size);
+    SolrDocumentList shard1Docs = createSolrDocumentList(0);
+    shard1Docs.setNumFound(0);
     shard1Docs.setNumFoundExact(false);
     shard1Docs.setMaxScore(99.0f);
 
@@ -186,6 +189,42 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
     SolrDocumentList responseDocs = responseBuilder.getResponseDocs();
     assertEquals(shard2Size, responseDocs.getNumFound());
     assertEquals(Boolean.TRUE, responseDocs.getNumFoundExact());
+  }
+
+  @Test
+  public void skippedShardWithHitsMakesMergedCountInexact() {
+    SortField sortField = new SortField(SORT_FIELD_NAME, SortField.Type.INT);
+    SortSpec sortSpec =
+        MockSortSpecBuilder.create()
+            .withSortFields(new SortField[] {sortField})
+            .withIncludesNonScoreOrDocSortField(true)
+            .build();
+    MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
+
+    // shard1 is skipped and reported hits that are not in the merged count, so the
+    // merged count of shard2 alone is a lower bound and must not be reported exact
+    final NamedList<Object> shard1ResponseHeader = new NamedList<>();
+    shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    SolrDocumentList shard1Docs = createSolrDocumentList(shard1Size);
+    shard1Docs.setNumFound(shard1Size);
+    shard1Docs.setNumFoundExact(true);
+
+    final NamedList<Object> shard2ResponseHeader = new NamedList<>();
+    SolrDocumentList shard2Docs = createSolrDocumentList(shard2Size);
+    shard2Docs.setNumFound(shard2Size);
+    shard2Docs.setNumFoundExact(true);
+
+    ShardRequest shardRequest =
+        MockShardRequest.create()
+            .withShardResponse(shard1ResponseHeader, shard1Docs)
+            .withShardResponse(shard2ResponseHeader, shard2Docs);
+
+    QueryComponent queryComponent = new QueryComponent();
+    queryComponent.mergeIds(responseBuilder, shardRequest);
+
+    SolrDocumentList responseDocs = responseBuilder.getResponseDocs();
+    assertEquals(shard2Size, responseDocs.getNumFound());
+    assertEquals(Boolean.FALSE, responseDocs.getNumFoundExact());
   }
 
   @Test
