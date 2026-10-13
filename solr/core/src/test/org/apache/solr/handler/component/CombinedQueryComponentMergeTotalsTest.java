@@ -220,6 +220,7 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
     ResponseBuilder rb = newResponseBuilder(sortSpec, "q0");
     cqc.mergeIds(rb, shardRequest(shard1, shard2));
     assertEquals("numFound", 3, rb.getResponseDocs().getNumFound());
+    assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
     assertEquals(
         "approximateTotalHits",
         5L,
@@ -269,6 +270,34 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
             .getResponseHeader()
             .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
     assertEquals("response size", 3, rb.getResponseDocs().size());
+  }
+
+  /** Two skipped partial shards; one reports hits, so the merged count is inexact. */
+  @Test
+  public void skippedPartialShardWithHitsClearsExactness() {
+    SolrDocument a1 = doc("a1", 2.0f), a2 = doc("a2", 1.0f);
+    ShardResponse shard1 =
+        shardResponse(
+            "shard1",
+            header(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE),
+            docList(2, true, a1, a2),
+            List.of(docList(2, true, a1, a2)),
+            null);
+    ShardResponse shard2 =
+        shardResponse(
+            "shard2",
+            header(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE),
+            docList(0, true),
+            List.of(docList(0, true)),
+            null);
+    SchemaField intField = currentRequestSchemaField("intDefault");
+    SortSpec sortSpec =
+        new SortSpec(
+            new Sort(new SortField("intDefault", SortField.Type.INT)), List.of(intField), 10, 0);
+    ResponseBuilder rb = newResponseBuilder(sortSpec, "q0");
+    cqc.mergeIds(rb, shardRequest(shard1, shard2));
+    assertEquals("numFound", 0, rb.getResponseDocs().getNumFound());
+    assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
   }
 
   private SchemaField currentRequestSchemaField(String fieldName) {
