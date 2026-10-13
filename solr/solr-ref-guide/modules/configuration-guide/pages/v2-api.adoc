@@ -59,7 +59,7 @@ For the "gettingstarted" collection, set the replication factor and whether to a
 
 [source,bash]
 ----
-curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
+curl 'http://localhost:8983/api/c/gettingstarted' -H 'Content-type:application/json' -d '
 { modify: { replicationFactor: "3" } }'
 
 {"responseHeader":{"status":0,"QTime":842}}
@@ -69,7 +69,7 @@ See the collections, shards, and replicas in the cluster:
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections?detailed=true
+curl 'http://localhost:8983/api/collections?detailed=true'
 
 {"responseHeader":{"status":0,"QTime":1},"collectionsDetail":{"gettingstarted":{"health":"GREEN","shards":{"shard1":{"state":"active"}}}}}
 ----
@@ -78,7 +78,7 @@ Set a cluster property:
 
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/cluster/properties/urlScheme -H 'Content-type: application/json' -d '
+curl -X PUT 'http://localhost:8983/api/cluster/properties/urlScheme' -H 'Content-type: application/json' -d '
 { "value": "http" }'
 
 {"responseHeader":{"status":0,"QTime":4}}
