@@ -288,7 +288,9 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertFalse("single-term query should not produce a phrase boost", phrase.matcher(resp).find());
 
     // Whitespace-free query that analyzes into multiple tokens: the phrase boost is meaningful and
-    // must be retained.
+    // must be retained. The qf clause is also the phrase "wi fi" here (this schema's version
+    // defaults autoGeneratePhraseQueries to true), so match the pf clause by the handler's ps=100
+    // slop and the pf boost.
     resp =
         h.query(
             req(
@@ -304,7 +306,31 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "true"));
     assertTrue(
         "multi-token query should retain its phrase boost",
-        Pattern.compile("subword:\"wi fi\"").matcher(resp).find());
+        Pattern.compile("subword:\"wi fi\"~100\\)\\^10\\.0").matcher(resp).find());
+
+    // With autoGeneratePhraseQueries="false" (the default since schema 1.4), the qf clause for
+    // "wi-fi" is a plain disjunction of its tokens, so the pf boost is the only adjacency signal.
+    // Gating on the user query's clause count (one, since there's no whitespace) would wrongly drop
+    // it; this is also the shape of CJK bigram queries.
+    resp =
+        h.query(
+            req(
+                "q",
+                "wi-fi",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword_noautophrase",
+                "pf",
+                "subword_noautophrase^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "qf clause should not be a phrase without autoGeneratePhraseQueries",
+        Pattern.compile("subword_noautophrase:wi subword_noautophrase:fi").matcher(resp).find());
+    assertTrue(
+        "multi-token query should retain its phrase boost without autoGeneratePhraseQueries",
+        Pattern.compile("subword_noautophrase:\"wi fi\"~100\\)\\^10\\.0").matcher(resp).find());
 
     // A single input term expanded by a multi-word synonym ("usa" => "united states of america")
     // likewise analyzes into multiple tokens, so its phrase boost must be retained.
@@ -323,6 +349,8 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "true"));
     assertTrue(
         "multi-word synonym query should retain its phrase boost",
-        Pattern.compile("text_syn:\"united states of america\"").matcher(resp).find());
+        Pattern.compile("text_syn:\"united states of america\"~100\\)\\^10\\.0")
+            .matcher(resp)
+            .find());
   }
 }
