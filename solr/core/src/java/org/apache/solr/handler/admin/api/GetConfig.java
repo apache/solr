@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ConfigApi;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
@@ -47,6 +48,11 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.SolrPluginUtils;
 
 public class GetConfig extends JerseyResource implements ConfigApi.Get {
+
+  // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigComponent.
+  // TODO: Remove this set when remaining GET /config/{component} sections also migrate.
+  public static final Set<String> MIGRATED_CONFIG_COMPONENTS =
+      Set.of("updateHandler", "directoryFactory", "indexConfig", "codecFactory");
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -89,15 +95,36 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return response;
   }
 
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
+  public ConfigInfoResponse getConfigComponent(String componentName) {
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
+    Map<String, Object> section = new LinkedHashMap<>();
+    section.put(componentName, solrConfigAsMap().get(componentName));
+    response.config = jsonSafeCopy(section);
+    return response;
+  }
+
+  private Map<String, Object> solrConfigAsMap() {
+    return Utils.convertToMap(solrQueryRequest.getCore().getSolrConfig(), new LinkedHashMap<>());
+  }
+
+  @SuppressWarnings("unchecked")
+  private NullKeyTolerantMap jsonSafeCopy(Map<String, Object> map) {
+    final var jsonSafeCopy = new NullKeyTolerantMap("children");
+    jsonSafeCopy.putAll((Map<String, Object>) Utils.getDeepCopy(map, 20, true));
+    return jsonSafeCopy;
+  }
+
   @SuppressWarnings({"unchecked"})
   private Map<String, Object> buildConfigMap(
       SolrQueryRequest solrQueryRequest, boolean expandParams) {
-    Map<String, Object> map =
-        Utils.convertToMap(solrQueryRequest.getCore().getSolrConfig(), new LinkedHashMap<>());
+
+    Map<String, Object> configMap = solrConfigAsMap();
 
     Map<String, Object> reqHandlers =
         (Map<String, Object>)
-            map.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
+            configMap.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
     List<PluginInfo> plugins = solrQueryRequest.getCore().getImplicitHandlers();
     for (PluginInfo plugin : plugins) {
       if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlers.containsKey(plugin.name)) {
@@ -111,9 +138,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       }
     }
 
-    final var jsonSafeCopy = new NullKeyTolerantMap("children");
-    jsonSafeCopy.putAll((Map<String, Object>) Utils.getDeepCopy(map, 20, true));
-    return jsonSafeCopy;
+    return jsonSafeCopy(configMap);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

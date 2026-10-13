@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.model.ConfigOverlayResponse;
@@ -68,5 +69,16 @@ public interface ConfigApi {
             @DefaultValue("-1")
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
+
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    @GET
+    @Path("/{component:updateHandler|directoryFactory|indexConfig|codecFactory}")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a config section",
+        tags = {"config"})
+    ConfigInfoResponse getConfigComponent(
+        @PathParam("component") @Parameter(description = "Name of the config component")
+            String component);
   }
 }
