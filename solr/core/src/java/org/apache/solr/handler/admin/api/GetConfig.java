@@ -52,7 +52,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigComponent.
   // TODO: Remove this set when remaining GET /config/{component} sections also migrate.
   public static final Set<String> MIGRATED_CONFIG_COMPONENTS =
-      Set.of("query", "updateHandler", "directoryFactory", "indexConfig", "codecFactory");
+      Set.of("updateHandler", "directoryFactory", "indexConfig", "codecFactory");
 
   private final SolrQueryRequest solrQueryRequest;
 
