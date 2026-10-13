@@ -1,4 +1,4 @@
-title: Standalone security.json edits are now serialized and written atomically, so concurrent edits (such as the Admin UI granting several permissions at once) can no longer corrupt the file or overwrite each other; the file also no longer carries the internal version metadata
+title: Standalone security.json edits are serialized within one Solr process and written through a temporary file, so concurrent edits can no longer overwrite each other or leave a partly written file. The file also no longer carries the internal version metadata.
 type: fixed
 authors:
   - name: Nick Shanin
