@@ -225,6 +225,9 @@ public class SolrConfigHandler extends RequestHandlerBase
                     .getZnodeVersion(
                         req.getParams().getInt(ConfigOverlay.NAME, -1),
                         req.getParams().getInt(RequestParams.NAME, -1)));
+          } else if (GetConfig.MIGRATED_CONFIG_COMPONENTS.contains(parts.get(1))) {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                resp, new GetConfig(req).getConfigComponent(parts.get(1)));
           } else {
             Map<String, Object> m = getConfigDetails(parts.get(1), req);
             Map<String, Object> val = new LinkedHashMap<>();
