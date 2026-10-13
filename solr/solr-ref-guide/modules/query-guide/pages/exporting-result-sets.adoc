@@ -103,6 +103,7 @@ Wildcard patterns can be used for the field list (e.g. `fl=*_i`) and will be exp
 
 Field aliases (e.g. `fl=id,price:price_d`) and xref:document-transformers.adoc[document transformers] (e.g. `fl=id,[docid]`) are supported, and their output is also visible to a local streaming expression.
 Transformers are applied one document at a time, and those that depend on scores or on a list of matching documents won't work.
+Some transformers, like `[subquery]` and `[child]`, produce output that might not work well, or at all, with `/export` and streaming expressions.
 
 Returning scores is not supported at this time.
 
