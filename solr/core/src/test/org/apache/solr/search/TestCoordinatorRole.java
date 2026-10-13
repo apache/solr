@@ -234,19 +234,23 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       JettySolrRunner nrtJettyF = nrtJetty;
       JettySolrRunner pullJettyF = pullJetty;
       Random r = random();
-      final long establishBaselineMs = r.nextInt(1000);
       final long nrtDowntimeMs = r.nextInt(10000);
       // NOTE: indexing goes through the PULL-node client, so PULL is only stopped after the add
       // has completed (see addDone).
       final long pullServiceTimeMs = 1000 + (long) r.nextInt(9000);
       CountDownLatch addDone = new CountDownLatch(1);
+      // counted down by the main thread right before the phase1 NRT queries, so the NRT jetty
+      // stops as soon as those queries are under way instead of after a fixed sleep
+      CountDownLatch stopNrtJetty = new CountDownLatch(1);
       Future<?> jettyManipulationFuture =
           executor.submit(
               () -> {
                 // we manipulate the jetty instances in a separate thread to more closely mimic
                 // the behavior we'd see irl.
                 try {
-                  Thread.sleep(establishBaselineMs);
+                  if (!stopNrtJetty.await(2, TimeUnit.MINUTES)) {
+                    log.warn("phase1 NRT queries did not start in time; stopping NRT anyway");
+                  }
                   log.info("stopping NRT jetty ...");
                   nrtJettyF.stop();
                   log.info("NRT jetty stopped.");
@@ -271,6 +275,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       long start = new Date().getTime();
       long individualRequestStart = start;
       int count = 0;
+      stopNrtJetty.countDown();
       while (nrtCore.equals(
           hostCore =
               getHostCoreName(
@@ -283,10 +288,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
       long now = new Date().getTime();
       log.info(
-          "phase1 NRT queries count={}, overall_duration={}, baseline_expected_overall_duration={}, switch-to-pull_duration={}",
+          "phase1 NRT queries count={}, overall_duration={}, switch-to-pull_duration={}",
           count,
           now - start,
-          establishBaselineMs,
           now - individualRequestStart);
       // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
       // very fast, because our QA-based client already knows both replicas are active, the index
