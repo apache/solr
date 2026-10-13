@@ -80,5 +80,23 @@ public interface ConfigApi {
     ConfigInfoResponse getConfigComponent(
         @PathParam("component") @Parameter(description = "Name of the config component")
             String component);
+
+    // TODO: Keep this regex in sync with GetConfig.RICH_CONFIG_COMPONENTS
+    @GET
+    @Path("/{component:query|searchComponent|queryResponseWriter}")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a config section (with optional component filter)",
+        tags = {"config"})
+    ConfigInfoResponse getConfigSection(
+        @PathParam("component") @Parameter(description = "Name of the config section")
+            String component,
+        @QueryParam("componentName")
+            @Parameter(description = "Restrict to a named entry within the section")
+            String componentName,
+        @QueryParam("meta")
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
   }
 }
