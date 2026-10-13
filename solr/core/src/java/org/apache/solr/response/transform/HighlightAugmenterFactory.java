@@ -119,12 +119,7 @@ public class HighlightAugmenterFactory extends TransformerFactory {
                 == 1;
 
     return new HighlightAugmenter(
-        display,
-        field,
-        params,
-        parseHighlightQuery(params, req),
-        passThrough,
-        singleValue);
+        display, field, params, parseHighlightQuery(params, req), passThrough, singleValue);
   }
 
   /** Parses {@code hl.q}, as the highlight component does; null if absent. */
@@ -205,7 +200,7 @@ public class HighlightAugmenterFactory extends TransformerFactory {
                   .filter(s -> !s.isEmpty())
                   .toList();
       if (!snippets.isEmpty()) {
-        doc.setField(name, singleValue ? snippets.get(0) : snippets);
+        doc.setField(name, singleValue ? snippets.getFirst() : snippets);
       } else if (passThrough) {
         Object original =
             context.getDocFetcher().solrDoc(docid, originalValueFields).getFieldValue(field);
@@ -239,7 +234,7 @@ public class HighlightAugmenterFactory extends TransformerFactory {
     /** Returns the formatted highlight of the doc's field, or null if none. */
     Object highlight(int docId) throws IOException {
       CharSequence content =
-          loadFieldValues(fields, DocIdSetIterator.range(docId, docId + 1), 0).get(0)[0];
+          loadFieldValues(fields, DocIdSetIterator.range(docId, docId + 1), 0).getFirst()[0];
       if (content == null) {
         return null;
       }

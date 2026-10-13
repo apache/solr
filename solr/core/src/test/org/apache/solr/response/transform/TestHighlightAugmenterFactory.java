@@ -86,8 +86,8 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   public void testExplicitField() throws Exception {
     // single-valued field and 1 snippet: a string, not a list
     List<SolrDocument> docs = query("id,body_hl:[hl f=body_t]");
-    assertContains("<em>fox</em>", docs.get(0).getFieldValue("body_hl"));
-    assertNull("the highlighted field isn't returned", docs.get(0).getFieldValue("body_t"));
+    assertContains("<em>fox</em>", docs.getFirst().getFieldValue("body_hl"));
+    assertNull("the highlighted field isn't returned", docs.getFirst().getFieldValue("body_t"));
     // no highlight, and the name isn't the field, so no pass-through
     assertFalse(docs.get(1).containsKey("body_hl"));
 
@@ -99,7 +99,7 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   @Test
   public void testFieldFromAlias() throws Exception {
     List<SolrDocument> docs = query("id,body_t:[hl]");
-    assertContains("<em>fox</em>", docs.get(0).getFieldValue("body_t"));
+    assertContains("<em>fox</em>", docs.getFirst().getFieldValue("body_t"));
     // no highlight: the original value passes through
     assertEquals(BODY_2, docs.get(1).getFieldValue("body_t"));
 
@@ -111,7 +111,7 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   @Test
   public void testMultiValuedPassThrough() throws Exception {
     List<SolrDocument> docs = query("id,tags_txt:[hl]");
-    List<String> snippets = snippets(docs.get(0), "tags_txt");
+    List<String> snippets = snippets(docs.getFirst(), "tags_txt");
     assertEquals(List.of("forest <em>fox</em>"), snippets);
     assertEquals(List.of("pets", "cats"), docs.get(1).getFieldValue("tags_txt"));
   }
@@ -120,7 +120,7 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   public void testLocalParams() throws Exception {
     List<SolrDocument> docs =
         query("id,body_hl:[hl f=body_t snippets=2 fragsize=1 tag.pre='[' tag.post=']']");
-    List<String> snippets = snippets(docs.get(0), "body_hl");
+    List<String> snippets = snippets(docs.getFirst(), "body_hl");
     assertEquals(snippets.toString(), 2, snippets.size());
     for (String snippet : snippets) {
       assertTrue(snippet, snippet.contains("[fox]"));
@@ -128,7 +128,7 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
 
     // q overrides the main query
     docs = query("id,body_hl:[hl f=body_t q=body_t:cats]");
-    assertFalse(docs.get(0).containsKey("body_hl"));
+    assertFalse(docs.getFirst().containsKey("body_hl"));
     assertContains("<em>cats</em>", docs.get(1).getFieldValue("body_hl"));
 
     // defaultSummary returns leading text when nothing matches
@@ -140,13 +140,13 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   public void testRequestParamFallback() throws Exception {
     List<SolrDocument> docs =
         query("id,body_hl:[hl f=body_t]", "hl.tag.pre", "[", "hl.tag.post", "]");
-    assertContains("[fox]", docs.get(0).getFieldValue("body_hl"));
+    assertContains("[fox]", docs.getFirst().getFieldValue("body_hl"));
 
     // local params override the request's, even per-field ones
     docs = query("id,body_hl:[hl f=body_t tag.pre=< tag.post=>]", "hl.tag.pre", "[");
-    assertContains("<fox>", docs.get(0).getFieldValue("body_hl"));
+    assertContains("<fox>", docs.getFirst().getFieldValue("body_hl"));
     docs = query("id,body_hl:[hl f=body_t tag.pre=< tag.post=>]", "f.body_t.hl.tag.pre", "[");
-    assertContains("<fox>", docs.get(0).getFieldValue("body_hl"));
+    assertContains("<fox>", docs.getFirst().getFieldValue("body_hl"));
 
     // the request's snippets param determines if the output is a list
     docs = query("id,body_hl:[hl f=body_t]", "hl.snippets", "2");
@@ -156,8 +156,8 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   @Test
   public void testMultipleInstances() throws Exception {
     List<SolrDocument> docs = query("id,body_t:[hl],title_t:[hl tag.pre=* tag.post=*]");
-    assertContains("<em>fox</em>", docs.get(0).getFieldValue("body_t"));
-    assertEquals("*Fox* story", docs.get(0).getFieldValue("title_t"));
+    assertContains("<em>fox</em>", docs.getFirst().getFieldValue("body_t"));
+    assertEquals("*Fox* story", docs.getFirst().getFieldValue("title_t"));
   }
 
   @Test
@@ -170,7 +170,7 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
   }
 
   @Test
-  public void testErrors() throws Exception {
+  public void testErrors() {
     SolrException e = expectThrows(SolrException.class, () -> query("id,[hl]"));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     e = expectThrows(SolrException.class, () -> query("id,body_t:[hl bogus=1]"));
