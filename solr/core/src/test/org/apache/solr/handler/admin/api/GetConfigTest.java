@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.request.ConfigApi;
@@ -93,5 +94,27 @@ public class GetConfigTest extends SolrTestCase {
       assertTrue(component, response.config.containsKey(component));
       assertEquals(component, 1, response.config.size());
     }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetConfigComponentFilteredByNameFromCore() throws Exception {
+    var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "searchComponent");
+    request.setComponentName("spellcheck");
+    request.setMeta(true);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.config);
+    assertEquals(1, response.config.size());
+
+    Map<String, Object> section = (Map<String, Object>) response.config.get("searchComponent");
+    assertNotNull(section);
+    assertTrue(section.containsKey("spellcheck"));
+
+    Map<String, Object> spellcheck = (Map<String, Object>) section.get("spellcheck");
+    assertNotNull(spellcheck);
+    assertEquals("solr.SpellCheckComponent", spellcheck.get("class"));
   }
 }
