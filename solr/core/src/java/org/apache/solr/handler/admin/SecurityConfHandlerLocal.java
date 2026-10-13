@@ -123,6 +123,15 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
             securityJsonPath.getParent(), securityJsonPath.getFileName().toString(), ".tmp");
     try {
       Files.write(tmpPath, Utils.toJSON(sanitizedData));
+      if (Files.exists(securityJsonPath)) {
+        try {
+          Files.setPosixFilePermissions(tmpPath, Files.getPosixFilePermissions(securityJsonPath));
+        } catch (UnsupportedOperationException | IOException e) {
+          if (log.isDebugEnabled()) {
+            log.debug("Could not keep the permissions of {}", securityJsonPath, e);
+          }
+        }
+      }
       try {
         Files.move(
             tmpPath,

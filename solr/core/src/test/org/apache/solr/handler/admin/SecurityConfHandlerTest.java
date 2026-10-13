@@ -26,7 +26,9 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -313,6 +315,41 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
             + longBytes.length
             + " bytes)",
         Arrays.equals(fileBytes, shortBytes) || Arrays.equals(fileBytes, longBytes));
+  }
+
+  /** An edit to security.json keeps the POSIX permissions of the existing file. */
+  public void testEditKeepsExistingSecurityJsonPermissions() throws Exception {
+    assumeWorkingMockito();
+    Path solrHome = createTempDir("securityConfHandlerLocalPerms");
+    assumeTrue(
+        "POSIX file permissions are not supported on this file system",
+        solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
+    Path securityJson = solrHome.resolve("security.json");
+    String seed =
+        "{\"authentication\":{\"class\":\"solr.BasicAuthPlugin\","
+            + "\"credentials\":{\"solr\":\"solr\"}},"
+            + "\"authorization\":{\"class\":\"solr.RuleBasedAuthorizationPlugin\",\"user-role\":{}}}";
+    Files.write(securityJson, seed.getBytes(StandardCharsets.UTF_8));
+    EnumSet<PosixFilePermission> expected =
+        EnumSet.of(
+            PosixFilePermission.OWNER_READ,
+            PosixFilePermission.OWNER_WRITE,
+            PosixFilePermission.GROUP_READ);
+    Files.setPosixFilePermissions(securityJson, expected);
+
+    CoreContainer cc = mock(CoreContainer.class);
+    when(cc.getSolrHome()).thenReturn(solrHome);
+    when(cc.getAuthorizationPlugin()).thenReturn(new RuleBasedAuthorizationPlugin());
+    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(cc);
+    postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
+
+    assertTrue(
+        "edit was not persisted",
+        Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
+    assertEquals(
+        "security.json lost its permissions in the edit",
+        expected,
+        Files.getPosixFilePermissions(securityJson));
   }
 
   private static void postAuthorizationEdit(SecurityConfHandler handler, String command)
