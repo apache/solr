@@ -30,15 +30,80 @@ solrAdminApp.controller('CollectionsController',
             });
           });
 
-          CollectionsV2.listCollections({detailed: true}, function (error, data, response) {
+          // Just names for the sidebar/alias-picker - the detailed per-collection data
+          // (shards, replicas, health) for whichever one is selected is fetched separately
+          // below, narrowed to that one collection, instead of fetching detail for all of them.
+          CollectionsV2.listCollections({}, function (error, data, response) {
             $timeout(function() {
               if (error) { ApiErrorHandler.handle(response); return; }
               $scope.collections = [];
-              for (var name in data.collectionsDetail) {
+              for (var i in data.collections) {
+                  var name = data.collections[i];
                   if (name.startsWith("._designer_")) {
                       continue;
                   }
-                  var collection = data.collectionsDetail[name];
+                  $scope.collections.push({name: name});
+              }
+            });
+          });
+
+          $scope.refreshSelectedCollection();
+
+          // Fetch aliases using getAliases to get properties
+          AliasesV2.getAliases(function (error, adata, response) {
+              $timeout(function() {
+                  if (error) { ApiErrorHandler.handle(response); return; }
+                  // TODO: Population of aliases array duplicated in app.js
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                      var props = {};
+                      if (key in adata.properties) {
+                          props = adata.properties[key];
+                      }
+                      var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                      $scope.aliases.push(alias);
+                      if ($routeParams.collection == 'alias_' + key) {
+                          $scope.collection = alias;
+                      }
+                  }
+                  if ($routeParams.collection && $routeParams.collection.indexOf('alias_') === 0 && !$scope.collection) {
+                      alert("No collection or alias called " + $routeParams.collection);
+                      $location.path("/~collections");
+                  }
+              });
+          });
+
+          ConfigSetsV2.listConfigSet(function(error, data, response) {
+              $timeout(function() {
+                  if (error) { ApiErrorHandler.handle(response); return; }
+                  $scope.configs = [];
+                  var items = data.configSets;
+                  for (var i in items) {
+                      $scope.configs.push({name: items[i]});
+                  }
+              });
+          });
+
+          $timeout.cancel($scope.timeout);
+          $scope.timeout = $timeout($scope.refreshHealth, 10000);
+      };
+
+      // Fetches shard/replica detail for the single collection named by the route,
+      // narrowed server-side via the "collection" param instead of fetching every collection.
+      $scope.refreshSelectedCollection = function() {
+          var name = $routeParams.collection;
+          if (!name || name.indexOf('alias_') === 0) {
+              return;
+          }
+          CollectionsV2.listCollections({detailed: true, collection: name}, function(error, data, response) {
+              $timeout(function() {
+                  if (error) { ApiErrorHandler.handle(response); return; }
+                  var collection = data.collectionsDetail && data.collectionsDetail[name];
+                  if (!collection) {
+                      alert("No collection or alias called " + name);
+                      $location.path("/~collections");
+                      return;
+                  }
                   collection.name = name;
                   collection.type = 'collection';
                   var shards = collection.shards;
@@ -58,48 +123,43 @@ solrAdminApp.controller('CollectionsController',
                       }
                       collection.shards.push(shard);
                   }
-                  $scope.collections.push(collection);
-                  if ($routeParams.collection == name) {
-                      $scope.collection = collection;
-                  }
-              }
-              // Fetch aliases using getAliases to get properties
-              AliasesV2.getAliases(function (error, adata, response) {
-                  $timeout(function() {
-                      if (error) { ApiErrorHandler.handle(response); return; }
-                      // TODO: Population of aliases array duplicated in app.js
-                      $scope.aliases = [];
-                      for (var key in adata.aliases) {
-                          var props = {};
-                          if (key in adata.properties) {
-                              props = adata.properties[key];
-                          }
-                          var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-                          $scope.aliases.push(alias);
-                          if ($routeParams.collection == 'alias_' + key) {
-                              $scope.collection = alias;
-                          }
-                      }
-                      // Decide what is selected in list
-                      if ($routeParams.collection && !$scope.collection) {
-                          alert("No collection or alias called " + $routeParams.collection);
-                          $location.path("/~collections");
-                      }
-                  });
-              });
-            });
-          });
-          ConfigSetsV2.listConfigSet(function(error, data, response) {
-              $timeout(function() {
-                  if (error) { ApiErrorHandler.handle(response); return; }
-                  $scope.configs = [];
-                  var items = data.configSets;
-                  for (var i in items) {
-                      $scope.configs.push({name: items[i]});
-                  }
+                  $scope.collection = collection;
               });
           });
       };
+
+      // Patches health onto the selected collection in place, so it never disturbs expanded/open UI state.
+      $scope.refreshHealth = function() {
+          var name = $scope.collection && $scope.collection.type === 'collection' && $scope.collection.name;
+          if (!name) {
+              $scope.timeout = $timeout($scope.refreshHealth, 10000);
+              return;
+          }
+          CollectionsV2.listCollections({detailed: true, collection: name}, function(error, data, response) {
+              $timeout(function() {
+                  if (error) {
+                      ApiErrorHandler.handle(response);
+                  } else if ($scope.collection && $scope.collection.name === name) {
+                      var freshCollection = data.collectionsDetail && data.collectionsDetail[name];
+                      if (freshCollection) {
+                          $scope.collection.health = freshCollection.health;
+                          for (var shardName in freshCollection.shards) {
+                              var existingShard = $scope.collection.shards.find(function(s) { return s.name === shardName; });
+                              if (existingShard) {
+                                  existingShard.health = freshCollection.shards[shardName].health;
+                              }
+                          }
+                      }
+                  }
+                  $scope.timeout = $timeout($scope.refreshHealth, 10000);
+              });
+          });
+      };
+
+      var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+          $timeout.cancel($scope.timeout);
+          onRouteChangeOff();
+      });
 
       $scope.hideAll = function() {
           $scope.showRename = false;
@@ -242,6 +302,7 @@ solrAdminApp.controller('CollectionsController',
                  ApiErrorHandler.handle(response);
              } else {
                  $scope.reloadSuccess = true;
+                 $scope.refreshHealth();
              }
            });
         });

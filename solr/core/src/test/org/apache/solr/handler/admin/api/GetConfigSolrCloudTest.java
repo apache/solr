@@ -40,7 +40,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testGetConfigFromCore() throws Exception {
+  public void testGetConfigFromCollection() throws Exception {
     var request = new ConfigApi.GetConfig(IndexType.COLLECTION, COLLECTION_NAME);
     var response = request.process(cluster.getSolrClient());
 
@@ -51,5 +51,29 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.config.containsKey("updateHandler"));
     assertTrue(response.config.containsKey("query"));
     assertTrue(response.config.containsKey("requestHandler"));
+  }
+
+  @Test
+  public void testGetOverlayFromCollection() throws Exception {
+    var request = new ConfigApi.GetOverlay(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.overlay);
+    assertTrue(response.overlay.containsKey("znodeVersion"));
+    assertEquals(-1, response.overlay.get("znodeVersion"));
+  }
+
+  @Test
+  public void testGetZnodeVersionFromCollection() throws Exception {
+    var request = new ConfigApi.GetZnodeVersion(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.znodeVersion);
+    assertTrue(response.znodeVersion.overlay >= -1);
+    assertTrue(response.znodeVersion.params >= -1);
   }
 }

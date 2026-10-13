@@ -39,9 +39,9 @@ The `-ext SAN=...` `keytool` option allows you to specify all the DNS names and/
 
 In addition to `localhost` and `127.0.0.1`, this example includes a LAN IP address `192.168.1.3` for the machine the Solr nodes will be running on:
 
-[source,terminal]
+[source,bash]
 ----
-$ keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:192.168.1.3,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:192.168.1.3,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
 ----
 
 The above command will create a keystore file named `solr-ssl.keystore.p12` in the current directory.
@@ -50,16 +50,16 @@ The above command will create a keystore file named `solr-ssl.keystore.p12` in t
 
 Convert the PKCS12 format keystore, including both the certificate and the key, into PEM format using the http://www.openssl.org[`openssl`] command:
 
-[source,terminal]
+[source,bash]
 ----
-$ openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem
+openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem
 ----
 
 If you want to use curl on OS X Yosemite (10.10), you'll need to create a certificate-only version of the PEM format, as follows:
 
-[source,terminal]
+[source,bash]
 ----
-$ openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
+openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
 ----
 
 === Set Common SSL-Related Environment Variables
@@ -148,9 +148,9 @@ If you created the SSL key without all DNS names or IP addresses on which Solr n
 *nix::
 +
 ====
-[source,terminal]
+[source,bash]
 ----
-$ bin/solr start --solr-home cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+bin/solr start --solr-home cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 
@@ -159,7 +159,7 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin\solr.cmd --solr-home cloud\node1 -z server1:2181,server2:2181,server3:2181
+bin\solr.cmd --solr-home cloud\node1 -z server1:2181,server2:2181,server3:2181
 
 ----
 ====
@@ -175,9 +175,9 @@ Customize the values for the parameters shown as needed and add any used in your
 *nix::
 +
 ====
-[source,terminal]
+[source,bash]
 ----
-$ bin/solr start -p 8984
+bin/solr start -p 8984
 ----
 ====
 
@@ -186,7 +186,7 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin\solr.cmd -p 8984
+bin\solr.cmd -p 8984
 ----
 ====
 ======
@@ -244,7 +244,7 @@ bin/solr create -c mycollection --shards 2
 Windows::
 +
 ====
-[source,text]
+[source,powershell]
 ----
 bin\solr.cmd create -c mycollection --shards 2
 ----
@@ -257,7 +257,7 @@ The `create` action will pass the `SOLR_SSL_*` properties set in your include fi
 
 To get the resulting cluster status (again, if you have not enabled client authentication, remove the `-E solr-ssl.pem:secret` option):
 
-[source,terminal]
+[source,bash]
 ----
 curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&indent=on"
 ----
@@ -301,9 +301,9 @@ You should get a response that looks like this:
 
 Use `bin/solr post` to index some example documents to the SolrCloud collection created above:
 
-[source,console]
+[source,bash]
 ----
-$ bin/solr post --solr-url https://localhost:8984 --name mycollection example/exampledocs/*.xml
+bin/solr post --solr-url https://localhost:8984 --name mycollection example/exampledocs/*.xml
 ----
 
 === Query Using curl
@@ -311,7 +311,7 @@ $ bin/solr post --solr-url https://localhost:8984 --name mycollection example/ex
 Use curl to query the SolrCloud collection created above, from a directory containing the PEM formatted certificate and key created above (e.g., `example/etc/`).
 If you have not enabled client authentication (system property `-Djetty.ssl.clientAuth=true)`, then you can remove the `-E solr-ssl.pem:secret` option:
 
-[source,console]
+[source,bash]
 ----
 curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
 ----
