@@ -339,8 +339,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 instanceof List<?> docList
             && docList.get(queryIndex) instanceof SolrDocumentList solrDocumentList) {
           docs = Objects.requireNonNull(solrDocumentList);
-          queryNumFound += docs.getNumFound();
-          hitCountIsExact = hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact());
         }
         failedShardCount +=
             addShardInfo(
@@ -378,14 +376,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           maxHitsTerminatedEarly = true;
         }
 
-        Object ath =
-            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
-        if (ath == null) {
-          queryApproximateTotalHits += queryNumFound;
-        } else {
-          queryApproximateTotalHits += ((Number) ath).longValue();
-        }
-
         @SuppressWarnings("unchecked")
         NamedList<List<Object>> sortFieldValues =
             (NamedList<List<Object>>)
@@ -396,8 +386,25 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         }
 
         boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
+        // The skip must be decided before the totals below are folded in: a skipped shard
+        // contributes nothing to this query's totals.
         if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
           continue;
+        }
+
+        if (docs != null) {
+          queryNumFound += docs.getNumFound();
+          if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
+            hitCountIsExact = false;
+          }
+        }
+
+        Object ath =
+            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+        if (ath == null) {
+          queryApproximateTotalHits += docs != null ? docs.getNumFound() : 0;
+        } else {
+          queryApproximateTotalHits += ((Number) ath).longValue();
         }
         NamedList<List<Object>> unmarshalledSortFieldValues =
             needsUnmarshalling
