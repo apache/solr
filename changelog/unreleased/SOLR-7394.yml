@@ -1,4 +1,4 @@
-title: Clear the recovering shard-terms entry when recovery fails permanently.
+title: Clear the recovering shard-terms entry and restore the pre-recovery term when recovery fails permanently.
 type: fixed
 authors:
   - name: Nick Shanin
