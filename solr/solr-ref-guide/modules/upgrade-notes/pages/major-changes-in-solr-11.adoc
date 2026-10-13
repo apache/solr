@@ -53,3 +53,12 @@ A request with no other parameters returns every collection.
 `collection`, `shard`, and `_route_` narrow which part of the tree is returned.
 
 The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
+
+== New Features
+
+=== Weighted Reciprocal Rank Fusion
+
+The Combined Query / RRF flow now supports per-query weights via `combiner.rrf.weight.<queryName>` (default `1.0`, non-negative).
+A weight multiplies that query's reciprocal rank contribution, so a caller can bias the fusion toward one list, for example to keep an exact lexical match above a merely similar vector match.
+Omitting the parameter keeps the equal-weight behavior, so existing requests are unchanged.
+See xref:query-guide:json-combined-query-dsl.adoc[] for details.
