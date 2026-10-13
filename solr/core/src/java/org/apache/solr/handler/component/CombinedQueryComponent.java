@@ -389,7 +389,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         // The skip must be decided before the totals below are folded in: a skipped shard
         // contributes nothing to this query's totals.
         if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
-          if (docs != null && docs.getNumFound() > 0) {
+          // a skipped shard that reported hits, or sent no count for this query at all, leaves
+          // hits out of the merged count, which is then a lower bound
+          if (docs == null || docs.getNumFound() > 0) {
             hitCountIsExact = false;
           }
           continue;
