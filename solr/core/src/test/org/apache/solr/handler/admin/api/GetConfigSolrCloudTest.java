@@ -76,4 +76,19 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.znodeVersion.overlay >= -1);
     assertTrue(response.znodeVersion.params >= -1);
   }
+
+  @Test
+  public void testGetConfigComponentFromCollection() throws Exception {
+    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
+      var request =
+          new ConfigApi.GetConfigComponent(IndexType.COLLECTION, COLLECTION_NAME, component);
+      var response = request.process(cluster.getSolrClient());
+
+      assertNotNull(component, response);
+      assertNull(component, response.error);
+      assertNotNull(component, response.config);
+      assertTrue(component, response.config.containsKey(component));
+      assertEquals(component, 1, response.config.size());
+    }
+  }
 }
