@@ -1029,7 +1029,7 @@ public class QueryComponent extends SearchComponent {
     boolean maxHitsTerminatedEarly = false;
     long approximateTotalHits = 0;
     int failedShardCount = 0;
-    boolean skippedShardReportedHits = false;
+    boolean anyShardSkipped = false;
     int failedShardCountForReRankCutoff = 0;
     NamedList<Object> reRankCutoffByShard = null;
     for (ShardResponse srsp : sreq.responses) {
@@ -1177,9 +1177,7 @@ public class QueryComponent extends SearchComponent {
       // before the shard's totals are folded into the merged totals below, so a skipped shard
       // contributes nothing to them.
       if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
-        if (docs.getNumFound() > 0) {
-          skippedShardReportedHits = true;
-        }
+        anyShardSkipped = true;
         continue;
       }
 
@@ -1233,9 +1231,10 @@ public class QueryComponent extends SearchComponent {
       } // end for-each-doc-in-response
     } // end for-each-response
 
-    // The merged count is not exact when a skipped shard reported hits: the query did match
-    // documents, they are just not part of this result.
-    if (skippedShardReportedHits) {
+    // The merged count is not exact when a shard was skipped: the hits it found, or would have
+    // found, are not in the count. A shard that stopped early reports the count it reached, even
+    // when that is zero.
+    if (anyShardSkipped) {
       hitCountIsExact = false;
     }
 
