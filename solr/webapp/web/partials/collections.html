@@ -205,7 +205,7 @@ limitations under the License.
 
       <div class="block" id="collection-data" ng-show="collection.type === 'collection'">
 
-          <h2>Collection: {{collection.name}}</h2>
+          <h2>Collection: {{collection.name}} <span class="health-dot" ng-if="collection.health" ng-class="'health-' + collection.health" title="Health: {{collection.health}}"></span></h2>
 
           <div class="message-container">
               <div class="message"></div>
@@ -253,7 +253,7 @@ limitations under the License.
         <div class="content shard" ng-repeat="shard in collection.shards">
           <a ng-click="toggleShard(shard)">
             <h2>
-                  <span ng-class="{open:shard.show}"><b>Shard: {{shard.name}}</b></span>
+                  <span class="shard-name" ng-class="{open:shard.show}"><b>Shard: {{shard.name}}</b> <span class="health-dot" ng-if="shard.health" ng-class="'health-' + shard.health" title="Health: {{shard.health}}"></span></span>
                   <div style="float:right" ng-show="!shard.range || shard.state == 'inactive'"><a ng-click="toggleRemoveShard(shard)"><span class="rem"></span></a></div>
               </h2>
           </a>

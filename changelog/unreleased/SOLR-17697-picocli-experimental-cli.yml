@@ -7,6 +7,31 @@ type: added
 authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
+  - name: Serhiy Bzhezytskyy
+  - name: Jalaz Kumar
+    nick: jaykay12
 links:
   - name: SOLR-17697
     url: https://issues.apache.org/jira/browse/SOLR-17697
+  - name: SOLR-18510
+    url: https://issues.apache.org/jira/browse/SOLR-18510
+  - name: SOLR-18509
+    url: https://issues.apache.org/jira/browse/SOLR-18509
+  - name: SOLR-18511
+    url: https://issues.apache.org/jira/browse/SOLR-18511
+  - name: SOLR-18512
+    url: https://issues.apache.org/jira/browse/SOLR-18512
+  - name: SOLR-18513
+    url: https://issues.apache.org/jira/browse/SOLR-18513
+  - name: SOLR-18514
+    url: https://issues.apache.org/jira/browse/SOLR-18514
+  - name: SOLR-18516
+    url: https://issues.apache.org/jira/browse/SOLR-18516
+  - name: SOLR-18519
+    url: https://issues.apache.org/jira/browse/SOLR-18519
+  - name: SOLR-18518
+    url: https://issues.apache.org/jira/browse/SOLR-18518
+  - name: SOLR-18517
+    url: https://issues.apache.org/jira/browse/SOLR-18517
+  - name: SOLR-18515
+    url: https://issues.apache.org/jira/browse/SOLR-18515

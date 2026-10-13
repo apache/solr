@@ -204,6 +204,44 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
   }
 
   /**
+   * Tests faceting on a string docValues field when every sub-query matches only a few docs in the
+   * first segment, and a later segment exists beyond them.
+   */
+  @Test
+  public void testFacetWithSmallMatchesAcrossSegments() throws Exception {
+    del("*:*");
+    for (int segment = 0; segment < 2; segment++) {
+      for (int i = 1; i <= 500; i++) {
+        int id = segment * 500 + i;
+        indexDoc(sdoc("id", Integer.toString(id), "color_sdv", id % 2 == 0 ? "red" : "blue"));
+      }
+      commit();
+    }
+    QueryResponse rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(1 OR 2)"}},
+                    "lexical2": {"lucene": {"query": "id:(3 OR 4)"}}
+                  },
+                  "limit": 5,
+                  "fields": ["id", "score"],
+                  "params": {
+                    "combiner": true,
+                    "facet": true,
+                    "facet.field": "color_sdv",
+                    "combiner.query": ["lexical1", "lexical2"]
+                  }
+                }"""));
+    assertEquals(4, rsp.getResults().size());
+    assertEquals("[blue (2), red (2)]", rsp.getFacetField("color_sdv").getValues().toString());
+  }
+
+  /**
    * Tests that using unsupported features with Combined Queries throws the expected exception.
    *
    * <p>This test case verifies that requests for Combined Queries that include either the
