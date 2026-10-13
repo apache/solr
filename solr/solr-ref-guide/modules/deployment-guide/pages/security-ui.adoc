@@ -18,7 +18,7 @@
 // under the License.
 
 The Security screen allows administrators with the `security-edit` permission to manage users, roles, and permissions.
-The Security screen works with Solr running in cloud and standalone modes.
+The Security screen works with Solr running in SolrCloud and user-managed modes.
 
 .Security Screen
 image::getting-started:solr-admin-ui/security.png[]

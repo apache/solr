@@ -188,7 +188,7 @@ You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-s
 
 === Creating Cores
 
-When Solr runs in standalone mode, you create "cores" to store data.
+When Solr runs in user-managed mode, you create "cores" to store data.
 On a non-Docker Solr, you would run the server in the background, then use the xref:solr-control-script-reference.adoc[Solr control script] to create cores and load data.
 With Solr docker you have various options.
 
