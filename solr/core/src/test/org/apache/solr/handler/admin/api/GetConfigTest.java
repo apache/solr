@@ -94,18 +94,4 @@ public class GetConfigTest extends SolrTestCase {
       assertEquals(component, 1, response.config.size());
     }
   }
-
-  @Test
-  public void testGetConfigSectionFromCore() throws Exception {
-    for (String section : GetConfig.RICH_CONFIG_COMPONENTS) {
-      var request = new ConfigApi.GetConfigSection(IndexType.CORE, CORE_NAME, section);
-      var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
-
-      assertNotNull(section, response);
-      assertNull(section, response.error);
-      assertNotNull(section, response.config);
-      assertTrue(section, response.config.containsKey(section));
-      assertEquals(section, 1, response.config.size());
-    }
-  }
 }

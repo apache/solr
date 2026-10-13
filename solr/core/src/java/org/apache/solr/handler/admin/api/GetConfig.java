@@ -56,11 +56,14 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigComponent.
   // TODO: Remove this set when remaining GET /config/{component} sections also migrate.
   public static final Set<String> MIGRATED_CONFIG_COMPONENTS =
-      Set.of("updateHandler", "directoryFactory", "indexConfig", "codecFactory");
-
-  // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigSection.
-  public static final Set<String> RICH_CONFIG_COMPONENTS =
-      Set.of("query", "searchComponent", "queryResponseWriter");
+      Set.of(
+          "updateHandler",
+          "directoryFactory",
+          "indexConfig",
+          "codecFactory",
+          "query",
+          "searchComponent",
+          "queryResponseWriter");
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -105,18 +108,9 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public ConfigInfoResponse getConfigComponent(String componentName) {
-    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    Map<String, Object> section = new LinkedHashMap<>();
-    section.put(componentName, solrConfigAsMap().get(componentName));
-    response.config = jsonSafeCopy(section);
-    return response;
-  }
-
-  @Override
-  @PermissionName(CONFIG_READ_PERM)
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public ConfigInfoResponse getConfigSection(String component, String componentName, boolean meta) {
+  public ConfigInfoResponse getConfigComponent(
+      String component, String componentName, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
     Map<String, Object> section = new LinkedHashMap<>();
     section.put(component, solrConfigAsMap().get(component));

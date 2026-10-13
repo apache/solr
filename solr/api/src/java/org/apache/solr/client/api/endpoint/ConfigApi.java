@@ -72,24 +72,14 @@ public interface ConfigApi {
 
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
-    @Path("/{component:updateHandler|directoryFactory|indexConfig|codecFactory}")
-    @StoreApiParameters
-    @Operation(
-        summary = "Fetch a config section",
-        tags = {"config"})
-    ConfigInfoResponse getConfigComponent(
-        @PathParam("component") @Parameter(description = "Name of the config component")
-            String component);
-
-    // TODO: Keep this regex in sync with GetConfig.RICH_CONFIG_COMPONENTS
-    @GET
-    @Path("/{component:query|searchComponent|queryResponseWriter}")
+    @Path(
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponent|queryResponseWriter}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section (with optional component filter)",
         tags = {"config"})
-    ConfigInfoResponse getConfigSection(
-        @PathParam("component") @Parameter(description = "Name of the config section")
+    ConfigInfoResponse getConfigComponent(
+        @PathParam("component") @Parameter(description = "Name of the config component")
             String component,
         @QueryParam("componentName")
             @Parameter(description = "Restrict to a named entry within the section")

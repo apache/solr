@@ -227,12 +227,9 @@ public class SolrConfigHandler extends RequestHandlerBase
                         req.getParams().getInt(RequestParams.NAME, -1)));
           } else if (GetConfig.MIGRATED_CONFIG_COMPONENTS.contains(parts.get(1))) {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                resp, new GetConfig(req).getConfigComponent(parts.get(1)));
-          } else if (GetConfig.RICH_CONFIG_COMPONENTS.contains(parts.get(1))) {
-            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 resp,
                 new GetConfig(req)
-                    .getConfigSection(
+                    .getConfigComponent(
                         parts.get(1),
                         req.getParams().get("componentName"),
                         req.getParams().getBool("meta", false)));
