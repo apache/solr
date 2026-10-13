@@ -213,7 +213,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/nodes
+curl 'http://localhost:8983/api/cluster/nodes'
 ----
 ====
 ======
@@ -257,7 +257,7 @@ V2 API::
 To create or update a cluster property:
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/cluster/properties/urlScheme -H 'Content-Type: application/json' -d '
+curl -X PUT 'http://localhost:8983/api/cluster/properties/urlScheme' -H 'Content-Type: application/json' -d '
   {
     "value": "https"
   }
@@ -267,7 +267,7 @@ curl -X PUT http://localhost:8983/api/cluster/properties/urlScheme -H 'Content-T
 To delete an existing cluster property:
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/properties/urlScheme
+curl -X DELETE 'http://localhost:8983/api/cluster/properties/urlScheme'
 ----
 ====
 ======
@@ -381,7 +381,7 @@ curl -X PUT -H 'Content-type:application/json' --data-binary '
 or
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/properties/defaults
+curl -X DELETE 'http://localhost:8983/api/cluster/properties/defaults'
 ----
 
 
@@ -417,7 +417,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/properties
+curl 'http://localhost:8983/api/cluster/properties'
 ----
 ====
 ======
@@ -426,7 +426,7 @@ curl http://localhost:8983/api/cluster/properties
 
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/properties
+curl 'http://localhost:8983/api/cluster/properties'
 ----
 
 *Output*
@@ -461,7 +461,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/properties/urlScheme
+curl 'http://localhost:8983/api/cluster/properties/urlScheme'
 ----
 ====
 ======
@@ -470,7 +470,7 @@ curl http://localhost:8983/api/cluster/properties/urlScheme
 
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/properties/urlScheme
+curl 'http://localhost:8983/api/cluster/properties/urlScheme'
 ----
 
 *Output*
@@ -509,7 +509,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cluster/replicas/balance' -H 'Content-Type: application/json' -d '
   {
     "nodes": ["localhost:8983_solr", "localhost:8984_solr"],
     "async": "balance-replicas-1"
@@ -588,7 +588,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/balance-shard-unique -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/balance-shard-unique' -H 'Content-Type: application/json' -d '
   {
     "property": "preferredLeader"
   }
@@ -687,7 +687,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cluster/replicas/migrate' -H 'Content-Type: application/json' -d '
   {
     "sourceNodes": ["localhost:8983_solr", "localhost:8984_solr"],
     "targetNodes": ["localhost:8985_solr", "localhost:8986_solr"],
@@ -788,7 +788,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace' -H 'Content-Type: application/json' -d '
     {
       "targetNodeName": "localhost:8983_solr",
       "waitForFinalState": "false",
@@ -894,7 +894,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/' -H 'Content-Type: application/json' -d '
     {
       "async": "someAsyncId"
     }
@@ -945,7 +945,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/overseer
+curl 'http://localhost:8983/api/cluster/overseer'
 ----
 ====
 ======
