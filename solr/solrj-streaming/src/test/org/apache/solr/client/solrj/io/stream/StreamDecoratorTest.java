@@ -1008,6 +1008,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testFetchStreamRejectsJoinFieldNameThatBreaksLocalParams() throws Exception {
     SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
     try {
       StreamFactory factory =
           new StreamFactory()
