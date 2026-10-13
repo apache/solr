@@ -331,9 +331,9 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
     assertEquals("response size", 3, rb.getResponseDocs().size());
   }
 
-  /** A skipped partial shard that reported no hits adds nothing, and its flag is not used. */
+  /** A skipped partial shard that reported no hits still leaves the count inexact. */
   @Test
-  public void skippedPartialShardWithoutHitsKeepsExactness() {
+  public void skippedPartialShardWithoutHitsClearsExactness() {
     SolrDocument b1 = doc("b1", 3.0f), b2 = doc("b2", 2.0f), b3 = doc("b3", 1.0f);
     NamedList<List<Object>> sortValues = new NamedList<>();
     sortValues.add("intDefault", List.<Object>of("1", "2", "3"));
@@ -341,8 +341,8 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
         shardResponse(
             "shard1",
             header(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE),
-            docList(0, false),
-            List.of(docList(0, false)),
+            docList(0, true),
+            List.of(docList(0, true)),
             null);
     ShardResponse shard2 =
         shardResponse(
@@ -358,7 +358,7 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
     ResponseBuilder rb = newResponseBuilder(sortSpec, "q0");
     cqc.mergeIds(rb, shardRequest(shard1, shard2));
     assertEquals("numFound", 3, rb.getResponseDocs().getNumFound());
-    assertEquals("numFoundExact", Boolean.TRUE, rb.getResponseDocs().getNumFoundExact());
+    assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
     assertEquals("response size", 3, rb.getResponseDocs().size());
   }
 

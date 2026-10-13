@@ -3,7 +3,7 @@ title: >
   contributes its totals to the merged response, the approximateTotalHits
   fallback adds each shard's own count instead of the running total, and the
   merged numFoundExact flag is true only when every shard reports an exact
-  count and no skipped shard reported hits or sent no count.
+  count and no shard was skipped.
 type: fixed
 authors:
   - name: Nick Shanin
