@@ -292,6 +292,13 @@ Example report output (Json or Markdown):
 and the final post-vote forward-porting.  It is integrated into the Release
 Wizard but can also be run standalone.  Run with `--help` for usage.
 
+=== 5.5 Dependency changes summary
+
+`dev-tools/scripts/dependencyChanges.py` summarizes the third-party dependency changes
+since the previous release by diffing `solr/licenses/`.  By default it prints to stdout;
+with `--write`, the Release Wizard uses it to write `dependency_update` changelog entries
+(one each for added, upgraded, and removed).
+
 == 6. Further Reading
 
 * https://github.com/logchange/logchange[Logchange web page]

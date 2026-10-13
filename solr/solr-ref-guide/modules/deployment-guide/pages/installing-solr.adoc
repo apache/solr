@@ -171,7 +171,7 @@ bin/solr start
 
 If you are running Windows, you can start Solr by running `bin\solr.cmd` instead.
 
-[source,plain]
+[source,powershell]
 ----
 bin\solr.cmd start
 ----
