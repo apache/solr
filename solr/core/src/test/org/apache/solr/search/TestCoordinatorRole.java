@@ -236,9 +236,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       Random r = random();
       final long establishBaselineMs = r.nextInt(1000);
       final long nrtDowntimeMs = r.nextInt(10000);
-      // NOTE: for `pullServiceTimeMs`, it can't be super-short. This is just to simplify our
-      // indexing code,
-      // based on the fact that our indexing is based on a PULL-node client.
+      // NOTE: indexing goes through the PULL-node client, so PULL is only stopped after the add
+      // has completed (see addDone).
       final long pullServiceTimeMs = 1000 + (long) r.nextInt(9000);
       CountDownLatch addDone = new CountDownLatch(1);
       Future<?> jettyManipulationFuture =
@@ -257,8 +256,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                   log.info("NRT jetty restarted.");
                   // once NRT is back up, we expect PULL to continue serving until the TTL on ZK
                   // state used for query request routing has expired (60s). But here we force a
-                  // return to NRT by stopping the PULL replica after a brief delay ...
-                  Thread.sleep(pullServiceTimeMs);
+                  // return to NRT by stopping the PULL replica once the NRT add has completed ...
                   if (!addDone.await(2, TimeUnit.MINUTES)) {
                     log.warn("NRT add did not succeed in time; stopping PULL anyway");
                   }
