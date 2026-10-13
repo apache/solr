@@ -185,6 +185,16 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
       v1ParamMap.put("collectionProperties", collectionProperties);
     }
 
+    if (v1ParamMap.get("numShards") instanceof String numShardsStr) {
+      v1ParamMap.put("numShards", Integer.valueOf(numShardsStr));
+    }
+    if (v1ParamMap.get("loadOnStartup") instanceof String loadOnStartupStr) {
+      v1ParamMap.put("loadOnStartup", Boolean.valueOf(loadOnStartupStr));
+    }
+    if (v1ParamMap.get("newCollection") instanceof String newCollectionStr) {
+      v1ParamMap.put("newCollection", Boolean.valueOf(newCollectionStr));
+    }
+
     return SolrJacksonMapper.getObjectMapper().convertValue(v1ParamMap, CreateCoreParams.class);
   }
 }
