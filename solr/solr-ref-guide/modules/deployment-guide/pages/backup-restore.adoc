@@ -729,6 +729,7 @@ All the above options will resolve to the same directory in your S3 Bucket: `dir
 
 Pre-Creation::
 The location must already exist within your S3 bucket before you can perform any backup operations with that location.
+A location exists if at least one object is stored under it, or if it was created as an (empty) folder, for instance with the "Create folder" button of the AWS console.
 +
 **Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
 
@@ -737,12 +738,9 @@ If you do not want to use a sub-directory within your bucket to store your backu
 However the location option is mandatory and you will receive an error when trying to perform backup operations without it.
 
 Directory Markers::
-S3 has no native concept of directories.
-The `S3BackupRepository` simulates directories by uploading zero-byte marker objects (e.g., `zk_backup/configs/myconfig/`) alongside the real backup files.
-If a backup is copied through a local filesystem and re-uploaded to S3 (for example using `aws s3 sync`), these zero-byte marker objects are typically lost because most tools translate them into real filesystem directories and do not recreate them on re-upload.
-+
-Solr handles this gracefully: if the directory marker is absent, Solr falls back to listing objects by key prefix to confirm that the configset files are present before restoring them.
-A restore will still fail with a clear error only if neither the marker nor any configset files can be found at the expected location.
+S3 has no native concept of directories, so Solr does not write any zero-byte "directory marker" objects: a directory is simply the common key prefix of the files stored in it.
+Backups can therefore be copied between buckets with tools such as `aws s3 sync`, which drop such marker objects, and still be restored.
+Backups made by older Solr versions, which do contain marker objects, can still be restored and deleted.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:

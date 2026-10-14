@@ -1,8 +1,9 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Remove S3 directory marker dependency from backup/restore — use virtual-directory convention instead
+title: The S3 backup repository no longer writes or depends on zero-byte directory marker objects, so S3 backups that were copied with tools that drop those markers (such as `aws s3 sync`) can be restored again.
 type: fixed
 authors:
   - name: Samuel Verstraete
+    nick: elangelo
 links:
-  - name: GitHub PR #4182
+  - name: PR#4182
     url: https://github.com/apache/solr/pull/4182

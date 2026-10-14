@@ -46,17 +46,16 @@ public class S3PathsTest extends AbstractS3ClientTest {
   /** Simple tests with a directory. */
   @Test
   public void testDirectory() throws S3Exception {
-    // createDirectory is a no-op on S3 (no marker objects are written).
-    // A prefix is treated as a directory if it has children — write one to establish the prefix.
-    client.createDirectory("/simple-directory"); // no-op
-    pushContent("/simple-directory/a-file", "content");
 
-    assertFalse(
-        "Bare name without trailing slash is not a key", client.pathExists("/simple-directory"));
+    client.createDirectory("/simple-directory");
+    assertFalse("An empty dir does not exist on S3", client.pathExists("/simple-directory/"));
+
+    pushContent("/simple-directory/a-file", "content");
+    assertFalse("Dir path needs a trailing slash", client.pathExists("/simple-directory"));
+    assertTrue("Dir should exist without a leading slash", client.pathExists("simple-directory/"));
+    assertTrue("Dir should exist with a leading slash", client.pathExists("/simple-directory/"));
     assertTrue(
-        "Dir should exist without a leading slash", client.pathExists("simple-directory/a-file"));
-    assertTrue(
-        "Prefix with children should be considered a directory",
+        "Leading slash should be irrelevant for determining if dir is a dir",
         client.isDirectory("simple-directory/"));
     assertTrue(
         "Leading slash should be irrelevant for determining if dir is a dir",
@@ -167,17 +166,10 @@ public class S3PathsTest extends AbstractS3ClientTest {
     assertTrue(client.pathExists("/my-file2"));
   }
 
-  /**
-   * Test that a directory containing objects but lacking an explicit directory marker (i.e. a
-   * "virtual directory") is still recognised as a directory. This mirrors the situation that arises
-   * after an {@code aws s3 sync} round-trip: {@code aws s3 sync} skips directory marker objects
-   * (keys ending with {@code /}) when downloading, so they are never re-uploaded and are absent in
-   * the target bucket.
-   */
+  /** A directory is any key prefix that has objects under it; no marker object is needed. */
   @Test
   public void testVirtualDirectoryWithoutMarker() throws S3Exception {
-    // Since createDirectory is a no-op, there are never marker objects.
-    // Write files directly under a prefix to establish virtual directories.
+    pushContent("/virtual-dir-sibling", "not under the prefix");
     pushContent("/virtual-dir/file1", "file1");
     pushContent("/virtual-dir/sub-dir/file2", "file2");
 
@@ -190,6 +182,7 @@ public class S3PathsTest extends AbstractS3ClientTest {
     assertFalse(
         "A path with no objects and no marker should not be a directory",
         client.isDirectory("/virtual-dir/empty-sub-dir"));
+    assertFalse("A file is not a directory", client.isDirectory("/virtual-dir/file1"));
   }
 
   /** Check listing objects of a directory. */

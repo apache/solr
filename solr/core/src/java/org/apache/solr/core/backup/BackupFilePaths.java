@@ -79,15 +79,14 @@ public class BackupFilePaths {
   }
 
   /**
-   * Previously created directory marker objects at the incremental backup locations. On S3-style
-   * object stores no explicit directory marker is needed; files can be written directly under any
-   * prefix. This method is kept for interface compatibility but performs no operations.
+   * Create all locations required to store an incremental backup.
    *
    * @throws IOException for issues encountered using repository to create directories
    */
   public void createIncrementalBackupFolders() throws IOException {
-    // S3 does not require directory markers. On local FS, parent directories are created
-    // implicitly when files are written. No action needed.
+    repository.createDirectory(backupLoc);
+    repository.createDirectory(getIndexDir());
+    repository.createDirectory(getShardBackupMetadataDir());
   }
 
   /**

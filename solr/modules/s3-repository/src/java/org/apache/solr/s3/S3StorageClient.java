@@ -41,7 +41,6 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -82,7 +81,7 @@ public class S3StorageClient {
   // S3 has a hard limit of 1000 keys per batch delete request
   private static final int MAX_KEYS_PER_BATCH_DELETE = 1000;
 
-  // Metadata name used to identify flag directory entries in S3
+  // Content type of the zero-byte directory marker objects written by older Solr versions
   private static final String S3_DIR_CONTENT_TYPE = "application/x-directory";
 
   // Error messages returned by S3 for a key not found.
@@ -180,12 +179,13 @@ public class S3StorageClient {
     return clientBuilder.build();
   }
 
-  /** Create a directory in S3, if it does not already exist. */
-  void createDirectory(String path) throws S3Exception {
-    // S3 does not require explicit directory marker objects. Writing a file directly
-    // under a prefix is sufficient. Creating zero-byte marker objects is an anti-pattern
-    // that causes failures after tools like 'aws s3 sync' drop them.
-  }
+  /**
+   * No-op: S3 has no directories, a "directory" is just a key prefix that exists as soon as an
+   * object is written under it. Older Solr versions wrote zero-byte marker objects here, but those
+   * get lost when a bucket is copied with tools such as {@code aws s3 sync}, so nothing may depend
+   * on them.
+   */
+  void createDirectory(String path) {}
 
   /**
    * Delete files from S3. Deletion order is not guaranteed.
@@ -269,10 +269,11 @@ public class S3StorageClient {
   }
 
   /**
-   * Check if path exists.
+   * Check if path exists. A directory path (ending with {@code /}) exists if any object is stored
+   * under that prefix, including a directory marker object written by older Solr versions.
    *
    * @param path to File/Directory in S3.
-   * @return true if path exists, otherwise false?
+   * @return true if path exists, otherwise false
    */
   boolean pathExists(String path) throws S3Exception {
     final String s3Path = sanitizedPath(path);
@@ -280,6 +281,10 @@ public class S3StorageClient {
     // for root return true
     if (s3Path.isEmpty() || S3_FILE_PATH_DELIMITER.equals(s3Path)) {
       return true;
+    }
+
+    if (s3Path.endsWith(S3_FILE_PATH_DELIMITER)) {
+      return hasObjectsUnderPrefix(s3Path);
     }
 
     try {
@@ -293,53 +298,22 @@ public class S3StorageClient {
   }
 
   /**
-   * Check if path is directory.
-   *
-   * <p>A path is considered a directory if either (a) an explicit directory marker object exists
-   * (i.e. a zero-byte object with key {@code path + "/"} and content-type {@code
-   * application/x-directory}), or (b) no such marker exists but at least one object exists whose
-   * key starts with {@code path + "/"} (a "virtual directory"). Case (b) arises after an {@code aws
-   * s3 sync} round-trip, which skips directory marker objects, causing them to be absent in the
-   * target bucket.
+   * Check if path is directory, i.e. if any object is stored under the {@code path + "/"} prefix.
    *
    * @param path to File/Directory in S3.
    * @return true if path is directory, otherwise false.
    */
   boolean isDirectory(String path) throws S3Exception {
-    final String s3Path = sanitizedDirPath(path);
-
-    try {
-      HeadObjectResponse objectMetadata =
-          s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
-      String contentType = objectMetadata.contentType();
-
-      return StrUtils.isNotNullOrEmpty(contentType)
-          && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
-    } catch (NoSuchKeyException nske) {
-      // No explicit directory marker found; fall back to checking whether any objects exist under
-      // this prefix. This handles "virtual directories" that arise after an 'aws s3 sync'
-      // round-trip, which does not preserve directory marker objects (keys ending with '/').
-      return hasChildrenUnderPrefix(s3Path);
-    } catch (SdkException sdke) {
-      throw handleAmazonException(sdke);
-    }
+    return hasObjectsUnderPrefix(sanitizedDirPath(path));
   }
 
-  /**
-   * Returns {@code true} if at least one object exists in S3 whose key starts with {@code dirPath}.
-   *
-   * <p>Used as a fallback in {@link #isDirectory} when no explicit directory marker object is
-   * present.
-   *
-   * @param dirPath directory path with a trailing {@code /} (as produced by {@link
-   *     #sanitizedDirPath})
-   */
-  private boolean hasChildrenUnderPrefix(String dirPath) throws S3Exception {
+  private boolean hasObjectsUnderPrefix(String prefix) throws S3Exception {
     try {
-      return !s3Client
-          .listObjectsV2(b -> b.bucket(bucketName).prefix(dirPath).maxKeys(1))
+      return s3Client
+          .listObjectsV2(b -> b.bucket(bucketName).prefix(prefix).maxKeys(1))
           .contents()
-          .isEmpty();
+          .stream()
+          .anyMatch(o -> o.key().startsWith(prefix));
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -353,9 +327,6 @@ public class S3StorageClient {
    */
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
-    if (isDirectory(s3Path)) {
-      throw new S3Exception("Path is Directory");
-    }
     try {
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
@@ -366,6 +337,12 @@ public class S3StorageClient {
         return objectMetadata.contentLength();
       }
       throw new S3Exception("Path is Directory");
+    } catch (NoSuchKeyException nske) {
+      // Only pay for the extra listing when the file is missing
+      if (isDirectory(s3Path)) {
+        throw new S3Exception("Path is Directory");
+      }
+      throw handleAmazonException(nske);
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
