@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -82,7 +83,8 @@ public class TestRawTransformer extends SolrCloudTestCase {
     final Path confDir = collDir.resolve("conf");
     Files.createDirectories(confDir);
     Path srcDir = TEST_HOME().resolve("collection1").resolve("conf");
-    Files.copy(srcDir.resolve("schema_latest.xml"), confDir.resolve("schema.xml"));
+    Files.writeString(
+        confDir.resolve("schema.xml"), schemaWithJsonField(srcDir.resolve("schema_latest.xml")));
     Files.copy(srcDir.resolve("solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
     for (String file :
         new String[] {
@@ -103,7 +105,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   private static void initCloud() throws Exception {
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
+    final Path configDir = copyConfWithJsonField();
 
     final int numNodes = 3;
     MiniSolrCloudCluster cloud =
@@ -118,6 +120,43 @@ public class TestRawTransformer extends SolrCloudTestCase {
         .process(cloudSolrClient);
 
     JSR = cloud.getRandomJetty(random());
+  }
+
+  /**
+   * The fixture schema defines no field whose name ends in {@code _json}, so a document field such
+   * as {@code payload_json} cannot be indexed against it. Returns the text of the given schema with
+   * one such dynamic field added. Only the copies of the schema this test runs against are
+   * extended; the checked-in fixture is left as it is.
+   */
+  private static String schemaWithJsonField(Path schema) throws Exception {
+    String text = Files.readString(schema);
+    String patched =
+        text.replace(
+            "</schema>",
+            "  <dynamicField name=\"*_json\" type=\"string\" indexed=\"true\" stored=\"true\""
+                + " multiValued=\"true\"/>\n</schema>");
+    assertFalse("the fixture schema has no </schema> to extend", patched.equals(text));
+    return patched;
+  }
+
+  /** Copies the collection1 conf dir, extending its schema as {@link #schemaWithJsonField}. */
+  private static Path copyConfWithJsonField() throws Exception {
+    Path srcDir = TEST_HOME().resolve("collection1").resolve("conf");
+    Path destDir = createTempDir().resolve("conf");
+    try (Stream<Path> paths = Files.walk(srcDir)) {
+      for (Path src : paths.toList()) {
+        // resolve through a string: destDir is on the test filesystem, srcDir is not
+        Path dest = destDir.resolve(srcDir.relativize(src).toString());
+        if (Files.isDirectory(src)) {
+          Files.createDirectories(dest);
+        } else if (src.getFileName().toString().equals("schema_latest.xml")) {
+          Files.writeString(dest, schemaWithJsonField(src));
+        } else {
+          Files.copy(src, dest);
+        }
+      }
+    }
+    return destDir;
   }
 
   @AfterClass
@@ -160,6 +199,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
       sdoc.addField("links", "{an_array:[4,5,6]}");
       sdoc.addField("content_type", "<root>one</root>");
       sdoc.addField("content_type", "<root>two</root>");
+      // a field whose name ends in _json, matched by the *_json glob in
+      // testSuffixGlobJsonTransformer; its dynamic field is added by schemaWithJsonField
+      sdoc.addField("payload_json", "{\"seq\":[1,2]}");
+      sdoc.addField("payload_json", "{\"seq\":[3,4]}");
       CLIENT.add("collection1", sdoc);
     }
     CLIENT.commit("collection1");
@@ -360,6 +403,66 @@ public class TestRawTransformer extends SolrCloudTestCase {
     SolrException e =
         expectThrows(SolrException.class, () -> CLIENT.request(badReq, "collection1"));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+  }
+
+  @Test
+  public void testSuffixGlobJsonTransformer() throws Exception {
+    // *_json:[json] writes every field whose name ends in _json raw, here payload_json
+    QueryRequest req =
+        new QueryRequest(
+            new ModifiableSolrParams(
+                Map.of(
+                    "q",
+                    new String[] {"*:*"},
+                    "fl",
+                    new String[] {"id,*_json:[json]"},
+                    "wt",
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    NamedList<Object> rsp = CLIENT.request(req, "collection1");
+    String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
+    assertTrue(
+        "suffix glob did not write the _json field raw: " + strResponse,
+        Pattern.compile("\"payload_json\":\\[\\{\"seq\":\\[1,2]},\\s*\\{\"seq\":\\[3,4]}]")
+            .matcher(strResponse)
+            .find());
+    assertFalse(
+        "field not matching the glob was returned: " + strResponse,
+        strResponse.contains("\"subject\""));
+
+    // *:[json] returns every field and writes each of them raw
+    req =
+        new QueryRequest(
+            new ModifiableSolrParams(
+                Map.of(
+                    "q",
+                    new String[] {"*:*"},
+                    "fl",
+                    new String[] {"*:[json]"},
+                    "wt",
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
+    assertTrue(
+        "all-fields glob did not write the single valued field raw: " + strResponse,
+        strResponse.contains("\"subject\":{poffL:[{offL:[{oGUID:\"7"));
+    assertTrue(
+        "all-fields glob did not write the multiValued field raw: " + strResponse,
+        Pattern.compile("\"links\":\\[\\{an_array:\\[1,2,3]},\\s*\\{an_array:\\[4,5,6]}]")
+            .matcher(strResponse)
+            .find());
+    assertTrue(
+        "all-fields glob did not write the _json field raw: " + strResponse,
+        Pattern.compile("\"payload_json\":\\[\\{\"seq\":\\[1,2]},\\s*\\{\"seq\":\\[3,4]}]")
+            .matcher(strResponse)
+            .find());
   }
 
   private static final InputStreamResponseParser XML_STREAM_RESPONSE_PARSER =
