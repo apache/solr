@@ -125,10 +125,6 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals("date desc", q.getSortField());
   }
 
-  /*
-   * Verifies that getSort() returns an immutable map,
-   * for both empty and non-empty situations
-   */
   public void testGetCopyKeepsSortClauses() {
     SolrQuery q = new SolrQuery("dog");
     q.addSort("price", SolrQuery.ORDER.asc);
@@ -145,6 +141,10 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals("price asc,id desc", q.getSortField());
   }
 
+  /*
+   * Verifies that getSort() returns an immutable map,
+   * for both empty and non-empty situations
+   */
   public void testGetSortImmutable() {
     SolrQuery q = new SolrQuery("dog");
 
