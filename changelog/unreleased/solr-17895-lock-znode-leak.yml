@@ -1,0 +1,7 @@
+title: "With the Overseer disabled, collection and configset lock dirs in ZooKeeper are now removed once empty. Dirs left by older versions are removed when their collection is deleted; earlier leftovers can be deleted by hand."
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-17895
+    url: https://issues.apache.org/jira/browse/SOLR-17895
