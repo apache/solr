@@ -1,4 +1,4 @@
-title: Distributed grouping on a multiValued field now fails with a clear 400 instead of an IllegalStateException from Lucene docValues.
+title: Distributed grouping on a multiValued non-numeric field now fails with a clear 400 instead of an IllegalStateException from Lucene docValues.
 type: fixed
 authors:
   - name: Nick Shanin
