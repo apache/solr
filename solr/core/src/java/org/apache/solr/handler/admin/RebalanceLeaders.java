@@ -33,11 +33,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.AdminCmdContext;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -122,7 +125,7 @@ class RebalanceLeaders {
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
-  void execute() throws KeeperException, InterruptedException {
+  void execute() throws Exception {
     DocCollection dc = checkParams();
 
     int max = req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE);
@@ -471,8 +474,7 @@ class RebalanceLeaders {
   // mean failure!
   //
 
-  private boolean waitAsyncRequests(final int maxWaitSecs, Boolean waitForAll)
-      throws KeeperException, InterruptedException {
+  private boolean waitAsyncRequests(final int maxWaitSecs, Boolean waitForAll) throws Exception {
 
     if (asyncRequests.size() == 0) {
       return true;
@@ -482,15 +484,7 @@ class RebalanceLeaders {
       Iterator<String> iter = asyncRequests.iterator();
       boolean foundChange = false;
       while (iter.hasNext()) {
-        String asyncId = iter.next();
-        if (coreContainer.getZkController().getOverseerFailureMap().contains(asyncId)) {
-          coreContainer.getZkController().getOverseerFailureMap().remove(asyncId);
-          coreContainer.getZkController().clearAsyncId(asyncId);
-          iter.remove();
-          foundChange = true;
-        } else if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId)) {
-          coreContainer.getZkController().getOverseerCompletedMap().remove(asyncId);
-          coreContainer.getZkController().clearAsyncId(asyncId);
+        if (removeIfDone(iter.next())) {
           iter.remove();
           foundChange = true;
         }
@@ -506,6 +500,21 @@ class RebalanceLeaders {
       TimeUnit.MILLISECONDS.sleep(100);
     }
     // If we get here, we've timed out waiting.
+    return false;
+  }
+
+  private boolean removeIfDone(String asyncId) throws Exception {
+    ZkController zkController = coreContainer.getZkController();
+    Optional<DistributedCollectionConfigSetCommandRunner> runner =
+        zkController.getDistributedCommandRunner();
+    if (runner.isPresent()) {
+      return runner.get().deleteSingleAsyncId(asyncId);
+    }
+    if (zkController.getOverseerFailureMap().remove(asyncId)
+        || zkController.getOverseerCompletedMap().remove(asyncId)) {
+      zkController.clearAsyncId(asyncId);
+      return true;
+    }
     return false;
   }
 

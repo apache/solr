@@ -157,6 +157,46 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     checkPreferredsAreLeaders();
   }
 
+  // Sub-command async ids must be found and cleared in both Overseer and distributed modes.
+  @Test
+  public void testRebalanceLeadersClearsAsyncIds() throws Exception {
+    DocCollection docCollection =
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
+    for (Slice slice : docCollection.getSlices()) {
+      Replica nonLeader =
+          slice.getReplicas().stream()
+              .filter(rep -> rep.getName().equals(slice.getLeader().getName()) == false)
+              .findFirst()
+              .orElseThrow();
+      setProp(slice, nonLeader, "preferredLeader");
+    }
+
+    int maxWaitSeconds = 30;
+    long start = System.nanoTime();
+    CollectionAdminResponse resp =
+        CollectionAdminRequest.rebalanceLeaders(COLLECTION_NAME)
+            .setMaxWaitSeconds(maxWaitSeconds)
+            .process(cluster.getSolrClient());
+    long elapsedSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start);
+    assertTrue(resp.getResponse().get("Summary").toString().contains("Success"));
+
+    for (String path :
+        List.of(
+            "/distributedapi/async/persistent",
+            "/overseer/collection-map-completed",
+            "/overseer/collection-map-failure")) {
+      if (zkClient().exists(path)) {
+        List<String> leftover =
+            zkClient().getChildren(path, null).stream()
+                .filter(id -> id.startsWith("mn-rebalanceleaders_"))
+                .toList();
+        assertTrue("Async ids not cleared from " + path + ": " + leftover, leftover.isEmpty());
+      }
+    }
+    assertTrue(
+        "Waited " + elapsedSeconds + "s, hit maxWaitSeconds", elapsedSeconds < maxWaitSeconds);
+  }
+
   // Ensure that the property is set on only one replica per slice when changing a unique property
   // on an individual
   // replica.
