@@ -1,5 +1,5 @@
 title: >
-  Pivot faceting now checks the request's query limits (timeAllowed, cpuAllowed) between pivot values, returning partial results instead of continuing to build the whole pivot tree after the limit is exceeded.
+  Pivot faceting now checks the request's query limits (timeAllowed, cpuAllowed, memAllowed) between pivot values, returning partial results instead of continuing to build the whole pivot tree after the limit is exceeded.
 type: fixed
 authors:
   - name: Nick Shanin
