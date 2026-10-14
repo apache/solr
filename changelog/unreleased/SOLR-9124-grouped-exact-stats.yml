@@ -1,5 +1,5 @@
 title: >
-  Distributed grouped queries now send the merged global term statistics (ExactStatsCache, LRUStatsCache) to the shards in the group stages, so group scores match the ungrouped ones.
+  Distributed grouped queries now send the merged global term statistics to the shards in the group stages, so grouped scores on a sharded query match the same grouped query on one node.
 type: fixed
 authors:
   - name: Nick Shanin
