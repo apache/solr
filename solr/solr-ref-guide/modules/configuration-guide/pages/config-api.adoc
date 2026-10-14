@@ -743,6 +743,18 @@ The same request handler defined with the Config API would look like this:
 }
 ----
 
+Multi-valued request-handler parameters such as `facet.field` should be sent as JSON arrays, which is also how `GET /config` returns them:
+
+[source,json]
+----
+"defaults": {
+  "facet.field": ["subject", "country"]
+}
+----
+
+Repeated parameter names in `defaults`, `appends`, and `invariants` are accepted and folded into that same list.
+Strict JSON clients cannot emit duplicate keys, so arrays are the portable encoding.
+
 The QueryElevationComponent searchComponent in `solrconfig.xml` looks like this:
 
 [source,xml]
