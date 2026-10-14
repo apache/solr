@@ -1035,6 +1035,39 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testFetchStreamRejectsJoinFieldNameWithUnicodeSpace() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      // The join field name carries an em space (U+2003). The local-params reader splits on
+      // Character.isWhitespace, so this name breaks the batch query the same way "a i" does,
+      // even though it has no ASCII whitespace.
+      String expression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a\u2003i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException e =
+          assertThrows(
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, expression));
+      assertTrue(e.getMessage(), causeChainContains(e, "invalid join field name [a\u2003i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
   private List<Tuple> drainFetchStream(
       StreamFactory factory, SolrClientCache solrClientCache, String expression)
       throws IOException {

@@ -150,7 +150,7 @@ public class FetchStream extends TupleStream implements Expressible {
       leftKey = rightKey = on;
     }
 
-    if (rightKey.matches(".*[\\s{}!'\"\\\\].*")) {
+    if (containsBatchBreakingChar(rightKey)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -168,6 +168,25 @@ public class FetchStream extends TupleStream implements Expressible {
         appendKey = false;
       }
     }
+  }
+
+  // The batch query embeds the join field name in local params, whose reader splits on
+  // Character.isWhitespace; reject anything that reader would treat as a separator, plus the
+  // other characters that would end or corrupt the df= value.
+  private static boolean containsBatchBreakingChar(String name) {
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if (Character.isWhitespace(c)
+          || c == '{'
+          || c == '}'
+          || c == '!'
+          || c == '\''
+          || c == '"'
+          || c == '\\') {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
