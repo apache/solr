@@ -351,7 +351,7 @@ public class RealTimeGetComponent extends SearchComponent {
             docFetcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
         SolrDocument doc = toSolrDoc(luceneDocument, searcherInfo.getSearcher().getSchema());
         if (reuseDvIters == null) {
-          reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
+          reuseDvIters = docFetcher.createDocValuesIteratorCache();
         }
         docFetcher.decorateDocValueFields(
             doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
