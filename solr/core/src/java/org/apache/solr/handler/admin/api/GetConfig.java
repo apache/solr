@@ -76,7 +76,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfig(boolean expandParams) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    response.config = buildConfigMap(solrQueryRequest, expandParams);
+    response.config = buildConfigMap(expandParams);
     return response;
   }
 
@@ -108,15 +108,36 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  public ConfigInfoResponse getRequestHandler(
+      boolean expandParams, String componentName, boolean meta) {
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
+    Map<String, Object> configMap = solrConfigAsMap();
+    configMap.put(
+        SolrRequestHandler.TYPE,
+        requestHandlersWithImplicits(configMap, expandParams, componentName));
+    applyNamedComponentFilter(configMap, SolrRequestHandler.TYPE, componentName, meta);
+
+    response.config = jsonSafeCopy(configMap);
+    return response;
+  }
+
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfigComponent(
       String component, String componentName, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
     Map<String, Object> section = new LinkedHashMap<>();
     section.put(component, solrConfigAsMap().get(component));
+    applyNamedComponentFilter(section, component, componentName, meta);
 
+    response.config = jsonSafeCopy(section);
+    return response;
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private void applyNamedComponentFilter(
+      Map<String, Object> section, String component, String componentName, boolean meta) {
     if (componentName != null) {
-      @SuppressWarnings({"rawtypes"})
       Map pluginNameVsPluginInfo = (Map) section.get(component);
       if (pluginNameVsPluginInfo != null) {
         Object o =
@@ -150,9 +171,6 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
         }
       }
     }
-
-    response.config = jsonSafeCopy(section);
-    return response;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -176,29 +194,34 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return jsonSafeCopy;
   }
 
-  @SuppressWarnings({"unchecked"})
-  private Map<String, Object> buildConfigMap(
-      SolrQueryRequest solrQueryRequest, boolean expandParams) {
-
+  private Map<String, Object> buildConfigMap(boolean expandParams) {
     Map<String, Object> configMap = solrConfigAsMap();
+    requestHandlersWithImplicits(configMap, expandParams, null);
+    return jsonSafeCopy(configMap);
+  }
 
-    Map<String, Object> reqHandlers =
+  @SuppressWarnings({"unchecked"})
+  private Map<String, Object> requestHandlersWithImplicits(Map<String, Object> configMap, boolean expandParams, String expandOnlyComponentName) {
+    Map<String, Object> reqHandlersMap =
         (Map<String, Object>)
             configMap.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
+
     List<PluginInfo> plugins = solrQueryRequest.getCore().getImplicitHandlers();
     for (PluginInfo plugin : plugins) {
-      if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlers.containsKey(plugin.name)) {
-        reqHandlers.put(plugin.name, plugin);
+      if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlersMap.containsKey(plugin.name)) {
+        reqHandlersMap.put(plugin.name, plugin);
       }
     }
 
     if (expandParams) {
-      for (Map.Entry<String, Object> entry : reqHandlers.entrySet()) {
-        entry.setValue(expandUseParams(solrQueryRequest, entry.getValue()));
+      for (Map.Entry<String, Object> entry : reqHandlersMap.entrySet()) {
+        if (expandOnlyComponentName == null || !expandOnlyComponentName.equals(entry.getKey())) {
+          entry.setValue(expandUseParams(solrQueryRequest, entry.getValue()));
+        }
       }
     }
 
-    return jsonSafeCopy(configMap);
+    return reqHandlersMap;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
