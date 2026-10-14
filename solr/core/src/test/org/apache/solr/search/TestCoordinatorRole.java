@@ -31,7 +31,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
@@ -234,14 +236,18 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       JettySolrRunner nrtJettyF = nrtJetty;
       JettySolrRunner pullJettyF = pullJetty;
       Random r = random();
-      final long nrtDowntimeMs = r.nextInt(10000);
       // NOTE: indexing goes through the PULL-node client, so PULL is only stopped after the add
       // has completed (see addDone).
-      final long pullServiceTimeMs = 1000 + (long) r.nextInt(9000);
       CountDownLatch addDone = new CountDownLatch(1);
       // counted down by the main thread right before the phase1 NRT queries, so the NRT jetty
       // stops as soon as those queries are under way instead of after a fixed sleep
       CountDownLatch stopNrtJetty = new CountDownLatch(1);
+      // counted down by the main thread once it has observed queries failing over to the PULL
+      // replica, so the NRT jetty restarts once the outage has been exercised instead of after
+      // a fixed downtime
+      CountDownLatch outageExercised = new CountDownLatch(1);
+      // the coordinator node's own state reader: the state its routing decisions are made from
+      ZkStateReader zkStateReader = qaJetty.getCoreContainer().getZkController().getZkStateReader();
       Future<?> jettyManipulationFuture =
           executor.submit(
               () -> {
@@ -254,7 +260,22 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                   log.info("stopping NRT jetty ...");
                   nrtJettyF.stop();
                   log.info("NRT jetty stopped.");
-                  Thread.sleep(nrtDowntimeMs); // let NRT be down for a while
+                  // keep NRT down until the cluster state shows the node as down and the main
+                  // thread has exercised the outage by observing the failover to PULL, instead
+                  // of holding it down for a fixed time
+                  try {
+                    zkStateReader.waitForState(
+                        COLL,
+                        2,
+                        TimeUnit.MINUTES,
+                        (liveNodes, collectionState) ->
+                            !liveNodes.contains(nrtJettyF.getNodeName()));
+                  } catch (TimeoutException e) {
+                    log.warn("cluster state did not show the NRT node down in time", e);
+                  }
+                  if (!outageExercised.await(2, TimeUnit.MINUTES)) {
+                    log.warn("failover to PULL was not observed in time; restarting NRT anyway");
+                  }
                   log.info("restarting NRT jetty ...");
                   nrtJettyF.start(true);
                   log.info("NRT jetty restarted.");
@@ -276,30 +297,37 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       long individualRequestStart = start;
       int count = 0;
       stopNrtJetty.countDown();
-      while (nrtCore.equals(
-          hostCore =
-              getHostCoreName(
-                  COLL,
-                  qaJettyBase,
-                  p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
-        count++;
-        Thread.sleep(100);
+      // Run the phase1 queries until one is served by PULL. Each retry waits for the cluster
+      // state to change (the NRT node leaving the live nodes is the change that flips the
+      // routing) instead of sleeping between requests; the wait itself is bounded, so a quiet
+      // cluster still retries at the old pace, and the whole phase is bounded as well.
+      long phase1Deadline =
+          new Date().getTime() + TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES);
+      hostCore = null;
+      do {
         individualRequestStart = new Date().getTime();
-      }
+        hostCore =
+            getHostCoreName(
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT"));
+        count++;
+        if (!pullCore.equals(hostCore)) {
+          waitForClusterStateChange(zkStateReader, COLL);
+        }
+      } while (!pullCore.equals(hostCore) && new Date().getTime() < phase1Deadline);
+      // the outage has been exercised (or the phase bound ran out, which the assert below
+      // reports): the NRT jetty may restart now
+      outageExercised.countDown();
       long now = new Date().getTime();
       log.info(
           "phase1 NRT queries count={}, overall_duration={}, switch-to-pull_duration={}",
           count,
           now - start,
           now - individualRequestStart);
-      // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
-      // very fast, because our QA-based client already knows both replicas are active, the index
-      // is stable, so the moment the client finds NRT is down it should be able to failover
-      // immediately and transparently to PULL.
+      // Failover to PULL for this case should be very fast, because our QA-based client already
+      // knows both replicas are active, the index is stable, so the moment the client finds NRT
+      // is down it should be able to failover immediately and transparently to PULL.
       assertEquals(
-          "when we break out of the NRT query loop, should be b/c routed to PULL",
-          pullCore,
-          hostCore);
+          "once the NRT node is down, queries should be routed to PULL", pullCore, hostCore);
       SolrInputDocument d = new SolrInputDocument();
       d.addField("id", "345");
       d.addField("desc_s", "Another Document");
@@ -308,6 +336,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       count = 0;
       start = new Date().getTime();
       individualRequestStart = start;
+      long addDeadline = start + TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES);
       for (; ; ) {
         try {
           client.add(COLL, d);
@@ -315,47 +344,76 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           addDone.countDown();
           break;
         } catch (SolrException ex) {
-          // we expect these until nrtJetty is back up.
+          // we expect these until nrtJetty is back up. Wait for the cluster state to show the
+          // NRT replica active again, or at least to move on, before retrying, instead of
+          // sleeping between attempts.
           count++;
-          Thread.sleep(100);
+          if (new Date().getTime() > addDeadline) {
+            throw ex;
+          }
+          DocCollection stateBefore = zkStateReader.getCollection(COLL);
+          int znodeVersionBefore = stateBefore == null ? -1 : stateBefore.getZNodeVersion();
+          int childVersionBefore = stateBefore == null ? -1 : stateBefore.getChildNodesVersion();
+          try {
+            zkStateReader.waitForState(
+                COLL,
+                30,
+                TimeUnit.SECONDS,
+                (liveNodes, collectionState) ->
+                    collectionState != null
+                        && ((liveNodes.contains(nrtJettyF.getNodeName())
+                                && collectionState
+                                    .getReplicasOnNode(nrtJettyF.getNodeName())
+                                    .stream()
+                                    .allMatch(rep -> rep.getState() == Replica.State.ACTIVE))
+                            || collectionState.getZNodeVersion() != znodeVersionBefore
+                            || collectionState.getChildNodesVersion() != childVersionBefore));
+          } catch (TimeoutException e) {
+            throw ex;
+          }
         }
         individualRequestStart = new Date().getTime();
       }
       now = new Date().getTime();
       log.info(
-          "successfully added another doc; duration: {}, overall_duration={}, baseline_expected_overall_duration={}, exception_count={}",
+          "successfully added another doc; duration: {}, overall_duration={}, exception_count={}",
           now - individualRequestStart,
           now - start,
-          nrtDowntimeMs,
           count);
       // NRT replica is back up, registered as available with Zk, and availability info has been
       // pulled down by our PULL-replica-based `client`, forwarded indexing command to NRT,
-      // index/commit completed. All of this accounts for the 3000ms tolerance allowed for below.
-      // This is not a strict value, and if it causes failures regularly we should feel free to
-      // increase the tolerance; but it's meant to provide a stable baseline from which to detect
-      // regressions.
+      // index/commit completed.
       count = 0;
       start = new Date().getTime();
       individualRequestStart = start;
-      while (pullCore.equals(
-          hostCore =
-              getHostCoreName(
-                  COLL,
-                  qaJettyBase,
-                  p -> {
-                    p.set(CommonParams.Q, "id:345");
-                    p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
-                  }))) {
-        count++;
-        Thread.sleep(100);
+      // The added doc is served by the NRT replica again once the manipulator has stopped
+      // PULL (it does so right after the add) and the coordinator's routing flips back. Each
+      // retry waits for the cluster state to change instead of sleeping between requests; the
+      // wait itself is bounded, so a quiet cluster still retries at the old pace, and the
+      // whole phase is bounded as well.
+      long phase3Deadline =
+          new Date().getTime() + TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES);
+      hostCore = null;
+      do {
         individualRequestStart = new Date().getTime();
-      }
+        hostCore =
+            getHostCoreName(
+                COLL,
+                qaJettyBase,
+                p -> {
+                  p.set(CommonParams.Q, "id:345");
+                  p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
+                });
+        count++;
+        if (!nrtCore.equals(hostCore)) {
+          waitForClusterStateChange(zkStateReader, COLL);
+        }
+      } while (!nrtCore.equals(hostCore) && new Date().getTime() < phase3Deadline);
       now = new Date().getTime();
       log.info(
-          "query retries between NRT index-ready and query-ready: {}; overall_duration={}; baseline_expected_overall_duration={}; failover-request_duration={}",
+          "queries between NRT index-ready and query-ready: {}; overall_duration={}; failover-request_duration={}",
           count,
           now - start,
-          pullServiceTimeMs,
           now - individualRequestStart);
       assertEquals(nrtCore, hostCore);
       // allow any exceptions to propagate
@@ -377,6 +435,10 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
       JettySolrRunner[] jettys = new JettySolrRunner[] {pullJettyF, nrtJettyF};
       Random threadRandom = new Random(r.nextInt());
+      // the toggle thread publishes one latch per phase here; the main thread counts it down
+      // once per query it completes, so each phase lasts for a counted number of queries
+      // instead of a duration slept through
+      AtomicReference<CountDownLatch> phaseLatch = new AtomicReference<>();
       Future<Integer> f =
           executor.submit(
               () -> {
@@ -385,17 +447,26 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                   int idx = iteration++ % jettys.length;
                   JettySolrRunner toManipulate = jettys[idx];
                   try {
-                    int serveTogetherTime = threadRandom.nextInt(7000);
-                    int downTime = threadRandom.nextInt(7000);
-                    log.info("serving together for {}ms", serveTogetherTime);
-                    Thread.sleep(serveTogetherTime);
+                    // the original drew each phase's length at random from 0 to 7000ms, which
+                    // the main thread's roughly 100ms query pace turns into 0 to 70 queries;
+                    // draw the phase lengths in queries from a comparable range instead
+                    int serveTogetherQueries = threadRandom.nextInt(70);
+                    int downQueries = threadRandom.nextInt(70);
+                    log.info("serving together for {} queries", serveTogetherQueries);
+                    if (!awaitQueryCount(phaseLatch, serveTogetherQueries, finishTimeMs)) {
+                      break;
+                    }
                     log.info("stopping {} ...", idx);
                     toManipulate.stop();
                     log.info("stopped {}.", idx);
-                    Thread.sleep(downTime);
+                    boolean downPhaseCompleted =
+                        awaitQueryCount(phaseLatch, downQueries, finishTimeMs);
                     log.info("restarting {} ...", idx);
                     toManipulate.start(true);
                     log.info("restarted {}.", idx);
+                    if (!downPhaseCompleted) {
+                      break;
+                    }
                     waitForState(
                         toManipulate.getNodeName() + " replicas didn't become active in time",
                         COLL,
@@ -424,7 +495,14 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             done.set(true);
           }
           count++;
-          Thread.sleep(100);
+          CountDownLatch latch = phaseLatch.get();
+          if (latch != null) {
+            latch.countDown();
+          } else {
+            // no phase is counting queries right now (a jetty is stopping or starting); pace
+            // this loop on cluster state changes instead of sleeping between requests
+            waitForClusterStateChange(zkStateReader, COLL);
+          }
         } while (!done.get());
       } finally {
         final String result;
@@ -470,6 +548,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     p.accept(q);
     SolrDocumentList docs = null;
     SolrClient solrClient = cluster.getJetty(qaNode).getSolrClient();
+    ZkStateReader zkStateReader =
+        cluster.getJetty(qaNode).getCoreContainer().getZkController().getZkStateReader();
     for (int i = 0; i < 100; i++) {
       try {
         QueryResponse queryResponse = solrClient.query(COLL, q);
@@ -491,11 +571,56 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           fail("initial error time threshold exceeded");
         }
       }
-      Thread.sleep(100);
+      // pace the retry on cluster state changes instead of sleeping: the transient errors and
+      // empty results above clear once the state moves on, and the wait returns as soon as it
+      // does (bounded, so a quiet cluster still retries at the old pace)
+      waitForClusterStateChange(zkStateReader, COLL);
     }
 
     assertTrue(found);
     return (String) docs.get(0).getFieldValue("_core_");
+  }
+
+  /**
+   * Blocks until the collection's cluster state changes, or the bounded wait runs out. Used to pace
+   * retries on the event they are waiting for instead of on a fixed sleep; a timeout is not an
+   * error, the caller simply retries.
+   */
+  private void waitForClusterStateChange(ZkStateReader zkStateReader, String collection)
+      throws Exception {
+    DocCollection stateBefore = zkStateReader.getCollection(collection);
+    int znodeVersionBefore = stateBefore == null ? -1 : stateBefore.getZNodeVersion();
+    int childVersionBefore = stateBefore == null ? -1 : stateBefore.getChildNodesVersion();
+    try {
+      zkStateReader.waitForState(
+          collection,
+          100,
+          TimeUnit.MILLISECONDS,
+          (liveNodes, collectionState) ->
+              collectionState == null
+                  || collectionState.getZNodeVersion() != znodeVersionBefore
+                  || collectionState.getChildNodesVersion() != childVersionBefore);
+    } catch (TimeoutException e) {
+      // no state change within the bound; the caller retries anyway
+    }
+  }
+
+  /**
+   * Publishes a latch that the main thread counts down once per completed query, and blocks until
+   * {@code queries} queries have completed or the toggle window ends. Returns false when the window
+   * ended before the count was reached.
+   */
+  private boolean awaitQueryCount(
+      AtomicReference<CountDownLatch> phaseLatch, int queries, long finishTimeMs)
+      throws InterruptedException {
+    CountDownLatch latch = new CountDownLatch(queries);
+    phaseLatch.set(latch);
+    try {
+      long remainingMs = finishTimeMs - System.currentTimeMillis();
+      return remainingMs > 0 && latch.await(remainingMs, TimeUnit.MILLISECONDS);
+    } finally {
+      phaseLatch.compareAndSet(latch, null);
+    }
   }
 
   public void testConcurrentAccess() throws Exception {
