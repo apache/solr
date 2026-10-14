@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +33,7 @@ import org.apache.solr.client.api.model.LogLevelChange;
 import org.apache.solr.client.api.model.SetThresholdRequestBody;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
@@ -64,7 +66,7 @@ public class NodeLoggingAPITest extends SolrTestCase {
         .thenReturn(List.of("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
     when(mockLogWatcher.getAllLoggers())
         .thenReturn(List.of(logInfo("org.a.s.Foo", "WARN", true), logInfo("org", null, false)));
-    final var responseBody = new NodeLogging(mockCoreContainer).listAllLoggersAndLevels();
+    final var responseBody = new NodeLogging(mockCoreContainer).listAllLoggersAndLevels(null);
 
     assertEquals(5, responseBody.levels.size());
     assertThat(responseBody.levels, containsInAnyOrder("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
@@ -81,14 +83,77 @@ public class NodeLoggingAPITest extends SolrTestCase {
   }
 
   @Test
+  public void testListLogLevelsWithoutNodesReportsNoBroadcastResults() {
+    when(mockLogWatcher.getAllLevels())
+        .thenReturn(List.of("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
+    when(mockLogWatcher.getAllLoggers()).thenReturn(List.of());
+
+    final var responseBody = new NodeLogging(mockCoreContainer).listAllLoggersAndLevels(null);
+
+    assertTrue(
+        "Expected no per-node results for a local request, but was " + responseBody.remoteNodeData,
+        responseBody.remoteNodeData.isEmpty());
+    assertNull(
+        "Expected failedNodes to be unset for a local request, but was " + responseBody.failedNodes,
+        responseBody.failedNodes);
+  }
+
+  @Test
+  public void testListLogLevelsWithNodesFailsOutsideSolrCloud() {
+    // The mock CoreContainer has no ZkController stubbed, as on a standalone (user-managed)
+    // node, so NodeLogging sees a null ZkController here.
+    try {
+      new NodeLogging(mockCoreContainer).listAllLoggersAndLevels("all");
+      fail("Expected a SolrException when 'nodes' is used outside SolrCloud mode");
+    } catch (SolrException e) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(
+          "Expected the error to name the 'nodes' parameter, but was: " + e.getMessage(),
+          e.getMessage().contains("'nodes'"));
+    }
+    verify(mockLogWatcher, never()).getAllLoggers();
+  }
+
+  @Test
   public void testReliesOnLogWatcherToModifyLogLevels() {
     final var responseBody =
         new NodeLogging(mockCoreContainer)
-            .modifyLocalLogLevel(List.of(new LogLevelChange("o.a.s.Foo", "WARN")));
+            .modifyLocalLogLevel(null, List.of(new LogLevelChange("o.a.s.Foo", "WARN")));
 
     assertNotNull(responseBody);
     assertNull("Expected error to be null but was " + responseBody.error, responseBody.error);
     verify(mockLogWatcher).setLogLevel("o.a.s.Foo", "WARN");
+  }
+
+  @Test
+  public void testModifyLogLevelsWithoutNodesReportsNoBroadcastResults() {
+    final var responseBody =
+        new NodeLogging(mockCoreContainer)
+            .modifyLocalLogLevel(null, List.of(new LogLevelChange("o.a.s.Foo", "WARN")));
+
+    assertTrue(
+        "Expected no per-node results for a local request, but was " + responseBody.remoteNodeData,
+        responseBody.remoteNodeData.isEmpty());
+    assertNull(
+        "Expected failedNodes to be unset for a local request, but was " + responseBody.failedNodes,
+        responseBody.failedNodes);
+  }
+
+  @Test
+  public void testModifyLogLevelsWithNodesFailsOutsideSolrCloud() {
+    // The mock CoreContainer has no ZkController stubbed, as on a standalone (user-managed)
+    // node, so NodeLogging sees a null ZkController here.
+    try {
+      new NodeLogging(mockCoreContainer)
+          .modifyLocalLogLevel("all", List.of(new LogLevelChange("o.a.s.Foo", "WARN")));
+      fail("Expected a SolrException when 'nodes' is used outside SolrCloud mode");
+    } catch (SolrException e) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(
+          "Expected the error to name the 'nodes' parameter, but was: " + e.getMessage(),
+          e.getMessage().contains("'nodes'"));
+    }
+    verify(mockLogWatcher, never()).setLogLevel(any(), any());
   }
 
   private SolrDocumentList logMessageDocList(String... logMessages) {

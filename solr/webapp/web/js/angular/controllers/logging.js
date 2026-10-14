@@ -101,7 +101,7 @@ solrAdminApp.controller('LoggingController',
 )
 
 .controller('LoggingLevelController',
-  function($scope, $timeout, Logging, LoggingV2, ApiErrorHandler) {
+  function($scope, $timeout, LoggingV2, ApiErrorHandler) {
     $scope.resetMenu("logging-levels");
 
     var packageOf = function(logger) {
@@ -126,7 +126,7 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      LoggingV2.listAllLoggersAndLevels(function(error, data, response) {
+      LoggingV2.listAllLoggersAndLevels({}, function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
           $scope.logging = makeTree(data.loggers, "");
@@ -159,20 +159,17 @@ solrAdminApp.controller('LoggingController',
       if (!$scope.isPermitted(permissions.CONFIG_EDIT_PERM)) {
         return;
       }
-      var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
-      // Intentionally still v1 (Logging, not LoggingV2): this relies on the "nodes=all" param to
-      // broadcast the level change to every live node. The v2 NodeLoggingApis endpoint is
-      // single-node only until SOLR-16738 wires it up to the new V2SolrRequestBasedProxy (see the
-      // TODO in NodeLogging.java). Move this to LoggingV2.modifyLocalLogLevel once that lands.
       var doSetLevel = function() {
-        var params = {set: setString};
-        // "nodes=all" only makes sense in SolrCloud mode; in standalone (user-managed) mode the
-        // request is handled locally, so the param is omitted entirely.
+        var opts = {logLevelChange: [{logger: logger.name, level: newLevel}]};
+        // "nodes=all" only makes sense in SolrCloud mode, where it broadcasts the level
+        // change to every live node; in standalone (user-managed) mode the request is
+        // handled locally, so the param is omitted entirely.
         if ($scope.isCloudEnabled) {
-          params.nodes = "all";
+          opts.nodes = "all";
         }
-        Logging.setLevel(params, function(data) {
+        LoggingV2.modifyLocalLogLevel(opts, function(error, data, response) {
+          if (error) { ApiErrorHandler.handle(response); return; }
           $scope.refresh();
         });
       };
