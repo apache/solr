@@ -204,7 +204,7 @@ solrAdminApp.config([
 })
 .filter('highlight', function($sce) {
   return function(input, lang) {
-    if (lang && input && hljs.getLanguage(lang)) return hljs.highlight(input, {language: lang}).value;
+    if (lang && input && lang!="txt" && lang!="csv") return hljs.highlight(lang, input).value;
     return input;
   }
 })
