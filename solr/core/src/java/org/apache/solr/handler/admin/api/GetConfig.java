@@ -201,7 +201,8 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   }
 
   @SuppressWarnings({"unchecked"})
-  private Map<String, Object> requestHandlersWithImplicits(Map<String, Object> configMap, boolean expandParams, String expandOnlyComponentName) {
+  private Map<String, Object> requestHandlersWithImplicits(
+      Map<String, Object> configMap, boolean expandParams, String expandOnlyComponentName) {
     Map<String, Object> reqHandlersMap =
         (Map<String, Object>)
             configMap.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());

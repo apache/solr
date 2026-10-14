@@ -70,7 +70,6 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path("/requestHandler")
     @StoreApiParameters
@@ -79,17 +78,16 @@ public interface ConfigApi {
         tags = {"config"})
     ConfigInfoResponse getRequestHandler(
         @QueryParam("expandParams")
-          @DefaultValue("false")
-          @Parameter(description = "Expand request handler useParams and effective parameters")
-          boolean expandParams,
+            @DefaultValue("false")
+            @Parameter(description = "Expand request handler useParams and effective parameters")
+            boolean expandParams,
         @QueryParam("componentName")
-          @Parameter(description = "Restrict to a named entry within the section")
-          String componentName,
+            @Parameter(description = "Restrict to a named entry within the section")
+            String componentName,
         @QueryParam("meta")
-          @DefaultValue("false")
-          @Parameter(description = "Include package metadata (_packageinfo_)")
-          boolean meta);
-
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
 
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
