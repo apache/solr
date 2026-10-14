@@ -5,5 +5,5 @@ authors:
   - name: Samuel Verstraete
     nick: elangelo
 links:
-  - name: PR#4182
-    url: https://github.com/apache/solr/pull/4182
+  - name: PR#5128
+    url: https://github.com/apache/solr/pull/5128
