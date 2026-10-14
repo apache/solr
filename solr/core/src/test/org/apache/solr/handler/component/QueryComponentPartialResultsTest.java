@@ -154,7 +154,7 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void skippedShardWithNoHitsMakesMergedCountInexact() {
+  public void skippedShardWithExactZeroLeavesMergedCountExact() {
     SortField sortField = new SortField(SORT_FIELD_NAME, SortField.Type.INT);
     SortSpec sortSpec =
         MockSortSpecBuilder.create()
@@ -163,9 +163,8 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
             .build();
     MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
 
-    // shard1 is skipped at merge time and reports no hits with an exact flag, which is the empty
-    // result a shard sends when it stopped before collecting anything; what it would have found
-    // is unknown, so the merged count of shard2 alone is a lower bound
+    // shard1 is skipped at merge time and reports an exact zero, so it holds no matches that are
+    // missing from the merged count; the merged count of shard2 alone is exact
     final NamedList<Object> shard1ResponseHeader = new NamedList<>();
     shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     SolrDocumentList shard1Docs = createSolrDocumentList(0);
@@ -188,7 +187,7 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
 
     SolrDocumentList responseDocs = responseBuilder.getResponseDocs();
     assertEquals(shard2Size, responseDocs.getNumFound());
-    assertEquals(Boolean.FALSE, responseDocs.getNumFoundExact());
+    assertEquals(Boolean.TRUE, responseDocs.getNumFoundExact());
   }
 
   @Test
@@ -448,7 +447,7 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void allShardsSkippedWithNoHitsDoesNotClaimExactZero() {
+  public void allShardsSkippedWithNoHitsKeepsExactZero() {
     SortField sortField = new SortField(SORT_FIELD_NAME, SortField.Type.INT);
     SortSpec sortSpec =
         MockSortSpecBuilder.create()
@@ -457,9 +456,8 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
             .build();
     MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
 
-    // both shards are skipped and report zero hits, the empty result a shard sends when it
-    // stopped before collecting anything; that zero is where the shards stopped, not a count of
-    // the matches, so it must not be reported exact
+    // both shards are skipped and each reports an exact zero, so no matches are missing from the
+    // merged count and the merged zero stays exact
     final NamedList<Object> shard1ResponseHeader = new NamedList<>();
     shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     SolrDocumentList shard1Docs = createSolrDocumentList(0);
@@ -471,6 +469,44 @@ public class QueryComponentPartialResultsTest extends SolrTestCaseJ4 {
     SolrDocumentList shard2Docs = createSolrDocumentList(0);
     shard2Docs.setNumFound(0);
     shard2Docs.setNumFoundExact(true);
+
+    ShardRequest shardRequest =
+        MockShardRequest.create()
+            .withShardResponse(shard1ResponseHeader, shard1Docs)
+            .withShardResponse(shard2ResponseHeader, shard2Docs);
+
+    QueryComponent queryComponent = new QueryComponent();
+    queryComponent.mergeIds(responseBuilder, shardRequest);
+
+    SolrDocumentList responseDocs = responseBuilder.getResponseDocs();
+    assertEquals(0, responseDocs.size());
+    assertEquals(0, responseDocs.getNumFound());
+    assertEquals(Boolean.TRUE, responseDocs.getNumFoundExact());
+  }
+
+  @Test
+  public void allShardsSkippedWithInexactZeroDoesNotClaimExactZero() {
+    SortField sortField = new SortField(SORT_FIELD_NAME, SortField.Type.INT);
+    SortSpec sortSpec =
+        MockSortSpecBuilder.create()
+            .withSortFields(new SortField[] {sortField})
+            .withIncludesNonScoreOrDocSortField(true)
+            .build();
+    MockResponseBuilder responseBuilder = MockResponseBuilder.create().withSortSpec(sortSpec);
+
+    // both shards are skipped and report zero hits; shard1's zero is exact, but shard2 reports
+    // its zero as inexact, so the merged zero must not be reported exact
+    final NamedList<Object> shard1ResponseHeader = new NamedList<>();
+    shard1ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    SolrDocumentList shard1Docs = createSolrDocumentList(0);
+    shard1Docs.setNumFound(0);
+    shard1Docs.setNumFoundExact(true);
+
+    final NamedList<Object> shard2ResponseHeader = new NamedList<>();
+    shard2ResponseHeader.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    SolrDocumentList shard2Docs = createSolrDocumentList(0);
+    shard2Docs.setNumFound(0);
+    shard2Docs.setNumFoundExact(false);
 
     ShardRequest shardRequest =
         MockShardRequest.create()

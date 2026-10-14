@@ -1029,7 +1029,7 @@ public class QueryComponent extends SearchComponent {
     boolean maxHitsTerminatedEarly = false;
     long approximateTotalHits = 0;
     int failedShardCount = 0;
-    boolean anyShardSkipped = false;
+    boolean skippedShardMayHoldMatches = false;
     int failedShardCountForReRankCutoff = 0;
     NamedList<Object> reRankCutoffByShard = null;
     for (ShardResponse srsp : sreq.responses) {
@@ -1174,10 +1174,14 @@ public class QueryComponent extends SearchComponent {
       // if partial results are being returned from the shard, then skip merging the results for the
       // shard. This avoids an exception below. if the shard returned partial results but we don't
       // need to unmarshal (a normal scoring query), then merge what we got. The skip is decided
-      // before the shard's totals are folded into the merged totals below, so a skipped shard
-      // contributes nothing to them.
+      // before the shard's totals are folded into the merged numFound and approximateTotalHits
+      // below, so a skipped shard contributes nothing to them.
       if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
-        anyShardSkipped = true;
+        // a skipped shard that reported hits, or an inexact count, may hold matches that are
+        // missing from the merged count; a skipped shard that reported an exact zero does not
+        if (docs.getNumFound() > 0 || !Boolean.TRUE.equals(docs.getNumFoundExact())) {
+          skippedShardMayHoldMatches = true;
+        }
         continue;
       }
 
@@ -1231,10 +1235,10 @@ public class QueryComponent extends SearchComponent {
       } // end for-each-doc-in-response
     } // end for-each-response
 
-    // The merged count is not exact when a shard was skipped: the hits it found, or would have
-    // found, are not in the count. A shard that stopped early reports the count it reached, even
-    // when that is zero.
-    if (anyShardSkipped) {
+    // A skipped shard that reported hits, or an inexact count, makes the merged count inexact
+    // whether or not other shards were merged. A skipped shard that reported an exact zero does
+    // not change the merged flag.
+    if (skippedShardMayHoldMatches) {
       hitCountIsExact = false;
     }
 
