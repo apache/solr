@@ -235,6 +235,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       // Now , kill NRT jetty
       JettySolrRunner nrtJettyF = nrtJetty;
       JettySolrRunner pullJettyF = pullJetty;
+      // captured while the jetty is running: JettySolrRunner.getNodeName() returns null once
+      // the jetty is stopped, and the state waits below evaluate it while NRT is down
+      final String nrtNodeName = nrtJetty.getNodeName();
       Random r = random();
       // NOTE: indexing goes through the PULL-node client, so PULL is only stopped after the add
       // has completed (see addDone).
@@ -268,8 +271,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                         COLL,
                         2,
                         TimeUnit.MINUTES,
-                        (liveNodes, collectionState) ->
-                            !liveNodes.contains(nrtJettyF.getNodeName()));
+                        (liveNodes, collectionState) -> !liveNodes.contains(nrtNodeName));
                   } catch (TimeoutException e) {
                     log.warn("cluster state did not show the NRT node down in time", e);
                   }
@@ -361,10 +363,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                 TimeUnit.SECONDS,
                 (liveNodes, collectionState) ->
                     collectionState != null
-                        && ((liveNodes.contains(nrtJettyF.getNodeName())
-                                && collectionState
-                                    .getReplicasOnNode(nrtJettyF.getNodeName())
-                                    .stream()
+                        && ((liveNodes.contains(nrtNodeName)
+                                && collectionState.getReplicasOnNode(nrtNodeName).stream()
                                     .allMatch(rep -> rep.getState() == Replica.State.ACTIVE))
                             || collectionState.getZNodeVersion() != znodeVersionBefore
                             || collectionState.getChildNodesVersion() != childVersionBefore));
