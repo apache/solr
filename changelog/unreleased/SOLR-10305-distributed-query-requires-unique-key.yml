@@ -1,5 +1,5 @@
 title: >
-  A distributed query (shards parameter) against a schema without a uniqueKey now fails with a 400 "Distributed search requires a uniqueKey field in the schema" instead of a NullPointerException while merging shard responses.
+  A distributed query (shards parameter) against a schema without a uniqueKey now fails with a 400 "Distributed search requires a uniqueKey field in the schema" instead of a NullPointerException.
 type: fixed
 authors:
   - name: Nick Shanin
