@@ -73,7 +73,10 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
         "//str[@name='id'][.='4056']");
   }
 
-  /** SOLR-10305: no uniqueKey and a shards parameter was a NullPointerException in mergeIds */
+  /**
+   * SOLR-10305: a shards request on a schema without a uniqueKey must be a 400, not a
+   * NullPointerException
+   */
   @Test
   public void testDistributedQueryWithoutUniqueKeyIsBadRequest() {
     assertQEx(
