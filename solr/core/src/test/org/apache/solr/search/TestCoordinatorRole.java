@@ -616,7 +616,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     CountDownLatch latch = new CountDownLatch(queries);
     phaseLatch.set(latch);
     try {
-      long remainingMs = finishTimeMs - System.currentTimeMillis();
+      long remainingMs = finishTimeMs - new Date().getTime();
       return remainingMs > 0 && latch.await(remainingMs, TimeUnit.MILLISECONDS);
     } finally {
       phaseLatch.compareAndSet(latch, null);
