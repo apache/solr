@@ -97,6 +97,11 @@ public class DelegatingBackupRepository extends AbstractBackupRepository {
   }
 
   @Override
+  public void writeBytes(URI path, byte[] data) throws IOException {
+    delegate.writeBytes(path, data);
+  }
+
+  @Override
   public void createDirectory(URI path) throws IOException {
     delegate.createDirectory(path);
   }

@@ -27,7 +27,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -166,10 +165,19 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
     Set<String> referencedIndexFiles = new HashSet<>();
     List<ShardBackupId> shardBackupIdFileDeletes = new ArrayList<>();
 
-    List<ShardBackupId> shardBackupIds =
-        Arrays.stream(repository.listAllOrEmpty(shardBackupMetadataDir))
-            .map(sbi -> ShardBackupId.fromShardMetadataFilename(sbi))
-            .collect(Collectors.toList());
+    List<ShardBackupId> shardBackupIds = new ArrayList<>();
+    for (String filename : repository.listAllOrEmpty(shardBackupMetadataDir)) {
+      try {
+        shardBackupIds.add(ShardBackupId.fromShardMetadataFilename(filename));
+      } catch (IllegalArgumentException e) {
+        // The directory can hold files that are not shard metadata, such as the staged temp
+        // file an interrupted metadata write leaves behind. Such files belong to no backup
+        // point, so they are ignored here instead of failing the whole deletion.
+        if (log.isDebugEnabled()) {
+          log.debug("Ignoring file [{}] in shard backup metadata directory", filename);
+        }
+      }
+    }
     for (ShardBackupId shardBackupId : shardBackupIds) {
       final BackupId backupId = shardBackupId.getContainingBackupId();
 

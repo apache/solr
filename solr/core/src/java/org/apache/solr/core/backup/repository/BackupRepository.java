@@ -147,6 +147,20 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    */
   OutputStream createOutput(URI path) throws IOException;
 
+  /**
+   * Write {@code data} to {@code path} using this repository's output semantics.
+   *
+   * <p>The default implementation writes directly through {@link #createOutput(URI)} and makes no
+   * atomicity guarantee: it does not stage the bytes, and a failed write may leave a partially
+   * written or replaced object. Repositories whose backing store supports it may override this
+   * method to stage the bytes and publish them atomically.
+   */
+  default void writeBytes(URI path, byte[] data) throws IOException {
+    try (OutputStream os = createOutput(path)) {
+      os.write(data);
+    }
+  }
+
   // TODO define whether this should also create any nonexistent parent directories. (i.e. is this
   // 'mkdir', or 'mkdir -p')
   /**
