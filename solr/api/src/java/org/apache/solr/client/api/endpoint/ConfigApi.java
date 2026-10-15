@@ -77,7 +77,8 @@ public interface ConfigApi {
         summary = "Fetch request handlers (including implicit handler)",
         tags = {"config"})
     ConfigInfoResponse getRequestHandler(
-        @PathParam("componentName") @Parameter(description = "Name of the specific request handler")
+        @QueryParam("componentName")
+            @Parameter(description = "Name of the specific request handler")
             String component,
         @QueryParam("expandParams")
             @DefaultValue("false")
