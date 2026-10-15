@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -423,9 +424,10 @@ public class PeerSync implements SolrMetricProducer {
       if (cantReachIsSuccess
           && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS
           && srsp.getException() instanceof SolrException
-          && ((SolrException) srsp.getException()).code() == 500) {
+          && SolrCoreInitializationException.class.getName()
+              .equals(((SolrException) srsp.getException()).getThrowable())) {
         log.warn(
-            "{} got a 500 from {}, counting as success ",
+            "{} got a core init failure from {}, counting as success ",
             msg(),
             srsp.getShardAddress(),
             srsp.getException());

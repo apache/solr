@@ -1,4 +1,4 @@
-title: PeerSync during leader election now treats a 500 response to the versions request from a replica as unreachable, like a 503, so a replica whose core failed to load no longer blocks the election
+title: PeerSync counts a core initialization failure on the versions request as success when cantReachIsSuccess is set, so a core that will not load no longer blocks leader election or a sync request
 type: fixed
 authors:
   - name: Nick Shanin

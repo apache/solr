@@ -17,17 +17,25 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.servlet.ResponseUtils;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit tests for {@link PeerSync#handleResponse}. These live outside {@link PeerSyncTest} because
@@ -36,6 +44,8 @@ import org.junit.Test;
  * reads nothing from it beyond the log prefix.
  */
 public class PeerSyncHandleResponseTest extends SolrTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
@@ -48,26 +58,41 @@ public class PeerSyncHandleResponseTest extends SolrTestCase {
   }
 
   @Test
-  public void testPeerSyncIgnores500FromVersionRequestWhenCantReachIsSuccess() throws Exception {
+  public void testPeerSyncCountsCoreInitFailureFromVersionRequestAsSuccess() throws Exception {
     try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1");
         PeerSync peerSync = new PeerSync(core, List.of("http://example.com/solr/core"), 10, true)) {
       ShardResponse response =
           failedResponse(
               PeerSync.SHARD_REQUEST_PURPOSE_GET_VERSIONS,
-              new SolrException(SolrException.ErrorCode.SERVER_ERROR, "boom"));
+              serverError(
+                  new SolrCoreInitializationException("collection1", new IOException("boom"))));
 
       assertTrue(peerSync.handleResponse(response));
     }
   }
 
   @Test
-  public void testPeerSyncStillFails500FromUpdateRequest() throws Exception {
+  public void testPeerSyncStillFailsOtherServerErrorFromVersionRequest() throws Exception {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1");
+        PeerSync peerSync = new PeerSync(core, List.of("http://example.com/solr/core"), 10, true)) {
+      ShardResponse response =
+          failedResponse(
+              PeerSync.SHARD_REQUEST_PURPOSE_GET_VERSIONS,
+              serverError(new SolrException(SolrException.ErrorCode.SERVER_ERROR, "boom")));
+
+      assertFalse(peerSync.handleResponse(response));
+    }
+  }
+
+  @Test
+  public void testPeerSyncStillFailsCoreInitFailureFromUpdateRequest() throws Exception {
     try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1");
         PeerSync peerSync = new PeerSync(core, List.of("http://example.com/solr/core"), 10, true)) {
       ShardResponse response =
           failedResponse(
               PeerSync.SHARD_REQUEST_PURPOSE_GET_UPDATES,
-              new SolrException(SolrException.ErrorCode.SERVER_ERROR, "boom"));
+              serverError(
+                  new SolrCoreInitializationException("collection1", new IOException("boom"))));
 
       assertFalse(peerSync.handleResponse(response));
     }
@@ -83,5 +108,16 @@ public class PeerSyncHandleResponseTest extends SolrTestCase {
     response.setException(exception);
     response.setShardAddress("http://example.com/solr/core");
     return response;
+  }
+
+  // The server writes the exception class into the response metadata, so build the error the
+  // same way the response writer does.
+  @SuppressWarnings("unchecked")
+  private static SolrException serverError(Throwable cause) {
+    NamedList<Object> info = new SimpleOrderedMap<>();
+    ResponseUtils.getErrorInfo(cause, info, log);
+    SolrException exception = new SolrException(SolrException.ErrorCode.SERVER_ERROR, "boom");
+    exception.setMetadata((NamedList<String>) info.get("metadata"));
+    return exception;
   }
 }
