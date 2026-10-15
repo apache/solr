@@ -271,7 +271,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
     if (expandParams) {
       for (Map.Entry<String, Object> entry : reqHandlersMap.entrySet()) {
-        if (expandOnlyComponentName == null || !expandOnlyComponentName.equals(entry.getKey())) {
+        if (expandOnlyComponentName == null || expandOnlyComponentName.equals(entry.getKey())) {
           entry.setValue(expandUseParams(solrQueryRequest, entry.getValue()));
         }
       }
