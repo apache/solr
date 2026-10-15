@@ -405,6 +405,15 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertNull(rf.getTransformer());
   }
 
+  @Test
+  public void testDigitLeadingNumberWithoutSchemaFieldStaysConstant() {
+    // "1001" is not a field in schema12.xml, so it must still be a numeric constant
+    ReturnFields rf = new SolrReturnFields(req("fl", "1001,id"));
+    assertNotNull(rf.getTransformer());
+    assertFalse(rf.getLuceneFieldNames().contains("1001"));
+    assertTrue(rf.wantsField("id"));
+  }
+
   /**
    * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument}
    * respects the {@link ReturnFields} and doesn't unnecessarily convert Fields that aren't needed.
