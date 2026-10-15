@@ -99,8 +99,9 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
 
     final ShardRequestTracker shardRequestTracker =
         CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
-    for (Slice slice :
-        ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
+    DocCollection collection =
+        ccc.getZkStateReader().getClusterState().getCollection(collectionName);
+    for (Slice slice : collection.getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() != State.ACTIVE) {
           if (log.isInfoEnabled()) {
@@ -170,14 +171,12 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
 
     // A shard counts as captured only if at least one of its replicas reported a snapshot. Shards
     // whose replicas were all skipped as inactive never received a request, so they must be
-    // checked against the cluster state rather than against the requests that were sent.
+    // checked against the collection state rather than against the requests that were sent.
     Set<String> shardsWithSnapshot = new HashSet<>();
     for (CoreSnapshotMetaData replica : replicas) {
       shardsWithSnapshot.add(replica.getShardId());
     }
-    DocCollection collectionStatus =
-        ccc.getZkStateReader().getClusterState().getCollection(collectionName);
-    for (Slice slice : collectionStatus.getActiveSlices()) {
+    for (Slice slice : collection.getActiveSlices()) {
       if (!shardsWithSnapshot.contains(slice.getName())) {
         failedShards.add(slice.getName());
       }

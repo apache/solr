@@ -17,7 +17,6 @@
 package org.apache.solr.core.snapshots;
 
 import java.util.Collection;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -32,7 +31,6 @@ import org.junit.Test;
  * A collection snapshot must not be recorded as successful when a shard has no active replica to
  * take a core snapshot.
  */
-@LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestSolrCloudSnapshotInactiveShard extends SolrCloudTestCase {
 
   @BeforeClass
