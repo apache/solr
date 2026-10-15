@@ -2,7 +2,6 @@ title: "fl: digit-leading names such as 1001_s are fields when the schema define
 type: fixed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-4374
     url: https://issues.apache.org/jira/browse/SOLR-4374
