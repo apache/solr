@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.SolrZKMetricsListener;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
@@ -347,17 +348,28 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
   @Test
   public void testSortByDocId() throws Exception {
-    // the cross-shard order of _docid_ is not defined, but the request must not fail
+    // the cross-shard order of _docid_ is not defined, but the request must not fail and each
+    // shard's hits must stay together
     for (String order : new String[] {"asc", "desc"}) {
       QueryResponse rsp =
           cluster
               .getSolrClient()
               .query(
                   COLLECTION,
-                  new SolrQuery("q", "*:*", "fl", "id,test_sS", "sort", "_docid_ " + order)
+                  new SolrQuery("q", "*:*", "fl", "id,test_sS,[shard]", "sort", "_docid_ " + order)
                       .setRows(20));
+      assertTrue("fixture must fit in one page", rsp.getResults().getNumFound() <= 20);
       assertEquals(rsp.getResults().getNumFound(), rsp.getResults().size());
       assertTrue(rsp.getResults().size() > 0);
+      Set<Object> seenShards = new HashSet<>();
+      Object currentShard = null;
+      for (SolrDocument doc : rsp.getResults()) {
+        Object shard = doc.getFieldValue("[shard]");
+        if (!shard.equals(currentShard)) {
+          assertTrue("shard " + shard + " is split across groups", seenShards.add(shard));
+          currentShard = shard;
+        }
+      }
     }
   }
 
