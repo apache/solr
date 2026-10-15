@@ -2,7 +2,6 @@ title: "LoggingInfoStream (IndexWriter infoStream logging) now includes the core
 type: changed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-5505
     url: https://issues.apache.org/jira/browse/SOLR-5505
