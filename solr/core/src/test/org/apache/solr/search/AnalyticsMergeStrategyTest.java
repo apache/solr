@@ -113,8 +113,7 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("group.topgroups.sort_i", "5");
     params.add("group.topgroups.sort_i", "50");
     QueryResponse shardRsp = new QueryRequest(params).process(clients.get(0));
-    assertShardCount(
-        shardRsp, "analytics section missing for grouped second phase shard query", 3);
+    assertShardCount(shardRsp, "analytics section missing for grouped second phase shard query", 3);
   }
 
   private void indexDocs() throws Exception {
