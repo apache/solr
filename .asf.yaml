@@ -19,7 +19,6 @@ github:
     rebase: false
 
   # Cap how many pull requests a contributor without write access may have open at once.
-  # TODO: Need to excempt user 'solrbot'
   # See https://github.com/apache/infrastructure-asfyaml#pr_creation_cap
   pull_requests:
     creation_cap:
