@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
@@ -1021,8 +1023,18 @@ public class FacetComponent extends SearchComponent {
   private void refinePivotFacets(ResponseBuilder rb, ShardRequest sreq) {
     // This is after the shard has returned the refinement request
     FacetInfo fi = rb._facetInfo;
+    boolean partialRefinement = false;
     for (ShardResponse srsp : sreq.responses) {
       int shardNumber = rb.getShardNum(srsp.getShard());
+
+      NamedList<?> responseHeader =
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "responseHeader", false);
+      if (responseHeader != null
+          && Boolean.TRUE.equals(
+              responseHeader.getBooleanArg(RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+        partialRefinement = true;
+      }
 
       NamedList<?> facetCounts =
           (NamedList<?>)
@@ -1048,6 +1060,12 @@ public class FacetComponent extends SearchComponent {
             shardNumber, rb, pivotFacetResponseFromShard.getValue());
         aggregatedPivotFacet.removeAllRefinementsForShard(shardNumber);
       }
+    }
+
+    if (partialRefinement) {
+      rb.rsp.setPartialResults(rb.req);
+      rb.rsp.addPartialResponseDetail("Faceting pivots refinement");
+      return;
     }
 
     if (allPivotFacetsAreFullyRefined(fi)) {
