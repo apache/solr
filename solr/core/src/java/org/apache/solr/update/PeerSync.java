@@ -424,7 +424,8 @@ public class PeerSync implements SolrMetricProducer {
       if (cantReachIsSuccess
           && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS
           && srsp.getException() instanceof SolrException
-          && SolrCoreInitializationException.class.getName()
+          && SolrCoreInitializationException.class
+              .getName()
               .equals(((SolrException) srsp.getException()).getThrowable())) {
         log.warn(
             "{} got a core init failure from {}, counting as success ",
