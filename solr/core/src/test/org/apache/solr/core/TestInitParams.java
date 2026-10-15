@@ -18,9 +18,14 @@ package org.apache.solr.core;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
@@ -126,5 +131,39 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertFalse(initParams.matchPath("/update/json/docs"));
     assertTrue(initParams.matchPath("/update/json"));
     assertTrue(initParams.matchPath("/update"));
+  }
+
+  @Test
+  public void testUpdateJsonDocsInitParamsRejectsFieldMappings() throws Exception {
+    initCore("solrconfig-update-json-docs-initparams.xml", "schema.xml");
+    try {
+      SolrRequestHandler handler = h.getCore().getRequestHandler("/update/json/docs");
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  handler.handleRequest(
+                      jsonDocsRequest("f", "title:/title"), new SolrQueryResponse()));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage(), ex.getMessage().contains("mapUniqueKeyOnly"));
+
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      handler.handleRequest(
+          jsonDocsRequest("mapUniqueKeyOnly", "false", "echo", "true", "f", "title:/title"), rsp);
+      assertEquals("[{title=t}]", String.valueOf(rsp.getValues().get("docs")));
+    } finally {
+      initCore("solrconfig-paramset.xml", "schema.xml");
+    }
+  }
+
+  private SolrQueryRequestBase jsonDocsRequest(String... keysAndValues) {
+    ModifiableSolrParams solrParams = params("json.command", "false");
+    for (int i = 0; i < keysAndValues.length; i += 2) {
+      solrParams.set(keysAndValues[i], keysAndValues[i + 1]);
+    }
+    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), solrParams) {};
+    String json = "{\"id\":\"1\",\"title\":\"t\"}";
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(json, "application/json")));
+    return req;
   }
 }
