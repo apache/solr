@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -37,6 +38,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -424,45 +426,31 @@ public class TestRawTransformer extends SolrCloudTestCase {
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
     String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
 
-    assertTrue(
-        "suffix glob did not write the _json field raw: " + strResponse,
-        Pattern.compile("\"payload_json\":\\[\\{\"seq\":\\[1,2]},\\s*\\{\"seq\":\\[3,4]}]")
-            .matcher(strResponse)
-            .find());
+    Object parsed = Utils.fromJSONString(strResponse);
+    List<?> docs = (List<?>) ((Map<?, ?>) ((Map<?, ?>) parsed).get("response")).get("docs");
+    int withPayload = 0;
+    for (Object doc : docs) {
+      Map<?, ?> fields = (Map<?, ?>) doc;
+      if (fields.containsKey("payload_json")) {
+        withPayload++;
+        assertEquals(
+            "payload_json was not written raw as a JSON array: " + strResponse,
+            "[{seq=[1, 2]}, {seq=[3, 4]}]",
+            String.valueOf(fields.get("payload_json")));
+      }
+    }
+    assertTrue("no payload_json field was returned: " + strResponse, withPayload > 0);
     assertFalse(
         "field not matching the glob was returned: " + strResponse,
         strResponse.contains("\"subject\""));
 
-    // *:[json] returns every field and writes each of them raw
-    req =
+    QueryRequest starReq =
         new QueryRequest(
             new ModifiableSolrParams(
-                Map.of(
-                    "q",
-                    new String[] {"*:*"},
-                    "fl",
-                    new String[] {"*:[json]"},
-                    "wt",
-                    new String[] {"json"},
-                    "indent",
-                    new String[] {"false"})));
-    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
-    rsp = CLIENT.request(req, "collection1");
-    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
-
-    assertTrue(
-        "all-fields glob did not write the single valued field raw: " + strResponse,
-        strResponse.contains("\"subject\":{poffL:[{offL:[{oGUID:\"7"));
-    assertTrue(
-        "all-fields glob did not write the multiValued field raw: " + strResponse,
-        Pattern.compile("\"links\":\\[\\{an_array:\\[1,2,3]},\\s*\\{an_array:\\[4,5,6]}]")
-            .matcher(strResponse)
-            .find());
-    assertTrue(
-        "all-fields glob did not write the _json field raw: " + strResponse,
-        Pattern.compile("\"payload_json\":\\[\\{\"seq\":\\[1,2]},\\s*\\{\"seq\":\\[3,4]}]")
-            .matcher(strResponse)
-            .find());
+                Map.of("q", new String[] {"*:*"}, "fl", new String[] {"*:[json]"})));
+    SolrException e =
+        expectThrows(SolrException.class, () -> CLIENT.request(starReq, "collection1"));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
   private static final InputStreamResponseParser XML_STREAM_RESPONSE_PARSER =

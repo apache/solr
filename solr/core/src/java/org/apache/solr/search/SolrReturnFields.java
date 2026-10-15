@@ -317,6 +317,12 @@ public class SolrReturnFields extends ReturnFields {
             continue;
           } else if (field != null && ch == ':' && sp.val.startsWith("[", sp.pos + 1)) {
             // "glob:[json]" applies a raw value transformer to every matching field
+            if ("*".equals(field)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "A raw value transformer cannot follow a bare *. "
+                      + "Use a named glob such as *_json:[json] instead.");
+            }
             sp.pos++;
             ModifiableSolrParams augmenterParams = new ModifiableSolrParams();
             sp.pos +=
@@ -333,11 +339,7 @@ public class SolrReturnFields extends ReturnFields {
                       + augmenterName
                       + "]");
             }
-            if ("*".equals(field)) {
-              _wantsAllFields = true;
-            } else {
-              globs.add(field);
-            }
+            globs.add(field);
             DocTransformer t = rawFactory.createForGlob(field, req);
             if (t != null) {
               augmenters.addTransformer(t);
