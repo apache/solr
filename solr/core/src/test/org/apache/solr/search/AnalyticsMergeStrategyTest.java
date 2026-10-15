@@ -90,10 +90,8 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     rsp = queryRandomShard(params);
     assertCount(rsp, 4);
 
-    // SOLR-7520: the post filter must also be completed on shards when grouping.
-    // Merge strategies do not run for grouped responses at the coordinator, so
-    // assert on a shard response, using the first phase request shape that the
-    // coordinator sends to each shard.
+    // Merge strategies do not run for grouped responses at the coordinator, so the grouped
+    // analytics checks read shard responses. Shard 0 holds docs 1, 2 and 7.
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!count}");
@@ -101,9 +99,41 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("group.field", "sort_i");
     params.add("group.distributed.first", "true");
     QueryResponse shardRsp = new QueryRequest(params).process(clients.get(0));
-    assertNotNull(
-        "analytics section missing for grouped shard query",
-        shardRsp.getResponse().get("analytics"));
+    assertShardCount(shardRsp, "analytics section missing for grouped shard query", 3);
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!count}");
+    params.add("group", "true");
+    params.add("group.field", "sort_i");
+    params.add("group.distributed.second", "true");
+    params.add("group.topgroups.sort_i", "5");
+    params.add("group.topgroups.sort_i", "50");
+    shardRsp = new QueryRequest(params).process(clients.get(0));
+    assertShardCount(
+        shardRsp, "analytics section missing for grouped second phase shard query", 3);
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!count}");
+    params.add("group", "true");
+    params.add("group.field", "sort_i");
+    params.add("group.ngroups", "true");
+    setDistributedParams(params);
+    rsp = queryRandomShard(params);
+    assertEquals(11, rsp.getGroupResponse().getValues().get(0).getNGroups().intValue());
+    assertEquals(11, rsp.getGroupResponse().getValues().get(0).getMatches());
+  }
+
+  private void assertShardCount(QueryResponse shardRsp, String missingMessage, int count)
+      throws Exception {
+    @SuppressWarnings({"rawtypes"})
+    NamedList analytics = (NamedList) shardRsp.getResponse().get("analytics");
+    assertNotNull(missingMessage, analytics);
+    Integer c = (Integer) analytics.get("mycount");
+    if (c != count) {
+      throw new Exception("Shard count is not correct:" + count + ":" + c);
+    }
   }
 
   private void assertCountOnly(QueryResponse rsp, int count) throws Exception {
