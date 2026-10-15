@@ -1046,6 +1046,9 @@ public class FacetComponent extends SearchComponent {
           (NamedList<List<NamedList<Object>>>) facetCounts.get(PIVOT_KEY);
 
       if (null == pivotFacetResponsesFromShard) {
+        if (!haveCompleteResults(responseHeader)) {
+          continue;
+        }
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "No pivot refinement response from shard: " + srsp.getShard());
