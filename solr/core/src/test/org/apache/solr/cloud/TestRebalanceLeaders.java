@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -172,8 +174,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
     ZkController zkController =
         cluster.getRandomJetty(random()).getCoreContainer().getZkController();
-    boolean overseerMode = zkController.getDistributedCommandRunner().isEmpty();
-    Set<String> idsBefore = overseerMode ? overseerAsyncIds(zkController) : Set.of();
+    Set<String> idsBefore = asyncIds(zkController);
 
     int maxWaitSeconds = 60;
     long start = System.nanoTime();
@@ -186,19 +187,20 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         resp.getResponse().toString(),
         resp.getResponse().get("Summary").toString().contains("Success"));
     assertNotNull("No leader change was requested", resp.getResponse().get("successes"));
-    // With the Overseer disabled this is the only signal: the wait ends early only once every
-    // sub-command's stored response was removed.
     assertTrue(
         "Waited " + elapsedSeconds + "s, hit maxWaitSeconds", elapsedSeconds < maxWaitSeconds);
 
-    if (overseerMode) {
-      Set<String> leftover = overseerAsyncIds(zkController);
-      leftover.removeAll(idsBefore);
-      assertTrue("Async ids not cleared: " + leftover, leftover.isEmpty());
-    }
+    Set<String> leftover = asyncIds(zkController);
+    leftover.removeAll(idsBefore);
+    assertTrue("Async ids not cleared: " + leftover, leftover.isEmpty());
   }
 
-  private Set<String> overseerAsyncIds(ZkController zkController) throws Exception {
+  private Set<String> asyncIds(ZkController zkController) throws Exception {
+    Optional<DistributedCollectionConfigSetCommandRunner> runner =
+        zkController.getDistributedCommandRunner();
+    if (runner.isPresent()) {
+      return new HashSet<>(runner.get().getTrackedAsyncIds());
+    }
     Set<String> ids = new HashSet<>(zkController.getOverseerCompletedMap().keys());
     ids.addAll(zkController.getOverseerFailureMap().keys());
     ids.addAll(Overseer.getAsyncIdsMap(zkController.getZkClient()).keys());
