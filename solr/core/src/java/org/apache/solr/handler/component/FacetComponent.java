@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -1030,9 +1030,7 @@ public class FacetComponent extends SearchComponent {
       NamedList<?> responseHeader =
           (NamedList<?>)
               SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "responseHeader", false);
-      if (responseHeader != null
-          && Boolean.TRUE.equals(
-              responseHeader.getBooleanArg(RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+      if (!haveCompleteResults(responseHeader)) {
         partialRefinement = true;
       }
 

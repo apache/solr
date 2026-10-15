@@ -229,9 +229,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
     // With partialResults=false the request does not throw: a tripped limit is
     // reported in the response header as "omitted" and no pivot data is
     // returned, so partial pivots are never handed back as if they were
-    // usable results. (An earlier version of this test expected a SolrException
-    // to reach the client; no path produces one, because the handler converts
-    // the limit exception into the omitted header.)
+    // usable results.
     QueryResponse rsp =
         solrClient.query(
             COLLECTION,
@@ -294,6 +292,39 @@ public class TestQueryLimits extends SolrCloudTestCase {
     assertNotNull(
         "refinement stopped on partial results should be marked partial: " + rsp.jsonStr(),
         rsp.getHeader().get("partialResults"));
+  }
+
+  @Test
+  public void testPivotFacetRefinementStopsWhenOmittedPartialResults() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    RefinementPivotQueryLimit limit = new RefinementPivotQueryLimit();
+    TestInjection.queryTimeout = limit;
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q", "id:*",
+                "facet", "true",
+                "facet.pivot", "val_i,id",
+                "f.val_i.facet.limit", "2",
+                "f.val_i.facet.overrequest.ratio", "0",
+                "f.val_i.facet.overrequest.count", "0",
+                "f.id.facet.limit", "1",
+                "f.id.facet.overrequest.ratio", "0",
+                "f.id.facet.overrequest.count", "0",
+                "multiThreaded", "false",
+                CommonParams.PARTIAL_RESULTS, "false"));
+    assertTrue(
+        "pivot refinement should reach the shards: " + limit.getTrippedRequests(),
+        limit.getTrippedRequests() > 0);
+    assertTrue(
+        "refinement should not be requested again after an omitted response: "
+            + limit.getTrippedRequests(),
+        limit.getTrippedRequests() <= 3);
+    assertEquals(
+        "refinement stopped on omitted results should be marked omitted: " + rsp.jsonStr(),
+        "omitted",
+        String.valueOf(rsp.getHeader().get("partialResults")));
   }
 
   @Test
