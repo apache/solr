@@ -86,13 +86,14 @@ public class GetConfigTest extends SolrTestCase {
   @Test
   public void testGetConfigComponentFromCore() throws Exception {
     for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
-      var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
+      String pathComponent = GetConfig.toExternalComponentName(component);
+      var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, pathComponent);
       var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
 
       assertNotNull(component, response);
       assertNull(component, response.error);
       assertNotNull(component, response.config);
-      assertTrue(component, response.config.containsKey(component));
+      assertTrue(component, response.config.containsKey(pathComponent));
       assertEquals(component, 1, response.config.size());
     }
   }
@@ -102,7 +103,7 @@ public class GetConfigTest extends SolrTestCase {
   public void testGetConfigComponentFilteredByNameFromCore() throws Exception {
     var request =
         new ConfigApi.GetConfigComponentByName(
-            IndexType.CORE, CORE_NAME, "searchComponent", "spellcheck");
+            IndexType.CORE, CORE_NAME, "searchComponents", "spellcheck");
     request.setMeta(true);
     var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
 
@@ -111,7 +112,7 @@ public class GetConfigTest extends SolrTestCase {
     assertNotNull(response.config);
     assertEquals(1, response.config.size());
 
-    Map<String, Object> section = (Map<String, Object>) response.config.get("searchComponent");
+    Map<String, Object> section = (Map<String, Object>) response.config.get("searchComponents");
     assertNotNull(section);
     assertTrue(section.containsKey("spellcheck"));
 
@@ -125,11 +126,11 @@ public class GetConfigTest extends SolrTestCase {
   public void testGetConfigComponentFilteredByNameOmitsPackageInfoByDefault() throws Exception {
     var request =
         new ConfigApi.GetConfigComponentByName(
-            IndexType.CORE, CORE_NAME, "searchComponent", "spellcheck");
+            IndexType.CORE, CORE_NAME, "searchComponents", "spellcheck");
     // meta is left unset, so it defaults to false and no package lookup should happen.
     var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
 
-    Map<String, Object> section = (Map<String, Object>) response.config.get("searchComponent");
+    Map<String, Object> section = (Map<String, Object>) response.config.get("searchComponents");
     Map<String, Object> spellcheck = (Map<String, Object>) section.get("spellcheck");
     assertFalse(spellcheck.containsKey("_packageinfo_"));
   }
@@ -152,7 +153,19 @@ public class GetConfigTest extends SolrTestCase {
   public void testGetConfigComponentByUnknownNameReturnsNotFound() {
     var request =
         new ConfigApi.GetConfigComponentByName(
-            IndexType.CORE, CORE_NAME, "searchComponent", "doesNotExist");
+            IndexType.CORE, CORE_NAME, "searchComponents", "doesNotExist");
+    final RemoteSolrException ex =
+        expectThrows(
+            RemoteSolrException.class,
+            () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+    assertEquals(404, ex.code());
+  }
+
+  @Test
+  public void testGetConfigComponentRejectsOldSingularSearchComponentPath() {
+    // v2 intentionally renamed this one section to the plural "searchComponents" in the URL;
+    // the old singular form (still used by v1) shouldn't match the v2 route at all.
+    var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "searchComponent");
     final RemoteSolrException ex =
         expectThrows(
             RemoteSolrException.class,

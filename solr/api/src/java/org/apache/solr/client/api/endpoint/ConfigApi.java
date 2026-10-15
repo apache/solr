@@ -70,10 +70,12 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
+    // here is the external name for the internal "searchComponent" section; see
+    // GetConfig#toExternalComponentName)
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponent|queryResponseWriter}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriter}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -82,10 +84,12 @@ public interface ConfigApi {
         @PathParam("component") @Parameter(description = "Name of the config component")
             String component);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
+    // here is the external name for the internal "searchComponent" section; see
+    // GetConfig#toExternalComponentName)
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponent|queryResponseWriter}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriter}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",
