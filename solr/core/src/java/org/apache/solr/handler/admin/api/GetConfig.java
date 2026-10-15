@@ -135,12 +135,14 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       String componentName, boolean expandParams, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
 
-    Map<String, Object> configMap = solrConfigAsMap();
+    Map<String, Object> configMap = new LinkedHashMap<>();
     configMap.put(
         SolrRequestHandler.TYPE,
-        requestHandlersWithImplicits(configMap, expandParams, componentName));
-    filterByComponentName(
-        configMap, SolrRequestHandler.TYPE, componentName, meta, solrQueryRequest);
+        requestHandlersWithImplicits(solrConfigAsMap(), expandParams, componentName));
+    if (componentName != null) {
+      filterByComponentName(
+          configMap, SolrRequestHandler.TYPE, componentName, meta, solrQueryRequest);
+    }
 
     response.config = jsonSafeCopy(configMap);
     return response;
