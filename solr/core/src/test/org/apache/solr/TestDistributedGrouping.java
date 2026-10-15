@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -1725,6 +1726,23 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     } finally {
       req.close();
     }
+  }
+
+  @Test
+  public void testMultiValuedGroupFieldIsBadRequest() throws Exception {
+    index("id", "1", "cat", "a");
+    commit();
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "*:*");
+    params.set("group", "true");
+    params.set("group.field", "cat");
+    setDistributedParams(params);
+
+    SolrException e =
+        expectThrows(
+            SolrException.class, () -> new QueryRequest(params).process(clients.get(0)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
   private QueryResponse simpleQuery(Object... queryParams) throws Exception {
