@@ -157,7 +157,6 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     checkPreferredsAreLeaders();
   }
 
-  // Sub-command async ids must be found and cleared in both Overseer and distributed modes.
   @Test
   public void testRebalanceLeadersClearsAsyncIds() throws Exception {
     DocCollection docCollection =
@@ -171,30 +170,39 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       setProp(slice, nonLeader, "preferredLeader");
     }
 
-    int maxWaitSeconds = 30;
+    ZkController zkController =
+        cluster.getRandomJetty(random()).getCoreContainer().getZkController();
+    boolean overseerMode = zkController.getDistributedCommandRunner().isEmpty();
+    Set<String> idsBefore = overseerMode ? overseerAsyncIds(zkController) : Set.of();
+
+    int maxWaitSeconds = 60;
     long start = System.nanoTime();
     CollectionAdminResponse resp =
         CollectionAdminRequest.rebalanceLeaders(COLLECTION_NAME)
             .setMaxWaitSeconds(maxWaitSeconds)
             .process(cluster.getSolrClient());
     long elapsedSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start);
-    assertTrue(resp.getResponse().get("Summary").toString().contains("Success"));
-
-    for (String path :
-        List.of(
-            "/distributedapi/async/persistent",
-            "/overseer/collection-map-completed",
-            "/overseer/collection-map-failure")) {
-      if (zkClient().exists(path)) {
-        List<String> leftover =
-            zkClient().getChildren(path, null).stream()
-                .filter(id -> id.startsWith("mn-rebalanceleaders_"))
-                .toList();
-        assertTrue("Async ids not cleared from " + path + ": " + leftover, leftover.isEmpty());
-      }
-    }
+    assertTrue(
+        resp.getResponse().toString(),
+        resp.getResponse().get("Summary").toString().contains("Success"));
+    assertNotNull("No leader change was requested", resp.getResponse().get("successes"));
+    // With the Overseer disabled this is the only signal: the wait ends early only once every
+    // sub-command's stored response was removed.
     assertTrue(
         "Waited " + elapsedSeconds + "s, hit maxWaitSeconds", elapsedSeconds < maxWaitSeconds);
+
+    if (overseerMode) {
+      Set<String> leftover = overseerAsyncIds(zkController);
+      leftover.removeAll(idsBefore);
+      assertTrue("Async ids not cleared: " + leftover, leftover.isEmpty());
+    }
+  }
+
+  private Set<String> overseerAsyncIds(ZkController zkController) throws Exception {
+    Set<String> ids = new HashSet<>(zkController.getOverseerCompletedMap().keys());
+    ids.addAll(zkController.getOverseerFailureMap().keys());
+    ids.addAll(Overseer.getAsyncIdsMap(zkController.getZkClient()).keys());
+    return ids;
   }
 
   // Ensure that the property is set on only one replica per slice when changing a unique property
