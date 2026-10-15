@@ -89,7 +89,7 @@ public interface ConfigApi {
             @Parameter(description = "Include package metadata (_packageinfo_)")
             boolean meta);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
     // and "queryResponseWriters" here are the external, pluralized names for the internal
     // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
     @GET
