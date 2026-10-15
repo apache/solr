@@ -122,10 +122,9 @@ TIP: Aliases for the `writeChangelog` task are `changelog` and `newChangelog`.
 
 == 4. Changelog Validation in Pull Requests
 
-The `validate-changelog` GitHub workflow automatically checks that:
-
-. **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
-. **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
+The `validate-changelog` GitHub workflow checks that code changes come with a
+changelog entry, and that any entry added under `changelog/unreleased/` is
+structurally valid.
 
 Pull requests that only touch documentation, tests, build files or CI configuration
 are exempt and pass without an entry.  Subjectively, some minor changes don't need one either.
