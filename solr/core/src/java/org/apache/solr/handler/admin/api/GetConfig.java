@@ -56,7 +56,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigComponent. These are the
   // internal SolrConfig section names (also used by the legacy v1 GET /config/{component} path);
-  // see EXTERNAL_COMPONENT_NAME for the v2-only "searchComponent" -> "searchComponents" rename.
+  // see EXTERNAL_TO_INTERNAL_COMPONENT_NAME for the v2-only pluralized renames.
   // TODO: Remove this set when remaining GET /config/{component} sections also migrate.
   public static final Set<String> MIGRATED_CONFIG_COMPONENTS =
       Set.of(
@@ -69,9 +69,11 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "queryResponseWriter");
 
   // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
-  // name. v1's GET /config/searchComponent keeps using the internal name unchanged.
+  // name. v1's GET /config/{component} keeps using the internal names unchanged.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
-      Map.of("searchComponents", "searchComponent");
+      Map.of(
+          "searchComponents", "searchComponent",
+          "queryResponseWriters", "queryResponseWriter");
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);

@@ -71,11 +71,11 @@ public interface ConfigApi {
             int expectedParamsVersion);
 
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
-    // here is the external name for the internal "searchComponent" section; see
-    // GetConfig#toExternalComponentName)
+    // and "queryResponseWriters" here are the external, pluralized names for the internal
+    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriter}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -85,11 +85,11 @@ public interface ConfigApi {
             String component);
 
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
-    // here is the external name for the internal "searchComponent" section; see
-    // GetConfig#toExternalComponentName)
+    // and "queryResponseWriters" here are the external, pluralized names for the internal
+    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriter}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",
