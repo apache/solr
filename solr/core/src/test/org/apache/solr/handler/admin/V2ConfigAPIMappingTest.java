@@ -49,7 +49,7 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   // the API lookup works for a handful of the valid config "components".
   @Test
   public void testGetSingleComponentConfig() {
-    assertAnnotatedApiExistsFor("GET", "/config/query");
+    assertAnnotatedApiExistsFor("GET", "/config/requestHandler");
     assertAnnotatedApiExistsFor("GET", "/config/jmx");
     assertAnnotatedApiExistsFor("GET", "/config/requestDispatcher");
     assertAnnotatedApiExistsFor("GET", "/config/luceneMatchVersion");

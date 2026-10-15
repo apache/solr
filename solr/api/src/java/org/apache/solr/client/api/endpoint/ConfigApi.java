@@ -70,9 +70,12 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
+    // and "queryResponseWriters" here are the external, pluralized names for the internal
+    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
     @GET
-    @Path("/{component:updateHandler|directoryFactory|indexConfig|codecFactory}")
+    @Path(
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -80,5 +83,25 @@ public interface ConfigApi {
     ConfigInfoResponse getConfigComponent(
         @PathParam("component") @Parameter(description = "Name of the config component")
             String component);
+
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
+    // and "queryResponseWriters" here are the external, pluralized names for the internal
+    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
+    @GET
+    @Path(
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}/{componentName}")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a single named entry within a config section",
+        tags = {"config"})
+    ConfigInfoResponse getConfigComponentByName(
+        @PathParam("component") @Parameter(description = "Name of the config component")
+            String component,
+        @PathParam("componentName") @Parameter(description = "Name of the entry within the section")
+            String componentName,
+        @QueryParam("meta")
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
   }
 }
