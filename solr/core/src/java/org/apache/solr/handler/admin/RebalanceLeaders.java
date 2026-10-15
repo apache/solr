@@ -33,14 +33,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.AdminCmdContext;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -484,7 +481,7 @@ class RebalanceLeaders {
       Iterator<String> iter = asyncRequests.iterator();
       boolean foundChange = false;
       while (iter.hasNext()) {
-        if (removeIfDone(iter.next())) {
+        if (coreContainer.getZkController().removeStoredAsyncResponse(iter.next())) {
           iter.remove();
           foundChange = true;
         }
@@ -500,21 +497,6 @@ class RebalanceLeaders {
       TimeUnit.MILLISECONDS.sleep(100);
     }
     // If we get here, we've timed out waiting.
-    return false;
-  }
-
-  private boolean removeIfDone(String asyncId) throws Exception {
-    ZkController zkController = coreContainer.getZkController();
-    Optional<DistributedCollectionConfigSetCommandRunner> runner =
-        zkController.getDistributedCommandRunner();
-    if (runner.isPresent()) {
-      return runner.get().deleteSingleAsyncId(asyncId);
-    }
-    if (zkController.getOverseerFailureMap().remove(asyncId)
-        || zkController.getOverseerCompletedMap().remove(asyncId)) {
-      zkController.clearAsyncId(asyncId);
-      return true;
-    }
     return false;
   }
 

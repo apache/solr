@@ -129,20 +129,7 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
 
     final DeleteClusterCommandStatusResponse response =
         instantiateJerseyResponse(DeleteClusterCommandStatusResponse.class);
-    final ZkController zkController = coreContainer.getZkController();
-
-    if (zkController.getDistributedCommandRunner().isEmpty()) {
-      if (zkController.getOverseerCompletedMap().remove(requestId)) {
-        zkController.clearAsyncId(requestId);
-        response.status = "successfully removed stored response for [" + requestId + "]";
-      } else if (zkController.getOverseerFailureMap().remove(requestId)) {
-        zkController.clearAsyncId(requestId);
-        response.status = "successfully removed stored response for [" + requestId + "]";
-      } else {
-        // Don't call zkController.clearAsyncId for this, since it could be a running/pending task
-        response.status = "[" + requestId + "] not found in stored responses";
-      }
-    } else if (zkController.getDistributedCommandRunner().get().deleteSingleAsyncId(requestId)) {
+    if (coreContainer.getZkController().removeStoredAsyncResponse(requestId)) {
       response.status = "successfully removed stored response for [" + requestId + "]";
     } else {
       response.status = "[" + requestId + "] not found in stored responses";
