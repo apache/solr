@@ -1069,7 +1069,8 @@ public class RealTimeGetComponent extends SearchComponent {
           // search all shards below. Other routers return null deliberately (e.g. a
           // compositeId router with a router field but no _route_ cannot name a slice,
           // and returning no documents for such requests is the established behavior).
-          if (coll.getRouter() instanceof ImplicitDocRouter) {
+          if (coll.getRouter() instanceof ImplicitDocRouter
+              && params.get(ShardParams._ROUTE_) == null) {
             idsForAllShards.add(id);
           }
           continue;

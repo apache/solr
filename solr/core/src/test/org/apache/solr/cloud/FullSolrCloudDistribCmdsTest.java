@@ -178,9 +178,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     shard2.add(sdoc("id", "4", "title", "s2 four"));
     shard2.commit();
 
-    assertNotNull(cloudClient.getById(testCollectionName, "1"));
-    assertNotNull(cloudClient.getById(testCollectionName, "4"));
+    assertEquals("s1 one", cloudClient.getById(testCollectionName, "1").getFirstValue("title"));
+    assertEquals("s2 four", cloudClient.getById(testCollectionName, "4").getFirstValue("title"));
     assertEquals(2, cloudClient.getById(testCollectionName, Arrays.asList("1", "4")).size());
+    assertNull(cloudClient.getById(testCollectionName, "4", params("_route_", "shard1")));
   }
 
   public void testDeleteByIdImplicitRouter() throws Exception {
