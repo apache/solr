@@ -76,13 +76,24 @@ public interface ConfigApi {
         "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponent|queryResponseWriter}")
     @StoreApiParameters
     @Operation(
-        summary = "Fetch a config section (with optional component filter)",
+        summary = "Fetch a config section",
         tags = {"config"})
     ConfigInfoResponse getConfigComponent(
         @PathParam("component") @Parameter(description = "Name of the config component")
+            String component);
+
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    @GET
+    @Path(
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponent|queryResponseWriter}/{componentName}")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a single named entry within a config section",
+        tags = {"config"})
+    ConfigInfoResponse getConfigComponentByName(
+        @PathParam("component") @Parameter(description = "Name of the config component")
             String component,
-        @QueryParam("componentName")
-            @Parameter(description = "Restrict to a named entry within the section")
+        @PathParam("componentName") @Parameter(description = "Name of the entry within the section")
             String componentName,
         @QueryParam("meta")
             @DefaultValue("false")

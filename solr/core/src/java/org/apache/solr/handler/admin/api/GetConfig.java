@@ -34,6 +34,7 @@ import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.model.ConfigOverlayResponse;
 import org.apache.solr.client.api.model.ConfigZnodeVersionResponse;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -108,51 +109,79 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public ConfigInfoResponse getConfigComponent(
+  public ConfigInfoResponse getConfigComponent(String component) {
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
+    Map<String, Object> section = new LinkedHashMap<>();
+    section.put(component, solrConfigAsMap().get(component));
+    response.config = jsonSafeCopy(section);
+    return response;
+  }
+
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
+  public ConfigInfoResponse getConfigComponentByName(
       String component, String componentName, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
     Map<String, Object> section = new LinkedHashMap<>();
     section.put(component, solrConfigAsMap().get(component));
-
-    if (componentName != null) {
-      @SuppressWarnings({"rawtypes"})
-      Map pluginNameVsPluginInfo = (Map) section.get(component);
-      if (pluginNameVsPluginInfo != null) {
-        Object o =
-            pluginNameVsPluginInfo instanceof MapWriter
-                ? pluginNameVsPluginInfo
-                : pluginNameVsPluginInfo.get(componentName);
-        Map<String, Object> pluginInfo =
-            o instanceof MapWriter
-                ? new SimpleOrderedMap<>((MapWriter) o)
-                : (Map<String, Object>) o;
-        section.put(
-            component,
-            pluginNameVsPluginInfo instanceof MapWriter
-                ? pluginInfo
-                : Map.of(componentName, pluginInfo));
-
-        if (meta) {
-          List<PackageListeners.Listener> listeners =
-              solrQueryRequest.getCore().getPackageListeners().getListeners();
-          for (PackageListeners.Listener listener : listeners) {
-            Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
-            if (infos == null || infos.isEmpty()) continue;
-            infos.forEach(
-                (s, mapWriter) -> {
-                  Map<String, Object> componentInfo = getComponentInfo(pluginInfo, componentName);
-                  if (s.equals(componentInfo.get("class"))) {
-                    (componentInfo).put("_packageinfo_", mapWriter);
-                  }
-                });
-          }
-        }
-      }
-    }
-
+    filterByComponentName(section, component, componentName, meta, solrQueryRequest);
     response.config = jsonSafeCopy(section);
     return response;
+  }
+
+  /**
+   * Shared by the v2 {@code getConfigComponentByName} API and {@link
+   * org.apache.solr.handler.SolrConfigHandler}'s legacy v1 handling for components not yet migrated
+   * to v2, so the two don't carry separate copies of this logic.
+   *
+   * @throws SolrException NOT_FOUND if {@code componentName} does not exist within {@code
+   *     component}
+   */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static void filterByComponentName(
+      Map<String, Object> section,
+      String component,
+      String componentName,
+      boolean meta,
+      SolrQueryRequest req) {
+    Map pluginNameVsPluginInfo = (Map) section.get(component);
+    if (pluginNameVsPluginInfo == null) {
+      return;
+    }
+
+    Object o =
+        pluginNameVsPluginInfo instanceof MapWriter
+            ? pluginNameVsPluginInfo
+            : pluginNameVsPluginInfo.get(componentName);
+    if (o == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          componentName + " not found in config section " + component);
+    }
+
+    Map<String, Object> pluginInfo =
+        o instanceof MapWriter ? new SimpleOrderedMap<>((MapWriter) o) : (Map<String, Object>) o;
+    section.put(
+        component,
+        pluginNameVsPluginInfo instanceof MapWriter
+            ? pluginInfo
+            : Map.of(componentName, pluginInfo));
+
+    if (meta) {
+      List<PackageListeners.Listener> listeners =
+          req.getCore().getPackageListeners().getListeners();
+      for (PackageListeners.Listener listener : listeners) {
+        Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+        if (infos == null || infos.isEmpty()) continue;
+        infos.forEach(
+            (s, mapWriter) -> {
+              Map<String, Object> componentInfo = getComponentInfo(pluginInfo, componentName);
+              if (s.equals(componentInfo.get("class"))) {
+                (componentInfo).put("_packageinfo_", mapWriter);
+              }
+            });
+      }
+    }
   }
 
   @SuppressWarnings({"unchecked"})

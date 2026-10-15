@@ -62,7 +62,6 @@ import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -77,7 +76,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -92,8 +90,6 @@ import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.pkg.PackageAPI;
-import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -226,70 +222,27 @@ public class SolrConfigHandler extends RequestHandlerBase
                         req.getParams().getInt(ConfigOverlay.NAME, -1),
                         req.getParams().getInt(RequestParams.NAME, -1)));
           } else if (GetConfig.MIGRATED_CONFIG_COMPONENTS.contains(parts.get(1))) {
+            String componentName = req.getParams().get("componentName");
+            GetConfig getConfig = new GetConfig(req);
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 resp,
-                new GetConfig(req)
-                    .getConfigComponent(
-                        parts.get(1),
-                        req.getParams().get("componentName"),
-                        req.getParams().getBool("meta", false)));
+                componentName == null
+                    ? getConfig.getConfigComponent(parts.get(1))
+                    : getConfig.getConfigComponentByName(
+                        parts.get(1), componentName, req.getParams().getBool("meta", false)));
           } else {
             Map<String, Object> m = getConfigDetails(parts.get(1), req);
             Map<String, Object> val = new LinkedHashMap<>();
             val.put(parts.get(1), m.get(parts.get(1)));
             String componentName = req.getParams().get("componentName");
             if (componentName != null) {
-              @SuppressWarnings({"rawtypes"})
-              Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
-              if (pluginNameVsPluginInfo != null) {
-                Object o =
-                    pluginNameVsPluginInfo instanceof MapWriter
-                        ? pluginNameVsPluginInfo
-                        : pluginNameVsPluginInfo.get(componentName);
-                Map<String, Object> pluginInfo =
-                    o instanceof MapWriter
-                        ? new SimpleOrderedMap<>((MapWriter) o)
-                        : (Map<String, Object>) o;
-                val.put(
-                    parts.get(1),
-                    pluginNameVsPluginInfo instanceof MapWriter
-                        ? pluginInfo
-                        : Map.of(componentName, pluginInfo));
-                if (req.getParams().getBool("meta", false)) {
-                  // meta=true is asking for the package info of the plugin
-                  // We go through all the listeners and see if there is one registered for this
-                  // plugin
-                  List<PackageListeners.Listener> listeners =
-                      req.getCore().getPackageListeners().getListeners();
-                  for (PackageListeners.Listener listener : listeners) {
-                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
-                    if (infos == null || infos.isEmpty()) continue;
-                    infos.forEach(
-                        (s, mapWriter) -> {
-                          Map<String, Object> componentInfo =
-                              getComponentInfo(pluginInfo, componentName);
-                          if (s.equals(componentInfo.get("class"))) {
-                            (componentInfo).put("_packageinfo_", mapWriter);
-                          }
-                        });
-                  }
-                }
-              }
+              GetConfig.filterByComponentName(
+                  val, parts.get(1), componentName, req.getParams().getBool("meta", false), req);
             }
             resp.add("config", val);
           }
         }
       }
-    }
-
-    @SuppressWarnings({"unchecked"})
-    private Map<String, Object> getComponentInfo(
-        Map<String, Object> pluginInfo, String componentName) {
-      if (pluginInfo.containsKey("class")) {
-        return pluginInfo;
-      }
-      return (Map<String, Object>)
-          pluginInfo.computeIfAbsent(componentName, k -> new LinkedHashMap<>());
     }
 
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {

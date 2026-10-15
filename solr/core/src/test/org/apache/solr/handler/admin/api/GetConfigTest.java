@@ -21,6 +21,7 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.IndexType;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigApi;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -99,8 +100,9 @@ public class GetConfigTest extends SolrTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testGetConfigComponentFilteredByNameFromCore() throws Exception {
-    var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "searchComponent");
-    request.setComponentName("spellcheck");
+    var request =
+        new ConfigApi.GetConfigComponentByName(
+            IndexType.CORE, CORE_NAME, "searchComponent", "spellcheck");
     request.setMeta(true);
     var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
 
@@ -116,5 +118,45 @@ public class GetConfigTest extends SolrTestCase {
     Map<String, Object> spellcheck = (Map<String, Object>) section.get("spellcheck");
     assertNotNull(spellcheck);
     assertEquals("solr.SpellCheckComponent", spellcheck.get("class"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetConfigComponentFilteredByNameOmitsPackageInfoByDefault() throws Exception {
+    var request =
+        new ConfigApi.GetConfigComponentByName(
+            IndexType.CORE, CORE_NAME, "searchComponent", "spellcheck");
+    // meta is left unset, so it defaults to false and no package lookup should happen.
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    Map<String, Object> section = (Map<String, Object>) response.config.get("searchComponent");
+    Map<String, Object> spellcheck = (Map<String, Object>) section.get("spellcheck");
+    assertFalse(spellcheck.containsKey("_packageinfo_"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetConfigComponentFilteredByNameForOtherMigratedComponents() throws Exception {
+    // filterCache is one of the few <query> entries the default configset doesn't comment out.
+    var queryRequest =
+        new ConfigApi.GetConfigComponentByName(IndexType.CORE, CORE_NAME, "query", "filterCache");
+    var queryResponse = queryRequest.process(solrTestRule.getSolrClient(CORE_NAME));
+    assertNotNull(queryResponse);
+    assertNull(queryResponse.error);
+    Map<String, Object> querySection = (Map<String, Object>) queryResponse.config.get("query");
+    assertNotNull(querySection);
+    assertTrue(querySection.containsKey("filterCache"));
+  }
+
+  @Test
+  public void testGetConfigComponentByUnknownNameReturnsNotFound() {
+    var request =
+        new ConfigApi.GetConfigComponentByName(
+            IndexType.CORE, CORE_NAME, "searchComponent", "doesNotExist");
+    final RemoteSolrException ex =
+        expectThrows(
+            RemoteSolrException.class,
+            () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+    assertEquals(404, ex.code());
   }
 }
