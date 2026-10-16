@@ -1,5 +1,6 @@
 title: >
-  Config remaining get sections
+  Migrate remaining GET /config/{component} sections to JAX-RS.
+  V2 renames listener to listeners (V1 unchanged)
 type: changed
 authors:
   - name: Jalaz Kumar
