@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import jakarta.inject.Named;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * @since solr 4.0
  */
+@Named("shard")
 public class ShardAugmenterFactory extends TransformerFactory {
   protected enum Style {
     URLS,
