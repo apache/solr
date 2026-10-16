@@ -45,10 +45,18 @@ import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -121,7 +129,8 @@ public class RunExampleTool extends ToolBase {
           .hasArg()
           .argName("NAME")
           .required()
-          .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
+          .desc(
+              "Name of the example to launch, one of: cloud, techproducts, secure_solr, schemaless, films.")
           .get();
 
   /**
@@ -332,7 +341,7 @@ public class RunExampleTool extends ToolBase {
       required = true,
       paramLabel = "NAME",
       description =
-          "Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
+          "Name of the example to launch, one of: cloud, techproducts, secure_solr, schemaless, films.")
   private String exampleOpt;
 
   @picocli.CommandLine.Option(
@@ -500,12 +509,13 @@ public class RunExampleTool extends ToolBase {
 
     if (!"cloud".equals(exampleType)
         && !"techproducts".equals(exampleType)
+        && !"secure_solr".equals(exampleType)
         && !"schemaless".equals(exampleType)
         && !"films".equals(exampleType)) {
       throw new IllegalArgumentException(
           "Unsupported example "
               + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, or films");
+              + "! Please choose one of: cloud, schemaless, techproducts, secure_solr, or films");
     }
 
     StartSolrParams startParams =
@@ -532,6 +542,16 @@ public class RunExampleTool extends ToolBase {
               zkHost,
               port,
               startParams));
+    } else if ("secure_solr".equals(exampleType)) {
+      if (cli.hasOption(USER_MANAGED_OPTION) || zkHost != null) {
+        throw new IllegalArgumentException(
+            "secure_solr requires embedded ZooKeeper in SolrCloud mode");
+      }
+      runSecureExample(
+          startParams,
+          port,
+          cli.hasOption(NO_PROMPT_OPTION),
+          cli.getOptionValue(SCRIPT_INPUTS_OPTION));
     } else {
       runExample(
           new RunExampleParams(!cli.hasOption(USER_MANAGED_OPTION), zkHost, port, startParams));
@@ -588,8 +608,8 @@ public class RunExampleTool extends ToolBase {
       String solrHomeProp = EnvUtils.getProperty("solr.home");
       if (solrHomeProp != null && !solrHomeProp.isEmpty()) {
         solrHomeDir = Path.of(solrHomeProp);
-      } else if ("cloud".equals(exampleType)) {
-        solrHomeDir = exampleDir.resolve("cloud");
+      } else if ("cloud".equals(exampleType) || "secure_solr".equals(exampleType)) {
+        solrHomeDir = exampleDir.resolve(exampleType);
         if (!Files.isDirectory(solrHomeDir)) Files.createDirectory(solrHomeDir);
       } else {
         solrHomeDir = serverDir.resolve("solr");
@@ -602,11 +622,132 @@ public class RunExampleTool extends ToolBase {
               + " is not a directory!");
   }
 
+  private static String[] withCredentials(String[] args, String credentials) {
+    if (credentials == null) return args;
+    List<String> result = new ArrayList<>(Arrays.asList(args));
+    result.add("--credentials");
+    result.add(credentials);
+    return result.toArray(String[]::new);
+  }
+
+  @SuppressWarnings("unchecked")
+  void runSecureExample(StartSolrParams start, int port, boolean noPrompt, String scriptInputs)
+      throws Exception {
+    for (String file : List.of("solr.xml", "zoo.cfg")) {
+      Path target = solrHomeDir.resolve(file);
+      if (!Files.exists(target)) Files.copy(serverDir.resolve("solr").resolve(file), target);
+    }
+    echo("Welcome to the secure SolrCloud example!");
+    echo(
+        "This example uses demonstration credentials. Change them before using it outside your local environment.");
+    usingScriptInputs = scriptInputs != null;
+    Scanner input =
+        new Scanner(
+            usingScriptInputs
+                ? new ByteArrayInputStream(scriptInputs.getBytes(StandardCharsets.UTF_8))
+                : userInput,
+            StandardCharsets.UTF_8);
+    if (usingScriptInputs) input.useDelimiter(",");
+    String user = noPrompt ? "solr" : prompt(input, "Administrator username [solr]: ", "solr");
+    String password =
+        noPrompt ? "SolrRocks" : promptPassword(input, "Administrator password [SolrRocks]: ");
+    if (user.contains(":")) throw new IllegalArgumentException("Username must not contain ':'");
+    if (user.equals(password))
+      throw new IllegalArgumentException("Username and password must differ");
+    Map<String, Object> config;
+    try (InputStream template =
+        SolrCore.class.getClassLoader().getResourceAsStream("security.json")) {
+      config = (Map<String, Object>) Utils.fromJSON(template.readAllBytes());
+    }
+    Map<String, Object> authentication = (Map<String, Object>) config.get("authentication");
+    authentication.put("blockUnknown", true);
+    Map<String, Object> credentials = new HashMap<>();
+    credentials.put(user, Sha256AuthenticationProvider.getSaltedHashedValue(password));
+    authentication.put("credentials", credentials);
+    Map<String, Object> authorization = (Map<String, Object>) config.get("authorization");
+    Map<String, Object> userRoles = new HashMap<>();
+    userRoles.put(user, List.of("superadmin", "admin", "index", "search"));
+    authorization.put("user-role", userRoles);
+    for (String role : List.of("index", "search")) {
+      if (!noPrompt
+          && !"y".equalsIgnoreCase(prompt(input, "Create a " + role + " user? [Y]: ", "Y")))
+        continue;
+      String name = noPrompt ? role : prompt(input, "Username [" + role + "]: ", role);
+      if (name.contains(":") || credentials.containsKey(name))
+        throw new IllegalArgumentException("Usernames must be unique and must not contain ':'");
+      String pass = noPrompt ? "SolrRocks" : promptPassword(input, "Password [SolrRocks]: ");
+      if (name.equals(pass))
+        throw new IllegalArgumentException("Username and password must differ");
+      credentials.put(name, Sha256AuthenticationProvider.getSaltedHashedValue(pass));
+      userRoles.put(name, "index".equals(role) ? List.of("index", "search") : List.of("search"));
+    }
+    StartSolrParams secured =
+        new StartSolrParams(
+            start.example(),
+            start.host(),
+            start.memory(),
+            start.jvmOpts(),
+            start.force(),
+            user + ":" + password,
+            start.extraArgs());
+    runExample(new RunExampleParams(true, null, port, secured), config);
+    echo(
+        "Secure Solr example running at "
+            + urlScheme
+            + "://localhost:"
+            + port
+            + "/solr/. Sign in as "
+            + user
+            + ".");
+  }
+
+  private String promptPassword(Scanner input, String message) {
+    echo(message);
+    String value;
+    if (!usingScriptInputs && System.console() != null && userInput == System.in) {
+      value = new String(System.console().readPassword());
+    } else {
+      value =
+          usingScriptInputs
+              ? (input.hasNext() ? input.next() : "")
+              : (input.hasNextLine() ? input.nextLine() : "");
+    }
+    return value.isEmpty() ? "SolrRocks" : value;
+  }
+
+  private void waitForSecurity(String solrUrl, String credentials) throws Exception {
+    // ZooKeeper watchers reload security asynchronously.
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+    while (System.nanoTime() < deadline) {
+      try (SolrClient anonymous = CLIUtils.getSolrClient(solrUrl, null)) {
+        anonymous.request(
+            new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/info/system", new ModifiableSolrParams()));
+      } catch (RemoteSolrException e) {
+        if (e.code() == 401) {
+          getNodeStatus(solrUrl, credentials, 30);
+          return;
+        }
+        throw e;
+      }
+      TimeUnit.MILLISECONDS.sleep(100);
+    }
+    throw new IllegalStateException("Timed out waiting for Basic Authentication to become active");
+  }
+
   void runExample(RunExampleParams params) throws Exception {
+    runExample(params, null);
+  }
+
+  private void runExample(RunExampleParams params, Map<String, Object> securityConfig)
+      throws Exception {
     String exampleName = params.start().example();
-    String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
-    String configSet =
-        "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
+    boolean techproducts = "techproducts".equals(exampleName) || "secure_solr".equals(exampleName);
+    String collectionName =
+        techproducts
+            ? "techproducts"
+            : "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
+    String configSet = techproducts ? "sample_techproducts_configs" : "_default";
 
     String zkHost = params.zkHost();
     int port = params.port();
@@ -614,6 +755,19 @@ public class RunExampleTool extends ToolBase {
         startSolr(solrHomeDir, params.isCloudMode(), params.start(), port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
+
+    if (securityConfig != null) {
+      String embeddedZk = (String) ((Map<?, ?>) nodeStatus.get("cloud")).get("ZooKeeper");
+      try (SolrZkClient zk = new SolrZkClient.Builder().withUrl(embeddedZk).build()) {
+        if (!zk.exists("/security.json")
+            || Utils.fromJSON(zk.getData("/security.json", null, null)).equals(Map.of())) {
+          zk.makePath("/security.json", Utils.toJSON(securityConfig), false);
+        } else {
+          echo("Using the existing security configuration.");
+        }
+      }
+      waitForSecurity(solrUrl, params.start().credentials());
+    }
 
     // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.
@@ -657,14 +811,13 @@ public class RunExampleTool extends ToolBase {
             "--conf-dir", configSet,
             "--solr-url", solrUrl
           };
+      createArgs = withCredentials(createArgs, params.start().credentials());
       CreateTool createTool = new CreateTool(runtime);
       int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
-      if (createCode != 0)
-        throw new Exception(
-            "Failed to create " + collectionName + " using command: " + Arrays.asList(createArgs));
+      if (createCode != 0) throw new Exception("Failed to create " + collectionName);
     }
 
-    if ("techproducts".equals(exampleName) && !alreadyExists) {
+    if (techproducts && !alreadyExists) {
 
       Path exampledocsDir = this.exampleDir.resolve("exampledocs");
       if (!Files.isDirectory(exampledocsDir)) {
@@ -691,7 +844,8 @@ public class RunExampleTool extends ToolBase {
               exampledocsDir.toAbsolutePath().toString()
             };
         PostTool postTool = new PostTool(runtime);
-        CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool, withCredentials(args, params.start().credentials()));
         postTool.runTool(postToolCli);
 
       } else {
@@ -1025,7 +1179,7 @@ public class RunExampleTool extends ToolBase {
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
     final var syspropArg =
-        ("techproducts".equals(params.example()))
+        ("techproducts".equals(params.example()) || "secure_solr".equals(params.example()))
             ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting,sql -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
 
@@ -1054,7 +1208,7 @@ public class RunExampleTool extends ToolBase {
         String.format(
             Locale.ROOT, "%s://%s:%d/solr", urlScheme, (host != null ? host : "localhost"), port);
 
-    String credentials = null; // for now, we don't need it for example tool.  But we should.
+    String credentials = params.credentials();
 
     Map<String, Object> nodeStatus = checkPortConflict(solrUrl, credentials, solrHomeDir, port);
     if (nodeStatus != null)
@@ -1401,12 +1555,13 @@ public class RunExampleTool extends ToolBase {
 
     if (!"cloud".equals(exampleType)
         && !"techproducts".equals(exampleType)
+        && !"secure_solr".equals(exampleType)
         && !"schemaless".equals(exampleType)
         && !"films".equals(exampleType)) {
       throw new IllegalArgumentException(
           "Unsupported example "
               + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, or films");
+              + "! Please choose one of: cloud, schemaless, techproducts, secure_solr, or films");
     }
 
     StartSolrParams startParams =
@@ -1416,6 +1571,12 @@ public class RunExampleTool extends ToolBase {
     if ("cloud".equals(exampleType)) {
       runCloudExample(
           new CloudExampleParams(noPromptOpt, scriptInputsOpt, zkHost, port, startParams));
+    } else if ("secure_solr".equals(exampleType)) {
+      if (userManagedOpt || zkHost != null) {
+        throw new IllegalArgumentException(
+            "secure_solr requires embedded ZooKeeper in SolrCloud mode");
+      }
+      runSecureExample(startParams, port, noPromptOpt, scriptInputsOpt);
     } else {
       runExample(new RunExampleParams(!userManagedOpt, zkHost, port, startParams));
     }

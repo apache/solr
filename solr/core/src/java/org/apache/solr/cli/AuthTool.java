@@ -27,13 +27,11 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -230,9 +228,8 @@ public class AuthTool extends ToolBase {
         List of options:""";
   }
 
-  List<String> authenticationVariables =
-      Arrays.asList(
-          "SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS");
+  private static final Set<String> AUTHENTICATION_VARIABLES =
+      Set.of("SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS");
 
   @Override
   public Options getOptions() {
@@ -361,10 +358,13 @@ public class AuthTool extends ToolBase {
       runtime.exit(0);
     }
 
-    Files.writeString(
+    if (Files.exists(basicAuthConfFile)) {
+      echo("Backup: " + IncludeFileEditor.backup(basicAuthConfFile));
+    }
+    IncludeFileEditor.writePrivate(
         basicAuthConfFile,
-        "httpBasicAuthUser=" + username + "\nhttpBasicAuthPassword=" + password,
-        StandardCharsets.UTF_8);
+        ("httpBasicAuthUser=" + username + "\nhttpBasicAuthPassword=" + password)
+            .getBytes(StandardCharsets.UTF_8));
 
     // update the solr.in.sh file to contain the necessary authentication lines
     updateIncludeFileEnableAuth(includeFile, basicAuthConfFile);
@@ -474,73 +474,32 @@ public class AuthTool extends ToolBase {
     }
   }
 
-  /**
-   * This will update the include file (e.g. solr.in.sh / solr.in.cmd) with the authentication
-   * parameters.
-   *
-   * @param includeFile The include file
-   * @param basicAuthConfFile If basicAuth, the path of the file containing credentials. If not,
-   *     null.
-   */
   private void updateIncludeFileEnableAuth(Path includeFile, Path basicAuthConfFile)
       throws IOException {
-    List<String> includeFileLines = Files.readAllLines(includeFile, StandardCharsets.UTF_8);
-    for (int i = 0; i < includeFileLines.size(); i++) {
-      String line = includeFileLines.get(i);
-      if (authenticationVariables.contains(line.trim().split("=")[0].trim())) { // Non-Windows
-        includeFileLines.set(i, "# " + line);
-      }
-      if (line.trim().split("=")[0].trim().startsWith("set ")
-          && authenticationVariables.contains(
-              line.trim().split("=")[0].trim().substring(4))) { // Windows
-        includeFileLines.set(i, "REM " + line);
-      }
-    }
-    includeFileLines.add(""); // blank line
-
-    if (basicAuthConfFile != null) { // for basicAuth
-      if (Constants.WINDOWS) {
-        includeFileLines.add("REM The following lines added by solr.cmd for enabling BasicAuth");
-        includeFileLines.add("set SOLR_AUTH_TYPE=basic");
-        includeFileLines.add(
-            "set SOLR_AUTHENTICATION_OPTS=\"-Dsolr.httpclient.config=" + basicAuthConfFile + "\"");
-      } else {
-        includeFileLines.add("# The following lines added by ./solr for enabling BasicAuth");
-        includeFileLines.add("SOLR_AUTH_TYPE=\"basic\"");
-        includeFileLines.add(
-            "SOLR_AUTHENTICATION_OPTS=\"-Dsolr.httpclient.config=" + basicAuthConfFile + "\"");
-      }
-    }
-
-    String lines = includeFileLines.stream().collect(Collectors.joining(System.lineSeparator()));
-    Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
-
-    if (basicAuthConfFile != null) {
-      echoIfVerbose("Written out credentials file: " + basicAuthConfFile);
-    }
+    var format =
+        Constants.WINDOWS ? IncludeFileEditor.Format.WINDOWS : IncludeFileEditor.Format.SHELL;
+    Map<String, String> settings = new LinkedHashMap<>();
+    settings.put("SOLR_AUTH_TYPE", "basic");
+    String authenticationOptions = "-Dsolr.httpclient.config=" + basicAuthConfFile;
+    settings.put(
+        "SOLR_AUTHENTICATION_OPTS",
+        Constants.WINDOWS ? "\"" + authenticationOptions + "\"" : authenticationOptions);
+    String updated =
+        IncludeFileEditor.update(
+            Files.readString(includeFile), settings, AUTHENTICATION_VARIABLES, format);
+    echo("Backup: " + IncludeFileEditor.save(includeFile, updated));
+    echoIfVerbose("Written out credentials file: " + basicAuthConfFile);
     echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath());
   }
 
   private void updateIncludeFileDisableAuth(Path includeFile) throws IOException {
-    List<String> includeFileLines = Files.readAllLines(includeFile, StandardCharsets.UTF_8);
-    boolean hasChanged = false;
-    for (int i = 0; i < includeFileLines.size(); i++) {
-      String line = includeFileLines.get(i);
-      if (authenticationVariables.contains(line.trim().split("=")[0].trim())) { // Non-Windows
-        includeFileLines.set(i, "# " + line);
-        hasChanged = true;
-      }
-      if (line.trim().split("=")[0].trim().startsWith("set ")
-          && authenticationVariables.contains(
-              line.trim().split("=")[0].trim().substring(4))) { // Windows
-        includeFileLines.set(i, "REM " + line);
-        hasChanged = true;
-      }
-    }
-    if (hasChanged) {
-      String lines = includeFileLines.stream().collect(Collectors.joining(System.lineSeparator()));
-      Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
-      echoIfVerbose("Commented out necessary lines from " + includeFile.toAbsolutePath());
+    var format =
+        Constants.WINDOWS ? IncludeFileEditor.Format.WINDOWS : IncludeFileEditor.Format.SHELL;
+    String original = Files.readString(includeFile);
+    String updated = IncludeFileEditor.disable(original, AUTHENTICATION_VARIABLES, format);
+    if (!original.equals(updated)) {
+      echo("Backup: " + IncludeFileEditor.save(includeFile, updated));
+      echoIfVerbose("Commented out authentication settings in " + includeFile.toAbsolutePath());
     }
   }
 
