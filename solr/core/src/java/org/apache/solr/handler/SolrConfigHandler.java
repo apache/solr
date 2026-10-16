@@ -197,7 +197,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         // v1 keeps internal section names (e.g. searchComponent); plurals are v2 only
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(
             resp,
-            new GetConfig(req).getConfig(req.getParams().getBool("expandParams", false),false));
+            new GetConfig(req).getConfig(req.getParams().getBool("expandParams", false), false));
       } else {
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());

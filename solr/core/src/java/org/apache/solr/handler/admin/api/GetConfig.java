@@ -113,7 +113,6 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     }
     response.config = configMap;
     return response;
-
   }
 
   @Override
