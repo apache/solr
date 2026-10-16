@@ -25,6 +25,7 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -911,7 +912,8 @@ public class QueryComponent extends SearchComponent {
   protected abstract static class ShardDocQueue {
     public abstract boolean push(ShardDoc shardDoc);
 
-    public abstract Map<Object, ShardDoc> resultIds(int offset);
+    /** Pops the page's hits, setting each positionInResponse. Returned in response order. */
+    public abstract List<ShardDoc> pageDocs(int offset);
   }
   ;
 
@@ -947,24 +949,21 @@ public class QueryComponent extends SearchComponent {
       }
 
       @Override
-      public Map<Object, ShardDoc> resultIds(int offset) {
-        final Map<Object, ShardDoc> resultIds = new HashMap<>();
-
+      public List<ShardDoc> pageDocs(int offset) {
         // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
         // So we want to pop the last documents off the queue to get
         // the docs offset -> queuesize
         int resultSize = queue.size() - offset;
         resultSize = Math.max(0, resultSize); // there may not be any docs in range
 
+        final ShardDoc[] pageDocs = new ShardDoc[resultSize];
         for (int i = resultSize - 1; i >= 0; i--) {
           ShardDoc shardDoc = queue.pop();
           shardDoc.positionInResponse = i;
-          // Need the toString() for correlation with other lists that must
-          // be strings (like keys in highlighting, explain, etc)
-          resultIds.put(shardDoc.id.toString(), shardDoc);
+          pageDocs[i] = shardDoc;
         }
 
-        return resultIds;
+        return Arrays.asList(pageDocs);
       }
     };
   }
@@ -1288,7 +1287,13 @@ public class QueryComponent extends SearchComponent {
       long numFound,
       boolean hitCountIsExact,
       int offset) {
-    final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(offset);
+    final List<ShardDoc> pageDocs = shardDocQueue.pageDocs(offset);
+    final Map<Object, ShardDoc> resultIds = new HashMap<>();
+    for (ShardDoc shardDoc : pageDocs) {
+      // Need the toString() for correlation with other lists that must
+      // be strings (like keys in highlighting, explain, etc)
+      resultIds.put(shardDoc.id.toString(), shardDoc);
+    }
 
     final SolrDocumentList responseDocs = new SolrDocumentList();
     if (maxScore != null) responseDocs.setMaxScore(maxScore);
@@ -1296,12 +1301,13 @@ public class QueryComponent extends SearchComponent {
     responseDocs.setNumFoundExact(hitCountIsExact);
     responseDocs.setStart(offset);
     // size appropriately
-    for (int i = 0; i < resultIds.size(); i++) responseDocs.add(null);
+    for (int i = 0; i < pageDocs.size(); i++) responseDocs.add(null);
 
     // save these results in a private area so we can access them
     // again when retrieving stored fields.
     // TODO: use ResponseBuilder (w/ comments) or the request context?
     rb.resultIds = resultIds;
+    rb.pageShardDocs = pageDocs;
     rb.setResponseDocs(responseDocs);
   }
 
@@ -1324,7 +1330,7 @@ public class QueryComponent extends SearchComponent {
 
     assert null != rb.resultIds : "resultIds was not set in ResponseBuilder";
 
-    Collection<ShardDoc> docsOnThisPage = rb.resultIds.values();
+    Collection<ShardDoc> docsOnThisPage = pageShardDocs(rb);
 
     if (0 == docsOnThisPage.size()) {
       // nothing more matching query, re-use existing totem so user can "resume"
@@ -1406,7 +1412,7 @@ public class QueryComponent extends SearchComponent {
     if (rb.resultIds == null) {
       rb.resultIds = new HashMap<>();
     }
-    for (ShardDoc sdoc : rb.resultIds.values()) {
+    for (ShardDoc sdoc : pageShardDocs(rb)) {
       Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
       if (shardDocs == null) {
         shardDocs = new ArrayList<>();
@@ -1461,6 +1467,11 @@ public class QueryComponent extends SearchComponent {
     return id.toString();
   }
 
+  /** The page's hits in response order, or the resultIds values if only that map was set. */
+  static Collection<ShardDoc> pageShardDocs(ResponseBuilder rb) {
+    return rb.pageShardDocs != null ? rb.pageShardDocs : rb.resultIds.values();
+  }
+
   protected void returnFields(ResponseBuilder rb, ShardRequest sreq) {
     // Keep in mind that this could also be a shard in a multi-tiered system.
     // TODO: if a multi-tiered system, it seems like some requests
@@ -1483,6 +1494,10 @@ public class QueryComponent extends SearchComponent {
       }
       String lastKeyString = "<empty>";
       Boolean shardDocFoundInResults = null;
+      final Map<String, ShardDoc> pageDocsByKey = new HashMap<>();
+      for (ShardDoc pageDoc : pageShardDocs(rb)) {
+        pageDocsByKey.put(idToString(pageDoc.id), pageDoc);
+      }
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
           // Don't try to get the documents if there was an exception in the shard
@@ -1527,8 +1542,8 @@ public class QueryComponent extends SearchComponent {
                     SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
         for (SolrDocument doc : docs) {
           final Object id = doc.getFieldValue(keyFieldName);
-          lastKeyString = id.toString();
-          final ShardDoc sdoc = rb.resultIds.get(lastKeyString);
+          lastKeyString = idToString(id);
+          final ShardDoc sdoc = pageDocsByKey.get(lastKeyString);
           if (sdoc != null) {
             shardDocFoundInResults = Boolean.TRUE;
             // There is no need to add scores to a document if the documents were retrieved in
@@ -1553,7 +1568,7 @@ public class QueryComponent extends SearchComponent {
           }
         }
       }
-      if (Objects.equals(shardDocFoundInResults, Boolean.FALSE) && !rb.resultIds.isEmpty()) {
+      if (Objects.equals(shardDocFoundInResults, Boolean.FALSE) && !pageDocsByKey.isEmpty()) {
         String keyMsg =
             !uniqueKey.equals(keyFieldName)
                 ? "(either " + uniqueKey + " or " + keyFieldName + ")"
@@ -1564,7 +1579,7 @@ public class QueryComponent extends SearchComponent {
                 + keyMsg
                 + " was erased by renaming via fl parameters."
                 + " Expecting:"
-                + rb.resultIds.keySet()
+                + pageDocsByKey.keySet()
                 + ", a sample of keys received:"
                 + lastKeyString);
       }

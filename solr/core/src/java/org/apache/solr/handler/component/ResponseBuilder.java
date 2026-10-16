@@ -211,6 +211,9 @@ public class ResponseBuilder {
   // returned sequence.
   // Only valid after STAGE_EXECUTE_QUERY has completed.
 
+  /** The page's hits in response order, or null if a component set only {@link #resultIds}. */
+  public List<ShardDoc> pageShardDocs;
+
   public boolean onePassDistributedQuery;
 
   public FacetComponent.FacetInfo _facetInfo;
