@@ -101,8 +101,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "transformers", "transformer",
           "updateProcessors", "updateProcessor",
           "queryConverters", "queryConverter",
-          "expressibles", "expressible",
-          "", "");
+          "expressibles", "expressible");
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);
