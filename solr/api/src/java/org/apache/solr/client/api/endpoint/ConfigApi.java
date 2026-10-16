@@ -85,7 +85,7 @@ public interface ConfigApi {
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|cache|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory|indexConfigdeletionPolicy|updateHandlerupdateLog}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|initParams|listeners|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|cache|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",
