@@ -231,7 +231,9 @@ public class SolrConfigHandler extends RequestHandlerBase
                     : getConfig.getConfigComponentByName(
                         parts.get(1), componentName, req.getParams().getBool("meta", false)));
           } else {
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Unregistered API endpoint");
+            throw new SolrException(
+                SolrException.ErrorCode.NOT_FOUND,
+                "No config API for path: /config/" + parts.get(1));
           }
         }
       }
