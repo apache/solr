@@ -19,6 +19,7 @@ package org.apache.lucene.gradle.buildinfra;
 
 import java.nio.file.Path;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.lucene.gradle.ChangesToHtmlTask;
 import org.apache.lucene.gradle.Checksum;
 import org.apache.lucene.gradle.ErrorReportingTestListener;
 import org.apache.lucene.gradle.ProfileResults;
@@ -55,6 +56,10 @@ public class BuildInfraPlugin implements Plugin<Project> {
 
     public Class<?> profileResultsClass() {
       return ProfileResults.class;
+    }
+
+    public Class<?> changesToHtmlTaskClass() {
+      return ChangesToHtmlTask.class;
     }
   }
 }

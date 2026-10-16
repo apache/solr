@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-import org.gradle.process.ExecOperations
-import javax.inject.Inject
-
 def resources = scriptResources(buildscript)
 
 configure(project(':solr:documentation')) {
-  task changesToHtml(type: ChangesToHtmlTask) {
-    siteDir = resources
-    script = file("${resources}/changes2html.py")
+  task changesToHtml(type: buildinfra.changesToHtmlTaskClass()) {
+    siteDir.set(resources)
+    changesFile.set(rootProject.file('CHANGELOG.md'))
+    targetDir.fileProvider(project.providers.provider {project.file("${project.docroot}/changes")})
   }
 
   // Make the rendered HTML of changes available as a separate
@@ -35,83 +33,6 @@ configure(project(':solr:documentation')) {
   artifacts {
     changesHtml changesToHtml.targetDir, {
       builtBy changesToHtml
-    }
-  }
-}
-
-// compile CHANGELOG.md into an html file
-abstract class ChangesToHtmlTask extends DefaultTask {
-
-  @Inject
-  abstract ExecOperations getExecOperations()
-
-  @Internal
-  Project productProject = project.parent
-
-  @Internal
-  String productName = productProject.name
-
-  @InputFile
-  File changesFile = project.rootProject.file('CHANGELOG.md')
-
-  @InputDirectory
-  File siteDir
-
-  @OutputDirectory
-  final DirectoryProperty targetDir = project.objects.directoryProperty()
-      .fileProvider(project.providers.provider {project.file("${project.docroot}/changes")})
-
-  @InputFile
-  def script
-
-  def toHtml() {
-    def output = new ByteArrayOutputStream()
-
-    // Check if Python is available
-    if (!pythonExists()) {
-      logger.warn("WARNING: Python is not installed, skipping creating Changes.html")
-      return
-    }
-
-    def result = execOperations.exec {
-      executable "python3"
-      standardOutput project.file("${targetDir.get().getAsFile()}/Changes.html").newOutputStream()
-      errorOutput = output
-      ignoreExitValue = true
-
-      args += [
-          script.toString(),
-          changesFile.toString()
-      ]
-    }
-
-    if (result.getExitValue() != 0) {
-      throw new GradleException("Changes generation failed:\n${output}")
-    }
-  }
-
-  @TaskAction
-  def convert() {
-    project.mkdir targetDir
-    if (changesFile.exists()) {
-      toHtml()
-      project.copy {
-        from siteDir
-        into targetDir
-        include "*.css"
-      }
-    } else {
-      throw new GradleException("Changes file ${changesFile} not found.")
-    }
-  }
-
-  def pythonExists() {
-    try {
-      def process = "python3 --version".execute()
-      process.waitFor()
-      return process.exitValue() == 0
-    } catch (Exception e) {
-      return false
     }
   }
 }
