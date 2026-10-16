@@ -206,6 +206,7 @@ public class ResponseBuilder {
   }
 
   public Map<Object, ShardDoc> resultIds;
+
   // Maps uniqueKeyValue to ShardDoc, which may be used to
   // determine order of the doc or uniqueKey in the final
   // returned sequence.
