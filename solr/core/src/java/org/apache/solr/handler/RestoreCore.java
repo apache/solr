@@ -40,7 +40,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -136,10 +135,8 @@ public class RestoreCore implements Callable<Boolean> {
                   "RestoreDownloadExecutor",
                   ExecutorService.class,
                   s ->
-                      ExecutorUtil.newMDCAwareCachedThreadPool(
-                          MAX_PARALLEL_DOWNLOADS,
-                          Integer.MAX_VALUE,
-                          new SolrNamedThreadFactory("RestoreDownloadExecutor")));
+                      ExecutorUtil.newMDCAwareFixedThreadPool(
+                          MAX_PARALLEL_DOWNLOADS, Integer.MAX_VALUE, "RestoreDownloadExecutor"));
 
       // Move all files from backupDir to restoreIndexDir
       for (String filename : repository.listAllFiles()) {

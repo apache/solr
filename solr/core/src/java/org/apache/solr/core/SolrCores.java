@@ -109,7 +109,7 @@ class SolrCores implements SolrInfoBean {
 
       ExecutorService coreCloseExecutor =
           ExecutorUtil.newMDCAwareFixedThreadPool(
-              Integer.MAX_VALUE, new SolrNamedThreadFactory("coreCloseExecutor"));
+              64, new SolrNamedThreadFactory("coreCloseExecutor"));
       try {
         for (SolrCore core : coreList) {
           coreCloseExecutor.execute(
