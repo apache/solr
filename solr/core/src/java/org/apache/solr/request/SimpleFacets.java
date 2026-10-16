@@ -787,14 +787,37 @@ public class SimpleFacets {
       throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     String[] groupFields = groupingSpecification != null ? groupingSpecification.getFields() : null;
-    String groupField =
+    final String groupField =
         groupFields != null && Array.getLength(groupFields) != 0 ? groupFields[0] : null;
-    if (groupField == null) {
-      // A facet refinement request can arrive without a grouping specification even
-      // though its parameters carry group.field: the refinement may ride on the
-      // stored-fields shard request, whose request factory removes the group parameter.
-      groupField = rb.req.getParams().get(GroupParams.GROUP_FIELD);
-    }
+    return getGroupedCountsForGroupField(
+        searcher,
+        base,
+        groupField,
+        field,
+        multiToken,
+        offset,
+        limit,
+        mincount,
+        missing,
+        sort,
+        prefix,
+        termFilter);
+  }
+
+  private NamedList<Integer> getGroupedCountsForGroupField(
+      SolrIndexSearcher searcher,
+      DocSet base,
+      String groupField,
+      String field,
+      boolean multiToken,
+      int offset,
+      int limit,
+      int mincount,
+      boolean missing,
+      String sort,
+      String prefix,
+      Predicate<BytesRef> termFilter)
+      throws IOException {
     if (groupField == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -1013,9 +1036,10 @@ public class SimpleFacets {
           ft.indexedToReadable(indexed, readable);
           return wanted.contains(readable.toString());
         };
-    return getGroupedCounts(
+    return getGroupedCountsForGroupField(
         searcher,
         baseDocset,
+        refinementGroupField(),
         field,
         sf.multiValued() || ft.multiValuedFieldCache(),
         0,
@@ -1025,6 +1049,19 @@ public class SimpleFacets {
         FacetParams.FACET_SORT_INDEX,
         null,
         termFilter);
+  }
+
+  /**
+   * The group.field of a facet refinement. A refinement can arrive without a grouping
+   * specification, because it may ride on the stored-fields shard request, whose request factory
+   * removes the group parameter. Then the field comes from the request parameters.
+   */
+  private String refinementGroupField() {
+    GroupingSpecification groupingSpecification = rb.getGroupingSpec();
+    String[] groupFields = groupingSpecification != null ? groupingSpecification.getFields() : null;
+    String groupField =
+        groupFields != null && Array.getLength(groupFields) != 0 ? groupFields[0] : null;
+    return groupField != null ? groupField : rb.req.getParams().get(GroupParams.GROUP_FIELD);
   }
 
   private int numDocs(
