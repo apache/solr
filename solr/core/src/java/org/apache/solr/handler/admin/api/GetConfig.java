@@ -95,7 +95,14 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       Map.of(
           "searchComponents", "searchComponent",
           "queryResponseWriters", "queryResponseWriter",
-          "listeners", "listener");
+          "listeners", "listener",
+          "queryParsers", "queryParser",
+          "valueSourceParsers", "valueSourceParser",
+          "transformers", "transformer",
+          "updateProcessors", "updateProcessor",
+          "queryConverters", "queryConverter",
+          "expressibles", "expressible",
+          "", "");
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);
