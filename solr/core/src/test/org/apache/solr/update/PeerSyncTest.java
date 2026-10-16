@@ -20,12 +20,14 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.IOException;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -455,17 +457,30 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // The matching 50 and 10 versions around the pair matter: the walk starts at the
     // lowest versions. With the pair as the only entry, the old code also loops
     // endlessly, adding the same range string on every pass until memory runs out.
+    // The read bound on the two lists is what keeps that loop from deciding how this
+    // check ends: the walk with the fix reads the lists a few dozen times, so a walk
+    // still reading after 100,000 reads is looping, and the read past the bound ends
+    // the worker thread. The failure is then the assertion below, not an
+    // OutOfMemoryError from a worker that nobody stopped.
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = List.of(50L, -42L, 10L);
-      List<Long> ourUpdates = List.of(50L, 42L, 10L);
+      AtomicLong reads = new AtomicLong();
+      List<Long> otherVersions = new ReadBoundedList(List.of(50L, -42L, 10L), reads);
+      List<Long> ourUpdates = new ReadBoundedList(List.of(50L, 42L, 10L), reads);
       long ourLowThreshold = ourUpdates.getLast(); // lowest in descending list
       MissedUpdatesRequest[] result = new MissedUpdatesRequest[1];
+      boolean[] returned = new boolean[1];
       Thread t =
           new Thread(
-              () ->
+              () -> {
+                try {
                   result[0] =
                       PeerSync.MissedUpdatesFinderBase.handleVersionsWithRanges(
-                          otherVersions, completeList, ourUpdates, ourLowThreshold));
+                          otherVersions, completeList, ourUpdates, ourLowThreshold);
+                  returned[0] = true;
+                } catch (ReadBoundExceeded e) {
+                  returned[0] = false; // the walk was still looping at the read bound
+                }
+              });
       t.setDaemon(true);
       t.start();
       try {
@@ -475,8 +490,46 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         fail("interrupted");
       }
       assertFalse("handleVersionsWithRanges did not terminate", t.isAlive());
+      if (!returned[0]) {
+        fail("handleVersionsWithRanges did not terminate");
+      }
       assertEquals(0L, result[0].totalRequestedUpdates);
       assertNull(result[0].versionsAndRanges);
+    }
+  }
+
+  /** Thrown by {@link ReadBoundedList} when a walk reads past the bound. */
+  private static final class ReadBoundExceeded extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+  }
+
+  /**
+   * A list that counts reads across every instance sharing one counter and throws {@link
+   * ReadBoundExceeded} once the count passes the bound, so a walk that never ends gives up its
+   * worker thread instead of filling the heap.
+   */
+  private static final class ReadBoundedList extends AbstractList<Long> {
+    private static final long MAX_READS = 100_000;
+
+    private final List<Long> delegate;
+    private final AtomicLong reads;
+
+    ReadBoundedList(List<Long> delegate, AtomicLong reads) {
+      this.delegate = delegate;
+      this.reads = reads;
+    }
+
+    @Override
+    public Long get(int index) {
+      if (reads.incrementAndGet() > MAX_READS) {
+        throw new ReadBoundExceeded();
+      }
+      return delegate.get(index);
+    }
+
+    @Override
+    public int size() {
+      return delegate.size();
     }
   }
 
