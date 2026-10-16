@@ -18,6 +18,20 @@ An `/update` request is parsed by a loader into a stream of `AddUpdateCommand` /
 Everything discussed here happens inside two processors near the end of that chain: `update.processor.DistributedZkUpdateProcessor` (subclass of `DistributedUpdateProcessor`; "DUP" below) and `update.processor.RunUpdateProcessor`.
 URPs configured *before* the DUP run only on the node that received the client request; URPs *after* it (and `RunUpdateProcessor`) run on the leader and again on every replica.
 
+=== Inter-node auth identity on outgoing requests
+
+Internal Solr-to-Solr requests are signed by `PKIAuthenticationPlugin`.
+When `SolrRequestInfo` has an authenticated user, that user identity is propagated.
+Otherwise, Solr signs as node identity (`NODE_IS_USER`) only when `ExecutorUtil.isSolrServerThread()` is true.
+
+That server-thread flag means "work originating from this Solr node" and starts at:
+
+* node startup (`CoreContainerProvider` around `createCoreContainer(...)`), and
+* request handling (`SolrServlet`).
+
+The flag propagates through `ExecutorUtil` MDC-aware executors and by thread inheritance, so child/background work created from those contexts continues to qualify as node-originated work.
+Code that starts independent threads outside those contexts, but still needs node identity for inter-node calls, must set/clear the flag explicitly (for example `ReplicationHandler`'s poll task).
+
 [source,mermaid]
 ----
 sequenceDiagram
