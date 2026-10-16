@@ -154,7 +154,7 @@ public class FetchStream extends TupleStream implements Expressible {
       throw new IOException(
           String.format(
               Locale.ROOT,
-              "fetch on parameter has an invalid join field name [%s]: whitespace, braces, '!', quotes and backslashes are not allowed",
+              "fetch on parameter has an invalid join field name [%s]: whitespace, '}', a leading quote and a leading '$' are not allowed",
               rightKey));
     }
 
@@ -170,19 +170,16 @@ public class FetchStream extends TupleStream implements Expressible {
     }
   }
 
-  // The batch query embeds the join field name in local params, whose reader splits on
-  // Character.isWhitespace; reject anything that reader would treat as a separator, plus the
-  // other characters that would end or corrupt the df= value.
+  // The batch query embeds the join field name as an unquoted local-params value. That reader
+  // ends an unquoted literal at whitespace or '}', a leading quote starts a quoted string, and
+  // a leading $ dereferences a request parameter, so reject exactly those shapes.
   private static boolean containsBatchBreakingChar(String name) {
     for (int i = 0; i < name.length(); i++) {
       char c = name.charAt(i);
-      if (Character.isWhitespace(c)
-          || c == '{'
-          || c == '}'
-          || c == '!'
-          || c == '\''
-          || c == '"'
-          || c == '\\') {
+      if (Character.isWhitespace(c) || c == '}') {
+        return true;
+      }
+      if (i == 0 && (c == '\'' || c == '"' || c == '$')) {
         return true;
       }
     }
