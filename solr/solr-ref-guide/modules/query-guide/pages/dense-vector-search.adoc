@@ -1042,6 +1042,14 @@ Details about using the ReRank Query Parser can be found in the xref:query-guide
 [NOTE]
 This is feature is currently experimental.
 
+[WARNING]
+====
+Vector indexing with GPU acceleration does not work in Solr 10.1 (SOLR-18556), because the bundled cuVS-Lucene library (25.12) is not compatible with Lucene 10.4.
+If you use GPU acceleration, skip Solr 10.1 and stay on Solr 10.0.x.
+This will be fixed in a subsequent 10.x release.
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#cuvs-gpu-acceleration-broken[Major Changes in Solr 10] for details.
+====
+
 Building HNSW graphs, esp. with high dimensions and cardinality, is usually slow. If you have a NVIDIA GPU, then building HNSW based indexes can be sped up manifold. This is powered by the https://github.com/rapidsai/cuvs-lucene[cuVS-Lucene] library, a pluggable vectors format for Apache Lucene. It uses the state of the art https://arxiv.org/abs/2308.15136[CAGRA algorithm] for quickly building a fixed degree connected graph, which is then serialized into a HNSW graph. https://developer.nvidia.com/cuda-downloads[CUDA 13.0+] and https://jdk.java.net/archive/[JDK 22] are required to use this feature.
 
 You can know more about Nvidia's cuVS library here: https://developer.nvidia.com/cuvs
