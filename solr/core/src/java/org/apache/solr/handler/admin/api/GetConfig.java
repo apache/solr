@@ -69,6 +69,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "queryResponseWriter");
 
   public static final String REQUEST_HANDLERS = "requestHandlers";
+  public static final Set<String> REQUEST_HANDLER_APIs = Set.of(SolrRequestHandler.TYPE, REQUEST_HANDLERS);
 
   // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
   // name. v1's GET /config/{component} keeps using the internal names unchanged.
