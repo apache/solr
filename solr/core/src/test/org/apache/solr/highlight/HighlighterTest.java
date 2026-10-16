@@ -89,6 +89,42 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testHighlightDatePointFieldDoesNotFail() {
+    assertU(adoc("id", "1", "x_date_p", "2012-08-01T00:00:01.999Z", "t_text", "alpha"));
+    assertU(commit());
+
+    for (String method : new String[] {"original", "unified"}) {
+      assertQ(
+          "date range query with hl.fl on a date field, method=" + method,
+          req(
+              "q",
+              "x_date_p:[2002-08-01T00:00:01.999Z TO 2013-08-13T23:59:59.999Z]",
+              "hl",
+              "true",
+              "hl.fl",
+              "x_date_p",
+              "hl.requireFieldMatch",
+              "true",
+              "hl.method",
+              method),
+          "count(//lst[@name='highlighting'])=1",
+          "//result[@numFound='1']");
+    }
+    // the stored value is shown to the highlighter in a form the field can parse again
+    assertQ(
+        req(
+            "q",
+            "x_date_p:[2002-08-01T00:00:01.999Z TO 2013-08-13T23:59:59.999Z] OR t_text:alpha",
+            "hl",
+            "true",
+            "hl.fl",
+            "x_date_p,t_text",
+            "hl.method",
+            "original"),
+        "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str='<em>alpha</em>'");
+  }
+
+  @Test
   public void testMergeContiguous() {
     HashMap<String, String> args = new HashMap<>();
     args.put(HighlightParams.HIGHLIGHT, "true");
