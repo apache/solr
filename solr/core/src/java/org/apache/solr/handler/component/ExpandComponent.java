@@ -445,9 +445,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
-    if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).complete();
+    try {
+      searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
+    } finally {
+      if (collector instanceof DelegatingCollector) {
+        ((DelegatingCollector) collector).complete();
+      }
     }
     if (queryLimits.maybeExitWithPartialResults("Expand expand")) {
       return;

@@ -1,5 +1,5 @@
 title: >
-  ExpandComponent now calls complete() on the post filter collector chain it builds, so post filters that emit their last group there (for example block collapse) no longer lose it in the expanded section.
+  ExpandComponent now calls complete() on the post filter collector chain it builds after the expand search, as the main search does. Post filters that finish their last group in complete(), such as block collapse, now get that call during expand.
 type: fixed
 authors:
   - name: Nick Shanin
