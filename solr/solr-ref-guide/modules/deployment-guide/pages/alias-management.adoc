@@ -589,6 +589,13 @@ The output will contain a list of aliases with the corresponding collection name
 
 ==== List the existing aliases
 
+*Input*
+
+[source,bash]
+----
+curl http://localhost:8983/api/aliases
+----
+
 *Output*
 
 [source,json]
@@ -611,6 +618,13 @@ The output will contain a list of aliases with the corresponding collection name
 ----
 
 ==== Getting details for a single alias
+
+*Input*
+
+[source,bash]
+----
+curl http://localhost:8983/api/aliases/testalias2
+----
 
 *Output*
 
