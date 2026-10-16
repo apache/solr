@@ -122,7 +122,9 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
         return;
       }
 
-      if (cmd.getReq().getParams().getBool(DistributedUpdateProcessor.COMMIT_END_POINT, false)) {
+      String commitEndPoint =
+          cmd.getReq().getParams().get(DistributedUpdateProcessor.COMMIT_END_POINT);
+      if (commitEndPoint != null && !"false".equals(commitEndPoint)) {
         // this is a targeted commit from replica to leader needed for recovery, so can't be ignored
         if (next != null) next.processCommit(cmd);
         return;
