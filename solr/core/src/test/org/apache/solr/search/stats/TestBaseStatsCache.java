@@ -104,7 +104,7 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
     params.set("sort", "id asc");
     params.set("fl", "id");
     params.set("group", "true");
-    params.set("group.field", "grp_s");
+    params.set("group.field", "grp_s1");
     params.set("group.sort", "score desc,id asc");
     params.set("group.limit", "1");
 

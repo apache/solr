@@ -51,7 +51,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
       for (int j = 0; j <= i; j++) {
         int currentId = docId++;
         String grp = "g" + (currentId % 2);
-        index_specific(i, id, currentId, "a_t", "one two three", "shard_i", shard, "grp_s", grp);
+        index_specific(i, id, currentId, "a_t", "one two three", "shard_i", shard, "grp_s1", grp);
         aDocId = rarely() ? currentId + "" : aDocId;
       }
     }
@@ -72,7 +72,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
         int currentId = docId++;
         String grp = "g" + (currentId % 2);
         index_specific(
-            i, id, currentId, "a_t", "one two three four five", "shard_i", shard, "grp_s", grp);
+            i, id, currentId, "a_t", "one two three four five", "shard_i", shard, "grp_s1", grp);
         aDocId = rarely() ? currentId + "" : aDocId;
       }
     }
