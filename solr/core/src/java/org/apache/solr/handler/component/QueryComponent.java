@@ -641,7 +641,8 @@ public class QueryComponent extends SearchComponent {
   private static boolean needsDistributedStats(ResponseBuilder rb) {
     return !rb.isDistribStatsDisabled()
         && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-            || rb.getSortSpec().includesScore());
+            || rb.getSortSpec().includesScore()
+            || (rb.grouping() && rb.getGroupingSpec().getWithinGroupSortSpec().includesScore()));
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {

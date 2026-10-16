@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search.stats;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.Group;
@@ -92,6 +94,27 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
 
     assertFalse(controlScores.isEmpty());
     assertEquals(controlScores, shardScores);
+    checkWithinGroupOrder();
+  }
+
+  // the main sort has no score, so the within-group score ranking must get global stats too
+  private void checkWithinGroupOrder() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "a_t:two a_t:five");
+    params.set("sort", "id asc");
+    params.set("fl", "id");
+    params.set("group", "true");
+    params.set("group.field", "grp_s");
+    params.set("group.sort", "score desc,id asc");
+    params.set("group.limit", "1");
+
+    List<String> controlDocs = topDocIdPerGroup(controlClient.query(params));
+    params.set("shards", shards);
+    SolrClient client = clients.get(r.nextInt(clients.size()));
+    List<String> shardDocs = topDocIdPerGroup(client.query(params));
+
+    assertEquals(2, controlDocs.size());
+    assertEquals(controlDocs, shardDocs);
   }
 
   private static Map<String, Object> topScorePerGroup(QueryResponse rsp) {
@@ -101,5 +124,14 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
       scores.put(group.getGroupValue(), group.getResult().get(0).getFieldValue("score"));
     }
     return scores;
+  }
+
+  private static List<String> topDocIdPerGroup(QueryResponse rsp) {
+    List<String> docIds = new ArrayList<>();
+    GroupCommand command = rsp.getGroupResponse().getValues().get(0);
+    for (Group group : command.getValues()) {
+      docIds.add(group.getGroupValue() + "=" + group.getResult().get(0).getFieldValue("id"));
+    }
+    return docIds;
   }
 }
