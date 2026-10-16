@@ -96,6 +96,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                 .resolve("streaming")
                 .resolve("conf"))
         .addConfig(
+            "conf-edismax",
+            getFile("solrj")
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
+        .addConfig(
             "ml",
             getFile("solrj").resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
@@ -950,7 +957,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testFetchStreamWithNonLuceneDefaultDefType() throws Exception {
     final String edismaxCollection = "fetchEdismax";
-    CollectionAdminRequest.createCollection(edismaxCollection, "conf", 1, 1)
+    // The Config API overlay is stored with the configset, not the collection, so the /select
+    // overlay set below would outlive this collection and leak into every other test in this
+    // class that uses the shared "conf" configset. This collection uses its own copy instead.
+    CollectionAdminRequest.createCollection(edismaxCollection, "conf-edismax", 1, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(edismaxCollection, 1, 1);
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -1095,6 +1105,72 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
           assertThrows(
               IOException.class, () -> drainFetchStream(factory, solrClientCache, expression));
       assertTrue(e.getMessage(), causeChainContains(e, "invalid join field name [$a_i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testFetchStreamRejectsJoinFieldNameWithClosingBraceOrLeadingQuote() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      // A } in the name ends the unquoted local-params value early, so the rest of the name
+      // lands outside the local params and changes the batch query.
+      String braceExpression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a}i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException braceFailure =
+          assertThrows(
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, braceExpression));
+      assertTrue(
+          braceFailure.getMessage(),
+          causeChainContains(braceFailure, "invalid join field name [a}i]"));
+
+      // A leading quote makes the local-params reader treat the rest of the name as a quoted
+      // string instead of the field name itself.
+      String singleQuoteExpression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id='a_i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException singleQuoteFailure =
+          assertThrows(
+              IOException.class,
+              () -> drainFetchStream(factory, solrClientCache, singleQuoteExpression));
+      assertTrue(
+          singleQuoteFailure.getMessage(),
+          causeChainContains(singleQuoteFailure, "invalid join field name ['a_i]"));
+
+      String doubleQuoteExpression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=\\\"a_i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException doubleQuoteFailure =
+          assertThrows(
+              IOException.class,
+              () -> drainFetchStream(factory, solrClientCache, doubleQuoteExpression));
+      assertTrue(
+          doubleQuoteFailure.getMessage(),
+          causeChainContains(doubleQuoteFailure, "invalid join field name [\"a_i]"));
     } finally {
       solrClientCache.close();
     }
