@@ -89,6 +89,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
           queue.add(upd);
           break;
         }
+        recordStreamedUpdate(upd);
         send(out, upd);
         out.flush();
 
