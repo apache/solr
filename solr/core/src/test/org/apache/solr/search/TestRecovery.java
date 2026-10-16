@@ -41,6 +41,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;
@@ -398,6 +399,22 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
+  }
+
+  /** SOLR-11483: numRecordsToKeep alone raises the default for the number of tlogs to keep. */
+  @Test
+  public void testMaxNumLogsToKeepDefaultFollowsNumRecordsToKeep() {
+    assertEquals(10, ulogWith(Map.of()).getMaxNumLogsToKeep());
+    assertEquals(1000, ulogWith(Map.of("numRecordsToKeep", "500")).getMaxNumLogsToKeep());
+    assertEquals(
+        7,
+        ulogWith(Map.of("numRecordsToKeep", "500", "maxNumLogsToKeep", "7")).getMaxNumLogsToKeep());
+  }
+
+  private static UpdateLog ulogWith(Map<String, Object> args) {
+    UpdateLog ulog = new UpdateLog();
+    ulog.init(new PluginInfo("updateLog", args));
+    return ulog;
   }
 
   @Test
