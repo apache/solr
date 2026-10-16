@@ -69,7 +69,8 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "queryResponseWriter");
 
   public static final String REQUEST_HANDLERS = "requestHandlers";
-  public static final Set<String> REQUEST_HANDLER_APIs = Set.of(SolrRequestHandler.TYPE, REQUEST_HANDLERS);
+  public static final Set<String> REQUEST_HANDLER_APIs =
+      Set.of(SolrRequestHandler.TYPE, REQUEST_HANDLERS);
 
   // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
   // name. v1's GET /config/{component} keeps using the internal names unchanged.
@@ -136,14 +137,18 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getRequestHandler(
       String componentName, boolean expandParams, boolean meta) {
+    return getRequestHandler(REQUEST_HANDLERS, componentName, expandParams, meta);
+  }
+
+  public ConfigInfoResponse getRequestHandler(
+      String sectionName, String componentName, boolean expandParams, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
 
     Map<String, Object> configMap = new LinkedHashMap<>();
     configMap.put(
-        REQUEST_HANDLERS,
-        requestHandlersWithImplicits(solrConfigAsMap(), expandParams, componentName));
+        sectionName, requestHandlersWithImplicits(solrConfigAsMap(), expandParams, componentName));
     if (componentName != null) {
-      filterByComponentName(configMap, REQUEST_HANDLERS, componentName, meta, solrQueryRequest);
+      filterByComponentName(configMap, sectionName, componentName, meta, solrQueryRequest);
     }
 
     response.config = jsonSafeCopy(configMap);

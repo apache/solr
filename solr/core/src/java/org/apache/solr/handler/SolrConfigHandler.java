@@ -222,6 +222,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                 resp,
                 new GetConfig(req)
                     .getRequestHandler(
+                        parts.get(1),
                         req.getParams().get("componentName"),
                         req.getParams().getBool("expandParams", false),
                         req.getParams().getBool("meta", false)));
