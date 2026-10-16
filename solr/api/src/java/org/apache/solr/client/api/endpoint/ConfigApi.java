@@ -70,6 +70,8 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
+    // TODO: RH names contain '/' (e.g. /select, /update/json), so they cannot be a @PathParam in
+    // the current design; Keeping filtering via @QueryParam for now.
     @GET
     @Path("/requestHandlers")
     @StoreApiParameters
