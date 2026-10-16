@@ -104,7 +104,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
    * @param doc the document
    * @param overwrite true if the document should overwrite existing docs with the same id
    * @throws NullPointerException if the document is null
+   * @deprecated set overwrite separately for the whole request
    */
+  @Deprecated
   public UpdateRequest add(final SolrInputDocument doc, Boolean overwrite) {
     return add(doc, null, overwrite);
   }
@@ -127,12 +129,15 @@ public class UpdateRequest extends AbstractUpdateRequest {
    * @param commitWithin the time horizon by which the document should be committed (in ms)
    * @param overwrite true if the document should overwrite existing docs with the same id
    * @throws NullPointerException if the document is null
+   * @deprecated set overwrite separately for the whole request
    */
+  @Deprecated
   public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin, Boolean overwrite) {
     Objects.requireNonNull(doc, "Cannot add a null SolrInputDocument");
     if (documents == null) {
       documents = new LinkedHashMap<>();
     }
+    // TODO eliminate overwrite, then simply store commitWithin.
     Map<String, Object> params = CollectionUtil.newHashMap(2);
     if (commitWithin != null) params.put(COMMIT_WITHIN, commitWithin);
     if (overwrite != null) params.put(OVERWRITE, overwrite);
@@ -166,14 +171,32 @@ public class UpdateRequest extends AbstractUpdateRequest {
     return this;
   }
 
+  /**
+   * For deleting a doc, and identifying the correct shard via a {@code _route_}. For a typical
+   * collection ({@code compositeId} router and without {@code router.field} specified), there's no
+   * need for this since Solr knows the correct shard using only the "id". Otherwise, and without a
+   * route, Solr blasts this out to all shards, which is suboptimal.
+   *
+   * @param route a {@code _route_} for this document
+   */
   public UpdateRequest deleteById(String id, String route) {
     return deleteById(id, route, null);
   }
 
+  /**
+   * For deleting a doc, conditionally based on the version.
+   *
+   * @param route a {@code _route_} for this document (null is okay)
+   * @param version optimistic version control (null is okay)
+   * @see <a
+   *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/partial-document-updates.html#optimistic-concurrency"
+   *     >Optimistic concurrency</a>
+   */
   public UpdateRequest deleteById(String id, String route, Long version) {
     if (deleteById == null) {
       deleteById = new LinkedHashMap<>();
     }
+    // TODO use record not Map
     Map<String, Object> params =
         (route == null && version == null) ? null : CollectionUtil.newHashMap(1);
     if (version != null) params.put(VER, version);
