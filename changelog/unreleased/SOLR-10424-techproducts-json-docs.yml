@@ -1,4 +1,4 @@
-title: "The techproducts example configset no longer sets mapUniqueKeyOnly on /update/json/docs, so posting JSON documents indexes all their fields instead of only the id and the _src_ copy."
+title: "The techproducts example configset no longer sets mapUniqueKeyOnly on /update/json/docs, so posted fields are indexed under their own names. A field the sample schema does not define now fails the request."
 type: fixed
 authors:
   - name: Nick Shanin
