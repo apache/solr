@@ -60,26 +60,7 @@ public class GetConfigAPI {
   // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
       path = {
-        "/config/luceneMatchVersion",
         "/config/requestHandler",
-        "/config/initParams",
-        "/config/listener",
-        "/config/requestDispatcher",
-        "/config/jmx",
-        "/config/queryParser",
-        "/config/valueSourceParser",
-        "/config/transformer",
-        "/config/updateProcessor",
-        "/config/updateRequestProcessorChain",
-        "/config/queryConverter",
-        "/config/cache",
-        "/config/circuitBreaker",
-        "/config/expressible",
-        "/config/schemaFactory",
-        "/config/restManager",
-        "/config/statsCache",
-        "/config/recoveryStrategy",
-        "/config/indexReaderFactory",
         "/config/indexConfigdeletionPolicy",
         "/config/updateHandlerupdateLog"
       },

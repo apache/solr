@@ -75,7 +75,7 @@ public interface ConfigApi {
     // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParser|valueSourceParser|transformer|updateProcessor|updateRequestProcessorChain|queryConverter|cache|circuitBreaker|expressible|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -89,7 +89,7 @@ public interface ConfigApi {
     // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParser|valueSourceParser|transformer|updateProcessor|updateRequestProcessorChain|queryConverter|cache|circuitBreaker|expressible|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",
