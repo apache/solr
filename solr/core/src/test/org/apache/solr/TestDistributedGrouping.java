@@ -1740,8 +1740,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     setDistributedParams(params);
 
     SolrException e =
-        expectThrows(
-            SolrException.class, () -> new QueryRequest(params).process(clients.get(0)));
+        expectThrows(SolrException.class, () -> new QueryRequest(params).process(clients.get(0)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
