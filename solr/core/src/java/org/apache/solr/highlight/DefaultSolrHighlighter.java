@@ -633,6 +633,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       throws IOException {
     SolrParams params = req.getParams();
     String fieldName = schemaField.getName();
+    if (doc.getFieldValues(fieldName) == null) {
+      // The document has no stored value, so there is nothing to build fragments from. With a
+      // wildcard hl.fl this is the common case (SOLR-4540); skip the per-field FVH work.
+      return null;
+    }
     SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder(fieldName, params);
 
     String[] snippets =
