@@ -162,6 +162,47 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3");
 
+    // both queries match 6 docs, overlapping on docs 5 and 6, so the fused result has 10 distinct
+    // docs; numFound is that distinct count, exact since no list was truncated
+    rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(1^=6 OR 2^=5 OR 3^=4 OR 4^=3 OR 5^=2 OR 6^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(5^=6 OR 6^=5 OR 7^=4 OR 8^=3 OR 9^=2 OR 10^=1)"}}
+                  },
+                  "limit": 10,
+                  "fields": ["id", "score"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
+    assertEquals(10, rsp.getResults().getNumFound());
+    assertEquals(Boolean.TRUE, rsp.getResults().getNumFoundExact());
+
+    // same queries, but the fusion pool (start + rows = 4) truncates each 6-match list to its
+    // top 4, so numFound is the fused pool size and is reported inexact
+    rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(1^=6 OR 2^=5 OR 3^=4 OR 4^=3 OR 5^=2 OR 6^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(5^=6 OR 6^=5 OR 7^=4 OR 8^=3 OR 9^=2 OR 10^=1)"}}
+                  },
+                  "limit": 4,
+                  "fields": ["id", "score"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
+    assertEquals(4, rsp.getResults().size());
+    assertEquals(8, rsp.getResults().getNumFound());
+    assertEquals(Boolean.FALSE, rsp.getResults().getNumFoundExact());
+
     // Multiple queries with sort
     rsp =
         query(

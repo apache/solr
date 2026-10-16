@@ -1,0 +1,9 @@
+title: Report the distinct fused document count as numFound for combined queries.
+type: fixed
+authors:
+  - name: Puneet Ahuja
+    nick: punAhuja
+  - name: Justin Michael Coyne
+links:
+  - name: SOLR-18550
+    url: https://issues.apache.org/jira/browse/SOLR-18550

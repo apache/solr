@@ -127,14 +127,42 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
             params(
                 CommonParams.JSON,
                 "{\"queries\":"
-                    + "{\"lexical1\":{\"lucene\":{\"query\":\"title:title test for doc 1\"}},"
-                    + "\"lexical2\":{\"lucene\":{\"query\":\"text:test text for doc 2\"}}},"
+                    + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^=4 OR 3^=2 OR 6^=3 OR 5^=1)\"}},"
+                    + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^=1 OR 5^=3 OR 7^=4 OR 10^=2)\"}}},"
                     + "\"limit\":5,"
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"debug\":[\"results\"],\"combiner.query\":[\"lexical1\",\"lexical2\"],"
                     + "\"rid\": \"test-1\"}}"));
-    assertEquals(10, rsp.getResults().getNumFound());
+    // both queries match 4 docs, overlapping on doc 5, so the fused result has 7 distinct docs
+    assertEquals(7, rsp.getResults().getNumFound());
     assertTrue(rsp.getDebugMap().containsKey("combinerExplanations"));
+  }
+
+  /**
+   * Tests that numFound is the distinct count of fused documents, not the larger sub-query's match
+   * count. Two queries matching three and two distinct docs, no overlap.
+   */
+  @Test
+  public void testNumFoundIsFusedCount() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "cats": {"lucene": {"query": "id:(1^=3 OR 2^=2 OR 3^=1)"}},
+                    "dogs": {"lucene": {"query": "id:(4^=2 OR 5^=1)"}}
+                  },
+                  "limit": 10,
+                  "fields": ["id"],
+                  "params": {"combiner": true, "combiner.query": ["cats", "dogs"]}
+                }"""));
+    assertEquals(5, rsp.getResults().size());
+    assertEquals(5, rsp.getResults().getNumFound());
+    assertEquals(Boolean.TRUE, rsp.getResults().getNumFoundExact());
   }
 
   /** Test no results in combined queries. */
@@ -196,7 +224,8 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\""
                     + ":[\"lexical1\",\"lexical2\"],\"debug\":[\"results\"]}}"));
-    assertEquals(10, rsp.getResults().getNumFound());
+    // the test combiner fuses to an empty list, so numFound reflects the fused result
+    assertEquals(0, rsp.getResults().getNumFound());
     assertEquals(
         "org.apache.lucene.search.Explanation:30 = this is test combiner\n",
         ((SimpleOrderedMap<?>) rsp.getDebugMap().get("combinerExplanations"))
