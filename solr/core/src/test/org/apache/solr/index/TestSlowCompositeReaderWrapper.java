@@ -27,6 +27,8 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
@@ -134,13 +136,15 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
 
   public void testTermsAndLiveDocsAreCached() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w =
-        new RandomIndexWriter(
-            random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
-    // Index id0 and id1 into the first segment and id2 into the second. The delete
-    // below must not empty a segment: getReader() applies pending deletes before
-    // building the reader, and a segment with no live docs left is dropped from
-    // the reader, which would leave a single leaf for the caching checks below.
+    IndexWriterConfig config =
+        newIndexWriterConfig()
+            .setMergePolicy(NoMergePolicy.INSTANCE)
+            .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+            .setRAMBufferSizeMB(16);
+    IndexWriter w = new IndexWriter(dir, config);
+    // Only the commits below flush, so the layout is fixed: id0 and id1 share the first segment
+    // and id2 is alone in the second. Deleting id0 leaves id1 live in the first segment; a segment
+    // with no live documents is dropped by the reader and would leave a single leaf.
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", "id" + i, Field.Store.NO));
@@ -151,8 +155,8 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
       }
     }
     w.deleteDocuments(new Term("id", "id0"));
-    IndexReader reader = w.getReader();
-    assertTrue(reader.leaves().size() > 1);
+    IndexReader reader = DirectoryReader.open(w);
+    assertEquals(2, reader.leaves().size());
     LeafReader slow = SlowCompositeReaderWrapper.wrap(reader);
 
     Terms terms = slow.terms("f");
@@ -166,6 +170,7 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     assertSame(liveDocs, slow.getLiveDocs());
     assertFalse(liveDocs.get(0));
     assertTrue(liveDocs.get(1));
+    assertTrue(liveDocs.get(2));
 
     reader.close();
     w.close();
