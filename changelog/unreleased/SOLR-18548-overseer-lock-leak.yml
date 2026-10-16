@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  The Overseer now releases a task's lock when storing its async ID in ZooKeeper fails, instead of
+  blocking later tasks for the same collection until the Overseer restarts
+type: fixed
+authors:
+  - name: Boyi Dai
+    nick: SpookyJumpyBeans
+links:
+  - name: SOLR-18548
+    url: https://issues.apache.org/jira/browse/SOLR-18548
