@@ -1,4 +1,4 @@
-title: >
+title:
   Migrate GET /config/requestHandler to JAX-RS
 type: changed
 authors:
