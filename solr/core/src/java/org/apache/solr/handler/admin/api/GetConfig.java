@@ -68,6 +68,8 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "searchComponent",
           "queryResponseWriter");
 
+  public static final String REQUEST_HANDLERS = "requestHandlers";
+
   // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
   // name. v1's GET /config/{component} keeps using the internal names unchanged.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
@@ -137,11 +139,10 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
     Map<String, Object> configMap = new LinkedHashMap<>();
     configMap.put(
-        SolrRequestHandler.TYPE,
+        REQUEST_HANDLERS,
         requestHandlersWithImplicits(solrConfigAsMap(), expandParams, componentName));
     if (componentName != null) {
-      filterByComponentName(
-          configMap, SolrRequestHandler.TYPE, componentName, meta, solrQueryRequest);
+      filterByComponentName(configMap, REQUEST_HANDLERS, componentName, meta, solrQueryRequest);
     }
 
     response.config = jsonSafeCopy(configMap);

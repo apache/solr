@@ -25,6 +25,7 @@ import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
+import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 import java.io.IOException;
@@ -216,7 +217,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                     .getZnodeVersion(
                         req.getParams().getInt(ConfigOverlay.NAME, -1),
                         req.getParams().getInt(RequestParams.NAME, -1)));
-          } else if (SolrRequestHandler.TYPE.equals(parts.get(1))) {
+          } else if (REQUEST_HANDLERS.equals(parts.get(1))) {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 resp,
                 new GetConfig(req)

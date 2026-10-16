@@ -71,7 +71,7 @@ public interface ConfigApi {
             int expectedParamsVersion);
 
     @GET
-    @Path("/requestHandler")
+    @Path("/requestHandlers")
     @StoreApiParameters
     @Operation(
         summary = "Fetch request handlers (including implicit handler)",

@@ -17,13 +17,13 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigApi;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -95,8 +95,7 @@ public class GetConfigTest extends SolrTestCase {
     assertNotNull(response.config);
     assertEquals(1, response.config.size());
 
-    Map<String, Object> configSection =
-        (Map<String, Object>) response.config.get(SolrRequestHandler.TYPE);
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
     assertNotNull(configSection);
     assertTrue(configSection.containsKey("/select"));
     assertTrue(configSection.containsKey("/admin/ping"));
@@ -113,8 +112,7 @@ public class GetConfigTest extends SolrTestCase {
     assertNull(response.error);
     assertEquals(1, response.config.size());
 
-    Map<String, Object> configSection =
-        (Map<String, Object>) response.config.get(SolrRequestHandler.TYPE);
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
     assertNotNull(configSection);
     assertTrue(configSection.containsKey("/select"));
 
@@ -134,8 +132,7 @@ public class GetConfigTest extends SolrTestCase {
     assertNull(response.error);
     assertEquals(1, response.config.size());
 
-    Map<String, Object> configSection =
-        (Map<String, Object>) response.config.get(SolrRequestHandler.TYPE);
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
 
     Map<String, Object> ping = (Map<String, Object>) configSection.get("/admin/ping");
     assertNotNull(ping.get("_useParamsExpanded_"));
@@ -150,8 +147,7 @@ public class GetConfigTest extends SolrTestCase {
     request.setComponentName("/admin/ping");
     var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
 
-    Map<String, Object> configSection =
-        (Map<String, Object>) response.config.get(SolrRequestHandler.TYPE);
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
 
     Map<String, Object> ping = (Map<String, Object>) configSection.get("/admin/ping");
     assertFalse(ping.containsKey("_useParamsExpanded_"));

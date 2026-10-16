@@ -320,9 +320,9 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     testForResponseElement(
         cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
-        "/config/requestHandler?componentName=" + component + "&meta=true",
+        "/config/requestHandlers?componentName=" + component + "&meta=true",
         credentials,
-        Arrays.asList("config", "requestHandler", component, "_packageinfo_", "version"),
+        Arrays.asList("config", "requestHandlers", component, "_packageinfo_", "version"),
         componentVersion);
   }
 
