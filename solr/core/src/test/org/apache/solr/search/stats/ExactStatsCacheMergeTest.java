@@ -17,9 +17,12 @@
 package org.apache.solr.search.stats;
 
 import java.util.List;
+import java.util.Set;
+import org.apache.lucene.index.Term;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -31,7 +34,23 @@ public class ExactStatsCacheMergeTest extends SolrTestCase {
     SolrQueryRequest req = new SolrQueryRequestBase(null, new ModifiableSolrParams()) {};
     ShardResponse noAnswer = new ShardResponse();
     noAnswer.setSolrResponse(new QueryResponse()); // getResponse() == null, no exception
+    ShardResponse answered = new ShardResponse();
+    answered.setSolrResponse(responseWithTerm(new Term("field", "a")));
 
-    new ExactStatsCache().mergeToGlobalStats(req, List.of(noAnswer));
+    new ExactStatsCache().mergeToGlobalStats(req, List.of(noAnswer, answered));
+
+    assertEquals(Set.of(new Term("field", "a")), mergedTerms(req));
+  }
+
+  private static QueryResponse responseWithTerm(Term term) {
+    NamedList<Object> body = new NamedList<>();
+    body.add(StatsCache.TERMS_KEY, StatsUtil.termsToEncodedString(List.of(term)));
+    QueryResponse rsp = new QueryResponse();
+    rsp.setResponse(body);
+    return rsp;
+  }
+
+  private static Set<Term> mergedTerms(SolrQueryRequest req) {
+    return StatsUtil.termsFromEncodedString((String) req.getContext().get(StatsCache.TERMS_KEY));
   }
 }

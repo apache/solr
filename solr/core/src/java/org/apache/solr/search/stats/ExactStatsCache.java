@@ -116,8 +116,10 @@ public class ExactStatsCache extends StatsCache {
       SolrResponse res = r.getSolrResponse();
       NamedList<Object> nl = res.getResponse();
       if (nl == null) {
-        // no server answered for this shard (not all cores are up)
-        log.debug("Empty response from shard={}", shard);
+        // the shard response has no body, so there are no stats to merge
+        if (log.isDebugEnabled()) {
+          log.debug("Empty response from shard={}", shard);
+        }
         continue;
       }
       if (res.getException() != null) {

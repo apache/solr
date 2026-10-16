@@ -1,6 +1,5 @@
 title: >
-  ExactStatsCache no longer throws a NullPointerException when merging global stats if a shard
-  returned no response.
+  ExactStatsCache skips a shard response that has no body when merging global stats.
 type: fixed
 authors:
   - name: Nick Shanin
