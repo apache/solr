@@ -85,7 +85,9 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "restManager",
           "statsCache",
           "recoveryStrategy",
-          "indexReaderFactory");
+          "indexReaderFactory",
+          "indexConfigdeletionPolicy",
+          "updateHandlerupdateLog");
 
   // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
   // name. v1's GET /config/{component} keeps using the internal names unchanged.
@@ -272,7 +274,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return jsonSafeCopy(configMap);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   private Map<String, Object> expandUseParams(SolrQueryRequest req, Object plugin) {
     Map<String, Object> pluginInfo;
     if (plugin instanceof Map) {

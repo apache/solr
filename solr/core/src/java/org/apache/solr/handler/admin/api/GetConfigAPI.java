@@ -60,9 +60,7 @@ public class GetConfigAPI {
   // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
       path = {
-        "/config/requestHandler",
-        "/config/indexConfigdeletionPolicy",
-        "/config/updateHandlerupdateLog"
+        "/config/requestHandler"
       },
       method = GET,
       permission = CONFIG_READ_PERM)

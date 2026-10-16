@@ -50,8 +50,6 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
   @Test
   public void testGetSingleComponentConfig() {
     assertAnnotatedApiExistsFor("GET", "/config/requestHandler");
-    assertAnnotatedApiExistsFor("GET", "/config/indexConfigdeletionPolicy");
-    assertAnnotatedApiExistsFor("GET", "/config/updateHandlerupdateLog");
   }
 
   @Test
