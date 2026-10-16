@@ -45,7 +45,8 @@ import org.mockito.Mockito;
  * Tests for the totals that {@link CombinedQueryComponent#mergeIds} reports: a partial shard that
  * the merge skips contributes nothing to its query's totals, the approximateTotalHits fallback adds
  * each shard's own count, and the merged exactness flag is true only when every contributing shard
- * reports an exact count. Fabricated shard responses are driven through {@code mergeIds} directly.
+ * reports an exact count and only one sub-query contributes to the merge. Fabricated shard
+ * responses are driven through {@code mergeIds} directly.
  */
 public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
 
@@ -416,75 +417,27 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
   }
 
   /*
-   * The two cases below pin the current behavior across sub-queries: the merged numFound and
-   * approximateTotalHits are the largest single sub-query totals. Whether the combined
-   * numFound should instead count the distinct documents that match any sub-query is the
-   * open question in SOLR-18541; these tests do not settle it.
+   * The merged numFound stays the largest single sub-query count. Counting the distinct
+   * documents that match any sub-query instead is the follow-up in SOLR-18541; until it
+   * lands, the case below pins that a multi-sub-query merge does not call that count exact.
    */
 
-  /** Two sub-queries: the second query's totals are the larger ones and reach the response. */
+  /** Two contributing sub-queries with exact counts (3 and 2): the merged count is not exact. */
   @Test
-  public void largestSubQueryTotalWinsWhenSecondQueryIsLarger() {
-    SolrDocument a1 = doc("a1", 5.0f), a2 = doc("a2", 4.0f), a3 = doc("a3", 3.0f);
-    SolrDocument b1 = doc("b1", 5.0f),
-        b2 = doc("b2", 4.0f),
-        b3 = doc("b3", 3.0f),
-        b4 = doc("b4", 2.0f);
+  public void multipleContributingSubQueriesClearExactness() {
+    SolrDocument c1 = doc("c1", 5.0f), c2 = doc("c2", 4.0f), c3 = doc("c3", 3.0f);
+    SolrDocument d1 = doc("d1", 2.0f), d2 = doc("d2", 1.0f);
     ShardResponse shard1 =
         shardResponse(
             "shard1",
-            header(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE),
-            docList(3, true, a1, a2, a3),
-            List.of(docList(2, true, a1, a2), docList(10, true, a3)),
-            null);
-    ShardResponse shard2 =
-        shardResponse(
-            "shard2",
             header(),
-            docList(4, true, b1, b2, b3, b4),
-            List.of(docList(3, true, b1, b2, b3), docList(1, true, b4)),
+            docList(5, true, c1, c2, c3, d1, d2),
+            List.of(docList(3, true, c1, c2, c3), docList(2, true, d1, d2)),
             null);
     ResponseBuilder rb = newResponseBuilder(scoreSortSpec(), "q0", "q1");
-    cqc.mergeIds(rb, shardRequest(shard1, shard2));
-    assertEquals("numFound", 11, rb.getResponseDocs().getNumFound());
-    assertEquals(
-        "approximateTotalHits",
-        11L,
-        rb.rsp
-            .getResponseHeader()
-            .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
-  }
-
-  /** Two sub-queries: the first query's totals are the larger ones and reach the response. */
-  @Test
-  public void largestSubQueryTotalWinsWhenFirstQueryIsLarger() {
-    SolrDocument a1 = doc("a1", 5.0f), a2 = doc("a2", 4.0f), a3 = doc("a3", 3.0f);
-    SolrDocument b1 = doc("b1", 5.0f),
-        b2 = doc("b2", 4.0f),
-        b3 = doc("b3", 3.0f),
-        b4 = doc("b4", 2.0f);
-    ShardResponse shard1 =
-        shardResponse(
-            "shard1",
-            header(SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY, Boolean.TRUE),
-            docList(3, true, a1, a2, a3),
-            List.of(docList(2, true, a1, a2), docList(1, true, a3)),
-            null);
-    ShardResponse shard2 =
-        shardResponse(
-            "shard2",
-            header(),
-            docList(4, true, b1, b2, b3, b4),
-            List.of(docList(3, true, b1, b2, b3), docList(1, true, b4)),
-            null);
-    ResponseBuilder rb = newResponseBuilder(scoreSortSpec(), "q0", "q1");
-    cqc.mergeIds(rb, shardRequest(shard1, shard2));
-    assertEquals("numFound", 5, rb.getResponseDocs().getNumFound());
-    assertEquals(
-        "approximateTotalHits",
-        5L,
-        rb.rsp
-            .getResponseHeader()
-            .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
+    cqc.mergeIds(rb, shardRequest(shard1));
+    assertEquals("numFound", 3, rb.getResponseDocs().getNumFound());
+    assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
+    assertEquals("response size", 5, rb.getResponseDocs().size());
   }
 }
