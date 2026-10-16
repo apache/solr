@@ -1,5 +1,6 @@
-title:
-  Migrate GET /config/requestHandler to JAX-RS
+title: >
+  Migrate GET /config/requestHandler to JAX-RS; V2 path and response key
+  are now plural requestHandlers (V1 unchanged)
 type: changed
 authors:
   - name: Jalaz Kumar

@@ -28,9 +28,9 @@
                 "method": "POST"
               },
               "verify-command": {
-                "path": "/api/collections/${collection}/config/requestHandler?componentName=${RH-HANDLER-PATH}&meta=true",
+                "path": "/api/collections/${collection}/config/requestHandlers?componentName=${RH-HANDLER-PATH}&meta=true",
                 "method": "GET",
-                "condition": "$['config'].['requestHandler'].['${RH-HANDLER-PATH}'].['_packageinfo_'].['version']",
+                "condition": "$['config'].['requestHandlers'].['${RH-HANDLER-PATH}'].['_packageinfo_'].['version']",
                 "expected": "${package-version}"
               }
             }
