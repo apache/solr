@@ -98,9 +98,22 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @Override
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfig(boolean expandParams) {
+    return getConfig(expandParams, true);
+  }
+
+  public ConfigInfoResponse getConfig(boolean expandParams, boolean useExternalComponentNames) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    response.config = buildConfigMap(solrQueryRequest, expandParams);
+    Map<String, Object> configMap = buildConfigMap(solrQueryRequest, expandParams);
+    if (useExternalComponentNames) {
+      Map<String, Object> reMappedConfigMap = new NullKeyTolerantMap("children");
+      for (Map.Entry<String, Object> e : configMap.entrySet()) {
+        reMappedConfigMap.put(toExternalComponentName(e.getKey()), e.getValue());
+      }
+      configMap = reMappedConfigMap;
+    }
+    response.config = configMap;
     return response;
+
   }
 
   @Override
