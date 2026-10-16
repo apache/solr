@@ -368,7 +368,7 @@ var client = new HttpJettySolrClient.Builder(solrUrl)
 QueryResponse rsp = req.process(client);
 ----
 
-CloudSolrClient's Builder supports receiving an HTTP SolrClient builder for creating its internal client, so to set the credentials at the client level you could use a code like:
+CloudSolrClient's Builder supports receiving an `HttpSolrClient.BuilderBase` instance for creating its internal client, so to set the credentials at the client level you could use a code like:
 
 [source,java]
 ----
