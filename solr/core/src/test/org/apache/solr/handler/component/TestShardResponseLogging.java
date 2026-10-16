@@ -70,4 +70,49 @@ public class TestShardResponseLogging extends SolrTestCase {
       assertFalse(message, message.contains(secretTerm));
     }
   }
+
+  @Test
+  public void testCorruptedResponseWithNullNodeNameUsesShardAddress() {
+    final String shardAddress = "http://localhost:8983/solr";
+
+    final ShardRequest shardRequest = new ShardRequest();
+    shardRequest.params = new ModifiableSolrParams();
+    shardRequest.params.set("q", "name:customer_secret_term");
+
+    final NamedList<Object> header = new NamedList<>();
+    header.add("status", 0);
+    final NamedList<Object> body = new NamedList<>();
+    body.add(SolrQueryResponse.RESPONSE_HEADER_KEY, header);
+    final SolrResponseBase solrResponse = new SolrResponseBase();
+    solrResponse.setResponse(body);
+
+    final ShardResponse shardResponse = new ShardResponse();
+    shardResponse.setShardRequest(shardRequest);
+    shardResponse.setSolrResponse(solrResponse);
+    shardResponse.setShard("shard1");
+    shardResponse.setShardAddress(shardAddress);
+    // The node name is left null, as it is once a node has stopped; both the warning and
+    // the exception should fall back to the shard address instead of printing "null".
+
+    try (LogListener warnLog =
+        LogListener.warn(SolrResponseUtil.class).substring("corrupted response")) {
+      final SolrException ex =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  SolrResponseUtil.getSubsectionFromShardResponse(
+                      null, shardResponse, "response", false));
+
+      final String message = warnLog.pollMessage();
+      assertNotNull("expected a corrupted response warning", message);
+      assertTrue(message, message.contains(shardAddress));
+
+      // The method wraps the "absent" exception in its catch block, so the message that
+      // names the node rides as the cause.
+      assertNotNull("expected a cause on the thrown exception", ex.getCause());
+      final String causeMessage = ex.getCause().getMessage();
+      assertTrue(causeMessage, causeMessage.contains("is absent in response from " + shardAddress));
+      assertFalse(causeMessage, causeMessage.contains("from null"));
+    }
+  }
 }

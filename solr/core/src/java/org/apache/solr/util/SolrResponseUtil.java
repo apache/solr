@@ -55,15 +55,18 @@ public class SolrResponseUtil {
                     SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           return null;
         } else {
+          String nodeName =
+              srsp.getNodeName() != null ? srsp.getNodeName() : srsp.getShardAddress();
           log.warn(
-              "corrupted response on {} : response contains keys {}",
-              srsp.getNodeName() != null ? srsp.getNodeName() : srsp.getShardAddress(),
-              responseKeyNames(response));
+              "corrupted response on {} : response contains keys {}, shard request purpose {}",
+              nodeName,
+              responseKeyNames(response),
+              srsp.getShardRequest().purpose);
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               shardResponseKey
                   + " is absent in response from "
-                  + srsp.getNodeName()
+                  + nodeName
                   + ", but "
                   + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
                   + " isn't set in the response.");

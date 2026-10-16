@@ -1,4 +1,4 @@
-title: The warning logged for a corrupted shard response no longer prints the shard request or the response, so the query text no longer appears in it
+title: Don't log the shard request or response in corrupted-response warnings
 type: fixed
 authors:
   - name: Nick Shanin
