@@ -1,4 +1,5 @@
 = Node Roles
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -106,11 +107,17 @@ Dedicated *`coordinator`* nodes can be provisioned with enough memory but very l
 
 Fetches the list of supported roles and their supported modes for this cluster.
 
-*Input*
+[tabs#node-roles-supported-request]
+======
+V2 API::
++
+====
 [source,bash]
 ----
 curl http://localhost:8983/api/cluster/node-roles/supported
 ----
+====
+======
 
 *Output*
 [source,text]
@@ -134,11 +141,17 @@ curl http://localhost:8983/api/cluster/node-roles/supported
 
 Fetches the current node roles assignment for all the nodes in the cluster.
 
-*Input*
+[tabs#node-roles-request]
+======
+V2 API::
++
+====
 [source,bash]
 ----
 curl http://localhost:8983/api/cluster/node-roles
 ----
+====
+======
 
 *Output*
 [source,text]
@@ -162,11 +175,17 @@ curl http://localhost:8983/api/cluster/node-roles
 
 Fetches the current node roles assignment for a specified role.
 
-*Input*
-[source,text]
+[tabs#node-roles-role-request]
+======
+V2 API::
++
+====
+[source,bash]
 ----
-http://localhost:8983/api/cluster/node-roles/role/data
+curl http://localhost:8983/api/cluster/node-roles/role/data
 ----
+====
+======
 
 *Output*
 [source,text]
@@ -181,11 +200,17 @@ http://localhost:8983/api/cluster/node-roles/role/data
 }
 ----
 
-*Input*
-[source,text]
+[tabs#node-roles-role-mode-request]
+======
+V2 API::
++
+====
+[source,bash]
 ----
-http://localhost:8983/api/cluster/node-roles/role/data/off
+curl http://localhost:8983/api/cluster/node-roles/role/data/off
 ----
+====
+======
 
 *Output*
 [source,text]
@@ -205,11 +230,17 @@ http://localhost:8983/api/cluster/node-roles/role/data/off
 
 Fetches the current node roles assignment for the specified node.
 
-*Input*
+[tabs#node-roles-node-request]
+======
+V2 API::
++
+====
 [source,bash]
 ----
 curl http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr
 ----
+====
+======
 
 *Output*
 [source,text]
