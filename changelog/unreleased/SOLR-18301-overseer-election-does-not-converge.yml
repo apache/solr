@@ -1,0 +1,12 @@
+title: >
+  Fix which prevents Overseer election from endlessly looping.
+  Previously, if Solr reconnected to ZK around the ZK session
+  boundary it could interfere with an Overseer election already
+  taking place. It would effectively block the Overseer election
+  until a manual restart took place.
+type: fixed
+authors:
+  - name: Luke Kot-Zaniewski
+links:
+  - name: SOLR-18301
+    url: https://issues.apache.org/jira/browse/SOLR-18301
