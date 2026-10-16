@@ -94,11 +94,13 @@ public class GetConfigTest extends SolrTestCase {
     assertNull(response.error);
     assertNotNull(response.config);
     assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
 
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
     assertNotNull(configSection);
     assertTrue(configSection.containsKey("/select"));
     assertTrue(configSection.containsKey("/admin/ping"));
+    assertTrue(configSection.containsKey("/spell"));
   }
 
   @Test
@@ -111,18 +113,21 @@ public class GetConfigTest extends SolrTestCase {
     assertNotNull(response);
     assertNull(response.error);
     assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
 
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
     assertNotNull(configSection);
+    assertEquals(1, configSection.size());
     assertTrue(configSection.containsKey("/select"));
 
-    Map<String, Object> select = (Map<String, Object>) configSection.get("/select");
-    assertEquals("solr.SearchHandler", select.get("class"));
+    Map<String, Object> selectRHSection = (Map<String, Object>) configSection.get("/select");
+    assertEquals("/select", selectRHSection.get("name"));
+    assertEquals("solr.SearchHandler", selectRHSection.get("class"));
   }
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testGetRequestHandlersExpandParamsExpandsNamedHandler() throws Exception {
+  public void testGetRequestHandlersExpandParamsTrue() throws Exception {
     var request = new ConfigApi.GetRequestHandler(IndexType.CORE, CORE_NAME);
     request.setComponentName("/admin/ping");
     request.setExpandParams(true);
@@ -131,13 +136,15 @@ public class GetConfigTest extends SolrTestCase {
     assertNotNull(response);
     assertNull(response.error);
     assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
 
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
 
-    Map<String, Object> ping = (Map<String, Object>) configSection.get("/admin/ping");
-    assertNotNull(ping.get("_useParamsExpanded_"));
-    Map<String, Object> expanded = (Map<String, Object>) ping.get("_useParamsExpanded_");
-    assertEquals("[NOT AVAILABLE]", expanded.get("_ADMIN_PING"));
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
+    assertNotNull(pingRHSection.get("_useParamsExpanded_"));
+    Map<String, Object> expandedPingRHSection = (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
+    assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
   }
 
   @Test
@@ -149,8 +156,8 @@ public class GetConfigTest extends SolrTestCase {
 
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
 
-    Map<String, Object> ping = (Map<String, Object>) configSection.get("/admin/ping");
-    assertFalse(ping.containsKey("_useParamsExpanded_"));
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertFalse(pingRHSection.containsKey("_useParamsExpanded_"));
   }
 
   @Test
