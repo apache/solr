@@ -86,6 +86,16 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
+  /** SOLR-10305: query=false must not skip the uniqueKey check on a shards request */
+  @Test
+  public void testDistributedQueryWithoutUniqueKeyAndQueryFalseIsBadRequest() {
+    assertQEx(
+        "distributed query with query=false without a uniqueKey must be rejected",
+        "uniqueKey",
+        req("q", "subject:Hoss", "shards", "127.0.0.1:1/solr/collection1", "query", "false"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
   /** SOLR-1371 */
   @Test
   public void testLuke() {

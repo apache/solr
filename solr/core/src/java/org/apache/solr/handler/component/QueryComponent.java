@@ -140,17 +140,17 @@ public class QueryComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
+    if (rb.isDistrib && req.getSchema().getUniqueKeyField() == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Distributed search requires a uniqueKey field in the schema");
+    }
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
     SolrQueryResponse rsp = rb.rsp;
 
     if (rb.isDistrib) {
-      if (req.getSchema().getUniqueKeyField() == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Distributed search requires a uniqueKey field in the schema");
-      }
       boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
       if (isCancellableQuery) {
