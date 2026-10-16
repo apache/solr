@@ -135,23 +135,24 @@ public class TestInitParams extends SolrTestCaseJ4 {
 
   @Test
   public void testUpdateJsonDocsInitParamsRejectsFieldMappings() throws Exception {
+    deleteCore();
     initCore("solrconfig-update-json-docs-initparams.xml", "schema.xml");
     try {
       SolrRequestHandler handler = h.getCore().getRequestHandler("/update/json/docs");
-      SolrException ex =
-          expectThrows(
-              SolrException.class,
-              () ->
-                  handler.handleRequest(
-                      jsonDocsRequest("f", "title:/title"), new SolrQueryResponse()));
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      handler.handleRequest(jsonDocsRequest("f", "title:/title"), rsp);
+      Exception ex = rsp.getException();
+      assertNotNull("expected the handler to record a rejection on the response", ex);
+      assertTrue(ex.toString(), ex instanceof SolrException);
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) ex).code());
       assertTrue(ex.getMessage(), ex.getMessage().contains("mapUniqueKeyOnly"));
 
-      SolrQueryResponse rsp = new SolrQueryResponse();
+      rsp = new SolrQueryResponse();
       handler.handleRequest(
           jsonDocsRequest("mapUniqueKeyOnly", "false", "echo", "true", "f", "title:/title"), rsp);
       assertEquals("[{title=t}]", String.valueOf(rsp.getValues().get("docs")));
     } finally {
+      deleteCore();
       initCore("solrconfig-paramset.xml", "schema.xml");
     }
   }
