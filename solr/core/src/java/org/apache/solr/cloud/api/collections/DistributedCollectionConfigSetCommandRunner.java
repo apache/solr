@@ -24,6 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -74,7 +75,8 @@ public class DistributedCollectionConfigSetCommandRunner {
   private static final String ZK_DISTRIBUTED_API_ROOT = "/distributedapi";
 
   /** Zookeeper node below which the locking hierarchy is anchored */
-  private static final String ZK_COLLECTION_LOCKS = ZK_DISTRIBUTED_API_ROOT + "/collectionlocks";
+  @VisibleForTesting
+  static final String ZK_COLLECTION_LOCKS = ZK_DISTRIBUTED_API_ROOT + "/collectionlocks";
 
   private static final String ZK_CONFIG_SET_LOCKS = ZK_DISTRIBUTED_API_ROOT + "/configsetlocks";
 

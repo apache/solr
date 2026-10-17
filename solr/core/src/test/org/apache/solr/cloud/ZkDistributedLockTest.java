@@ -17,9 +17,11 @@
 
 package org.apache.solr.cloud;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
@@ -85,44 +87,42 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
       server.run();
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .withUrl(server.getZkAddress())
+              .withUrl(server.getZkHost())
               .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
               .build()) {
         String collRoot = "/lockTestCollectionRoot";
         DistributedCollectionLockFactory collLockFactory =
             new ZkDistributedCollectionLockFactory(zkClient, collRoot);
-        collLockFactory
-            .createLock(
+        DistributedLock replicaLock =
+            collLockFactory.createLock(
                 true,
                 CollectionParams.LockLevel.REPLICA,
                 COLLECTION_NAME,
                 SHARD_NAME,
                 REPLICA_NAME,
-                null)
-            .release();
-        collLockFactory
-            .createLock(
-                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null)
-            .release();
-        collLockFactory
-            .createLock(
-                true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null)
-            .release();
-        assertContainer(server, collRoot + "/" + COLLECTION_NAME);
-        assertContainer(server, collRoot + "/" + COLLECTION_NAME + "/Locks");
-        assertContainer(server, collRoot + "/" + COLLECTION_NAME + "/_" + SHARD_NAME);
-        assertContainer(server, collRoot + "/" + COLLECTION_NAME + "/_" + SHARD_NAME + "/Locks");
-        assertContainer(
-            server, collRoot + "/" + COLLECTION_NAME + "/_" + SHARD_NAME + "/_" + REPLICA_NAME);
+                null);
+        replicaLock.release();
+        DistributedLock shardLock =
+            collLockFactory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+        shardLock.release();
+        DistributedLock collLock =
+            collLockFactory.createLock(
+                true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
+        collLock.release();
+        assertLockDirsAreContainers(server, replicaLock, collRoot);
+        assertLockDirsAreContainers(server, shardLock, collRoot);
+        assertLockDirsAreContainers(server, collLock, collRoot);
 
         String configSetRoot = "/lockTestConfigSetRoot";
         DistributedConfigSetLockFactory configSetLockFactory =
             new ZkDistributedConfigSetLockFactory(zkClient, configSetRoot);
-        configSetLockFactory.createLock(true, CONFIG_SET_NAME).release();
-        assertContainer(server, configSetRoot + "/" + CONFIG_SET_NAME);
+        DistributedLock configSetLock = configSetLockFactory.createLock(true, CONFIG_SET_NAME);
+        configSetLock.release();
+        assertLockDirsAreContainers(server, configSetLock, configSetRoot);
 
         // Simulate ZooKeeper removing the empty containers
-        zkClient.clean(collRoot + "/" + COLLECTION_NAME);
+        zkClient.clean(parent(parent(collLock.getLockId())));
         DistributedLock lock =
             collLockFactory.createLock(
                 true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
@@ -146,29 +146,59 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
               .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
               .build()) {
         String root = "/lockTestCollectionRoot";
-        String coll = root + "/" + COLLECTION_NAME;
-        String shard = coll + "/_" + SHARD_NAME;
-        zkClient.makePath(coll + "/Locks", false);
-        zkClient.makePath(shard + "/Locks", false);
-        zkClient.makePath(shard + "/_" + REPLICA_NAME, false);
-        zkClient.makePath(root + "/otherColl/Locks", false);
-
         ZkDistributedCollectionLockFactory factory =
             new ZkDistributedCollectionLockFactory(zkClient, root);
+        String collLockDir =
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.COLLECTION,
+                    COLLECTION_NAME,
+                    null,
+                    null,
+                    null));
+        String replicaLockDir =
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.REPLICA,
+                    COLLECTION_NAME,
+                    SHARD_NAME,
+                    REPLICA_NAME,
+                    null));
+        String shardLockDir =
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.SHARD,
+                    COLLECTION_NAME,
+                    SHARD_NAME,
+                    null,
+                    null));
+        String otherCollLockDir =
+            lockDir(
+                factory.createLock(
+                    true, CollectionParams.LockLevel.COLLECTION, "otherColl", null, null, null));
+        String coll = parent(collLockDir);
+        zkClient.clean(root);
+        for (String dir : List.of(collLockDir, shardLockDir, replicaLockDir, otherCollLockDir)) {
+          zkClient.makePath(dir, false);
+        }
+
         DistributedLock shardLock =
             factory.createLock(
                 true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
 
         factory.deleteEmptyLockDirs(COLLECTION_NAME);
-        assertFalse(zkClient.exists(coll + "/Locks"));
-        assertFalse(zkClient.exists(shard + "/_" + REPLICA_NAME));
+        assertFalse(zkClient.exists(collLockDir));
+        assertFalse(zkClient.exists(replicaLockDir));
         assertTrue(zkClient.exists(shardLock.getLockId()));
         assertTrue(shardLock.isAcquired());
 
         shardLock.release();
         factory.deleteEmptyLockDirs(COLLECTION_NAME);
         assertFalse(zkClient.exists(coll));
-        assertTrue(zkClient.exists(root + "/otherColl/Locks"));
+        assertTrue(zkClient.exists(otherCollLockDir));
       }
     } finally {
       server.shutdown();
@@ -182,7 +212,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     try {
       server.run();
       String root = "/lockTestCollectionRoot";
-      String shard = root + "/" + COLLECTION_NAME + "/_" + SHARD_NAME;
+      AtomicReference<String> shardLockDir = new AtomicReference<>();
       AtomicBoolean removed = new AtomicBoolean();
       try (SolrZkClient zkClient =
           new SolrZkClient(
@@ -192,21 +222,28 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
             @Override
             public String create(String path, byte[] data, CreateMode createMode)
                 throws KeeperException, InterruptedException {
-              if (path.equals(shard + "/Locks") && removed.compareAndSet(false, true)) {
-                delete(shard, -1);
+              if (path.equals(shardLockDir.get()) && removed.compareAndSet(false, true)) {
+                delete(parent(path), -1);
               }
               return super.create(path, data, createMode);
             }
           }) {
-        DistributedLock lock =
-            new ZkDistributedCollectionLockFactory(zkClient, root)
-                .createLock(
+        ZkDistributedCollectionLockFactory factory =
+            new ZkDistributedCollectionLockFactory(zkClient, root);
+        shardLockDir.set(
+            lockDir(
+                factory.createLock(
                     true,
                     CollectionParams.LockLevel.SHARD,
                     COLLECTION_NAME,
                     SHARD_NAME,
                     null,
-                    null);
+                    null)));
+        zkClient.clean(root);
+
+        DistributedLock lock =
+            factory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
         assertTrue(removed.get());
         assertTrue(lock.isAcquired());
         lock.release();
@@ -216,14 +253,24 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static void assertContainer(ZkTestServer server, String path) {
-    assertTrue(
-        path + " should be a container node",
-        server
-            .getZKDatabase()
-            .getDataTree()
-            .getContainers()
-            .contains(server.getZkAddress().substring(server.getZkHost().length()) + path));
+  /** Asserts every node between the lock and {@code root} is a container. */
+  private static void assertLockDirsAreContainers(
+      ZkTestServer server, DistributedLock lock, String root) {
+    for (String dir = parent(lock.getLockId()); !dir.equals(root); dir = parent(dir)) {
+      assertTrue(
+          dir + " should be a container node",
+          server.getZKDatabase().getDataTree().getContainers().contains(dir));
+    }
+  }
+
+  /** Releases the lock and returns the dir it was created in. */
+  private static String lockDir(DistributedLock lock) {
+    lock.release();
+    return parent(lock.getLockId());
+  }
+
+  private static String parent(String path) {
+    return path.substring(0, path.lastIndexOf('/'));
   }
 
   private void monothreadedCollectionTests(DistributedCollectionLockFactory factory) {
