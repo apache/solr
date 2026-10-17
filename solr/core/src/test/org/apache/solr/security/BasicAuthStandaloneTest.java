@@ -22,6 +22,7 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Map;
@@ -103,6 +104,25 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
         new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), UTF_8)
             .contains("harry"));
 
+    command = "{\n" + "'set-user-role': {'harry':'admin'}\n" + "}";
+    doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
+    verifySecurityStatus(
+        httpClient, baseUrl + authzPrefix, "authorization/user-role/harry", "admin", 20);
+
+    Map<String, Object> persistedSecurityJson =
+        asMap(
+            Utils.fromJSONString(
+                Files.readString(instance.getHomeDir().resolve("security.json"), UTF_8)));
+    Map<String, Object> persistedAuthc = asMap(persistedSecurityJson.get("authentication"));
+    Map<String, Object> persistedAuthz = asMap(persistedSecurityJson.get("authorization"));
+    assertFalse(
+        "authentication config should not contain internal metadata",
+        persistedAuthc.containsKey(""));
+    assertFalse(
+        "authorization config should not contain internal metadata",
+        persistedAuthz.containsKey(""));
+    assertEquals("admin", ((Map<?, ?>) persistedAuthz.get("user-role")).get("harry"));
+
     // Edit authorization
     verifySecurityStatus(
         httpClient, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
@@ -169,6 +189,11 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       throw new IOException(e);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> asMap(Object value) {
+    return (Map<String, Object>) value;
   }
 
   private static String encodeBasicAuthHeaderIfNotNull(String user, String pwd) {

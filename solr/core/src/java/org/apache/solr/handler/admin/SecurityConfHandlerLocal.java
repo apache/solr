@@ -19,15 +19,19 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +41,28 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected Path securityJsonPath;
 
+  /**
+   * Serializes edits on this handler instance. An edit is a read-edit-write of the whole file: two
+   * edits running at once would each base their rewrite on the same starting content, so one of
+   * them is lost. Callers do send edits concurrently; the Admin UI, for one, issues one request per
+   * granted permission without waiting for the previous one to return.
+   */
+  private final Object editLock = new Object();
+
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);
     securityJsonPath = coreContainer.getSolrHome().resolve("security.json");
+  }
+
+  @Override
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (SolrRequest.METHOD.POST.equals(req.getContext().get("httpMethod"))) {
+      synchronized (editLock) {
+        super.handleRequestBody(req, rsp);
+      }
+    } else {
+      super.handleRequestBody(req, rsp);
+    }
   }
 
   /**
@@ -83,15 +106,52 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to SOLR_HOME. Object was empty.");
     }
-    try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
-      securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
-      log.debug("Persisted security.json to {}", securityJsonPath);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> sanitizedData =
+        (Map<String, Object>) Utils.getDeepCopy(securityConfig.getData(), 4);
+    for (Object pluginConfig : sanitizedData.values()) {
+      if (pluginConfig instanceof Map<?, ?> pluginConfigMap) {
+        pluginConfigMap.remove("");
+      }
+    }
+    // Serialize first, then write to a temporary file in the same directory and move it over
+    // security.json. The file on disk is therefore always one complete document: a reader
+    // never observes a partially written file, and a crash mid-write leaves the previous
+    // document in place.
+    Path tmpPath =
+        Files.createTempFile(
+            securityJsonPath.getParent(), securityJsonPath.getFileName().toString(), ".tmp");
+    try {
+      Files.write(tmpPath, Utils.toJSON(sanitizedData));
+      if (Files.exists(securityJsonPath)) {
+        try {
+          Files.setPosixFilePermissions(tmpPath, Files.getPosixFilePermissions(securityJsonPath));
+        } catch (UnsupportedOperationException | IOException e) {
+          if (log.isDebugEnabled()) {
+            log.debug("Could not keep the permissions of {}", securityJsonPath, e);
+          }
+        }
+      }
+      try {
+        Files.move(
+            tmpPath,
+            securityJsonPath,
+            StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(tmpPath, securityJsonPath, StandardCopyOption.REPLACE_EXISTING);
+      }
+      if (log.isDebugEnabled()) {
+        log.debug("Persisted security.json to {}", securityJsonPath);
+      }
       return true;
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to " + securityJsonPath,
           e);
+    } finally {
+      Files.deleteIfExists(tmpPath);
     }
   }
 
