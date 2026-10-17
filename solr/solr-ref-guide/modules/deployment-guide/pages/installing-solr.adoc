@@ -43,11 +43,9 @@ Please refer to the xref:solr-in-docker.adoc[] page for information on how to us
 When getting started with Solr, all you need to do is extract the Solr distribution archive to a directory of your choosing.
 This will suffice as an initial development environment, but take care not to overtax this "toy" installation before setting up your true development and production environments.
 
-For most new installations, start with xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] using its embedded ZooKeeper, as described in xref:getting-started:tutorial-solrcloud.adoc[].
-This gets you a cluster that can scale to multiple nodes and shards without requiring you to manage a separate ZooKeeper ensemble up front.
-A single-node xref:getting-started:cluster-types.adoc#user-managed-cluster[User-Managed] (standalone) installation is still a reasonable choice if you know you'll only ever run one node, but migrating from User-Managed to SolrCloud later is more work than starting with SolrCloud from the beginning.
-
 When you've progressed past initial evaluation of Solr, you'll want to take care to plan your implementation.
+You may need to reinstall Solr on another server or make a clustered SolrCloud environment.
+
 When you're ready to setup Solr for a production environment, please refer to the instructions provided on the xref:taking-solr-to-production.adoc[] page.
 
 .What Size Server Do I Need?
@@ -58,6 +56,10 @@ How to size your Solr installation is a complex question that relies on a number
 It's highly recommended that you spend a bit of time thinking about the factors that will impact hardware sizing for your Solr implementation.
 A very good blog post that discusses the issues to consider is https://lucidworks.com/blog/solr-sizing-guide-estimating-solr-sizing-hardware/[Sizing Hardware in the Abstract: Why We Don't have a Definitive Answer].
 ====
+
+One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact).
+In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number.
+If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] as part of your design from the start.
 
 == Package Installation
 
