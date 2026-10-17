@@ -94,8 +94,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     this.solrQueryResponse = solrQueryResponse;
   }
 
-  protected ReplicationDetailsResponse doFetchReplicationDetails(boolean showFollowerDetails)
-      throws IOException {
+  protected ReplicationDetailsResponse doFetchReplicationDetails(boolean showFollowerDetails) {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return replicationHandler.getReplicationDetails(showFollowerDetails);
