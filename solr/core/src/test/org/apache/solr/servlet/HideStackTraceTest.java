@@ -40,7 +40,7 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupSolrHome() throws Exception {
 
-    System.setProperty("solr.hideStackTrace", "true");
+    System.setProperty("solr.responses.stacktrace.enabled", "false");
 
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
