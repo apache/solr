@@ -34,6 +34,7 @@ import org.apache.solr.client.api.model.ConfigInfoResponse;
 import org.apache.solr.client.api.model.ConfigOverlayResponse;
 import org.apache.solr.client.api.model.ConfigZnodeVersionResponse;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -53,7 +54,9 @@ import org.apache.solr.util.SolrPluginUtils;
 
 public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
-  // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigComponent.
+  // TODO: Keep this in sync with @Path regex on ConfigApi.Get#getConfigComponent. These are the
+  // internal SolrConfig section names (also used by the legacy v1 GET /config/{component} path);
+  // see EXTERNAL_TO_INTERNAL_COMPONENT_NAME for the v2-only pluralized renames.
   // TODO: Remove this set when remaining GET /config/{component} sections also migrate.
   public static final Set<String> MIGRATED_CONFIG_COMPONENTS =
       Set.of(
@@ -64,6 +67,28 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "query",
           "searchComponent",
           "queryResponseWriter");
+
+  public static final String REQUEST_HANDLERS = "requestHandlers";
+
+  // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
+  // name. v1's GET /config/{component} keeps using the internal names unchanged.
+  private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
+      Map.of(
+          "searchComponents", "searchComponent",
+          "queryResponseWriters", "queryResponseWriter");
+
+  private static String toInternalComponentName(String externalName) {
+    return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);
+  }
+
+  public static String toExternalComponentName(String internalName) {
+    for (Map.Entry<String, String> e : EXTERNAL_TO_INTERNAL_COMPONENT_NAME.entrySet()) {
+      if (e.getValue().equals(internalName)) {
+        return e.getKey();
+      }
+    }
+    return internalName;
+  }
 
   private final SolrQueryRequest solrQueryRequest;
 
@@ -109,13 +134,20 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @Override
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getRequestHandler(
-      boolean expandParams, String componentName, boolean meta) {
+      String componentName, boolean expandParams, boolean meta) {
+    return getRequestHandler(REQUEST_HANDLERS, componentName, expandParams, meta);
+  }
+
+  public ConfigInfoResponse getRequestHandler(
+      String sectionName, String componentName, boolean expandParams, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    Map<String, Object> configMap = solrConfigAsMap();
+
+    Map<String, Object> configMap = new LinkedHashMap<>();
     configMap.put(
-        SolrRequestHandler.TYPE,
-        requestHandlersWithImplicits(configMap, expandParams, componentName));
-    applyNamedComponentFilter(configMap, SolrRequestHandler.TYPE, componentName, meta);
+        sectionName, requestHandlersWithImplicits(solrConfigAsMap(), expandParams, componentName));
+    if (componentName != null) {
+      filterByComponentName(configMap, sectionName, componentName, meta, solrQueryRequest);
+    }
 
     response.config = jsonSafeCopy(configMap);
     return response;
@@ -123,52 +155,80 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public ConfigInfoResponse getConfigComponent(
-      String component, String componentName, boolean meta) {
+  public ConfigInfoResponse getConfigComponent(String component) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    Map<String, Object> section = new LinkedHashMap<>();
-    section.put(component, solrConfigAsMap().get(component));
-    applyNamedComponentFilter(section, component, componentName, meta);
 
-    response.config = jsonSafeCopy(section);
+    Map<String, Object> configMap = new LinkedHashMap<>();
+    configMap.put(component, solrConfigAsMap().get(toInternalComponentName(component)));
+
+    response.config = jsonSafeCopy(configMap);
     return response;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private void applyNamedComponentFilter(
-      Map<String, Object> section, String component, String componentName, boolean meta) {
-    if (componentName != null) {
-      Map pluginNameVsPluginInfo = (Map) section.get(component);
-      if (pluginNameVsPluginInfo != null) {
-        Object o =
-            pluginNameVsPluginInfo instanceof MapWriter
-                ? pluginNameVsPluginInfo
-                : pluginNameVsPluginInfo.get(componentName);
-        Map<String, Object> pluginInfo =
-            o instanceof MapWriter
-                ? new SimpleOrderedMap<>((MapWriter) o)
-                : (Map<String, Object>) o;
-        section.put(
-            component,
-            pluginNameVsPluginInfo instanceof MapWriter
-                ? pluginInfo
-                : Map.of(componentName, pluginInfo));
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
+  public ConfigInfoResponse getConfigComponentByName(
+      String component, String componentName, boolean meta) {
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
 
-        if (meta) {
-          List<PackageListeners.Listener> listeners =
-              solrQueryRequest.getCore().getPackageListeners().getListeners();
-          for (PackageListeners.Listener listener : listeners) {
-            Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
-            if (infos == null || infos.isEmpty()) continue;
-            infos.forEach(
-                (s, mapWriter) -> {
-                  Map<String, Object> componentInfo = getComponentInfo(pluginInfo, componentName);
-                  if (s.equals(componentInfo.get("class"))) {
-                    (componentInfo).put("_packageinfo_", mapWriter);
-                  }
-                });
-          }
-        }
+    Map<String, Object> configMap = new LinkedHashMap<>();
+    configMap.put(component, solrConfigAsMap().get(toInternalComponentName(component)));
+    filterByComponentName(configMap, component, componentName, meta, solrQueryRequest);
+    response.config = jsonSafeCopy(configMap);
+    return response;
+  }
+
+  /**
+   * Shared by the v2 {@code getConfigComponentByName} API and {@link
+   * org.apache.solr.handler.SolrConfigHandler}'s legacy v1 handling for components not yet migrated
+   * to v2, so the two don't carry separate copies of this logic.
+   *
+   * @throws SolrException NOT_FOUND if {@code componentName} does not exist within {@code
+   *     component}
+   */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static void filterByComponentName(
+      Map<String, Object> configMap,
+      String component,
+      String componentName,
+      boolean meta,
+      SolrQueryRequest req) {
+    Map pluginNameVsPluginInfo = (Map) configMap.get(component);
+    if (pluginNameVsPluginInfo == null) {
+      return;
+    }
+
+    Object o =
+        pluginNameVsPluginInfo instanceof MapWriter
+            ? pluginNameVsPluginInfo
+            : pluginNameVsPluginInfo.get(componentName);
+    if (o == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          componentName + " not found in config section " + component);
+    }
+
+    Map<String, Object> pluginInfo =
+        o instanceof MapWriter ? new SimpleOrderedMap<>((MapWriter) o) : (Map<String, Object>) o;
+    configMap.put(
+        component,
+        pluginNameVsPluginInfo instanceof MapWriter
+            ? pluginInfo
+            : Map.of(componentName, pluginInfo));
+
+    if (meta) {
+      List<PackageListeners.Listener> listeners =
+          req.getCore().getPackageListeners().getListeners();
+      for (PackageListeners.Listener listener : listeners) {
+        Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+        if (infos == null || infos.isEmpty()) continue;
+        infos.forEach(
+            (s, mapWriter) -> {
+              Map<String, Object> componentInfo = getComponentInfo(pluginInfo, componentName);
+              if (s.equals(componentInfo.get("class"))) {
+                (componentInfo).put("_packageinfo_", mapWriter);
+              }
+            });
       }
     }
   }
@@ -216,7 +276,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
     if (expandParams) {
       for (Map.Entry<String, Object> entry : reqHandlersMap.entrySet()) {
-        if (expandOnlyComponentName == null || !expandOnlyComponentName.equals(entry.getKey())) {
+        if (expandOnlyComponentName == null || expandOnlyComponentName.equals(entry.getKey())) {
           entry.setValue(expandUseParams(solrQueryRequest, entry.getValue()));
         }
       }
