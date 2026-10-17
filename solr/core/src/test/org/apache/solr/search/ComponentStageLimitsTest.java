@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
@@ -52,6 +53,8 @@ public class ComponentStageLimitsTest extends SolrCloudTestCase {
                 "<requestHandler",
                 "<searchComponent name=\"expensiveSearchComponent\"\n"
                     + "                   class=\"org.apache.solr.search.ExpensiveSearchComponent\"/>\n"
+                    + "  <searchComponent name=\"exitingReaderComponent\"\n"
+                    + "                   class=\"org.apache.solr.search.ExitingReaderSearchComponent\"/>\n"
                     + "\n"
                     + "  <requestHandler")
             .replace(
@@ -59,7 +62,22 @@ public class ComponentStageLimitsTest extends SolrCloudTestCase {
                 "class=\"solr.SearchHandler\">\n"
                     + "    <arr name=\"first-components\">\n"
                     + "      <str>expensiveSearchComponent</str>\n"
-                    + "    </arr>\n"));
+                    + "    </arr>\n")
+            // A handler whose explicit component list places the exiting component after the
+            // debug component (with an explicit list the debug component is not moved last),
+            // so a limit tripping there has real debug output to preserve. Used with
+            // distrib=false so the request takes the local processing path.
+            .replace(
+                "</config>",
+                "  <requestHandler name=\"/exiting\" class=\"solr.SearchHandler\">\n"
+                    + "    <arr name=\"components\">\n"
+                    + "      <str>query</str>\n"
+                    + "      <str>debug</str>\n"
+                    + "      <str>exitingReaderComponent</str>\n"
+                    + "    </arr>\n"
+                    + "  </requestHandler>\n"
+                    + "\n"
+                    + "</config>"));
     return configSet.resolve("conf");
   }
 
@@ -184,6 +202,41 @@ public class ComponentStageLimitsTest extends SolrCloudTestCase {
     assertTrue(
         details.contains("exceeded prior to query in [expensiveSearchComponent, query, facet,"));
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+  }
+
+  @Test
+  public void testLimitAfterDebugKeepsSingleDebugSection() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    // The /exiting handler runs query, then debug, then a component that throws the limit
+    // exception, and distrib=false keeps the request on the local processing path. So when the
+    // limit trips, DebugComponent has already added the real "debug" section to the response.
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "qt",
+                "/exiting",
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                "debug",
+                "true",
+                "distrib",
+                "false",
+                ExitingReaderSearchComponent.THROW_PARAM,
+                "true"));
+    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+    // the query really ran before the trip, so its response must survive (SOLR-8020)
+    assertTrue("should have found docs", rsp.getResults().getNumFound() > 0);
+    // SOLR-8020: the short circuit path must not append a second, empty "debug" section
+    assertEquals(
+        "debug section must appear once: " + rsp.jsonStr(),
+        1,
+        rsp.getResponse().getAll("debug").size());
+    @SuppressWarnings("unchecked")
+    NamedList<Object> debug = (NamedList<Object>) rsp.getResponse().get("debug");
+    assertNotNull("the surviving debug section must be the real one", debug.get("parsedquery"));
   }
 
   @Test
