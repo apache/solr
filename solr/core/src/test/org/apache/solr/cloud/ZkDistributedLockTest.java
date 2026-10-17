@@ -17,11 +17,16 @@
 
 package org.apache.solr.cloud;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
 public class ZkDistributedLockTest extends SolrTestCaseJ4 {
@@ -69,6 +74,203 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     } finally {
       server.shutdown();
     }
+  }
+
+  /**
+   * Lock directories must be ZooKeeper container nodes so they get removed once empty, and a lock
+   * must still be obtainable after its directory was removed.
+   */
+  @Test
+  public void testLockDirsAreContainers() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkHost())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        String collRoot = "/lockTestCollectionRoot";
+        DistributedCollectionLockFactory collLockFactory =
+            new ZkDistributedCollectionLockFactory(zkClient, collRoot);
+        DistributedLock replicaLock =
+            collLockFactory.createLock(
+                true,
+                CollectionParams.LockLevel.REPLICA,
+                COLLECTION_NAME,
+                SHARD_NAME,
+                REPLICA_NAME,
+                null);
+        replicaLock.release();
+        DistributedLock shardLock =
+            collLockFactory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+        shardLock.release();
+        DistributedLock collLock =
+            collLockFactory.createLock(
+                true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
+        collLock.release();
+        assertLockDirsAreContainers(server, replicaLock, collRoot);
+        assertLockDirsAreContainers(server, shardLock, collRoot);
+        assertLockDirsAreContainers(server, collLock, collRoot);
+
+        String configSetRoot = "/lockTestConfigSetRoot";
+        DistributedConfigSetLockFactory configSetLockFactory =
+            new ZkDistributedConfigSetLockFactory(zkClient, configSetRoot);
+        DistributedLock configSetLock = configSetLockFactory.createLock(true, CONFIG_SET_NAME);
+        configSetLock.release();
+        assertLockDirsAreContainers(server, configSetLock, configSetRoot);
+
+        // Simulate ZooKeeper removing the empty containers
+        zkClient.clean(parent(parent(collLock.getLockId())));
+        DistributedLock lock =
+            collLockFactory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+        assertTrue(lock.isAcquired());
+        lock.release();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  /** Lock dirs left as persistent nodes by older versions get removed, live locks are kept. */
+  @Test
+  public void testDeleteEmptyLockDirs() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        String root = "/lockTestCollectionRoot";
+        ZkDistributedCollectionLockFactory factory =
+            new ZkDistributedCollectionLockFactory(zkClient, root);
+        String collLockDir =
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.COLLECTION,
+                    COLLECTION_NAME,
+                    null,
+                    null,
+                    null));
+        String replicaLockDir =
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.REPLICA,
+                    COLLECTION_NAME,
+                    SHARD_NAME,
+                    REPLICA_NAME,
+                    null));
+        String shardLockDir =
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.SHARD,
+                    COLLECTION_NAME,
+                    SHARD_NAME,
+                    null,
+                    null));
+        String otherCollLockDir =
+            lockDir(
+                factory.createLock(
+                    true, CollectionParams.LockLevel.COLLECTION, "otherColl", null, null, null));
+        String coll = parent(collLockDir);
+        zkClient.clean(root);
+        for (String dir : List.of(collLockDir, shardLockDir, replicaLockDir, otherCollLockDir)) {
+          zkClient.makePath(dir, false);
+        }
+
+        DistributedLock shardLock =
+            factory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+
+        factory.deleteEmptyLockDirs(COLLECTION_NAME);
+        assertFalse(zkClient.exists(collLockDir));
+        assertFalse(zkClient.exists(replicaLockDir));
+        assertTrue(zkClient.exists(shardLock.getLockId()));
+        assertTrue(shardLock.isAcquired());
+
+        shardLock.release();
+        factory.deleteEmptyLockDirs(COLLECTION_NAME);
+        assertFalse(zkClient.exists(coll));
+        assertTrue(zkClient.exists(otherCollLockDir));
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  /** A parent lock dir removed while the lock path is being created must not fail the lock. */
+  @Test
+  public void testParentRemovedWhileCreatingLockPath() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      String root = "/lockTestCollectionRoot";
+      AtomicReference<String> shardLockDir = new AtomicReference<>();
+      AtomicBoolean removed = new AtomicBoolean();
+      try (SolrZkClient zkClient =
+          new SolrZkClient(
+              new SolrZkClient.Builder()
+                  .withUrl(server.getZkAddress())
+                  .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)) {
+            @Override
+            public String create(String path, byte[] data, CreateMode createMode)
+                throws KeeperException, InterruptedException {
+              if (path.equals(shardLockDir.get()) && removed.compareAndSet(false, true)) {
+                delete(parent(path), -1);
+              }
+              return super.create(path, data, createMode);
+            }
+          }) {
+        ZkDistributedCollectionLockFactory factory =
+            new ZkDistributedCollectionLockFactory(zkClient, root);
+        shardLockDir.set(
+            lockDir(
+                factory.createLock(
+                    true,
+                    CollectionParams.LockLevel.SHARD,
+                    COLLECTION_NAME,
+                    SHARD_NAME,
+                    null,
+                    null)));
+        zkClient.clean(root);
+
+        DistributedLock lock =
+            factory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+        assertTrue(removed.get());
+        assertTrue(lock.isAcquired());
+        lock.release();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  /** Asserts every node between the lock and {@code root} is a container. */
+  private static void assertLockDirsAreContainers(
+      ZkTestServer server, DistributedLock lock, String root) {
+    for (String dir = parent(lock.getLockId()); !dir.equals(root); dir = parent(dir)) {
+      assertTrue(
+          dir + " should be a container node",
+          server.getZKDatabase().getDataTree().getContainers().contains(dir));
+    }
+  }
+
+  /** Releases the lock and returns the dir it was created in. */
+  private static String lockDir(DistributedLock lock) {
+    lock.release();
+    return parent(lock.getLockId());
+  }
+
+  private static String parent(String path) {
+    return path.substring(0, path.lastIndexOf('/'));
   }
 
   private void monothreadedCollectionTests(DistributedCollectionLockFactory factory) {

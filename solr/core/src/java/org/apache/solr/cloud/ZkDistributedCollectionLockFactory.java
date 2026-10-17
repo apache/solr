@@ -22,11 +22,13 @@ import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetComma
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * A distributed lock implementation using Zookeeper "directory" nodes created within a collection
  * znode hierarchy, for use with the distributed Collection API implementation. The locks are
- * implemented using ephemeral nodes placed below the "directory" nodes.
+ * implemented using ephemeral nodes placed below the "directory" nodes, which are container nodes
+ * so ZooKeeper removes them once empty.
  *
  * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper
  *     lock recipe</a>
@@ -62,8 +64,16 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
   }
 
   /**
-   * Returns the Zookeeper path to the lock, creating missing nodes if needed. Note that the
-   * complete lock hierarchy (/locks and below) can be deleted if SolrCloud is stopped.
+   * Deletes the empty lock dirs left for {@code collName}. Clusters that ran older versions have
+   * these as persistent nodes, which ZooKeeper never removes on its own.
+   */
+  public void deleteEmptyLockDirs(String collName) throws KeeperException, InterruptedException {
+    deleteEmptyDirs(getPathPrefix().append(collName).toString());
+  }
+
+  /**
+   * Returns the Zookeeper path to the lock. Note that the complete lock hierarchy (/locks and
+   * below) can be deleted if SolrCloud is stopped.
    *
    * <p>The tree of lock directories for a given collection {@code collName} is as follows:
    *
@@ -81,8 +91,7 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
    *          _replicaNameS2R2   <-- EPHEMERAL replica level locks go here
    * }</pre>
    *
-   * This method will create the path where the {@code EPHEMERAL} lock nodes should go. That path
-   * is:
+   * The path where the {@code EPHEMERAL} lock nodes should go is:
    *
    * <ul>
    *   <li>For {@link org.apache.solr.common.params.CollectionParams.LockLevel#COLLECTION} - {@code
