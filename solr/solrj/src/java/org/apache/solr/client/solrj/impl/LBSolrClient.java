@@ -20,10 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.http.HttpConnectTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -210,7 +205,7 @@ public abstract class LBSolrClient extends SolrClient {
     public LBSolrClient build() {
       return new LBSolrClient(this) {
         @Override
-        protected SolrClient getClient(Endpoint endpoint) {
+        protected HttpSolrClient getClient(Endpoint endpoint) {
           return solrClient;
         }
       };
@@ -614,20 +609,11 @@ public abstract class LBSolrClient extends SolrClient {
     return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
   }
 
-  // TODO SOLR-17541 should remove the need for the special-casing below; remove as a part of that
-  // ticket.
+  // getClient(...) may return a client that isn't pointed at the desired URL, or at any URL at all.
   private NamedList<Object> doRequest(
-      SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
+      HttpSolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClient that may not
-    // be pointed at the desired URL (or any URL for that matter).  We special-case that here to
-    // ensure the appropriate URL is provided.
-    if (solrClient instanceof HttpSolrClient hasReqWithUrl) {
-      return hasReqWithUrl.requestWithBaseUrl(baseUrl, solrRequest, collection);
-    }
-
-    // Assume provided client already uses 'baseUrl'
-    return solrClient.request(solrRequest, collection);
+    return solrClient.requestWithBaseUrl(baseUrl, solrRequest, collection);
   }
 
   protected Exception doRequest(
@@ -655,28 +641,8 @@ public abstract class LBSolrClient extends SolrClient {
         }
         throw e;
       }
-    } catch (SocketException e) {
-      if (!isNonRetryable || e instanceof ConnectException) {
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else {
-        throw e;
-      }
-    } catch (SocketTimeoutException e) {
-      if (!isNonRetryable) {
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else {
-        throw e;
-      }
-    } catch (SolrServerException e) {
-      Throwable rootCause = e.getRootCause();
-      if (!isNonRetryable
-          && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
-        ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable
-          && (isConnectException(rootCause)
-              || SolrException.hasCause(e, RequestNotSentException.class))) {
-        // Nothing of the request reached the server, so replaying it elsewhere is safe even though
-        // it isn't idempotent.
+    } catch (SolrServerException | IOException e) {
+      if (mayFailOver(baseUrl, e, isNonRetryable)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;
@@ -688,16 +654,25 @@ public abstract class LBSolrClient extends SolrClient {
     return ex;
   }
 
-  protected boolean isConnectException(Throwable t) {
-    if (t instanceof ConnectException || t instanceof HttpConnectTimeoutException) {
+  /**
+   * Whether {@code e} permits trying the next endpoint. A request that isn't safe to replay fails
+   * over only when the transport proves nothing was sent; anything else fails over on any network
+   * failure.
+   */
+  protected boolean mayFailOver(Endpoint endpoint, Exception e, boolean isNonRetryable) {
+    if (getClient(endpoint).wasRequestUnsent(e)) {
       return true;
     }
-    // Check for common connection timeout exceptions by name to avoid hard dependencies on
-    // specific HTTP client libraries (e.g., Jetty or Apache HttpClient).
-    return t != null && t.getClass().getName().endsWith("ConnectTimeoutException");
+    Throwable rootCause = (e instanceof SolrServerException sse) ? sse.getRootCause() : e;
+    return !isNonRetryable
+        && (rootCause instanceof IOException || rootCause instanceof TimeoutException);
   }
 
-  protected abstract SolrClient getClient(Endpoint endpoint);
+  /**
+   * The transport used to reach {@code endpoint}. Declared as an {@link HttpSolrClient} so callers
+   * can ask it to classify its own failures; {@link Builder} already requires one.
+   */
+  protected abstract HttpSolrClient getClient(Endpoint endpoint);
 
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor
