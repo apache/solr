@@ -22,9 +22,12 @@ import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 import java.util.Map;
 import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,7 +40,9 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty(ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    // 2 nodes so that a request can land on a node that does *not* host the collection's only
+    // replica, forcing Solr to internally proxy the request to the node that does.
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
         .process(cluster.getSolrClient());
   }
@@ -78,6 +83,33 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertNotNull(response.znodeVersion);
     assertTrue(response.znodeVersion.overlay >= -1);
     assertTrue(response.znodeVersion.params >= -1);
+  }
+
+  /**
+   * Reproduces a bug where a v2 "/config" request proxied internally to the node actually hosting
+   * the collection fails with "Cannot find API for the path", because Solr forwards such requests
+   * using the short "/c/{collection}/..." alias, but {@code Constants.INDEX_PATH_PREFIX}'s JAX-RS
+   * {@code @Path} regex only recognizes "cores" or "collections", not "c".
+   */
+  @Test
+  public void testGetOverlayFromCollectionViaNonHostingNode() throws Exception {
+    Replica replica = getCollectionState(COLLECTION_NAME).replicaStream().findFirst().orElseThrow();
+    JettySolrRunner hostingJetty = cluster.getReplicaJetty(replica);
+    JettySolrRunner otherJetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(jetty -> !jetty.equals(hostingJetty))
+            .findFirst()
+            .orElseThrow();
+
+    try (var client = new HttpJettySolrClient.Builder(otherJetty.getBaseUrl().toString()).build()) {
+      var request = new ConfigApi.GetOverlay(IndexType.COLLECTION, COLLECTION_NAME);
+      var response = request.process(client);
+
+      assertNotNull(response);
+      assertNull(response.error);
+      assertNotNull(response.overlay);
+      assertTrue(response.overlay.containsKey("znodeVersion"));
+    }
   }
 
   @Test
