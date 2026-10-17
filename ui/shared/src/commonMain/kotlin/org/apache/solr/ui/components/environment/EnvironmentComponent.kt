@@ -17,24 +17,33 @@
 
 package org.apache.solr.ui.components.environment
 
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.environment.data.JavaProperty
-import org.apache.solr.ui.components.environment.data.JvmData
-import org.apache.solr.ui.components.environment.data.Versions
+import org.apache.solr.ui.components.environment.domain.LoadJavaPropertiesUseCase
+import org.apache.solr.ui.components.environment.domain.LoadSystemDataUseCase
+import org.apache.solr.ui.components.environment.repository.EnvironmentRepository
+import org.apache.solr.ui.components.environment.viewmodel.EnvironmentViewModel
 
 /**
  * Component interface that represents the environment section.
  */
 interface EnvironmentComponent {
 
-    val model: StateFlow<Model>
+    /**
+     * Dependencies provided by the application.
+     */
+    val environmentRepository: EnvironmentRepository
 
     /**
-     * State class that holds values of the [EnvironmentComponent]'s sate.
+     * Use case responsible for loading the system data.
      */
-    data class Model(
-        val versions: Versions = Versions(),
-        val jvm: JvmData = JvmData(),
-        val javaProperties: List<JavaProperty> = emptyList(),
-    )
+    val loadSystemDataUseCase: LoadSystemDataUseCase
+
+    /**
+     * Use case responsible for loading the java properties.
+     */
+    val loadJavaPropertiesUseCase: LoadJavaPropertiesUseCase
+
+    /**
+     * Factory method to create a [EnvironmentViewModel] instance.
+     */
+    fun createEnvironmentViewModel(): EnvironmentViewModel
 }

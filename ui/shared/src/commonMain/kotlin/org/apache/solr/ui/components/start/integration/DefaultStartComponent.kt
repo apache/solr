@@ -17,63 +17,38 @@
 
 package org.apache.solr.ui.components.start.integration
 
-import com.arkivanov.mvikotlin.core.instancekeeper.getStore
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import com.arkivanov.mvikotlin.extensions.coroutines.labels
-import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import org.apache.solr.ui.components.start.StartComponent
-import org.apache.solr.ui.components.start.store.StartStore
-import org.apache.solr.ui.components.start.store.StartStore.Intent
-import org.apache.solr.ui.components.start.store.StartStoreProvider
-import org.apache.solr.ui.utils.AppComponentContext
-import org.apache.solr.ui.utils.coroutineScope
-import org.apache.solr.ui.utils.map
+import org.apache.solr.ui.components.start.data.HttpStartRepository
+import org.apache.solr.ui.components.start.domain.ConnectUseCase
+import org.apache.solr.ui.components.start.domain.DefaultConnectUseCase
+import org.apache.solr.ui.components.start.repository.StartRepository
+import org.apache.solr.ui.components.start.viewmodel.StartViewModel
+import org.apache.solr.ui.utils.AppDispatchers
+import org.apache.solr.ui.utils.platformDispatchers
 
+/**
+ * Default implementation of the [StartComponent].
+ *
+ * This implementation is using HTTP for establishing connections.
+ *
+ * @param httpClient The pre-configured HTTP client to use for connection attempts.
+ */
 class DefaultStartComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
     httpClient: HttpClient,
-    output: (StartComponent.Output) -> Unit,
-) : StartComponent,
-    AppComponentContext by componentContext {
+    private val dispatchers: AppDispatchers = platformDispatchers(),
+) : StartComponent {
 
-    private val mainScope = coroutineScope(SupervisorJob() + mainContext)
-    private val ioScope = coroutineScope(SupervisorJob() + ioContext)
-
-    private val store = instanceKeeper.getStore {
-        StartStoreProvider(
-            storeFactory = storeFactory,
-            client = HttpStartStoreClient(httpClient),
-            mainContext = mainScope.coroutineContext,
-            ioContext = ioScope.coroutineContext,
-        ).provide()
+    override val startRepository: StartRepository by lazy {
+        HttpStartRepository(httpClient)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, startStateToModel)
-
-    init {
-        store.labels.onEach { label ->
-            when (label) {
-                is StartStore.Label.AuthRequired -> output(
-                    StartComponent.Output.OnAuthRequired(
-                        url = label.url,
-                        methods = label.methods,
-                    ),
-                )
-
-                is StartStore.Label.Connected ->
-                    output(StartComponent.Output.OnConnected(url = label.url))
-            }
-        }.launchIn(mainScope)
+    override val connectUseCase: ConnectUseCase by lazy {
+        DefaultConnectUseCase(startRepository)
     }
 
-    override fun onSolrUrlChange(url: String) = store.accept(Intent.UpdateSolrUrl(url))
-
-    override fun onConnect() = store.accept(Intent.Connect)
+    override fun createStartViewModel(): StartViewModel = StartViewModel(
+        connectUseCase = connectUseCase,
+        dispatchers = dispatchers,
+    )
 }
