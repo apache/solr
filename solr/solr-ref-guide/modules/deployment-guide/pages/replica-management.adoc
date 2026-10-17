@@ -29,6 +29,47 @@ All of the examples in this section assume you are running the "techproducts" So
 bin/solr start -e techproducts
 ----
 
+[[listreplicas]]
+== List Replicas
+
+Fetch the replicas of a collection shard.
+
+This is a v2-only API. The closest v1 equivalent is xref:cluster-node-management.adoc#clusterstatus[CLUSTERSTATUS].
+
+[tabs#listreplicas-request]
+======
+V2 API::
++
+====
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections/techproducts/shards/shard1/replicas
+----
+====
+======
+
+=== List Replicas Response
+
+The response includes a `replicas` object keyed by replica name (`core_nodeN`). Each entry uses the same replica fields CLUSTERSTATUS already returns. SolrJ provides `ReplicasApi.ListReplicas` for this request.
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":3},
+  "replicas":{
+    "core_node1":{
+      "core":"techproducts_shard1_replica_n1",
+      "base_url":"http://localhost:8983/solr",
+      "node_name":"localhost:8983_solr",
+      "state":"active",
+      "type":"NRT",
+      "leader":true}
+  }
+}
+----
+
 [[addreplica]]
 == ADDREPLICA: Add Replica
 
