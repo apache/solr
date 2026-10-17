@@ -30,6 +30,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.schema.IndexSchema;
@@ -289,12 +290,14 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertTrue(rf.getTransformer() instanceof DocTransformers);
     assertEquals(2, ((DocTransformers) rf.getTransformer()).size());
 
-    rf = new SolrReturnFields(req("fl", "[xxxxx]"));
-    assertFalse(rf.wantsScore());
-    assertTrue(rf.wantsField("[xxxxx]"));
-    assertFalse(rf.wantsField("id"));
-    assertFalse(rf.wantsAllFields());
-    assertNull(rf.getTransformer());
+    SolrException e =
+        expectThrows(SolrException.class, () -> new SolrReturnFields(req("fl", "id,[xxxxx]")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage(), e.getMessage().contains("Unknown DocTransformer: xxxxx"));
+    e =
+        expectThrows(
+            SolrException.class, () -> new SolrReturnFields(req("fl", "alias:[xxxxx foo=bar]")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
 
     // Don't return 'store' just because it is required by the transformer
     rf = new SolrReturnFields(req("fl", "[geo f=store]"));
