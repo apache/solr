@@ -1,5 +1,5 @@
 title:
-   Added JAX-RS enabled V2 APIs for missing Replication endpoints
+   Add V2 JAX-RS API for replication details (GET /api/cores/{coreName}/replication)
 type: added
 authors:
   - name: Jalaz Kumar

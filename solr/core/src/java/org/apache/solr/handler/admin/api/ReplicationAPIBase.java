@@ -98,7 +98,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       throws IOException {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
-    return null;
+    return replicationHandler.getReplicationDetails(showFollowerDetails);
   }
 
   protected IndexVersionResponse doFetchIndexVersion() throws IOException {
