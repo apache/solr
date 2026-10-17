@@ -65,16 +65,17 @@ abstract class ChangesToHtmlTask extends DefaultTask {
   def script
 
   def toHtml() {
-    def output = new ByteArrayOutputStream()
-
-    // Check if Python is available
-    if (!pythonExists()) {
-      logger.warn("WARNING: Python is not installed, skipping creating Changes.html")
-      return
+    def py3Executable = project.externalTool("python3")
+    // Fail here so a missing interpreter is not reported as a later broken-link error.
+    if (!pythonExists(py3Executable)) {
+      throw new GradleException(
+          "python3 is required to generate Changes.html (resolved: ${py3Executable}). " +
+          "Install Python 3 or pass -Ppython3.exe=/path/to/python")
     }
 
+    def output = new ByteArrayOutputStream()
     def result = execOperations.exec {
-      executable "python3"
+      executable py3Executable
       standardOutput project.file("${targetDir.get().getAsFile()}/Changes.html").newOutputStream()
       errorOutput = output
       ignoreExitValue = true
@@ -105,9 +106,9 @@ abstract class ChangesToHtmlTask extends DefaultTask {
     }
   }
 
-  def pythonExists() {
+  def pythonExists(String py3Executable) {
     try {
-      def process = "python3 --version".execute()
+      def process = [py3Executable, "--version"].execute()
       process.waitFor()
       return process.exitValue() == 0
     } catch (Exception e) {
