@@ -1,0 +1,8 @@
+title: >
+  Pivot faceting now checks the request's query limits (timeAllowed, cpuAllowed, memAllowed) between pivot values, returning partial results instead of continuing to build the whole pivot tree after the limit is exceeded.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-6831
+    url: https://issues.apache.org/jira/browse/SOLR-6831
