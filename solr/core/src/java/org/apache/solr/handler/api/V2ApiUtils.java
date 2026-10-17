@@ -23,12 +23,15 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.response.PrometheusResponseWriter;
@@ -120,7 +123,7 @@ public class V2ApiUtils {
             if (trimHeader && kStr.equals("responseHeader")) {
               return null;
             }
-            destination.add(kStr, value);
+            destination.add(kStr, convertReflectWriteableValue(value));
             return this; // returning "this" means we can't use a lambda :-(
           }
         };
@@ -134,5 +137,21 @@ public class V2ApiUtils {
           final JsonProperty prop = field.getAnnotation(JsonProperty.class);
           return prop.value().isEmpty() ? field.getName() : prop.value();
         });
+  }
+
+  private static Object convertReflectWriteableValue(Object value) {
+    if (value instanceof ReflectWritable) {
+      NamedList<Object> result = new SimpleOrderedMap<>();
+      squashObjectIntoNamedList(result, value, true);
+      return result;
+    }
+    if (value instanceof List<?> list) {
+      List<Object> objects = new ArrayList<>(list.size());
+      for (Object item : list) {
+        objects.add(convertReflectWriteableValue(item));
+      }
+      return objects;
+    }
+    return value;
   }
 }

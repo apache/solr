@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +33,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -68,6 +71,33 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     final var queryResponse = new SolrQueryResponse();
     coreReplicationAPI = new CoreReplicationAPIMock(mockCore, mockQueryRequest, queryResponse);
+  }
+
+  @Test
+  public void testFetchReplicationDetails() {
+    ReplicationDetails details = new ReplicationDetails();
+    details.isLeader = true;
+    details.isFollower = false;
+    details.indexVersion = 42L;
+    details.generation = 7L;
+    ReplicationDetailsResponse expectedResponse =
+        new ReplicationDetailsResponse(details, Response.Status.OK.getReasonPhrase());
+
+    when(mockReplicationHandler.getReplicationDetails(true)).thenReturn(expectedResponse);
+    when(mockReplicationHandler.getReplicationDetails(false)).thenReturn(expectedResponse);
+
+    ReplicationDetailsResponse withDefaultFollower =
+        coreReplicationAPI.fetchReplicationDetails(null);
+    assertSame(expectedResponse, withDefaultFollower);
+    assertTrue(withDefaultFollower.details.isLeader);
+    assertEquals(Long.valueOf(42L), withDefaultFollower.details.indexVersion);
+
+    ReplicationDetailsResponse withFollowerTrue = coreReplicationAPI.fetchReplicationDetails(true);
+    assertSame(expectedResponse, withFollowerTrue);
+
+    ReplicationDetailsResponse withFollowerFalse =
+        coreReplicationAPI.fetchReplicationDetails(false);
+    assertSame(expectedResponse, withFollowerFalse);
   }
 
   @Test
