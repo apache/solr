@@ -1,0 +1,14 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  The v2 `/api/metrics` endpoint no longer rejects standard `Accept` headers. It compared the whole
+  header against a single content type, so a Prometheus scrape (and anything sending `*/*`) got
+  HTTP 400. The header is now parsed as the list of media ranges it is, and OpenMetrics is served
+  when the client asks for it.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: GITHUB#4210
+    url: https://github.com/apache/solr/pull/4210

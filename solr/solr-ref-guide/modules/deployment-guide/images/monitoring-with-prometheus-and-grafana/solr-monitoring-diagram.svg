@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="560" viewBox="0 0 860 560" font-family="Arial, Helvetica, sans-serif">
+
+  <defs>
+    <marker id="arrow-grey" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#757575"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#388E3C"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#1565C0"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6A1B9A"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#00000022"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="860" height="560" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text x="430" y="30" text-anchor="middle" font-size="17" font-weight="bold" fill="#212121">Solr 10.x Monitoring Architecture</text>
+
+  <!-- SolrCloud Cluster background box -->
+  <rect x="100" y="50" width="490" height="145" rx="10" ry="10"
+        fill="#e3f2fd" stroke="#90CAF9" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="345" y="68" text-anchor="middle" font-size="12" font-weight="bold" fill="#1565C0">SolrCloud Cluster</text>
+
+  <!-- Solr Node 1 -->
+  <rect x="115" y="75" width="140" height="100" rx="8" ry="8"
+        fill="#e8f4f8" stroke="#2196F3" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="185" cy="103" r="14" fill="#2196F3"/>
+  <text x="185" y="108" text-anchor="middle" font-size="11" font-weight="bold" fill="white">S</text>
+  <text x="185" y="127" text-anchor="middle" font-size="12" font-weight="bold" fill="#0D47A1">Node 1</text>
+  <text x="185" y="143" text-anchor="middle" font-size="10" fill="#1565C0">:8983/api/metrics</text>
+  <text x="185" y="158" text-anchor="middle" font-size="10" fill="#1565C0">OTLP gRPC :4317</text>
+
+  <!-- Solr Node 2 -->
+  <rect x="335" y="75" width="140" height="100" rx="8" ry="8"
+        fill="#e8f4f8" stroke="#2196F3" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="405" cy="103" r="14" fill="#2196F3"/>
+  <text x="405" y="108" text-anchor="middle" font-size="11" font-weight="bold" fill="white">S</text>
+  <text x="405" y="127" text-anchor="middle" font-size="12" font-weight="bold" fill="#0D47A1">Node 2</text>
+  <text x="405" y="143" text-anchor="middle" font-size="10" fill="#1565C0">:8983/api/metrics</text>
+  <text x="405" y="158" text-anchor="middle" font-size="10" fill="#1565C0">OTLP gRPC :4317</text>
+
+  <!-- OTel Collector -->
+  <rect x="650" y="62" width="175" height="118" rx="8" ry="8"
+        fill="#e8f5e9" stroke="#4CAF50" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="737" cy="92" r="14" fill="#4CAF50"/>
+  <text x="737" y="97" text-anchor="middle" font-size="10" font-weight="bold" fill="white">OTel</text>
+  <text x="737" y="116" text-anchor="middle" font-size="12" font-weight="bold" fill="#1B5E20">OTel Collector</text>
+  <text x="737" y="132" text-anchor="middle" font-size="10" fill="#2E7D32">OTLP receiver</text>
+  <text x="737" y="148" text-anchor="middle" font-size="10" fill="#2E7D32">Prometheus exporter</text>
+  <text x="737" y="164" text-anchor="middle" font-size="10" fill="#2E7D32">OTLP exporter</text>
+
+  <!-- Prometheus -->
+  <rect x="255" y="240" width="155" height="95" rx="8" ry="8"
+        fill="#fff3e0" stroke="#FF9800" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="332" cy="267" r="14" fill="#FF9800"/>
+  <text x="332" y="272" text-anchor="middle" font-size="11" font-weight="bold" fill="white">P</text>
+  <text x="332" y="292" text-anchor="middle" font-size="12" font-weight="bold" fill="#E65100">Prometheus</text>
+  <text x="332" y="308" text-anchor="middle" font-size="10" fill="#BF360C">scrape + store</text>
+  <text x="332" y="323" text-anchor="middle" font-size="10" fill="#BF360C">PromQL alerts</text>
+
+  <!-- Grafana -->
+  <rect x="100" y="390" width="145" height="95" rx="8" ry="8"
+        fill="#fce4ec" stroke="#E91E63" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="172" cy="415" r="14" fill="#E91E63"/>
+  <text x="172" y="420" text-anchor="middle" font-size="11" font-weight="bold" fill="white">G</text>
+  <text x="172" y="440" text-anchor="middle" font-size="12" font-weight="bold" fill="#880E4F">Grafana</text>
+  <text x="172" y="456" text-anchor="middle" font-size="10" fill="#AD1457">Dashboards</text>
+  <text x="172" y="471" text-anchor="middle" font-size="10" fill="#AD1457">Explore / Alerts</text>
+
+  <!-- Alertmanager -->
+  <rect x="435" y="390" width="160" height="95" rx="8" ry="8"
+        fill="#f3e5f5" stroke="#9C27B0" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="515" cy="415" r="14" fill="#9C27B0"/>
+  <text x="515" y="420" text-anchor="middle" font-size="11" font-weight="bold" fill="white">A</text>
+  <text x="515" y="440" text-anchor="middle" font-size="12" font-weight="bold" fill="#4A148C">Alertmanager</text>
+  <text x="515" y="456" text-anchor="middle" font-size="10" fill="#6A1B9A">route + dedupe</text>
+  <text x="515" y="471" text-anchor="middle" font-size="10" fill="#6A1B9A">silence rules</text>
+
+  <!-- Other backends box -->
+  <rect x="650" y="230" width="175" height="80" rx="8" ry="8"
+        fill="#f5f5f5" stroke="#9E9E9E" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="737" y="260" text-anchor="middle" font-size="11" font-weight="bold" fill="#424242">Other Backends</text>
+  <text x="737" y="284" text-anchor="middle" font-size="10" fill="#616161">OTLP-compatible backends</text>
+
+  <!-- Notification targets -->
+  <rect x="435" y="508" width="160" height="40" rx="6" ry="6"
+        fill="white" stroke="#BDBDBD" stroke-width="1.5"/>
+  <text x="515" y="533" text-anchor="middle" font-size="10" fill="#424242">email, chat, paging, webhooks</text>
+
+  <!-- User / person icon below Grafana -->
+  <circle cx="172" cy="515" r="10" fill="#E91E63" opacity="0.8"/>
+  <path d="M152 546 Q172 530 192 546" stroke="#E91E63" stroke-width="2" fill="none" opacity="0.8"/>
+  <text x="172" y="554" text-anchor="middle" font-size="10" fill="#880E4F">User / Ops Team</text>
+
+  <!-- ARROWS -->
+
+  <!-- Prometheus scrape to Node 1 (dashed blue) -->
+  <path d="M 255,275 C 210,275 185,240 185,175"
+        fill="none" stroke="#1565C0" stroke-width="1.8"
+        stroke-dasharray="7,4" marker-end="url(#arrow-blue)"/>
+
+  <!-- Prometheus scrape to Node 2 (dashed blue) -->
+  <path d="M 332,240 C 332,210 405,210 405,175"
+        fill="none" stroke="#1565C0" stroke-width="1.8"
+        stroke-dasharray="7,4" marker-end="url(#arrow-blue)"/>
+
+  <!-- Scrape label -->
+  <text x="215" y="218" font-size="10" fill="#1565C0" font-style="italic">scrape /api/metrics</text>
+
+  <!-- Node 1 OTLP push to OTel Collector (solid green) -->
+  <path d="M 255,118 C 440,118 540,110 650,110"
+        fill="none" stroke="#388E3C" stroke-width="2"
+        marker-end="url(#arrow-green)"/>
+
+  <!-- Node 2 OTLP push to OTel Collector (solid green) -->
+  <path d="M 475,128 C 560,128 600,130 650,130"
+        fill="none" stroke="#388E3C" stroke-width="2"
+        marker-end="url(#arrow-green)"/>
+
+  <!-- OTLP push label -->
+  <text x="530" y="105" font-size="10" fill="#2E7D32" font-style="italic">OTLP push</text>
+
+  <!-- OTel Collector to Prometheus (grey) -->
+  <path d="M 700,180 C 680,220 490,250 410,270"
+        fill="none" stroke="#757575" stroke-width="1.8"
+        marker-end="url(#arrow-grey)"/>
+  <text x="582" y="215" font-size="10" fill="#424242" font-style="italic">Prom. exporter</text>
+
+  <!-- OTel Collector to Other backends (grey, downward) -->
+  <path d="M 737,180 L 737,230"
+        fill="none" stroke="#757575" stroke-width="1.8"
+        marker-end="url(#arrow-grey)"/>
+
+  <!-- Prometheus to Grafana (grey) -->
+  <path d="M 290,335 C 270,365 200,375 172,390"
+        fill="none" stroke="#757575" stroke-width="1.8"
+        marker-end="url(#arrow-grey)"/>
+
+  <!-- Prometheus to Alertmanager (grey) -->
+  <path d="M 380,335 C 420,365 480,375 515,390"
+        fill="none" stroke="#757575" stroke-width="1.8"
+        marker-end="url(#arrow-grey)"/>
+
+  <!-- Alertmanager to Notifications (purple) -->
+  <path d="M 515,485 L 515,508"
+        fill="none" stroke="#6A1B9A" stroke-width="1.8"
+        marker-end="url(#arrow-purple)"/>
+
+  <!-- Grafana to User (grey) -->
+  <path d="M 172,485 L 172,503"
+        fill="none" stroke="#E91E63" stroke-width="1.5"
+        marker-end="url(#arrow-grey)"/>
+
+  <!-- LEGEND -->
+  <rect x="610" y="468" width="230" height="72" rx="6" ry="6"
+        fill="white" stroke="#BDBDBD" stroke-width="1.5"/>
+  <text x="622" y="485" font-size="11" font-weight="bold" fill="#212121">Legend</text>
+
+  <!-- Prometheus pull legend line -->
+  <line x1="622" y1="502" x2="659" y2="502" stroke="#1565C0" stroke-width="2" stroke-dasharray="6,3"/>
+  <polygon points="659,498.5 668,502 659,505.5" fill="#1565C0"/>
+  <text x="674" y="506" font-size="10" fill="#212121">Prometheus pull (scrape)</text>
+
+  <!-- OTLP push legend line -->
+  <line x1="622" y1="524" x2="659" y2="524" stroke="#388E3C" stroke-width="2"/>
+  <polygon points="659,520.5 668,524 659,527.5" fill="#388E3C"/>
+  <text x="674" y="528" font-size="10" fill="#212121">OTLP push</text>
+
+</svg>
