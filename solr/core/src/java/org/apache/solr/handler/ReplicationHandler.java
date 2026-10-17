@@ -77,6 +77,10 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse.CommitDetails;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetails;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -1021,20 +1025,17 @@ public class ReplicationHandler extends RequestHandlerBase
   // there a core set of values that are required to make a response here useful?
   /** Used for showing statistics and progress information. */
   public ReplicationDetailsResponse getReplicationDetails(boolean showFollowerDetails) {
-    ReplicationDetailsResponse.ReplicationDetails details =
-        new ReplicationDetailsResponse.ReplicationDetails();
-    ReplicationDetailsResponse.LeaderDetails leader =
-        new ReplicationDetailsResponse.LeaderDetails();
-    ReplicationDetailsResponse.FollowerDetails follower =
-        new ReplicationDetailsResponse.FollowerDetails();
+    ReplicationDetails details = new ReplicationDetails();
+    LeaderDetails leader = new LeaderDetails();
+    FollowerDetails follower = new FollowerDetails();
 
     boolean shouldFollowerBePopulated = false;
 
     details.indexSize = NumberUtils.readableSize(core.getIndexSize());
     details.indexPath = core.getIndexDir();
     details.commits = getCommitDetails();
-    details.isLeader = String.valueOf(isLeader);
-    details.isFollower = String.valueOf(isFollower);
+    details.isLeader = isLeader;
+    details.isFollower = isFollower;
     CommitVersionInfo vInfo = getIndexVersion();
     details.indexVersion = null == vInfo ? 0 : vInfo.version;
     details.generation = null == vInfo ? 0 : vInfo.generation;
@@ -1044,7 +1045,7 @@ public class ReplicationHandler extends RequestHandlerBase
     if (isLeader) {
       if (includeConfFiles != null) leader.confFiles = includeConfFiles;
       leader.replicateAfter = getReplicateAfterStrings();
-      leader.replicationEnabled = String.valueOf(replicationEnabled.get());
+      leader.replicationEnabled = replicationEnabled.get();
     }
 
     if (isLeader && commit != null) {
@@ -1079,9 +1080,9 @@ public class ReplicationHandler extends RequestHandlerBase
       addReplicationProperties(follower, props);
 
       follower.currentDate = new Date().toString();
-      follower.isPollingDisabled = String.valueOf(isPollingDisabled());
+      follower.isPollingDisabled = isPollingDisabled();
       boolean isReplicating = isReplicating();
-      follower.isReplicating = String.valueOf(isReplicating);
+      follower.isReplicating = isReplicating;
       if (isReplicating) {
         try {
           long bytesToDownload = 0;
@@ -1171,8 +1172,7 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("unchecked")
-  private void addReplicationProperties(
-      ReplicationDetailsResponse.FollowerDetails followerDetails, Properties props) {
+  private void addReplicationProperties(FollowerDetails followerDetails, Properties props) {
     addVal(
         v -> followerDetails.indexReplicatedAt = (String) v,
         IndexFetcher.INDEX_REPLICATED_AT,
@@ -1231,11 +1231,10 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("unchecked")
-  private List<ReplicationDetailsResponse.CommitDetails> getCommitDetails() {
-    List<ReplicationDetailsResponse.CommitDetails> commits = new ArrayList<>();
+  private List<CommitDetails> getCommitDetails() {
+    List<CommitDetails> commits = new ArrayList<>();
     for (NamedList<Object> namedList : getCommits()) {
-      ReplicationDetailsResponse.CommitDetails commitDetail =
-          new ReplicationDetailsResponse.CommitDetails();
+      CommitDetails commitDetail = new CommitDetails();
       commitDetail.indexVersion = (Long) namedList.get("indexVersion");
       commitDetail.generation = (Long) namedList.get(GENERATION);
       commitDetail.filelist = (List<String>) namedList.get(CMD_GET_FILE_LIST);
