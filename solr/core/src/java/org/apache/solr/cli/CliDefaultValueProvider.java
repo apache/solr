@@ -16,21 +16,36 @@
  */
 package org.apache.solr.cli;
 
+import java.lang.reflect.Field;
 import org.apache.solr.common.util.EnvUtils;
 import picocli.CommandLine;
 
-/** Provides default values for CLI arguments. */
+/**
+ * Fills picocli options from the environment (solr.in.sh variables, system properties) when they
+ * are not given on the command line, keyed by the option's long name.
+ */
 public class CliDefaultValueProvider implements CommandLine.IDefaultValueProvider {
+
   @Override
   public String defaultValue(CommandLine.Model.ArgSpec argSpec) throws Exception {
-    return switch (argSpec.paramLabel()) {
-      case "<zkHost>" -> EnvUtils.getProperty("zkHost");
-      case "<solrConnection>" -> EnvUtils.getProperty("solr.connection");
-      case "<solrUrl>" -> EnvUtils.getProperty("solr.url");
+    if (!(argSpec instanceof CommandLine.Model.OptionSpec option)) {
+      return null;
+    }
+    return switch (option.longestName()) {
+      case "--zk-host" -> EnvUtils.getProperty("zkHost");
+      case "--solr-connection" -> EnvUtils.getProperty("solr.connection");
+      // Only the shared option means a base URL; a tool's own --solr-url (ApiTool's full endpoint
+      // URL) must not be filled from SOLR_URL
+      case "--solr-url" ->
+          declaredIn(option, ConnectionOptions.class) ? EnvUtils.getProperty("solr.url") : null;
       // Must match CLIUtils.getDefaultSolrUrl(), which reads solr.port.listen
-      case "<port>" -> EnvUtils.getProperty("solr.port.listen", "8983");
-      case "<maxWaitSecs>" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
+      case "--port" -> EnvUtils.getProperty("solr.port.listen", "8983");
+      case "--max-wait-secs" -> EnvUtils.getProperty("solr.max.wait.seconds", "0");
       default -> null;
     };
+  }
+
+  private static boolean declaredIn(CommandLine.Model.OptionSpec option, Class<?> holder) {
+    return option.userObject() instanceof Field field && field.getDeclaringClass() == holder;
   }
 }

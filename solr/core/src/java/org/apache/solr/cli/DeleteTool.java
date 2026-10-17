@@ -24,12 +24,10 @@ import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.EnvUtils;
 
 /** Supports delete command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -93,16 +91,11 @@ public class DeleteTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      description = "Name of the core / collection to delete.")
-  private String name;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   @picocli.CommandLine.Option(
       names = {"--delete-config"},
@@ -164,30 +157,11 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHostArg =
-        (connectionOptions != null)
-            ? connectionOptions.effectiveZkHost()
-            : EnvUtils.getProperty("zkHost");
-    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
-    String credentials = (credentialsOptions != null) ? credentialsOptions.credentials : null;
-
-    String resolvedSolrUrl;
-    if (solrUrlArg != null) {
-      resolvedSolrUrl = CLIUtils.normalizeSolrUrl(solrUrlArg);
-    } else if (zkHostArg != null) {
-      resolvedSolrUrl =
-          CLIUtils.solrUrlFromConnection(
-              CloudSolrClient.CloudSolrClientConnection.parse(zkHostArg), credentials);
-    } else {
-      resolvedSolrUrl = CLIUtils.getDefaultSolrUrl();
-      CLIO.err(
-          "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
-              + resolvedSolrUrl
-              + ".");
-    }
+    String credentials = credentialsOptions.credentials;
+    String resolvedSolrUrl = connectionOptions.resolveSolrUrl(credentials);
 
     try (var solrClient = CLIUtils.getSolrClient(resolvedSolrUrl, credentials)) {
-      delete(new DeleteParams(name, deleteConfig), solrClient);
+      delete(new DeleteParams(collectionNameOptions.name, deleteConfig), solrClient);
     }
     return 0;
   }

@@ -126,16 +126,11 @@ public class CreateTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      description = "Name of collection or core to create.")
-  private String name;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   @picocli.CommandLine.Option(
       names = {"-sh", "--shards"},
@@ -440,47 +435,34 @@ public class CreateTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHostArg =
-        (connectionOptions != null)
-            ? connectionOptions.effectiveZkHost()
-            : EnvUtils.getProperty("zkHost");
-    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
+    String credentials = credentialsOptions.credentials;
+    var namedConnection = connectionOptions.namedConnection();
 
-    if (zkHostArg != null) {
+    if (namedConnection != null && namedConnection.isZookeeper()) {
       CreateParams params =
           new CreateParams(
-              name,
+              collectionNameOptions.name,
               confDir,
               confName,
               null,
               false,
-              credentialsOptions.credentials,
+              credentials,
               shards,
               replicationFactor);
-      createCollection(zkHostArg, params);
+      createCollection(connectionOptions.resolveZkHost(credentials), params);
     } else {
-      String resolvedSolrUrl;
-      if (solrUrlArg != null) {
-        resolvedSolrUrl = CLIUtils.normalizeSolrUrl(solrUrlArg);
-      } else {
-        resolvedSolrUrl = CLIUtils.getDefaultSolrUrl();
-        CLIO.err(
-            "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
-                + resolvedSolrUrl
-                + ".");
-      }
+      String resolvedSolrUrl = connectionOptions.resolveSolrUrl(credentials);
       CreateParams params =
           new CreateParams(
-              name,
+              collectionNameOptions.name,
               confDir,
               confName,
               resolvedSolrUrl,
-              solrUrlArg != null,
-              credentialsOptions.credentials,
+              connectionOptions.hasExplicitConnection(),
+              credentials,
               shards,
               replicationFactor);
-      try (var solrClient =
-          CLIUtils.getSolrClient(resolvedSolrUrl, credentialsOptions.credentials)) {
+      try (var solrClient = CLIUtils.getSolrClient(resolvedSolrUrl, credentials)) {
         Map<String, Object> status = StatusTool.reportStatus(solrClient);
         @SuppressWarnings("unchecked")
         Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
