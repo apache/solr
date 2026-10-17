@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
@@ -435,6 +437,23 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
 
     System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
+  }
+
+  /** Replica assignment for a collection that does not exist, as a concurrent delete can cause. */
+  @Test
+  public void testAssignForMissingCollection() {
+    Assign.AssignRequest request =
+        new Assign.AssignRequestBuilder()
+            .forCollection("missingCollection")
+            .forShard(List.of("shard1"))
+            .assignNrtReplicas(1)
+            .build();
+
+    Assign.AssignmentException e =
+        expectThrows(
+            Assign.AssignmentException.class,
+            () -> Assign.createAssignStrategy(cc).assign(cloudManager, request));
+    assertTrue(e.getMessage(), e.getMessage().contains("missingCollection"));
   }
 
   @Test
