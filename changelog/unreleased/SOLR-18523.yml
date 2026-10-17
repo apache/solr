@@ -1,0 +1,7 @@
+title: "Remove the checkJavadocLinks crawl from the documentation build"
+type: other
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18523
+    url: https://issues.apache.org/jira/browse/SOLR-18523
