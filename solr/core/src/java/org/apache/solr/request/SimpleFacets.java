@@ -180,7 +180,7 @@ public class SimpleFacets {
     String facetValue = param;
     String key = param;
     List<String> tags = List.of();
-    int threads = -1;
+    int threads = 1; // a negative value would mean one thread per segment for facet.method=fcs
 
     if (localParams == null) {
       SolrParams params = global;
