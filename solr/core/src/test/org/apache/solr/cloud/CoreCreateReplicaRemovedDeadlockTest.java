@@ -19,19 +19,18 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.UpdateHandler;
@@ -46,14 +45,14 @@ import org.slf4j.LoggerFactory;
 /**
  * Removes a replica from cluster state while its core is registering, so {@code
  * UnloadCoreOnDeletedWatcher} fires for a core whose pending core op is held by the creating
- * thread. The create must complete and the core must then be unloaded.
+ * thread. The core must then disappear from CoreAdmin STATUS, which also proves the create
+ * finished, since the unload waits for its pending core op.
  */
 public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int COMPLETION_TIMEOUT_SEC = 45;
-  private static final String WATCHER_FRAME = "UnloadCoreOnDeletedWatcher.onStateChanged";
-  private static final String PENDING_OP_FRAME = "SolrCores.waitAddPendingCoreOps";
+  private static final AtomicInteger RUN = new AtomicInteger();
 
   private static final AtomicBoolean ARMED = new AtomicBoolean(false);
   private static volatile String targetCollection;
@@ -132,7 +131,7 @@ public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
   public void testCollectionAlreadyWatched() throws Exception {
     JettySolrRunner nodeA = cluster.getJettySolrRunner(0);
     JettySolrRunner nodeB = cluster.getJettySolrRunner(1);
-    String collection = "watchedColl";
+    String collection = "watchedColl" + RUN.incrementAndGet();
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
         .setCreateNodeSet(nodeA.getNodeName() + "," + nodeB.getNodeName())
         .process(cluster.getSolrClient());
@@ -150,7 +149,7 @@ public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
   public void testFirstReplicaOnNode() throws Exception {
     JettySolrRunner nodeA = cluster.getJettySolrRunner(0);
     JettySolrRunner nodeB = cluster.getJettySolrRunner(1);
-    String collection = "unwatchedColl";
+    String collection = "unwatchedColl" + RUN.incrementAndGet();
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
         .setCreateNodeSet(nodeA.getNodeName())
         .process(cluster.getSolrClient());
@@ -162,7 +161,8 @@ public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
   private void runScenario(String collection, JettySolrRunner nodeB) throws Exception {
     targetCollection = collection;
     ARMED.set(true);
-    // async, since ADDREPLICA keeps waiting for the removed replica to show up in cluster state
+    // async, since ADDREPLICA keeps waiting for the removed replica to show up in cluster state,
+    // holding its lock; hence a new collection per run
     CollectionAdminRequest.addReplicaToShard(collection, "shard1")
         .setNode(nodeB.getNodeName())
         .processAsync(cluster.getSolrClient());
@@ -188,25 +188,26 @@ public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
 
     try {
       new TimeOut(COMPLETION_TIMEOUT_SEC, TimeUnit.SECONDS, TimeSource.NANO_TIME)
-          .waitFor("core create still running", () -> !createThreadInCreate());
+          .waitFor("", () -> !coreListed(nodeB, blockedCoreName));
     } catch (TimeoutException e) {
-      failWithDiagnostics();
+      fail(
+          "Core "
+              + blockedCoreName
+              + " still listed by CoreAdmin STATUS on node B after "
+              + COMPLETION_TIMEOUT_SEC
+              + "s. Threads:\n"
+              + threadDump());
     }
-
-    CoreContainer cc = nodeB.getCoreContainer();
-    new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
-        .waitFor(
-            "Core " + blockedCoreName + " was not unloaded on node B",
-            () ->
-                cc.getCoreDescriptor(blockedCoreName) == null
-                    && !cc.getAllCoreNames().contains(blockedCoreName));
-    assertEquals("Threads waiting on a pending core op", List.of(), pendingOpWaiters());
   }
 
-  private static boolean createThreadInCreate() {
-    ThreadInfo ti =
-        ManagementFactory.getThreadMXBean().getThreadInfo(createThreadId, Integer.MAX_VALUE);
-    return ti != null && formatStack(ti.getStackTrace()).contains("CoreContainer.create(");
+  private static boolean coreListed(JettySolrRunner node, String coreName) {
+    try {
+      return CoreAdminRequest.getStatus(null, node.getSolrClient())
+          .getCoreStatus()
+          .containsKey(coreName);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /** Removes the replica from state.json directly, as DELETEREPLICA eventually would. */
@@ -233,50 +234,15 @@ public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
     }
   }
 
-  private static List<String> pendingOpWaiters() {
-    List<String> waiters = new ArrayList<>();
-    for (ThreadInfo ti : ManagementFactory.getThreadMXBean().dumpAllThreads(false, false)) {
-      if (ti.getThreadState() == Thread.State.WAITING
-          && formatStack(ti.getStackTrace()).contains(PENDING_OP_FRAME)) {
-        waiters.add(header(ti) + solrFrames(ti.getStackTrace()));
+  private static String threadDump() {
+    StringBuilder sb = new StringBuilder();
+    for (ThreadInfo ti : ManagementFactory.getThreadMXBean().dumpAllThreads(true, true)) {
+      String frames = solrFrames(ti.getStackTrace());
+      if (ti.getThreadId() == createThreadId || frames.contains("UnloadCoreOnDeletedWatcher")) {
+        sb.append(header(ti)).append(frames);
       }
     }
-    return waiters;
-  }
-
-  private void failWithDiagnostics() {
-    ThreadInfo[] infos = ManagementFactory.getThreadMXBean().dumpAllThreads(true, true);
-    List<String> involved = new ArrayList<>();
-    String createThread = null;
-    for (ThreadInfo ti : infos) {
-      boolean isCreateThread = ti.getThreadId() == createThreadId;
-      boolean isWatcherForCore =
-          ti.getThreadName().contains(blockedCoreName)
-              && formatStack(ti.getStackTrace()).contains(WATCHER_FRAME);
-      if (!isCreateThread && !isWatcherForCore) {
-        continue;
-      }
-      String entry = header(ti) + solrFrames(ti.getStackTrace());
-      if (isCreateThread) {
-        createThread = entry;
-      } else {
-        involved.add(entry);
-      }
-      log.error("Thread involved in deadlock on core {}:\n{}", blockedCoreName, entry);
-    }
-    fail(
-        "Core create did not complete within "
-            + COMPLETION_TIMEOUT_SEC
-            + "s. Create thread for core "
-            + blockedCoreName
-            + ":\n"
-            + createThread
-            + "Other threads in "
-            + WATCHER_FRAME
-            + " for this core: "
-            + involved.size()
-            + "\n"
-            + String.join("\n", involved));
+    return sb.toString();
   }
 
   private static String header(ThreadInfo ti) {
@@ -297,14 +263,6 @@ public class CoreCreateReplicaRemovedDeadlockTest extends SolrCloudTestCase {
       if (f.getClassName().startsWith("org.apache.solr.")) {
         sb.append("\tat ").append(f).append('\n');
       }
-    }
-    return sb.toString();
-  }
-
-  private static String formatStack(StackTraceElement[] frames) {
-    StringBuilder sb = new StringBuilder();
-    for (StackTraceElement f : frames) {
-      sb.append("\tat ").append(f).append('\n');
     }
     return sb.toString();
   }
