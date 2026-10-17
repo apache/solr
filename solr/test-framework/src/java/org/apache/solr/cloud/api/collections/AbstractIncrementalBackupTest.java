@@ -303,6 +303,73 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   @Test
+  public void testHiddenFileInShardBackupMetadataDir() throws Exception {
+    setTestSuffix("testHiddenFileInShardBackupMetadataDir");
+    final String backupCollectionName = getCollectionName();
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    indexDocs(backupCollectionName, true);
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      for (int i = 0; i < 3; i++) {
+        RequestStatusState state =
+            CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+                .setLocation(backupLocation)
+                .setRepositoryName(BACKUP_REPO_NAME)
+                .processAndWait(solrClient, 100);
+        assertEquals(RequestStatusState.COMPLETED, state);
+      }
+
+      URI backupUri =
+          repository.resolveDirectory(
+              repository.createDirectoryURI(backupLocation), backupName, backupCollectionName);
+      URI shardBackupMetadataDir =
+          new BackupFilePaths(repository, backupUri).getShardBackupMetadataDir();
+      try (OutputStream out =
+          repository.createOutput(repository.resolve(shardBackupMetadataDir, ".DS_Store"))) {
+        out.write(1);
+      }
+
+      CollectionAdminResponse response =
+          CollectionAdminRequest.deleteBackupById(backupName, 0)
+              .setRepositoryName(BACKUP_REPO_NAME)
+              .setLocation(backupLocation)
+              .process(solrClient);
+      assertEquals(0, response.getResponse()._get("deleted[0]/backupId"));
+
+      response =
+          CollectionAdminRequest.deleteBackupByRecency(backupName, 1)
+              .setRepositoryName(BACKUP_REPO_NAME)
+              .setLocation(backupLocation)
+              .process(solrClient);
+      assertEquals(1, response.getResponse()._get("deleted[0]/backupId"));
+
+      RequestStatusState state =
+          CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+              .setLocation(backupLocation)
+              .setMaxNumberBackupPoints(1)
+              .setRepositoryName(BACKUP_REPO_NAME)
+              .processAndWait(solrClient, 100);
+      assertEquals(RequestStatusState.COMPLETED, state);
+
+      response =
+          CollectionAdminRequest.listBackup(backupName)
+              .setBackupLocation(backupLocation)
+              .setBackupRepository(BACKUP_REPO_NAME)
+              .process(solrClient);
+      List<Map<String, Object>> backups =
+          (List<Map<String, Object>>) response.getResponse().get("backups");
+      assertEquals(List.of(3), backups.stream().map(b -> b.get("backupId")).toList());
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
   @Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
