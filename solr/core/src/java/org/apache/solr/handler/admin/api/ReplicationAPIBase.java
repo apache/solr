@@ -48,6 +48,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -91,6 +92,12 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     this.solrCore = solrCore;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
+  }
+
+  protected ReplicationDetailsResponse doFetchReplicationDetails(boolean showFollowerDetails) throws IOException {
+    ReplicationHandler replicationHandler =
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+    return null;
   }
 
   protected IndexVersionResponse doFetchIndexVersion() throws IOException {

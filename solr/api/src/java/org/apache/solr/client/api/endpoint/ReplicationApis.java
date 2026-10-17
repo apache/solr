@@ -31,10 +31,22 @@ import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
 @Path("/cores/{coreName}/replication")
 public interface ReplicationApis {
+
+  @GET
+  @CoreApiParameters
+  @Operation(
+      summary = "Return replication configuration and current status.",
+      tags = {"replication"})
+  ReplicationDetailsResponse fetchReplicationDetails(
+      @Parameter(description = "When true on a follower, include nested details fetched from leader", required = false)
+      @QueryParam("follower")
+          @DefaultValue("true")
+      Boolean follower);
 
   @GET
   @CoreApiParameters

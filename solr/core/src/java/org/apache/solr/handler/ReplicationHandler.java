@@ -62,7 +62,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.zip.Adler32;
@@ -77,6 +76,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -324,7 +324,10 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       populateCommitInfo(rsp);
     } else if (command.equals(CMD_DETAILS)) {
-      getReplicationDetails(rsp, solrParams.getBool("follower", true));
+      final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+          rsp, coreReplicationAPI.fetchReplicationDetails(solrParams.getBool("follower", true))
+      );
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
@@ -1018,63 +1021,65 @@ public class ReplicationHandler extends RequestHandlerBase
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
   // there a core set of values that are required to make a response here useful?
   /** Used for showing statistics and progress information. */
-  private NamedList<Object> getReplicationDetails(
-      SolrQueryResponse rsp, boolean showFollowerDetails) {
-    NamedList<Object> details = new SimpleOrderedMap<>();
-    NamedList<Object> leader = new SimpleOrderedMap<>();
-    NamedList<Object> follower = new SimpleOrderedMap<>();
+  public ReplicationDetailsResponse getReplicationDetails(boolean showFollowerDetails) {
+    ReplicationDetailsResponse.ReplicationDetails details = new ReplicationDetailsResponse.ReplicationDetails();
+    ReplicationDetailsResponse.LeaderDetails leader = new ReplicationDetailsResponse.LeaderDetails();
+    ReplicationDetailsResponse.FollowerDetails follower = new ReplicationDetailsResponse.FollowerDetails();
 
-    details.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
-    details.add("indexPath", core.getIndexDir());
-    details.add(CMD_SHOW_COMMITS, getCommits());
-    details.add("isLeader", String.valueOf(isLeader));
-    details.add("isFollower", String.valueOf(isFollower));
+    boolean shouldFollowerBePopulated = false;
+
+    details.indexSize = NumberUtils.readableSize(core.getIndexSize());
+    details.indexPath = core.getIndexDir();
+    details.commits = getCommitDetails();
+    details.isLeader = String.valueOf(isLeader);
+    details.isFollower = String.valueOf(isFollower);
     CommitVersionInfo vInfo = getIndexVersion();
-    details.add("indexVersion", null == vInfo ? 0 : vInfo.version);
-    details.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
+    details.indexVersion = null == vInfo ? 0 : vInfo.version;
+    details.generation = null == vInfo ? 0 : vInfo.generation;
 
     IndexCommit commit = indexCommitPoint; // make a copy so it won't change
 
     if (isLeader) {
-      if (includeConfFiles != null) leader.add(CONF_FILES, includeConfFiles);
-      leader.add(REPLICATE_AFTER, getReplicateAfterStrings());
-      leader.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
+      if (includeConfFiles != null) leader.confFiles = includeConfFiles;
+      leader.replicateAfter = getReplicateAfterStrings();
+      leader.replicationEnabled = String.valueOf(replicationEnabled.get());
     }
 
     if (isLeader && commit != null) {
       CommitVersionInfo repCommitInfo = CommitVersionInfo.build(commit);
-      leader.add("replicableVersion", repCommitInfo.version);
-      leader.add("replicableGeneration", repCommitInfo.generation);
+      leader.replicableVersion = repCommitInfo.version;
+      leader.replicableGeneration = repCommitInfo.generation;
     }
 
     IndexFetcher fetcher = currentIndexFetcher;
     if (fetcher != null) {
+      shouldFollowerBePopulated = true;
       Properties props = loadReplicationProperties();
       if (showFollowerDetails) {
         try {
           NamedList<Object> nl = fetcher.getDetails();
-          follower.add("leaderDetails", nl.get(CMD_DETAILS));
+          follower.leaderDetails = nl.get(CMD_DETAILS);
         } catch (Exception e) {
           log.warn("Exception while invoking 'details' method for replication on leader ", e);
-          follower.add(ERR_STATUS, "invalid_leader");
+          follower.error = "invalid_leader";
         }
       }
-      follower.add(LEADER_URL, fetcher.getLeaderCoreUrl());
+      follower.leaderUrl = fetcher.getLeaderCoreUrl();
       if (getPollInterval() != null) {
-        follower.add(ReplicationAPIBase.POLL_INTERVAL, getPollInterval());
+        follower.pollInterval = getPollInterval();
       }
       Date nextScheduled = getNextScheduledExecTime();
       if (nextScheduled != null && !isPollingDisabled()) {
-        follower.add(NEXT_EXECUTION_AT, nextScheduled.toString());
+        follower.nextExecutionAt = nextScheduled.toString();
       } else if (isPollingDisabled()) {
-        follower.add(NEXT_EXECUTION_AT, "Polling disabled");
+        follower.nextExecutionAt = "Polling disabled";
       }
-      addReplicationProperties(follower::add, props);
+      addReplicationProperties(follower, props);
 
-      follower.add("currentDate", new Date().toString());
-      follower.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
+      follower.currentDate = new Date().toString();
+      follower.isPollingDisabled = String.valueOf(isPollingDisabled());
       boolean isReplicating = isReplicating();
-      follower.add("isReplicating", String.valueOf(isReplicating));
+      follower.isReplicating = String.valueOf(isReplicating);
       if (isReplicating) {
         try {
           long bytesToDownload = 0;
@@ -1090,9 +1095,9 @@ public class ReplicationHandler extends RequestHandlerBase
             bytesToDownload += (Long) file.get(SIZE);
           }
 
-          follower.add("filesToDownload", filesToDownload);
-          follower.add("numFilesToDownload", String.valueOf(filesToDownload.size()));
-          follower.add("bytesToDownload", NumberUtils.readableSize(bytesToDownload));
+          follower.filesToDownload = filesToDownload;
+          follower.numFilesToDownload = String.valueOf(filesToDownload.size());
+          follower.bytesToDownload = NumberUtils.readableSize(bytesToDownload);
 
           long bytesDownloaded = 0;
           List<String> filesDownloaded = new ArrayList<>();
@@ -1121,17 +1126,17 @@ public class ReplicationHandler extends RequestHandlerBase
                 percentDownloaded = (float) (currFileSizeDownloaded * 100) / currFileSize;
             }
           }
-          follower.add("filesDownloaded", filesDownloaded);
-          follower.add("numFilesDownloaded", String.valueOf(filesDownloaded.size()));
+          follower.filesDownloaded = filesDownloaded;
+          follower.numFilesDownloaded = String.valueOf(filesDownloaded.size());
 
           long estimatedTimeRemaining = 0;
 
           Date replicationStartTimeStamp = fetcher.getReplicationStartTimeStamp();
           if (replicationStartTimeStamp != null) {
-            follower.add("replicationStartTime", replicationStartTimeStamp.toString());
+            follower.replicationStartTime = replicationStartTimeStamp.toString();
           }
           long elapsed = fetcher.getReplicationTimeElapsed();
-          follower.add("timeElapsed", elapsed + "s");
+          follower.timeElapsed = elapsed + "s";
 
           if (bytesDownloaded > 0)
             estimatedTimeRemaining =
@@ -1140,53 +1145,62 @@ public class ReplicationHandler extends RequestHandlerBase
           long downloadSpeed = 0;
           if (bytesToDownload > 0) totalPercent = (float) (bytesDownloaded * 100) / bytesToDownload;
           if (elapsed > 0) downloadSpeed = (bytesDownloaded / elapsed);
-          if (currFile != null) follower.add("currentFile", currFile);
-          follower.add("currentFileSize", NumberUtils.readableSize(currFileSize));
-          follower.add(
-              "currentFileSizeDownloaded", NumberUtils.readableSize(currFileSizeDownloaded));
-          follower.add("currentFileSizePercent", String.valueOf(percentDownloaded));
-          follower.add("bytesDownloaded", NumberUtils.readableSize(bytesDownloaded));
-          follower.add("totalPercent", String.valueOf(totalPercent));
-          follower.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
-          follower.add("downloadSpeed", NumberUtils.readableSize(downloadSpeed));
+          if (currFile != null) follower.currentFile = currFile;
+          follower.currentFileSize = NumberUtils.readableSize(currFileSize);
+          follower.currentFileSizeDownloaded = NumberUtils.readableSize(currFileSizeDownloaded);
+          follower.currentFileSizePercent = String.valueOf(percentDownloaded);
+          follower.bytesDownloaded = NumberUtils.readableSize(bytesDownloaded);
+          follower.totalPercent = String.valueOf(totalPercent);
+          follower.timeRemaining = estimatedTimeRemaining + "s";
+          follower.downloadSpeed = NumberUtils.readableSize(downloadSpeed);
         } catch (Exception e) {
           log.error("Exception while writing replication details: ", e);
         }
       }
     }
 
-    if (isLeader) details.add("leader", leader);
-    if (follower.size() > 0) details.add("follower", follower);
+    if (isLeader) details.leader = leader;
+    if (shouldFollowerBePopulated) details.follower = follower;
 
     NamedList<?> snapshotStats = snapShootDetails;
-    if (snapshotStats != null) details.add(CMD_BACKUP, snapshotStats);
+    if (snapshotStats != null) details.backup = snapshotStats;
 
-    if (rsp.getValues().get(STATUS) == null) {
-      rsp.add(STATUS, OK_STATUS);
-    }
-    rsp.add(CMD_DETAILS, details);
-    return details;
+    return new ReplicationDetailsResponse(details, OK_STATUS);
   }
 
-  private void addReplicationProperties(BiConsumer<String, Object> consumer, Properties props) {
-    addVal(consumer, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-    addVal(consumer, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
-    addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
-    addVal(consumer, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-    addVal(consumer, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
-    addVal(consumer, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-    addVal(consumer, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
-    addVal(consumer, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-    addVal(consumer, IndexFetcher.TIMES_FAILED, props, Integer.class);
-    addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-    addVal(consumer, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+  @SuppressWarnings("unchecked")
+  private void addReplicationProperties(ReplicationDetailsResponse.FollowerDetails followerDetails, Properties props) {
+    addVal(v -> followerDetails.indexReplicatedAt = (String) v, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+    addVal(v -> followerDetails.indexReplicatedAtList = (List<String>) v, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
+    addVal(v -> followerDetails.replicationFailedAtList = (List<String>) v, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
+    addVal(v -> followerDetails.timesIndexReplicated = (Integer) v, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+    addVal(v -> followerDetails.confFilesReplicated = (String) v, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
+    addVal(v -> followerDetails.timesConfigReplicated = (Integer) v, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+    addVal(v -> followerDetails.confFilesReplicatedAt = (String) v, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
+    addVal(v -> followerDetails.lastCycleBytesDownloaded = (Long) v, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+    addVal(v -> followerDetails.timesFailed = (Integer) v, IndexFetcher.TIMES_FAILED, props, Integer.class);
+    addVal(v -> followerDetails.replicationFailedAt = (String) v, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+    addVal(v -> followerDetails.previousCycleTimeInSeconds = (Long) v, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<ReplicationDetailsResponse.CommitDetails> getCommitDetails() {
+    List<ReplicationDetailsResponse.CommitDetails> commits = new ArrayList<>();
+    for (NamedList<Object> namedList : getCommits()) {
+      ReplicationDetailsResponse.CommitDetails commitDetail = new ReplicationDetailsResponse.CommitDetails();
+      commitDetail.indexVersion = (Long) namedList.get("indexVersion");
+      commitDetail.generation = (Long) namedList.get(GENERATION);
+      commitDetail.filelist = (List<String>) namedList.get(CMD_GET_FILE_LIST);
+      commits.add(commitDetail);
+    }
+    return commits;
   }
 
   private void addVal(
-      BiConsumer<String, Object> consumer, String key, Properties props, Class<?> clzz) {
+      Consumer<Object> consumer, String key, Properties props, Class<?> clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
-      consumer.accept(key, val);
+      consumer.accept(val);
     }
   }
 
