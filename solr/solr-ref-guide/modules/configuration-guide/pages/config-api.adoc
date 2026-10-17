@@ -64,6 +64,16 @@ A plugin's *unnamed* child elements - for example, the anonymous `<processor>` e
     ]
 }]
 ----
+
+Top-level section names match the internal plugin type names used in `solrconfig.xml`, including `searchComponent` and `queryResponseWriter`:
+
+[source,json]
+----
+{
+  "searchComponent": {"elevator": {"class": "solr.QueryElevationComponent"}},
+  "queryResponseWriter": {"xslt": {"class": "solr.XSLTResponseWriter"}}
+}
+----
 ====
 
 V2 API::
@@ -74,7 +84,9 @@ V2 API::
 http://localhost:8983/api/collections/techproducts/config
 ----
 
-The response is the same merged configuration as the V1 API, with one difference: a plugin's unnamed child elements are grouped under a self-describing `children` key instead of an empty string, since Solr's V2 JSON serialization library does not allow empty-string keys:
+The response is the same merged configuration as the V1 API, with two differences.
+
+First, a plugin's unnamed child elements are grouped under a self-describing `children` key instead of an empty string, since Solr's V2 JSON serialization library does not allow empty-string keys:
 
 [source,json]
 ----
@@ -86,6 +98,16 @@ The response is the same merged configuration as the V1 API, with one difference
       {"class": "solr.RunUpdateProcessorFactory"}
     ]
 }]
+----
+
+Second, the `searchComponent` and `queryResponseWriter` sections are renamed to their pluralized forms, `searchComponents` and `queryResponseWriters`, matching the names used by the dedicated per-section endpoints described below:
+
+[source,json]
+----
+{
+  "searchComponents": {"elevator": {"class": "solr.QueryElevationComponent"}},
+  "queryResponseWriters": {"xslt": {"class": "solr.XSLTResponseWriter"}}
+}
 ----
 ====
 ======
