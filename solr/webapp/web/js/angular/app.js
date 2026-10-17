@@ -513,7 +513,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, Ping, Constants, SchemaDesigner, ApiErrorHandler) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, ClusterV2, Ping, Constants, SchemaDesigner, ApiErrorHandler, NodeTarget) {
 
   $rootScope.exceptions={};
 
@@ -525,6 +525,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.cores = [];
       $scope.collections = [];
       $scope.aliases = [];
+      $scope.liveNodes = [];
   }
 
   $scope.permissions = permissions;
@@ -532,28 +533,36 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
   }
 
-  $scope.refresh();
-  $scope.resetMenu = function(page, pageType) {
-    CoresV2.getAllCoreStatus({indexInfo: false}, function(error, data, response) {
+  var loadCoresForSelectedNode = function(pageType) {
+    CoresV2.getAllCoreStatus(NodeTarget.withNodes({indexInfo: false}), function(error, data, response) {
       $timeout(function() {
         if (error) { ApiErrorHandler.handle(response); return; }
+        var payload = NodeTarget.unwrap(data, response) || {};
+        var status = payload.status || {};
+        var initFailures = payload.initFailures || {};
         $scope.cores = [];
         var currentCoreName = $route.current.params.core;
         delete $scope.currentCore;
-        for (var key in data.status) {
-          var core = data.status[key];
+        for (var key in status) {
+          var core = status[key];
           if (core.name.startsWith("._designer_")) {
             continue;
           }
           $scope.cores.push(core);
-          if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
+          if ((!$scope.isCloudEnabled || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
               $scope.currentCore = core;
           }
         }
-        $scope.showInitFailures = Object.keys(data.initFailures).length>0;
-        $scope.initFailures = data.initFailures;
+        $scope.showInitFailures = Object.keys(initFailures).length>0;
+        $scope.initFailures = initFailures;
+        $scope.viewingRemoteNode = NodeTarget.isRemote();
       });
     });
+  };
+
+  $scope.refresh();
+  $scope.resetMenu = function(page, pageType) {
+    loadCoresForSelectedNode(pageType);
 
     SystemV2.getNodeSystemInfo({}, function(error, data, response) {
       $timeout(function() {
@@ -563,11 +572,22 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
           // pages waiting for isCloudEnabled to settle (e.g. the logging page) fall
           // back to local-only behavior instead of waiting forever.
           $scope.isCloudEnabled = false;
+          NodeTarget.clear();
           return;
         }
-        $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+        $scope.isCloudEnabled = !!(data.mode && data.mode.match(/solrcloud/i));
         $scope.usersPermissions = data.security.permissions;
         $scope.isSecurityEnabled = data.security.authenticationPlugin != null;
+        if (!$scope.isCloudEnabled) {
+          NodeTarget.clear();
+          $scope.liveNodes = [];
+          $scope.selectedNode = null;
+          $scope.viewingRemoteNode = false;
+        } else if (data.node) {
+          NodeTarget.setLocalNode(data.node);
+          $scope.localNode = data.node;
+          $scope.selectedNode = NodeTarget.state.selectedNode;
+        }
 
         $scope.isSchemaDesignerEnabled = $scope.isPermitted([
           permissions.CONFIG_EDIT_PERM,
@@ -579,6 +599,20 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         var currentCollectionName = $route.current.params.core;
         delete $scope.currentCollection;
         if ($scope.isCloudEnabled) {
+          ClusterV2.listClusterNodes(function(error, nodesData, response) {
+            $timeout(function() {
+              if (error) {
+                ApiErrorHandler.handle(response);
+                NodeTarget.markReady();
+                return;
+              }
+              NodeTarget.setLiveNodes(nodesData.nodes || []);
+              $scope.liveNodes = NodeTarget.state.liveNodes;
+              $scope.selectedNode = NodeTarget.state.selectedNode;
+              $scope.viewingRemoteNode = NodeTarget.isRemote();
+              loadCoresForSelectedNode(pageType);
+            });
+          });
           CollectionsV2.listCollections({}, function (error, cdata, response) {
             $timeout(function() {
               if (error) { ApiErrorHandler.handle(response); return; }
@@ -638,8 +672,31 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
+    $scope.pageType = pageType;
+    $scope.isNodeScopedPage =
+      (pageType === Constants.IS_CORE_PAGE && !NodeTarget.isRemote()) ||
+      /^(index|logging|java-props|threads|cores)$/.test(page);
     $scope.currentUser = sessionStorage.getItem("auth.username");
     $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  $scope.nodeLabel = function(node) {
+    if (!node) {
+      return '';
+    }
+    return node === $scope.localNode ? node + ' (this node)' : node;
+  };
+
+  $scope.onSelectedNodeChange = function() {
+    if (NodeTarget.selectNode($scope.selectedNode)) {
+      $scope.viewingRemoteNode = NodeTarget.isRemote();
+      if (NodeTarget.isRemote() && $scope.pageType === Constants.IS_CORE_PAGE) {
+        $location.url('/');
+        return;
+      }
+      loadCoresForSelectedNode($scope.pageType === Constants.IS_CORE_PAGE ? Constants.IS_CORE_PAGE : Constants.IS_ROOT_PAGE);
+      $route.reload();
+    }
   };
 
   $scope.showHideMenu = function() {
@@ -663,12 +720,18 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCore = function(core) {
-    if (core) {
+    if (core && !NodeTarget.isRemote()) {
       $location.url("/" + core.name + "/core-overview");
     }
   }
 
   $scope.showCollection = function(collection) {
+    if (!collection || !collection.type) {
+      return;
+    }
+    if ($route.current && $route.current.params && $route.current.params.core === collection.name) {
+      return;
+    }
     if (collection.type === 'collection') {
       $location.url("/" + collection.name + "/collection-overview")
     } else if (collection.type === 'alias') {

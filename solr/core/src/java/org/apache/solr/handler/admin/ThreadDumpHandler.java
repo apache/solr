@@ -41,7 +41,7 @@ public class ThreadDumpHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    final var response = new NodeThreadsAPI().getThreadDump();
+    final var response = new NodeThreadsAPI().getThreadDump(null);
     final var system = new SimpleOrderedMap<Object>();
     final var counts = new SimpleOrderedMap<Object>();
     counts.add("current", Math.toIntExact(response.system.threadCount.current));

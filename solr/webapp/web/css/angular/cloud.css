@@ -506,6 +506,14 @@ limitations under the License.
 {
   font-style: italic;
 }
+
+#content #cloud #nodes-content .node-spec a.node-admin-link
+{
+  display: inline-block;
+  margin-top: 4px;
+  font-style: normal;
+  font-weight: bold;
+}
 #content #cloud #nodes-content .node-uptime
 {
   font-weight: bolder;

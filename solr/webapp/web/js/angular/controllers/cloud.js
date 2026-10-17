@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
+    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler, NodeTarget) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
+            nodesSubController($scope, $location, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -79,6 +79,14 @@ function ensureNodeInHosts(node_name, hosts) {
   ensureInList(node_name, hostNodes);
 }
 
+function nodeNameToAdminUrl(nodeName) {
+  var match = /^(.*):(\d+)_(.+)$/.exec(nodeName);
+  if (!match) {
+    return null;
+  }
+  return window.location.protocol + '//' + match[1] + ':' + match[2] + '/' + match[3];
+}
+
 // from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
 function bytesToSize(bytes) {
   var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
@@ -107,7 +115,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
+var nodesSubController = function($scope, $location, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -118,6 +126,23 @@ var nodesSubController = function($scope, $timeout, ClusterV2, CollectionsV2, Sy
   $scope.from = 0;
   $scope.to = $scope.pageSize - 1;
   $scope.filterType = "node"; // Pre-initialize dropdown
+
+  $scope.openNodeDashboard = function(nodeName) {
+    if (!nodeName) {
+      return;
+    }
+    NodeTarget.selectNode(nodeName);
+    var parent = $scope.$parent;
+    while (parent) {
+      if (angular.isDefined(parent.liveNodes)) {
+        parent.selectedNode = nodeName;
+        parent.viewingRemoteNode = NodeTarget.isRemote();
+        break;
+      }
+      parent = parent.$parent;
+    }
+    $location.url('/');
+  };
 
   $scope.toggleAllDetails = function() {
     $scope.showAllDetails = !$scope.showAllDetails;
@@ -230,6 +255,9 @@ var nodesSubController = function($scope, $timeout, ClusterV2, CollectionsV2, Sy
                 var hostName = node.split(":")[0];
                 nodes[node] = {};
                 nodes[node]['host'] = hostName;
+              }
+              if (!nodes[node]['base_url']) {
+                nodes[node]['base_url'] = nodeNameToAdminUrl(node);
               }
               ensureNodeInHosts(node, hosts);
             }

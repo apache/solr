@@ -16,10 +16,28 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** Generic logging response that includes the name of the log watcher (e.g. "Log4j2") */
 public class LoggingResponse extends SolrJerseyResponse {
+
+  // Object, not LoggingResponse, since @JsonAnySetter below also feeds this map raw values.
+  public Map<String, Object> remoteNodeData = new LinkedHashMap<>();
+
+  @JsonAnyGetter
+  public Map<String, Object> remoteNodeData() {
+    return remoteNodeData;
+  }
+
+  @JsonAnySetter
+  public void setRemoteNodeResponse(String field, Object value) {
+    remoteNodeData.put(field, value);
+  }
+
   @JsonProperty("watcher")
   public String watcherName;
 }

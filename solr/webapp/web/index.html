@@ -111,7 +111,14 @@ limitations under the License.
 
     <div id="header">
 
-      <a href="#/" id="solr"><span>Apache SOLR</span></a>
+      <a ng-href="{{ isCloudEnabled ? '#/~cloud?view=nodes' : '#/' }}" id="solr"><span>Apache SOLR</span></a>
+
+      <div id="selected-node-badge"
+           ng-show="!http401 && isCloudEnabled && liveNodes.length > 1 && selectedNode && isNodeScopedPage"
+           ng-class="{remote: viewingRemoteNode}">
+        <span class="badge-label">Node</span>
+        <span class="badge-value">{{ nodeLabel(selectedNode) }}</span>
+      </div>
 
     </div>
 
@@ -167,98 +174,121 @@ limitations under the License.
 
             <li id="login" class="global" ng-class="{active:page=='login'}" ng-show="http401 || currentUser"><p><a href="#/login">{{http401 ? "Login" : "Logout " + currentUser}}</a></p></li>
 
-            <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>
-
             <div ng-show="!http401">
+
+              <li class="menu-section" id="menu-section-cluster" ng-show="isCloudEnabled">Cluster</li>
+
+              <li ng-show="isCloudEnabled" id="cloud-nodes" class="global" ng-class="{active:page=='cloud-nodes'}"><p><a href="#/~cloud?view=nodes">Nodes</a></p></li>
+              <li ng-show="isCloudEnabled" id="cloud-tree" class="global" ng-class="{active:page=='cloud-tree'}"><p><a href="#/~cloud?view=tree">Tree</a></p></li>
+              <li ng-show="isCloudEnabled" id="cloud-zkstatus" class="global" ng-class="{active:page=='cloud-zkstatus'}"><p><a href="#/~cloud?view=zkstatus">ZK Status</a></p></li>
+              <li ng-show="isCloudEnabled" id="cloud-graph" class="global" ng-class="{active:page=='cloud-graph'}"><p><a href="#/~cloud?view=graph">Graph</a></p></li>
+
+              <li ng-show="isCloudEnabled" id="security" class="global" ng-class="{active:page=='security'}"><p><a href="#/~security">Security</a></p></li>
+
+              <li ng-show="isCloudEnabled && isSchemaDesignerEnabled" id="schema-designer" class="global" ng-class="{active:page=='schema-designer'}"><p><a href="#/~schema-designer">Schema Designer</a></p></li>
+
+              <li ng-show="isCloudEnabled" id="collections" class="global" ng-class="{active:page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
+
+              <div id="collection-selector" class="menu-control" ng-show="isCloudEnabled">
+                <div id="has-collections" ng-show="collections.length!=0">
+                  <select placeholder-text-single="'Collection Selector'"
+                          ng-model="currentCollection"
+                          chosen
+                          search-contains="true"
+                          ng-change="showCollection(currentCollection)"
+                          ng-options="collection.name for collection in aliases_and_collections"></select>
+                </div>
+                <p id="has-no-collections" ng-show="collections.length==0"><a href="#/~collections">
+                  No collections available
+                  <span>Go and create one</span>
+                </a></p>
+              </div>
+              <div id="collection-menu" class="sub-menu" ng-show="currentCollection">
+                <ul>
+                  <li class="overview" ng-show="currentCollection.type === 'collection'" ng-class="{active:page=='collection-overview'}"><a href="#/{{currentCollection.name}}/collection-overview"><span>Overview</span></a></li>
+                  <li class="overview" ng-show="currentCollection.type === 'alias'" ng-class="{active:page=='alias-overview'}"><a href="#/{{currentCollection.name}}/alias-overview"><span>Overview</span></a></li>
+                  <li class="analysis" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
+                  <li class="documents" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
+                  <li class="paramsets" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='paramsets'}"><a href="#/{{currentCollection.name}}/paramsets"><span>Paramsets</span></a></li>
+                  <li class="files" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
+                  <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
+                  <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
+                  <li class="sqlquery" ng-class="{active:page=='sqlquery'}"><a href="#/{{currentCollection.name}}/sqlquery"><span>SQL</span></a></li>
+                  <li class="schema" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
+                </ul>
+              </div>
+
+              <li class="menu-section" id="menu-section-node">Node</li>
+
+              <li id="node-selector-item" class="menu-control" ng-if="isCloudEnabled && liveNodes.length > 1">
+                <div id="node-selector">
+                  <label id="node-selector-label" for="node_selector_select">Node</label>
+                  <div id="has-nodes">
+                    <select id="node_selector_select"
+                            aria-labelledby="node-selector-label"
+                            placeholder-text-single="'Select node'"
+                            ng-model="$parent.selectedNode"
+                            chosen
+                            search-contains="true"
+                            ng-change="onSelectedNodeChange()"
+                            ng-options="node as nodeLabel(node) for node in liveNodes"></select>
+                  </div>
+                  <p id="node-selector-hint" ng-class="{remote: viewingRemoteNode}">
+                    {{ viewingRemoteNode ? 'Remote node (Node screens only)' : 'This node (Node screens only)' }}
+                  </p>
+                </div>
+              </li>
+
+              <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>
+
               <li id="logging" class="global" ng-class="{active:page=='logging'}"><p><a href="#/~logging">Logging</a></p>
                 <ul ng-show="showingLogging">
                   <li class="level" ng-class="{active:page=='logging-levels'}"><a href="#/~logging/level">Level</a></li>
                 </ul>
               </li>
 
-              <li id="security" class="global" ng-class="{active:page=='security'}"><p><a href="#/~security">Security</a></p></li>
-
-              <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:showingCloud}"><p><a href="#/~cloud">Cloud</a></p>
-                <ul ng-show="showingCloud">
-                  <li class="nodes" ng-class="{active:page=='cloud-nodes'}"><a href="#/~cloud?view=nodes">Nodes</a></li>
-                  <li class="tree" ng-class="{active:page=='cloud-tree'}"><a href="#/~cloud?view=tree">Tree</a></li>
-                  <li class="zkstatus" ng-class="{active:page=='cloud-zkstatus'}"><a href="#/~cloud?view=zkstatus">ZK Status</a></li>
-                  <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud?view=graph">Graph</a></li>
-                </ul>
-              </li>
-
-              <li ng-show="isCloudEnabled && isSchemaDesignerEnabled" id="schema-designer" class="global" ng-class="{active:page=='schema-designer'}"><p><a href="#/~schema-designer">Schema Designer</a></p></li>
-
-              <li ng-show="isCloudEnabled" id="collections" class="global" ng-class="{active:page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
-              <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
-
-              <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></li>
+              <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></p></li>
 
               <li id="threads" class="global" ng-class="{active:page=='threads'}"><p><a href="#/~threads">Thread Dump</a></p></li>
+
+              <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
+
+              <li ng-hide="isCloudEnabled" id="security-standalone" class="global" ng-class="{active:page=='security'}"><p><a href="#/~security">Security</a></p></li>
+
+              <div id="core-selector" class="menu-control">
+                <div id="has-cores" ng-show="cores.length!=0">
+                  <select placeholder-text-single="'Core Selector'"
+                          ng-model="currentCore"
+                          chosen
+                          search-contains="true"
+                          ng-change="showCore(currentCore)"
+                          ng-options="core.name for core in cores"></select>
+                </div>
+                <p id="has-no-cores" ng-show="cores.length==0"><a href="#/~cores">
+                  No cores available
+                  <span>Go and create one</span>
+                </a></p>
+              </div>
+              <div id="core-menu" class="sub-menu" ng-show="currentCore && !viewingRemoteNode">
+                <ul>
+                  <li class="overview" ng-class="{active:page=='overview'}"><a href="#/{{currentCore.name}}/core-overview"><span>Overview</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCore.name}}/analysis"><span>Analysis</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="paramsets" ng-class="{active:page=='paramsets'}"><a href="#/{{currentCore.name}}/paramsets"><span>Paramsets</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
+                  <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="showPing"> (<span>{{pingMS}}ms</span>)</small></a></li>
+                  <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
+                  <li ng-hide="isCloudEnabled" class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCore.name}}/schema"><span>Schema</span></a></li>
+                  <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
+                </ul>
+              </div>
 
               <li id="new-ui" class="global"><p><a href="/solr/ui">Open New UI</a></p></li>
             </div>
           </ul>
 
-          <div ng-show="!http401">
-            <div id="collection-selector" ng-show="isCloudEnabled">
-              <div id="has-collections" ng-show="collections.length!=0">
-                <select placeholder-text-single="'Collection Selector'"
-                        ng-model="currentCollection"
-                        chosen
-                        search-contains="true"
-                        ng-change="showCollection(currentCollection)"
-                        ng-options="collection.name for collection in aliases_and_collections"></select>
-              </div>
-              <p id="has-no-collections" ng-show="collections.length==0"><a href="#/~collections">
-                No collections available
-                <span>Go and create one</span>
-              </a></p>
-            </div>
-            <div id="collection-menu" class="sub-menu" ng-show="currentCollection">
-              <ul>
-                <li class="overview" ng-show="currentCollection.type === 'collection'" ng-class="{active:page=='collection-overview'}"><a href="#/{{currentCollection.name}}/collection-overview"><span>Overview</span></a></li>
-                <li class="overview" ng-show="currentCollection.type === 'alias'" ng-class="{active:page=='alias-overview'}"><a href="#/{{currentCollection.name}}/alias-overview"><span>Overview</span></a></li>
-                <li class="analysis" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
-                <li class="documents" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
-                <li class="paramsets" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='paramsets'}"><a href="#/{{currentCollection.name}}/paramsets"><span>Paramsets</span></a></li>
-                <li class="files" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
-                <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
-                <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
-                <li class="sqlquery" ng-class="{active:page=='sqlquery'}"><a href="#/{{currentCollection.name}}/sqlquery"><span>SQL</span></a></li>
-                <li class="schema" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
-              </ul>
-            </div>
-            <div id="core-selector">
-              <div id="has-cores" ng-show="cores.length!=0">
-                <select placeholder-text-single="'Core Selector'"
-                        ng-model="currentCore"
-                        chosen
-                        search-contains="true"
-                        ng-change="showCore(currentCore)"
-                        ng-options="core.name for core in cores"></select>
-              </div>
-              <p id="has-no-cores" ng-show="cores.length==0"><a href="#/~cores">
-                No cores available
-                <span>Go and create one</span>
-              </a></p>
-            </div>
-            <div id="core-menu" class="sub-menu" ng-show="currentCore">
-              <ul>
-                <li class="overview" ng-class="{active:page=='overview'}"><a href="#/{{currentCore.name}}/core-overview"><span>Overview</span></a></li>
-                <li ng-hide="isCloudEnabled" class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCore.name}}/analysis"><span>Analysis</span></a></li>
-                <li ng-hide="isCloudEnabled" class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
-                <li ng-hide="isCloudEnabled" class="paramsets" ng-class="{active:page=='paramsets'}"><a href="#/{{currentCore.name}}/paramsets"><span>Paramsets</span></a></li>
-                <li ng-hide="isCloudEnabled" class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
-                <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="showPing"> (<span>{{pingMS}}ms</span>)</small></a></li>
-                <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
-                <li ng-hide="isCloudEnabled" class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
-                <li ng-hide="isCloudEnabled" class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
-                <li ng-hide="isCloudEnabled" class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCore.name}}/schema"><span>Schema</span></a></li>
-                <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
-              </ul>
-            </div>
-          </div>
         </div>
       </div>
 

@@ -23,9 +23,11 @@ import java.util.Map;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodePropertiesApi;
 import org.apache.solr.client.api.model.NodePropertiesResponse;
+import org.apache.solr.client.solrj.request.NodeApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.security.PermissionNameProvider;
 
@@ -49,8 +51,13 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
-  public NodePropertiesResponse getNodeProperties() {
-    return buildResponse(null);
+  public NodePropertiesResponse getNodeProperties(String nodes) {
+    final NodePropertiesResponse response = instantiateJerseyResponse(NodePropertiesResponse.class);
+    if (proxyToNodes(response, nodes)) {
+      return response;
+    }
+    response.systemProperties = collectProperties(null);
+    return response;
   }
 
   @Override
@@ -65,13 +72,31 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
           SolrException.ErrorCode.NOT_FOUND,
           "No system property named '" + propertyName + "' exists on this node.");
     }
-    return buildResponse(propertyName);
+    final NodePropertiesResponse response = instantiateJerseyResponse(NodePropertiesResponse.class);
+    response.systemProperties = collectProperties(propertyName);
+    return response;
   }
 
-  private NodePropertiesResponse buildResponse(String name) {
-    final NodePropertiesResponse response = instantiateJerseyResponse(NodePropertiesResponse.class);
-    response.systemProperties = collectProperties(name);
-    return response;
+  private boolean proxyToNodes(NodePropertiesResponse response, String nodes) {
+    try {
+      if (coreContainer != null) {
+        final var req = new NodeApi.GetNodeProperties();
+        req.setNodes(nodes);
+        final var reqProxy =
+            new V2SolrRequestBasedProxy<NodePropertiesResponse>(coreContainer, req) {
+              @Override
+              public void processTypedProxiedResponse(
+                  String nodeName, NodePropertiesResponse proxiedResponse) {
+                response.remoteNodeData.put(nodeName, proxiedResponse);
+              }
+            };
+        return reqProxy.proxyRequest();
+      }
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+    return false;
   }
 
   /** Collect redacted system properties, optionally limited to a single named property. */

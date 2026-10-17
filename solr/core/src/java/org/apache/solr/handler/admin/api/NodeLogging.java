@@ -36,19 +36,22 @@ import org.apache.solr.client.api.model.LogMessageInfo;
 import org.apache.solr.client.api.model.LogMessagesResponse;
 import org.apache.solr.client.api.model.LoggingResponse;
 import org.apache.solr.client.api.model.SetThresholdRequestBody;
+import org.apache.solr.client.solrj.request.LoggingApi;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.logging.LogWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO Add support for 'nodes' param once SOLR-16738 is completed.
 /**
  * V2 APIs for getting or setting log levels on an individual node.
  *
  * <p>These APIs ('/api/node/logging' and descendants) are analogous to the v1 /admin/info/logging.
+ * GET endpoints accept an optional {@code nodes} parameter to proxy to other live nodes via {@link
+ * V2SolrRequestBasedProxy}.
  */
 public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
@@ -65,9 +68,13 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public ListLevelsResponse listAllLoggersAndLevels() {
+  public ListLevelsResponse listAllLoggersAndLevels(String nodes) {
+    final ListLevelsResponse response = instantiateJerseyResponse(ListLevelsResponse.class);
+    if (proxyListLevels(response, nodes)) {
+      return response;
+    }
     ensureLogWatcherEnabled();
-    final ListLevelsResponse response = instantiateLoggingResponse(ListLevelsResponse.class);
+    response.watcherName = watcher.getName();
 
     response.levels = watcher.getAllLevels();
 
@@ -80,6 +87,28 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
     response.loggers = loggerInfo;
 
     return response;
+  }
+
+  private boolean proxyListLevels(ListLevelsResponse response, String nodes) {
+    try {
+      if (coreContainer != null) {
+        final var req = new LoggingApi.ListAllLoggersAndLevels();
+        req.setNodes(nodes);
+        final var reqProxy =
+            new V2SolrRequestBasedProxy<ListLevelsResponse>(coreContainer, req) {
+              @Override
+              public void processTypedProxiedResponse(
+                  String nodeName, ListLevelsResponse proxiedResponse) {
+                response.remoteNodeData.put(nodeName, proxiedResponse);
+              }
+            };
+        return reqProxy.proxyRequest();
+      }
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+    return false;
   }
 
   @Override
@@ -100,9 +129,13 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public LogMessagesResponse fetchLocalLogMessages(Long boundingTimeMillis) {
+  public LogMessagesResponse fetchLocalLogMessages(Long boundingTimeMillis, String nodes) {
+    final LogMessagesResponse response = instantiateJerseyResponse(LogMessagesResponse.class);
+    if (proxyLogMessages(response, boundingTimeMillis, nodes)) {
+      return response;
+    }
     ensureLogWatcherEnabled();
-    final LogMessagesResponse response = instantiateLoggingResponse(LogMessagesResponse.class);
+    response.watcherName = watcher.getName();
     if (boundingTimeMillis == null) {
       throw new SolrException(BAD_REQUEST, "Missing required parameter, 'since'.");
     }
@@ -127,6 +160,30 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
     response.docs = docs;
 
     return response;
+  }
+
+  private boolean proxyLogMessages(
+      LogMessagesResponse response, Long boundingTimeMillis, String nodes) {
+    try {
+      if (coreContainer != null) {
+        final var req = new LoggingApi.FetchLocalLogMessages();
+        req.setSince(boundingTimeMillis);
+        req.setNodes(nodes);
+        final var reqProxy =
+            new V2SolrRequestBasedProxy<LogMessagesResponse>(coreContainer, req) {
+              @Override
+              public void processTypedProxiedResponse(
+                  String nodeName, LogMessagesResponse proxiedResponse) {
+                response.remoteNodeData.put(nodeName, proxiedResponse);
+              }
+            };
+        return reqProxy.proxyRequest();
+      }
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+    return false;
   }
 
   @Override
