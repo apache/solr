@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 
+import java.util.Map;
 import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -27,7 +28,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.Map;
 
 /** HTTP tests for fetching the full config via the collection-scoped v2 path. */
 public class GetConfigSolrCloudTest extends SolrCloudTestCase {
@@ -139,7 +139,8 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
     assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
     assertNotNull(pingRHSection.get("_useParamsExpanded_"));
-    Map<String, Object> expandedPingRHSection = (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
+    Map<String, Object> expandedPingRHSection =
+        (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
     assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
   }
 
@@ -161,9 +162,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
     request.setComponentName("/randomHandler");
     final RemoteSolrException exception =
-        assertThrows(
-            RemoteSolrException.class,
-            () -> request.process(cluster.getSolrClient()));
+        assertThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
     assertEquals(404, exception.code());
   }
 

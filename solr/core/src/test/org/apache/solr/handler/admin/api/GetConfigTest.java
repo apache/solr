@@ -143,7 +143,8 @@ public class GetConfigTest extends SolrTestCase {
     Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
     assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
     assertNotNull(pingRHSection.get("_useParamsExpanded_"));
-    Map<String, Object> expandedPingRHSection = (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
+    Map<String, Object> expandedPingRHSection =
+        (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
     assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
   }
 
