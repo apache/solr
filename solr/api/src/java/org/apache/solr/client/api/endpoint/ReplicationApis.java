@@ -43,10 +43,12 @@ public interface ReplicationApis {
       summary = "Return replication configuration and current status.",
       tags = {"replication"})
   ReplicationDetailsResponse fetchReplicationDetails(
-      @Parameter(description = "When true on a follower, include nested details fetched from leader", required = false)
-      @QueryParam("follower")
+      @Parameter(
+              description = "When true on a follower, include nested details fetched from leader",
+              required = false)
+          @QueryParam("follower")
           @DefaultValue("true")
-      Boolean follower);
+          Boolean follower);
 
   @GET
   @CoreApiParameters

@@ -46,7 +46,7 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   @Override
   @PermissionName(CORE_READ_PERM)
   public ReplicationDetailsResponse fetchReplicationDetails(Boolean follower) {
-    return doFetchReplicationDetails(follower==null || follower);
+    return doFetchReplicationDetails(follower == null || follower);
   }
 
   @Override

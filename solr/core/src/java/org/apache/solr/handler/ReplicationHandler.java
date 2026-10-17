@@ -326,8 +326,7 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equals(CMD_DETAILS)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-          rsp, coreReplicationAPI.fetchReplicationDetails(solrParams.getBool("follower", true))
-      );
+          rsp, coreReplicationAPI.fetchReplicationDetails(solrParams.getBool("follower", true)));
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
@@ -1022,9 +1021,12 @@ public class ReplicationHandler extends RequestHandlerBase
   // there a core set of values that are required to make a response here useful?
   /** Used for showing statistics and progress information. */
   public ReplicationDetailsResponse getReplicationDetails(boolean showFollowerDetails) {
-    ReplicationDetailsResponse.ReplicationDetails details = new ReplicationDetailsResponse.ReplicationDetails();
-    ReplicationDetailsResponse.LeaderDetails leader = new ReplicationDetailsResponse.LeaderDetails();
-    ReplicationDetailsResponse.FollowerDetails follower = new ReplicationDetailsResponse.FollowerDetails();
+    ReplicationDetailsResponse.ReplicationDetails details =
+        new ReplicationDetailsResponse.ReplicationDetails();
+    ReplicationDetailsResponse.LeaderDetails leader =
+        new ReplicationDetailsResponse.LeaderDetails();
+    ReplicationDetailsResponse.FollowerDetails follower =
+        new ReplicationDetailsResponse.FollowerDetails();
 
     boolean shouldFollowerBePopulated = false;
 
@@ -1169,25 +1171,71 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("unchecked")
-  private void addReplicationProperties(ReplicationDetailsResponse.FollowerDetails followerDetails, Properties props) {
-    addVal(v -> followerDetails.indexReplicatedAt = (String) v, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-    addVal(v -> followerDetails.indexReplicatedAtList = (List<String>) v, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
-    addVal(v -> followerDetails.replicationFailedAtList = (List<String>) v, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
-    addVal(v -> followerDetails.timesIndexReplicated = (Integer) v, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-    addVal(v -> followerDetails.confFilesReplicated = (String) v, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
-    addVal(v -> followerDetails.timesConfigReplicated = (Integer) v, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-    addVal(v -> followerDetails.confFilesReplicatedAt = (String) v, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
-    addVal(v -> followerDetails.lastCycleBytesDownloaded = (Long) v, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-    addVal(v -> followerDetails.timesFailed = (Integer) v, IndexFetcher.TIMES_FAILED, props, Integer.class);
-    addVal(v -> followerDetails.replicationFailedAt = (String) v, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-    addVal(v -> followerDetails.previousCycleTimeInSeconds = (Long) v, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+  private void addReplicationProperties(
+      ReplicationDetailsResponse.FollowerDetails followerDetails, Properties props) {
+    addVal(
+        v -> followerDetails.indexReplicatedAt = (String) v,
+        IndexFetcher.INDEX_REPLICATED_AT,
+        props,
+        Date.class);
+    addVal(
+        v -> followerDetails.indexReplicatedAtList = (List<String>) v,
+        IndexFetcher.INDEX_REPLICATED_AT_LIST,
+        props,
+        List.class);
+    addVal(
+        v -> followerDetails.replicationFailedAtList = (List<String>) v,
+        IndexFetcher.REPLICATION_FAILED_AT_LIST,
+        props,
+        List.class);
+    addVal(
+        v -> followerDetails.timesIndexReplicated = (Integer) v,
+        IndexFetcher.TIMES_INDEX_REPLICATED,
+        props,
+        Integer.class);
+    addVal(
+        v -> followerDetails.confFilesReplicated = (String) v,
+        IndexFetcher.CONF_FILES_REPLICATED,
+        props,
+        String.class);
+    addVal(
+        v -> followerDetails.timesConfigReplicated = (Integer) v,
+        IndexFetcher.TIMES_CONFIG_REPLICATED,
+        props,
+        Integer.class);
+    addVal(
+        v -> followerDetails.confFilesReplicatedAt = (String) v,
+        IndexFetcher.CONF_FILES_REPLICATED_AT,
+        props,
+        Date.class);
+    addVal(
+        v -> followerDetails.lastCycleBytesDownloaded = (Long) v,
+        IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED,
+        props,
+        Long.class);
+    addVal(
+        v -> followerDetails.timesFailed = (Integer) v,
+        IndexFetcher.TIMES_FAILED,
+        props,
+        Integer.class);
+    addVal(
+        v -> followerDetails.replicationFailedAt = (String) v,
+        IndexFetcher.REPLICATION_FAILED_AT,
+        props,
+        Date.class);
+    addVal(
+        v -> followerDetails.previousCycleTimeInSeconds = (Long) v,
+        IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN,
+        props,
+        Long.class);
   }
 
   @SuppressWarnings("unchecked")
   private List<ReplicationDetailsResponse.CommitDetails> getCommitDetails() {
     List<ReplicationDetailsResponse.CommitDetails> commits = new ArrayList<>();
     for (NamedList<Object> namedList : getCommits()) {
-      ReplicationDetailsResponse.CommitDetails commitDetail = new ReplicationDetailsResponse.CommitDetails();
+      ReplicationDetailsResponse.CommitDetails commitDetail =
+          new ReplicationDetailsResponse.CommitDetails();
       commitDetail.indexVersion = (Long) namedList.get("indexVersion");
       commitDetail.generation = (Long) namedList.get(GENERATION);
       commitDetail.filelist = (List<String>) namedList.get(CMD_GET_FILE_LIST);
@@ -1196,8 +1244,7 @@ public class ReplicationHandler extends RequestHandlerBase
     return commits;
   }
 
-  private void addVal(
-      Consumer<Object> consumer, String key, Properties props, Class<?> clzz) {
+  private void addVal(Consumer<Object> consumer, String key, Properties props, Class<?> clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
       consumer.accept(val);
