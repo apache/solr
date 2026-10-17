@@ -30,7 +30,7 @@ import picocli.CommandLine;
       "  # Start on a custom port with 2g heap",
       "  bin/solr start -p 8984 -m 2g",
       "",
-      "  # Start in user managed mode",
+      "  # Start in user-managed mode",
       "  bin/solr start --user-managed"
     })
 public class StartCommand implements Callable<Integer> {
@@ -47,7 +47,7 @@ public class StartCommand implements Callable<Integer> {
 
   @CommandLine.Option(
       names = "--user-managed",
-      description = "Start Solr in standalone mode. Default is SolrCloud (ZooKeeper) mode.")
+      description = "Start Solr in user-managed mode. Default is SolrCloud (ZooKeeper) mode.")
   boolean userManaged;
 
   @CommandLine.Option(

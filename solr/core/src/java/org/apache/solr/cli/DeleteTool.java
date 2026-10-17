@@ -36,7 +36,7 @@ import org.apache.solr.common.util.EnvUtils;
 @picocli.CommandLine.Command(
     name = "delete",
     description =
-        "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.",
+        "Deletes a collection or core depending on whether Solr is running in SolrCloud or user-managed mode.",
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0:Collection or core deleted successfully.",
@@ -136,7 +136,7 @@ public class DeleteTool extends ToolBase {
   @Override
   public String getHeader() {
     return """
-        Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode. \
+        Deletes a collection or core depending on whether Solr is running in SolrCloud or user-managed mode. \
         Deleting a collection does not delete it's configuration unless you pass in the --delete-config flag.
 
         List of options:""";

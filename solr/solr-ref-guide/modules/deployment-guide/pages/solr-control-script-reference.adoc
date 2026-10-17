@@ -96,9 +96,9 @@ In most cases, you should wrap the additional parameters in double quotes.
 |Optional |Default: none
 |===
 +
-Start Solr in User Managed mode (AKA Standalone mode).  This is the style of Solr that supports only cores, not collections.
+Start Solr in user-managed mode (also called standalone mode).  This is the style of Solr that supports only cores, not collections.
 +
-For more details, see the section <<User Managed Mode>> below.
+For more details, see the section <<User-Managed Mode>> below.
 +
 *Example*: `bin/solr start --user-managed`
 
@@ -344,9 +344,9 @@ When starting in SolrCloud mode, the interactive script session will prompt you 
 
 For more information about starting Solr in SolrCloud mode, see also the section xref:getting-started:tutorial-solrcloud.adoc[].
 
-==== User Managed Mode
+==== User-Managed Mode
 
-`bin/solr start --user-managed` starts Solr in User Managed mode (AKA Standalone mode).  This was the default mode up until Solr 10x.
+`bin/solr start --user-managed` starts Solr in user-managed mode (also called standalone mode).  This was the default mode up until Solr 10x.
 
 For more information about the different modes, see the section xref:getting-started:cluster-types.adoc[].
 
@@ -933,7 +933,7 @@ For Basic Authentication the script provides https://github.com/apache/solr/blob
 The command `bin/solr auth enable` configures Solr to use Basic Authentication when accessing the User Interface, using `bin/solr` and any API requests.
 
 NOTE: This command currently requires SolrCloud mode — it uploads the generated `security.json` to ZooKeeper so that all nodes pick it up automatically.
-For user-managed (standalone) clusters, you must create the `security.json` file manually and place it in each node's Solr home directory.
+For user-managed clusters or standalone installations, you must create the `security.json` file manually and place it in each node's Solr home directory.
 See xref:basic-authentication-plugin.adoc[] for details.
 
 TIP: For more information about Solr's authentication plugins, see the section xref:securing-solr.adoc[].
