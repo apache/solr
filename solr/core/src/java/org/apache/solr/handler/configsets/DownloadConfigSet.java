@@ -100,11 +100,8 @@ public class DownloadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi
                 if (Files.isHidden(dir)) {
                   return FileVisitResult.SKIP_SUBTREE;
                 }
-                String dirName = tmpDirectory.relativize(dir).toString();
-                if (!dirName.isEmpty()) {
-                  if (!dirName.endsWith("/")) {
-                    dirName += "/";
-                  }
+                String dirName = toZipEntryName(tmpDirectory, dir, true);
+                if (dirName != null) {
                   zipOut.putNextEntry(new ZipEntry(dirName));
                   zipOut.closeEntry();
                 }
@@ -115,10 +112,12 @@ public class DownloadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi
               public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                   throws IOException {
                 if (!Files.isHidden(file)) {
-                  try (InputStream fis = Files.newInputStream(file)) {
-                    ZipEntry zipEntry = new ZipEntry(tmpDirectory.relativize(file).toString());
-                    zipOut.putNextEntry(zipEntry);
-                    fis.transferTo(zipOut);
+                  String entryName = toZipEntryName(tmpDirectory, file, false);
+                  if (entryName != null) {
+                    try (InputStream fis = Files.newInputStream(file)) {
+                      zipOut.putNextEntry(new ZipEntry(entryName));
+                      fis.transferTo(zipOut);
+                    }
                   }
                 }
                 return FileVisitResult.CONTINUE;
@@ -129,5 +128,22 @@ public class DownloadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi
       PathUtils.deleteDirectory(tmpDirectory);
     }
     return baos.toByteArray();
+  }
+
+  /**
+   * Convert a path under {@code root} into a ZIP-legal relative entry name.
+   *
+   * <p>ZIP requires {@code /} separators and forbids a leading slash. Returns {@code null} for the
+   * root itself so callers skip the nameless {@code /} directory entry.
+   */
+  static String toZipEntryName(Path root, Path path, boolean directory) {
+    String name = root.relativize(path).toString().replace('\\', '/');
+    if (name.isEmpty()) {
+      return null;
+    }
+    if (directory && !name.endsWith("/")) {
+      name += "/";
+    }
+    return name;
   }
 }
