@@ -23,6 +23,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE_DEFAULT_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
@@ -116,7 +117,9 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     ClusterState clusterState = adminCmdContext.getClusterState();
     final Aliases aliases = ccc.getZkStateReader().getAliases();
     final String collectionName = message.getStr(NAME);
-    final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
+    final boolean waitForFinalState =
+        CollectionHandlingUtils.getBoolWithEnvFallback(
+            message, WAIT_FOR_FINAL_STATE, WAIT_FOR_FINAL_STATE_DEFAULT_PROP, true);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
     boolean prsDefault = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);

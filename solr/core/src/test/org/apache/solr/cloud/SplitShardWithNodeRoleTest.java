@@ -21,8 +21,15 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.AsyncCollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
@@ -85,10 +92,20 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
     ur.commit(client, collName);
 
     final int numSubShards = 2;
-    CollectionAdminRequest.SplitShard splitShard =
-        CollectionAdminRequest.splitShard(collName)
-            .setShardName("shard1")
-            .setNumSubShards(numSubShards);
+    // this method does its own explicit waitForState(...) below; pin waitForFinalState=false
+    // so SPLITSHARD's own new default doesn't also wait (and risk the client's HTTP timeout).
+    AsyncCollectionAdminRequest splitShard =
+        new AsyncCollectionAdminRequest(CollectionAction.SPLITSHARD) {
+          @Override
+          public SolrParams getParams() {
+            ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+            params.set(CollectionAdminParams.COLLECTION, collName);
+            params.set(CoreAdminParams.SHARD, "shard1");
+            params.set("numSubShards", numSubShards);
+            params.set(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
+            return params;
+          }
+        };
     splitShard.process(cluster.getSolrClient());
     int totalShards = shard + (numSubShards - 1);
     waitForState(
