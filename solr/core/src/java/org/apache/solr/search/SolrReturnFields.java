@@ -38,6 +38,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.response.transform.OriginalScoreAugmenter;
+import org.apache.solr.response.transform.RawValueTransformerFactory;
 import org.apache.solr.response.transform.RenameFieldTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -312,6 +313,36 @@ public class SolrReturnFields extends ReturnFields {
               _wantsAllFields = true;
             } else {
               globs.add(field);
+            }
+            continue;
+          } else if (field != null && ch == ':' && sp.val.startsWith("[", sp.pos + 1)) {
+            // "glob:[json]" applies a raw value transformer to every matching field
+            if ("*".equals(field)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "A raw value transformer cannot follow a bare *. "
+                      + "Use a named glob such as *_json:[json] instead.");
+            }
+            sp.pos++;
+            ModifiableSolrParams augmenterParams = new ModifiableSolrParams();
+            sp.pos +=
+                QueryParsing.parseLocalParams(
+                    sp.val.substring(sp.pos), 0, augmenterParams, req.getParams(), "[", ']');
+            String augmenterName = augmenterParams.get("type");
+            TransformerFactory factory = req.getCore().getTransformerFactory(augmenterName);
+            if (!(factory instanceof RawValueTransformerFactory rawFactory)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "A glob can only be combined with a raw value transformer such as [json] or [xml]: "
+                      + field
+                      + ":["
+                      + augmenterName
+                      + "]");
+            }
+            globs.add(field);
+            DocTransformer t = rawFactory.createForGlob(field, req);
+            if (t != null) {
+              augmenters.addTransformer(t);
             }
             continue;
           } else if (ORIGINAL_SCORE_NAME.equals(field) && sp.opt("(") && sp.opt(")")) {
