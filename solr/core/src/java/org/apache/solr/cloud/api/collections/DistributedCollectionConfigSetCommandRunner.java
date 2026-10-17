@@ -24,8 +24,10 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -150,6 +152,12 @@ public class DistributedCollectionConfigSetCommandRunner {
   /** See {@link DistributedApiAsyncTracker#deleteSingleAsyncId(String)} */
   public boolean deleteSingleAsyncId(String asyncId) throws Exception {
     return asyncTaskTracker.deleteSingleAsyncId(asyncId);
+  }
+
+  /** See {@link DistributedApiAsyncTracker#getTrackedAsyncIds()} */
+  @VisibleForTesting
+  public Collection<String> getTrackedAsyncIds() throws Exception {
+    return asyncTaskTracker.getTrackedAsyncIds();
   }
 
   /** See {@link DistributedApiAsyncTracker#deleteAllAsyncIds()} */
