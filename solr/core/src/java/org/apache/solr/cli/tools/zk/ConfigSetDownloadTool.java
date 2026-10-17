@@ -1,0 +1,171 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.cli.tools.zk;
+
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.solr.cli.CLIUtils;
+import org.apache.solr.cli.CommonCLIOptions;
+import org.apache.solr.cli.ConfigSetOptions;
+import org.apache.solr.cli.DefaultToolRuntime;
+import org.apache.solr.cli.ToolBase;
+import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/** Supports zk downconfig command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "downconfig",
+    description = "Download a configset from ZooKeeper to the local filesystem.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Download a configset from ZooKeeper",
+      "  bin/solr zk downconfig -n myconfig -d /local/conf -z localhost:9983",
+      "",
+      "  # Download into a path relative to the Solr installation",
+      "  bin/solr zk downconfig -n myconfig -d server/solr/configsets/myconfig/conf -z localhost:9983"
+    })
+public class ConfigSetDownloadTool extends ToolBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Option CONF_NAME_OPTION =
+      Option.builder("n")
+          .longOpt("conf-name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Configset name in ZooKeeper.")
+          .get();
+
+  private static final Option CONF_DIR_OPTION =
+      Option.builder("d")
+          .longOpt("conf-dir")
+          .hasArg()
+          .argName("DIR")
+          .required()
+          .desc("Local directory with configs.")
+          .get();
+
+  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
+
+  @picocli.CommandLine.Option(
+      names = {"-d", "--conf-dir"},
+      description =
+          """
+        Local directory for configs.
+        The path to write the downloaded configuration set into. If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be the parent. An absolute path may be supplied as well.
+
+        In either case, _pre-existing configurations at the destination will be overwritten_!
+
+        **Examples:**
+        * `-d directory_under_configsets`
+        * `-d /path/to/configset/destination`
+        """,
+      required = true,
+      paramLabel = "DIR")
+  public String confDir;
+
+  public ConfigSetDownloadTool() {
+    this(new DefaultToolRuntime());
+  }
+
+  public ConfigSetDownloadTool(ToolRuntime runtime) {
+    super(runtime);
+  }
+
+  @Override
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(CONF_NAME_OPTION)
+        .addOption(CONF_DIR_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
+  }
+
+  @Override
+  public String getName() {
+    return "downconfig";
+  }
+
+  @Override
+  public String getUsage() {
+    return "bin/solr zk downconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+  }
+
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    String zkHost = CLIUtils.getZkHost(cli);
+    String confName = cli.getOptionValue(CONF_NAME_OPTION);
+    String confDir = cli.getOptionValue(CONF_DIR_OPTION);
+
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
+      doDownconfig(zkClient, zkHost, confName, confDir);
+    } catch (Exception e) {
+      log.error("Could not complete downconfig operation for reason: ", e);
+      throw (e);
+    }
+  }
+
+  private void doDownconfig(SolrZkClient zkClient, String zkHost, String confName, String confDir)
+      throws Exception {
+    Path configSetPath = Path.of(confDir);
+    // we try to be nice about having the "conf" in the directory, and we create it if it's not
+    // there.
+    if (!configSetPath.endsWith("conf")) {
+      configSetPath = configSetPath.resolve("conf");
+    }
+    Files.createDirectories(configSetPath);
+    echo(
+        "Downloading configset "
+            + confName
+            + " from ZooKeeper at "
+            + zkHost
+            + " to directory "
+            + configSetPath.toAbsolutePath());
+
+    zkClient.downConfig(confName, configSetPath);
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    String zkHost = zkOpts.resolveZkHost();
+
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      doDownconfig(zkClient, zkHost, configSetOpts.confName, confDir);
+      return 0;
+    } catch (Exception e) {
+      log.error("Could not complete downconfig operation for reason: ", e);
+      throw (e);
+    }
+  }
+}
