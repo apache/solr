@@ -59,30 +59,7 @@ public class GetConfigAPI {
   // Every name SolrConfig.writeMap can emit.
   // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
-      path = {
-        "/config/luceneMatchVersion",
-        "/config/requestHandler",
-        "/config/initParams",
-        "/config/listener",
-        "/config/requestDispatcher",
-        "/config/jmx",
-        "/config/queryParser",
-        "/config/valueSourceParser",
-        "/config/transformer",
-        "/config/updateProcessor",
-        "/config/updateRequestProcessorChain",
-        "/config/queryConverter",
-        "/config/cache",
-        "/config/circuitBreaker",
-        "/config/expressible",
-        "/config/schemaFactory",
-        "/config/restManager",
-        "/config/statsCache",
-        "/config/recoveryStrategy",
-        "/config/indexReaderFactory",
-        "/config/indexConfigdeletionPolicy",
-        "/config/updateHandlerupdateLog"
-      },
+      path = {"/config/requestHandler"},
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getComponentConfig(SolrQueryRequest req, SolrQueryResponse rsp) {

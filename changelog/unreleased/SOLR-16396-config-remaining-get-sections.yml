@@ -1,0 +1,11 @@
+title: >
+  Migrate remaining GET /config/{component} sections to JAX-RS.
+  V2 renames listener, queryParser, valueSourceParser, transformer, updateProcessor, queryConverter and expressibles to
+  listeners, queryParsers, valueSourceParsers, transformers, updateProcessors, queryConverters and expressibles respectively.  (V1 unchanged)
+type: changed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-16396
+    url: https://issues.apache.org/jira/browse/SOLR-16396

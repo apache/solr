@@ -70,12 +70,10 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
-    // and "queryResponseWriters" here are the external, pluralized names for the internal
-    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|cache|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory|indexConfigdeletionPolicy|updateHandlerupdateLog}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -84,12 +82,10 @@ public interface ConfigApi {
         @PathParam("component") @Parameter(description = "Name of the config component")
             String component);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
-    // and "queryResponseWriters" here are the external, pluralized names for the internal
-    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|initParams|listeners|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|cache|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",
