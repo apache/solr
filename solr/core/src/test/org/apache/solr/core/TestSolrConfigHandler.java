@@ -188,6 +188,11 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static void reqhandlertests(RestTestHarness writeHarness) throws Exception {
+    // The full "/config" response pluralizes searchComponent -> searchComponents under the V2
+    // API (see GetConfig#getConfig), but not under V1; the per-component endpoints used elsewhere
+    // in this test are unaffected since they already use the pluralized name.
+    String searchComponentKey =
+        writeHarness.getBaseURL().contains("/____v2/") ? "searchComponents" : "searchComponent";
     String payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n"
@@ -332,7 +337,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "searchComponent", "tc", "class"),
+        asList("config", searchComponentKey, "tc", "class"),
         "org.apache.solr.handler.component.TermsComponent",
         TIMEOUT_S);
     payload =
@@ -343,14 +348,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "searchComponent", "tc", "class"),
+        asList("config", searchComponentKey, "tc", "class"),
         "org.apache.solr.handler.component.TermVectorComponent",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-searchcomponent' : 'tc'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness, "/config", asList("config", "searchComponent", "tc"), null, TIMEOUT_S);
+        writeHarness, "/config", asList("config", searchComponentKey, "tc"), null, TIMEOUT_S);
     // <valueSourceParser name="countUsage"
     // class="org.apache.solr.core.CountUsageValueSourceParser"/>
     payload =
@@ -444,7 +449,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         testForResponseElement(
             writeHarness,
             "/config",
-            asList("config", "searchComponent", "myspellcheck", "spellchecker", "class"),
+            asList("config", searchComponentKey, "myspellcheck", "spellchecker", "class"),
             "solr.DirectSolrSpellChecker",
             TIMEOUT_S);
 
