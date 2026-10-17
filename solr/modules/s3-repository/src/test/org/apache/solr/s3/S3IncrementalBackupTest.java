@@ -19,14 +19,24 @@ package org.apache.solr.s3;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Test;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.Nightly
@@ -140,5 +150,72 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   @Override
   public String getBackupLocation() {
     return "/";
+  }
+
+  /**
+   * Copying a backup to another bucket or prefix with tools such as {@code aws s3 sync} only copies
+   * the real files, not zero-byte directory marker objects. Such a copy, configset included, must
+   * still restore.
+   */
+  @Test
+  public void testRestoreBackupCopiedWithoutDirectoryMarkers() throws Exception {
+    setTestSuffix("testcopiedwithoutmarkers");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+    final String restoreConfigName = "conf1_restored";
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+    final String copyLocation = "copied-backups";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+        .setLocation(getBackupLocation())
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(solrClient, 100);
+
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      List<String> keys =
+          s3
+              .listObjectsV2Paginator(b -> b.bucket(BUCKET_NAME).prefix(backupName + "/"))
+              .contents()
+              .stream()
+              .map(S3Object::key)
+              .toList();
+      assertTrue(
+          "Backup should contain the configset",
+          keys.stream().anyMatch(k -> k.contains("/configs/conf1/")));
+      assertFalse(
+          "Backup should not contain directory marker objects: " + keys,
+          keys.stream().anyMatch(k -> k.endsWith("/")));
+
+      for (String key : keys) {
+        s3.copyObject(
+            b ->
+                b.sourceBucket(BUCKET_NAME)
+                    .sourceKey(key)
+                    .destinationBucket(BUCKET_NAME)
+                    .destinationKey(copyLocation + "/" + key));
+      }
+    }
+
+    // Restoring under a new config name makes the restore upload the configset from the backup
+    CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setLocation(copyLocation)
+        .setConfigName(restoreConfigName)
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(solrClient, 500);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
+
+    assertTrue(
+        new ConfigSetAdminRequest.List()
+            .process(solrClient)
+            .getConfigSets()
+            .contains(restoreConfigName));
+    assertEquals(
+        numDocs,
+        solrClient.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound());
   }
 }

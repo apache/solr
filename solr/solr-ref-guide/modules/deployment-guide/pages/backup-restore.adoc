@@ -729,12 +729,18 @@ All the above options will resolve to the same directory in your S3 Bucket: `dir
 
 Pre-Creation::
 The location must already exist within your S3 bucket before you can perform any backup operations with that location.
+A location exists if at least one object is stored under it, or if it was created as an (empty) folder, for instance with the "Create folder" button of the AWS console.
 +
 **Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
 
 Empty Location::
 If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.
 However the location option is mandatory and you will receive an error when trying to perform backup operations without it.
+
+Directory Markers::
+S3 has no native concept of directories, so Solr does not write any zero-byte "directory marker" objects: a directory is simply the common key prefix of the files stored in it.
+Backups can therefore be copied between buckets with tools such as `aws s3 sync`, which drop such marker objects, and still be restored.
+Backups made by older Solr versions, which do contain marker objects, can still be restored and deleted.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:
