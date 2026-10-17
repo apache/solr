@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -45,21 +46,7 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 3)
   public void test() throws Exception {
-    del("*:*");
-
-    index_specific(0, "id", "1", "sort_i", "5");
-    index_specific(0, "id", "2", "sort_i", "50");
-    index_specific(1, "id", "5", "sort_i", "4");
-    index_specific(1, "id", "6", "sort_i", "10");
-    index_specific(0, "id", "7", "sort_i", "1");
-    index_specific(1, "id", "8", "sort_i", "2");
-    index_specific(2, "id", "9", "sort_i", "1000");
-    index_specific(2, "id", "10", "sort_i", "1500");
-    index_specific(2, "id", "11", "sort_i", "1300");
-    index_specific(1, "id", "12", "sort_i", "15");
-    index_specific(1, "id", "13", "sort_i", "16");
-
-    commit();
+    indexDocs();
 
     /*
      * The count qparser plugin is pointing to AnalyticsTestQParserPlugin. This class defines a
@@ -88,6 +75,74 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     setDistributedParams(params);
     rsp = queryRandomShard(params);
     assertCount(rsp, 4);
+
+    // Merge strategies do not run for grouped responses at the coordinator, so the grouped
+    // analytics checks read shard responses. Shard 0 holds docs 1, 2 and 7.
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!count}");
+    params.add("group", "true");
+    params.add("group.field", "sort_i");
+    params.add("group.distributed.first", "true");
+    QueryResponse shardRsp = new QueryRequest(params).process(clients.get(0));
+    assertShardCount(shardRsp, "analytics section missing for grouped shard query", 3);
+
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!count}");
+    params.add("group", "true");
+    params.add("group.field", "sort_i");
+    params.add("group.ngroups", "true");
+    setDistributedParams(params);
+    rsp = queryRandomShard(params);
+    assertEquals(11, rsp.getGroupResponse().getValues().get(0).getNGroups().intValue());
+    assertEquals(11, rsp.getGroupResponse().getValues().get(0).getMatches());
+  }
+
+  @Test
+  @ShardsFixed(num = 3)
+  public void testGroupedSecondPhase() throws Exception {
+    indexDocs();
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!count}");
+    params.add("group", "true");
+    params.add("group.field", "sort_i");
+    params.add("group.distributed.second", "true");
+    params.add("group.topgroups.sort_i", "5");
+    params.add("group.topgroups.sort_i", "50");
+    QueryResponse shardRsp = new QueryRequest(params).process(clients.get(0));
+    assertShardCount(shardRsp, "analytics section missing for grouped second phase shard query", 3);
+  }
+
+  private void indexDocs() throws Exception {
+    del("*:*");
+
+    index_specific(0, "id", "1", "sort_i", "5");
+    index_specific(0, "id", "2", "sort_i", "50");
+    index_specific(1, "id", "5", "sort_i", "4");
+    index_specific(1, "id", "6", "sort_i", "10");
+    index_specific(0, "id", "7", "sort_i", "1");
+    index_specific(1, "id", "8", "sort_i", "2");
+    index_specific(2, "id", "9", "sort_i", "1000");
+    index_specific(2, "id", "10", "sort_i", "1500");
+    index_specific(2, "id", "11", "sort_i", "1300");
+    index_specific(1, "id", "12", "sort_i", "15");
+    index_specific(1, "id", "13", "sort_i", "16");
+
+    commit();
+  }
+
+  private void assertShardCount(QueryResponse shardRsp, String missingMessage, int count)
+      throws Exception {
+    @SuppressWarnings({"rawtypes"})
+    NamedList analytics = (NamedList) shardRsp.getResponse().get("analytics");
+    assertNotNull(missingMessage, analytics);
+    Integer c = (Integer) analytics.get("mycount");
+    if (c != count) {
+      throw new Exception("Shard count is not correct:" + count + ":" + c);
+    }
   }
 
   private void assertCountOnly(QueryResponse rsp, int count) throws Exception {
