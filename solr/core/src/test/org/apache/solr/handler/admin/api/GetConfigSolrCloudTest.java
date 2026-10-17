@@ -94,7 +94,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     JettySolrRunner hostingJetty = cluster.getReplicaJetty(replica);
     JettySolrRunner otherJetty =
         cluster.getJettySolrRunners().stream()
-            .filter(jetty -> jetty != hostingJetty)
+            .filter(jetty -> !jetty.equals(hostingJetty))
             .findFirst()
             .orElseThrow();
 
