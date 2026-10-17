@@ -304,6 +304,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
+    String keyNameInShardDocs = shardResponseKeyName(rb, uniqueKeyField);
 
     NamedList<Object> shardInfo = null;
     if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -407,10 +408,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         // put it in the uniqueDoc to dedup
         Set<Object> thisShardCombinedIds =
             combinedDocIdsPerShard.computeIfAbsent(
-                srsp.getShard(), shard -> extractIdsFromCombinedResponse(rb, srsp, uniqueKeyField));
+                srsp.getShard(),
+                shard -> extractIdsFromCombinedResponse(rb, srsp, keyNameInShardDocs));
         for (int i = 0; i < docs.size(); i++) {
           SolrDocument doc = docs.get(i);
-          Object id = doc.getFieldValue(uniqueKeyField.getName());
+          Object id = doc.getFieldValue(keyNameInShardDocs);
           if (!thisShardCombinedIds.contains(id)) {
             continue;
           }
@@ -646,11 +648,11 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
    * Returns an empty set if the combined response is not available.
    */
   private static Set<Object> extractIdsFromCombinedResponse(
-      ResponseBuilder rb, ShardResponse srsp, SchemaField uniqueKeyField) {
+      ResponseBuilder rb, ShardResponse srsp, String keyNameInShardDocs) {
     Object response = SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false);
     if (response instanceof SolrDocumentList docList) {
       return docList.stream()
-          .map(doc -> doc.getFieldValue(uniqueKeyField.getName()))
+          .map(doc -> doc.getFieldValue(keyNameInShardDocs))
           .collect(Collectors.toSet());
     }
     return Set.of();
