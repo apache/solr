@@ -99,7 +99,7 @@ Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer s
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
 
-=== V2 collections tree
+=== V2 API
 
 In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
 It does not include `live_nodes`, the alias map, or cluster properties.
