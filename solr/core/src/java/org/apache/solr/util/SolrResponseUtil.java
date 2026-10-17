@@ -17,6 +17,9 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -52,12 +55,18 @@ public class SolrResponseUtil {
                     SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           return null;
         } else {
-          log.warn("corrupted response on {} : {}", srsp.getShardRequest(), solrResponse);
+          String nodeName =
+              srsp.getNodeName() != null ? srsp.getNodeName() : srsp.getShardAddress();
+          log.warn(
+              "corrupted response on {} : response contains keys {}, shard request purpose {}",
+              nodeName,
+              responseKeyNames(response),
+              srsp.getShardRequest().purpose);
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               shardResponseKey
                   + " is absent in response from "
-                  + srsp.getNodeName()
+                  + nodeName
                   + ", but "
                   + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
                   + " isn't set in the response.");
@@ -73,5 +82,17 @@ public class SolrResponseUtil {
             ex);
       }
     }
+  }
+
+  /**
+   * The top-level key names of a shard response, for logging. The values are left out on purpose:
+   * the response header can echo the request params, the query text included.
+   */
+  private static List<String> responseKeyNames(NamedList<?> response) {
+    List<String> keyNames = new ArrayList<>(response.size());
+    for (Map.Entry<String, ?> entry : response) {
+      keyNames.add(entry.getKey());
+    }
+    return keyNames;
   }
 }
