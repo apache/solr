@@ -18,11 +18,14 @@ package org.apache.solr.handler.component;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.search.CallerSpecificQueryLimit;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.util.ErrorLogMuter;
+import org.apache.solr.util.TestInjection;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -944,6 +947,68 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.rows", "10");
 
     assertQ(req(params), "*[count(//doc)=0]");
+  }
+
+  @Test
+  public void testExpandCompletesPostFilterCollectors() {
+    assertU(adoc("id", "1", "group_s", "g1", "test_i", "5"));
+    assertU(adoc("id", "2", "group_s", "g1", "test_i", "50"));
+    assertU(adoc("id", "3", "group_s", "g2", "test_i", "7"));
+    assertU(adoc("id", "4", "group_s", "g2", "test_i", "70"));
+    assertU(commit());
+
+    CompleteTrackingQParserPlugin.reset();
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s}",
+            "fq", "{!completetracking}",
+            "expand", "true",
+            "expand.rows", "10"),
+        "count(/response/lst[@name='expanded']/result)=2");
+
+    // one collector for the main search and one for the expand search; both must be completed
+    assertTrue(
+        "expand should build its own post filter collector",
+        CompleteTrackingQParserPlugin.CREATED.get() >= 2);
+    assertEquals(
+        "every post filter collector must have complete() called",
+        CompleteTrackingQParserPlugin.CREATED.get(),
+        CompleteTrackingQParserPlugin.COMPLETED.get());
+  }
+
+  @Test
+  public void testExpandCompletesPostFilterCollectorsWhenQueryLimitExceeded() {
+    assertU(adoc("id", "1", "group_s", "g1", "test_i", "5"));
+    assertU(adoc("id", "2", "group_s", "g1", "test_i", "50"));
+    assertU(adoc("id", "3", "group_s", "g2", "test_i", "7"));
+    assertU(adoc("id", "4", "group_s", "g2", "test_i", "70"));
+    assertU(commit());
+
+    // the first check is ExpandComponent.process before the expand search; trip on the next one
+    CallerSpecificQueryLimit limit =
+        new CallerSpecificQueryLimit(List.of("ExpandComponent.process:1"));
+    CompleteTrackingQParserPlugin.reset();
+    TestInjection.queryTimeout = limit;
+    try {
+      assertQ(
+          req(
+              "q", "*:*",
+              "fq", "{!collapse field=group_s}",
+              "fq", "{!completetracking}",
+              "expand", "true",
+              "expand.rows", "10"),
+          "//lst[@name='responseHeader']/*[@name='partialResults'][.='true']");
+    } finally {
+      TestInjection.queryTimeout = null;
+    }
+    assertFalse(
+        "the query limit should have tripped", limit.getCallerMatcher().getTrippedBy().isEmpty());
+
+    assertEquals(
+        "every post filter collector must have complete() called",
+        CompleteTrackingQParserPlugin.CREATED.get(),
+        CompleteTrackingQParserPlugin.COMPLETED.get());
   }
 
   @Test
