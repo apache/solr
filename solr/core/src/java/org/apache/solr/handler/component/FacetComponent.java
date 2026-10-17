@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY;
 import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import java.io.IOException;
@@ -1032,6 +1033,9 @@ public class FacetComponent extends SearchComponent {
               SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "responseHeader", false);
       if (!haveCompleteResults(responseHeader)) {
         partialRefinement = true;
+        if ("omitted".equals(responseHeader.get(RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          fi.pivotDataWithheld = true;
+        }
       }
 
       NamedList<?> facetCounts =
@@ -1188,7 +1192,7 @@ public class FacetComponent extends SearchComponent {
         SpatialHeatmapFacets.RESPONSE_KEY,
         SpatialHeatmapFacets.distribFinish(fi.heatmapFacets, rb));
 
-    if (fi.pivotFacets != null && fi.pivotFacets.size() > 0) {
+    if (fi.pivotFacets != null && fi.pivotFacets.size() > 0 && !fi.pivotDataWithheld) {
       facet_counts.add(PIVOT_KEY, createPivotFacetOutput(rb));
     }
 
@@ -1277,6 +1281,7 @@ public class FacetComponent extends SearchComponent {
         new LinkedHashMap<>();
     public SimpleOrderedMap<SimpleOrderedMap<Integer>> intervalFacets = new SimpleOrderedMap<>();
     public SimpleOrderedMap<PivotFacet> pivotFacets = new SimpleOrderedMap<>();
+    boolean pivotDataWithheld;
     public LinkedHashMap<String, SpatialHeatmapFacets.HeatmapFacet> heatmapFacets;
 
     void parse(SolrParams params, ResponseBuilder rb) {

@@ -336,6 +336,48 @@ public class TestQueryLimits extends SolrCloudTestCase {
         "refinement stopped on omitted results should be marked omitted: " + rsp.jsonStr(),
         "omitted",
         String.valueOf(rsp.getHeader().get("partialResults")));
+    assertNull("no pivot data should be returned: " + rsp.jsonStr(), rsp.getFacetPivot());
+  }
+
+  @Test
+  public void testPivotFacetRefinementWithholdsPivotDataWhenAnyShardOmits() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    RefinementPivotQueryLimit limit = new RefinementPivotQueryLimit();
+    TestInjection.queryTimeout = limit;
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "facet",
+                "true",
+                "facet.pivot",
+                "val_i,id",
+                "f.val_i.facet.limit",
+                "1",
+                "f.val_i.facet.overrequest.ratio",
+                "0",
+                "f.val_i.facet.overrequest.count",
+                "0",
+                "f.id.facet.limit",
+                "1",
+                "f.id.facet.overrequest.ratio",
+                "0",
+                "f.id.facet.overrequest.count",
+                "0",
+                "multiThreaded",
+                "false",
+                CommonParams.PARTIAL_RESULTS,
+                "false"));
+    assertTrue(
+        "pivot refinement should reach the shards: " + limit.getTrippedRequests(),
+        limit.getTrippedRequests() > 0);
+    assertEquals(
+        "an omitted shard refinement answer should mark the response omitted: " + rsp.jsonStr(),
+        "omitted",
+        String.valueOf(rsp.getHeader().get("partialResults")));
+    assertNull("no pivot data should be returned: " + rsp.jsonStr(), rsp.getFacetPivot());
   }
 
   @Test
