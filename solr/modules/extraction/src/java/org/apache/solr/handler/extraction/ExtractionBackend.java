@@ -52,7 +52,10 @@ public interface ExtractionBackend extends Closeable {
     md.add(ExtractingMetadataConstants.HTTP_HEADER_CONTENT_TYPE, request.contentType);
     md.add(ExtractingMetadataConstants.STREAM_NAME, request.streamName);
     md.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, request.streamSourceInfo);
-    md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
+    // the size is unknown (null) for streams that do not report one; do not add the text "null"
+    if (request.streamSize != null) {
+      md.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(request.streamSize));
+    }
     md.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, request.contentType);
     md.add(ExtractingMetadataConstants.HTTP_HEADER_CONTENT_ENCODING, request.charset);
     return md;
