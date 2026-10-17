@@ -82,12 +82,6 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.znodeVersion.params >= -1);
   }
 
-  /**
-   * Reproduces a bug where a v2 "/config" request proxied internally to the node actually hosting
-   * the collection fails with "Cannot find API for the path", because Solr forwards such requests
-   * using the short "/c/{collection}/..." alias, but {@code Constants.INDEX_PATH_PREFIX}'s JAX-RS
-   * {@code @Path} regex only recognizes "cores" or "collections", not "c".
-   */
   @Test
   public void testGetOverlayFromCollectionViaNonHostingNode() throws Exception {
     Replica replica = getCollectionState(COLLECTION_NAME).replicaStream().findFirst().orElseThrow();
