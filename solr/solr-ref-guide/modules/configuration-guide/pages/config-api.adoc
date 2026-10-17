@@ -64,16 +64,6 @@ A plugin's *unnamed* child elements - for example, the anonymous `<processor>` e
     ]
 }]
 ----
-
-Top-level section names match the internal plugin type names used in `solrconfig.xml`, including `searchComponent` and `queryResponseWriter`:
-
-[source,json]
-----
-{
-  "searchComponent": {"elevator": {"class": "solr.QueryElevationComponent"}},
-  "queryResponseWriter": {"xslt": {"class": "solr.XSLTResponseWriter"}}
-}
-----
 ====
 
 V2 API::
@@ -100,15 +90,7 @@ First, a plugin's unnamed child elements are grouped under a self-describing `ch
 }]
 ----
 
-Second, the `searchComponent` and `queryResponseWriter` sections are renamed to their pluralized forms, `searchComponents` and `queryResponseWriters`, matching the names used by the dedicated per-section endpoints described below:
-
-[source,json]
-----
-{
-  "searchComponents": {"elevator": {"class": "solr.QueryElevationComponent"}},
-  "queryResponseWriters": {"xslt": {"class": "solr.XSLTResponseWriter"}}
-}
-----
+Second, the `searchComponent` and `queryResponseWriter` sections are renamed to their pluralized forms, `searchComponents` and `queryResponseWriters`, as described below.
 ====
 ======
 
