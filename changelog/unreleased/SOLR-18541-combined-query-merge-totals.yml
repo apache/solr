@@ -1,0 +1,13 @@
+title: >
+  CombinedQueryComponent.mergeIds: a skipped partial shard no longer
+  contributes its totals to the merged response, the approximateTotalHits
+  fallback adds each shard's own count instead of the running total, and the
+  merged numFoundExact flag is true only when every shard reports an exact
+  count, no shard was skipped, and only one sub-query contributes to the
+  merge.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18541
+    url: https://issues.apache.org/jira/browse/SOLR-18541

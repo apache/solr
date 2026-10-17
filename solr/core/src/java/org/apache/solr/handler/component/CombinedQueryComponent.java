@@ -313,6 +313,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
     long numFound = 0;
     boolean hitCountIsExact = true;
+    int contributingQueryCount = 0;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
     boolean maxHitsTerminatedEarly = false;
@@ -329,6 +330,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       int failedShardCount = 0;
       long queryNumFound = 0;
       long queryApproximateTotalHits = 0;
+      boolean queryContributed = false;
       final ShardDocQueue queuePerQuery =
           newShardDocQueue(rb.req.getSearcher(), sortFields, perQueryQueueSize);
       for (ShardResponse srsp : sreq.responses) {
@@ -339,8 +341,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 instanceof List<?> docList
             && docList.get(queryIndex) instanceof SolrDocumentList solrDocumentList) {
           docs = Objects.requireNonNull(solrDocumentList);
-          queryNumFound += docs.getNumFound();
-          hitCountIsExact = hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact());
         }
         failedShardCount +=
             addShardInfo(
@@ -378,14 +378,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           maxHitsTerminatedEarly = true;
         }
 
-        Object ath =
-            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
-        if (ath == null) {
-          queryApproximateTotalHits += queryNumFound;
-        } else {
-          queryApproximateTotalHits += ((Number) ath).longValue();
-        }
-
         @SuppressWarnings("unchecked")
         NamedList<List<Object>> sortFieldValues =
             (NamedList<List<Object>>)
@@ -396,8 +388,30 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         }
 
         boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
+        // The skip must be decided before the totals below are folded in: a skipped shard
+        // contributes nothing to this query's totals.
         if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
+          // a skipped shard leaves hits out of the merged count, which is then a lower bound; a
+          // shard that stopped early may report no count for this query at all, or a zero
+          hitCountIsExact = false;
           continue;
+        }
+
+        queryContributed = true;
+
+        if (docs != null) {
+          queryNumFound += docs.getNumFound();
+          if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
+            hitCountIsExact = false;
+          }
+        }
+
+        Object ath =
+            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+        if (ath == null) {
+          queryApproximateTotalHits += docs != null ? docs.getNumFound() : 0;
+        } else {
+          queryApproximateTotalHits += ((Number) ath).longValue();
         }
         NamedList<List<Object>> unmarshalledSortFieldValues =
             needsUnmarshalling
@@ -440,7 +454,17 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       shardDocMap.put(queriesToCombineKeys[queryIndex], shardDocsPerQuery);
       numFound = max(numFound, queryNumFound);
       approximateTotalHits = max(approximateTotalHits, queryApproximateTotalHits);
+      if (queryContributed) {
+        contributingQueryCount++;
+      }
     } // for each query to combine
+
+    // The merged numFound is the largest single sub-query count, not the count of the
+    // distinct documents that match any sub-query, so a merge that more than one
+    // sub-query contributed to does not report that count as exact.
+    if (contributingQueryCount > 1) {
+      hitCountIsExact = false;
+    }
 
     rb.rsp.addToLog("hits", numFound);
 
