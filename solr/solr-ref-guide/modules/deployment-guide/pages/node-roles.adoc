@@ -109,7 +109,7 @@ Fetches the list of supported roles and their supported modes for this cluster.
 *Input*
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/node-roles/supported
+curl 'http://localhost:8983/api/cluster/node-roles/supported'
 ----
 
 *Output*
@@ -137,7 +137,7 @@ Fetches the current node roles assignment for all the nodes in the cluster.
 *Input*
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/node-roles
+curl 'http://localhost:8983/api/cluster/node-roles'
 ----
 
 *Output*
@@ -208,7 +208,7 @@ Fetches the current node roles assignment for the specified node.
 *Input*
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr
+curl 'http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr'
 ----
 
 *Output*
