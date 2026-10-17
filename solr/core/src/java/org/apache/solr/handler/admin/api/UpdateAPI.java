@@ -22,6 +22,8 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import org.apache.solr.api.EndPoint;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -41,7 +43,7 @@ public class UpdateAPI {
 
   @EndPoint(method = POST, path = "/update", permission = UPDATE_PERM)
   public void update(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
+    rewriteToJsonDocs(req);
     updateRequestHandler.handleRequest(req, rsp);
   }
 
@@ -57,12 +59,18 @@ public class UpdateAPI {
 
   @EndPoint(method = POST, path = "/update/json", permission = UPDATE_PERM)
   public void updateJson(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
+    rewriteToJsonDocs(req);
     updateRequestHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(method = POST, path = "/update/bin", permission = UPDATE_PERM)
   public void updateJavabin(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     updateRequestHandler.handleRequest(req, rsp);
+  }
+
+  private static void rewriteToJsonDocs(SolrQueryRequest req) {
+    req.getContext().put(PATH, "/update/json/docs");
+    req.setParams(
+        new ModifiableSolrParams(req.getParams()).set(UpdateParams.UPDATE_CHAIN, "json-docs-uuid"));
   }
 }
