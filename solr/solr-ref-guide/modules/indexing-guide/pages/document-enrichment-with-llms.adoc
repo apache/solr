@@ -56,7 +56,7 @@ Language Models is a module and therefore its plugins must be configured in `sol
 * Enable the `language-models` module to make the Language Models classes available on Solr's classpath.
 See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 
-* An {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[UpdateRequestProcessorChain]
+* An {solr-javadocs}/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[UpdateRequestProcessorChain]
 that includes at least one `DocumentEnrichmentUpdateProcessor` update processor.
 
 === Update Processor Chain Design
