@@ -53,6 +53,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -2950,6 +2951,7 @@ public class ZkController implements Closeable {
     String coreNodeName;
     String shard;
     String coreName;
+    private boolean unloadQueued;
 
     public UnloadCoreOnDeletedWatcher(String coreNodeName, String shard, String coreName) {
       this.coreNodeName = coreNodeName;
@@ -2964,20 +2966,32 @@ public class ZkController implements Closeable {
       if (getCoreContainer().getCoreDescriptor(coreName) == null) return true;
 
       boolean replicaRemoved = getReplicaOrNull(collectionState, shard, coreNodeName) == null;
-      if (replicaRemoved) {
+      if (replicaRemoved && !unloadQueued) {
+        unloadQueued = true;
+        log.info("Replica {} removed from clusterstate, remove it.", coreName);
         try {
-          log.info("Replica {} removed from clusterstate, remove it.", coreName);
-          getCoreContainer().unload(coreName, true, true, true);
-        } catch (SolrException e) {
-          if (!e.getMessage().contains("Cannot unload non-existent core")) {
-            // no need to log if the core was already unloaded
-            log.warn("Failed to unregister core:{}", coreName, e);
-          }
-        } catch (Exception e) {
-          log.warn("Failed to unregister core:{}", coreName, e);
+          // unload may block on a pending core op held by register's caller
+          getCoreContainer().runAsync(this::unloadCore);
+        } catch (RejectedExecutionException e) {
+          log.info("Not unloading core:{}, CoreContainer is shutting down", coreName);
         }
       }
       return replicaRemoved;
+    }
+
+    private void unloadCore() {
+      CoreDescriptor cd = getCoreContainer().getCoreDescriptor(coreName);
+      if (cd == null || !coreNodeName.equals(cd.getCloudDescriptor().getCoreNodeName())) return;
+      try {
+        getCoreContainer().unload(coreName, true, true, true);
+      } catch (SolrException e) {
+        if (!e.getMessage().contains("Cannot unload non-existent core")) {
+          // no need to log if the core was already unloaded
+          log.warn("Failed to unregister core:{}", coreName, e);
+        }
+      } catch (Exception e) {
+        log.warn("Failed to unregister core:{}", coreName, e);
+      }
     }
 
     @Override
