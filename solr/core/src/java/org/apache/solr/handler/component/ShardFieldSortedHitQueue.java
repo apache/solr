@@ -120,6 +120,10 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
         if (f1 > f2) return 1;
         return 0;
       };
+    } else if (type == SortField.Type.DOC) {
+      // doc ids are local to a shard and shards do not send them back; documents from the same
+      // shard keep their shard order and the shard name breaks ties between shards
+      return (o1, o2) -> 0;
     } else if (type == SortField.Type.REWRITEABLE) {
       try {
         sortField = sortField.rewrite(searcher);
