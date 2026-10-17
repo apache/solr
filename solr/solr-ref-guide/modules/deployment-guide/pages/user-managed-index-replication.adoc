@@ -1,4 +1,5 @@
-= User-Managed Index Replication Index Replication
+= User-Managed Index Replication
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -378,25 +379,26 @@ http://{leaderHost}:{port}/solr/{coreName}/replication?command=disablereplicatio
 `indexversion`::
 Return the version of the latest replicatable index on the specified leader or follower.
 +
+[tabs#indexversion-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{host}:{port}/solr/{coreName}/replication?command=indexversion
-
 ----
 ====
+
+V2 API::
 +
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{host}:{port}/api/cores/{coreName}/replication/indexversion
-
 ----
 ====
+======
 
 `fetchindex`::
 Force the specified follower to fetch a copy of the index from its leader.
@@ -435,25 +437,26 @@ http://{followerHost}:{port}/solr/{coreName}/replication?command=details
 Retrieve a list of Lucene files present in the specified host's index.
 
 +
+[tabs#filelist-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{host}:{port}/solr/{coreName}/replication?command=filelist&generation={generationNumber}
-
 ----
 ====
+
+V2 API::
 +
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{host}:{port}/api/cores/{coreName}/replication/files?generation={generationNumber}
-
 ----
 ====
+======
 +
 You can discover the generation number of the index by running the `indexversion` command.
 
@@ -461,25 +464,26 @@ You can discover the generation number of the index by running the `indexversion
 Retrieve a stream of a specific file path of a core.
 
 +
+[tabs#filecontent-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{host}:{port}/solr/{coreName}/replication?command=filecontent&{directoryType}={filePath}&wt=filestream
-
 ----
 ====
+
+V2 API::
 +
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{host}:{port}/api/cores/{coreName}/replication/files/{filePath}&dirType={directoryType}
-
 ----
 ====
+======
 +
 Directory type is required for both V1 and V2 with these supported types:
 
@@ -594,23 +598,26 @@ Use a small positive value (for example `2`) for production monitoring unless yo
 
 Use the health endpoint as follows:
 
+[tabs#health-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{followerHost}:{port}/solr/admin/info/health?maxGenerationLag={maxLag}
 ----
 ====
 
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{followerHost}:{port}/api/node/health?maxGenerationLag={maxLag}
 ----
 ====
+======
 
 A healthy response looks like:
 

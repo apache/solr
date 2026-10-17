@@ -137,13 +137,6 @@ The response will include the status of the request and the status of the cluste
 
 === Examples using CLUSTERSTATUS
 
-*Input*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
-----
-
 *Output*
 
 [source,json]
@@ -436,13 +429,6 @@ curl http://localhost:8983/api/cluster/properties
 ====
 ======
 
-*Input*
-
-[source,bash]
-----
-curl http://localhost:8983/api/cluster/properties
-----
-
 *Output*
 
 [source,json]
@@ -479,13 +465,6 @@ curl http://localhost:8983/api/cluster/properties/urlScheme
 ----
 ====
 ======
-
-*Input*
-
-[source,bash]
-----
-curl http://localhost:8983/api/cluster/properties/urlScheme
-----
 
 *Output*
 
@@ -1138,12 +1117,7 @@ curl http://localhost:8983/api/cluster/overseer
 
 === Examples using OVERSEERSTATUS
 
-*Input:*
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
-----
+*Output:*
 
 [source,json]
 ----
