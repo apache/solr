@@ -985,9 +985,10 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", "group_s", "g2", "test_i", "70"));
     assertU(commit());
 
-    // the first check is ExpandComponent.process before the expand search; trip on the next one
+    // the sixth check is ExpandComponent.process inside the expand search: the expand post filter
+    // collector has been created but has not completed yet, so the limit exception leaves the search
     CallerSpecificQueryLimit limit =
-        new CallerSpecificQueryLimit(List.of("ExpandComponent.process:1"));
+        new CallerSpecificQueryLimit(List.of("ExpandComponent.process:6"));
     CompleteTrackingQParserPlugin.reset();
     TestInjection.queryTimeout = limit;
     try {
