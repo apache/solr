@@ -715,7 +715,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertTrue(
         "preemptive creation of 2017-10-26 is either still in flight (3 collections) or finished (4)"
             + colsT1,
-        colsT1.contains("myalias" + TRA + "2017-10-26") ? colsT1.size() == 4 : colsT1.size() == 3);
+        colsT1.contains(alias + TRA + "2017-10-26") ? colsT1.size() == 4 : colsT1.size() == 3);
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
@@ -744,7 +744,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertFalse(
         "Preemptive creation happened twice and created a collection "
             + "further in the future than the configured time slice!",
-        cols.contains("myalias" + TRA + "2017-10-27"));
+        cols.contains(alias + TRA + "2017-10-27"));
 
     validateCollectionCountAndAvailability(
         alias, 4, "Only 4 cols expected (preemptive create happened" + "twice among threads");
