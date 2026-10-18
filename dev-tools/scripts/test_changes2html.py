@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -58,6 +60,24 @@ class ChangesToHtmlTest(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             write_changes_html(self.root / 'missing.md', self.root / 'release')
 
+    def test_cli_without_output_dir_writes_to_stdout(self):
+        script = Path(__file__).resolve().parent / 'changes2html.py'
+
+        result = subprocess.run(
+            [sys.executable, str(script), str(self.changelog)],
+            capture_output=True,
+            text=True,
+            cwd=self.root,
+            check=False,
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('Apache Solr Release Notes', result.stdout)
+        self.assertIn('SOLR-123', result.stdout)
+        created = sorted(path.name for path in self.root.iterdir())
+        self.assertEqual(['CHANGELOG.md'], created)
 
 if __name__ == '__main__':
+    unittest.main()
+
     unittest.main()
