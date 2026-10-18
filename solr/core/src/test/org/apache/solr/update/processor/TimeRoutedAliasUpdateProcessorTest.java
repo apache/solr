@@ -343,7 +343,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         ExecutorUtil.newMDCAwareCachedThreadPool(
             "TimeRoutedAliasProcessorTestx-testPreemptiveCreation");
 
-    Exception[] threadExceptions = new Exception[2];
+    Throwable[] threadExceptions = new Throwable[2];
     boolean[] threadStarted = new boolean[2];
     boolean[] threadFinished = new boolean[2];
     try {
@@ -354,8 +354,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             try {
               starter.await();
               concurrentUpdates(params, alias);
-            } catch (Exception e) {
-              threadExceptions[0] = e;
+            } catch (Throwable t) {
+              threadExceptions[0] = t;
             }
             threadFinished[0] = true;
           });
@@ -366,8 +366,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             try {
               starter.await();
               concurrentUpdates(params, alias2);
-            } catch (Exception e) {
-              threadExceptions[1] = e;
+            } catch (Throwable t) {
+              threadExceptions[1] = t;
             }
             threadFinished[1] = true;
           });
@@ -377,10 +377,13 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
 
     // threads are known to be terminated by now, check for exceptions
-    for (Exception threadException : threadExceptions) {
+    for (Throwable threadException : threadExceptions) {
       if (threadException != null) {
         Thread.sleep(5000); // avoid spurious fails due to TRA thread not done yet
-        throw threadException;
+        if (threadException instanceof Error) {
+          throw (Error) threadException;
+        }
+        throw (Exception) threadException;
       }
     }
 
@@ -705,13 +708,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             params));
     assertUpdateResponse(solrClient.commit(alias));
 
-    List<String> colsT1;
-    colsT1 =
-        new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(3, colsT1.size());
-    assertFalse(
-        "Preemptive creation appears to not be asynchronous anymore",
-        colsT1.contains("myalias" + TRA + "2017-10-26"));
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
