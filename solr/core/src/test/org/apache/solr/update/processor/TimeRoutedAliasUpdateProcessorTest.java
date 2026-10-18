@@ -602,6 +602,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             + "may exist yet: "
             + cols,
         cols.size() == 8 || cols.size() == 9);
+    assertEquals(
+        "the only collection that can follow 2017-10-30 is 2017-10-31",
+        cols.size() == 9,
+        cols.contains(alias + TRA + "2017-10-31"));
+    assertFalse(cols.contains(alias + TRA + "2017-11-01"));
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 7, alias);
@@ -669,7 +674,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertFalse(cols.contains("myalias" + TRA + "2017-11-03"));
+    assertFalse(cols.contains(alias + TRA + "2017-11-03"));
 
     assertUpdateResponse(
         add(
