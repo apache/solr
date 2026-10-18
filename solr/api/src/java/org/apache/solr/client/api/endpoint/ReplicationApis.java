@@ -39,6 +39,7 @@ public interface ReplicationApis {
 
   @GET
   @CoreApiParameters
+  @Path("/details")
   @Operation(
       summary = "Return replication configuration and current status.",
       tags = {"replication"})
