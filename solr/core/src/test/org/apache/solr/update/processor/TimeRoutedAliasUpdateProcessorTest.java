@@ -710,6 +710,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             params));
     assertUpdateResponse(solrClient.commit(alias));
 
+    List<String> colsT1 =
+        new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
+    assertTrue(
+        "preemptive creation of 2017-10-26 is either still in flight (3 collections) or finished (4)"
+            + colsT1,
+        colsT1.contains("myalias" + TRA + "2017-10-26") ? colsT1.size() == 4 : colsT1.size() == 3);
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
