@@ -101,7 +101,8 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "transformers", "transformer",
           "updateProcessors", "updateProcessor",
           "queryConverters", "queryConverter",
-          "expressibles", "expressible");
+          "expressibles", "expressible",
+          "caches", "cache");
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);
@@ -194,10 +195,19 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       String componentName,
       boolean meta,
       SolrQueryRequest req) {
-    Map pluginNameVsPluginInfo = (Map) section.get(component);
-    if (pluginNameVsPluginInfo == null) {
+    Object sectionValue = section.get(component);
+    if (sectionValue == null) {
       return;
     }
+    if (!(sectionValue instanceof Map) && !(sectionValue instanceof MapWriter)) {
+      // e.g. circuitBreaker, initParams, listener, updateRequestProcessorChain: plugins declared
+      // without REQUIRE_NAME are serialized as a List, not a name-keyed Map, so filtering by name
+      // doesn't apply to them.
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          component + " does not support filtering by componentName");
+    }
+    Map pluginNameVsPluginInfo = (Map) sectionValue;
 
     Object o =
         pluginNameVsPluginInfo instanceof MapWriter

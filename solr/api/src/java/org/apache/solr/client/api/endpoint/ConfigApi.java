@@ -73,7 +73,7 @@ public interface ConfigApi {
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|cache|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory|indexConfigdeletionPolicy|updateHandlerupdateLog}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|caches|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory|indexConfigdeletionPolicy|updateHandlerupdateLog}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -82,10 +82,14 @@ public interface ConfigApi {
         @PathParam("component") @Parameter(description = "Name of the config component")
             String component);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS. Sections without
+    // REQUIRE_NAME in SolrConfig's plugin registration (initParams, listeners,
+    // updateRequestProcessorChain, circuitBreaker) are deliberately excluded here: they're
+    // serialized as a List rather than a name-keyed Map, so by-name lookup isn't meaningful for
+    // them (see GetConfig.filterByComponentName).
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|initParams|listeners|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|cache|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|queryParsers|valueSourceParsers|transformers|updateProcessors|queryConverters|caches|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",
