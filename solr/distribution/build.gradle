@@ -48,15 +48,16 @@ if (project.ext.useGpgForSigning) {
 // Prepare the "source" distribution artifact.
 apply from: buildscript.sourceFile.toPath().resolveSibling("source-release.gradle")
 
-// Set up the HTML-rendered "changes" distribution artifact by linking to documentation's output.
+// The release tooling creates this Python-rendered output after `clean check`.
+def documentationProject = project(':solr:documentation')
+def releaseChangesHtmlDir = new File(documentationProject.buildDir, 'site/changes')
+
 configurations {
-  changesHtml
   openApiSpecFile
   docker
 }
 
 dependencies {
-  changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
   openApiSpecFile project(path: ":solr:api", configuration: "openapiSpec")
   docker project(path: ':solr:docker', configuration: 'packagingOfficial')
 }
@@ -128,9 +129,24 @@ task assembleRelease(type: Sync) {
   description "Assemble all Solr artifacts for a release."
   dependsOn ":mavenToLocalFolder"
 
-  from(configurations.changesHtml, {
+  from(releaseChangesHtmlDir, {
     into "changes"
   })
+
+  doFirst {
+    def requiredFiles = [
+        "Changes.html",
+        "ChangesFancyStyle.css",
+        "ChangesSimpleStyle.css",
+        "ChangesFixedWidthStyle.css",
+    ]
+    def missingFiles = requiredFiles.findAll { name -> !new File(releaseChangesHtmlDir, name).isFile() }
+    if (!missingFiles.isEmpty()) {
+      throw new GradleException(
+          "Missing release changes files ${missingFiles}; run `python3 -u dev-tools/scripts/changes2html.py CHANGELOG.md " +
+              "--output-dir solr/documentation/build/site/changes` before assembleRelease.")
+    }
+  }
 
   from(configurations.openApiSpecFile, {
     into "openApi"
