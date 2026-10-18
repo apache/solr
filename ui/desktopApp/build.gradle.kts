@@ -30,12 +30,6 @@ dependencies {
   implementation(libs.kotlinx.coroutines.swing)
   implementation(libs.compose.material3)
 
-  implementation(libs.essenty.lifecycle)
-  implementation(libs.decompose.decompose)
-  implementation(libs.decompose.extensions.compose)
-  implementation(libs.mvikotlin.main)
-  implementation(libs.mvikotlin.mvikotlin)
-
   implementation(libs.compose.uiToolingPreview)
 }
 

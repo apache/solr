@@ -29,14 +29,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.solr.ui.components.start.StartComponent
+import org.apache.solr.ui.components.start.domain.StartEvent
+import org.apache.solr.ui.components.start.viewmodel.StartUiState
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.action_connect
 import org.apache.solr.ui.shared.generated.resources.cd_solr_logo
@@ -55,19 +60,50 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * The composable used for users that have already authenticated.
  *
- * @param component Component that manages the state of the composable.
+ * @param component Component that provides the view model of the composable.
+ * @param onEvent Called when the start screen emits an event that the parent has to handle,
+ * e.g. when a connection has been established.
  */
 @Composable
 fun StartContent(
     component: StartComponent,
+    onEvent: (StartEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val viewModel = viewModel { component.createStartViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+    val currentOnEvent by rememberUpdatedState(onEvent)
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { currentOnEvent(it) }
+    }
+
+    StartContent(
+        uiState = uiState,
+        onSolrUrlChange = viewModel::changeSolrUrl,
+        onConnect = viewModel::connect,
+        modifier = modifier,
+    )
+}
+
+/**
+ * The composable used for connecting to a Solr instance.
+ *
+ * @param uiState The state of the start screen to render.
+ * @param onSolrUrlChange Called when the user changes the Solr URL.
+ * @param onConnect Called when the user wants to connect to the Solr URL.
+ */
+@Composable
+fun StartContent(
+    uiState: StartUiState,
+    onSolrUrlChange: (String) -> Unit,
+    onConnect: () -> Unit,
     modifier: Modifier = Modifier,
 ) = Row(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalAlignment = Alignment.CenterVertically,
 ) {
-    val model by component.model.collectAsState()
-
     Image(
         modifier = Modifier.weight(1f)
             .align(Alignment.Bottom)
@@ -99,13 +135,13 @@ fun StartContent(
 
             SolrOutlinedTextField(
                 modifier = Modifier.fillMaxWidth().testTag("solr_url_input"),
-                value = model.url,
+                value = uiState.url,
                 singleLine = true,
-                onValueChange = component::onSolrUrlChange,
+                onValueChange = onSolrUrlChange,
                 placeholder = { Text(text = defaultSolrUrl()) },
-                enabled = !model.isConnecting,
+                enabled = !uiState.isConnecting,
                 supportingText = {
-                    model.error?.let {
+                    uiState.error?.let {
                         Text(
                             modifier = Modifier.testTag("input_error"),
                             text = stringResource(it),
@@ -119,12 +155,12 @@ fun StartContent(
             Column {
                 SolrButton(
                     modifier = Modifier.fillMaxWidth().testTag("connect_button"),
-                    enabled = !model.isConnecting,
-                    onClick = component::onConnect,
+                    enabled = !uiState.isConnecting,
+                    onClick = onConnect,
                 ) {
                     Text(
                         text = stringResource(
-                            if (model.isConnecting) {
+                            if (uiState.isConnecting) {
                                 Res.string.connecting
                             } else {
                                 Res.string.action_connect
@@ -132,7 +168,7 @@ fun StartContent(
                         ),
                     )
                 }
-                if (model.isConnecting) {
+                if (uiState.isConnecting) {
                     SolrLinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth().testTag("loading_indicator"),
                     )
