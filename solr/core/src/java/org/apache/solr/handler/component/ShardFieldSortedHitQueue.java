@@ -91,8 +91,9 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       return !(docA.orderInShard < docB.orderInShard);
     }
 
-    // run comparators
-    final int n = comparators.length;
+    // a leading _docid_ key has no order across shards, so the keys after it are not consulted:
+    // the shard name decides between shards and the shard's own order decides within it
+    final int n = this.fields[0].getType() == SortField.Type.DOC ? 0 : comparators.length;
     int c = 0;
     for (int i = 0; i < n && c == 0; i++) {
       c =
