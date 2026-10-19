@@ -73,6 +73,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
@@ -1525,6 +1526,11 @@ public class ReplicationHandler extends RequestHandlerBase
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return List.of();
   }
 
   // check leader or follower is enabled

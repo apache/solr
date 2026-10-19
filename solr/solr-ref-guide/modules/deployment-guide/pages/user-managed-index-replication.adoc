@@ -446,7 +446,7 @@ V2 API::
 ====
 [source,bash]
 ----
-http://{followerHost}:{port}/api/cores/{coreName}/replication/details
+http://{followerHost}:{port}/api/cores/{coreName}/replication
 ----
 ====
 ======
