@@ -97,7 +97,7 @@ If you use these features to query another cluster, add its connection details t
 
 [WARNING]
 ====
-Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (SOLR-18556).
+Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (refer SOLR-18556 for updates).
 Solr 10.1 upgrades to Lucene 10.4, and a cuVS-lucene (library which powers the GPU accelertion) library version compatible with Lucene 10.4 is not available as of Solr 10.1 release.
 
 If you use GPU acceleration for vector indexing, skip Solr 10.1 and stay on Solr 10.0.x.
