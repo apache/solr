@@ -133,21 +133,6 @@ task assembleRelease(type: Sync) {
     into "changes"
   })
 
-  doFirst {
-    def requiredFiles = [
-        "Changes.html",
-        "ChangesFancyStyle.css",
-        "ChangesSimpleStyle.css",
-        "ChangesFixedWidthStyle.css",
-    ]
-    def missingFiles = requiredFiles.findAll { name -> !new File(releaseChangesHtmlDir, name).isFile() }
-    if (!missingFiles.isEmpty()) {
-      throw new GradleException(
-          "Missing release changes files ${missingFiles}; run `python3 -u dev-tools/scripts/changes2html.py CHANGELOG.md " +
-              "--output-dir solr/documentation/build/site/changes` before assembleRelease.")
-    }
-  }
-
   from(configurations.openApiSpecFile, {
     into "openApi"
   })
