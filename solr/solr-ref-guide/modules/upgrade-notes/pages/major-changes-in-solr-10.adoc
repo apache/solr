@@ -52,18 +52,6 @@ The default command line interface is not changed.
 
 == Solr 10.1
 
-[#cuvs-gpu-acceleration-broken]
-=== GPU Acceleration (cuVS) Does Not Work in Solr 10.1
-
-[WARNING]
-====
-Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (SOLR-18556).
-Solr 10.1 upgrades to Lucene 10.4, and the bundled cuVS-Lucene library (25.12) is not compatible with Lucene 10.4.
-
-If you use GPU acceleration for vector search, skip Solr 10.1 and stay on Solr 10.0.x.
-This will be fixed in a subsequent 10.x release.
-====
-
 === Misc
 
 For SSL (https), it's no longer necessary to set the "urlScheme" cluster property since the `SOLR_SSL_ENABLED` env var (or `solr.ssl.enabled` sys-prop) suffices.
@@ -103,6 +91,18 @@ Streaming expressions and the cross-collection join query parser now restrict wh
 * The cross-collection join query parser no longer accepts both `zkHost` and `solrUrl`; specify at most one.
 
 If you use these features to query another cluster, add its connection details to the corresponding setting before upgrading.
+
+[#cuvs-gpu-acceleration-broken]
+=== GPU Acceleration (cuVS) Does Not Work in Solr 10.1
+
+[WARNING]
+====
+Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (SOLR-18556).
+Solr 10.1 upgrades to Lucene 10.4, and the bundled cuVS-Lucene library (25.12) is not compatible with Lucene 10.4.
+
+If you use GPU acceleration for vector search, skip Solr 10.1 and stay on Solr 10.0.x.
+This will be fixed in a subsequent 10.x release.
+====
 
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
