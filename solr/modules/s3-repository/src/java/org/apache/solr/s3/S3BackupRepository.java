@@ -147,6 +147,11 @@ public class S3BackupRepository extends AbstractBackupRepository {
   }
 
   @Override
+  public boolean supportsEmptyDirectories() {
+    return false;
+  }
+
+  @Override
   public void deleteDirectory(URI path) throws IOException {
     Objects.requireNonNull(path, "cannot delete directory with a null URI");
 

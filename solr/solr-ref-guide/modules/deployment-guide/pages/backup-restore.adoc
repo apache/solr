@@ -727,11 +727,9 @@ When using the Backup & Restore Collections API Calls, the **`location`** option
 +
 All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
 
-Pre-Creation::
-The location must already exist within your S3 bucket before you can perform any backup operations with that location.
-A location exists if at least one object is stored under it, or if it was created as an (empty) folder, for instance with the "Create folder" button of the AWS console.
-+
-**Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
+Location Creation::
+The location does not need to be created before a backup is written to it: it comes into existence with the first file of the backup.
+Restoring, listing and deleting backups require a location that already holds at least one object.
 
 Empty Location::
 If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.

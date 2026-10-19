@@ -351,11 +351,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   }
 
   @Override
-  protected boolean supportsEmptyDirectories() {
-    return false;
-  }
-
-  @Override
   protected Class<? extends BackupRepository> getRepositoryClass() {
     return S3BackupRepository.class;
   }

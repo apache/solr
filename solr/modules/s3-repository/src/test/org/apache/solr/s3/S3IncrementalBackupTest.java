@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -217,5 +218,52 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
     assertEquals(
         numDocs,
         solrClient.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound());
+  }
+
+  /**
+   * S3 can't hold an empty directory, so a backup location doesn't have to be created first: it
+   * comes into existence with the first file of the backup. Restoring from a location that holds
+   * nothing still fails.
+   */
+  @Test
+  public void testBackupToLocationThatDoesNotExistYet() throws Exception {
+    setTestSuffix("testnewlocation");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+    final String newLocation = "new-location/nested";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+            .setLocation(newLocation)
+            .setRepositoryName(BACKUP_REPO_NAME)
+            .processAndWait(solrClient, 100));
+
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+            .setLocation(newLocation)
+            .setRepositoryName(BACKUP_REPO_NAME)
+            .processAndWait(solrClient, 500));
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
+    assertEquals(
+        numDocs,
+        solrClient.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound());
+
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () ->
+                CollectionAdminRequest.restoreCollection(restoreCollectionName + "_2", backupName)
+                    .setLocation("missing-location")
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .processAndWait(solrClient, 100));
+    assertTrue(e.getMessage(), e.getMessage().contains("does not exist"));
   }
 }
