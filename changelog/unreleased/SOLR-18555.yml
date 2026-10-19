@@ -1,5 +1,8 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: Add a request handler for highlighting supplied text without searching the index.
-type: new_features
+type: added
 authors:
   - name: Nick Shanin
+links:
+  - name: SOLR-18555
+    url: https://issues.apache.org/jira/browse/SOLR-18555

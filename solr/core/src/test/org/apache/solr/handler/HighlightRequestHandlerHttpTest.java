@@ -63,8 +63,7 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
   public void testGetStreamBodyAndV2Routes() throws Exception {
     String encodedText = URLEncoder.encode(TEXT, StandardCharsets.UTF_8);
     String params = "?q=_text_%3Asolr&hl.fl=_text_&wt=json&stream.body=" + encodedText;
-    String v2Url =
-        solrTestRule.getJetty().getBaseURLV2() + "/cores/" + CORE_NAME + "/highlight";
+    String v2Url = solrTestRule.getJetty().getBaseURLV2() + "/cores/" + CORE_NAME + "/highlight";
 
     assertHighlightResponse(
         solrTestRule
@@ -74,11 +73,7 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
             .GET(solrTestRule.getBaseUrl() + "/" + CORE_NAME + "/highlight" + params));
 
     assertHighlightResponse(
-        solrTestRule
-            .getJetty()
-            .getSolrClient()
-            .getHttpClient()
-            .GET(v2Url + params));
+        solrTestRule.getJetty().getSolrClient().getHttpClient().GET(v2Url + params));
     assertHighlightResponse(
         sendBodyRequest("POST", v2Url + "?q=_text_%3Asolr&hl.fl=_text_&wt=json"));
     assertHighlightResponse(

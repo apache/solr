@@ -48,6 +48,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 
 /** Highlights supplied plain text with a query. */
@@ -99,11 +100,7 @@ public class HighlightRequestHandler extends RequestHandlerBase {
     if (queryString == null || queryString.isBlank()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "A query is required using '"
-              + CommonParams.Q
-              + "' or '"
-              + HighlightParams.Q
-              + "'");
+          "A query is required using '" + CommonParams.Q + "' or '" + HighlightParams.Q + "'");
     }
 
     String parserType = params.get(HighlightParams.QPARSER, params.get(QueryParsing.DEFTYPE));
@@ -231,7 +228,7 @@ public class HighlightRequestHandler extends RequestHandlerBase {
             .withHandleMultiTermQuery(true)
             .withHighlightPhrasesStrictly(true)
             .withPassageRelevancyOverSpeed(true)
-            .withWeightMatches(false);
+            .withWeightMatches(true);
 
     return new UnifiedHighlighter(builder) {
       @Override
@@ -263,13 +260,17 @@ public class HighlightRequestHandler extends RequestHandlerBase {
       @Override
       protected Set<HighlightFlag> getFlags(String field) {
         Set<HighlightFlag> flags = EnumSet.noneOf(HighlightFlag.class);
-        if (params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, true)) {
-          flags.add(HighlightFlag.MULTI_TERM_QUERY);
+        flags.addAll(super.getFlags(field));
+        if (!params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, true)) {
+          flags.remove(HighlightFlag.MULTI_TERM_QUERY);
         }
-        if (params.getFieldBool(field, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
-          flags.add(HighlightFlag.PHRASES);
+        if (!params.getFieldBool(field, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
+          flags.remove(HighlightFlag.PHRASES);
         }
-        flags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
+        if (!flags.contains(HighlightFlag.MULTI_TERM_QUERY)
+            || !flags.contains(HighlightFlag.PHRASES)) {
+          flags.remove(HighlightFlag.WEIGHT_MATCHES);
+        }
         return flags;
       }
 
