@@ -219,24 +219,16 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
     }
     QueryResponse rsp =
         query(
-            "/search",
-            params(
-                CommonParams.JSON,
-                """
-                {
-                  "queries": {
-                    "lexical1": {"lucene": {"query": "id:(1 OR 2)"}},
-                    "lexical2": {"lucene": {"query": "id:(3 OR 4)"}}
-                  },
-                  "limit": 5,
-                  "fields": ["id", "score"],
-                  "params": {
-                    "combiner": true,
-                    "facet": true,
-                    "facet.field": "color_sdv",
-                    "combiner.query": ["lexical1", "lexical2"]
-                  }
-                }"""));
+            CommonParams.JSON,
+            "{\"queries\":"
+                + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(1 OR 2)\"}},"
+                + "\"lexical2\":{\"lucene\":{\"query\":\"id:(3 OR 4)\"}}},"
+                + "\"limit\":5,"
+                + "\"fields\":[\"id\",\"score\"],"
+                + "\"params\":{\"combiner\":true,\"facet\":true,\"facet.field\":\"color_sdv\","
+                + "\"combiner.query\":[\"lexical1\",\"lexical2\"]}}",
+            CommonParams.QT,
+            "/search");
     assertEquals(4, rsp.getResults().size());
     assertEquals("[blue (2), red (2)]", rsp.getFacetField("color_sdv").getValues().toString());
   }
