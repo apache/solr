@@ -50,10 +50,10 @@ public class ReplicationDetailsResponse extends SolrJerseyResponse {
     public List<CommitDetails> commits;
 
     @JsonProperty("isLeader")
-    public boolean isLeader;
+    public String isLeader;
 
     @JsonProperty("isFollower")
-    public boolean isFollower;
+    public String isFollower;
 
     @JsonProperty("indexVersion")
     public Long indexVersion;
@@ -91,7 +91,7 @@ public class ReplicationDetailsResponse extends SolrJerseyResponse {
     public List<String> replicateAfter;
 
     @JsonProperty("replicationEnabled")
-    public boolean replicationEnabled;
+    public String replicationEnabled;
 
     @JsonProperty("replicableVersion")
     public Long replicableVersion;
@@ -154,10 +154,10 @@ public class ReplicationDetailsResponse extends SolrJerseyResponse {
     public String currentDate;
 
     @JsonProperty("isPollingDisabled")
-    public boolean isPollingDisabled;
+    public String isPollingDisabled;
 
     @JsonProperty("isReplicating")
-    public boolean isReplicating;
+    public String isReplicating;
 
     @JsonProperty("filesToDownload")
     public List<String> filesToDownload;

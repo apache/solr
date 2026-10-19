@@ -1034,8 +1034,8 @@ public class ReplicationHandler extends RequestHandlerBase
     details.indexSize = NumberUtils.readableSize(core.getIndexSize());
     details.indexPath = core.getIndexDir();
     details.commits = getCommitDetails();
-    details.isLeader = isLeader;
-    details.isFollower = isFollower;
+    details.isLeader = String.valueOf(isLeader);
+    details.isFollower = String.valueOf(isFollower);
     CommitVersionInfo vInfo = getIndexVersion();
     details.indexVersion = null == vInfo ? 0 : vInfo.version;
     details.generation = null == vInfo ? 0 : vInfo.generation;
@@ -1045,7 +1045,7 @@ public class ReplicationHandler extends RequestHandlerBase
     if (isLeader) {
       if (includeConfFiles != null) leader.confFiles = includeConfFiles;
       leader.replicateAfter = getReplicateAfterStrings();
-      leader.replicationEnabled = replicationEnabled.get();
+      leader.replicationEnabled = String.valueOf(replicationEnabled.get());
     }
 
     if (isLeader && commit != null) {
@@ -1080,9 +1080,9 @@ public class ReplicationHandler extends RequestHandlerBase
       addReplicationProperties(follower, props);
 
       follower.currentDate = new Date().toString();
-      follower.isPollingDisabled = isPollingDisabled();
+      follower.isPollingDisabled = String.valueOf(isPollingDisabled());
       boolean isReplicating = isReplicating();
-      follower.isReplicating = isReplicating;
+      follower.isReplicating = String.valueOf(isReplicating);
       if (isReplicating) {
         try {
           long bytesToDownload = 0;
