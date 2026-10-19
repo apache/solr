@@ -60,6 +60,7 @@ public abstract class SolrRequest<T> implements Serializable {
 
   public enum METHOD {
     GET,
+    QUERY,
     HEAD,
     POST,
     PUT,
@@ -111,6 +112,7 @@ public abstract class SolrRequest<T> implements Serializable {
   public static final Set<String> SUPPORTED_METHODS =
       Set.of(
           METHOD.GET.toString(),
+          METHOD.QUERY.toString(),
           METHOD.POST.toString(),
           METHOD.PUT.toString(),
           METHOD.DELETE.toString());

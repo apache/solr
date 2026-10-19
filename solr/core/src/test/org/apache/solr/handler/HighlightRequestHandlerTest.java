@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider.Name;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -254,6 +255,64 @@ public class HighlightRequestHandlerTest extends SolrTestCaseJ4 {
                     invalidLimit,
                     List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+  }
+
+  @Test
+  public void testRejectsParserOverridesAndParserSubqueries() throws Exception {
+    ModifiableSolrParams parserOverride =
+        params(
+            CommonParams.Q,
+            "text:solr",
+            HighlightParams.FIELDS,
+            "text",
+            HighlightParams.QPARSER,
+            "mlt");
+    SolrException exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                handle(
+                    parserOverride,
+                    List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertTrue(exception.getMessage().contains("supports only"));
+
+    ModifiableSolrParams defTypeOverride =
+        params(CommonParams.Q, "text:solr", HighlightParams.FIELDS, "text", "defType", "mlt");
+    exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                handle(
+                    defTypeOverride,
+                    List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertTrue(exception.getMessage().contains("supports only"));
+
+    ModifiableSolrParams localParamsQuery =
+        params(CommonParams.Q, "{!mlt qf=text}solr", HighlightParams.FIELDS, "text");
+    exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                handle(
+                    localParamsQuery,
+                    List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertTrue(exception.getMessage().contains("Local-parameter"));
+
+    ModifiableSolrParams subquery =
+        params(
+            CommonParams.Q,
+            "text:solr OR _query_:\"{!mlt qf=text}solr\"",
+            HighlightParams.FIELDS,
+            "text");
+    expectThrows(
+        SyntaxError.class,
+        () ->
+            handle(
+                subquery,
+                List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
   }
 
   @Test

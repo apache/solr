@@ -59,17 +59,22 @@ For example, a matching body can produce this response fragment:
 }
 ----
 
-The handler accepts the normal query parser and highlighting formatting
-parameters, including `hl.qparser`, `hl.tag.pre`, `hl.tag.post`, and
+The handler accepts `POST` and HTTP `QUERY` requests with a `text/plain` body.
+It also accepts `GET` requests with the text in `stream.body`. It uses the
+built-in Lucene query parser and rejects other parser selections and local
+parameter parser syntax so parsing cannot dispatch to an arbitrary query parser
+plugin. The handler does not acquire a searcher or execute a document query.
+It is available through both the legacy core request-handler path and the V2
+`/api/cores/{core}/highlight` route.
+
+Supported highlighting options include `hl.tag.pre`, `hl.tag.post`, and
 `hl.encoder`. The default `hl.encoder=simple` leaves supplied text unescaped;
 use `hl.encoder=html` when rendering the returned snippets as HTML. Custom tag
-values are returned as markup and should only contain trusted content. Some
-query parser plugins may consult the index while parsing, so the no-search
-behavior applies to the highlighting path and to parsers that do not access
-indexed documents. It requires a query. `hl.fl` selects the field or fields to
-highlight and otherwise falls back to `df`; the default config supplies
-`_text_` for `df`. Wildcard field names are not supported because expanding
-them would require consulting the index.
+values are returned as markup and should only contain trusted content. The
+handler requires a query. `hl.fl` selects the field or fields to highlight and
+otherwise falls back to `df`; the default config supplies `_text_` for `df`.
+Wildcard field names are not supported because expanding them would require
+consulting the index.
 
 == Usage
 

@@ -19,7 +19,9 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.BreakIterator;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.lucene.search.Query;
@@ -28,6 +30,8 @@ import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter.HighlightFlag;
 import org.apache.lucene.search.uhighlight.WholeBreakIterator;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -35,6 +39,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.UnifiedSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,6 +47,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.security.AuthorizationContext;
 
 /** Highlights supplied plain text with a query. */
@@ -59,6 +65,18 @@ public class HighlightRequestHandler extends RequestHandlerBase {
   @Override
   public Boolean registerV2() {
     return true;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return Set.of(
+        new ApiBag.ReqHandlerToApi(
+            this,
+            () -> {
+              var spec = ApiBag.HANDLER_NAME_SPEC_PROVIDER.getSpec();
+              spec.put("methods", List.of("GET", "POST", "QUERY"));
+              return spec;
+            }));
   }
 
   @Override
@@ -88,14 +106,20 @@ public class HighlightRequestHandler extends RequestHandlerBase {
               + "'");
     }
 
-    String parserType =
-        params.get(
-            HighlightParams.QPARSER,
-            params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
-    // TODO: Some configured QParser plugins consult the index while parsing. The highlighter
-    // itself does not use a searcher, but a strict no-index guarantee requires restricting or
-    // otherwise isolating parser plugins before accepting arbitrary parser types here.
-    QParser parser = QParser.getParser(queryString, parserType, req);
+    String parserType = params.get(HighlightParams.QPARSER, params.get(QueryParsing.DEFTYPE));
+    if (parserType != null && !QParserPlugin.DEFAULT_QTYPE.equals(parserType)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "HighlightRequestHandler supports only the '"
+              + QParserPlugin.DEFAULT_QTYPE
+              + "' query parser");
+    }
+    if (queryString.stripLeading().startsWith("{!")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Local-parameter query parsers are not supported by HighlightRequestHandler");
+    }
+    QParser parser = createQueryParser(queryString, req);
     Query query = parser.getHighlightQuery();
     if (query == null) {
       throw new SolrException(
@@ -254,6 +278,33 @@ public class HighlightRequestHandler extends RequestHandlerBase {
         return params.getFieldBool(field, HighlightParams.FIELD_MATCH, false)
             ? field::equals
             : ignored -> true;
+      }
+    };
+  }
+
+  private static QParser createQueryParser(String queryString, SolrQueryRequest req) {
+    // Do not use QParser.getParser here: configured plugins and local parameters can dispatch to
+    // parsers that use the index. Keep this parser limited to the built-in Lucene syntax.
+    return new QParser(queryString, null, req.getParams(), req) {
+      private SolrQueryParser parser;
+
+      @Override
+      public Query parse() throws SyntaxError {
+        if (qstr == null || qstr.isEmpty()) return null;
+
+        parser = new SolrQueryParser(this, getParam(CommonParams.DF));
+        parser.setDefaultOperator(QueryParsing.parseOP(getParam(QueryParsing.OP)));
+        parser.setSplitOnWhitespace(
+            StrUtils.parseBool(
+                getParam(QueryParsing.SPLIT_ON_WHITESPACE),
+                SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
+        parser.setAllowSubQueryParsing(false);
+        return parser.parse(qstr);
+      }
+
+      @Override
+      public String[] getDefaultHighlightFields() {
+        return parser == null ? new String[] {} : new String[] {parser.getDefaultField()};
       }
     };
   }
