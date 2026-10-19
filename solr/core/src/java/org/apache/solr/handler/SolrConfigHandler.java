@@ -90,8 +90,6 @@ import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
