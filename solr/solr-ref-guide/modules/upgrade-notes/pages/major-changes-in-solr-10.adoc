@@ -101,7 +101,7 @@ Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-accelerat
 Solr 10.1 upgrades to Lucene 10.4, and a cuVS-lucene (library which powers the GPU accelertion) library version compatible with Lucene 10.4 is not available as of Solr 10.1 release.
 
 If you use GPU acceleration for vector indexing, skip Solr 10.1 and stay on Solr 10.0.x.
-This will be fixed in a subsequent Solr 10.x release.
+This is expected to be fixed in a subsequent Solr 10.x release.
 ====
 
 === v2 API
