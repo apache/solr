@@ -1,5 +1,5 @@
 title:
-   Add V2 JAX-RS API for replication details (GET /api/cores/{coreName}/replication)
+   Add V2 JAX-RS API for replication details (GET /api/cores/{coreName}/replication/details)
 type: added
 authors:
   - name: Jalaz Kumar
