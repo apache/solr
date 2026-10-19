@@ -1044,7 +1044,7 @@ This is feature is currently experimental.
 
 [WARNING]
 ====
-Vector indexing with GPU acceleration does not work in Solr 10.1 (SOLR-18556), and is expected to be fixed in a subsequent Solr 10.x release.
+Vector indexing with GPU acceleration does not work in Solr 10.1 (see SOLR-18556), and is expected to be fixed in a subsequent Solr 10.x release.
 See xref:upgrade-notes:major-changes-in-solr-10.adoc#cuvs-gpu-acceleration-broken[Major Changes in Solr 10] for details.
 ====
 
