@@ -62,6 +62,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -341,6 +342,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         ExecutorUtil.newMDCAwareCachedThreadPool(
             "TimeRoutedAliasProcessorTestx-testPreemptiveCreation");
 
+    TestInjection.preemptiveCreateLatch = new CountDownLatch(2);
     Throwable[] threadExceptions = new Throwable[2];
     boolean[] threadStarted = new boolean[2];
     boolean[] threadFinished = new boolean[2];
@@ -372,6 +374,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       starter.countDown();
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executorService);
+      TestInjection.preemptiveCreateLatch = null;
     }
 
     // threads are known to be terminated by now, check for exceptions
@@ -717,10 +720,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     List<String> colsT1 =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertTrue(
-        "preemptive creation of 2017-10-26 is either still in flight (3 collections) or finished (4)"
-            + colsT1,
-        colsT1.contains(alias + TRA + "2017-10-26") ? colsT1.size() == 4 : colsT1.size() == 3);
+    assertFalse(
+        "preemptive creation of 2017-10-26 must still be held by the test latch" + colsT1,
+        colsT1.contains(alias + TRA + "2017-10-26"));
+    assertEquals(3, colsT1.size());
+    TestInjection.preemptiveCreateLatch.countDown();
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
