@@ -22,7 +22,6 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
@@ -88,7 +87,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -103,7 +101,6 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
@@ -134,9 +131,6 @@ import org.apache.zookeeper.KeeperException;
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.noggit.CharArr;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
@@ -232,8 +226,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // thread will read the latest value
   public static volatile SSLTestConfig sslConfig;
 
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   @BeforeClass
   public static void setupTestCases() {
     if (ignoreExceptionMuter != null) {
@@ -286,7 +278,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     ExecutorUtil.resetThreadLocalProviders();
-    OpenTelemetryConfigurator.resetForTest();
   }
 
   @AfterClass
@@ -473,6 +464,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     randomizeNumericTypesProperties();
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting a self-referencing exception cause loop, by identity
   public static Throwable getWrappedException(Throwable e) {
     while (e != null && e.getCause() != e && e.getCause() != null) {
       e = e.getCause();
@@ -2286,6 +2279,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument solrDocument1)
@@ -2336,6 +2330,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrDocumentList(Object expected, Object actual) {
     if (!(expected instanceof SolrDocumentList list1)
         || !(actual instanceof SolrDocumentList list2)) {
@@ -2367,6 +2362,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return true;
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrInputDocument sdoc1)
@@ -2441,6 +2437,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // fast path: same ref implies equal
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
     if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
@@ -2525,53 +2522,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
-   * directly
-   *
-   * @param url the base URL for a Solr node. Should not contain a core or collection name.
-   */
-  /**
-   * @deprecated Prefer an existing client, e.g. from a {@link
-   *     org.apache.solr.util.SolrClientTestRule} or {@link
-   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
-   */
-  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(String url) {
-    return new HttpJettySolrClient.Builder(url).build();
-  }
-
-  /** Create a basic HttpSolrClient pointed at the specified replica */
-  /**
-   * @deprecated Prefer an existing client, e.g. from a {@link
-   *     org.apache.solr.util.SolrClientTestRule} or {@link
-   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
-   */
-  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(Replica replica) {
-    return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
-   * directly
-   *
-   * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
-   * @param defaultCoreName the name of a core that the created client should default to when making
-   *     core-aware requests
-   */
-  /**
-   * @deprecated Prefer an existing client, e.g. from a {@link
-   *     org.apache.solr.util.SolrClientTestRule} or {@link
-   *     org.apache.solr.embedded.JettySolrRunner#getSolrClient()}.
-   */
-  @Deprecated(since = "10.1") // probably use an existing client like on a testRule/jettyRunner
-  public static HttpJettySolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpJettySolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
-  }
-
-  /**
    * Returns a randomly generated Date in the appropriate Solr external (input) format
    *
    * @see #randomSkewedDate
@@ -2605,6 +2555,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // SolrIndexSearcher identity, not equality, is what matters here
   protected static void waitForWarming(SolrCore core) throws InterruptedException {
     RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
     RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);

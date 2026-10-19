@@ -29,9 +29,9 @@ public class JWTPrincipal implements Principal {
   Map<String, Object> claims;
 
   /**
-   * User principal with user name as well as one or more roles that he/she belong to
+   * User principal with username as well as one or more roles that he/she belong to
    *
-   * @param username string with user name for user
+   * @param username string with username for user
    * @param token compact string representation of JWT token
    * @param claims list of verified JWT claims as a map
    */

@@ -34,7 +34,6 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -54,7 +53,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -295,20 +293,13 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
     final RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
-    final Collection<ContentStream> streams;
-    if (contentWriter == null) {
-      streams = requestWriter.getContentStreams(solrRequest);
-    } else {
-      streams = null;
-    }
-
     String contentType = "application/x-www-form-urlencoded";
     if (contentWriter != null && contentWriter.getContentType() != null) {
       contentType = contentWriter.getContentType();
     }
     reqb.header("Content-Type", contentType);
 
-    if (isMultipart(streams)) {
+    if (isMultipart(contentWriter)) {
       throw new UnsupportedOperationException("This client does not support multipart.");
     }
 
@@ -323,14 +314,6 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       bodyPublisher =
           HttpRequest.BodyPublishers.ofInputStream(
               () -> pReq.beginContentWriting(contentWriter, this.requestBodyExecutor));
-    } else if (streams != null && streams.size() == 1) {
-      boolean success = maybeTryHeadRequest(url);
-      if (!success) {
-        reqb.version(HttpClient.Version.HTTP_1_1);
-      }
-
-      InputStream is = streams.iterator().next().getStream();
-      bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> is);
     } else {
       // move any params specified in urlParamNames or solrRequest from queryParams into urlParams
       ModifiableSolrParams urlParams = calculateQueryParams(urlParamNames, queryParams);

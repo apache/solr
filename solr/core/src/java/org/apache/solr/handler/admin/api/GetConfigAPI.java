@@ -28,22 +28,15 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
  *
- * <p>This class covers a handful of distinct paths under GET /v2/c/collectionName/config: /,
- * /overlay, /params, /znodeVersion, etc.
+ * <p>This class covers legacy AnnotatedApi paths under GET /config: /params, /params{paramset}, and
+ * remaining {@code /config/{component}} sections not yet migrated to {@link
+ * org.apache.solr.client.api.endpoint.ConfigApi.Get}
  */
 public class GetConfigAPI {
   private final SolrConfigHandler configHandler;
 
   public GetConfigAPI(SolrConfigHandler configHandler) {
     this.configHandler = configHandler;
-  }
-
-  @EndPoint(
-      path = {"/config"},
-      method = GET,
-      permission = CONFIG_READ_PERM)
-  public void getAllConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
-    configHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(
@@ -62,9 +55,34 @@ public class GetConfigAPI {
     configHandler.handleRequest(req, rsp);
   }
 
-  // This endpoint currently covers a whole list of paths by using the "component" placeholder
+  // GET /config/... sections still via SolrConfigHandler.
+  // Every name SolrConfig.writeMap can emit.
+  // Delete a path from this list when that section is migrated to Jersey
   @EndPoint(
-      path = {"/config/{component}"},
+      path = {
+        "/config/luceneMatchVersion",
+        "/config/requestHandler",
+        "/config/initParams",
+        "/config/listener",
+        "/config/requestDispatcher",
+        "/config/jmx",
+        "/config/queryParser",
+        "/config/valueSourceParser",
+        "/config/transformer",
+        "/config/updateProcessor",
+        "/config/updateRequestProcessorChain",
+        "/config/queryConverter",
+        "/config/cache",
+        "/config/circuitBreaker",
+        "/config/expressible",
+        "/config/schemaFactory",
+        "/config/restManager",
+        "/config/statsCache",
+        "/config/recoveryStrategy",
+        "/config/indexReaderFactory",
+        "/config/indexConfigdeletionPolicy",
+        "/config/updateHandlerupdateLog"
+      },
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getComponentConfig(SolrQueryRequest req, SolrQueryResponse rsp) {

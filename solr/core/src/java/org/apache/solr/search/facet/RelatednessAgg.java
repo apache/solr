@@ -138,6 +138,8 @@ public class RelatednessAgg extends AggValueSource {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // FacetContext identity, not equality, is what matters here
   public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
       throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...

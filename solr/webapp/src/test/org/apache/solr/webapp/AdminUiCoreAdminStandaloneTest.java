@@ -63,8 +63,8 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
     openPage("swapa/core-overview", By.id("dashboard"));
     waitFor(By.cssSelector("#core-menu .query"));
     waitFor(By.cssSelector("#core-menu .replication"));
-    // the ping widget answers 503 when the configset has no healthcheck file
-    assertNoSevereConsoleErrors("/admin/ping");
+    waitForPageContains("Ping request handler is not configured with a healthcheck file.");
+    assertNoSevereConsoleErrors();
   }
 
   @Test
@@ -95,12 +95,11 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
   @Test
   public void testSwapCoresViaUi() throws Exception {
     // make the cores distinguishable: swapa gets one document, swapb stays empty
-    try (var client = standaloneJetty.newClient()) {
-      var doc = new SolrInputDocument();
-      doc.addField("id", "swap-doc");
-      client.add("swapa", doc);
-      client.commit("swapa");
-    }
+    var client = standaloneJetty.getSolrClient();
+    var doc = new SolrInputDocument();
+    doc.addField("id", "swap-doc");
+    client.add("swapa", doc);
+    client.commit("swapa");
     assertEquals(1, numDocs("swapa"));
     assertEquals(0, numDocs("swapb"));
 
@@ -136,8 +135,12 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
   }
 
   private long numDocs(String coreName) {
-    try (var client = standaloneJetty.newClient()) {
-      return client.query(coreName, new SolrQuery("*:*")).getResults().getNumFound();
+    try {
+      return standaloneJetty
+          .getSolrClient()
+          .query(coreName, new SolrQuery("*:*"))
+          .getResults()
+          .getNumFound();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

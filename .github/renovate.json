@@ -4,15 +4,24 @@
   "enabled": true,
   "gitIgnoredAuthors": ["renovate-bot <renovate-bot@noreply.github.com>"],
   "dependencyDashboard": false,
-  "enabledManagers": ["gradle", "github-actions"],
+  "enabledManagers": ["gradle", "github-actions", "custom.regex"],
   "labels": ["exempt-stale"],
   "milestone": 1,
-  "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
+   "includePaths": ["gradle/libs.versions.toml", "ui/gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump container images pinned as action inputs (e.g. the QEMU emulator passed to docker/setup-qemu-action), which the github-actions manager does not track",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": ["image:\\s+(?<depName>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s+#\\s*(?<currentValue>\\S+)"],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "postUpgradeTasks": {
     "commands": [
       "./gradlew resolveAndLockAll --write-locks",
-      "./gradlew kotlinUpgradeYarnLock",
-      "./gradlew updateLicenses"
+      "./gradlew updateLicenses",
+      "./gradlew -p ui kotlinUpgradeYarnLock"
     ],
     "fileFilters": ["solr/licenses/*.sha1", "**/gradle.lockfile", "settings-gradle.lockfile"],
     "executionMode": "branch"
@@ -194,7 +203,7 @@
     },
     {
       "description": "Group all GitHub Actions upgrades together in same PR",
-      "matchManagers": ["github-actions"],
+      "matchManagers": ["github-actions", "custom.regex"],
       "groupName": "GitHub Actions"
     }
   ],

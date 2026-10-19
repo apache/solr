@@ -34,6 +34,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.lucene.index.DirectoryReader;
@@ -65,7 +68,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
@@ -234,14 +239,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/admin/cores", SolrRequestType.ADMIN, params);
 
-    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
-      NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-    }
+    SolrClient adminClient = adminClient(jettySolrRunner);
+    NamedList<Object> res = adminClient.request(req);
+    assertNotNull("null response from server", res);
   }
 
   private SolrClient adminClient(JettySolrRunner client) {
-    return getHttpSolrClient(client.getBaseUrl().toString());
+    return client.getSolrClient();
   }
 
   @Test
@@ -1494,6 +1498,63 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testFollowerRestartsWhenCommitExpiresBeforeFileDownload() throws Exception {
+    invokeReplicationCommand(
+        buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
+
+    index(leaderClient, "id", "1", "name", "generation-g");
+    leaderClient.commit();
+    index(leaderClient, "id", "1", "name", "generation-g-plus-one");
+
+    CountDownLatch fileListFetched = new CountDownLatch(1);
+    CountDownLatch continueDownload = new CountDownLatch(1);
+    IndexFetcher.testWait =
+        () -> {
+          fileListFetched.countDown();
+          try {
+            continueDownload.await();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+          }
+          return true;
+        };
+
+    ExecutorService workload =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("staleGenerationWorkload"));
+    try {
+      Future<?> followerFetch =
+          workload.submit(
+              () -> {
+                pullFromTo(leaderJetty, followerJetty);
+                return null;
+              });
+
+      assertTrue(fileListFetched.await(TIMEOUT, TimeUnit.MILLISECONDS));
+
+      long reserveDuration;
+      try (SolrCore core = leaderJetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+        ReplicationHandler handler =
+            (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+        reserveDuration = handler.getReserveCommitDuration();
+      }
+      Thread.sleep(reserveDuration + 1000);
+      leaderClient.commit();
+
+      IndexFetcher.testWait = () -> true;
+      continueDownload.countDown();
+      followerFetch.get(TIMEOUT, TimeUnit.MILLISECONDS);
+
+      assertEquals(1, numFound(rQuery(1, "name:generation-g-plus-one", followerClient)));
+    } finally {
+      IndexFetcher.testWait = () -> true;
+      continueDownload.countDown();
+      workload.shutdownNow();
+    }
+  }
+
+  @Test
   public void testFetchIndexShouldReportErrorsWhenTheyOccur() throws Exception {
     int leaderPort = leaderJetty.getLocalPort();
     leaderJetty.stop();
@@ -1659,33 +1720,32 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
-      final var statusRequest = new CoresApi.GetCoreStatus("collection1");
-      while (timeSlept < TIMEOUT) {
-        try {
-          final var statusResponse = statusRequest.process(adminClient);
-          assertNotNull(statusResponse.status);
-          assertTrue(statusResponse.status.containsKey("collection1"));
-          final var coreStatus = statusResponse.status.get("collection1");
-          Date startTime = coreStatus.startTime;
+    SolrClient adminClient = adminClient(jettySolrRunner);
+    final var statusRequest = new CoresApi.GetCoreStatus("collection1");
+    while (timeSlept < TIMEOUT) {
+      try {
+        final var statusResponse = statusRequest.process(adminClient);
+        assertNotNull(statusResponse.status);
+        assertTrue(statusResponse.status.containsKey("collection1"));
+        final var coreStatus = statusResponse.status.get("collection1");
+        Date startTime = coreStatus.startTime;
 
-          assertNotNull("core has null startTime", startTime);
-          if (null == min || startTime.after(min)) {
-            return startTime;
-          }
-        } catch (SolrException e) {
-          // workaround for SOLR-4668
-          if (500 != e.code()) {
-            throw e;
-          } // else server possibly from the core reload in progress...
+        assertNotNull("core has null startTime", startTime);
+        if (null == min || startTime.after(min)) {
+          return startTime;
         }
-
-        timeSlept += sleepInterval;
-        Thread.sleep(sleepInterval);
+      } catch (SolrException e) {
+        // workaround for SOLR-4668
+        if (500 != e.code()) {
+          throw e;
+        } // else server possibly from the core reload in progress...
       }
-      fail("timed out waiting for collection1 startAt time to exceed: " + min);
-      return min; // compilation necessity
+
+      timeSlept += sleepInterval;
+      Thread.sleep(sleepInterval);
     }
+    fail("timed out waiting for collection1 startAt time to exceed: " + min);
+    return min; // compilation necessity
   }
 
   @Test

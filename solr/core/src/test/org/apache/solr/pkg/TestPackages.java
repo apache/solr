@@ -593,6 +593,138 @@ public class TestPackages extends SolrCloudTestCase {
 
   private void expectError(
       SolrRequest<?> req, SolrClient client, String errPath, String expectErrorMsg)
+  @Test
+  @SuppressWarnings("ReferenceEquality")
+  public void testSchemaPlugins() throws Exception {
+    String COLLECTION_NAME = "testSchemaLoadingColl";
+    System.setProperty("managed.schema.mutable", "true");
+
+    IndexSchema[] schemas = new IndexSchema[2]; // tracks schemas for a selected core
+
+    String FILE1 = "/schemapkg/schema-plugins.jar";
+    byte[] derFile = readFile("cryptokeys/pub_key512.der");
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
+    postFileAndWait(
+        cluster,
+        "runtimecode/schema-plugins.jar.bin",
+        FILE1,
+        "U+AdO/jgY3DtMpeFRGoTQk72iA5g/qjPvdQYPGBaXB5+ggcTZk4FoIWiueB0bwGJ8Mg3V/elxOqEbD2JR8R0tA==");
+
+    String FILE2 = "/schemapkg/payload-component.jar";
+    postFileAndWait(
+        cluster,
+        "runtimecode/payload-component.jar.bin",
+        FILE2,
+        "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
+
+    // upload package v1.0
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
+    add.version = "1.0";
+    add.pkg = "schemapkg";
+    add.files = Arrays.asList(FILE1, FILE2);
+    V2Request req =
+        new V2Request.Builder("/cluster/package")
+            .forceV2(true)
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload(Map.of("add", add))
+            .build();
+    req.process(cluster.getSolrClient());
+
+    TestDistribFileStore.assertResponseValues(
+        10,
+        () ->
+            new V2Request.Builder("/cluster/package")
+                .withMethod(SolrRequest.METHOD.GET)
+                .build()
+                .process(cluster.getSolrClient()),
+        Map.of(
+            ":result:packages:schemapkg[0]:version",
+            "1.0",
+            ":result:packages:schemapkg[0]:files[0]",
+            FILE1));
+
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 2)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
+
+    // make note of the schema instance for one of the cores
+    SolrCore.Provider coreProvider =
+        cluster.getJettySolrRunners().stream()
+            .flatMap(
+                jetty ->
+                    jetty.getCoreContainer().getAllCoreNames().stream()
+                        .map(name -> new SolrCore.Provider(jetty.getCoreContainer(), name, null)))
+            .findFirst()
+            .orElseThrow();
+
+    coreProvider.withCore(core -> schemas[0] = core.getLatestSchema());
+
+    // upload package v2.0
+    add = new PackagePayload.AddVersion();
+    add.version = "2.0";
+    add.pkg = "schemapkg";
+    add.files = Arrays.asList(FILE1, FILE2);
+    req =
+        new V2Request.Builder("/cluster/package")
+            .forceV2(true)
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload(Map.of("add", add))
+            .build();
+    req.process(cluster.getSolrClient());
+
+    TestDistribFileStore.assertResponseValues(
+        10,
+        () ->
+            new V2Request.Builder("/cluster/package")
+                .withMethod(SolrRequest.METHOD.GET)
+                .build()
+                .process(cluster.getSolrClient()),
+        Map.of(
+            ":result:packages:schemapkg[1]:version",
+            "2.0",
+            ":result:packages:schemapkg[1]:files[0]",
+            FILE1));
+
+    // even though package version 2.0 uses exactly the same files
+    // as version 1.0, the core schema should still reload, and
+    // the core should be associated with a different schema instance
+    TestDistribFileStore.assertResponseValues(
+        10,
+        () -> {
+          coreProvider.withCore(core -> schemas[1] = core.getLatestSchema());
+          return params("schemaReloaded", (schemas[0] != schemas[1]) ? "yes" : "no");
+        },
+        Map.of("schemaReloaded", "yes"));
+
+    // after the reload, the custom field type class now comes from package v2.0
+    String fieldTypeName = "myNewTextFieldWithAnalyzerClass";
+
+    FieldType fieldTypeV1 = schemas[0].getFieldTypeByName(fieldTypeName);
+    assertEquals("my.pkg.MyTextField", fieldTypeV1.getClass().getCanonicalName());
+
+    FieldType fieldTypeV2 = schemas[1].getFieldTypeByName(fieldTypeName);
+    assertEquals("my.pkg.MyTextField", fieldTypeV2.getClass().getCanonicalName());
+
+    assertNotEquals(
+        "my.pkg.MyTextField classes should be from different classloaders",
+        fieldTypeV1.getClass(),
+        fieldTypeV2.getClass());
+  }
+
+  public static void postFileAndWait(
+      MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {
+    ByteBuffer fileContent = getFileContent(fname);
+    @SuppressWarnings("ByteBufferBackingArray") // this is the result of a call to wrap()
+    String sha512 = DigestUtils.sha512Hex(fileContent.array());
+
+    TestDistribFileStore.postFile(
+        cluster.getSolrClient(), fileContent, path, sig); // has file, but no signature
+
+    TestDistribFileStore.checkAllNodesForFile(
+        cluster, path, Map.of(":files:" + path + ":sha512", sha512), false);
+  }
+
+  private void expectError(V2Request req, SolrClient client, String errPath, String expectErrorMsg)
       throws IOException, SolrServerException {
     try {
       req.process(client);

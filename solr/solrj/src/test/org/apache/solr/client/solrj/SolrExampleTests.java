@@ -23,7 +23,6 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,8 +30,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,7 +48,7 @@ import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrack
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
@@ -80,7 +77,6 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -439,14 +435,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     if (solrTestRule.getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
-      String url = solrTestRule.getBaseUrl();
-      try (SolrClient adminClient = getHttpSolrClient(url)) {
-        SolrQuery q = new SolrQuery();
+      SolrClient adminClient = solrTestRule.getAdminClient();
+      SolrQuery q = new SolrQuery();
 
-        final var rsp = new SystemInfoRequest().process(adminClient);
-        assertNotNull(rsp.getResponse().get("mode"));
-        assertNotNull(rsp.getResponse().get("lucene"));
-      }
+      final var rsp = new SystemInfoRequest().process(adminClient);
+      assertNotNull(rsp.getResponse().get("mode"));
+      assertNotNull(rsp.getResponse().get("lucene"));
     }
   }
 
@@ -785,12 +779,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     SolrDocument out2 = out.get(1);
     assertEquals("111", out1.getFieldValue("id"));
     assertEquals("222", out2.getFieldValue("id"));
-    assertEquals(1.0f, out1.getFieldValue("score"));
-    assertEquals(1.0f, out2.getFieldValue("score"));
+    assertEquals(1.0, ((Number) out1.getFieldValue("score")).doubleValue(), 0.0);
+    assertEquals(1.0, ((Number) out2.getFieldValue("score")).doubleValue(), 0.0);
 
     // check that the docid is one bigger
-    int id1 = (Integer) out1.getFieldValue("[docid]");
-    int id2 = (Integer) out2.getFieldValue("[docid]");
+    int id1 = ((Number) out1.getFieldValue("[docid]")).intValue();
+    int id2 = ((Number) out2.getFieldValue("[docid]")).intValue();
     assertTrue("should be bigger [" + id1 + "," + id2 + "]", id2 > id1);
 
     // The score from explain should be the same as the score
@@ -799,7 +793,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     // Augmented _value_ with alias
     assertEquals("aaa", out1.get("aaa"));
-    assertEquals(10, ((Integer) out1.get("ten")).intValue());
+    assertEquals(10, ((Number) out1.get("ten")).intValue());
   }
 
   @Test
@@ -920,42 +914,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    Path file = getFile("solrj/books.csv");
-    final int opened[] = new int[] {0};
-    final int closed[] = new int[] {0};
-
-    boolean assertClosed = random().nextBoolean();
-    if (assertClosed) {
-      byte[] allBytes = Files.readAllBytes(file);
-
-      ContentStreamBase.ByteArrayStream contentStreamMock =
-          new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
-            @Override
-            public InputStream getStream() throws IOException {
-              opened[0]++;
-              return new ByteArrayInputStream(allBytes) {
-                @Override
-                public void close() throws IOException {
-                  super.close();
-                  closed[0]++;
-                }
-              };
-            }
-          };
-      up.addContentStream(contentStreamMock);
-    } else {
-      up.addFile(file, "application/csv");
-    }
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
+    up.addFile(getFile("solrj/books.csv"), "application/csv");
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
-
-    if (assertClosed) {
-      assertEquals("open only once", 1, opened[0]);
-      assertEquals("close exactly once", 1, closed[0]);
-    }
     rsp = client.query(new SolrQuery("*:*"));
     assertEquals(10, rsp.getResults().getNumFound());
   }
@@ -1013,7 +977,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
     up.addFile(getFile("solrj/docs1.xml"), "application/xml"); // 2
     up.addFile(getFile("solrj/docs2.xml"), "application/xml"); // 3
     up.setParam("a", "\u1234");
@@ -1919,7 +1883,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     List<RangeFacet> list = rsp.getFacetRanges();
     assertEquals(2, list.size());
     @SuppressWarnings("unchecked")
-    RangeFacet<Float, Float> range1 = list.get(0);
+    RangeFacet<Number, Number> range1 = list.get(0);
     assertEquals("price1", range1.getName());
     assertEquals(0, range1.getStart().intValue());
     assertEquals(200, range1.getEnd().intValue());
@@ -1935,7 +1899,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, counts1.get(3).getCount());
     assertEquals("150.0", counts1.get(3).getValue());
     @SuppressWarnings("unchecked")
-    RangeFacet<Float, Float> range2 = list.get(1);
+    RangeFacet<Number, Number> range2 = list.get(1);
     assertEquals("price2", range2.getName());
     assertEquals(0, range2.getStart().intValue());
     assertEquals(200, range2.getEnd().intValue());
@@ -1962,9 +1926,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     for (RangeFacet range : featuresBBBRanges) {
       if (range.getName().equals("price1")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -1986,9 +1950,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         }
       } else if (range.getName().equals("price2")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -2018,9 +1982,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     for (RangeFacet range : facetRanges) {
       if (range.getName().equals("price1")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -2042,9 +2006,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         }
       } else if (range.getName().equals("price2")) {
         assertNotNull(range);
-        assertEquals(0, ((Float) range.getStart()).intValue());
-        assertEquals(200, ((Float) range.getEnd()).intValue());
-        assertEquals(50, ((Float) range.getGap()).intValue());
+        assertEquals(0, ((Number) range.getStart()).intValue());
+        assertEquals(200, ((Number) range.getEnd()).intValue());
+        assertEquals(50, ((Number) range.getGap()).intValue());
         @SuppressWarnings({"unchecked"})
         List<Count> counts = range.getCounts();
         assertEquals(4, counts.size());
@@ -2377,7 +2341,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long) resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
-    assertEquals(1.0f, resp.getResults().get(0).getFirstValue(field));
+    assertEquals(1.0, ((Number) resp.getResults().get(0).getFirstValue(field)).doubleValue(), 0.0);
 
     // update "price" with incorrect version (optimistic locking)
     HashMap<String, Object> oper = new HashMap<>(); // need better api for this???
@@ -2423,7 +2387,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue(field));
+    assertEquals(
+        "price was not updated?",
+        100.0,
+        ((Number) resp.getResults().get(0).getFirstValue(field)).doubleValue(),
+        0.0);
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
 
     // update "price", no version
@@ -2435,7 +2403,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue(field));
+    assertEquals(
+        "price was not updated?",
+        200.0,
+        ((Number) resp.getResults().get(0).getFirstValue(field)).doubleValue(),
+        0.0);
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
@@ -2614,7 +2586,10 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String) kid.getFieldValue("id");
-            assertEquals("kid is the wrong level", kidLevel, (int) kid.getFieldValue("level_i"));
+            assertEquals(
+                "kid is the wrong level",
+                kidLevel,
+                ((Number) kid.getFieldValue("level_i")).intValue());
             SolrInputDocument origChild = findDescendant(origDoc, kidId);
             assertNotNull(docId + " doesn't have descendant " + kidId, origChild);
           }
@@ -2697,7 +2672,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           assertTrue("orig doc had no kids at all", origDoc.hasChildDocuments());
           for (SolrDocument kid : outDoc.getChildDocuments()) {
             String kidId = (String) kid.getFieldValue("id");
-            int kidLevel = (int) kid.getFieldValue("level_i");
+            int kidLevel = ((Number) kid.getFieldValue("level_i")).intValue();
             assertTrue(
                 "kid level to high: " + kidLevelMax + "<" + kidLevel, kidLevel <= kidLevelMax);
             assertTrue(

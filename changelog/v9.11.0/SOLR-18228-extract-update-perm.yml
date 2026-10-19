@@ -1,0 +1,9 @@
+title: >-
+  /update/extract (ExtractingRequestHandler) now requires the "update"
+  permission rather than "read", since it indexes documents.
+type: changed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18228
+    url: https://issues.apache.org/jira/browse/SOLR-18228

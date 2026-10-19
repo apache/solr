@@ -643,6 +643,8 @@ public class RealTimeGetComponent extends SearchComponent {
    *
    * @see #getInputDocumentFromTlog(SolrCore, BytesRef, AtomicLong, Set, Resolution)
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   private static SolrInputDocument getInputDocumentFromTlog(
       SolrCore core,
       BytesRef idBytes,
@@ -755,6 +757,8 @@ public class RealTimeGetComponent extends SearchComponent {
    * @param resolveStrategy {@link Resolution#DOC} or {@link Resolution#ROOT_WITH_CHILDREN}.
    * @see Resolution
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   public static SolrInputDocument getInputDocument(
       SolrCore core,
       BytesRef idBytes,

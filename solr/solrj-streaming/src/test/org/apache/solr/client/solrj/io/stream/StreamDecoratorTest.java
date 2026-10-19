@@ -33,6 +33,8 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
+import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
 import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
@@ -4890,6 +4892,120 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       assertEquals(1, tuples.size());
       assertOrder(tuples, 2);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testIntersectComplementAsymmetricOn() throws Exception {
+    // Regression test: complement()/intersect() must order tuples across streamA/streamB using
+    // a comparator derived from the (possibly asymmetric) on= equalitor, not streamA's own sort
+    // comparator (whose left/right field names are both streamA's field, so comparing it against
+    // a streamB tuple always reads a missing field as null and returns a constant, non-negative
+    // result). That bug caused streamB to be fully drained the first time a streamA value that
+    // isn't present in streamB was compared, silently making complement() return all of streamA
+    // and intersect() return nothing.
+    //
+    // streamA's first value (x_i=1) is deliberately absent from streamB's y_i values, which is
+    // exactly what drained streamB under the bug. fl restricts each side's tuples so that the
+    // other side's field is genuinely absent (not merely null).
+    new UpdateRequest()
+        .add(id, "10", "a_s", "setA", "x_i", "1") // no match in streamB
+        .add(id, "11", "a_s", "setA", "x_i", "2") // matches streamB y_i=2
+        .add(id, "12", "a_s", "setA", "x_i", "4") // matches streamB y_i=4
+        .add(id, "13", "a_s", "setB", "y_i", "2")
+        .add(id, "14", "a_s", "setB", "y_i", "3")
+        .add(id, "15", "a_s", "setB", "y_i", "4")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    StreamFactory factory =
+        new StreamFactory()
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withFunctionName("search", CloudSolrStream.class)
+            .withFunctionName("intersect", IntersectStream.class)
+            .withFunctionName("complement", ComplementStream.class);
+
+    try {
+      StreamExpression intersectExpr =
+          StreamExpressionParser.parse(
+              "intersect("
+                  + "search(collection1, q=a_s:setA, fl=\"id,x_i\", sort=\"x_i asc\"),"
+                  + "search(collection1, q=a_s:setB, fl=\"id,y_i\", sort=\"y_i asc\"),"
+                  + "on=\"x_i=y_i\")");
+      TupleStream intersectStream = new IntersectStream(intersectExpr, factory);
+      intersectStream.setStreamContext(streamContext);
+      List<Tuple> intersectTuples = getTuples(intersectStream);
+
+      assertEquals(2, intersectTuples.size());
+      assertOrder(intersectTuples, 11, 12);
+
+      StreamExpression complementExpr =
+          StreamExpressionParser.parse(
+              "complement("
+                  + "search(collection1, q=a_s:setA, fl=\"id,x_i\", sort=\"x_i asc\"),"
+                  + "search(collection1, q=a_s:setB, fl=\"id,y_i\", sort=\"y_i asc\"),"
+                  + "on=\"x_i=y_i\")");
+      TupleStream complementStream = new ComplementStream(complementExpr, factory);
+      complementStream.setStreamContext(streamContext);
+      List<Tuple> complementTuples = getTuples(complementStream);
+
+      assertEquals(1, complementTuples.size());
+      assertOrder(complementTuples, 10);
+
+      // sanity check invariant: complement and intersect partition streamA
+      assertEquals(3, complementTuples.size() + intersectTuples.size());
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testUniqueStreamRightSideEqualitorDedup() throws Exception {
+    // Regression test: complement()/intersect() dedup streamB using an equalitor derived from
+    // only the right-hand side of the (possibly asymmetric) on= equalitor. Using the full,
+    // asymmetric equalitor directly (the pre-fix behavior) compares tuple.get(leftFieldName) - a
+    // field streamB doesn't have - against tuple.get(rightFieldName), so two equal streamB tuples
+    // never test as equal and dedup silently never fires.
+    new UpdateRequest()
+        .add(id, "20", "a_s", "setB", "y_i", "7")
+        .add(id, "21", "a_s", "setB", "y_i", "7")
+        .add(id, "22", "a_s", "setB", "y_i", "9")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    StreamFactory factory =
+        new StreamFactory()
+            .withCollectionUseThisConnection("collection1", getSolrConnection())
+            .withFunctionName("search", CloudSolrStream.class);
+
+    try {
+      StreamEqualitor asymmetricEq = new FieldEqualitor("x_i", "y_i");
+      // sort includes "id asc" as a tiebreaker so which of the two y_i=7 tuples survives dedup is
+      // deterministic
+      String searchExpr =
+          "search(collection1, q=a_s:setB, fl=\"id,y_i\", sort=\"y_i asc, id asc\")";
+
+      TupleStream undeduped = new UniqueStream(factory.constructStream(searchExpr), asymmetricEq);
+      undeduped.setStreamContext(streamContext);
+      // dedup never fires against the asymmetric equalitor: the duplicate y_i=7 isn't collapsed
+      assertEquals(3, getTuples(undeduped).size());
+
+      TupleStream deduped =
+          new UniqueStream(
+              factory.constructStream(searchExpr),
+              StreamEqualitor.deriveRightEqualitor(asymmetricEq));
+      deduped.setStreamContext(streamContext);
+      List<Tuple> dedupedTuples = getTuples(deduped);
+      assertEquals(2, dedupedTuples.size());
+      assertOrder(dedupedTuples, 20, 22);
     } finally {
       solrClientCache.close();
     }

@@ -32,6 +32,9 @@ public class MemOutputStream extends FastOutputStream {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // arrays don't override equals(), so identity is the only real
+  // comparison
   public void flush(byte[] arr, int offset, int len) throws IOException {
     if (arr == buf && offset == 0 && len == buf.length) {
       buffers.add(buf); // steal the buffer

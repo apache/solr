@@ -16,28 +16,32 @@
 */
 
 solrAdminApp.controller('JavaPropertiesController',
-  function($scope, Properties, Constants){
+  function($scope, $timeout, NodeV2, Constants, ApiErrorHandler){
     $scope.resetMenu("java-props", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
-      Properties.get(function(data) {
-        var sysprops = data["system.properties"];
-        var sep = sysprops["path.separator"]
-        var props = [];
-        for (var key in sysprops) {
-          var value = sysprops[key];
-          var values = value.split(sep);
-          if (value === sep) {
-            values = [':'];
+      NodeV2.getNodeProperties(function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); return; }
+
+          var sysprops = data["system.properties"];
+          var sep = sysprops["path.separator"]
+          var props = [];
+          for (var key in sysprops) {
+            var value = sysprops[key];
+            var values = value.split(sep);
+            if (value === sep) {
+              values = [':'];
+            }
+            props.push({
+              name: key.replace(/\./g, '.&#8203;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;'),
+              values: values
+            });
           }
-          props.push({
-            name: key.replace(/\./g, '.&#8203;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;'),
-            values: values
-          });
-        }
-        $scope.pathSeparator = sep;
-        $scope.props = props;
+          $scope.pathSeparator = sep;
+          $scope.props = props;
+        });
       });
     };
 

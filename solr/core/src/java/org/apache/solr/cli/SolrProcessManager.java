@@ -18,12 +18,12 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.servlet.CoreContainerProvider.SOLR_INSTALL_DIR;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.jna.platform.win32.COM.COMUtils;
+import com.sun.jna.platform.win32.COM.WbemcliUtil.WmiQuery;
+import com.sun.jna.platform.win32.COM.WbemcliUtil.WmiResult;
+import com.sun.jna.platform.win32.Ole32;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -160,7 +159,7 @@ public class SolrProcessManager {
 
   /**
    * Gets the command line of a process as a string. For Windows, we need to fetch command lines
-   * using a PowerShell command.
+   * from WMI (see {@link #commandLinesWindows()}).
    *
    * @param ph the process handle
    * @return the command line of the process
@@ -174,53 +173,43 @@ public class SolrProcessManager {
   }
 
   /**
-   * Gets the command lines of all java processes on Windows using PowerShell.
+   * WMI columns to select from {@code Win32_Process}. The enum constant names are used verbatim as
+   * the WQL {@code SELECT} column names (WQL is case-insensitive).
+   */
+  enum ProcessProperty {
+    PROCESSID,
+    COMMANDLINE
+  }
+
+  /**
+   * Gets the command lines of all java processes on Windows by querying WMI ({@code Win32_Process})
+   * through JNA. This avoids spawning an external PowerShell process.
    *
    * @return a map of process IDs to command lines
    */
   private static Map<Long, String> commandLinesWindows() {
+    COMUtils.checkRC(Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED));
     try {
-      Process process =
-          new ProcessBuilder(
-                  "powershell.exe",
-                  "-Command",
-                  "Get-CimInstance -ClassName Win32_Process | Where-Object { $_.Name -like '*java*' } | Select-Object ProcessId, CommandLine | ConvertTo-Json -Depth 1")
-              .redirectErrorStream(true)
-              .start();
-      String output = IOUtils.toString(process.getInputStream(), StandardCharsets.UTF_8);
-      int exitCode = process.waitFor();
-      if (exitCode != 0) {
-        String errorText = IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8);
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Error getting command lines for Windows: " + errorText);
+      // Filter to java processes in the WQL query itself; LIKE is case-insensitive in WMI, so this
+      // matches processes named e.g. "java.exe" while letting WMI do the filtering.
+      WmiResult<ProcessProperty> result =
+          new WmiQuery<>("Win32_Process WHERE Name LIKE '%java%'", ProcessProperty.class).execute();
+      Map<Long, String> pidToCommandLine = new HashMap<>();
+      for (int i = 0; i < result.getResultCount(); i++) {
+        Object commandLine = result.getValue(ProcessProperty.COMMANDLINE, i);
+        Object processId = result.getValue(ProcessProperty.PROCESSID, i);
+        // CommandLine can be null if the current user cannot read it for that process
+        if (commandLine != null && processId != null) {
+          pidToCommandLine.put(((Number) processId).longValue(), commandLine.toString());
+        }
       }
-      return parseWindowsPidToCommandLineJson(output);
-    } catch (IOException e) {
+      return pidToCommandLine;
+    } catch (RuntimeException e) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows");
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Interrupted while getting command lines for Windows");
+          SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows", e);
+    } finally {
+      Ole32.INSTANCE.CoUninitialize();
     }
-  }
-
-  static Map<Long, String> parseWindowsPidToCommandLineJson(String jsonString)
-      throws JsonProcessingException {
-    // Json format: [{"ProcessId": 1234, "CommandLine": "java foo"}]
-    ObjectMapper mapper = new ObjectMapper();
-    List<WindowsProcessInfo> processInfoList =
-        mapper.readValue(jsonString, new TypeReference<>() {});
-    return processInfoList.stream()
-        .filter(p -> p.CommandLine != null)
-        .collect(Collectors.toMap(p -> p.ProcessId, p -> p.CommandLine));
-  }
-
-  public static class WindowsProcessInfo {
-    public long ProcessId;
-    public String CommandLine;
   }
 
   /**

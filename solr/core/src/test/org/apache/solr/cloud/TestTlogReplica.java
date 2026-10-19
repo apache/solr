@@ -257,50 +257,49 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    Replica sliceLeader = s.getLeader();
+    SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       // TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (SolrClient tlogReplicaClient = getHttpSolrClient(r)) {
-        while (true) {
-          try {
-            assertEquals(
-                "Replica " + r.getName() + " not up to date after 10 seconds",
-                1,
-                tlogReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-            JettySolrRunner jetty =
-                cluster.getJettySolrRunners().stream()
-                    .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
-                    .findFirst()
-                    .orElse(null);
-            assertNotNull("Could not find jetty for replica " + r, jetty);
+      SolrClient tlogReplicaClient = cluster.getSolrClient(r);
+      while (true) {
+        try {
+          assertEquals(
+              "Replica " + r.getName() + " not up to date after 10 seconds",
+              1,
+              tlogReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+          JettySolrRunner jetty =
+              cluster.getJettySolrRunners().stream()
+                  .filter(j -> j.getBaseUrl().toString().equals(r.getBaseUrl()))
+                  .findFirst()
+                  .orElse(null);
+          assertNotNull("Could not find jetty for replica " + r, jetty);
 
-            try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
-              var cumulativeAddsDatapoint =
-                  SolrMetricTestUtils.getGaugeDatapoint(
-                      core,
-                      "solr_core_update_cumulative_ops",
-                      SolrMetricTestUtils.newCloudLabelsBuilder(core)
-                          .label("category", "UPDATE")
-                          .label("ops", "adds")
-                          .build());
-              assertNotNull("Could not find cumulative adds metric", cumulativeAddsDatapoint);
-              assertEquals(
-                  "Append replicas should receive all updates. Replica: " + r,
-                  1.0,
-                  cumulativeAddsDatapoint.getValue(),
-                  0.0);
-            }
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(100);
-            }
+          try (SolrCore core = jetty.getCoreContainer().getCore(r.getCoreName())) {
+            var cumulativeAddsDatapoint =
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    core,
+                    "solr_core_update_cumulative_ops",
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            assertNotNull("Could not find cumulative adds metric", cumulativeAddsDatapoint);
+            assertEquals(
+                "Append replicas should receive all updates. Replica: " + r,
+                1.0,
+                cumulativeAddsDatapoint.getValue(),
+                0.0);
+          }
+          break;
+        } catch (AssertionError e) {
+          if (t.hasTimedOut()) {
+            throw e;
+          } else {
+            Thread.sleep(100);
           }
         }
       }
@@ -443,9 +442,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-      assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
+    Replica sliceLeader = s.getLeader();
+    SolrClient leaderClient = cluster.getSolrClient(sliceLeader);
+    assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
     waitForNumDocsInAllReplicas(
         1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
@@ -895,10 +894,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     updates.add(simulatedDBQ("inplace_updatable_int:5", 3L));
     updates.add(simulatedUpdateRequest(1L, "id", 1, "inplace_updatable_int", 6, "_version_", 2L));
     for (JettySolrRunner solrRunner : getSolrRunner(false)) {
-      try (SolrClient client = solrRunner.newClient()) {
-        for (UpdateRequest up : updates) {
-          up.process(client, collectionName);
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (UpdateRequest up : updates) {
+        up.process(client, collectionName);
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
@@ -1000,20 +998,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
-        while (true) {
-          try {
-            assertEquals(
-                "Replica " + r.getName() + " not up to date after " + timeout + " seconds",
-                numDocs,
-                replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(100);
-            }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      while (true) {
+        try {
+          assertEquals(
+              "Replica " + r.getName() + " not up to date after " + timeout + " seconds",
+              numDocs,
+              replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
+          break;
+        } catch (AssertionError e) {
+          if (t.hasTimedOut()) {
+            throw e;
+          } else {
+            Thread.sleep(100);
           }
         }
       }
@@ -1150,17 +1147,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void checkRTG(int from, int to, List<JettySolrRunner> solrRunners) throws Exception {
     for (JettySolrRunner solrRunner : solrRunners) {
-      try (SolrClient client = solrRunner.newClient()) {
-        for (int i = from; i <= to; i++) {
-          SolrQuery query = new SolrQuery();
-          query.set("distrib", false);
-          query.setRequestHandler("/get");
-          query.set("id", i);
-          QueryResponse res = client.query(collectionName, query);
-          assertNotNull(
-              "Can not find doc " + i + " in " + solrRunner.getBaseUrl(),
-              res.getResponse().get("doc"));
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (int i = from; i <= to; i++) {
+        SolrQuery query = new SolrQuery();
+        query.set("distrib", false);
+        query.setRequestHandler("/get");
+        query.set("id", i);
+        QueryResponse res = client.query(collectionName, query);
+        assertNotNull(
+            "Can not find doc " + i + " in " + solrRunner.getBaseUrl(),
+            res.getResponse().get("doc"));
       }
     }
   }

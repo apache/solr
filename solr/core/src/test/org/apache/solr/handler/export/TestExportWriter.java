@@ -1754,4 +1754,47 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "Error message should mention DocValues requirement",
         ex.getMessage().contains("DocValues"));
   }
+
+  /**
+   * SOLR-13217: collapse only replays group heads, so trailing leaves with no heads leave a null
+   * export bitset. {@code /export} must skip those leaves instead of NPEing in {@code
+   * BitSetIterator}.
+   */
+  @Test
+  public void testCollapseWithTrailingEmptyLeaf() throws Exception {
+    assertU(adoc("id", "1", "group_s_dv", "A", "intdv", "10"));
+    assertU(commit());
+    assertU(adoc("id", "2", "group_s_dv", "A", "intdv", "1"));
+    assertU(commit());
+
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "fq",
+            "{!collapse field=group_s_dv sort='intdv desc'}",
+            "fl",
+            "id",
+            "sort",
+            "id asc"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'");
+
+    String resp =
+        h.query(
+            req(
+                "q",
+                "*:*",
+                "qt",
+                "/export",
+                "fq",
+                "{!collapse field=group_s_dv sort='intdv desc'}",
+                "fl",
+                "id,group_s_dv,intdv",
+                "sort",
+                "id asc"));
+    assertJsonEquals(
+        resp,
+        "{\"responseHeader\":{\"status\":0},\"response\":{\"numFound\":1,\"docs\":[{\"id\":\"1\",\"group_s_dv\":\"A\",\"intdv\":10}]}}");
+  }
 }

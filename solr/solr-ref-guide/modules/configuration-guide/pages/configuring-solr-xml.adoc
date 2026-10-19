@@ -37,6 +37,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="allowUrls">${solr.security.allow.urls:}</str>
+  <str name="allowZkHosts">${solr.security.allow.zk.hosts:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
@@ -272,6 +273,24 @@ In SolrCloud mode, the allow-list is automatically configured to include all liv
 +
 The allow-list can also be configured with the `solr.security.allow.urls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.security.allow.urls.enabled=false`.
+
+[#allow-zk-hosts]
+`allowZkHosts`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Comma-separated list of ZooKeeper connection strings of other SolrCloud clusters that may be passed as a `zkHost` (or ZooKeeper-based `solrConnection`) parameter to features that fetch data from another cluster, such as cross-collection join and streaming expressions.
+The local SolrCloud ZooKeeper ensemble is always allowed and need not be listed.
+Solr in standalone (non-SolrCloud) mode does not allow any `zkHost`.
++
+Matching is character-for-character against the full connection string -- e.g. `zk1:2181,zk2:2181,zk3:2181/solr` is a different value from `zk1:2181,zk2:2181,zk3:2181` or from the same hosts in a different order.
+The local ensemble's value includes any chroot suffix configured at startup: if Solr was started with `-DzkHost=zk1:2181/solr`, then `zkHost="zk1:2181/solr"` is allowed but `zkHost="zk1:2181"` is not unless listed.
+A value that is not allowed is rejected with an error mentioning `allowZkHosts`.
++
+The allow-list can also be configured with the `solr.security.allow.zk.hosts` system property in `solr.in.sh` / `solr.in.cmd`.
 
 `hideStackTrace`::
 +

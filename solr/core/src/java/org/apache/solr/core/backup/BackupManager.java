@@ -102,15 +102,6 @@ public class BackupManager {
         lastBackupId.map(BackupId::nextBackupId).orElse(BackupId.zero()));
   }
 
-  public static BackupManager forBackup(
-      BackupRepository repository, ZkStateReader stateReader, URI backupPath) {
-    Objects.requireNonNull(repository);
-    Objects.requireNonNull(stateReader);
-
-    return new BackupManager(
-        repository, backupPath, stateReader, null, BackupId.traditionalBackup());
-  }
-
   public static BackupManager forRestore(
       BackupRepository repository, ZkStateReader stateReader, URI backupPath, int bid)
       throws IOException {

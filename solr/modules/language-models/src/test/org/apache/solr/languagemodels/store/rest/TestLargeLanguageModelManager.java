@@ -58,7 +58,7 @@ public class TestLargeLanguageModelManager extends TestLanguageModelBase {
 
     final ManagedResource res = restManager.getManagedResource(resourceId);
     assertTrue(res instanceof LargeLanguageModelStore);
-    assertEquals(res.getResourceId(), resourceId);
+    assertEquals(resourceId, res.getResourceId());
   }
 
   @Test

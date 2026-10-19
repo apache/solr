@@ -42,7 +42,7 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Menaged resource for storing a model */
+/** Managed resource for storing a model */
 public class ManagedModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
 

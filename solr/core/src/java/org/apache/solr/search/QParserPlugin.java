@@ -24,6 +24,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.search.join.FiltersQParserPlugin;
+import org.apache.solr.search.join.GlobalOrdinalsJoinQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTContentQParserPlugin;
@@ -93,6 +94,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     map.put(FuzzyQParserPlugin.NAME, new FuzzyQParserPlugin());
     map.put(NumericRangeQParserPlugin.NAME, new NumericRangeQParserPlugin());
     map.put(IntervalsQParserPlugin.NAME, new IntervalsQParserPlugin());
+    map.put(GlobalOrdinalsJoinQParserPlugin.NAME, new GlobalOrdinalsJoinQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

@@ -123,7 +123,9 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
     var update = new SchemaDesignerApi.UpdateSchemaObject(configSet);
     update.setSchemaVersion(schemaVersion);
     update.setName("keywords");
-    update.setAdditionalProperties(Map.of("type", "string", "stored", true, "multiValued", true));
+    update.setAdditionalProperty("type", "string");
+    update.setAdditionalProperty("stored", true);
+    update.setAdditionalProperty("multiValued", true);
     SchemaDesignerUpdateResponse updateResp = update.process(cluster.getSolrClient());
     assertNotNull(updateResp.field);
     assertEquals("field", updateResp.updateType);
