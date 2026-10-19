@@ -44,15 +44,16 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.security.AuthorizationContext;
 
-/** Highlights supplied plain text with a query without searching indexed documents. */
+/** Highlights supplied plain text with a query. */
 public class HighlightRequestHandler extends RequestHandlerBase {
 
   private static final String TEXT_RESPONSE_KEY = "text";
   private static final String STREAM_BODY_PARAM = "stream.body";
+  static final int MAX_ALLOWED_CHARS = 1_048_576;
 
   @Override
   public String getDescription() {
-    return "Highlights supplied text without searching the index.";
+    return "Highlights supplied text with a query.";
   }
 
   @Override
@@ -68,6 +69,11 @@ public class HighlightRequestHandler extends RequestHandlerBase {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           HighlightParams.MAX_CHARS + " must be a positive integer");
+    }
+    if (maxChars > MAX_ALLOWED_CHARS) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          HighlightParams.MAX_CHARS + " must not exceed " + MAX_ALLOWED_CHARS);
     }
 
     String text = readText(req, maxChars);
@@ -86,6 +92,9 @@ public class HighlightRequestHandler extends RequestHandlerBase {
         params.get(
             HighlightParams.QPARSER,
             params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
+    // TODO: Some configured QParser plugins consult the index while parsing. The highlighter
+    // itself does not use a searcher, but a strict no-index guarantee requires restricting or
+    // otherwise isolating parser plugins before accepting arbitrary parser types here.
     QParser parser = QParser.getParser(queryString, parserType, req);
     Query query = parser.getHighlightQuery();
     if (query == null) {
@@ -149,7 +158,7 @@ public class HighlightRequestHandler extends RequestHandlerBase {
               "HighlightRequestHandler requires a text/plain content stream");
         }
         try (Reader reader = contentStream.getReader()) {
-          return reader.readNChars(maxChars);
+          return readUpTo(reader, maxChars);
         }
       }
     }
@@ -163,6 +172,19 @@ public class HighlightRequestHandler extends RequestHandlerBase {
         "HighlightRequestHandler requires text/plain content or the '"
             + STREAM_BODY_PARAM
             + "' parameter");
+  }
+
+  private static String readUpTo(Reader reader, int maxChars) throws IOException {
+    char[] buffer = new char[Math.min(maxChars, 8192)];
+    StringBuilder text = new StringBuilder(buffer.length);
+    int remaining = maxChars;
+    int read;
+    while (remaining > 0
+        && (read = reader.read(buffer, 0, Math.min(remaining, buffer.length))) != -1) {
+      text.append(buffer, 0, read);
+      remaining -= read;
+    }
+    return text.toString();
   }
 
   private static void rejectWildcardFields(String[] fields) {

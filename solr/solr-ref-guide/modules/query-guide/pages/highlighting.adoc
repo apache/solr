@@ -45,8 +45,8 @@ document, the result is stored under the synthetic key `text`. The supplied
 body is treated as one passage, so a matching query highlights the whole text
 without dividing it into document fragments. `hl.maxAnalyzedChars` limits how
 much of the input is read; it defaults to the same limit as search-result
-highlighting. A GET request can supply the text with the `stream.body` request
-parameter instead of a body.
+highlighting and cannot exceed 1,048,576 characters. A GET request can supply
+the text with the `stream.body` request parameter instead of a body.
 
 For example, a matching body can produce this response fragment:
 
@@ -61,7 +61,12 @@ For example, a matching body can produce this response fragment:
 
 The handler accepts the normal query parser and highlighting formatting
 parameters, including `hl.qparser`, `hl.tag.pre`, `hl.tag.post`, and
-`hl.encoder`. It requires a query. `hl.fl` selects the field or fields to
+`hl.encoder`. The default `hl.encoder=simple` leaves supplied text unescaped;
+use `hl.encoder=html` when rendering the returned snippets as HTML. Custom tag
+values are returned as markup and should only contain trusted content. Some
+query parser plugins may consult the index while parsing, so the no-search
+behavior applies to the highlighting path and to parsers that do not access
+indexed documents. It requires a query. `hl.fl` selects the field or fields to
 highlight and otherwise falls back to `df`; the default config supplies
 `_text_` for `df`. Wildcard field names are not supported because expanding
 them would require consulting the index.
