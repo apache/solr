@@ -790,6 +790,8 @@ IF NOT "%SOLR_HOST%"=="" (
 )
 
 set SCRIPT_SOLR_OPTS=
+REM Use the lower shared arena permit limit recommended for Lucene 9.
+set "SCRIPT_SOLR_OPTS=-Dorg.apache.lucene.store.MMapDirectory.sharedArenaMaxPermits=64"
 
 REM Default placement plugin
 IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
