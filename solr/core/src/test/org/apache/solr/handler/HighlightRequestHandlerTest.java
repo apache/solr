@@ -103,7 +103,8 @@ public class HighlightRequestHandlerTest extends SolrTestCaseJ4 {
                     "<strong>Solr</strong>", "text/plain; charset=UTF-8")));
 
     assertArrayEquals(
-        new String[] {"&lt;strong&gt;<em>Solr</em>&lt;&#x2F;strong&gt;"}, snippets(response, "text"));
+        new String[] {"&lt;strong&gt;<em>Solr</em>&lt;&#x2F;strong&gt;"},
+        snippets(response, "text"));
   }
 
   @Test
@@ -311,7 +312,9 @@ public class HighlightRequestHandlerTest extends SolrTestCaseJ4 {
     SolrException subqueryException =
         expectThrows(
             SolrException.class,
-            () -> handle(subquery, List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
+            () ->
+                handle(
+                    subquery, List.of(new ContentStreamBase.StringStream("Solr", "text/plain"))));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, subqueryException.code());
   }
 
