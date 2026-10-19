@@ -1,0 +1,7 @@
+title: bin/solr post now honors --filetypes for files and globs, and reports the right file count.
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-18031
+    url: https://issues.apache.org/jira/browse/SOLR-18031

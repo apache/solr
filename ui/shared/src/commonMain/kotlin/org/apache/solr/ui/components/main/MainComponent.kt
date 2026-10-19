@@ -17,14 +17,11 @@
 
 package org.apache.solr.ui.components.main
 
-import com.arkivanov.decompose.router.stack.ChildStack
-import com.arkivanov.decompose.value.Value
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
-import org.apache.solr.ui.components.navigation.NavigationComponent
-import org.apache.solr.ui.views.navigation.MainMenu
+import org.apache.solr.ui.components.main.viewmodel.MainViewModel
 
 /**
  * Main component of the application that is used as base for users with access.
@@ -32,72 +29,42 @@ import org.apache.solr.ui.views.navigation.MainMenu
  * Note that this component can be accessed if the user is either authenticated or if the Solr
  * instance accessed does not have any authentication enabled.
  */
-interface MainComponent : NavigationComponent {
+interface MainComponent {
+
+    // TODO Add DashboardComponent once available
+
+    // TODO Add MetricsComponent once available
 
     /**
-     * Child stack that holds the navigation state.
+     * Component of the cluster section.
      */
-    val childStack: Value<ChildStack<*, Child>>
+    val clusterComponent: ClusterComponent
+
+    // TODO Add SecurityComponent once available
 
     /**
-     * Handles navigation requests from a navigation menu.
-     *
-     * @param menuItem The destination to navigate to.
+     * Component of the configsets section.
      */
-    fun onNavigate(menuItem: MainMenu)
+    val configsetsComponent: ConfigsetsComponent
+
+    // TODO Add CollectionsComponent once available
+
+    // TODO Add QueriesAndOperationsComponent once available
 
     /**
-     * Handles logout requests.
+     * Component of the environment section.
      */
-    fun onLogout()
+    val environmentComponent: EnvironmentComponent
 
     /**
-     * Child interface that defines all available children of the [MainComponent].
+     * Component of the logging section.
      */
-    sealed interface Child {
+    val loggingComponent: LoggingComponent
 
-        // TODO Uncomment once DashboardComponent available
-        // data class Dashboard(val component: DashboardComponent): Child
+    // TODO Add ThreadDumpComponent once available
 
-        // TODO Uncomment once MetricsComponent available
-        // data class Metrics(val component: MetricsComponent): Child
-
-        data class Cluster(val component: ClusterComponent) : Child
-
-        // TODO Uncomment once SecurityComponent available
-        // data class Security(val component: SecurityComponent): Child
-
-        data class Configsets(val component: ConfigsetsComponent) : Child
-
-        // TODO Uncomment once MetricsComponent available
-        // data class Collections(val component: CollectionsComponent): Child
-
-        // TODO Uncomment once QueriesAndOperationsComponent available
-        // data class QueriesAndOperations(val component: QueriesAndOperationsComponent): Child
-
-        /**
-         * Child that leads to the environment section.
-         *
-         * @property component Component that holds the state of this child.
-         */
-        data class Environment(val component: EnvironmentComponent) : Child
-
-        /**
-         * Child that leads to the logging section.
-         *
-         * @property component Component that holds the state of this child.
-         */
-        data class Logging(val component: LoggingComponent) : Child
-
-        // TODO Uncomment once ThreadDump available
-        // data class ThreadDump(val component: ThreadDumpComponent): Child
-    }
-
-    sealed interface Output {
-
-        /**
-         * Output that is returned when the user logs out.
-         */
-        data object UserLoggedOut : Output
-    }
+    /**
+     * Factory method to create a [MainViewModel] instance.
+     */
+    fun createMainViewModel(): MainViewModel
 }

@@ -34,6 +34,22 @@ This compatibility safeguard can be disabled via the environment variable `SOLR_
 
 Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
+== Solr 10.2
+
+=== Snapshot commands are now `bin/solr snapshot` sub-commands
+
+The `snapshot-create`, `snapshot-delete`, `snapshot-describe`, `snapshot-export` and `snapshot-list` commands of the experimental picocli command line interface are replaced by the sub-commands of `bin/solr snapshot`:
+
+[source,bash]
+----
+bin/solr snapshot create -c mycollection --snapshot-name snap1
+bin/solr snapshot list -c mycollection
+----
+
+The old spellings still work and are hidden from the help and from this guide.
+They are deprecated in Solr 10.2 and are removed in Solr 11.0.
+The default command line interface is not changed.
+
 == Solr 10.1
 
 === Misc
@@ -82,6 +98,18 @@ Starting in Solr 10.1 it is no longer possible for users to disable the v2 API b
 Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer should take care to review any custom `RuleBasedAuthorizationPlugin` permissions and ensure that v2 API paths are adequately secured.
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
+
+=== V2 API
+
+In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
+It does not include `live_nodes`, the alias map, or cluster properties.
+Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for those.
+
+There is no `includeAll` parameter.
+A request with no other parameters returns every collection.
+`collection`, `shard`, and `_route_` narrow which part of the tree is returned.
+
+The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 
 === JWT Authentication
 

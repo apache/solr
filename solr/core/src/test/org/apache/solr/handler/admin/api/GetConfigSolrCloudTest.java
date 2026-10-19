@@ -40,7 +40,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testGetConfigFromCore() throws Exception {
+  public void testGetConfigFromCollection() throws Exception {
     var request = new ConfigApi.GetConfig(IndexType.COLLECTION, COLLECTION_NAME);
     var response = request.process(cluster.getSolrClient());
 
@@ -51,5 +51,45 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.config.containsKey("updateHandler"));
     assertTrue(response.config.containsKey("query"));
     assertTrue(response.config.containsKey("requestHandler"));
+  }
+
+  @Test
+  public void testGetOverlayFromCollection() throws Exception {
+    var request = new ConfigApi.GetOverlay(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.overlay);
+    assertTrue(response.overlay.containsKey("znodeVersion"));
+    assertEquals(-1, response.overlay.get("znodeVersion"));
+  }
+
+  @Test
+  public void testGetZnodeVersionFromCollection() throws Exception {
+    var request = new ConfigApi.GetZnodeVersion(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.znodeVersion);
+    assertTrue(response.znodeVersion.overlay >= -1);
+    assertTrue(response.znodeVersion.params >= -1);
+  }
+
+  @Test
+  public void testGetConfigComponentFromCollection() throws Exception {
+    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
+      String pathComponent = GetConfig.toExternalComponentName(component);
+      var request =
+          new ConfigApi.GetConfigComponent(IndexType.COLLECTION, COLLECTION_NAME, pathComponent);
+      var response = request.process(cluster.getSolrClient());
+
+      assertNotNull(component, response);
+      assertNull(component, response.error);
+      assertNotNull(component, response.config);
+      assertTrue(component, response.config.containsKey(pathComponent));
+      assertEquals(component, 1, response.config.size());
+    }
   }
 }

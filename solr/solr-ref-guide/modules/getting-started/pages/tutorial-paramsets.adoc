@@ -30,15 +30,15 @@ Then go ahead to the next section.
 
 === Create a New Collection
 
-[,console]
+[,bash]
 ----
-$ bin/solr create -c films
+bin/solr create -c films
 ----
 
 Because we didn't specify a ConfigSet, we will end up using the `_default` ConfigSet.
 We'll specify the specific schema for a couple of fields that Solr would otherwise guess differently (than we'd like) about:
 
-[,console]
+[,bash]
 ----
 curl http://localhost:8983/solr/films/schema -H 'Content-type:application/json' --data-binary '{
   "add-field" : [
@@ -69,9 +69,9 @@ and for the release date also to be single valued.
 
 Now that we have updated our Schema, we need to index the sample film data, or, if you already have indexed it, then re-index it to take advantage of the new field definitions we added.  
 
-[,console]
+[,bash]
 ----
-$ bin/solr post -c films example/films/films.json
+bin/solr post -c films example/films/films.json
 ----
 
 === Let's get Searching!
@@ -87,14 +87,14 @@ http://localhost:8983/solr/films/query?q=name:batman
 
 Show me all 'Super hero' movies:
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
 ----
 
 Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
 ----
@@ -113,7 +113,7 @@ That is clearly not related to any Harry Potter movies.
 Let's set up two relevancy algorithms, using our APIs, and then compare the quality of the results.
 Algorithm *A* will specify using `dismax` and a `qf` parameter, while Algorithm *B* will use `dismax`, `qf` and a must match `mm` set to 100%.
 
-[,console]
+[,bash]
 ----
 curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json' --data-binary '{
 "set": {

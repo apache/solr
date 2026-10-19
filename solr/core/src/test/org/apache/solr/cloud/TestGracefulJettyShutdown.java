@@ -25,7 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -33,6 +34,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -41,16 +44,15 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore("Flaky from Jetty 12.1.10 upgrade https://issues.apache.org/jira/browse/SOLR-18297")
-public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
+@Nightly
+public class TestGracefulJettyShutdown extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testSingleShardInFlightRequestsDuringShutDown() throws Exception {
-    final String collection = getSaferTestName();
+    final String collection = "graceful";
     final String handler = "/foo";
 
     final Semaphore handlerGate = new Semaphore(0);
@@ -80,16 +82,17 @@ public class TestGracefulJettyShutdown extends SolrTestCaseJ4 {
       final CloudSolrClient cloudClient = cluster.getSolrClient();
 
       // add a few docs...
-      cloudClient.add(collection, sdoc("id", "xxx", "foo_s", "aaa"));
-      cloudClient.add(collection, sdoc("id", "yyy", "foo_s", "bbb"));
-      cloudClient.add(collection, sdoc("id", "zzz", "foo_s", "aaa"));
+      cloudClient.add(collection, new SolrInputDocument("id", "xxx", "foo_s", "aaa"));
+      cloudClient.add(collection, new SolrInputDocument("id", "yyy", "foo_s", "bbb"));
+      cloudClient.add(collection, new SolrInputDocument("id", "zzz", "foo_s", "aaa"));
       cloudClient.commit(collection);
 
       final List<Future<QueryResponse>> results = new ArrayList<>(13);
 
       try (SolrClient jettyClient =
           new HttpJettySolrClient.Builder(nodeToStop.getBaseUrl().toString()).build()) {
-        final QueryRequest req = new QueryRequest(handler, params("q", "foo_s:aaa"));
+        final QueryRequest req =
+            new QueryRequest(handler, new ModifiableSolrParams().set("q", "foo_s:aaa"));
 
         // check inflight requests using both clients...
         for (SolrClient client : Arrays.asList(cloudClient, jettyClient)) {
