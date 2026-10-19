@@ -182,8 +182,9 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(10, rsp.getResults().getNumFound());
     assertEquals(Boolean.TRUE, rsp.getResults().getNumFoundExact());
 
-    // same queries, but the fusion pool (start + rows = 4) truncates each 6-match list to its
-    // top 4, so numFound is the fused pool size and is reported inexact
+    // same queries, but the fusion pool (start + rows = 2) truncates each 6-match list to its
+    // top 2; numFound never drops below the largest sub-query's match count (6) and is
+    // reported inexact because the fused pool holds only a subset of the matches
     rsp =
         query(
             "/search",
@@ -195,12 +196,33 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
                     "lexical1": {"lucene": {"query": "id:(1^=6 OR 2^=5 OR 3^=4 OR 4^=3 OR 5^=2 OR 6^=1)"}},
                     "lexical2": {"lucene": {"query": "id:(5^=6 OR 6^=5 OR 7^=4 OR 8^=3 OR 9^=2 OR 10^=1)"}}
                   },
-                  "limit": 4,
+                  "limit": 2,
                   "fields": ["id", "score"],
                   "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
                 }"""));
-    assertEquals(4, rsp.getResults().size());
-    assertEquals(8, rsp.getResults().getNumFound());
+    assertEquals(2, rsp.getResults().size());
+    assertEquals(6, rsp.getResults().getNumFound());
+    assertEquals(Boolean.FALSE, rsp.getResults().getNumFoundExact());
+
+    // count-only: rows=0 leaves the fusion pool empty, but numFound still reports the
+    // largest sub-query's match count rather than the pool size of 0
+    rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(1^=6 OR 2^=5 OR 3^=4 OR 4^=3 OR 5^=2 OR 6^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(5^=6 OR 6^=5 OR 7^=4 OR 8^=3 OR 9^=2 OR 10^=1)"}}
+                  },
+                  "limit": 0,
+                  "fields": ["id", "score"],
+                  "params": {"combiner": true, "combiner.query": ["lexical1", "lexical2"]}
+                }"""));
+    assertEquals(0, rsp.getResults().size());
+    assertEquals(6, rsp.getResults().getNumFound());
     assertEquals(Boolean.FALSE, rsp.getResults().getNumFoundExact());
 
     // Multiple queries with sort

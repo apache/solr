@@ -224,8 +224,9 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
                     + "\"fields\":[\"id\",\"score\",\"title\"],"
                     + "\"params\":{\"combiner\":true,\"combiner.algorithm\":test,\"combiner.query\""
                     + ":[\"lexical1\",\"lexical2\"],\"debug\":[\"results\"]}}"));
-    // the test combiner fuses to an empty list, so numFound reflects the fused result
-    assertEquals(0, rsp.getResults().getNumFound());
+    // the test combiner fuses to an empty list, so numFound falls back to the largest
+    // sub-query's match count rather than the (empty) fused pool
+    assertEquals(10, rsp.getResults().getNumFound());
     assertEquals(
         "org.apache.lucene.search.Explanation:30 = this is test combiner\n",
         ((SimpleOrderedMap<?>) rsp.getDebugMap().get("combinerExplanations"))
