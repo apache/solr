@@ -608,8 +608,11 @@
     </lst>
   </requestHandler>
 
+  <!-- Highlights supplied text without searching indexed documents. -->
+  <requestHandler name="/highlight" class="solr.HighlightRequestHandler" />
+
   <!-- Shared parameters for multiple Request Handlers -->
-  <initParams path="/update/**,/query,/select,/spell">
+  <initParams path="/update/**,/query,/select,/spell,/highlight">
     <lst name="defaults">
       <str name="df">_text_</str>
     </lst>

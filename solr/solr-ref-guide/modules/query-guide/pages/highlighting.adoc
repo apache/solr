@@ -25,9 +25,49 @@ Highlighting is extremely configurable, perhaps more than any other part of Solr
 There are many parameters each for fragment sizing, formatting, ordering, backup/alternate behavior, and more options that are hard to categorize.
 Nonetheless, highlighting is very simple to use.
 
+== Highlighting supplied text
+
+The core `/highlight` request handler highlights text supplied with a request,
+without searching documents in the index. Send the text in a `text/plain`
+request body and provide a query with `q` or `hl.q`, plus a field with `hl.fl`
+or `df`:
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/my_collection/highlight?q=body:solr&hl.fl=body' \
+  -H 'Content-Type: text/plain' --data-binary 'Solr highlights this text.'
+----
+
+The response uses the same `highlighting` section and per-field string arrays
+as the `HighlightComponent`. Since the request does not identify an indexed
+document, the result is stored under the synthetic key `text`. The supplied
+body is treated as one passage, so a matching query highlights the whole text
+without dividing it into document fragments. `hl.maxAnalyzedChars` limits how
+much of the input is read; it defaults to the same limit as search-result
+highlighting. A GET request can supply the text with the `stream.body` request
+parameter instead of a body.
+
+For example, a matching body can produce this response fragment:
+
+[source,json]
+----
+"highlighting": {
+  "text": {
+    "body": ["Solr <em>highlights</em> this text."]
+  }
+}
+----
+
+The handler accepts the normal query parser and highlighting formatting
+parameters, including `hl.qparser`, `hl.tag.pre`, `hl.tag.post`, and
+`hl.encoder`. It requires a query. `hl.fl` selects the field or fields to
+highlight and otherwise falls back to `df`; the default config supplies
+`_text_` for `df`. Wildcard field names are not supported because expanding
+them would require consulting the index.
+
 == Usage
 
-Highlighting requires that you have a `uniqueKey` defined in your xref:indexing-guide:schema-elements.adoc[schema].
+Search-result highlighting requires that you have a `uniqueKey` defined in your xref:indexing-guide:schema-elements.adoc[schema].
 
 === Common Highlighter Parameters
 You need to set the `hl` and often `hl.fl` parameters to enable highlighting results to be returned.

@@ -1,0 +1,5 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Add a request handler for highlighting supplied text without searching the index.
+type: new_features
+authors:
+  - name: Nick Shanin
