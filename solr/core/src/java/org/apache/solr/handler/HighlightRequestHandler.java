@@ -56,6 +56,11 @@ public class HighlightRequestHandler extends RequestHandlerBase {
   }
 
   @Override
+  public Boolean registerV2() {
+    return true;
+  }
+
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     int maxChars = params.getInt(HighlightParams.MAX_CHARS, SolrHighlighter.DEFAULT_MAX_CHARS);

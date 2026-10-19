@@ -30,7 +30,8 @@ Nonetheless, highlighting is very simple to use.
 The core `/highlight` request handler highlights text supplied with a request,
 without searching documents in the index. Send the text in a `text/plain`
 request body and provide a query with `q` or `hl.q`, plus a field with `hl.fl`
-or `df`:
+or `df`. The handler is available through the legacy core route and the
+handler-specific V2 route, `/api/c/{collectionName}/highlight`:
 
 [source,bash]
 ----
