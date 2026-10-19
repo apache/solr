@@ -80,8 +80,8 @@ The query structure is similar to JSON Query DSL except for how multiple queries
 `combiner.rrf.k` | Default: `60`::
    The k parameter in the RRF algorithm.
 `combiner.rrf.weight.<queryName>` | Default: `1.0`::
-   A non-negative multiplier applied to the reciprocal rank contribution of the query named `<queryName>` (where `<queryName>` is an entry in `combiner.query`).
-   Omit the parameter to give a query equal weight, which is the default behavior, so existing requests are unchanged.
+   A positive multiplier applied to the reciprocal rank contribution of the query named `<queryName>` (where `<queryName>` is an entry in `combiner.query`).
+   If omitted, the query's weight is `1.0`, so all queries contribute equally by default.
    Weights are multipliers, not percentages, and need not sum to `1.0`; a weight of `2.0` makes a query twice as influential as a weight of `1.0`.
    Use this to bias the fusion toward one list, for example to keep an exact lexical match above a merely similar vector match.
 

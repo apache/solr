@@ -57,41 +57,55 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
 
   /**
    * Reads the RRF weight for a query from {@code combiner.rrf.weight.<queryKey>}, defaulting to
-   * {@link CombinerParams#DEFAULT_COMBINER_RRF_WEIGHT}. A negative weight is rejected with a 400.
+   * {@link CombinerParams#DEFAULT_COMBINER_RRF_WEIGHT} when absent. Validated once up front by
+   * {@link #validateWeights}.
    */
   private float getWeight(SolrParams solrParams, String queryKey) {
-    float weight =
-        solrParams.getFloat(
-            CombinerParams.COMBINER_RRF_WEIGHT + "." + queryKey,
-            CombinerParams.DEFAULT_COMBINER_RRF_WEIGHT);
-    if (weight < 0) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "RRF weight for query '" + queryKey + "' must be non-negative, found " + weight);
-    }
-    return weight;
+    return solrParams.getFloat(
+        CombinerParams.COMBINER_RRF_WEIGHT + "." + queryKey,
+        CombinerParams.DEFAULT_COMBINER_RRF_WEIGHT);
   }
 
   /**
    * Rejects {@code combiner.rrf.weight.<queryKey>} params whose {@code <queryKey>} is not one of
-   * the queries being combined.
+   * the queries being combined, or whose value is not a positive finite number.
    */
-  private void validateWeightNames(SolrParams solrParams, Set<String> knownQueryKeys) {
+  private void validateWeights(SolrParams solrParams, Set<String> knownQueryKeys) {
     String prefix = CombinerParams.COMBINER_RRF_WEIGHT + ".";
     for (Map.Entry<String, String[]> entry : solrParams) {
       String name = entry.getKey();
-      if (name.startsWith(prefix)) {
-        String queryKey = name.substring(prefix.length());
-        if (!knownQueryKeys.contains(queryKey)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "RRF weight for unknown query '"
-                  + queryKey
-                  + "'; not in combiner.query: "
-                  + knownQueryKeys);
-        }
+      if (!name.startsWith(prefix)) {
+        continue;
+      }
+      String queryKey = name.substring(prefix.length());
+      if (!knownQueryKeys.contains(queryKey)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "RRF weight for unknown query '"
+                + queryKey
+                + "'; not in combiner.query: "
+                + knownQueryKeys);
+      }
+      String rawWeight = entry.getValue()[0];
+      float weight;
+      try {
+        weight = Float.parseFloat(rawWeight);
+      } catch (NumberFormatException e) {
+        throw badWeightRequest(queryKey, rawWeight);
+      }
+      if (!(weight > 0) || !Float.isFinite(weight)) {
+        throw badWeightRequest(queryKey, rawWeight);
       }
     }
+  }
+
+  private static SolrException badWeightRequest(String queryKey, String rawWeight) {
+    return new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        "RRF weight for query '"
+            + queryKey
+            + "' must be a positive finite number, found "
+            + rawWeight);
   }
 
   /**
@@ -113,7 +127,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
   @Override
   public List<ShardDoc> combine(Map<String, List<ShardDoc>> queriesDocMap, SolrParams solrParams) {
     int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
-    validateWeightNames(solrParams, queriesDocMap.keySet());
+    validateWeights(solrParams, queriesDocMap.keySet());
     HashMap<String, Float> docIdToScore = new HashMap<>();
     Map<String, ShardDoc> docIdToShardDoc = new HashMap<>();
     List<ShardDoc> finalShardDocList = new ArrayList<>();
@@ -179,6 +193,10 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       List<ShardDoc> combinedQueriesDocs,
       SolrParams solrParams) {
     int kVal = solrParams.getInt(CombinerParams.COMBINER_RRF_K, this.k);
+    float[] weights = new float[queryKeys.length];
+    for (int i = 0; i < queryKeys.length; i++) {
+      weights[i] = getWeight(solrParams, queryKeys[i]);
+    }
     SimpleOrderedMap<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
     Map<String, Integer[]> docIdToRanks = getRanks(queryKeys, queriesDocMap, combinedQueriesDocs);
     for (ShardDoc shardDoc : combinedQueriesDocs) {
@@ -187,20 +205,20 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
       Explanation fullDocIdExplanation =
           Explanation.match(
               shardDoc.score,
-              getReciprocalRankFusionExplain(queryKeys, rankPerQuery, kVal, solrParams));
+              getReciprocalRankFusionExplain(queryKeys, rankPerQuery, kVal, weights));
       docIdsExplanations.add(docId, fullDocIdExplanation);
     }
     return docIdsExplanations;
   }
 
   private String getReciprocalRankFusionExplain(
-      String[] queryKeys, Integer[] rankPerQuery, int kVal, SolrParams solrParams) {
+      String[] queryKeys, Integer[] rankPerQuery, int kVal, float[] weights) {
     StringBuilder reciprocalRankFusionExplain = new StringBuilder();
     StringJoiner scoreComponents = new StringJoiner(" + ");
     for (int i = 0; i < queryKeys.length; i++) {
       Integer rank = rankPerQuery[i];
       if (rank != null) {
-        float weight = getWeight(solrParams, queryKeys[i]);
+        float weight = weights[i];
         if (weight == CombinerParams.DEFAULT_COMBINER_RRF_WEIGHT) {
           scoreComponents.add("1/(" + kVal + "+" + rank + ")");
         } else {

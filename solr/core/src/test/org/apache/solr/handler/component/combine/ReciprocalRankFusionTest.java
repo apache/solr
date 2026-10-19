@@ -150,27 +150,14 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     assertEquals("A", shardDocs.get(0).id);
   }
 
-  /** A weight of 0 contributes nothing for that list but is not an error. */
+  /** A weight of 0, infinity, NaN or an unparsable value is rejected with a 400. */
   @Test
-  public void testQueryListCombineZeroWeight() {
-    SolrParams solrParams =
-        params(
-            CombinerParams.COMBINER_RRF_WEIGHT + ".lexical", "0",
-            CombinerParams.COMBINER_RRF_WEIGHT + ".vector", "1");
-    List<ShardDoc> shardDocs = reciprocalRankFusion.combine(twoListDocMap(), solrParams);
-    assertEquals(3, shardDocs.size());
-    // only vector ranks contribute: C=1/21, A=1/22, B=1/23
-    assertEquals("C", shardDocs.get(0).id);
-    assertEquals("A", shardDocs.get(1).id);
-    assertEquals("B", shardDocs.get(2).id);
-  }
-
-  /** A negative weight is rejected with a 400. */
-  @Test
-  public void testNegativeWeightThrows() {
-    SolrParams solrParams = params(CombinerParams.COMBINER_RRF_WEIGHT + ".lexical", "-0.5");
-    assertThrows(
-        SolrException.class, () -> reciprocalRankFusion.combine(twoListDocMap(), solrParams));
+  public void testInvalidWeightThrows() {
+    for (String bad : List.of("0", "-0.5", "Infinity", "-Infinity", "NaN", "abc")) {
+      SolrParams solrParams = params(CombinerParams.COMBINER_RRF_WEIGHT + ".lexical", bad);
+      assertThrows(
+          SolrException.class, () -> reciprocalRankFusion.combine(twoListDocMap(), solrParams));
+    }
   }
 
   /** A weight for a query name not in combiner.query is rejected with a 400. */
