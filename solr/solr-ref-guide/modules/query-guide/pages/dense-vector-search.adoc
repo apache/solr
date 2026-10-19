@@ -1044,9 +1044,7 @@ This is feature is currently experimental.
 
 [WARNING]
 ====
-Vector indexing with GPU acceleration does not work in Solr 10.1 (SOLR-18556), because the bundled cuVS-Lucene library (25.12) is not compatible with Lucene 10.4.
-If you use GPU acceleration, skip Solr 10.1 and stay on Solr 10.0.x.
-This will be fixed in a subsequent 10.x release.
+Vector indexing with GPU acceleration does not work in Solr 10.1 (SOLR-18556), and is expected to be fixed in a subsequent Solr 10.x release.
 See xref:upgrade-notes:major-changes-in-solr-10.adoc#cuvs-gpu-acceleration-broken[Major Changes in Solr 10] for details.
 ====
 
