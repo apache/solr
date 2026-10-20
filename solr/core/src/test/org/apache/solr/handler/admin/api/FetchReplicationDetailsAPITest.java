@@ -49,8 +49,8 @@ public class FetchReplicationDetailsAPITest extends SolrTestCase {
     assertNull(response.error);
     assertEquals("OK", response.status);
     assertNotNull(response.details);
-    assertEquals("true", response.details.isLeader);
-    assertEquals("false", response.details.isFollower);
+    assertEquals(Boolean.TRUE, response.details.isLeader);
+    assertEquals(Boolean.FALSE, response.details.isFollower);
     assertNotNull(response.details.indexSize);
     assertNotNull(response.details.indexPath);
     assertNotNull(response.details.commits);
