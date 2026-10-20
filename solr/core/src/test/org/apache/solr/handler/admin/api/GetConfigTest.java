@@ -55,8 +55,12 @@ public class GetConfigTest extends SolrTestCase {
     assertTrue(response.config.containsKey("luceneMatchVersion"));
     assertTrue(response.config.containsKey("updateHandler"));
     assertTrue(response.config.containsKey("query"));
-    assertTrue(response.config.containsKey("requestHandler"));
-    assertTrue(response.config.containsKey("searchComponent"));
+    assertFalse(response.config.containsKey("requestHandler"));
+    assertTrue(response.config.containsKey("requestHandlers"));
+
+    assertFalse(response.config.containsKey("searchComponent"));
+    assertTrue(response.config.containsKey("searchComponents"));
+
     assertTrue(response.config.containsKey("updateProcessor"));
   }
 
