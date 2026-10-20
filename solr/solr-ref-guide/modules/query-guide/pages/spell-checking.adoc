@@ -98,6 +98,12 @@ Finally, `buildOnCommit` and `buildOnOptimize` define whether to build the spell
 or at every optimize request.
 Both are optional, and can be omitted if you would rather set their values to `false`.
 
+By default, a `buildOnCommit` rebuild runs synchronously as part of the commit itself, so a slow rebuild (a large dictionary, or storage with throttled I/O) blocks every commit until it finishes.
+Set `buildOnCommitAsync` to `true` to run the rebuild on a dedicated background thread instead: commits return immediately, and the rebuild catches up shortly after.
+If a commit lands while a rebuild is still running, that commit's own rebuild is skipped rather than queued, so a burst of commits can't pile up an ever-growing backlog of stale rebuilds.
+Only takes effect when `buildOnCommit` is also `true`; has no effect on `buildOnOptimize`.
+Defaults to `false` (synchronous, unchanged from prior releases).
+
 ==== DirectSolrSpellChecker
 
 The `DirectSolrSpellChecker` uses terms from the Solr index without building a parallel index like the `IndexBasedSpellChecker`.
