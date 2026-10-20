@@ -832,8 +832,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LIST,
         (req, rsp, h) -> {
           final ListCollections listCollectionsAPI = new ListCollections(h.coreContainer, req, rsp);
-          final SolrJerseyResponse listCollectionsResponse =
-              listCollectionsAPI.listCollections(null, null, null, null, null);
+          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),

@@ -16,17 +16,14 @@
 */
 
 solrAdminApp.controller('CollectionOverviewController',
-function($scope, $routeParams, $timeout, CollectionsV2, Constants, ApiErrorHandler) {
+function($scope, $routeParams, Collections, Constants) {
   $scope.resetMenu("collection-overview", Constants.IS_COLLECTION_PAGE);
 
   $scope.refresh = function() {
-    CollectionsV2.listCollections({detailed: true, collection: $routeParams.core}, function(error, data, response) {
-      $timeout(function() {
-        if (error) { ApiErrorHandler.handle(response); return; }
-        $scope.selectedCollection = data.collectionsDetail[$routeParams.core];
-        $scope.selectedCollection.name = $routeParams.core;
-        $scope.rootUrl = Constants.ROOT_URL;
-      });
+    Collections.status({}, function(data) {
+      $scope.selectedCollection = data.cluster.collections[$routeParams.core];
+      $scope.selectedCollection.name = $routeParams.core;
+      $scope.rootUrl = Constants.ROOT_URL;
     });
   };
 

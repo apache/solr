@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('AliasOverviewController',
-function($scope, $routeParams, Constants) {
+function($scope, $routeParams, Collections, Constants) {
   $scope.resetMenu("collection-overview", Constants.IS_COLLECTION_PAGE);
 
   $scope.refresh = function() {
