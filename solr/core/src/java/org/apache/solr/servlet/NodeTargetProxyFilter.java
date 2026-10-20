@@ -52,14 +52,14 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
   protected void doFilter(HttpServletRequest req, HttpServletResponse resp, FilterChain chain)
       throws IOException, ServletException {
     // also accept it as a query param on GET requests, for convenience when a header can't
-    // easily be set (e.g. a browser address bar); skipped for other methods since
-    // getParameter() would consume a form-urlencoded POST body
+    // easily be set (e.g. a browser address bar)
     String targetNode = req.getHeader(TARGET_NODE_HEADER);
+    String queryString = req.getQueryString();
     if (targetNode == null
         && "GET".equals(req.getMethod())
-        && req.getQueryString() != null
-        && req.getQueryString().contains(TARGET_NODE_HEADER)) {
-      targetNode = req.getParameter(TARGET_NODE_HEADER); // will parse
+        && queryString != null
+        && queryString.contains(TARGET_NODE_HEADER)) {
+      targetNode = SolrRequestParsers.parseQueryString(queryString).get(TARGET_NODE_HEADER);
     }
     if (targetNode == null || targetNode.isBlank() || !proxyToNode(targetNode, req, resp)) {
       chain.doFilter(req, resp);
@@ -118,7 +118,7 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
    * has no '.', it's a bare peer hostname; expand it using {@code ownNodeName}'s domain suffix and
    * {@code :port_context}. Otherwise, returned unchanged.
    */
-  private static String resolvePeerShorthand(String targetNode, String ownNodeName) {
+  static String resolvePeerShorthand(String targetNode, String ownNodeName) {
     if (targetNode.contains(".")) {
       return targetNode;
     }
