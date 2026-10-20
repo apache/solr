@@ -24,6 +24,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_P
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,18 +82,20 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "searchComponents", "searchComponent",
           "queryResponseWriters", "queryResponseWriter");
 
-  // v2-only renames for the full GET /config dump's top-level section keys. A superset of
-  // EXTERNAL_TO_INTERNAL_COMPONENT_NAME above: it also covers requestHandler, which has its own
+  // v2-only renames for the full GET /config dump's top-level section keys. Built from
+  // EXTERNAL_TO_INTERNAL_COMPONENT_NAME above, plus requestHandler: that section has its own
   // dedicated endpoint (and thus its own plural name) but isn't part of the generic
-  // /config/{component} path routing.
+  // /config/{component} path routing, so it's not in the map above. Deriving from that map, rather
+  // than duplicating its entries here, keeps the two in sync automatically if it ever gains more
+  // entries.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_FULL_CONFIG_NAME =
-      Map.of(
-          "searchComponents",
-          "searchComponent",
-          "queryResponseWriters",
-          "queryResponseWriter",
-          REQUEST_HANDLERS,
-          SolrRequestHandler.TYPE);
+      buildFullConfigNameMap();
+
+  private static Map<String, String> buildFullConfigNameMap() {
+    Map<String, String> map = new HashMap<>(EXTERNAL_TO_INTERNAL_COMPONENT_NAME);
+    map.put(REQUEST_HANDLERS, SolrRequestHandler.TYPE);
+    return Map.copyOf(map);
+  }
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);
