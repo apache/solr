@@ -19,9 +19,12 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import org.apache.solr.client.api.model.IndexType;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +37,9 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty(ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    // 2 nodes so that a request can land on a node that does *not* host the collection's only
+    // replica, forcing Solr to internally proxy the request to the node that does.
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
         .process(cluster.getSolrClient());
   }
@@ -75,6 +80,27 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertNotNull(response.znodeVersion);
     assertTrue(response.znodeVersion.overlay >= -1);
     assertTrue(response.znodeVersion.params >= -1);
+  }
+
+  @Test
+  public void testGetOverlayFromCollectionViaNonHostingNode() throws Exception {
+    Replica replica = getCollectionState(COLLECTION_NAME).replicaStream().findFirst().orElseThrow();
+    JettySolrRunner hostingJetty = cluster.getReplicaJetty(replica);
+    JettySolrRunner otherJetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(jetty -> !jetty.equals(hostingJetty))
+            .findFirst()
+            .orElseThrow();
+
+    try (var client = new HttpJettySolrClient.Builder(otherJetty.getBaseUrl().toString()).build()) {
+      var request = new ConfigApi.GetOverlay(IndexType.COLLECTION, COLLECTION_NAME);
+      var response = request.process(client);
+
+      assertNotNull(response);
+      assertNull(response.error);
+      assertNotNull(response.overlay);
+      assertTrue(response.overlay.containsKey("znodeVersion"));
+    }
   }
 
   @Test
