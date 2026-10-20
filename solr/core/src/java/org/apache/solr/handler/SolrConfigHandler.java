@@ -190,7 +190,9 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (parts.size() == 1) {
         // this is the whole config. sent out the whole payload
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-            resp, new GetConfig(req).getConfig(req.getParams().getBool("expandParams", false)));
+            resp,
+            new GetConfig(req)
+                .getConfigWithInternalNames(req.getParams().getBool("expandParams", false)));
       } else {
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
