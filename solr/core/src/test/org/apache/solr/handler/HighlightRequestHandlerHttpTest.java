@@ -61,8 +61,7 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
   @Test
   public void testQueryMethodCannotReachUpdateHandler() throws Exception {
     String url = solrTestRule.getBaseUrl() + "/" + CORE_NAME + "/update?wt=json";
-    String update =
-        "<add><doc><field name=\"id\">query-method-must-not-update</field></doc></add>";
+    String update = "<add><doc><field name=\"id\">query-method-must-not-update</field></doc></add>";
 
     ContentResponse response = sendBodyRequest("QUERY", url, "application/xml", update);
 
