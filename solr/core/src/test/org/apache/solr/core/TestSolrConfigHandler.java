@@ -98,12 +98,19 @@ public class TestSolrConfigHandler extends RestTestBase {
     solrTestRule.reset();
   }
 
+  /**
+   * The full "/config" response pluralizes some section names (e.g. searchComponent ->
+   * searchComponents, requestHandler -> requestHandlers) under the V2 API (see
+   * GetConfig#getConfig), but not under V1.
+   */
+  private static String fullConfigKey(
+      RestTestHarness harness, String internalName, String externalName) {
+    return harness.getBaseURL().contains("/____v2/") ? externalName : internalName;
+  }
+
   public void testProperty() throws Exception {
     RestTestHarness harness = restTestHarness;
-    // The full "/config" response pluralizes requestHandler -> requestHandlers under the V2 API
-    // (see GetConfig#getConfig), but not under V1.
-    String requestHandlerKey =
-        harness.getBaseURL().contains("/____v2/") ? "requestHandlers" : "requestHandler";
+    String requestHandlerKey = fullConfigKey(harness, "requestHandler", "requestHandlers");
     MapWriter confMap = getRespMap(harness, "/config");
     assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/luke"), null));
     assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/info"), null));
@@ -192,13 +199,10 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static void reqhandlertests(RestTestHarness writeHarness) throws Exception {
-    // The full "/config" response pluralizes searchComponent -> searchComponents and
-    // requestHandler -> requestHandlers under the V2 API (see GetConfig#getConfig), but not under
-    // V1; the per-component endpoints used elsewhere in this test are unaffected since they
-    // already use the pluralized name.
-    boolean isV2 = writeHarness.getBaseURL().contains("/____v2/");
-    String searchComponentKey = isV2 ? "searchComponents" : "searchComponent";
-    String requestHandlerKey = isV2 ? "requestHandlers" : "requestHandler";
+    // The per-component endpoints used elsewhere in this test are unaffected by the full-config
+    // pluralization below, since they already use the pluralized name.
+    String searchComponentKey = fullConfigKey(writeHarness, "searchComponent", "searchComponents");
+    String requestHandlerKey = fullConfigKey(writeHarness, "requestHandler", "requestHandlers");
     String payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n"

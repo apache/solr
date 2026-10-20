@@ -70,9 +70,22 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   public static final String REQUEST_HANDLERS = "requestHandlers";
 
-  // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
-  // name. v1's GET /config/{component} keeps using the internal names unchanged.
+  // v2-only renames for the GET /config/{component} and /config/{component}/{componentName}
+  // paths: external (URL/response-key) component name -> internal SolrConfig section name. v1's
+  // GET /config/{component} keeps using the internal names unchanged. requestHandler is NOT here:
+  // it never routes through these paths (it has its own dedicated /config/requestHandlers
+  // endpoint instead, since handler names can contain '/'), so including it would wrongly imply
+  // ConfigApi.Get#getConfigComponent(ByName) can resolve it.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
+      Map.of(
+          "searchComponents", "searchComponent",
+          "queryResponseWriters", "queryResponseWriter");
+
+  // v2-only renames for the full GET /config dump's top-level section keys. A superset of
+  // EXTERNAL_TO_INTERNAL_COMPONENT_NAME above: it also covers requestHandler, which has its own
+  // dedicated endpoint (and thus its own plural name) but isn't part of the generic
+  // /config/{component} path routing.
+  private static final Map<String, String> EXTERNAL_TO_INTERNAL_FULL_CONFIG_NAME =
       Map.of(
           "searchComponents",
           "searchComponent",
@@ -94,6 +107,15 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return internalName;
   }
 
+  private static String toExternalFullConfigName(String internalName) {
+    for (Map.Entry<String, String> e : EXTERNAL_TO_INTERNAL_FULL_CONFIG_NAME.entrySet()) {
+      if (e.getValue().equals(internalName)) {
+        return e.getKey();
+      }
+    }
+    return internalName;
+  }
+
   private final SolrQueryRequest solrQueryRequest;
 
   @Inject
@@ -104,21 +126,29 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @Override
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfig(boolean expandParams) {
-    return getConfig(expandParams, true);
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
+    response.config = renameToExternalFullConfigNames(buildConfigMap(expandParams));
+    return response;
   }
 
-  public ConfigInfoResponse getConfig(boolean expandParams, boolean useExternalComponentNames) {
+  /**
+   * Same as {@link #getConfig(boolean)}, but keeps internal section names (e.g. {@code
+   * searchComponent}, {@code requestHandler}) instead of the v2-only pluralized forms. Used by
+   * {@link SolrConfigHandler}'s legacy v1 {@code GET /config}, which must preserve the original
+   * names for backward compatibility.
+   */
+  public ConfigInfoResponse getConfigWithInternalNames(boolean expandParams) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    Map<String, Object> configMap = buildConfigMap(expandParams);
-    if (useExternalComponentNames) {
-      Map<String, Object> reMappedConfigMap = new NullKeyTolerantMap("children");
-      for (Map.Entry<String, Object> e : configMap.entrySet()) {
-        reMappedConfigMap.put(toExternalComponentName(e.getKey()), e.getValue());
-      }
-      configMap = reMappedConfigMap;
-    }
-    response.config = configMap;
+    response.config = buildConfigMap(expandParams);
     return response;
+  }
+
+  private Map<String, Object> renameToExternalFullConfigNames(Map<String, Object> configMap) {
+    Map<String, Object> reMappedConfigMap = new NullKeyTolerantMap("children");
+    for (Map.Entry<String, Object> e : configMap.entrySet()) {
+      reMappedConfigMap.put(toExternalFullConfigName(e.getKey()), e.getValue());
+    }
+    return reMappedConfigMap;
   }
 
   @Override
