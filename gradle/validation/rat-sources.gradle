@@ -51,14 +51,16 @@ Set<String> loadGitTrackedFiles() {
   rootProject.ext.ratGitIndexLoaded = true
   rootProject.ext.ratGitTrackedFiles = null
 
+  // .git is a file (not a directory) in a git worktree
   def dotGit = new File(rootProject.projectDir, ".git")
-  if (!dotGit.isDirectory()) {
+  if (!dotGit.exists()) {
     return null // not a git repository
   }
 
   def repository = null
   try {
     repository = new FileRepositoryBuilder()
+        .findGitDir(rootProject.projectDir)
         .setWorkTree(rootProject.projectDir)
         .setMustExist(true)
         .build()
