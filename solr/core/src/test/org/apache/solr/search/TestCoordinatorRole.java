@@ -448,9 +448,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                   int idx = iteration++ % jettys.length;
                   JettySolrRunner toManipulate = jettys[idx];
                   try {
-                    // the original drew each phase's length at random from 0 to 7000ms, which
-                    // the main thread's roughly 100ms query pace turns into 0 to 70 queries;
-                    // draw the phase lengths in queries from a comparable range instead
+                    // The old phase duration was random from 0 to 7000ms, around 0 to 70 queries
+                    // at the old ~100ms query pace. These phase lengths are now expressed as
+                    // completed query counts.
                     int serveTogetherQueries = threadRandom.nextInt(70);
                     int downQueries = threadRandom.nextInt(70);
                     log.info("serving together for {} queries", serveTogetherQueries);
