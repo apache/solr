@@ -74,7 +74,7 @@ public class HighlightRequestHandler extends RequestHandlerBase {
             this,
             () -> {
               var spec = ApiBag.HANDLER_NAME_SPEC_PROVIDER.getSpec();
-              spec.put("methods", List.of("GET", "POST", "QUERY"));
+              spec.put("methods", List.of("GET", "POST"));
               return spec;
             }));
   }
@@ -223,7 +223,6 @@ public class HighlightRequestHandler extends RequestHandlerBase {
     UnifiedHighlighter.Builder builder =
         UnifiedHighlighter.builderWithoutSearcher(req.getSchema().getIndexAnalyzer())
             .withMaxLength(maxChars)
-            .withBreakIterator(WholeBreakIterator::new)
             .withHandleMultiTermQuery(true)
             .withHighlightPhrasesStrictly(true)
             .withPassageRelevancyOverSpeed(true)

@@ -48,7 +48,7 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPostAndQueryMethodsAcceptPlainTextBody() throws Exception {
+  public void testPostAcceptsPlainTextBody() throws Exception {
     String url =
         solrTestRule.getBaseUrl()
             + "/"
@@ -56,14 +56,36 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
             + "/highlight?q=_text_%3Asolr&hl.fl=_text_&wt=json";
 
     assertHighlightResponse(sendBodyRequest("POST", url));
-    assertHighlightResponse(sendBodyRequest("QUERY", url));
+  }
+
+  @Test
+  public void testQueryMethodCannotReachUpdateHandler() throws Exception {
+    String url = solrTestRule.getBaseUrl() + "/" + CORE_NAME + "/update?wt=json";
+    String update =
+        "<add><doc><field name=\"id\">query-method-must-not-update</field></doc></add>";
+
+    ContentResponse response = sendBodyRequest("QUERY", url, "application/xml", update);
+
+    assertTrue(response.getContentAsString(), response.getStatus() != 200);
+  }
+
+  @Test
+  public void testQueryMethodIsNotRegisteredForV2Handler() throws Exception {
+    String v2Url = solrTestRule.getJetty().getBaseURLV2() + "/cores/" + CORE_NAME + "/highlight";
+    String url = v2Url + "?q=_text_%3Asolr&hl.fl=_text_&wt=json";
+
+    ContentResponse response = sendBodyRequest("QUERY", url);
+
+    assertTrue(response.getContentAsString(), response.getStatus() != 200);
   }
 
   @Test
   public void testGetStreamBodyAndV2Routes() throws Exception {
     String encodedText = URLEncoder.encode(TEXT, StandardCharsets.UTF_8);
     String params = "?q=_text_%3Asolr&hl.fl=_text_&wt=json&stream.body=" + encodedText;
-    String v2Url = solrTestRule.getJetty().getBaseURLV2() + "/cores/" + CORE_NAME + "/highlight";
+    String v2BaseUrl = solrTestRule.getJetty().getBaseURLV2();
+    String v2CoreUrl = v2BaseUrl + "/cores/" + CORE_NAME + "/highlight";
+    String v2CollectionUrl = v2BaseUrl + "/c/" + CORE_NAME + "/highlight";
 
     assertHighlightResponse(
         solrTestRule
@@ -73,21 +95,26 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
             .GET(solrTestRule.getBaseUrl() + "/" + CORE_NAME + "/highlight" + params));
 
     assertHighlightResponse(
-        solrTestRule.getJetty().getSolrClient().getHttpClient().GET(v2Url + params));
+        solrTestRule.getJetty().getSolrClient().getHttpClient().GET(v2CoreUrl + params));
     assertHighlightResponse(
-        sendBodyRequest("POST", v2Url + "?q=_text_%3Asolr&hl.fl=_text_&wt=json"));
+        solrTestRule.getJetty().getSolrClient().getHttpClient().GET(v2CollectionUrl + params));
     assertHighlightResponse(
-        sendBodyRequest("QUERY", v2Url + "?q=_text_%3Asolr&hl.fl=_text_&wt=json"));
+        sendBodyRequest("POST", v2CoreUrl + "?q=_text_%3Asolr&hl.fl=_text_&wt=json"));
   }
 
   private static ContentResponse sendBodyRequest(String method, String url) throws Exception {
+    return sendBodyRequest(method, url, "text/plain; charset=UTF-8", TEXT);
+  }
+
+  private static ContentResponse sendBodyRequest(
+      String method, String url, String contentType, String body) throws Exception {
     return solrTestRule
         .getJetty()
         .getSolrClient()
         .getHttpClient()
         .newRequest(url)
         .method(method)
-        .body(new StringRequestContent("text/plain; charset=UTF-8", TEXT, StandardCharsets.UTF_8))
+        .body(new StringRequestContent(contentType, body, StandardCharsets.UTF_8))
         .send();
   }
 

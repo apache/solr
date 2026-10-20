@@ -27,11 +27,13 @@ Nonetheless, highlighting is very simple to use.
 
 == Highlighting supplied text
 
-The core `/highlight` request handler highlights text supplied with a request,
-without searching documents in the index. Send the text in a `text/plain`
-request body and provide a query with `q` or `hl.q`, plus a field with `hl.fl`
-or `df`. The handler is available through the legacy core route and the
-handler-specific V2 route, `/api/c/{collectionName}/highlight`:
+The `/highlight` request handler highlights supplied text without searching
+the index. Send a `text/plain` body with POST; for GET, provide the text with
+`stream.body`. A query is required in `q` or `hl.q`. Use `hl.fl`
+to select fields; if it is omitted, the handler uses `df`. The legacy route is
+`/solr/{collection}/highlight`. V2 collection requests use
+`/api/c/{collection}/highlight`; core requests use
+`/api/cores/{core}/highlight`:
 
 [source,bash]
 ----
@@ -39,14 +41,10 @@ curl 'http://localhost:8983/solr/my_collection/highlight?q=body:solr&hl.fl=body'
   -H 'Content-Type: text/plain' --data-binary 'Solr highlights this text.'
 ----
 
-The response uses the same `highlighting` section and per-field string arrays
-as the `HighlightComponent`. Since the request does not identify an indexed
-document, the result is stored under the synthetic key `text`. The supplied
-body is treated as one passage, so a matching query highlights the whole text
-without dividing it into document fragments. `hl.maxAnalyzedChars` limits how
-much of the input is read; it defaults to the same limit as search-result
-highlighting and cannot exceed 1,048,576 characters. A GET request can supply
-the text with the `stream.body` request parameter instead of a body.
+The response uses the usual `highlighting` shape, with the supplied text under
+the `text` key and one snippet for each matching field. The input is one
+passage, and the handler does not require a `uniqueKey`. `hl.maxAnalyzedChars`
+defaults to 51,200 and cannot exceed 1,048,576; longer input is truncated.
 
 For example, a matching body can produce this response fragment:
 
@@ -59,22 +57,12 @@ For example, a matching body can produce this response fragment:
 }
 ----
 
-The handler accepts `POST` and HTTP `QUERY` requests with a `text/plain` body.
-It also accepts `GET` requests with the text in `stream.body`. It uses the
-built-in Lucene query parser and rejects other parser selections and local
-parameter parser syntax so parsing cannot dispatch to an arbitrary query parser
-plugin. The handler does not acquire a searcher or execute a document query.
-It is available through both the legacy core request-handler path and the V2
-`/api/cores/{core}/highlight` route.
-
-Supported highlighting options include `hl.tag.pre`, `hl.tag.post`, and
-`hl.encoder`. The default `hl.encoder=simple` leaves supplied text unescaped;
-use `hl.encoder=html` when rendering the returned snippets as HTML. Custom tag
-values are returned as markup and should only contain trusted content. The
-handler requires a query. `hl.fl` selects the field or fields to highlight and
-otherwise falls back to `df`; the default config supplies `_text_` for `df`.
-Wildcard field names are not supported because expanding them would require
-consulting the index.
+The handler accepts only the built-in Lucene query parser. Parser plugins,
+local-parameter syntax, and `_query_` subqueries are rejected. Wildcard fields
+are not supported. The default configset sets `df` to `_text_`.
+`hl.encoder=simple` leaves supplied text unescaped; use `hl.encoder=html` when
+rendering snippets as HTML. Custom tag values are markup, so use trusted
+content.
 
 == Usage
 
