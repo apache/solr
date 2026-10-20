@@ -79,6 +79,7 @@ import org.slf4j.LoggerFactory;
       VersionTool.class,
       ZkTool.class,
       AuthTool.class,
+      SSLTool.class,
       CreateTool.class,
       DeleteTool.class,
       AssertTool.class,
@@ -371,6 +372,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
     else if ("mkroot".equals(toolType)) return new ZkMkrootTool(runtime);
     else if ("assert".equals(toolType)) return new AssertTool(runtime);
     else if ("auth".equals(toolType)) return new AuthTool(runtime);
+    else if ("ssl".equals(toolType)) return new SSLTool(runtime);
     else if ("export".equals(toolType)) return new ExportTool(runtime);
     else if ("package".equals(toolType)) return new PackageTool(runtime);
     else if ("post".equals(toolType)) return new PostTool(runtime);

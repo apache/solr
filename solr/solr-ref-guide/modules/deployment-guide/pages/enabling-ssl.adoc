@@ -19,11 +19,63 @@
 
 Solr can encrypt communications to and from clients and between nodes in SolrCloud mode with Secure Sockets Layer encryption (SSL).
 
-This section describes enabling SSL using a self-signed certificate.
+This section describes installing an existing PEM certificate with `bin/solr ssl` and configuring SSL manually with a self-signed certificate.
+The command is available on Unix and macOS; use the manual steps on Windows or when you already have a Java keystore.
 
 For background on SSL certificates and keys, see http://www.tldp.org/HOWTO/SSL-Certificates-HOWTO/.
 
 == Configuring Solr for SSL
+
+=== Install an Existing PEM Certificate
+
+On Unix and macOS, `bin/solr ssl` converts a PEM certificate and private key to a Java keystore, installs it, and updates `solr.in.sh`.
+It requires OpenSSL on your `PATH`.
+The certificate must cover the hostnames used by clients and other Solr nodes.
+For a certificate issued by Let's Encrypt, use `fullchain.pem` and `privkey.pem` from your ACME client.
+Obtaining and renewing certificates is a separate step.
+
+Save a keystore password of at least six characters in a file readable only by the user running Solr.
+The file must contain a single line; a final newline is optional.
+
+[source,bash]
+----
+chmod 600 /path/to/keystore-password.txt
+bin/solr ssl --cert /path/to/fullchain.pem \
+  --key /path/to/privkey.pem \
+  --password-file /path/to/keystore-password.txt \
+  --zk-host localhost:9983
+----
+
+This installs `server/etc/solr-ssl.keystore.jks` and a separate truststore, relative to the Solr installation.
+The truststore contains the running JDK's trusted certificates and the supplied certificate chain.
+The tool configures HTTPS with hostname verification enabled and client certificate authentication disabled.
+It sets `urlScheme=https` in ZooKeeper when `--zk-host` is supplied.
+Omit that option for a user-managed node.
+If you omit it for SolrCloud, set the property separately with `bin/solr cluster --property urlScheme --value https --zk-host <host:port>` before restarting Solr.
+
+The shell script supplies the include file selected by `SOLR_INCLUDE`.
+Use `--solr-include-file /path/to/solr.in.sh` to select another file, such as `/var/solr/solr.in.sh` for a service installation.
+Use `--keystore /path/to/solr-ssl.jks` to select the destination; its parent directory must exist and its path must not contain whitespace.
+For PKCS12, supply `--store-type PKCS12`; the default destination then ends in `.p12`.
+For an encrypted PEM key, supply `--key-password-file /path/to/key-password.txt`.
+
+Existing destination files and the include file are backed up to unique `.bak` files alongside the originals.
+The tool prints the backup paths and restricts the keystore, truststore, include file, and backups to their owner's access (`0600`).
+The include file contains the keystore password, so run the tool as the Solr service user and protect the password file and backups.
+A failure to update ZooKeeper restores the local files; inspect the cluster property before retrying after a connection failure.
+
+Restart Solr to use the new configuration.
+For SolrCloud, changing `urlScheme` affects every node: prepare certificates and configuration on every node and coordinate the switch to HTTPS across the cluster.
+The tool does not restart nodes or update advertised hostnames.
+Run it again after certificate renewal to install the renewed files.
+Rebuilding the truststore also refreshes its copy of the JDK's trusted certificates.
+
+For all options, see xref:cli/solr-ssl.adoc[].
+
+== Configure SSL Manually
+
+If you used `bin/solr ssl`, skip these manual keystore and include-file steps and continue with <<Starting Solr After Enabling SSL>>.
+The following example creates a PKCS12 keystore directly, so it does not need conversion with `bin/solr ssl`.
 
 === Generate a Self-Signed Certificate and a Key
 
@@ -48,19 +100,23 @@ The above command will create a keystore file named `solr-ssl.keystore.p12` in t
 
 === Convert the Certificate and Key to PEM Format for Use with curl
 
-Convert the PKCS12 format keystore, including both the certificate and the key, into PEM format using the http://www.openssl.org[`openssl`] command:
+For curl to trust the self-signed server certificate, export a certificate-only PEM file:
+
+[source,bash]
+----
+openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
+----
+
+If you also enable client certificate authentication, export the certificate and private key to a separate PEM file for curl's `-E` option:
 
 [source,bash]
 ----
 openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem
 ----
 
-If you want to use curl on OS X Yosemite (10.10), you'll need to create a certificate-only version of the PEM format, as follows:
-
-[source,bash]
-----
-openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
-----
+If you used `bin/solr ssl`, your original PEM certificate files remain available for clients.
+For publicly trusted certificates, curl normally uses the operating system's trusted certificates without `--cacert`.
+For a private CA or a self-signed certificate, supply its certificate with `--cacert`.
 
 === Set Common SSL-Related Environment Variables
 
@@ -132,6 +188,20 @@ They are mutually exclusive and Jetty will select one of them which may not be w
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
+=== Set the SolrCloud URL Scheme
+
+For SolrCloud, set the cluster property before starting nodes with HTTPS:
+
+[source,bash]
+----
+bin/solr cluster --property urlScheme --value https --zk-host server1:2181,server2:2181,server3:2181
+----
+
+On Windows, use `bin\solr.cmd cluster` with the same options.
+ZooKeeper must be running, and its connection string must include any chroot used by the cluster.
+This property affects every node; prepare each node's SSL configuration and coordinate the switch across the cluster.
+Skip this step if `bin/solr ssl --zk-host ...` already set the property, or if you are using a user-managed node.
+
 == Starting Solr After Enabling SSL
 
 === Start SolrCloud
@@ -159,7 +229,7 @@ Windows::
 ====
 [source,powershell]
 ----
-bin\solr.cmd --solr-home cloud\node1 -z server1:2181,server2:2181,server3:2181
+bin\solr.cmd start --solr-home cloud\node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 
 ----
 ====
@@ -177,7 +247,7 @@ Customize the values for the parameters shown as needed and add any used in your
 ====
 [source,bash]
 ----
-bin/solr start -p 8984
+bin/solr start --user-managed -p 8984
 ----
 ====
 
@@ -186,7 +256,7 @@ Windows::
 ====
 [source,powershell]
 ----
-bin\solr.cmd -p 8984
+bin\solr.cmd start --user-managed -p 8984
 ----
 ====
 ======
@@ -255,11 +325,12 @@ The `create` action will pass the `SOLR_SSL_*` properties set in your include fi
 
 === Retrieve SolrCloud Cluster Status using curl
 
-To get the resulting cluster status (again, if you have not enabled client authentication, remove the `-E solr-ssl.pem:secret` option):
+To get the resulting cluster status with the self-signed certificate from the manual example:
+If you enabled client certificate authentication, also supply `-E solr-ssl.pem:secret`.
 
 [source,bash]
 ----
-curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&indent=on"
+curl --cacert solr-ssl.cacert.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&indent=on"
 ----
 
 You should get a response that looks like this:
@@ -308,12 +379,14 @@ bin/solr post --solr-url https://localhost:8984 --name mycollection example/exam
 
 === Query Using curl
 
-Use curl to query the SolrCloud collection created above, from a directory containing the PEM formatted certificate and key created above (e.g., `example/etc/`).
-If you have not enabled client authentication (system property `-Djetty.ssl.clientAuth=true)`, then you can remove the `-E solr-ssl.pem:secret` option:
+Use curl to query the collection, from the directory containing the certificate-only PEM file created in the manual example.
+For a publicly trusted certificate installed with `bin/solr ssl`, use the hostname in that certificate and omit `--cacert`.
+If Basic Authentication is enabled, also supply `--user username:password`.
+The `-E` option is needed only when client certificate authentication is enabled.
 
 [source,bash]
 ----
-curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
+curl --cacert solr-ssl.cacert.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
 ----
 
 === Index a Document using CloudSolrClient
