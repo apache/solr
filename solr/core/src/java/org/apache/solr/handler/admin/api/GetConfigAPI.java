@@ -28,7 +28,8 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
  *
- * <p>This class only covers legacy AnnotatedApi paths under GET /config: /params and /params{paramset}
+ * <p>This class only covers legacy AnnotatedApi paths under GET /config: /params and
+ * /params{paramset}
  */
 public class GetConfigAPI {
   private final SolrConfigHandler configHandler;
