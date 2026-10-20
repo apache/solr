@@ -1,0 +1,10 @@
+title: >
+  The /export handler now supports document transformers (e.g. `[docid]`) and field aliases in `fl`,
+  and their output is visible to its local streaming expression (`expr`). An aliased field such as
+  `fl=x:myfield` is now returned as `x`; previously it was silently returned as `myfield`.
+type: added
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-9957
+    url: https://issues.apache.org/jira/browse/SOLR-9957
