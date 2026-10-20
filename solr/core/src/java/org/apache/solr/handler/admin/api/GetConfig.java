@@ -74,8 +74,12 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   // name. v1's GET /config/{component} keeps using the internal names unchanged.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
       Map.of(
-          "searchComponents", "searchComponent",
-          "queryResponseWriters", "queryResponseWriter");
+          "searchComponents",
+          "searchComponent",
+          "queryResponseWriters",
+          "queryResponseWriter",
+          REQUEST_HANDLERS,
+          SolrRequestHandler.TYPE);
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);

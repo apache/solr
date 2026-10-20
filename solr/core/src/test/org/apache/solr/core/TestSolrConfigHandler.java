@@ -100,11 +100,15 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public void testProperty() throws Exception {
     RestTestHarness harness = restTestHarness;
+    // The full "/config" response pluralizes requestHandler -> requestHandlers under the V2 API
+    // (see GetConfig#getConfig), but not under V1.
+    String requestHandlerKey =
+        harness.getBaseURL().contains("/____v2/") ? "requestHandlers" : "requestHandler";
     MapWriter confMap = getRespMap(harness, "/config");
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/info"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/luke"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/info"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/file"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/ping"), null));
 
     String payload =
         "{\n"
@@ -188,11 +192,13 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static void reqhandlertests(RestTestHarness writeHarness) throws Exception {
-    // The full "/config" response pluralizes searchComponent -> searchComponents under the V2
-    // API (see GetConfig#getConfig), but not under V1; the per-component endpoints used elsewhere
-    // in this test are unaffected since they already use the pluralized name.
-    String searchComponentKey =
-        writeHarness.getBaseURL().contains("/____v2/") ? "searchComponents" : "searchComponent";
+    // The full "/config" response pluralizes searchComponent -> searchComponents and
+    // requestHandler -> requestHandlers under the V2 API (see GetConfig#getConfig), but not under
+    // V1; the per-component endpoints used elsewhere in this test are unaffected since they
+    // already use the pluralized name.
+    boolean isV2 = writeHarness.getBaseURL().contains("/____v2/");
+    String searchComponentKey = isV2 ? "searchComponents" : "searchComponent";
+    String requestHandlerKey = isV2 ? "requestHandlers" : "requestHandler";
     String payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n"
@@ -468,7 +474,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         testForResponseElement(
             writeHarness,
             "/config",
-            asList("config", "requestHandler", "/dump100", "class"),
+            asList("config", requestHandlerKey, "/dump100", "class"),
             "org.apache.solr.handler.DumpRequestHandler",
             TIMEOUT_S);
 
