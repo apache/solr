@@ -17,8 +17,11 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 
+import java.util.Map;
 import org.apache.solr.client.api.model.IndexType;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigApi;
@@ -82,6 +85,12 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.znodeVersion.params >= -1);
   }
 
+  /**
+   * Reproduces a bug where a v2 "/config" request proxied internally to the node actually hosting
+   * the collection fails with "Cannot find API for the path", because Solr forwards such requests
+   * using the short "/c/{collection}/..." alias, but {@code Constants.INDEX_PATH_PREFIX}'s JAX-RS
+   * {@code @Path} regex only recognizes "cores" or "collections", not "c".
+   */
   @Test
   public void testGetOverlayFromCollectionViaNonHostingNode() throws Exception {
     Replica replica = getCollectionState(COLLECTION_NAME).replicaStream().findFirst().orElseThrow();
@@ -101,6 +110,92 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
       assertNotNull(response.overlay);
       assertTrue(response.overlay.containsKey("znodeVersion"));
     }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersFromCollection() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.config);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+    assertNotNull(configSection);
+    assertTrue(configSection.containsKey("/select"));
+    assertTrue(configSection.containsKey("/admin/ping"));
+    assertTrue(configSection.containsKey("/graph"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersFilteredByNameFromCollection() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/select");
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+    assertNotNull(configSection);
+    assertEquals(1, configSection.size());
+    assertTrue(configSection.containsKey("/select"));
+
+    Map<String, Object> selectRHSection = (Map<String, Object>) configSection.get("/select");
+    assertEquals("/select", selectRHSection.get("name"));
+    assertEquals("solr.SearchHandler", selectRHSection.get("class"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersExpandParamsTrue() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/admin/ping");
+    request.setExpandParams(true);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
+    assertNotNull(pingRHSection.get("_useParamsExpanded_"));
+    Map<String, Object> expandedPingRHSection =
+        (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
+    assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersOmitsExpandedParamsByDefault() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/admin/ping");
+    var response = request.process(cluster.getSolrClient());
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertFalse(pingRHSection.containsKey("_useParamsExpanded_"));
+  }
+
+  @Test
+  public void testGetRequestHandlersByUnknownNameReturnsNotFound() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/randomHandler");
+    final RemoteSolrException exception =
+        assertThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+    assertEquals(404, exception.code());
   }
 
   @Test

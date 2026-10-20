@@ -693,12 +693,12 @@ V2 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/api/collections/gettingstarted/config/requestHandler?componentName=/export&expandParams=true
+http://localhost:8983/api/collections/gettingstarted/config/requestHandlers?componentName=/export&expandParams=true
 ----
 ====
 ======
 
-The response will look similar to:
+The response will look similar to (V1 nests under `requestHandler`; V2 nests under `requestHandlers`):
 
 [source,json]
 ----
