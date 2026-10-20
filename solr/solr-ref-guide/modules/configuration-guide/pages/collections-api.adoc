@@ -45,8 +45,6 @@ However, there is a limit of 10,000 on the number of async call responses stored
 
 === Examples of Async Requests
 
-*Input*
-
 [tabs#asyncexample]
 ======
 V1 API::
