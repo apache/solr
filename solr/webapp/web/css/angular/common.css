@@ -465,9 +465,11 @@ pre.syntax.language-json .number
   color: blue;
 }
 
-pre.syntax.language-json .literal
+pre.syntax.language-json .literal,
+pre.syntax.language-json .literal .keyword
 {
   color: firebrick;
+  font-weight: normal;
 }
 
 pre.syntax .string,
@@ -515,6 +517,7 @@ pre.syntax .django .tag .keyword
 }
 
 pre.syntax .attribute,
+pre.syntax .attr,
 pre.syntax .variable,
 pre.syntax .instancevar,
 pre.syntax .lisp .body
@@ -522,7 +525,8 @@ pre.syntax .lisp .body
   color: #008080;
 }
 
-pre.syntax.language-json .attribute
+pre.syntax.language-json .attribute,
+pre.syntax.language-json .attr
 {
   color: black;
   font-weight: bold;
