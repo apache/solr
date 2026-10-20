@@ -51,6 +51,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
@@ -170,16 +171,15 @@ public class PackageUtils {
   private static String getJsonStringFromUrl(
       SolrClient client, String path, SolrParams params, boolean isCollectionApi) {
     try {
-      String resolvedPath = path;
       int queryIndex = path.indexOf('?');
       if (queryIndex >= 0) {
         ModifiableSolrParams merged = new ModifiableSolrParams(params);
-        merged.add(parseQueryString(path.substring(queryIndex + 1)));
+        merged.add(SolrRequestParsers.parseQueryString(path.substring(queryIndex + 1)));
         params = merged;
-        resolvedPath = path.substring(0, queryIndex);
+        path = path.substring(0, queryIndex);
       }
       GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, resolvedPath, params)
+          new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
               .setRequiresCollection(isCollectionApi);
       request.setResponseParser(new InputStreamResponseParser("json"));
       var response = client.request(request);
@@ -189,16 +189,6 @@ public class PackageUtils {
     } catch (IOException | SolrServerException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static ModifiableSolrParams parseQueryString(String queryString) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (String pair : queryString.split("&")) {
-      if (pair.isEmpty()) continue;
-      String[] kv = pair.split("=", 2);
-      params.add(kv[0], kv.length > 1 ? kv[1] : "");
-    }
-    return params;
   }
 
   /**

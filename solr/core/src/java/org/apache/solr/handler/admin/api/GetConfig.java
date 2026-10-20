@@ -138,13 +138,17 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return getRequestHandler(REQUEST_HANDLERS, componentName, expandParams, meta);
   }
 
+  @SuppressWarnings("unchecked")
   public ConfigInfoResponse getRequestHandler(
       String sectionName, String componentName, boolean expandParams, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
 
+    Map<String, Object> reqHandlersMap =
+        (Map<String, Object>)
+            solrConfigAsMap().computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
     Map<String, Object> configMap = new LinkedHashMap<>();
     configMap.put(
-        sectionName, requestHandlersWithImplicits(solrConfigAsMap(), expandParams, componentName));
+        sectionName, requestHandlersWithImplicits(reqHandlersMap, expandParams, componentName));
     if (componentName != null) {
       filterByComponentName(configMap, sectionName, componentName, meta, solrQueryRequest);
     }
@@ -254,19 +258,23 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return jsonSafeCopy;
   }
 
+  @SuppressWarnings("unchecked")
   private Map<String, Object> buildConfigMap(boolean expandParams) {
     Map<String, Object> configMap = solrConfigAsMap();
-    requestHandlersWithImplicits(configMap, expandParams, null);
-    return jsonSafeCopy(configMap);
-  }
-
-  @SuppressWarnings({"unchecked"})
-  private Map<String, Object> requestHandlersWithImplicits(
-      Map<String, Object> configMap, boolean expandParams, String expandOnlyComponentName) {
     Map<String, Object> reqHandlersMap =
         (Map<String, Object>)
             configMap.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
+    requestHandlersWithImplicits(reqHandlersMap, expandParams, null);
+    return jsonSafeCopy(configMap);
+  }
 
+  /**
+   * Merges implicit handlers into {@code reqHandlersMap} (mutated in place and returned), expanding
+   * useParams for {@code expandOnlyComponentName} (or all entries if null) when {@code
+   * expandParams}.
+   */
+  private Map<String, Object> requestHandlersWithImplicits(
+      Map<String, Object> reqHandlersMap, boolean expandParams, String expandOnlyComponentName) {
     List<PluginInfo> plugins = solrQueryRequest.getCore().getImplicitHandlers();
     for (PluginInfo plugin : plugins) {
       if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlersMap.containsKey(plugin.name)) {
