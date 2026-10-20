@@ -98,13 +98,24 @@ public class TestSolrConfigHandler extends RestTestBase {
     solrTestRule.reset();
   }
 
+  /**
+   * The full "/config" response pluralizes some section names (e.g. searchComponent ->
+   * searchComponents, requestHandler -> requestHandlers) under the V2 API (see
+   * GetConfig#getConfig), but not under V1.
+   */
+  private static String fullConfigKey(
+      RestTestHarness harness, String internalName, String externalName) {
+    return harness.getBaseURL().contains("/____v2/") ? externalName : internalName;
+  }
+
   public void testProperty() throws Exception {
     RestTestHarness harness = restTestHarness;
+    String requestHandlerKey = fullConfigKey(harness, "requestHandler", "requestHandlers");
     MapWriter confMap = getRespMap(harness, "/config");
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/info"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/luke"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/info"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/file"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/ping"), null));
 
     String payload =
         "{\n"
@@ -188,6 +199,10 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static void reqhandlertests(RestTestHarness writeHarness) throws Exception {
+    // The per-component endpoints used elsewhere in this test are unaffected by the full-config
+    // pluralization below, since they already use the pluralized name.
+    String searchComponentKey = fullConfigKey(writeHarness, "searchComponent", "searchComponents");
+    String requestHandlerKey = fullConfigKey(writeHarness, "requestHandler", "requestHandlers");
     String payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n"
@@ -332,7 +347,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "searchComponent", "tc", "class"),
+        asList("config", searchComponentKey, "tc", "class"),
         "org.apache.solr.handler.component.TermsComponent",
         TIMEOUT_S);
     payload =
@@ -343,14 +358,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "searchComponent", "tc", "class"),
+        asList("config", searchComponentKey, "tc", "class"),
         "org.apache.solr.handler.component.TermVectorComponent",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-searchcomponent' : 'tc'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness, "/config", asList("config", "searchComponent", "tc"), null, TIMEOUT_S);
+        writeHarness, "/config", asList("config", searchComponentKey, "tc"), null, TIMEOUT_S);
     // <valueSourceParser name="countUsage"
     // class="org.apache.solr.core.CountUsageValueSourceParser"/>
     payload =
@@ -444,7 +459,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         testForResponseElement(
             writeHarness,
             "/config",
-            asList("config", "searchComponent", "myspellcheck", "spellchecker", "class"),
+            asList("config", searchComponentKey, "myspellcheck", "spellchecker", "class"),
             "solr.DirectSolrSpellChecker",
             TIMEOUT_S);
 
@@ -463,7 +478,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         testForResponseElement(
             writeHarness,
             "/config",
-            asList("config", "requestHandler", "/dump100", "class"),
+            asList("config", requestHandlerKey, "/dump100", "class"),
             "org.apache.solr.handler.DumpRequestHandler",
             TIMEOUT_S);
 
