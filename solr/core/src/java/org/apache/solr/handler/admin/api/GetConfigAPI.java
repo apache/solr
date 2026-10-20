@@ -61,7 +61,6 @@ public class GetConfigAPI {
   @EndPoint(
       path = {
         "/config/luceneMatchVersion",
-        "/config/requestHandler",
         "/config/initParams",
         "/config/listener",
         "/config/requestDispatcher",

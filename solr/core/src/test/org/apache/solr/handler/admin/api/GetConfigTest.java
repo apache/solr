@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
@@ -84,6 +85,94 @@ public class GetConfigTest extends SolrTestCase {
     assertNotNull(response.znodeVersion);
     assertTrue(response.znodeVersion.overlay >= -1);
     assertTrue(response.znodeVersion.params >= -1);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersFromCore() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.CORE, CORE_NAME);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.config);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+    assertNotNull(configSection);
+    assertTrue(configSection.containsKey("/select"));
+    assertTrue(configSection.containsKey("/admin/ping"));
+    assertTrue(configSection.containsKey("/spell"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersFilteredByNameFromCore() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.CORE, CORE_NAME);
+    request.setComponentName("/select");
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+    assertNotNull(configSection);
+    assertEquals(1, configSection.size());
+    assertTrue(configSection.containsKey("/select"));
+
+    Map<String, Object> selectRHSection = (Map<String, Object>) configSection.get("/select");
+    assertEquals("/select", selectRHSection.get("name"));
+    assertEquals("solr.SearchHandler", selectRHSection.get("class"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersExpandParamsTrue() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.CORE, CORE_NAME);
+    request.setComponentName("/admin/ping");
+    request.setExpandParams(true);
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
+    assertNotNull(pingRHSection.get("_useParamsExpanded_"));
+    Map<String, Object> expandedPingRHSection =
+        (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
+    assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersOmitsExpandedParamsByDefault() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.CORE, CORE_NAME);
+    request.setComponentName("/admin/ping");
+    var response = request.process(solrTestRule.getSolrClient(CORE_NAME));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertFalse(pingRHSection.containsKey("_useParamsExpanded_"));
+  }
+
+  @Test
+  public void testGetRequestHandlersByUnknownNameReturnsNotFound() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.CORE, CORE_NAME);
+    request.setComponentName("/randomHandler");
+    final RemoteSolrException exception =
+        assertThrows(
+            RemoteSolrException.class,
+            () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+    assertEquals(404, exception.code());
   }
 
   @Test

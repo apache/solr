@@ -519,7 +519,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 +
 ACORN is an algorithm designed to make hybrid searches consisting of a filter and a vector search more efficient.
 This approach tackles both the performance limitations of pre- and post- filtering.
-It modifies the construction of the HNSW graph and the search on it. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
+It modifies how the HNSW graph is searched. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
 +
 Solr relies on Lucene's implementation of the `filteredSearchThreshold` in the  {lucene-javadocs}/core/org/apache/lucene/search/knn/KnnSearchStrategy.html[KnnSearchStrategy].
 +
