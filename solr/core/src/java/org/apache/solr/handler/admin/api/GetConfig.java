@@ -71,23 +71,16 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   public static final String REQUEST_HANDLERS = "requestHandlers";
 
-  // v2-only renames for the GET /config/{component} and /config/{component}/{componentName}
-  // paths: external (URL/response-key) component name -> internal SolrConfig section name. v1's
-  // GET /config/{component} keeps using the internal names unchanged. requestHandler is NOT here:
-  // it never routes through these paths (it has its own dedicated /config/requestHandlers
-  // endpoint instead, since handler names can contain '/'), so including it would wrongly imply
-  // ConfigApi.Get#getConfigComponent(ByName) can resolve it.
+  // v2-only renames for /config/{component}(/{componentName}): external name -> internal
+  // SolrConfig section name. Excludes requestHandler, which has its own dedicated endpoint instead
+  // of routing through these paths.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
       Map.of(
           "searchComponents", "searchComponent",
           "queryResponseWriters", "queryResponseWriter");
 
-  // v2-only renames for the full GET /config dump's top-level section keys. Built from
-  // EXTERNAL_TO_INTERNAL_COMPONENT_NAME above, plus requestHandler: that section has its own
-  // dedicated endpoint (and thus its own plural name) but isn't part of the generic
-  // /config/{component} path routing, so it's not in the map above. Deriving from that map, rather
-  // than duplicating its entries here, keeps the two in sync automatically if it ever gains more
-  // entries.
+  // Same, but for the full /config dump's top-level keys, which also renames requestHandler.
+  // Derived from the map above so the two can't drift apart.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_FULL_CONFIG_NAME =
       buildFullConfigNameMap();
 
