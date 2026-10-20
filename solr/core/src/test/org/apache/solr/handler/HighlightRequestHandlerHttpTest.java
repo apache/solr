@@ -82,7 +82,7 @@ public class HighlightRequestHandlerHttpTest extends SolrTestCaseJ4 {
   public void testGetStreamBodyAndV2Routes() throws Exception {
     String encodedText = URLEncoder.encode(TEXT, StandardCharsets.UTF_8);
     String params = "?q=_text_%3Asolr&hl.fl=_text_&wt=json&stream.body=" + encodedText;
-    String v2BaseUrl = solrTestRule.getJetty().getBaseURLV2();
+    String v2BaseUrl = solrTestRule.getJetty().getBaseURLV2().toString();
     String v2CoreUrl = v2BaseUrl + "/cores/" + CORE_NAME + "/highlight";
     String v2CollectionUrl = v2BaseUrl + "/c/" + CORE_NAME + "/highlight";
 
