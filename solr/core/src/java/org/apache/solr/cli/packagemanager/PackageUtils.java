@@ -160,12 +160,26 @@ public class PackageUtils {
     return getJsonStringFromUrl(client, path, params, false);
   }
 
-  /** Returns JSON string from a given Solr URL */
+  /**
+   * repository.json's verify/setup command templates embed their query string directly in {@code
+   * path} (e.g. {@code .../requestHandlers?componentName=x&meta=true}). The HTTP client always
+   * appends its own query string afterward with a leading {@code ?}, and a URL with two {@code ?}
+   * characters is parsed as a single query string on the wire -- so the last templated parameter
+   * silently absorbs the client's params as part of its own value instead of being read correctly.
+   */
   private static String getJsonStringFromUrl(
       SolrClient client, String path, SolrParams params, boolean isCollectionApi) {
     try {
+      String resolvedPath = path;
+      int queryIndex = path.indexOf('?');
+      if (queryIndex >= 0) {
+        ModifiableSolrParams merged = new ModifiableSolrParams(params);
+        merged.add(parseQueryString(path.substring(queryIndex + 1)));
+        params = merged;
+        resolvedPath = path.substring(0, queryIndex);
+      }
       GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
+          new GenericSolrRequest(SolrRequest.METHOD.GET, resolvedPath, params)
               .setRequiresCollection(isCollectionApi);
       request.setResponseParser(new InputStreamResponseParser("json"));
       var response = client.request(request);
@@ -175,6 +189,16 @@ public class PackageUtils {
     } catch (IOException | SolrServerException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static ModifiableSolrParams parseQueryString(String queryString) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    for (String pair : queryString.split("&")) {
+      if (pair.isEmpty()) continue;
+      String[] kv = pair.split("=", 2);
+      params.add(kv[0], kv.length > 1 ? kv[1] : "");
+    }
+    return params;
   }
 
   /**
