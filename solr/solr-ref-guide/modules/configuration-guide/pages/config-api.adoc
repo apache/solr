@@ -125,7 +125,7 @@ To see the configuration for implicit request handlers, add `expandParams=true` 
 See the documentation for implicit request handlers linked above for examples using this command.
 
 The available top-level sections that can be added as path parameters include: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
-(Other `solconfig.xml` sections emitted by Solr may also be fetched the same way)
+(Other `solrconfig.xml` sections emitted by Solr may also be fetched the same way)
 
 In the V2 API, several multi-valued sections use pluralized path names (and the same plural as the response JSON key).
 
