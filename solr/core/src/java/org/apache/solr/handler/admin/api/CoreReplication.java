@@ -46,6 +46,8 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   @Override
   @PermissionName(CORE_READ_PERM)
   public ReplicationDetailsResponse fetchReplicationDetails(Boolean follower) {
+    // Boxed (rather than the primitive boolean used elsewhere for similar flags) so this method
+    // can also be called directly, bypassing the JAX-RS @DefaultValue, with no value supplied.
     return doFetchReplicationDetails(follower == null || follower);
   }
 
