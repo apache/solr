@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
+
 package org.apache.solr.ui.views.environment
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.data.Versions
+import org.apache.solr.ui.components.environment.viewmodel.EnvironmentUiState
 
 class EnvironmentContentTest {
 
@@ -32,7 +31,7 @@ class EnvironmentContentTest {
     @Test
     fun testEnvironmentContentRendering() = runComposeUiTest {
         setContent {
-            EnvironmentContent(TestEnvironmentComponent)
+            EnvironmentContent(uiState = testUiState)
         }
 
         // Test if component data is displayed
@@ -45,21 +44,17 @@ class EnvironmentContentTest {
     }
 }
 
-private object TestEnvironmentComponent : EnvironmentComponent {
-    override val model: StateFlow<EnvironmentComponent.Model> = MutableStateFlow(
-        EnvironmentComponent.Model(
-            versions = Versions(
-                solrSpecVersion = "solr-spec version",
-            ),
-            javaProperties = listOf(
-                "key 1" to "value 1",
-                "key 2" to "value 2",
-                "key 3" to "value 3",
-                "key 4" to "value 4",
-                "key 5" to "value 5",
-                "key 6" to "value 6",
-                "key 7" to "value 7",
-            ),
-        ),
-    )
-}
+private val testUiState = EnvironmentUiState(
+    lucene = Versions(
+        solrSpecVersion = "solr-spec version",
+    ),
+    javaProperties = listOf(
+        "key 1" to "value 1",
+        "key 2" to "value 2",
+        "key 3" to "value 3",
+        "key 4" to "value 4",
+        "key 5" to "value 5",
+        "key 6" to "value 6",
+        "key 7" to "value 7",
+    ),
+)
