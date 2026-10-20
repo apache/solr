@@ -119,6 +119,7 @@ To see the configuration for implicit request handlers, add `expandParams=true` 
 See the documentation for implicit request handlers linked above for examples using this command.
 
 The available top-level sections that can be added as path parameters are: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
+In the V2 API, `searchComponent` and `queryResponseWriter` are exposed under the pluralized names `searchComponents` and `queryResponseWriters` instead.
 
 To further restrict the request to a single component within a top-level section, use the `componentName` request parameter.
 
@@ -160,6 +161,54 @@ The output of this command will look similar to:
 ----
 
 The ability to restrict to objects within a top-level section is limited to request handlers (`requestHandler`), search components (`searchComponent`), and response writers (`queryResponseWriter`).
+
+For search components and response writers, the V2 API uses a path segment instead of the `componentName` request parameter, under the pluralized section names.
+For example, to return configuration for the `elevator` search component:
+
+[tabs#getnamedcomponent]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/techproducts/config/searchComponent?componentName=elevator
+----
+====
+V2 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/api/collections/techproducts/config/searchComponents/elevator
+----
+====
+======
+
+The same applies to response writers.
+For example, to return configuration for the `xslt` response writer:
+
+[tabs#getnamedwriter]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/techproducts/config/queryResponseWriter?componentName=xslt
+----
+====
+V2 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/api/collections/techproducts/config/queryResponseWriters/xslt
+----
+====
+======
+
+Request handlers are unaffected and continue to use `componentName` in both APIs, as shown above.
 
 == Commands to Modify the Config
 
