@@ -28,8 +28,9 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
  *
- * <p>This class covers legacy AnnotatedApi paths under GET /config: /params, /params{paramset},
- * /overlay, /znodeVersion, etc.
+ * <p>This class covers legacy AnnotatedApi paths under GET /config: /params, /params{paramset}, and
+ * remaining {@code /config/{component}} sections not yet migrated to {@link
+ * org.apache.solr.client.api.endpoint.ConfigApi.Get}
  */
 public class GetConfigAPI {
   private final SolrConfigHandler configHandler;
@@ -60,16 +61,9 @@ public class GetConfigAPI {
   @EndPoint(
       path = {
         "/config/luceneMatchVersion",
-        "/config/query",
         "/config/requestHandler",
-        "/config/searchComponent",
-        "/config/updateHandler",
-        "/config/queryResponseWriter",
         "/config/initParams",
         "/config/listener",
-        "/config/directoryFactory",
-        "/config/indexConfig",
-        "/config/codecFactory",
         "/config/requestDispatcher",
         "/config/jmx",
         "/config/queryParser",
