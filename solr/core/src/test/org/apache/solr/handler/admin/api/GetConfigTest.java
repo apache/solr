@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.IndexType;
@@ -239,6 +240,36 @@ public class GetConfigTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  public void testGetConfigComponentSectionShapes() throws Exception {
+    var queryResponse =
+        new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "luceneMatchVersion")
+            .process(solrTestRule.getSolrClient(CORE_NAME));
+    assertNull(queryResponse.error);
+    assertTrue(queryResponse.config.get("luceneMatchVersion") instanceof String);
+
+    queryResponse =
+        new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "initParams")
+            .process(solrTestRule.getSolrClient(CORE_NAME));
+    assertNull(queryResponse.error);
+    assertTrue(queryResponse.config.get("initParams") instanceof List);
+
+    queryResponse =
+        new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "requestDispatcher")
+            .process(solrTestRule.getSolrClient(CORE_NAME));
+    assertNull(queryResponse.error);
+    assertTrue(queryResponse.config.get("requestDispatcher") instanceof Map);
+
+    queryResponse =
+        new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "updateProcessors")
+            .process(solrTestRule.getSolrClient(CORE_NAME));
+    assertNull(queryResponse.error);
+    Map<String, Object> querySection = (Map<String, Object>) queryResponse.config.get("updateProcessors");
+    assertNotNull(querySection);
+    assertTrue(querySection.containsKey("uuid"));
+  }
+
+  @Test
   public void testGetConfigComponentByUnknownNameReturnsNotFound() {
     var request =
         new ConfigApi.GetConfigComponentByName(
@@ -251,14 +282,41 @@ public class GetConfigTest extends SolrTestCase {
   }
 
   @Test
-  public void testGetConfigComponentRejectsOldSingularSearchComponentPath() {
-    // v2 intentionally renamed this one section to the plural "searchComponents" in the URL;
-    // the old singular form (still used by v1) shouldn't match the v2 route at all.
-    var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "searchComponent");
+  public void testGetConfigComponentByNameOnListSectionReturnsNotFound() {
+    // List-shaped sections are excluded from the by-name @Path; Jersey should return 404.
+    for (String component : List.of("listeners", "initParams", "updateRequestProcessorChain", "circuitBreaker")) {
+      var request =
+          new ConfigApi.GetConfigComponentByName(
+              IndexType.CORE, CORE_NAME, component, "random");
     final RemoteSolrException ex =
         expectThrows(
             RemoteSolrException.class,
             () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
     assertEquals(404, ex.code());
+  }
+  }
+
+  @Test
+  public void testGetConfigComponentRejectsOldSingularPaths() {
+    // v2-only plurals;
+    // the old singular form (still used by v1) shouldn't match the v2 route at all.
+    for (String component: List.of(
+        "searchComponent",
+        "queryResponseWriter",
+        "listener",
+        "queryParser",
+        "valueSourceParser",
+        "transformer",
+        "updateProcessor",
+        "queryConverter",
+        "expressible",
+        "cache")) {
+      var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
+      final RemoteSolrException ex =
+          expectThrows(
+              RemoteSolrException.class,
+              () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+      assertEquals(404, ex.code());
+    }
   }
 }
