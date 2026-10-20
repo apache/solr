@@ -70,6 +70,27 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
+    // TODO: RH names contain '/' (e.g. /select, /update/json), so they cannot be a @PathParam in
+    // the current design; Keeping filtering via @QueryParam for now.
+    @GET
+    @Path("/requestHandlers")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch request handlers (including implicit handler)",
+        tags = {"config"})
+    ConfigInfoResponse getRequestHandler(
+        @QueryParam("componentName")
+            @Parameter(description = "Name of the specific request handler")
+            String component,
+        @QueryParam("expandParams")
+            @DefaultValue("false")
+            @Parameter(description = "Expand request handler useParams and effective parameters")
+            boolean expandParams,
+        @QueryParam("meta")
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
+
     // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
     // and "queryResponseWriters" here are the external, pluralized names for the internal
     // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)

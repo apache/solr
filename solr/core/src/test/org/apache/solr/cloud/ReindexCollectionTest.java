@@ -444,6 +444,42 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     assertEquals(status.toString(), "aborted", status.get("state"));
   }
 
+  @Test
+  public void testAbortWithAliasedTarget() throws Exception {
+    final String sourceCollection = "abortAliasedReindexing";
+    final String targetCollection = "abortAliasedReindexingTarget";
+    final String targetAlias = "abortAliasedReindexingAlias";
+    createCollection(sourceCollection, "conf1", 2, 1);
+
+    TestInjection.reindexLatch = new CountDownLatch(1);
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
+    String asyncId = req.processAsync(solrClient);
+    waitForState(
+        "source collection didn't become readOnly", sourceCollection, DocCollection::isReadOnly);
+
+    // an alias on the target makes the cleanup fail to delete it
+    CollectionAdminRequest.createAlias(targetAlias, targetCollection).process(solrClient);
+
+    req = CollectionAdminRequest.reindexCollection(sourceCollection);
+    req.setCommand("abort");
+    req.process(solrClient);
+    waitForReindexingState(sourceCollection, ReindexCollectionCmd.State.ABORTED);
+    TestInjection.reindexLatch.countDown();
+
+    // the source collection must still be restored
+    waitForState(
+        "source collection is in wrong state",
+        sourceCollection,
+        docCollection -> !docCollection.isReadOnly());
+    waitForReindexingState(sourceCollection, null);
+
+    // the failure to delete the aliased target is still reported
+    assertEquals(
+        RequestStatusState.FAILED,
+        CollectionAdminRequest.requestStatus(asyncId).waitFor(solrClient, 30));
+  }
+
   private void createCollection(String name, String config, int numShards, int numReplicas)
       throws Exception {
     CollectionAdminRequest.createCollection(name, config, numShards, numReplicas)
