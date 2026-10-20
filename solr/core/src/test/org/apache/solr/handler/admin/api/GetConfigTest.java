@@ -64,7 +64,6 @@ public class GetConfigTest extends SolrTestCase {
 
     assertFalse(response.config.containsKey("updateProcessor"));
     assertTrue(response.config.containsKey("updateProcessors"));
-
   }
 
   @Test

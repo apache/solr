@@ -100,7 +100,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   /**
    * The full "/config" response pluralizes some section names (e.g. searchComponent ->
-   * searchComponents, requestHandler -> requestHandlers) under the V2 API (see
+   * searchComponents, requestHandler -> requestHandlers etc.) under the V2 API (see
    * GetConfig#getConfig), but not under V1.
    */
   private static String fullConfigKey(
@@ -205,7 +205,8 @@ public class TestSolrConfigHandler extends RestTestBase {
     String requestHandlerKey = fullConfigKey(writeHarness, "requestHandler", "requestHandlers");
     String queryConverterKey = fullConfigKey(writeHarness, "queryConverter", "queryConverters");
     String listenerKey = fullConfigKey(writeHarness, "listener", "listeners");
-    String valueSourceParserKey = fullConfigKey(writeHarness, "valueSourceParser", "valueSourceParsers");
+    String valueSourceParserKey =
+        fullConfigKey(writeHarness, "valueSourceParser", "valueSourceParsers");
     String transformerKey = fullConfigKey(writeHarness, "transformer", "transformers");
 
     String payload =
