@@ -58,7 +58,8 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.config.containsKey("luceneMatchVersion"));
     assertTrue(response.config.containsKey("updateHandler"));
     assertTrue(response.config.containsKey("query"));
-    assertTrue(response.config.containsKey("requestHandler"));
+    assertFalse(response.config.containsKey("requestHandler"));
+    assertTrue(response.config.containsKey("requestHandlers"));
   }
 
   @Test
