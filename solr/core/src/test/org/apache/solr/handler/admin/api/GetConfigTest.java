@@ -264,7 +264,8 @@ public class GetConfigTest extends SolrTestCase {
         new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, "updateProcessors")
             .process(solrTestRule.getSolrClient(CORE_NAME));
     assertNull(queryResponse.error);
-    Map<String, Object> querySection = (Map<String, Object>) queryResponse.config.get("updateProcessors");
+    Map<String, Object> querySection =
+        (Map<String, Object>) queryResponse.config.get("updateProcessors");
     assertNotNull(querySection);
     assertTrue(querySection.containsKey("uuid"));
   }
@@ -284,33 +285,34 @@ public class GetConfigTest extends SolrTestCase {
   @Test
   public void testGetConfigComponentByNameOnListSectionReturnsNotFound() {
     // List-shaped sections are excluded from the by-name @Path; Jersey should return 404.
-    for (String component : List.of("listeners", "initParams", "updateRequestProcessorChain", "circuitBreaker")) {
+    for (String component :
+        List.of("listeners", "initParams", "updateRequestProcessorChain", "circuitBreaker")) {
       var request =
-          new ConfigApi.GetConfigComponentByName(
-              IndexType.CORE, CORE_NAME, component, "random");
-    final RemoteSolrException ex =
-        expectThrows(
-            RemoteSolrException.class,
-            () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
-    assertEquals(404, ex.code());
-  }
+          new ConfigApi.GetConfigComponentByName(IndexType.CORE, CORE_NAME, component, "random");
+      final RemoteSolrException ex =
+          expectThrows(
+              RemoteSolrException.class,
+              () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+      assertEquals(404, ex.code());
+    }
   }
 
   @Test
   public void testGetConfigComponentRejectsOldSingularPaths() {
     // v2-only plurals;
     // the old singular form (still used by v1) shouldn't match the v2 route at all.
-    for (String component: List.of(
-        "searchComponent",
-        "queryResponseWriter",
-        "listener",
-        "queryParser",
-        "valueSourceParser",
-        "transformer",
-        "updateProcessor",
-        "queryConverter",
-        "expressible",
-        "cache")) {
+    for (String component :
+        List.of(
+            "searchComponent",
+            "queryResponseWriter",
+            "listener",
+            "queryParser",
+            "valueSourceParser",
+            "transformer",
+            "updateProcessor",
+            "queryConverter",
+            "expressible",
+            "cache")) {
       var request = new ConfigApi.GetConfigComponent(IndexType.CORE, CORE_NAME, component);
       final RemoteSolrException ex =
           expectThrows(
