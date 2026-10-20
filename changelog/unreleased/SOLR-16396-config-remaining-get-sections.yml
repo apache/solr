@@ -1,7 +1,7 @@
 title: >
   Migrate remaining GET /config/{component} sections to JAX-RS.
-  V2 renames listener, queryParser, valueSourceParser, transformer, updateProcessor, queryConverter and expressibles to
-  listeners, queryParsers, valueSourceParsers, transformers, updateProcessors, queryConverters and expressibles respectively.  (V1 unchanged)
+  V2 renames listener, queryParser, valueSourceParser, cache, transformer, updateProcessor, queryConverter and expressible to
+  listeners, queryParsers, valueSourceParsers, caches, transformers, updateProcessors, queryConverters and expressibles respectively.  (V1 unchanged)
 type: changed
 authors:
   - name: Jalaz Kumar
