@@ -236,16 +236,9 @@ public class SolrConfigHandler extends RequestHandlerBase
                     : getConfig.getConfigComponentByName(
                         parts.get(1), componentName, req.getParams().getBool("meta", false)));
           } else {
-            Map<String, Object> m =
-                Utils.convertToMap(req.getCore().getSolrConfig(), new LinkedHashMap<>());
-            Map<String, Object> val = new LinkedHashMap<>();
-            val.put(parts.get(1), m.get(parts.get(1)));
-            String componentName = req.getParams().get("componentName");
-            if (componentName != null) {
-              GetConfig.filterByComponentName(
-                  val, parts.get(1), componentName, req.getParams().getBool("meta", false), req);
-            }
-            resp.add("config", val);
+            throw new SolrException(
+                SolrException.ErrorCode.NOT_FOUND,
+                "No config API for path: /config/" + parts.get(1));
           }
         }
       }
