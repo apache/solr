@@ -439,6 +439,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       // once per query it completes, so each phase lasts for a counted number of queries
       // instead of a duration slept through
       AtomicReference<CountDownLatch> phaseLatch = new AtomicReference<>();
+      boolean failoverObserved = false;
       Future<Integer> f =
           executor.submit(
               () -> {
@@ -453,20 +454,16 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     int serveTogetherQueries = threadRandom.nextInt(70);
                     int downQueries = threadRandom.nextInt(70);
                     log.info("serving together for {} queries", serveTogetherQueries);
-                    if (!awaitQueryCount(phaseLatch, serveTogetherQueries, finishTimeMs)) {
+                    if (!awaitQueryCount(phaseLatch, serveTogetherQueries, finishTimeMs, done)) {
                       break;
                     }
                     log.info("stopping {} ...", idx);
                     toManipulate.stop();
                     log.info("stopped {}.", idx);
-                    boolean downPhaseCompleted =
-                        awaitQueryCount(phaseLatch, downQueries, finishTimeMs);
+                    awaitQueryCount(phaseLatch, downQueries, finishTimeMs, done);
                     log.info("restarting {} ...", idx);
                     toManipulate.start(true);
                     log.info("restarted {}.", idx);
-                    if (!downPhaseCompleted) {
-                      break;
-                    }
                     waitForState(
                         toManipulate.getNodeName() + " replicas didn't become active in time",
                         COLL,
@@ -482,6 +479,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
               });
       count = 0;
       start = new Date().getTime();
+      long toggleEndMs;
       try {
         do {
           if (pullCore.equals(
@@ -492,6 +490,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     p.set(CommonParams.Q, "id:345");
                     p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
                   }))) {
+            failoverObserved = true;
             done.set(true);
           }
           count++;
@@ -514,6 +513,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           result = "Failure";
         }
         Integer toggleCount = f.get();
+        toggleEndMs = new Date().getTime();
         long secondsDuration =
             TimeUnit.SECONDS.convert(new Date().getTime() - start, TimeUnit.MILLISECONDS);
         log.info(
@@ -522,6 +522,11 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             secondsDuration,
             toggleCount,
             count);
+      }
+      if (failoverObserved) {
+        assertTrue(
+            "toggle thread ran until the end of the toggle window after the failover was observed",
+            toggleEndMs < finishTimeMs);
       }
     } finally {
       try {
@@ -607,17 +612,29 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
   /**
    * Publishes a latch that the main thread counts down once per completed query, and blocks until
-   * {@code queries} queries have completed or the toggle window ends. Returns false when the window
-   * ended before the count was reached.
+   * {@code queries} queries have completed, the toggle window ends, or {@code done} is set (the
+   * main thread stops querying once done, so the count would never be reached). Returns false when
+   * the count was not reached.
    */
   private boolean awaitQueryCount(
-      AtomicReference<CountDownLatch> phaseLatch, int queries, long finishTimeMs)
+      AtomicReference<CountDownLatch> phaseLatch,
+      int queries,
+      long finishTimeMs,
+      AtomicBoolean done)
       throws InterruptedException {
     CountDownLatch latch = new CountDownLatch(queries);
     phaseLatch.set(latch);
     try {
-      long remainingMs = finishTimeMs - new Date().getTime();
-      return remainingMs > 0 && latch.await(remainingMs, TimeUnit.MILLISECONDS);
+      while (!done.get()) {
+        long remainingMs = finishTimeMs - new Date().getTime();
+        if (remainingMs <= 0) {
+          return false;
+        }
+        if (latch.await(Math.min(remainingMs, 100), TimeUnit.MILLISECONDS)) {
+          return true;
+        }
+      }
+      return false;
     } finally {
       phaseLatch.compareAndSet(latch, null);
     }
