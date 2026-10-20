@@ -54,15 +54,4 @@ public class GetConfigAPI {
   public void getSingleParamSet(SolrQueryRequest req, SolrQueryResponse rsp) {
     configHandler.handleRequest(req, rsp);
   }
-
-  // GET /config/... sections still via SolrConfigHandler.
-  // Every name SolrConfig.writeMap can emit.
-  // Delete a path from this list when that section is migrated to Jersey
-  @EndPoint(
-      path = {"/config/requestHandler"},
-      method = GET,
-      permission = CONFIG_READ_PERM)
-  public void getComponentConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
-    configHandler.handleRequest(req, rsp);
-  }
 }
