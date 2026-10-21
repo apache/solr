@@ -92,9 +92,6 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
     assertNoSevereConsoleErrors();
   }
 
-  /**
-   * The Logging &gt; Level screen fetches log levels for the selected node, not just the log page.
-   */
   @Test
   public void testLoggingLevelsScreenFollowsSelectedNode() {
     String remoteNode = cluster.getJettySolrRunner(1).getNodeName();
