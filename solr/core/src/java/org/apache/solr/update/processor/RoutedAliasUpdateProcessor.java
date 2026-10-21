@@ -51,6 +51,7 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,10 +132,21 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
-    ZkController zkController = req.getCoreContainer().getZkController();
-    final Map<String, String> aliasProperties =
-        zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
+  private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName)
+      throws KeeperException {
+    ZkStateReader zkStateReader = req.getCoreContainer().getZkController().getZkStateReader();
+    Map<String, String> aliasProperties =
+        zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
+    if (aliasProperties.isEmpty()) {
+      // our cached aliases may be stale (e.g. a watch was missed), so check ZK before failing
+      try {
+        zkStateReader.aliasesManager.update();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+      aliasProperties = zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
+    }
     if (aliasProperties.isEmpty()) {
       throw RoutedAlias.newAliasMustExistException(
           aliasName); // if it did exist, we'd have a non-null map
