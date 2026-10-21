@@ -23,7 +23,7 @@ are listed together, since they are typically from the same project.
 
 Prints the summary to stdout, or with --write, writes changelog YAML entries and
 deletes the per-PR dependency_update entries authored by solrbot, which the summary
-supersedes.
+supersedes, from both unreleased/ and the version's folder if an earlier RC moved them there.
 
 This is a stopgap until Solr publishes an SBOM per release, which would be the
 better source to diff.
@@ -180,7 +180,7 @@ def remove_solrbot_entries(directory):
   count = 0
   for name in sorted(os.listdir(directory)):
     path = os.path.join(directory, name)
-    if (name.endswith('.yml') and not name.startswith('dependency-changes-')
+    if (name.endswith(('.yml', '.yaml')) and not name.startswith('dependency-changes-')
         and is_solrbot_dependency_entry(path)):
       os.remove(path)
       count += 1
@@ -219,6 +219,10 @@ def main():
       os.remove(path)
       print(f'Removed {path}; no {category} dependency changes')
   remove_solrbot_entries(args.write)
+  # Entries already moved out of unreleased by an earlier RC's changelog prepare
+  released_dir = os.path.join(os.path.dirname(os.path.normpath(args.write)), f'v{version}')
+  if os.path.isdir(released_dir):
+    remove_solrbot_entries(released_dir)
 
 
 if __name__ == '__main__':
