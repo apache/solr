@@ -21,7 +21,9 @@ jar checksum files in solr/licenses/ between two git refs (by default: the
 previous release tag and HEAD).  Jars that moved between the same two versions
 are listed together, since they are typically from the same project.
 
-Prints the summary to stdout, or with --write, writes changelog YAML entries.
+Prints the summary to stdout, or with --write, writes changelog YAML entries and
+deletes the per-PR dependency_update entries authored by solrbot, which the summary
+supersedes.
 
 This is a stopgap until Solr publishes an SBOM per release, which would be the
 better source to diff.
@@ -165,6 +167,26 @@ def to_yaml(title, version):
           f'    url: https://github.com/apache/solr/tree/releases/solr/{version}/solr/licenses\n')
 
 
+def is_solrbot_dependency_entry(path):
+  """Whether a changelog YAML entry is a dependency_update with solrbot among its authors."""
+  with open(path, encoding='utf-8') as f:
+    text = f.read()
+  return (re.search(r'^type:\s*dependency_update\s*$', text, re.M) is not None
+          and re.search(r'^\s*-?\s*name:\s*[\'"]?solrbot[\'"]?\s*$', text, re.M) is not None)
+
+
+def remove_solrbot_entries(directory):
+  """Deletes solrbot's per-PR dependency_update entries; the generated summary replaces them."""
+  count = 0
+  for name in sorted(os.listdir(directory)):
+    path = os.path.join(directory, name)
+    if (name.endswith('.yml') and not name.startswith('dependency-changes-')
+        and is_solrbot_dependency_entry(path)):
+      os.remove(path)
+      count += 1
+  print(f'Removed {count} solrbot dependency_update entries from {directory}')
+
+
 def main():
   parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--from', dest='from_ref',
@@ -196,6 +218,7 @@ def main():
     elif os.path.exists(path):
       os.remove(path)
       print(f'Removed {path}; no {category} dependency changes')
+  remove_solrbot_entries(args.write)
 
 
 if __name__ == '__main__':
