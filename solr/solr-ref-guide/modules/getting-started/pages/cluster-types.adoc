@@ -21,7 +21,7 @@ A Solr cluster is a group of servers that each run one or more Solr _nodes_.
 There are two general modes of operating a cluster of Solr nodes.
 One mode provides central coordination of the Solr nodes (<<SolrCloud Clusters>>), while the other allows you to operate a cluster without this central coordination (<<User-Managed Cluster>>).
 
-TIP: "User-managed" is sometimes referred to as "Standalone" in source code.
+TIP: "User Managed" is sometimes referred to as "Standalone" in source code.
 
 Both modes share general concepts, but ultimately differ in how those concepts are reflected in functionality and features.
 

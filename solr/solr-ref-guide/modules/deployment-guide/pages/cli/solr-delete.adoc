@@ -42,7 +42,7 @@ bin/solr delete [-fhv] [--delete-config] -c=<name> [-u=<credentials>]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Deletes a collection or core depending on whether Solr is running in SolrCloud or user-managed mode.
+Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode.
 
 // end::picocli-generated-man-section-description[]
 

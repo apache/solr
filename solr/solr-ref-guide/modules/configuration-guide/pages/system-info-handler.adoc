@@ -49,7 +49,7 @@ http://localhost:8983/api/node/system
 The keys in the result are:
 
 `mode`::
-Either `solrcloud` or `std`, indicating the mode Solr is running in; `std` is user-managed mode.
+Either `solrcloud` or `std`, indicating the mode Solr is running in; `std` is standalone mode.
 
 `solr_home`::
 Solr base directory.

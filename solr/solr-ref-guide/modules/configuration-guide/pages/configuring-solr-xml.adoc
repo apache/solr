@@ -284,7 +284,7 @@ If you need to disable this feature for backwards compatibility, you can set the
 +
 Comma-separated list of ZooKeeper connection strings of other SolrCloud clusters that may be passed as a `zkHost` (or ZooKeeper-based `solrConnection`) parameter to features that fetch data from another cluster, such as cross-collection join and streaming expressions.
 The local SolrCloud ZooKeeper ensemble is always allowed and need not be listed.
-Solr in user-managed (non-SolrCloud) mode does not allow any `zkHost`.
+Solr in standalone (non-SolrCloud) mode does not allow any `zkHost`.
 +
 Matching is character-for-character against the full connection string -- e.g. `zk1:2181,zk2:2181,zk3:2181/solr` is a different value from `zk1:2181,zk2:2181,zk3:2181` or from the same hosts in a different order.
 The local ensemble's value includes any chroot suffix configured at startup: if Solr was started with `-DzkHost=zk1:2181/solr`, then `zkHost="zk1:2181/solr"` is allowed but `zkHost="zk1:2181"` is not unless listed.

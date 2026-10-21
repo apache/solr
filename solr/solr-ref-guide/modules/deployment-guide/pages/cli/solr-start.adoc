@@ -98,7 +98,7 @@ Starts Solr
   Set solr.solr.home system property; default is 'server/solr'. Ignored in examples mode
 
 *--user-managed*::
-  Start Solr in user-managed mode. Default is SolrCloud (ZooKeeper) mode.
+  Start Solr in standalone mode. Default is SolrCloud (ZooKeeper) mode.
 
 *--verbose*::
   Set log level to DEBUG (verbose); default is INFO
@@ -122,7 +122,7 @@ Starts Solr
   bin/solr start -p 8984 -m 2g
 
 [%hardbreaks]
-  # Start in user-managed mode
+  # Start in user managed mode
   bin/solr start --user-managed
 
 // end::picocli-generated-man-section-footer[]

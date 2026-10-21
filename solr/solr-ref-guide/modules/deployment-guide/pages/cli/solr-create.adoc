@@ -43,7 +43,7 @@ bin/solr create [-hv] -c=<name> [-d=<confDir>] [-n=<confName>]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Creates a core or collection depending on whether Solr is running in user-managed (core) or SolrCloud mode (collection).
+Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
 
 // end::picocli-generated-man-section-description[]
 

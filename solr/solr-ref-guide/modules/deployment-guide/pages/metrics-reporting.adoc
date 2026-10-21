@@ -68,7 +68,7 @@ The type of replica. This can be NRT/TLOG/PULL.
 `shard`::
 The name of the shard.
 
-In user-managed mode, only the `core` attribute is attached to the metrics.
+In standalone mode, only the `core` attribute is attached to the metrics.
 
 Some examples of metrics available from the core registry:
 
