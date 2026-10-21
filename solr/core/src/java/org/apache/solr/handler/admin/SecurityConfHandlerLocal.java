@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,22 @@ import org.slf4j.LoggerFactory;
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected Path securityJsonPath;
+  private final Object securityJsonLock = new Object();
 
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);
     securityJsonPath = coreContainer.getSolrHome().resolve("security.json");
+  }
+
+  /**
+   * Serializes requests, since a local file has no versioned write to detect concurrent edits the
+   * way ZooKeeper does. Reads are included so they never see a partially written file.
+   */
+  @Override
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    synchronized (securityJsonLock) {
+      super.handleRequestBody(req, rsp);
+    }
   }
 
   /**
