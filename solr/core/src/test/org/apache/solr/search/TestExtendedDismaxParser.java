@@ -1203,8 +1203,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   // same multi-term PhraseQuery that the "wi-fi" and "usa" cases already exercise, so it covers no
   // new code path while requiring a CJK analyzer to be configured in the test schema.
   public void testSingleTermPhraseBoost() throws Exception {
-    // Plain single-token query: the pf phrase boost adds nothing over the qf term boost, so no
-    // phrase clause should be present. minClauseSize already discards it regardless of this change.
+    // Plain single-token query: the pf phrase boost imposes no adjacency, so minClauseSize discards
+    // it and no boosted (or empty) phrase clause should be present.
     String singleTokenParsed =
         getParsedQuery(
             req(
@@ -1213,7 +1213,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "pf", "subject^10",
                 "defType", "edismax",
                 "debugQuery", "true"));
-    assertThat(singleTokenParsed, not(containsString("subject:\"")));
+    assertThat(singleTokenParsed, allOf(not(containsString("^10.0")), not(containsString("()"))));
 
     // Whitespace-free query that analyzes into multiple tokens: the phrase boost is meaningful
     // (imposes adjacency that the qf clause does not) and must survive.
@@ -1242,11 +1242,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     // "of" is a stopword (the "?" gap) and Porter stemming yields unit/state/america.
     assertThat(synonymParsed, containsString("(subject:\"unit state ? america\")^10.0"));
 
-    // A clause-less query (q=*:*) must not add an empty "" phrase clause that would defeat the
-    // MatchAllDocsQuery optimization.
-    Query matchAll =
-        QParser.getParser("*:*", "edismax", req("qf", "subject", "pf", "subject^10")).getQuery();
-    assertThat(matchAll, isA(MatchAllDocsQuery.class));
+    // q=*:* must not add an empty phrase clause that would defeat the MatchAllDocsQuery
+    // optimization.
+    try (SolrQueryRequest req = req("qf", "subject", "pf", "subject^10")) {
+      Query matchAll = QParser.getParser("*:*", "edismax", req).getQuery();
+      assertThat(matchAll, isA(MatchAllDocsQuery.class));
+    }
   }
 
   // test phrase fields including pf2 pf3 and phrase slop

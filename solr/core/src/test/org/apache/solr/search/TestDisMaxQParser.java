@@ -25,21 +25,31 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /** Unit tests for {@link DisMaxQParser} internals that do not need a running core. */
-public class TestDisMaxQParser extends SolrTestCaseJ4 {
+public class TestDisMaxQParser extends SolrTestCase {
 
   private static TermQuery term(String field, String text) {
     return new TermQuery(new Term(field, text));
   }
 
+  private static BooleanQuery should(Query... queries) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (Query query : queries) {
+      builder.add(query, BooleanClause.Occur.SHOULD);
+    }
+    return builder.build();
+  }
+
   // SOLR-18314: isEffectivelySingleTerm decides whether a parsed pf phrase query collapses to a
-  // single analyzed term (so the phrase boost is redundant and should be dropped). It must return
-  // true only when every field's clause is a single term; any clause with two or more terms means
-  // the phrase boost adds a real adjacency constraint and must be kept.
+  // single analyzed position (so the phrase boost imposes no adjacency and should be dropped). It
+  // must return true only when every field's clause is a single position; any clause spanning two
+  // or more positions means the phrase boost adds a real adjacency constraint and must be kept.
   @Test
   public void testIsEffectivelySingleTermIsTrueForSingleTermShapes() {
     // A bare single term.
@@ -49,10 +59,28 @@ public class TestDisMaxQParser extends SolrTestCaseJ4 {
     assertTrue(
         DisMaxQParser.isEffectivelySingleTerm(new BoostQuery(term("subject", "wireless"), 10f)));
 
-    // A one-term phrase is just a term boost in disguise.
-    assertTrue(DisMaxQParser.isEffectivelySingleTerm(new PhraseQuery("subject", "wireless")));
+    // Synonyms at a single position, as built by each synonymQueryStyle: as_same_term (the
+    // default) builds a SynonymQuery, pick_best a DisjunctionMaxQuery, and as_distinct_terms a
+    // BooleanQuery of SHOULD clauses.
+    assertTrue(
+        DisMaxQParser.isEffectivelySingleTerm(
+            new SynonymQuery.Builder("subject")
+                .addTerm(new Term("subject", "tv"))
+                .addTerm(new Term("subject", "television"))
+                .build()));
+    assertTrue(
+        DisMaxQParser.isEffectivelySingleTerm(
+            new BoostQuery(
+                new DisjunctionMaxQuery(
+                    List.of(term("subject", "tv"), term("subject", "television")), 0f),
+                10f)));
+    assertTrue(
+        DisMaxQParser.isEffectivelySingleTerm(
+            should(term("subject", "tv"), term("subject", "television"))));
 
-    // A one-position MultiPhraseQuery (e.g. a single term with synonyms) is likewise single-term.
+    // Degenerate one-position phrases (QueryBuilder emits a TermQuery or SynonymQuery instead, but
+    // these are equally single-term).
+    assertTrue(DisMaxQParser.isEffectivelySingleTerm(new PhraseQuery("subject", "wireless")));
     MultiPhraseQuery singlePosition =
         new MultiPhraseQuery.Builder().add(new Term("subject", "wireless")).build();
     assertTrue(DisMaxQParser.isEffectivelySingleTerm(singlePosition));
@@ -72,13 +100,19 @@ public class TestDisMaxQParser extends SolrTestCaseJ4 {
     // A genuine two-term phrase (e.g. WordDelimiter splitting "wi-fi" into "wi fi").
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(new PhraseQuery("subject", "wi", "fi")));
 
-    // A two-position MultiPhraseQuery (e.g. a multi-word synonym expansion).
+    // A two-position MultiPhraseQuery (e.g. synonyms within a multi-token phrase).
     MultiPhraseQuery twoPositions =
         new MultiPhraseQuery.Builder()
             .add(new Term("subject", "wi"))
             .add(new Term("subject", "fi"))
             .build();
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(twoPositions));
+
+    // A sloppy graph phrase (e.g. a multi-word synonym) is a disjunction of per-path phrases; any
+    // multi-term path keeps the boost.
+    assertFalse(
+        DisMaxQParser.isEffectivelySingleTerm(
+            should(term("subject", "wifi"), new PhraseQuery(100, "subject", "wi", "fi"))));
 
     // Any field with a multi-term clause keeps the boost, even if other fields are single-term.
     DisjunctionMaxQuery mixed =
@@ -95,11 +129,12 @@ public class TestDisMaxQParser extends SolrTestCaseJ4 {
     // Unrecognized shapes conservatively keep the boost rather than silently dropping it.
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(new MatchAllDocsQuery()));
 
-    BooleanQuery booleanQuery =
+    // Only all-SHOULD BooleanQueries are synonym disjunctions; required clauses are not.
+    BooleanQuery required =
         new BooleanQuery.Builder()
-            .add(term("subject", "wireless"), BooleanClause.Occur.SHOULD)
+            .add(term("subject", "wireless"), BooleanClause.Occur.MUST)
             .build();
-    assertFalse(DisMaxQParser.isEffectivelySingleTerm(booleanQuery));
+    assertFalse(DisMaxQParser.isEffectivelySingleTerm(required));
 
     // null is a valid input (parse() can return it) and must not throw.
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(null));

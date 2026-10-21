@@ -1,7 +1,7 @@
-title: Fix the eDisMax parser adding an empty phrase (pf) boost clause for clause-less queries such
-  as q=*:* (distinct from single-term queries). The empty SHOULD clause defeated the single-clause
-  MatchAllDocsQuery optimization; it is now omitted, so these queries again reduce to a
-  MatchAllDocsQuery.
+title: Fix the eDisMax parser adding an empty phrase field (pf) boost clause when no phrase qualifies
+  for the boost, such as for single-term queries or q=*:*. The empty SHOULD clause did not affect
+  scoring but defeated the single-clause MatchAllDocsQuery optimization; it is now omitted, so q=*:*
+  reduces to a MatchAllDocsQuery even when pf is set.
 type: fixed
 authors:
   - name: Ian Springer

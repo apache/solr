@@ -27,6 +27,7 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
@@ -203,11 +204,12 @@ public class DisMaxQParser extends QParser {
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
 
       Query phrase = getPhraseQuery(userQuery, pp);
-      // A single-term phrase boost is a no-op adjacency constraint (effectively a redundant term
-      // boost), so skip it. This is decided from the analyzed phrase rather than the user query's
-      // clause count, because analyzers such as CJK, ngram, WordDelimiterGraph, and multi-word
-      // synonyms can split a single input term into several tokens that DO warrant a phrase boost
-      if (null != phrase && !isEffectivelySingleTerm(phrase)) {
+      // A single-term phrase boost imposes no adjacency constraint, so skip it, as eDisMax does.
+      // Require both a single user term and a single analyzed term: analyzers such as CJK, ngram,
+      // WordDelimiterGraph, and multi-word synonyms can split one input term into several tokens,
+      // and a multi-word query can analyze to one token (e.g. an exact-match keyword or string
+      // field). Either way the phrase boost is meaningful.
+      if (null != phrase && !(isSingleUserTerm(userQuery) && isEffectivelySingleTerm(phrase))) {
         query.add(phrase, BooleanClause.Occur.SHOULD);
       }
     }
@@ -244,13 +246,20 @@ public class DisMaxQParser extends QParser {
     return phrase;
   }
 
+  /** Returns true if the user query, ignoring quotes, is a single whitespace-free term. */
+  private static boolean isSingleUserTerm(String userQuery) {
+    String term = userQuery.replace("\"", "").strip();
+    return !term.isEmpty() && term.codePoints().noneMatch(Character::isWhitespace);
+  }
+
   /**
-   * Returns true if the parsed phrase query boils down to a single analyzed term, in which case the
-   * phrase boost adds nothing over the term boost already applied by the main query. The parser
-   * produces a {@link DisjunctionMaxQuery} over per-field {@link BoostQuery}-wrapped term/phrase
-   * queries; we inspect the underlying query shape so that analyzers which split a single input
-   * term into multiple tokens keep their phrase boost. Unrecognized shapes (and {@code null})
-   * conservatively return false (keep the boost).
+   * Returns true if the parsed phrase query boils down to a single analyzed position in every
+   * field, in which case the phrase boost imposes no adjacency constraint. The parser produces a
+   * {@link DisjunctionMaxQuery} over per-field {@link BoostQuery}-wrapped queries; we inspect the
+   * underlying query shape so that analyzers which split a single input term into multiple tokens
+   * keep their phrase boost. Synonyms at a single position count as a single term, whichever {@code
+   * synonymQueryStyle} built them. Unrecognized shapes (and {@code null}) conservatively return
+   * false (keep the boost).
    */
   @VisibleForTesting
   static boolean isEffectivelySingleTerm(Query query) {
@@ -258,10 +267,16 @@ public class DisMaxQParser extends QParser {
       return isEffectivelySingleTerm(boostQuery.getQuery());
     }
     if (query instanceof DisjunctionMaxQuery dmq) {
-      // Every field's clause is a single term, so the phrase across fields is too.
+      // Every field's clause is a single term (or synonymQueryStyle=pick_best synonyms).
       return dmq.getDisjuncts().stream().allMatch(DisMaxQParser::isEffectivelySingleTerm);
     }
-    if (query instanceof TermQuery) {
+    if (query instanceof BooleanQuery booleanQuery) {
+      // synonymQueryStyle=as_distinct_terms synonyms at a single position
+      return booleanQuery.clauses().stream()
+          .allMatch(
+              c -> c.occur() == BooleanClause.Occur.SHOULD && isEffectivelySingleTerm(c.query()));
+    }
+    if (query instanceof TermQuery || query instanceof SynonymQuery) {
       return true;
     }
     if (query instanceof PhraseQuery phraseQuery) {

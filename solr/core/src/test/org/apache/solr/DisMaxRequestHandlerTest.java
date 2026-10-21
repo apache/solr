@@ -246,11 +246,13 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p_bool.matcher(resp).find());
   }
 
-  // SOLR-18314: the pf phrase boost is dropped for single-term queries, decided from the analyzed
-  // query. A single input term whose analysis yields multiple tokens must keep its phrase boost,
-  // whether from WordDelimiter splitting "wi-fi" into "wi fi" or a multi-word synonym expanding
-  // "usa" into "united states of america". Unlike eDisMax, the classic DisMax parser has no
-  // minClauseSize gate, so this is enforced by inspecting the parsed phrase query.
+  // SOLR-18314: the pf phrase boost is dropped for single-term queries, i.e. a single user term
+  // that also analyzes to a single token. A single input term whose analysis yields multiple tokens
+  // must keep its phrase boost, whether from WordDelimiter splitting "wi-fi" into "wi fi" or a
+  // multi-word synonym expanding "usa" into "united states of america". So must a multi-word query
+  // that analyzes to a single token on a string pf field (an exact-match boost). Unlike eDisMax,
+  // the classic DisMax parser has no minClauseSize gate, so this is enforced by inspecting the
+  // user query and the parsed phrase query.
   //
   // CJK is an important example of a query with no spaces that can still parse to multiple terms.
   // However, we don't add a dedicated CJK test: CJK analysis of a single input term produces the
@@ -258,9 +260,8 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   // code path while requiring a CJK analyzer to be configured in the test schema.
   @Test
   public void testSingleTermPhraseBoost() throws Exception {
-    // Single analyzed token: the pf phrase boost is redundant with the qf term boost, so no phrase
-    // query should appear in the parsed query.
-    Pattern phrase = Pattern.compile("subword:\"");
+    // Single analyzed token: the pf phrase boost imposes no adjacency, so only the unboosted qf
+    // clause should appear in the parsed query.
     String resp =
         h.query(
             req(
@@ -274,7 +275,12 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "subword^10",
                 CommonParams.DEBUG_QUERY,
                 "true"));
-    assertFalse("single-term query should not produce a phrase boost", phrase.matcher(resp).find());
+    assertTrue(
+        "single-term query should keep its qf clause",
+        Pattern.compile("\\(subword:wireless\\)(?!\\^)").matcher(resp).find());
+    assertFalse(
+        "single-term query should not produce a phrase boost",
+        Pattern.compile("subword:wireless\\)\\^10\\.0").matcher(resp).find());
 
     // Whitespace-free query that analyzes into multiple tokens: the phrase boost is meaningful and
     // must be retained. The qf clause is also the phrase "wi fi" here (this schema's version
@@ -341,5 +347,24 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
         Pattern.compile("text_syn:\"united states of america\"~100\\)\\^10\\.0")
             .matcher(resp)
             .find());
+
+    // A multi-word query on a string pf field analyzes to a single exact-match term, which is the
+    // only signal ranking an exact match first, so its phrase boost must be retained.
+    resp =
+        h.query(
+            req(
+                "q",
+                "hello world",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword",
+                "pf",
+                "foo_s^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-word query should retain its exact-match phrase boost",
+        Pattern.compile("foo_s:hello world\\)\\^10\\.0").matcher(resp).find());
   }
 }
