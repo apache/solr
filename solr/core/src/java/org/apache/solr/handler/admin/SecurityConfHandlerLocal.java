@@ -106,22 +106,52 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
         pluginConfigMap.remove("");
       }
     }
-    // Serialize first, then write to a temporary file in the same directory and move it over
-    // security.json. The file on disk is therefore always one complete document: a reader
-    // never observes a partially written file, and a crash mid-write leaves the previous
-    // document in place.
+    try {
+      replaceSecurityJson(Utils.toJSON(sanitizedData));
+      if (log.isDebugEnabled()) {
+        log.debug("Persisted security.json to {}", securityJsonPath);
+      }
+      return true;
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed persisting security.json to " + securityJsonPath,
+          e);
+    }
+  }
+
+  /**
+   * Replaces security.json through a temporary file in the same directory. A symbolic link, a file
+   * whose owner or permissions cannot carry over, and a file the directory cannot replace are
+   * written in place.
+   */
+  private void replaceSecurityJson(byte[] json) throws IOException {
+    if (!Files.isSymbolicLink(securityJsonPath)) {
+      try {
+        replaceThroughTemporaryFile(json);
+        return;
+      } catch (IOException e) {
+        log.warn(
+            "Could not replace {} through a temporary file, writing it in place",
+            securityJsonPath,
+            e);
+      }
+    }
+    Files.write(securityJsonPath, json);
+  }
+
+  private void replaceThroughTemporaryFile(byte[] json) throws IOException {
     Path tmpPath =
         Files.createTempFile(
             securityJsonPath.getParent(), securityJsonPath.getFileName().toString(), ".tmp");
     try {
-      Files.write(tmpPath, Utils.toJSON(sanitizedData));
+      Files.write(tmpPath, json);
       if (Files.exists(securityJsonPath)) {
-        try {
+        if (tmpPath.getFileSystem().supportedFileAttributeViews().contains("posix")) {
           Files.setPosixFilePermissions(tmpPath, Files.getPosixFilePermissions(securityJsonPath));
-        } catch (UnsupportedOperationException | IOException e) {
-          if (log.isDebugEnabled()) {
-            log.debug("Could not keep the permissions of {}", securityJsonPath, e);
-          }
+        }
+        if (!Files.getOwner(tmpPath).equals(Files.getOwner(securityJsonPath))) {
+          throw new IOException("security.json is owned by " + Files.getOwner(securityJsonPath));
         }
       }
       try {
@@ -133,15 +163,6 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
       } catch (AtomicMoveNotSupportedException e) {
         Files.move(tmpPath, securityJsonPath, StandardCopyOption.REPLACE_EXISTING);
       }
-      if (log.isDebugEnabled()) {
-        log.debug("Persisted security.json to {}", securityJsonPath);
-      }
-      return true;
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Failed persisting security.json to " + securityJsonPath,
-          e);
     } finally {
       try {
         Files.deleteIfExists(tmpPath);

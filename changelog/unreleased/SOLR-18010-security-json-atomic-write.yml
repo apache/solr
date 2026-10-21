@@ -1,4 +1,4 @@
-title: Standalone security.json is written through a temporary file and moved into place, so a reader or a crash never sees a partly written document, existing file permissions are kept, and the file no longer carries internal version metadata.
+title: Standalone security.json is replaced through a temporary file, so a process crash during an edit no longer leaves a partly written file; the file keeps its permissions and no longer stores internal version metadata. Symbolic links and directories that cannot take a new file are still written in place.
 type: fixed
 authors:
   - name: Nick Shanin
