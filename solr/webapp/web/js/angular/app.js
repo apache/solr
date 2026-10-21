@@ -675,7 +675,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.pageType = pageType;
     $scope.isNodeScopedPage =
       (pageType === Constants.IS_CORE_PAGE && !NodeTarget.isRemote()) ||
-      /^(index|logging|java-props|threads|cores)$/.test(page);
+      /^(index|logging|logging-levels|java-props|threads|cores)$/.test(page);
     $scope.currentUser = sessionStorage.getItem("auth.username");
     $scope.http401 = sessionStorage.getItem("http401");
   };

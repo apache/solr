@@ -83,7 +83,7 @@ solrAdminApp.controller('LoggingController',
 )
 
 .controller('LoggingLevelController',
-  function($scope, $timeout, Logging, LoggingV2, ApiErrorHandler) {
+  function($scope, $timeout, Logging, LoggingV2, ApiErrorHandler, NodeTarget) {
     $scope.resetMenu("logging-levels");
 
     var packageOf = function(logger) {
@@ -108,14 +108,15 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      LoggingV2.listAllLoggersAndLevels({}, function(error, data, response) {
+      LoggingV2.listAllLoggersAndLevels(NodeTarget.withNodes({}), function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
-          $scope.logging = makeTree(data.loggers || [], "");
-          $scope.watcher = data.watcher;
+          var payload = NodeTarget.unwrap(data, response) || {};
+          $scope.logging = makeTree(payload.loggers || [], "");
+          $scope.watcher = payload.watcher;
           $scope.levels = [];
-          for (var level in data.levels) {
-            $scope.levels.push({name:data.levels[level], pos:level});
+          for (var level in payload.levels) {
+            $scope.levels.push({name:payload.levels[level], pos:level});
           }
         });
       });
@@ -163,5 +164,5 @@ solrAdminApp.controller('LoggingController',
       }
     };
 
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh);
   });

@@ -91,4 +91,26 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
     assertTrue(waitFor(By.id("selected-node-badge")).getAttribute("class").contains("remote"));
     assertNoSevereConsoleErrors();
   }
+
+  /**
+   * The Logging &gt; Level screen fetches log levels for the selected node, not just the log page.
+   */
+  @Test
+  public void testLoggingLevelsScreenFollowsSelectedNode() {
+    String remoteNode = cluster.getJettySolrRunner(1).getNodeName();
+
+    openPage("", By.id("index"));
+    waitFor(By.id("node-selector-item"));
+    selectNode(remoteNode);
+
+    click(By.cssSelector("#menu #logging a"));
+    waitFor(By.id("logging"));
+    click(By.cssSelector("#menu #logging .level a"));
+    waitFor(By.id("loggingtree"));
+
+    waitForTextContains(By.cssSelector("#selected-node-badge .badge-value"), remoteNode);
+    assertTrue(waitFor(By.id("selected-node-badge")).getAttribute("class").contains("remote"));
+    waitForTextContains(By.id("node-selector-hint"), "Node screens only");
+    assertNoSevereConsoleErrors();
+  }
 }
