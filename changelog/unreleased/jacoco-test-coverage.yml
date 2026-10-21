@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Add opt-in jacoco test coverage reporting to the Gradle build. Run the "coverage" task
+  (or pass -Ptests.coverage=true) to record per-module coverage reports, and run
+  "gradlew coverage" at the root for an aggregated report across all modules.
+type: other
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18338
+    url: https://issues.apache.org/jira/browse/SOLR-18338

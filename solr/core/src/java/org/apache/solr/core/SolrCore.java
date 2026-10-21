@@ -81,7 +81,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -335,7 +334,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * @return the latest snapshot of the schema used by this core instance.
+   * Returns the latest snapshot of the schema used by this core instance.
+   *
+   * <p>Request processing code should normally use {@link SolrQueryRequest#getSchema()} so that the
+   * schema remains stable for the lifetime of the request. Code operating on a {@link
+   * SolrIndexSearcher} should normally use {@link SolrIndexSearcher#getSchema()} so that the schema
+   * matches the searcher.
+   *
+   * @return the latest schema snapshot
    * @see #setLatestSchema
    */
   public IndexSchema getLatestSchema() {
@@ -847,59 +853,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this.indexReaderFactory = indexReaderFactory;
   }
 
-  // protect via synchronized(SolrCore.class)
-  private static Set<String> dirs = new HashSet<>();
-
-  /**
-   * Returns <code>true</code> iff the index in the named directory is currently locked.
-   *
-   * @param directory the directory to check for a lock
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use of this method can only lead to race conditions. Try to actually obtain a lock
-   *     instead.
-   */
-  @Deprecated
-  private static boolean isWriterLocked(Directory directory) throws IOException {
-    try {
-      directory.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
-      return false;
-    } catch (LockObtainFailedException failed) {
-      return true;
-    }
-  }
-
-  void initIndex(boolean passOnPreviousState, boolean reload) throws IOException {
+  /** Also fails fast (LockObtainFailedException) if an existing index directory is locked. */
+  void initIndex(boolean reload) throws IOException {
     String indexDir = getNewIndexDir();
     boolean indexExists = getDirectoryFactory().exists(indexDir);
-    boolean firstTime;
-    synchronized (SolrCore.class) {
-      firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
-    }
 
     initIndexReaderFactory();
 
-    if (indexExists && firstTime && !passOnPreviousState) {
-      final String lockType = getSolrConfig().indexConfig.lockType;
-      Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
-      try {
-        if (isWriterLocked(dir)) {
-          log.error(
-              "Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
-              indexDir,
-              lockType);
-          throw new LockObtainFailedException(
-              "Index dir '"
-                  + indexDir
-                  + "' of core '"
-                  + name
-                  + "' is already locked. "
-                  + "The most likely cause is another Solr server (or another solr core in this server) "
-                  + "also configured to use this directory; other possible causes may be specific to lockType: "
-                  + lockType);
-        }
-      } finally {
-        directoryFactory.release(dir);
-      }
+    if (indexExists) {
+      // Fails fast on a lock conflict (LUCENE-6507/6508); solrCoreState caches the writer.
+      solrCoreState.getIndexWriter(this, false).decref();
     }
 
     // Create the index if it doesn't exist.
@@ -1130,7 +1093,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
       this.codec = initCodec(solrConfig, this.schema);
-      initIndex(prev != null, reload);
+      initIndex(reload);
 
       initWriters();
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
@@ -1993,6 +1956,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Get the request handler registered to a given name.
    *
+   * <p>A {@code null} handlerName resolves to the core's default request handler (whichever handler
+   * is aliased to the empty string, normally the one registered at "/select", or "standard" for
+   * legacy configs) rather than returning {@code null}; see {@link
+   * RequestHandlers#initHandlersFromConfig}.
+   *
    * <p>This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {
@@ -2316,6 +2284,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *
    * <p>This method acquires openSearcherLock - do not call with searchLock held!
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // schema is only ever replaced wholesale, so identity is correct here
   public RefCounted<SolrIndexSearcher> openNewSearcher(
       boolean updateHandlerReopens, boolean realtime) {
     if (isClosed()) { // catch some errors quicker
@@ -2532,6 +2502,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *     SolrIndexSearcher}.
    */
   // TODO waitSearcher should be an AtomicReference or something that is a more clear API
+  @SuppressWarnings(
+      "ReferenceEquality") // SolrIndexSearcher identity, not equality, is what matters here
   public RefCounted<SolrIndexSearcher> getSearcher(
       boolean forceNew,
       boolean returnSearcher,
@@ -2818,6 +2790,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   //
   // onDeckSearchers will also be decremented (it should have been incremented
   // as a result of opening a new searcher).
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting re-registration of the exact same searcher holder
   private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) {
     synchronized (searcherLock) {
       try {
@@ -2941,7 +2915,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
+    final SimpleOrderedMap<Object> responseHeader = new SimpleOrderedMap<>();
     rsp.addResponseHeader(responseHeader);
 
     rsp.addToLog(PATH, req.getContext().get(PATH));
@@ -3028,9 +3002,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 + "'");
       }
       if (echoParams == EchoParamStyle.EXPLICIT) {
-        responseHeader.add("params", req.getOriginalParams().toNamedList());
+        responseHeader.add("params", new SimpleOrderedMap<>(req.getOriginalParams()));
       } else if (echoParams == EchoParamStyle.ALL) {
-        responseHeader.add("params", req.getParams().toNamedList());
+        responseHeader.add("params", new SimpleOrderedMap<>(req.getParams()));
       }
     }
   }
@@ -3053,18 +3027,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     void write(OutputStream os) throws IOException;
-  }
-
-  /**
-   * Gets a response writer suitable for node/container-level requests.
-   *
-   * @param writerName the writer name, or null for default
-   * @return the response writer, never null
-   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
-   */
-  @Deprecated
-  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return ResponseWritersRegistry.getWriter(writerName);
   }
 
   /**

@@ -99,7 +99,6 @@ public class JsonSchemaValidator {
 
 abstract class Validator<T> {
   Validator(Map<?, ?> schema, T properties) {}
-  ;
 
   abstract boolean validate(Object o, List<String> errs);
 }

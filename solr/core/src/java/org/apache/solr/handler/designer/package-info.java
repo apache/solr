@@ -20,5 +20,5 @@
  * limitations under the License.
  */
 
-/** The {@link org.apache.solr.handler.designer.SchemaDesignerAPI} and supporting classes. */
+/** The {@link org.apache.solr.handler.designer.SchemaDesigner} and supporting classes. */
 package org.apache.solr.handler.designer;

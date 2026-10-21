@@ -67,7 +67,7 @@ public final class CLIUtils {
       CommandLine cli) throws IOException {
     String solrConnection =
         getCliOptionOrPropValue(
-            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr-connection", null);
+            cli, CommonCLIOptions.SOLR_CONNECTION_OPTION, "solr.connection", null);
     if (solrConnection != null && !solrConnection.isBlank()) {
       return CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
     }
@@ -221,7 +221,11 @@ public final class CLIUtils {
   /**
    * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * SolrCloud.
+   *
+   * @deprecated Only used by the commons-cli parser. Picocli tools resolve the URL from their own
+   *     annotated connection options and call {@link #normalizeSolrUrl(String)}.
    */
+  @Deprecated
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 
@@ -233,32 +237,82 @@ public final class CLIUtils {
             "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
                 + solrUrl
                 + ".");
-      } else if (!solrConnection.isZookeeper()) {
-        // HTTP form (e.g. `-s http://host:port`): the connection string already names a Solr URL,
-        // so use it directly without spinning up a CloudSolrClient.
-        solrUrl = normalizeSolrUrl(solrConnection.quorumItems().get(0), false);
       } else {
-        var builder =
-            new HttpJettySolrClient.Builder()
-                .withOptionalBasicAuthCredentials(
-                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-        try (CloudSolrClient cloudSolrClient = getCloudSolrClient(solrConnection, builder)) {
-          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-          if (liveNodes.isEmpty())
-            throw new IllegalStateException(
-                "No live nodes found! Cannot determine 'solrUrl' from SolrCloud: "
-                    + solrConnection);
-
-          String firstLiveNode = liveNodes.iterator().next();
-          String urlScheme =
-              cloudSolrClient.getClusterStateProvider().getClusterProperty("urlScheme", "http");
-          solrUrl = URLUtil.getBaseUrlForNodeName(firstLiveNode, urlScheme, false);
-          solrUrl = normalizeSolrUrl(solrUrl, false);
-        }
+        solrUrl =
+            solrUrlFromConnection(
+                solrConnection, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
       }
     }
     solrUrl = normalizeSolrUrl(solrUrl);
     return solrUrl;
+  }
+
+  /**
+   * The picocli counterpart of {@link #normalizeSolrUrl(CommandLine)}: {@code --solr-url}, else the
+   * connection named by {@code --solr-connection} or {@code --zk-host} (or the matching property
+   * when the option is absent), else the default URL with the same warning.
+   *
+   * @param connectionOptions the parsed connection group, or null if none of its options was given
+   */
+  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+      throws Exception {
+    String solrUrl = connectionOptions != null ? connectionOptions.solrUrl : null;
+    if (solrUrl == null) {
+      String solrConnection =
+          (connectionOptions != null && connectionOptions.solrConnection != null)
+              ? connectionOptions.solrConnection
+              : EnvUtils.getProperty("solr.connection");
+      String zkHost =
+          (connectionOptions != null && connectionOptions.zkHost != null)
+              ? connectionOptions.zkHost
+              : EnvUtils.getProperty("zkHost");
+      if (solrConnection != null && !solrConnection.isBlank()) {
+        solrUrl =
+            solrUrlFromConnection(
+                CloudSolrClient.CloudSolrClientConnection.parse(solrConnection), credentials);
+      } else if (zkHost != null && !zkHost.isBlank()) {
+        var zkSolrConnection = CloudSolrClient.CloudSolrClientConnection.parse(zkHost);
+        if (!zkSolrConnection.isZookeeper()) {
+          throw new IOException(
+              String.format(
+                  Locale.ROOT, "Expected ZooKeeper connection string, but got: '%s'.", zkHost));
+        }
+        solrUrl = solrUrlFromConnection(zkSolrConnection, credentials);
+      } else {
+        solrUrl = getDefaultSolrUrl();
+        CLIO.err(
+            "Neither --solr-connection, --zk-host or --solr-url parameters, nor SOLR_CONNECTION, ZK_HOST env var provided, so assuming solr url is "
+                + solrUrl
+                + ".");
+      }
+    }
+    return normalizeSolrUrl(solrUrl);
+  }
+
+  /**
+   * Resolves a base Solr URL from a parsed connection. The HTTP form (e.g. {@code -s
+   * http://host:port}) already names a Solr URL, so it is used directly without spinning up a
+   * CloudSolrClient; the ZooKeeper form queries the cluster for a live node's base URL.
+   */
+  public static String solrUrlFromConnection(
+      CloudSolrClient.CloudSolrClientConnection solrConnection, String credentials)
+      throws Exception {
+    if (!solrConnection.isZookeeper()) {
+      return normalizeSolrUrl(solrConnection.quorumItems().get(0), false);
+    }
+    var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(solrConnection, builder)) {
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+      if (liveNodes.isEmpty())
+        throw new IllegalStateException(
+            "No live nodes found! Cannot determine 'solrUrl' from SolrCloud: " + solrConnection);
+
+      String firstLiveNode = liveNodes.iterator().next();
+      String urlScheme =
+          cloudSolrClient.getClusterStateProvider().getClusterProperty("urlScheme", "http");
+      return normalizeSolrUrl(
+          URLUtil.getBaseUrlForNodeName(firstLiveNode, urlScheme, false), false);
+    }
   }
 
   /**

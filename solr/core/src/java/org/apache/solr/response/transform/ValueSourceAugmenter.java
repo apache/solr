@@ -143,6 +143,8 @@ public class ValueSourceAugmenter extends DocTransformer {
   IntObjectHashMap<Object> cachedValuesById;
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // NULL_SENTINEL is a unique sentinel; identity check is intentional
   public void transform(SolrDocument doc, int docid, DocIterationInfo docIterationInfo) {
     Object cacheValue = (cachedValuesById != null) ? cachedValuesById.get(docid) : null;
     if (cacheValue != null) {

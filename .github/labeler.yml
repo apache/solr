@@ -97,6 +97,7 @@ admin-ui:
       - any-glob-to-any-file:
           - solr/webapp/**
           - solr/ui/**
+          - ui/**
 
 # Add labels for changes to solr modules
 module:analysis-extras:
@@ -108,6 +109,16 @@ module:clustering:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/clustering/**
+
+module:cross-dc:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/cross-dc/**
+
+module:cuvs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/cuvs/**
 
 module:extraction:
   - changed-files:
@@ -128,6 +139,11 @@ module:langid:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/langid/**
+
+module:language-models:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/language-models/**
 
 module:ltr:
   - changed-files:

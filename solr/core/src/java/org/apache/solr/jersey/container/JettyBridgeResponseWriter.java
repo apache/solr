@@ -21,15 +21,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Response.StatusType;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A ResponseWriter which copies that output of JAX-RS computation over to {@link
@@ -43,8 +40,6 @@ import org.slf4j.LoggerFactory;
  * the jersey-container-jetty-http artifact.
  */
 public class JettyBridgeResponseWriter implements ContainerResponseWriter {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final HttpServletResponse httpServletResponse;
 

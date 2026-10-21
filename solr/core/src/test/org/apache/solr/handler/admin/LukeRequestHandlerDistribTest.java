@@ -46,7 +46,6 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
 
   private LukeResponse requestLuke(ModifiableSolrParams extra) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/admin/luke");
     params.set("numTerms", "0");
     params.set("shards.info", "true");
     params.add(extra);
@@ -61,7 +60,7 @@ public class LukeRequestHandlerDistribTest extends BaseDistributedSearchTestCase
     handle.put(LukeRequestHandler.KEY_DISTINCT, SKIP);
     handle.put(LukeRequestHandler.KEY_TOP_TERMS, SKIP);
     handle.put(LukeRequestHandler.KEY_HISTOGRAM, SKIP);
-    QueryResponse qr = query(params);
+    QueryResponse qr = query("/admin/luke", params);
     LukeResponse rsp = new LukeResponse();
     rsp.setResponse(qr.getResponse());
 

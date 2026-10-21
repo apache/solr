@@ -20,6 +20,9 @@ package org.apache.solr.request.json;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParserPlugin;
 
 /**
  * Convert json query object to local params.
@@ -29,10 +32,11 @@ import org.apache.solr.common.SolrException;
 class JsonQueryConverter {
   private int numParams = 0;
 
-  String toLocalParams(Object jsonQueryObject, Map<String, String[]> additionalParams) {
+  String toLocalParams(
+      SolrQueryRequest req, Object jsonQueryObject, Map<String, String[]> additionalParams) {
     if (jsonQueryObject instanceof String) return jsonQueryObject.toString();
     StringBuilder builder = new StringBuilder();
-    buildLocalParams(builder, jsonQueryObject, true, additionalParams);
+    buildLocalParams(req, builder, jsonQueryObject, true, additionalParams);
     return builder.toString();
   }
 
@@ -48,6 +52,7 @@ class JsonQueryConverter {
   // parameter like 42, or a sub-query)
   @SuppressWarnings({"unchecked"})
   private void buildLocalParams(
+      SolrQueryRequest req,
       StringBuilder builder,
       Object val,
       boolean isQParser,
@@ -104,7 +109,7 @@ class JsonQueryConverter {
           StringBuilder sb = new StringBuilder();
           sb.append("{!tag=").append(tagName).append("}");
           sb.append(taggedQueryObject.toString());
-          buildLocalParams(builder, sb.toString(), true, additionalParams);
+          buildLocalParams(req, builder, sb.toString(), true, additionalParams);
           return;
         } else if (taggedQueryObject instanceof Map) {
           map = (Map<String, Object>) taggedQueryObject;
@@ -133,9 +138,17 @@ class JsonQueryConverter {
       if (tagName != null) {
         subBuilder.append("tag=").append(tagName).append(' ');
       }
-      buildLocalParams(subBuilder, subVal, false, additionalParams);
-      subBuilder.append("}");
-
+      QParserPlugin plugin = req.getCore().getQueryPlugin(qtype);
+      if (plugin instanceof JsonConsumerQParserPlugin) {
+        // hand the nested object to the parser as a JSON string via a dereferenced param
+        // ordinary param, forwarded to shards, re-parsed there
+        subBuilder
+            .append("}")
+            .append(/*putParam(*/ Utils.toJSONString(subVal, -1) /*, additionalParams)*/);
+      } else {
+        buildLocalParams(req, subBuilder, subVal, false, additionalParams);
+        subBuilder.append("}");
+      }
       if (useSubBuilder) {
         builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
       }
@@ -154,7 +167,7 @@ class JsonQueryConverter {
             }
             for (Object subVal : l) {
               builder.append(key).append("=");
-              buildLocalParams(builder, subVal, true, additionalParams);
+              buildLocalParams(req, builder, subVal, true, additionalParams);
               builder.append(" ");
             }
           } else {
@@ -162,7 +175,7 @@ class JsonQueryConverter {
               key = "v";
             }
             builder.append(key).append("=");
-            buildLocalParams(builder, entry.getValue(), true, additionalParams);
+            buildLocalParams(req, builder, entry.getValue(), true, additionalParams);
             builder.append(" ");
           }
         }

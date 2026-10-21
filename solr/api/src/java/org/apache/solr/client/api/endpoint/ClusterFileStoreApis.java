@@ -87,10 +87,10 @@ public interface ClusterFileStoreApis {
   @Operation(
       summary = "Delete a file or directory from the filestore.",
       tags = {"file-store"})
-  @Path("/files{path:.+}")
+  @Path("/files{filePath:.+}")
   SolrJerseyResponse deleteFile(
       @Parameter(description = "Path to a file or directory within the filestore")
-          @PathParam("path")
+          @PathParam("filePath")
           String path,
       @Parameter(
               description =

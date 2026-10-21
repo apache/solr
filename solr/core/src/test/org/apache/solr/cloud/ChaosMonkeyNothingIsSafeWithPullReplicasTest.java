@@ -99,8 +99,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    // can help to hide this when testing and looking at logs
-    // ignoreException("shard update error");
     useFactory("solr.StandardDirectoryFactory");
   }
 

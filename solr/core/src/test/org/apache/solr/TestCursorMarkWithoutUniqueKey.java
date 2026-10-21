@@ -19,6 +19,7 @@ package org.apache.solr;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.After;
 import org.junit.Before;
 
@@ -47,21 +48,19 @@ public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
     deleteCore();
   }
 
+  @SuppressWarnings("try")
   public void test() {
 
     assertU(adoc("fld", "val"));
     assertU(commit());
 
-    try {
-      ignoreException(
-          "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
+    try (ErrorLogMuter ignored =
+        ErrorLogMuter.regex(
+            "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field")) {
       expectThrows(
           RuntimeException.class,
           "No exception when querying with a cursorMark with no uniqueKey defined.",
           () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START)));
-    } finally {
-      unIgnoreException(
-          "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
     }
   }
 }

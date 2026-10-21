@@ -201,14 +201,21 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   public BalancePlan computeBalancing(
       BalanceRequest balanceRequest, PlacementContext placementContext) throws PlacementException {
     Map<Replica, Node> replicaMovements = new HashMap<>();
-    TreeSet<WeightedNode> orderedNodes = new TreeSet<>();
-    orderedNodes.addAll(
+    Collection<WeightedNode> weightedNodes =
         getWeightedNodes(
                 placementContext,
                 balanceRequest.getNodes(),
                 placementContext.getCluster().collections(),
                 true)
-            .values());
+            .values();
+
+    // First move replicas that share a node with another replica of the same shard, a state the
+    // weight-based balancing below cannot necessarily detect since such duplicates do not have to
+    // make their node weigh more than its peers.
+    moveDuplicateShardReplicas(weightedNodes, replicaMovements);
+
+    TreeSet<WeightedNode> orderedNodes = new TreeSet<>();
+    orderedNodes.addAll(weightedNodes);
 
     // While the node with the lowest weight still has room to take a replica from the node with the
     // highest weight, loop
@@ -303,6 +310,64 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     return placementContext
         .getBalancePlanFactory()
         .createBalancePlan(balanceRequest, replicaMovements);
+  }
+
+  /**
+   * Move replicas that share a node with another replica of the same shard to other nodes, since
+   * multiple replicas of the same shard on one node give neither availability nor capacity
+   * benefits. Placement will never create such a state, per the default {@link
+   * WeightedNode#canAddReplica(Replica)}, but users can, e.g. by adding a replica to an explicit
+   * node. Each duplicate replica is moved to the accepting node with the lowest projected weight
+   * with the replica added, like {@link #computePlacements(Collection, PlacementContext)} does.
+   */
+  private static void moveDuplicateShardReplicas(
+      Collection<WeightedNode> weightedNodes, Map<Replica, Node> replicaMovements) {
+    List<WeightedNode> sourceNodes = new ArrayList<>(weightedNodes);
+    sourceNodes.sort(Comparator.comparing(node -> node.getNode().getName()));
+    for (WeightedNode sourceNode : sourceNodes) {
+      Map<String, List<Replica>> replicasPerShard =
+          sourceNode.getAllReplicasOnNode().stream()
+              .collect(Collectors.groupingBy(replica -> replica.getShard().getUniqueShardId()));
+      for (List<Replica> shardReplicas : replicasPerShard.values()) {
+        if (shardReplicas.size() < 2) {
+          continue;
+        }
+        // Move extra replicas of this shard away until only one remains on the node, in replica
+        // name order like the weight-based balancing below. A replica that cannot be removed or has
+        // no eligible target is left in place and does not stop us from moving the others, so a
+        // single stuck replica no longer leaves the duplicate unresolved.
+        shardReplicas.sort(Comparator.comparing(Replica::getReplicaName));
+        int remainingOnNode = shardReplicas.size();
+        for (Replica replica : shardReplicas) {
+          if (remainingOnNode < 2) {
+            break;
+          }
+          if (!sourceNode.canRemoveReplicas(Set.of(replica)).isEmpty()) {
+            continue;
+          }
+          Optional<WeightedNode> targetNode =
+              weightedNodes.stream()
+                  .filter(node -> !node.equals(sourceNode))
+                  .filter(node -> node.canAddReplica(replica))
+                  .min(
+                      Comparator.<WeightedNode>comparingInt(
+                              node -> node.calcRelevantWeightWithReplica(replica))
+                          .thenComparing(Comparator.naturalOrder()));
+          if (targetNode.isPresent()) {
+            WeightedNode target = targetNode.get();
+            log.debug(
+                "Duplicate replica movement chosen. From: {}, To: {}, Replica: {}",
+                sourceNode,
+                target,
+                replica);
+            target.addReplica(replica);
+            sourceNode.removeReplica(replica);
+            replicaMovements.put(replica, target.getNode());
+            remainingOnNode--;
+          }
+        }
+      }
+    }
   }
 
   protected Map<Node, WeightedNode> getWeightedNodes(

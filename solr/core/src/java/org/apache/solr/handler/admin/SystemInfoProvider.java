@@ -286,6 +286,8 @@ public class SystemInfoProvider {
   }
 
   /** Get Security Info */
+  // Identity against the internal singleton is intentionally stricter than equals().
+  @SuppressWarnings("ReferenceEquality")
   public NodeSystemResponse.Security getSecurityInfo() {
     NodeSystemResponse.Security info = new NodeSystemResponse.Security();
 

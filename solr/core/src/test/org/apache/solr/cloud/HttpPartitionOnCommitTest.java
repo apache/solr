@@ -190,25 +190,24 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (SolrClient client = getHttpSolrClient(replica)) {
-      try {
-        client.commit();
+    SolrClient client = getSolrClient(replica);
+    try {
+      client.commit();
 
-        if (log.isInfoEnabled()) {
-          log.info("Sent commit request to {} OK, took {}ms", replicaCoreUrl, timer.getTime());
-        }
-      } catch (Exception exc) {
-        Throwable rootCause = SolrException.getRootCause(exc);
-        if (rootCause instanceof IOException) {
-          log.warn(
-              "No HTTP response from sending commit request to {}; will re-try after waiting 3 seconds",
-              replicaCoreUrl);
-          Thread.sleep(3000);
-          client.commit();
-          log.info("Second attempt at sending commit to {} succeeded", replicaCoreUrl);
-        } else {
-          throw exc;
-        }
+      if (log.isInfoEnabled()) {
+        log.info("Sent commit request to {} OK, took {}ms", replicaCoreUrl, timer.getTime());
+      }
+    } catch (Exception exc) {
+      Throwable rootCause = SolrException.getRootCause(exc);
+      if (rootCause instanceof IOException) {
+        log.warn(
+            "No HTTP response from sending commit request to {}; will re-try after waiting 3 seconds",
+            replicaCoreUrl);
+        Thread.sleep(3000);
+        client.commit();
+        log.info("Second attempt at sending commit to {} succeeded", replicaCoreUrl);
+      } else {
+        throw exc;
       }
     }
   }

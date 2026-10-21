@@ -38,7 +38,7 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** System load average. */
   public static final NodeMetricImpl<Double> SYSLOAD_AVG =
-      new NodeMetricImpl<>("sysLoadAvg", "jvm_system_cpu_utilization_ratio");
+      new NodeMetricImpl<>("sysLoadAvg", "jvm_system_cpu_utilization");
 
   /** Number of available processors. */
   public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =

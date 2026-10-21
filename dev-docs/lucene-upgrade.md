@@ -6,15 +6,15 @@ https://lucene.apache.org/core/9_4_0/MIGRATE.html
 
 ## Start
 
-Create a new branch locally e.g. `git checkout -b lucene1040 -t origin/main` for upgrading to Lucene 10.4.0 version.
+Create a new branch locally e.g. `git checkout -b lucene1051 -t origin/main` for upgrading to Lucene 10.5.1 version.
 
 ## Build
 
 ### `gradle/libs.versions.toml` update
 
 ```
-- apache-lucene:*=10.3.0
-+ apache-lucene:*=10.4.0
+-apache-lucene = "10.4.0"
++apache-lucene = "10.5.1"
 ```
 
 ### lockfiles update
@@ -30,6 +30,10 @@ Create a new branch locally e.g. `git checkout -b lucene1040 -t origin/main` for
 
 git add solr/licenses
 ```
+
+Note that `updateLicenses` compiles Solr, because it enumerates the JARs on the
+compile and runtime classpaths. If Lucene made signature changes, fix the code
+first (see below) and then come back to this step.
 
 ## Code
 

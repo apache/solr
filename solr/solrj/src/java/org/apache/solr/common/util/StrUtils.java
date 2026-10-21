@@ -302,36 +302,38 @@ public class StrUtils {
    *
    * <p>Characters with a numeric value less than 32 are encoded. &amp;,=,%,+,space are encoded.
    */
-  public static void partialURLEncodeVal(StringBuilder dest, String val) {
+  public static String partialURLEncodeVal(String val) {
+    var output = new StringBuilder();
     for (int i = 0; i < val.length(); i++) {
       char ch = val.charAt(i);
       if (ch < 32) {
-        dest.append('%');
-        if (ch < 0x10) dest.append('0');
-        dest.append(Integer.toHexString(ch));
+        output.append('%');
+        if (ch < 0x10) output.append('0');
+        output.append(Integer.toHexString(ch));
       } else {
         switch (ch) {
           case ' ':
-            dest.append('+');
+            output.append('+');
             break;
           case '&':
-            dest.append("%26");
+            output.append("%26");
             break;
           case '%':
-            dest.append("%25");
+            output.append("%25");
             break;
           case '=':
-            dest.append("%3D");
+            output.append("%3D");
             break;
           case '+':
-            dest.append("%2B");
+            output.append("%2B");
             break;
           default:
-            dest.append(ch);
+            output.append(ch);
             break;
         }
       }
     }
+    return output.toString();
   }
 
   /**

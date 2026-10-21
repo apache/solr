@@ -400,7 +400,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
     }
-    CryptoKeys cryptoKeys = null;
+    CryptoKeys cryptoKeys;
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {

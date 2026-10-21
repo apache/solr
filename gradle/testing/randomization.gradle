@@ -19,15 +19,13 @@
 // Configure test randomization seeds and derived test properties.
 //
 
-import java.nio.file.*
 import com.carrotsearch.randomizedtesting.SeedUtils
 import com.carrotsearch.randomizedtesting.generators.RandomPicks
+import java.nio.file.Path
 import org.apache.tools.ant.types.Commandline
 
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
 
   dependencies {
     classpath libs.carrotsearch.randomizedtesting.runner
@@ -134,6 +132,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr")}) {
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
           [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
           [propName: 'tests.ssl', value: null, description: "Control SSL: true=force on, false=force off, unset=randomize (all respect @SuppressSSL)."],
+          [propName: 'tests.selenium', value: false, description: "Enables or disables @SeleniumTest tests (browser-based, need a local Chrome)."],
       ]
     }
   }

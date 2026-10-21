@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_SECURITY_CONF_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
@@ -68,6 +69,9 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   @PermissionName(ZK_READ_PERM)
   public StreamingOutput readNode(String zkPath) {
     zkPath = sanitizeZkPath(zkPath);
+    if (SOLR_SECURITY_CONF_PATH.equals(zkPath)) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such node: " + zkPath);
+    }
     return readNodeAndAddToResponse(zkPath);
   }
 
@@ -118,13 +122,14 @@ public class ZookeeperRead extends AdminAPIBase implements ZooKeeperReadApis {
   }
 
   private String sanitizeZkPath(String zkPath) {
-    if (zkPath == null || zkPath.isEmpty()) {
+    if (zkPath == null) {
       return "/";
-    } else if (zkPath.length() > 1 && zkPath.endsWith("/")) {
-      return zkPath.substring(0, zkPath.length() - 1);
     }
-
-    return zkPath;
+    zkPath = zkPath.trim();
+    while (zkPath.length() > 1 && zkPath.endsWith("/")) {
+      zkPath = zkPath.substring(0, zkPath.length() - 1);
+    }
+    return zkPath.isEmpty() ? "/" : zkPath;
   }
 
   /** Simple mime type guessing based on first character of the response */

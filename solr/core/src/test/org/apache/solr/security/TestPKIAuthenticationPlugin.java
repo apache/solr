@@ -207,6 +207,23 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
         "Should not have proceeded after authentication failure", wrappedRequestByFilter.get());
   }
 
+  @Test
+  public void testMalformedV2HeaderSignatureRejected() throws Exception {
+    headerValue.set(nodeName + " someuser 1234567890 not_base64!!!");
+
+    HttpServletResponse response = mock(HttpServletResponse.class);
+    assertFalse(
+        "Should have rejected request with a non-base64 signature",
+        mock.authenticate(mockReq, response, filterChain));
+
+    verify(response)
+        .setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), PKIAuthenticationPlugin.HEADER_V2);
+    verify(response).sendError(ArgumentMatchers.eq(401), anyString());
+
+    assertNull(
+        "Should not have proceeded after authentication failure", wrappedRequestByFilter.get());
+  }
+
   private HttpServletRequest createMockRequest(final AtomicReference<String> headerValue) {
     HttpServletRequest mockReq = mock(HttpServletRequest.class);
     when(mockReq.getHeader(any(String.class)))

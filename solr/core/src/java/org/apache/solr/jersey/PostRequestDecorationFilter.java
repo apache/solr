@@ -55,8 +55,12 @@ public class PostRequestDecorationFilter implements ContainerResponseFilter {
     }
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
+    if (solrQueryRequest == null) {
+      log.trace("Skipping QTime assignment because no SolrQueryRequest was attached");
+      return;
+    }
     if (!responseContext.hasEntity()
-        || !SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+        || !(responseContext.getEntity() instanceof SolrJerseyResponse)) {
       log.debug("Skipping QTime assignment because response was not a SolrJerseyResponse");
       return;
     }

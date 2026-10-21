@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.primes.Primes;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -409,7 +410,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   ModifiableSolrParams params = new ModifiableSolrParams();
                   if (realTime) {
                     params.set("wt", "json");
-                    params.set("qt", "/get");
                     params.set("ids", Integer.toString(id));
                   } else {
                     params.set("wt", "json");
@@ -420,7 +420,11 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   int clientId = rand.nextInt(clients.size());
                   if (!realTime) clientId = clientIndexUsedForCommit;
 
-                  QueryResponse response = clients.get(clientId).query(params);
+                  SolrClient client = clients.get(clientId);
+                  QueryResponse response =
+                      realTime
+                          ? new QueryRequest("/get", params).process(client)
+                          : client.query(params);
                   if (response.getResults().size() == 0) {
                     // there's no info we can get back from a delete operation, so not much we
                     // can check

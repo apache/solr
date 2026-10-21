@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated Utils.getBaseUrlForNodeName(String, String) and Utils.getBaseUrlForNodeName(String, String, boolean) methods; use the identically named URLUtil methods instead.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18386
+    url: https://issues.apache.org/jira/browse/SOLR-18386

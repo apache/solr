@@ -215,6 +215,9 @@ grant {
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+  // java.net.http.HttpClient requires URLPermission separately from SocketPermission above.
+  permission java.net.URLPermission "http://${solr.internal.network.permission}:*/-", "*:*";
+  permission java.net.URLPermission "https://${solr.internal.network.permission}:*/-", "*:*";
 
   // CUDA for GPU module (cuVS)
   permission java.lang.RuntimePermission "loadLibrary.cudart";

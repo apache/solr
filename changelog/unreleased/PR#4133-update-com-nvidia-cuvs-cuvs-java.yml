@@ -1,7 +1,0 @@
-title: Update com.nvidia.cuvs:cuvs-java to v26
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4133
-  url: https://github.com/apache/solr/pull/4133

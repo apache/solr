@@ -37,6 +37,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.Test;
 
@@ -401,47 +402,48 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   // Write out the cores' config files, both bad schema files, bad config files and some good
   // cores.
+  @SuppressWarnings("try")
   private CoreContainer initGoodAndBad(
       List<String> goodCores, List<String> badSchemaCores, List<String> badConfigCores)
       throws Exception {
     solrHomeDirectory = createTempDir();
 
     // Don't pollute the log with exception traces when they're expected.
-    ignoreException(Pattern.quote("SAXParseException"));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote("SAXParseException"))) {
+      // Create the cores that should be fine.
+      for (String coreName : goodCores) {
+        Path coreRoot = solrHomeDirectory.resolve(coreName);
+        copyMinConf(coreRoot, "name=" + coreName);
+      }
 
-    // Create the cores that should be fine.
-    for (String coreName : goodCores) {
-      Path coreRoot = solrHomeDirectory.resolve(coreName);
-      copyMinConf(coreRoot, "name=" + coreName);
+      // Collect the files that we'll write to the config directories.
+      Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
+      String min_schema = Files.readString(top.resolve("schema-tiny.xml"), StandardCharsets.UTF_8);
+      String min_config =
+          Files.readString(top.resolve("solrconfig-minimal.xml"), StandardCharsets.UTF_8);
+      String rand_snip =
+          Files.readString(
+              top.resolve("solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
+
+      // Now purposely mess up the config files, introducing stupid syntax errors.
+      String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
+      String bad_schema = min_schema.replace("<field", "<filed");
+
+      // Create the cores with bad configs
+      for (String coreName : badConfigCores) {
+        writeCustomConfig(coreName, bad_config, min_schema, rand_snip);
+      }
+
+      // Create the cores with bad schemas.
+      for (String coreName : badSchemaCores) {
+        writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
+      }
+
+      NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory, "<solr/>");
+
+      // OK this should succeed, but at the end we should have recorded a series of errors.
+      return createCoreContainer(config, new CorePropertiesLocator(config));
     }
-
-    // Collect the files that we'll write to the config directories.
-    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
-    String min_schema = Files.readString(top.resolve("schema-tiny.xml"), StandardCharsets.UTF_8);
-    String min_config =
-        Files.readString(top.resolve("solrconfig-minimal.xml"), StandardCharsets.UTF_8);
-    String rand_snip =
-        Files.readString(
-            top.resolve("solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
-
-    // Now purposely mess up the config files, introducing stupid syntax errors.
-    String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
-    String bad_schema = min_schema.replace("<field", "<filed");
-
-    // Create the cores with bad configs
-    for (String coreName : badConfigCores) {
-      writeCustomConfig(coreName, bad_config, min_schema, rand_snip);
-    }
-
-    // Create the cores with bad schemas.
-    for (String coreName : badSchemaCores) {
-      writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
-    }
-
-    NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory, "<solr/>");
-
-    // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config, new CorePropertiesLocator(config));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the

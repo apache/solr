@@ -22,19 +22,20 @@ import java.util.regex.Pattern;
 import javax.script.ScriptEngineManager;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Assume;
 
 public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
 
   public void testBogusScriptEngine() throws Exception {
     // sanity check
-    Assume.assumeTrue(null == (new ScriptEngineManager()).getEngineByName("giberish"));
+    Assume.assumeTrue(null == (new ScriptEngineManager()).getEngineByName("gibberish"));
 
     assertConfigs(
         "bad-solrconfig-bogus-scriptengine-name.xml",
         "schema.xml",
         getFile("scripting/solr/collection1").getParent().toString(),
-        "giberish");
+        "gibberish");
   }
 
   public void testMissingScriptFile() throws Exception {
@@ -62,6 +63,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
    * errString, asserts that initializing a core with these files causes an error matching the
    * specified errString ot be thrown.
    */
+  @SuppressWarnings("try")
   protected final void assertConfigs(
       final String solrconfigFile,
       final String schemaFile,
@@ -69,9 +71,7 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
       final String errString)
       throws Exception {
 
-    ignoreException(Pattern.quote(errString));
-    try {
-
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       if (null == solrHome) {
         initCore(solrconfigFile, schemaFile);
       } else {
@@ -88,7 +88,6 @@ public class TestBadScriptingUpdateProcessorConfig extends SolrTestCaseJ4 {
       throw e;
     } finally {
       deleteCore();
-      resetExceptionIgnores();
     }
     fail("Did not encounter any exception from: " + solrconfigFile + " using " + schemaFile);
   }

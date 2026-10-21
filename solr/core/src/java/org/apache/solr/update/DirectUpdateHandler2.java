@@ -176,6 +176,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // UpdateLog identity, not equality, is what matters here
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
     super(core, updateHandler.getUpdateLog(), false);
     solrCoreState = core.getSolrCoreState();

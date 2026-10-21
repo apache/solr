@@ -1239,7 +1239,6 @@ public class QueryComponent extends SearchComponent {
     if (thereArePartialResults) {
       rb.rsp
           .getResponseHeader()
-          .asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
@@ -1257,10 +1256,7 @@ public class QueryComponent extends SearchComponent {
           && Boolean.TRUE.equals(segmentTerminatedEarly)) {
         rb.rsp
             .getResponseHeader()
-            .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        rb.rsp
-            .getResponseHeader()
-            .add(
+            .put(
                 SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
                 segmentTerminatedEarly);
       }

@@ -1,0 +1,10 @@
+title: >
+  The Prometheus JVM CPU metrics are now named `jvm_system_cpu_utilization` and
+  `jvm_cpu_recent_utilization` (the `_ratio` suffix was dropped) following the
+  OpenTelemetry Prometheus exporter update.
+type: changed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: PR#4711
+    url: https://github.com/apache/solr/pull/4711

@@ -111,13 +111,18 @@ task newChangelog {
 }
 
 task writeChangelogPr {
-  description = 'Generates a changelog entry file (YAML) for the current GitHub PR'
+  description = 'Generates a changelog entry file (YAML) for the current GitHub PR. ' +
+      'Pass -Ppr=<number-or-url> if the PR cannot be auto-detected from the current branch.'
   doLast {
     def ctx = changelogSetup()
-    def prInfoProc = ['gh', 'pr', 'view', '--json', 'number,title'].execute()
+    def prArg = providers.gradleProperty("pr").getOrNull()
+    def prCommand = prArg ? ['gh', 'pr', 'view', prArg, '--json', 'number,title'] :
+        ['gh', 'pr', 'view', '--json', 'number,title']
+    def prInfoProc = prCommand.execute()
     prInfoProc.waitFor()
     if (prInfoProc.exitValue() != 0) {
-      throw new GradleException("Could not find a GitHub PR for branch '${ctx.gitBranch}'. Make sure you've pushed this branch and created a PR.\n${prInfoProc.err.text.trim()}")
+      def target = prArg ? "PR '${prArg}'" : "a GitHub PR for branch '${ctx.gitBranch}'"
+      throw new GradleException("Could not find ${target}. Make sure you've pushed this branch and created a PR, or pass -Ppr=<number-or-url>.\n${prInfoProc.err.text.trim()}")
     }
     def prJson = new groovy.json.JsonSlurper().parseText(prInfoProc.text)
     def prNumber = prJson.number

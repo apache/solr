@@ -89,11 +89,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
-  @Override
-  public void connect() {
-    getLiveNodes();
-  }
-
   /** Create a SolrClient implementation that uses the specified Solr node URL */
   protected abstract SolrClient getSolrClient(String baseUrl);
 

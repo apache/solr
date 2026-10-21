@@ -114,11 +114,12 @@ public class PlacementPluginFactoryLoader {
         case "affinity" -> new AffinityPlacementFactory();
         case "minimizecores" -> new MinimizeCoresPlacementFactory();
         case "random" -> new RandomPlacementFactory();
-        default -> throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Invalid value for system property '"
-                + PLACEMENTPLUGIN_DEFAULT_SYSPROP
-                + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
+        default ->
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid value for system property '"
+                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
+                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
       };
     } else {
       // TODO: Consider making the ootb default AffinityPlacementFactory, see

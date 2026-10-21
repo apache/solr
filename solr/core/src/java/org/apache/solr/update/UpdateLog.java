@@ -22,6 +22,8 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -93,6 +95,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -734,6 +737,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /* Takes over ownership of the log, keeping it until no longer needed
     and then decrementing its reference and dropping it.
   */
+  @SuppressWarnings(
+      "ReferenceEquality") // TransactionLog identity, not equality, is what matters here
   protected synchronized void addOldLog(TransactionLog oldLog, boolean removeOld) {
     if (oldLog == null) return;
 
@@ -1546,6 +1551,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param commitVersion any updates that have version larger than the commitVersion will be copied
    *     over
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // TransactionLog identity, not equality, is what matters here
   public void copyOverOldUpdates(long commitVersion, TransactionLog oldTlog) {
     copyOverOldUpdatesCounter.inc();
 
@@ -1701,7 +1708,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     close(committed, false);
   }
 
-  @SuppressWarnings("try")
+  @SuppressWarnings({
+    "try",
+    "ReferenceEquality" // TransactionLog identity, not equality, is what matters here
+  })
   public void close(boolean committed, boolean deleteOnClose) {
     try (Closeable c = releaseTlogDir) {
       recoveryExecutor.shutdown(); // no new tasks
@@ -2122,7 +2132,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
-      try {
+      final Span span = TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay").startSpan();
+      TraceUtils.ifNotNoop(
+          span,
+          s -> {
+            TraceUtils.setDbInstance(s, req.getCore().getName());
+            s.setAttribute("updatelog.replay.state", state.toString());
+            s.setAttribute("updatelog.replay.logs", translogs.size());
+          });
+      try (var scope = span.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
         for (; ; ) {
           TransactionLog translog = translogs.pollFirst();
           if (translog == null) break;
@@ -2136,9 +2155,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           recoveryInfo.errors.incrementAndGet();
           log.error("Replay failed due to exception", e);
         }
+        span.recordException(e);
       } catch (Exception e) {
         recoveryInfo.errors.incrementAndGet();
         log.error("Replay failed due to exception", e);
+        span.recordException(e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
@@ -2152,6 +2173,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           log.error("ERROR: didn't get to recover from tlog {}", translog);
           translog.decref();
         }
+
+        TraceUtils.ifNotNoop(
+            span,
+            s -> {
+              s.setAttribute("updatelog.replay.adds", recoveryInfo.adds);
+              s.setAttribute("updatelog.replay.deletes", recoveryInfo.deletes);
+              s.setAttribute("updatelog.replay.deleteByQuery", recoveryInfo.deleteByQuery);
+              s.setAttribute("updatelog.replay.errors", recoveryInfo.errors.get());
+            });
+        if (recoveryInfo.failed || recoveryInfo.errors.get() > 0) {
+          span.setStatus(StatusCode.ERROR);
+        }
+        span.end();
       }
 
       loglog.warn("Log replay finished. recoveryInfo={}", recoveryInfo);
@@ -2162,7 +2196,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     public void doReplay(TransactionLog translog) {
-      try {
+      final Span span =
+          TraceUtils.getGlobalTracer().spanBuilder("updatelog.replay.log").startSpan();
+      TraceUtils.ifNotNoop(
+          span,
+          s -> {
+            if (translog.tlog != null) {
+              s.setAttribute("updatelog.replay.logFile", translog.tlog.getFileName().toString());
+            }
+            s.setAttribute("updatelog.replay.logSizeBytes", translog.getLogSize());
+          });
+      try (var scope = span.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
         loglog.warn(
             "Starting log replay {}  active={} starting pos={} inSortedOrder={}",
             translog,
@@ -2339,10 +2384,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           } catch (ClassCastException cl) {
             recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry={}", o, cl);
+            span.recordException(cl);
             // would be caused by a corrupt transaction log
           } catch (Exception ex) {
             recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
+            span.recordException(ex);
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
@@ -2386,6 +2433,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       } finally {
         if (tlogReader != null) tlogReader.close();
         translog.decref();
+        span.end();
       }
     }
 

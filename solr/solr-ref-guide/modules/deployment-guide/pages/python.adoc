@@ -24,7 +24,7 @@ JSON is the preferred interchange format for Python users, and Python has suppor
 ----
 from urllib2 import *
 import json
-connection = urlopen('http://localhost:8983/solr/collection_name/select?q=cheese&wt=json')
+connection = urlopen('http://localhost:8983/solr/{collectionName}/select?q=cheese&wt=json')
 response = json.load(connection)
 print response['response']['numFound'], "documents found."
 

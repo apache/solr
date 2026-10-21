@@ -16,16 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
-import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
-import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
-import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
-import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -44,7 +38,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE
 import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
@@ -80,7 +73,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.OV
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REINDEXCOLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RENAME;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
@@ -114,12 +106,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.ClusterPropertyApis;
+import org.apache.solr.client.api.endpoint.ListAliasesApi;
+import org.apache.solr.client.api.endpoint.ListClusterNodesApi;
+import org.apache.solr.client.api.endpoint.ListCollectionsApi;
+import org.apache.solr.client.api.endpoint.RenameCollectionApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
@@ -133,10 +129,8 @@ import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
-import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
@@ -162,20 +156,20 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
+import org.apache.solr.handler.admin.api.ClusterCommands;
 import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatus;
@@ -196,6 +190,7 @@ import org.apache.solr.handler.admin.api.DeleteShard;
 import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
+import org.apache.solr.handler.admin.api.ListClusterNodes;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
@@ -322,7 +317,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext =
-        new AdminCmdContext(operation.action, req.getParams().get(ASYNC), req);
+        new AdminCmdContext(
+            operation.action,
+            req.getParams().get(ASYNC),
+            (String) req.getContext().get(CALLING_LOCK_ID_HEADER));
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
@@ -335,8 +333,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       rsp.setException(exp);
     }
   }
-
-  static final Set<String> KNOWN_ROLES = Set.of("overseer");
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
@@ -437,13 +433,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return submitCollectionApiCommand(coreContainer.getZkController(), adminCmdContext, m, timeout);
   }
 
-  private boolean overseerCollectionQueueContains(String asyncId)
-      throws KeeperException, InterruptedException {
-    OverseerTaskQueue collectionQueue =
-        coreContainer.getZkController().getOverseerCollectionQueue();
-    return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
-  }
-
   /**
    * Copy prefixed params into a map. There must only be one value for these parameters.
    *
@@ -488,14 +477,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Category getCategory() {
     return Category.ADMIN;
-  }
-
-  private static void addStatusToResponse(
-      NamedList<Object> results, RequestStatusState state, String msg) {
-    SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
-    status.add("state", state.getKey());
-    status.add("msg", msg);
-    results.add("status", status);
   }
 
   @SuppressWarnings("ImmutableEnumChecker")
@@ -558,6 +539,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
 
+    /**
+     * V2 equivalent: {@link RenameCollectionApi} ({@code POST
+     * /collections/{collectionName}/rename}).
+     */
     RENAME_OP(
         RENAME,
         (req, rsp, h) -> {
@@ -566,6 +551,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return copy(req.getParams(), map, FOLLOW_ALIASES);
         }),
 
+    /** No V2 equivalent yet. */
     REINDEXCOLLECTION_OP(
         REINDEXCOLLECTION,
         (req, rsp, h) -> {
@@ -651,6 +637,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link SplitShardAPI} ({@code POST /collections/{collection}/shards} with the
+     * {@code split} command).
+     */
     SPLITSHARD_OP(
         SPLITSHARD,
         DEFAULT_COLLECTION_OP_TIMEOUT * 5,
@@ -728,6 +718,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DeleteReplica.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link MigrateDocsAPI} ({@code POST /collections/{collection}} with the {@code
+     * migrate-docs} command).
+     */
     MIGRATE_OP(
         MIGRATE,
         (req, rsp, h) -> {
@@ -739,24 +733,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   "split.key",
                   "target.collection");
           return copy(req.getParams(), map, "forward.timeout", FOLLOW_ALIASES);
-        }),
-    ADDROLE_OP(
-        ADDROLE,
-        (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, "role", "node");
-          if (!KNOWN_ROLES.contains(map.get("role")))
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Unknown role. Supported roles are ," + KNOWN_ROLES);
-          return map;
-        }),
-    REMOVEROLE_OP(
-        REMOVEROLE,
-        (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, "role", "node");
-          if (!KNOWN_ROLES.contains(map.get("role")))
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Unknown role. Supported roles are ," + KNOWN_ROLES);
-          return map;
         }),
     CLUSTERPROP_OP(
         CLUSTERPROP,
@@ -789,141 +765,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     REQUESTSTATUS_OP(
         REQUESTSTATUS,
         (req, rsp, h) -> {
-          req.getParams().required().check(REQUESTID);
-
-          final CoreContainer coreContainer = h.coreContainer;
-          final String requestId = req.getParams().get(REQUESTID);
-          final ZkController zkController = coreContainer.getZkController();
-
-          final NamedList<Object> status = new NamedList<>();
-          if (zkController.getDistributedCommandRunner().isEmpty()) {
-            if (zkController.getOverseerRunningMap().contains(requestId)) {
-              addStatusToResponse(status, RUNNING, "found [" + requestId + "] in running tasks");
-            } else if (zkController.getOverseerCompletedMap().contains(requestId)) {
-              final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
-              rsp.getValues()
-                  .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
-              addStatusToResponse(
-                  status, COMPLETED, "found [" + requestId + "] in completed tasks");
-            } else if (zkController.getOverseerFailureMap().contains(requestId)) {
-              final byte[] mapEntry = zkController.getOverseerFailureMap().get(requestId);
-              rsp.getValues()
-                  .addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
-              addStatusToResponse(status, FAILED, "found [" + requestId + "] in failed tasks");
-            } else if (h.overseerCollectionQueueContains(requestId)) {
-              addStatusToResponse(
-                  status, SUBMITTED, "found [" + requestId + "] in submitted tasks");
-            } else {
-              addStatusToResponse(
-                  status, NOT_FOUND, "Did not find [" + requestId + "] in any tasks queue");
-            }
-          } else {
-            Pair<RequestStatusState, OverseerSolrResponse> sr =
-                zkController
-                    .getDistributedCommandRunner()
-                    .get()
-                    .getAsyncTaskRequestStatus(requestId);
-            final String message;
-            switch (sr.first()) {
-              case COMPLETED:
-                message = "found [" + requestId + "] in completed tasks";
-                rsp.getValues().addAll(sr.second().getResponse());
-                break;
-              case FAILED:
-                message = "found [" + requestId + "] in failed tasks";
-                rsp.getValues().addAll(sr.second().getResponse());
-                break;
-              case RUNNING:
-                message = "found [" + requestId + "] in running tasks";
-                break;
-              case SUBMITTED:
-                message = "found [" + requestId + "] in submitted tasks";
-                break;
-              default:
-                message = "Did not find [" + requestId + "] in any tasks queue";
-            }
-            addStatusToResponse(status, sr.first(), message);
-          }
-
-          rsp.getValues().addAll(status);
+          ClusterCommands.invokeGetFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     DELETESTATUS_OP(
         DELETESTATUS,
-        new CollectionOp() {
-          @Override
-          public Map<String, Object> execute(
-              SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
-            final CoreContainer coreContainer = h.coreContainer;
-            final String requestId = req.getParams().get(REQUESTID);
-            final ZkController zkController = coreContainer.getZkController();
-            boolean flush = req.getParams().getBool(CollectionAdminParams.FLUSH, false);
-
-            if (requestId == null && !flush) {
-              throw new SolrException(
-                  ErrorCode.BAD_REQUEST, "Either requestid or flush parameter must be specified.");
-            }
-
-            if (requestId != null && flush) {
-              throw new SolrException(
-                  ErrorCode.BAD_REQUEST,
-                  "Both requestid and flush parameters can not be specified together.");
-            }
-
-            if (zkController.getDistributedCommandRunner().isEmpty()) {
-              if (flush) {
-                Collection<String> completed = zkController.getOverseerCompletedMap().keys();
-                Collection<String> failed = zkController.getOverseerFailureMap().keys();
-                for (String asyncId : completed) {
-                  zkController.getOverseerCompletedMap().remove(asyncId);
-                  zkController.clearAsyncId(asyncId);
-                }
-                for (String asyncId : failed) {
-                  zkController.getOverseerFailureMap().remove(asyncId);
-                  zkController.clearAsyncId(asyncId);
-                }
-                rsp.getValues()
-                    .add("status", "successfully cleared stored collection api responses");
-              } else {
-                // Request to cleanup
-                if (zkController.getOverseerCompletedMap().remove(requestId)) {
-                  zkController.clearAsyncId(requestId);
-                  rsp.getValues()
-                      .add(
-                          "status", "successfully removed stored response for [" + requestId + "]");
-                } else if (zkController.getOverseerFailureMap().remove(requestId)) {
-                  zkController.clearAsyncId(requestId);
-                  rsp.getValues()
-                      .add(
-                          "status", "successfully removed stored response for [" + requestId + "]");
-                } else {
-                  rsp.getValues()
-                      .add("status", "[" + requestId + "] not found in stored responses");
-                  // Don't call zkController.clearAsyncId for this, since it could be a
-                  // running/pending task
-                }
-              }
-            } else {
-              if (flush) {
-                zkController.getDistributedCommandRunner().get().deleteAllAsyncIds();
-                rsp.getValues()
-                    .add("status", "successfully cleared stored collection api responses");
-              } else {
-                if (zkController
-                    .getDistributedCommandRunner()
-                    .get()
-                    .deleteSingleAsyncId(requestId)) {
-                  rsp.getValues()
-                      .add(
-                          "status", "successfully removed stored response for [" + requestId + "]");
-                } else {
-                  rsp.getValues()
-                      .add("status", "[" + requestId + "] not found in stored responses");
-                }
-              }
-            }
-            return null;
-          }
+        (req, rsp, h) -> {
+          ClusterCommands.invokeDeleteFromV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     ADDREPLICA_OP(
         ADDREPLICA,
@@ -939,7 +788,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link ClusterAPI#getOverseerStatus} ({@code GET /cluster/overseer}), which
+     * calls this operation.
+     */
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
+    /** No V2 equivalent yet. */
     DISTRIBUTEDAPIPROCESSING_OP(
         DISTRIBUTEDAPIPROCESSING,
         (req, rsp, h) -> {
@@ -955,13 +809,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LIST,
         (req, rsp, h) -> {
           final ListCollections listCollectionsAPI = new ListCollections(h.coreContainer, req, rsp);
-          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
+          final SolrJerseyResponse listCollectionsResponse =
+              listCollectionsAPI.listCollections(null, null, null, null, null);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
     /**
      * Handle cluster status request. Can return status per specific collection/shard or per all
      * collections.
+     */
+    /**
+     * Superseded by V2, which splits it up: {@link ListCollectionsApi} ({@code GET
+     * /collections?detailed=true}) for the collections tree, {@link ListClusterNodesApi} ({@code
+     * GET /cluster/nodes}), {@link ListAliasesApi} ({@code GET /aliases}) and {@link
+     * ClusterPropertyApis} ({@code GET /cluster/properties}).
      */
     CLUSTERSTATUS_OP(
         CLUSTERSTATUS,
@@ -1011,6 +872,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           BalanceShardUnique.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link RebalanceLeadersAPI} ({@code POST /collections/{collection}} with the
+     * {@code rebalance-leaders} command).
+     */
     REBALANCELEADERS_OP(
         REBALANCELEADERS,
         (req, rsp, h) -> {
@@ -1018,6 +883,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
     // XXX should this command support followAliases?
+    /**
+     * V2 equivalent: {@link ModifyCollectionAPI} ({@code POST /collections/{collection}} with the
+     * {@code modify} command).
+     */
     MODIFYCOLLECTION_OP(
         MODIFYCOLLECTION,
         (req, rsp, h) -> {
@@ -1172,6 +1041,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link MoveReplicaAPI} ({@code POST /collections/{collection}} with the {@code
+     * move-replica} command).
+     */
     MOVEREPLICA_OP(
         MOVEREPLICA,
         (req, rsp, h) -> {
@@ -1180,7 +1053,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return copy(
               req.getParams(),
               map,
-              CollectionParams.FROM_NODE,
               CollectionParams.SOURCE_NODE,
               TARGET_NODE,
               WAIT_FOR_FINAL_STATE,
@@ -1364,6 +1236,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteShard.class,
         ForceLeader.class,
         InstallShardData.class,
+        ListClusterNodes.class,
         ListCollections.class,
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
@@ -1380,7 +1253,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class,
-        ClusterProperty.class);
+        ClusterProperty.class,
+        ClusterCommands.class);
   }
 
   @Override

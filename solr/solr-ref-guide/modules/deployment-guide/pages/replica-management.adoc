@@ -72,7 +72,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/replicas -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/shards/shard1/replicas -H 'Content-Type: application/json' -d '
   {
     "node":"localhost:8983_solr"
   }
@@ -336,7 +336,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "move-replica":{
       "replica":"core_node6",

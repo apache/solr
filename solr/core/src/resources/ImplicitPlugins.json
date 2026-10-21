@@ -144,21 +144,15 @@
       }
     },
     "/tasks/cancel": {
-      "class": "solr.QueryCancellationHandler",
-      "useParams":"_TASK_CANCELLATION",
-      "components": [
-        "querycancellation"
-      ]
+      "class": "solr.TaskCancellationHandler",
+      "useParams":"_TASK_CANCELLATION"
     },
     "/tasks/list": {
       "class": "solr.ActiveTasksListHandler",
-      "useParams":"_LIST_TASKS",
-      "components": [
-        "activetaskslist"
-      ]
+      "useParams":"_LIST_TASKS"
     }
   },
-  "queryResponseWriter": {  
+  "queryResponseWriter": {
     "geojson": {
       "class": "solr.GeoJSONResponseWriter"
     },

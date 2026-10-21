@@ -1,0 +1,7 @@
+# Ignore gradle wrapper since it may be added by default
+# when loading as separate module in IDE. We basically
+# use the root project's gradle wrapper and therefore
+# don't have to add a second one into the project
+gradle/wrapper
+gradlew
+gradlew.bat

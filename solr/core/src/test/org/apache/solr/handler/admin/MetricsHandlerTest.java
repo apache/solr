@@ -50,8 +50,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -77,8 +76,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -102,8 +100,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -123,8 +120,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -153,8 +149,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -183,8 +178,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -205,8 +199,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,
@@ -240,8 +233,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
-        req(
-            CommonParams.QT,
+        reqWithPath(
             CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricUtils.PROMETHEUS_METRICS_WT,

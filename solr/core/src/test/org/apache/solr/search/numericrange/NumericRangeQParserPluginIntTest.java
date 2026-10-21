@@ -24,8 +24,24 @@ import org.junit.Test;
 /**
  * Tests for {@link NumericRangeQParserPlugin} using {@link
  * org.apache.solr.schema.numericrange.IntRangeField} fields.
+ *
+ * <p>Each scenario picks its field at random (via {@link #randomField}) from the equivalent field
+ * variants for 1D: indexed-only, indexed+docValues, and the (non-indexed) docValues-only field so
+ * all of those code paths, including the pure docValues query, get incidental coverage across seeds
+ * while the assertions stay identical.
  */
 public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
+
+  /** 1D int range variants: indexed-only, indexed+docValues, and (non-indexed) docValues-only. */
+  private static final String[] ONE_D = {"price_range", "price_range_dv", "price_range_dvonly"};
+
+  /** 2D int range (bounding box): indexed-only field and its indexed+docValues sibling. */
+  private static final String[] TWO_D = {"bbox", "bbox_dv"};
+
+  /** Randomly returns one of the given field variants so DV / non-DV both get covered. */
+  private static String randomField(String... variants) {
+    return variants[random().nextInt(variants.length)];
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -41,32 +57,33 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DIntersectsQuery() {
+    String f = randomField(ONE_D);
     // Index documents with 1D ranges
-    assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "price_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "price_range", "[50 TO 80]"));
-    assertU(adoc("id", "4", "price_range", "[200 TO 300]"));
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 80]"));
+    assertU(adoc("id", "4", f, "[200 TO 300]"));
     assertU(commit());
 
     // Query: find ranges intersecting [120 TO 180]
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[120 TO 180]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[120 TO 180]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
-        "//result/doc/str[@name='price_range'][.='[100 TO 200]']",
-        "//result/doc/str[@name='price_range'][.='[150 TO 250]']");
+        "//result/doc/str[@name='" + f + "'][.='[100 TO 200]']",
+        "//result/doc/str[@name='" + f + "'][.='[150 TO 250]']");
 
     // Query: find ranges intersecting [0 TO 100]
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[0 TO 100]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
 
     // Query: find ranges intersecting [175 TO 225]
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[175 TO 225]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[175 TO 225]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
@@ -75,39 +92,41 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DWithinQuery() {
-    assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "price_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "price_range", "[50 TO 80]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 80]"));
     assertU(commit());
 
     // Query: find ranges within [0 TO 300]
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=price_range}[0 TO 300]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0 TO 300]"),
         "//result[@numFound='3']");
 
     // Query: find ranges within [100 TO 200]
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=price_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[100 TO 200]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     // Query: find ranges within [0 TO 100]
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=price_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='3']");
   }
 
   @Test
   public void test1DContainsQuery() {
-    assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "price_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "price_range", "[50 TO 300]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 300]"));
     assertU(commit());
 
     // Query: find ranges containing [160 TO 170]
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=price_range}[160 TO 170]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[160 TO 170]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
@@ -115,12 +134,12 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
     // Query: find ranges containing [0 TO 400]
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=price_range}[0 TO 400]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[0 TO 400]"),
         "//result[@numFound='0']");
 
     // Query: find ranges containing [100 TO 200]
     assertQ(
-        req("q", "{!numericRange criteria=\"contains\" field=price_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[100 TO 200]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
@@ -128,16 +147,17 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void test1DCrossesQuery() {
-    assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "price_range", "[150 TO 250]"));
-    assertU(adoc("id", "3", "price_range", "[50 TO 80]"));
-    assertU(adoc("id", "4", "price_range", "[120 TO 180]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[100 TO 200]"));
+    assertU(adoc("id", "2", f, "[150 TO 250]"));
+    assertU(adoc("id", "3", f, "[50 TO 80]"));
+    assertU(adoc("id", "4", f, "[120 TO 180]"));
     assertU(commit());
 
     // Query: find ranges crossing [150 TO 250]
     // Should match ranges that intersect but are not within
     assertQ(
-        req("q", "{!numericRange criteria=\"crosses\" field=price_range}[150 TO 250]"),
+        req("q", "{!numericRange criteria=\"crosses\" field=" + f + "}[150 TO 250]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='4']");
@@ -145,51 +165,67 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void test2DIntersectsQuery() {
+    String f = randomField(TWO_D);
     // Index documents with 2D ranges (bounding boxes)
-    assertU(adoc("id", "1", "bbox", "[0,0 TO 10,10]"));
-    assertU(adoc("id", "2", "bbox", "[5,5 TO 15,15]"));
-    assertU(adoc("id", "3", "bbox", "[20,20 TO 30,30]"));
+    assertU(adoc("id", "1", f, "[0,0 TO 10,10]"));
+    assertU(adoc("id", "2", f, "[5,5 TO 15,15]"));
+    assertU(adoc("id", "3", f, "[20,20 TO 30,30]"));
     assertU(commit());
 
     // Query: find bboxes intersecting [8,8 TO 12,12]
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=bbox}[8,8 TO 12,12]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[8,8 TO 12,12]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
-        "//result/doc/str[@name='bbox'][.='[0,0 TO 10,10]']",
-        "//result/doc/str[@name='bbox'][.='[5,5 TO 15,15]']");
+        "//result/doc/str[@name='" + f + "'][.='[0,0 TO 10,10]']",
+        "//result/doc/str[@name='" + f + "'][.='[5,5 TO 15,15]']");
 
     // Query: find bboxes intersecting [25,25 TO 35,35]
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=bbox}[25,25 TO 35,35]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[25,25 TO 35,35]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='3']");
 
     // Query: find bboxes intersecting [100,100 TO 200,200]
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=bbox}[100,100 TO 200,200]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[100,100 TO 200,200]"),
         "//result[@numFound='0']");
   }
 
   @Test
   public void test2DWithinQuery() {
-    assertU(adoc("id", "1", "bbox", "[5,5 TO 10,10]"));
-    assertU(adoc("id", "2", "bbox", "[0,0 TO 20,20]"));
-    assertU(adoc("id", "3", "bbox", "[15,15 TO 25,25]"));
+    String f = randomField(TWO_D);
+    assertU(adoc("id", "1", f, "[5,5 TO 10,10]"));
+    assertU(adoc("id", "2", f, "[0,0 TO 20,20]"));
+    assertU(adoc("id", "3", f, "[15,15 TO 25,25]"));
     assertU(commit());
 
     // Query: find bboxes within [0,0 TO 20,20]
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=bbox}[0,0 TO 20,20]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0,0 TO 20,20]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
 
     // Query: find bboxes within [0,0 TO 30,30]
     assertQ(
-        req("q", "{!numericRange criteria=\"within\" field=bbox}[0,0 TO 30,30]"),
+        req("q", "{!numericRange criteria=\"within\" field=" + f + "}[0,0 TO 30,30]"),
         "//result[@numFound='3']");
+  }
+
+  @Test
+  public void test2DContainsQuery() {
+    String f = randomField(TWO_D);
+    assertU(adoc("id", "1", f, "[0,0 TO 10,10]")); // contains [3,3 TO 7,7]
+    assertU(adoc("id", "2", f, "[4,4 TO 6,6]")); // within it, does NOT contain
+    assertU(commit());
+
+    // Query: find bboxes containing [3,3 TO 7,7]
+    assertQ(
+        req("q", "{!numericRange criteria=\"contains\" field=" + f + "}[3,3 TO 7,7]"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='id'][.='1']");
   }
 
   @Test
@@ -329,46 +365,49 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNegativeValues() {
-    assertU(adoc("id", "1", "price_range", "[-100 TO -50]"));
-    assertU(adoc("id", "2", "price_range", "[-75 TO -25]"));
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[-100 TO -50]"));
+    assertU(adoc("id", "2", f, "[-75 TO -25]"));
     assertU(commit());
 
     // Query with negative range
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[-80 TO -60]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[-80 TO -60]"),
         "//result[@numFound='2']");
   }
 
   @Test
   public void testExtremeValues() {
+    String f = randomField(ONE_D);
     int min = Integer.MIN_VALUE;
     int max = Integer.MAX_VALUE;
 
-    assertU(adoc("id", "1", "price_range", "[" + min + " TO " + max + "]"));
+    assertU(adoc("id", "1", f, "[" + min + " TO " + max + "]"));
     assertU(commit());
 
     // Query should match the extreme range
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[0 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
 
   @Test
   public void testPointRange() {
+    String f = randomField(ONE_D);
     // Point range where min == max
-    assertU(adoc("id", "1", "price_range", "[100 TO 100]"));
+    assertU(adoc("id", "1", f, "[100 TO 100]"));
     assertU(commit());
 
     // Intersects query with point
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[100 TO 100]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[100 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     // Intersects query containing point
     assertQ(
-        req("q", "{!numericRange criteria=intersects field=price_range}[50 TO 150]"),
+        req("q", "{!numericRange criteria=intersects field=" + f + "}[50 TO 150]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
@@ -382,31 +421,33 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFullRange() {
+    String f = randomField(ONE_D);
     // doc 1: narrow range, fully inside the query range  → should NOT match (doc contains query)
     // doc 2: wide range that fully contains the query range → should match
     // doc 3: range that only partially overlaps            → should NOT match
-    assertU(adoc("id", "1", "price_range", "[130 TO 160]")); // No match
-    assertU(adoc("id", "2", "price_range", "[100 TO 200]")); // Match!
-    assertU(adoc("id", "3", "price_range", "[150 TO 250]")); // No match
+    assertU(adoc("id", "1", f, "[130 TO 160]")); // No match
+    assertU(adoc("id", "2", f, "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", f, "[150 TO 250]")); // No match
     assertU(commit());
 
     // Contains semantics: find indexed ranges that fully contain [120 TO 180]
     assertQ(
-        req("q", "price_range:[120 TO 180]"),
+        req("q", f + ":[120 TO 180]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='2']");
   }
 
   @Test
   public void testGetFieldQueryFullRangeMultipleMatches() {
-    assertU(adoc("id", "1", "price_range", "[0 TO 1000]")); // Match!
-    assertU(adoc("id", "2", "price_range", "[100 TO 200]")); // Match!
-    assertU(adoc("id", "3", "price_range", "[100 TO 199]")); // No match - max too low
-    assertU(adoc("id", "4", "price_range", "[101 TO 200]")); // No match - min too high
+    String f = randomField(ONE_D);
+    assertU(adoc("id", "1", f, "[0 TO 1000]")); // Match!
+    assertU(adoc("id", "2", f, "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", f, "[100 TO 199]")); // No match - max too low
+    assertU(adoc("id", "4", f, "[101 TO 200]")); // No match - min too high
     assertU(commit());
 
     assertQ(
-        req("q", "price_range:[100 TO 200]"),
+        req("q", f + ":[100 TO 200]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -414,15 +455,16 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQuerySingleBound() {
-    // Single-bound syntax: price_range:150 is sugar for contains([150 TO 150])
-    assertU(adoc("id", "1", "price_range", "[100 TO 200]")); // Match!
-    assertU(adoc("id", "2", "price_range", "[150 TO 150]")); // Match!
-    assertU(adoc("id", "3", "price_range", "[100 TO 149]")); // No match - max below 150
-    assertU(adoc("id", "4", "price_range", "[151 TO 300]")); // No match - min above 150
+    String f = randomField(ONE_D);
+    // Single-bound syntax: <field>:150 is sugar for contains([150 TO 150])
+    assertU(adoc("id", "1", f, "[100 TO 200]")); // Match!
+    assertU(adoc("id", "2", f, "[150 TO 150]")); // Match!
+    assertU(adoc("id", "3", f, "[100 TO 149]")); // No match - max below 150
+    assertU(adoc("id", "4", f, "[151 TO 300]")); // No match - min above 150
     assertU(commit());
 
     assertQ(
-        req("q", "price_range:150"),
+        req("q", f + ":150"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -430,15 +472,16 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQuerySingleBound2D() {
-    // 2D single-bound: bbox:5,5 is sugar for contains([5,5 TO 5,5])
-    assertU(adoc("id", "1", "bbox", "[0,0 TO 10,10]")); // Match!
-    assertU(adoc("id", "2", "bbox", "[5,5 TO 5,5]")); // Match!
-    assertU(adoc("id", "3", "bbox", "[0,0 TO 4,10]")); // No match - X dimension ends too low
-    assertU(adoc("id", "4", "bbox", "[6,0 TO 10,10]")); // No match - X dimension starts too high
+    String f = randomField(TWO_D);
+    // 2D single-bound: <field>:5,5 is sugar for contains([5,5 TO 5,5])
+    assertU(adoc("id", "1", f, "[0,0 TO 10,10]")); // Match!
+    assertU(adoc("id", "2", f, "[5,5 TO 5,5]")); // Match!
+    assertU(adoc("id", "3", f, "[0,0 TO 4,10]")); // No match - X dimension ends too low
+    assertU(adoc("id", "4", f, "[6,0 TO 10,10]")); // No match - X dimension starts too high
     assertU(commit());
 
     assertQ(
-        req("q", "bbox:5,5"),
+        req("q", f + ":5,5"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -446,10 +489,12 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFieldFormatting() {
+    String f1 = randomField(ONE_D);
+    String f2 = randomField(TWO_D);
     // Test 1D field formatting
-    assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
+    assertU(adoc("id", "1", f1, "[100 TO 200]"));
     // Test 2D field formatting
-    assertU(adoc("id", "2", "bbox", "[10,20 TO 30,40]"));
+    assertU(adoc("id", "2", f2, "[10,20 TO 30,40]"));
     // Test 3D field formatting
     assertU(adoc("id", "3", "cube", "[5,10,15 TO 25,30,35]"));
     // Test 4D field formatting
@@ -471,13 +516,13 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
     assertQ(
         req("q", "id:1"),
         "//result[@numFound='1']",
-        "//result/doc/str[@name='price_range'][.='[100 TO 200]']");
+        "//result/doc/str[@name='" + f1 + "'][.='[100 TO 200]']");
 
     // Verify 2D field returns correctly formatted value
     assertQ(
         req("q", "id:2"),
         "//result[@numFound='1']",
-        "//result/doc/str[@name='bbox'][.='[10,20 TO 30,40]']");
+        "//result/doc/str[@name='" + f2 + "'][.='[10,20 TO 30,40]']");
 
     // Verify 3D field returns correctly formatted value
     assertQ(

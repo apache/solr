@@ -26,6 +26,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -254,6 +256,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
     protected Long indexGen;
     protected IndexDeletionPolicyWrapper delPolicy;
+    private boolean commitPointSaved;
 
     protected String fileName;
     protected String cfileName;
@@ -287,13 +290,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
       switch (dirType) {
         case CONF_FILE_SHORT:
-          cfileName = file;
+          cfileName = fileName;
           break;
         case TLOG_FILE:
-          tlogFileName = file;
-          break;
-        default:
-          fileName = file;
+          tlogFileName = fileName;
           break;
       }
 
@@ -316,7 +316,15 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     // Throw exception on directory traversal attempts
     protected String validateFilenameOrError(String fileName) {
       if (fileName != null) {
-        Path filePath = Path.of(fileName);
+        // Treat both '/' and '\' as separators so that ".." components are detected on
+        // every platform. The original fileName is returned; initFile() enforces that it
+        // resolves within the intended directory.
+        Path filePath;
+        try {
+          filePath = Path.of(FileUtils.normalizeToOsPathSeparator(fileName));
+        } catch (InvalidPathException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid file name");
+        }
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {
@@ -342,7 +350,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
       // reserve commit point till write is complete
       if (indexGen != null) {
-        delPolicy.saveCommitPoint(indexGen);
+        try {
+          delPolicy.saveCommitPoint(indexGen);
+          commitPointSaved = true;
+        } catch (IllegalStateException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.CONFLICT, "invalid index generation: " + indexGen, e);
+        }
       }
     }
 
@@ -360,7 +374,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       ReplicationHandler replicationHandler =
           (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
 
-      if (indexGen != null) {
+      if (commitPointSaved) {
         // Reserve the commit point for another 10s for the next file to be to fetched.
         // We need to keep extending the commit reservation between requests so that the replica can
         // fetch all the files correctly.
@@ -547,8 +561,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
     @Override
     protected Path initFile() {
-      // if it is a tlog file read from tlog directory
-      return Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir(), tlogFileName);
+      return resolveWithinOrForbidden(
+          Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir()),
+          tlogFileName,
+          "tlog directory");
     }
   }
 
@@ -568,9 +584,26 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
     @Override
     protected Path initFile() {
-      // if it is a conf file read from config directory
-      return solrCore.getResourceLoader().getConfigPath().resolve(cfileName);
+      return resolveWithinOrForbidden(
+          solrCore.getResourceLoader().getConfigPath(), cfileName, "core config directory");
     }
+  }
+
+  /**
+   * Resolves {@code child} against {@code parent}, throwing a FORBIDDEN {@link SolrException} if
+   * the result lies outside {@code parent}.
+   */
+  private static Path resolveWithinOrForbidden(
+      Path parent, String child, String parentDescription) {
+    if (child == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "File name required");
+    }
+    Path resolved = parent.resolve(child);
+    if (!FileUtils.isPathAChildOfParent(parent, resolved)) {
+      throw new SolrException(
+          SolrException.ErrorCode.FORBIDDEN, "File path must be within the " + parentDescription);
+    }
+    return resolved.normalize();
   }
 
   private void reportErrorOnResponse(

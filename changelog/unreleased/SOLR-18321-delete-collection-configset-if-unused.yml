@@ -1,0 +1,12 @@
+title: bin/solr delete no longer requires a direct ZooKeeper connection to safely delete a
+  collection's configset; it now uses the Configsets V2 API instead, relying on the API's
+  existing unconditional refusal to delete a configset that's still in use by another
+  collection. The delete tool's -f/--force flag is deprecated and no longer has any effect --
+  it never actually bypassed that in-use check; it's kept only as a no-op for backward
+  compatibility with existing scripts.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18321
+    url: https://issues.apache.org/jira/browse/SOLR-18321

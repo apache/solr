@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -256,20 +257,18 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
         .getAllowListUrlChecker();
   }
 
+  @SuppressWarnings("try")
   private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster)
       throws IOException {
     String expectedExceptionMessage =
         "nor in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'";
-    ignoreException(expectedExceptionMessage);
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedExceptionMessage)) {
       numDocs(query, shards, cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
     } catch (SolrServerException e) {
       assertThat(e.getCause(), instanceOf(RemoteSolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
       assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
-    } finally {
-      unIgnoreException(expectedExceptionMessage);
     }
   }
 

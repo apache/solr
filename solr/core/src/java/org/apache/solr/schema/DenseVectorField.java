@@ -37,6 +37,7 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
@@ -265,16 +266,6 @@ public class DenseVectorField extends FloatPointField {
     return knnAlgorithm;
   }
 
-  @Deprecated
-  public Integer getHnswMaxConn() {
-    return hnswM;
-  }
-
-  @Deprecated
-  public Integer getHnswBeamWidth() {
-    return hnswEfConstruction;
-  }
-
   public Integer getHnswM() {
     return hnswM;
   }
@@ -499,6 +490,16 @@ public class DenseVectorField extends FloatPointField {
         SolrException.ErrorCode.BAD_REQUEST, "Vector encoding not supported for function queries.");
   }
 
+  /** Throws if this field type does not support the KNN query parsers. */
+  public void checkKnnQueryParsersSupported() throws SolrException {
+    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "KNN vector queries are not supported for fields using knnAlgorithm=\"flat\". "
+              + "Use vectorSimilarity() function queries instead.");
+    }
+  }
+
   public Query getKnnVectorQuery(
       String fieldName,
       String vectorToSearch,
@@ -509,12 +510,7 @@ public class DenseVectorField extends FloatPointField {
       EarlyTerminationParams earlyTermination,
       Integer filteredSearchThreshold) {
 
-    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "KNN vector queries are not supported for fields using knnAlgorithm=\"flat\". "
-              + "Use vectorSimilarity() function queries instead.");
-    }
+    checkKnnQueryParsersSupported();
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
@@ -572,6 +568,11 @@ public class DenseVectorField extends FloatPointField {
     return baseQuery;
   }
 
+  @Override
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    return new FieldExistsQuery(field.getName());
+  }
+
   /**
    * Not Supported. Please use the {!knn} query parser to run K nearest neighbors search queries.
    */
@@ -582,7 +583,10 @@ public class DenseVectorField extends FloatPointField {
         "Field Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");
   }
 
-  /** Not Supported */
+  /**
+   * Unbounded ranges ({@code [* TO *]}) are treated as existence queries. Bounded range queries are
+   * not supported.
+   */
   @Override
   public Query getRangeQuery(
       QParser parser,
@@ -591,6 +595,9 @@ public class DenseVectorField extends FloatPointField {
       String part2,
       boolean minInclusive,
       boolean maxInclusive) {
+    if (part1 == null && part2 == null) {
+      return getExistenceQuery(parser, field);
+    }
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Range Queries are not supported for Dense Vector fields. Please use the {!knn} query parser to run K nearest neighbors search queries.");

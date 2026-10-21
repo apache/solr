@@ -92,7 +92,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     // verify doc is on the leader and replica
     final List<Replica> notLeaders =
-        stateReader.getClusterState().getCollection(COLLECTION).getReplicas().stream()
+        stateReader
+            .getClusterState()
+            .getCollection(COLLECTION)
+            .replicaStream()
             .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
             .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);
@@ -107,32 +110,29 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = getHttpSolrClient(replica)) {
-      String docId = String.valueOf(1);
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("id", docId);
-      doc.setField("_version_", maxOnReplica - 1); // bad version!!!
+    SolrClient client = cluster.getSolrClient(replica);
+    String docId = String.valueOf(1);
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", docId);
+    doc.setField("_version_", maxOnReplica - 1); // bad version!!!
 
-      // simulate what the leader does when sending a doc to a replica
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(
-          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
-      params.set(DISTRIB_FROM, leader.getCoreUrl());
+    // simulate what the leader does when sending a doc to a replica
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
+    params.set(DISTRIB_FROM, leader.getCoreUrl());
 
-      UpdateRequest req = new UpdateRequest();
-      req.setParams(params);
-      req.add(doc);
+    UpdateRequest req = new UpdateRequest();
+    req.setParams(params);
+    req.add(doc);
 
-      log.info(
-          "Sending doc with out-of-date version ({}) document directly to replica",
-          maxOnReplica - 1);
+    log.info(
+        "Sending doc with out-of-date version ({}) document directly to replica", maxOnReplica - 1);
 
-      client.request(req);
-      client.commit();
+    client.request(req);
+    client.commit();
 
-      Long docVersion = getVersionFromIndex(replica, docId);
-      assertEquals("older version should have been thrown away", maxOnReplica, docVersion);
-    }
+    Long docVersion = getVersionFromIndex(replica, docId);
+    assertEquals("older version should have been thrown away", maxOnReplica, docVersion);
 
     reloadCollection(leader, COLLECTION);
 
@@ -298,13 +298,12 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = getHttpSolrClient(replica)) {
-      QueryResponse qr = client.query(query);
-      SolrDocumentList hits = qr.getResults();
-      if (hits.isEmpty()) fail("No results returned from query: " + query);
+    SolrClient client = cluster.getSolrClient(replica);
+    QueryResponse qr = client.query(query);
+    SolrDocumentList hits = qr.getResults();
+    if (hits.isEmpty()) fail("No results returned from query: " + query);
 
-      vers = (Long) hits.get(0).getFirstValue("_version_");
-    }
+    vers = (Long) hits.get(0).getFirstValue("_version_");
 
     if (vers == null)
       fail("Failed to get version using query " + query + " from " + replica.getCoreUrl());
@@ -320,27 +319,18 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getHttpSolrClient(leader);
+    SolrClient leaderSolr = cluster.getSolrClient(leader);
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
+    for (Replica r : notLeaders) replicas.add(cluster.getSolrClient(r));
 
-    try {
-      for (int d = firstDocId; d <= lastDocId; d++) {
+    for (int d = firstDocId; d <= lastDocId; d++) {
 
-        if (deletedDocs != null && deletedDocs.contains(d)) continue;
+      if (deletedDocs != null && deletedDocs.contains(d)) continue;
 
-        String docId = String.valueOf(d);
-        Long leaderVers = assertDocExists(leaderSolr, docId, null);
-        for (SolrClient replicaSolr : replicas) {
-          assertDocExists(replicaSolr, docId, leaderVers);
-        }
-      }
-    } finally {
-      if (leaderSolr != null) {
-        leaderSolr.close();
-      }
+      String docId = String.valueOf(d);
+      Long leaderVers = assertDocExists(leaderSolr, docId, null);
       for (SolrClient replicaSolr : replicas) {
-        replicaSolr.close();
+        assertDocExists(replicaSolr, docId, leaderVers);
       }
     }
   }
@@ -359,8 +349,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    */
   protected Long assertDocExists(SolrClient solr, String docId, Long expVers) throws Exception {
     QueryRequest qr =
-        new QueryRequest(
-            params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
+        new QueryRequest("/get", params("id", docId, "distrib", "false", "fl", "id,_version_"));
     NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
@@ -377,30 +366,30 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
-      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
-      long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
+    SolrClient client = cluster.getSolrClient(replica);
+    CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
+    long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
-      Thread.sleep(1000);
+    Thread.sleep(1000);
 
-      // send reload command for the collection
-      log.info("Sending RELOAD command for {}", testCollectionName);
-      CollectionAdminRequest.reloadCollection(testCollectionName).process(client);
-      Thread.sleep(2000); // reload can take a short while
+    // send reload command for the collection
+    log.info("Sending RELOAD command for {}", testCollectionName);
+    CollectionAdminRequest.reloadCollection(testCollectionName).process(client);
+    Thread.sleep(2000); // reload can take a short while
 
-      // verify reload is done, waiting up to 30 seconds for slow test environments
-      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
-      while (System.nanoTime() < timeout) {
-        statusResp = CoreAdminRequest.getStatus(coreName, client);
-        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
-        if (startTimeAfterReload > leaderCoreStartTime) {
-          reloadedOk = true;
-          break;
-        }
-        // else ... still waiting to see the reloaded core report a later start time
-        Thread.sleep(1000);
+    // verify reload is done, waiting up to 30 seconds for slow test environments
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    while (System.nanoTime() < timeout) {
+      statusResp = CoreAdminRequest.getStatus(coreName, client);
+      long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
+      if (startTimeAfterReload > leaderCoreStartTime) {
+        reloadedOk = true;
+        break;
       }
+      // else ... still waiting to see the reloaded core report a later start time
+      Thread.sleep(1000);
     }
+
     return reloadedOk;
   }
 }

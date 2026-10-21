@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
@@ -222,13 +221,12 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
     CloudSolrClient client = clientCache.getCloudSolrClient(solrConnection);
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS_FIELD, field);
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
     params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest("/terms", params);
 
     try {
       // Get the response from the terms component

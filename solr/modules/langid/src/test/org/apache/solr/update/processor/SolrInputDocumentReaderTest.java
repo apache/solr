@@ -78,7 +78,7 @@ public class SolrInputDocumentReaderTest extends SolrTestCase {
   }
 
   @Test
-  public void testGetStringFields() throws Exception {
+  public void testGetStringFields() {
     String[] expected = new String[] {"f1", "f2", "f4"};
     assertArrayEquals(expected, SolrInputDocumentReader.getStringFields(doc));
   }

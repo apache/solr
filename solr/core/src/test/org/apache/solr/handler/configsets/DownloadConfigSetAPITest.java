@@ -89,6 +89,7 @@ public class DownloadConfigSetAPITest extends SolrTestCase {
     try (final Response response = api.downloadConfigSet("myconfig")) {
       assertEquals(200, response.getStatus());
       assertEquals("application/zip", response.getMediaType().toString());
+      assertNull(response.getHeaderString("Content-Disposition"));
     }
   }
 }

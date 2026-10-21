@@ -230,7 +230,9 @@ public class SolrConfig implements MapWriter {
               .txt();
 
       luceneMatchVersion = SolrConfig.parseLuceneVersionString(val);
-      log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
+      if (!luceneMatchVersion.equals(Version.LATEST)) {
+        log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
+      }
 
       String indexConfigPrefix;
 

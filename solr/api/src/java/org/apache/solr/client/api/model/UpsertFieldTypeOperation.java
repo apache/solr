@@ -19,18 +19,26 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashMap;
 import java.util.Map;
 
+@Schema(additionalProperties = Schema.AdditionalPropertiesValue.TRUE)
 public class UpsertFieldTypeOperation extends SchemaChange {
   @JsonProperty public String name;
 
+  // Field named to match what the OpenAPI-generated SolrJ client derives as a Java-safe
+  // identifier for the reserved word "class" (see api.mustache's {{name}} usage) -- the
+  // SolrJ codegen assigns into this field by that exact name, so a hand-picked name here
+  // (e.g. "className") would compile-fail the generated client the moment this class stops
+  // being shielded from per-field setter generation (see SchemaChange's oneOf discriminator).
   @JsonProperty("class")
-  public String className;
+  public String propertyClass;
 
   // Used for setting analyzers, index and stored settings, etc.
   private Map<String, Object> additionalProperties = new HashMap<>();
 
+  @Schema(hidden = true)
   @JsonAnyGetter
   public Map<String, Object> getAdditionalProperties() {
     return additionalProperties;

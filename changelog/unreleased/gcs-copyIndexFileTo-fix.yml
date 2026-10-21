@@ -1,0 +1,10 @@
+title: >
+  Fixed GCS backup restores silently swallowing failures and stopping early on zero-byte reads (SOLR-18250).
+type: fixed
+authors:
+  - name: Prithvi S
+links:
+  - name: SOLR-18250
+    url: https://issues.apache.org/jira/browse/SOLR-18250
+  - name: PR#4726
+    url: https://github.com/apache/solr/pull/4726

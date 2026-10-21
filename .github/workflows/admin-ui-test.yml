@@ -1,0 +1,48 @@
+name: Admin UI Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/admin-ui-test.yml'
+      # the Admin UI itself, its browser tests and its build
+      - 'solr/webapp/**'
+      # the v2 API contract the UI (and its generated js-client) is built against
+      - 'solr/api/**'
+      # the v2 API implementations backing the UI screens
+      - 'solr/core/src/java/org/apache/solr/handler/admin/api/**'
+      # the embedded-Jetty harness and test-group annotation this suite runs on
+      - 'solr/test-framework/src/java/org/apache/solr/embedded/**'
+      - 'solr/test-framework/src/java/org/apache/solr/util/SeleniumTest.java'
+      - 'gradle/testing/randomization.gradle'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Admin UI browser tests
+
+    # ubuntu-latest has Chrome preinstalled, which the Selenium tests require
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Run the Admin UI browser tests
+      run: ./gradlew :solr:webapp:test -Ptests.selenium=true
+
+    - name: Archive test output (screenshots, page sources, browser logs)
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output
+        path: |
+          solr/webapp/build/test-results/**
+          solr/webapp/build/tmp/tests-tmp/**

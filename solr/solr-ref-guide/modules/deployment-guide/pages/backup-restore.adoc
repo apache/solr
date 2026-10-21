@@ -129,7 +129,7 @@ The name of the commit which was used while taking a snapshot using the CREATESN
 
 === Backup Status
 
-The `backup` operation can be monitored to see if it has completed by sending the `details` command to the `/replication` handler, as in this example:
+The `backup` operation can be monitored by sending the `details` command to the `/replication` handler, as in this example:
 
 .Status API Example
 [source,text]
@@ -137,7 +137,35 @@ The `backup` operation can be monitored to see if it has completed by sending th
 http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 ----
 
-.Output Snippet
+The `backup` section of the response describes the most recent backup on the core, whether it is still running or has already finished.
+While a backup is in progress, `status` is one of:
+
+`waiting for commit`::
+The backup has been requested, but its index commit -- and with it the list of files to copy -- has not been resolved yet.
+No file counts are reported.
+
+`running`::
+The backup's files are being copied.
+`fileCount` is the total number of files to copy, and `finishedFileCount` how many of them have been copied so far.
+
+.Output Snippet: a running backup
+[source,xml]
+----
+<lst name="backup">
+  <str name="startTime">2022-02-11T17:19:33.271461700Z</str>
+  <str name="status">running</str>
+  <str name="snapshotName">my_backup</str>
+  <str name="directoryName">snapshot.my_backup</str>
+  <int name="fileCount">10</int>
+  <int name="finishedFileCount">4</int>
+</lst>
+----
+
+`snapshotName` is only reported for a named backup.
+
+Once the backup completes, `status` becomes `success`:
+
+.Output Snippet: a completed backup
 [source,xml]
 ----
 <lst name="backup">
@@ -151,7 +179,10 @@ http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 </lst>
 ----
 
-If it failed then a `snapShootException` will be sent in the response.
+If it failed then an `exception` will be sent in the response.
+
+The reported status is retained until the next backup is started on the core, or until the core is reloaded.
+A `success` may therefore describe an earlier backup rather than one that was just requested; a newly requested backup replaces it with `waiting for commit` as soon as it is accepted.
 
 === Restore API
 
@@ -236,12 +267,12 @@ The status value can be "In Progress", "success" or "failed".
 If it failed then an "exception" will also be sent in the response.
 
 [[create-snapshot-api]]
-== CREATE: Create a Snapshot
+== CREATESNAPSHOT: Create a Snapshot
 
 The snapshot functionality is different from the backup functionality as the index files aren't copied anywhere.
 The index files are snapshotted in the same index directory and can be referenced while taking backups.
 
-You can trigger a snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+You can trigger a CREATESNAPSHOT command with an HTTP request like this (replace "techproducts" with the name of the core you are working with):
 
 [tabs#createsnapshot]
 ======
@@ -267,9 +298,27 @@ curl -X POST http://localhost:8983/api/cores/techproducts/snapshots/commit1
 ====
 ======
 
-=== CREATE Parameters
+=== CREATESNAPSHOT Parameters
 
-The CREATE action allows the following parameters:
+The CREATESNAPSHOT action allows the following parameters:
+
+`core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the core to perform the snapshot on.
+
+`commitName`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name to store the snapshot as.
 
 `async`::
 +
@@ -280,15 +329,15 @@ The CREATE action allows the following parameters:
 +
 Request ID to track this action which will be processed asynchronously.
 
-=== CREATE Response
+=== CREATESNAPSHOT Response
 
 The response will include the status of the request, the core name, snapshot name, index directory path, snapshot generation, and a list of file names.
 If the status is anything other than "success", an error message will explain why the request failed.
 
 [[list-snapshot-api]]
-== List: List All Snapshots for a Particular Core
+== LISTSNAPSHOTS: List All Snapshots for a Particular Core
 
-You can trigger a list snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+You can trigger a LISTSNAPSHOTS command with an HTTP request like this (replace "techproducts" with the name of the core you are working with):
 
 [tabs#listsnapshots]
 ======
@@ -314,9 +363,18 @@ curl http://localhost:8983/api/cores/techproducts/snapshots
 ====
 ======
 
-=== LIST Parameters
+=== LISTSNAPSHOTS Parameters
 
-The LIST action allows the following parameters:
+The LISTSNAPSHOTS action allows the following parameters:
+
+`core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the core to whose snapshots we want to list.
 
 `async`::
 +
@@ -327,15 +385,15 @@ The LIST action allows the following parameters:
 +
 Request ID to track this action which will be processed asynchronously.
 
-=== LIST Response
+=== LISTSNAPSHOTS Response
 
 The response will include the status of the request and all existing snapshots for the core.
 If the status is anything other than "success", an error message will explain why the request failed.
 
 [[delete-snapshot-api]]
-== DELETE: Delete a Snapshot
+== DELETESNAPSHOT: Delete a Snapshot
 
-You can trigger a delete snapshot with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+You can trigger a DELETESNAPSHOT command with an HTTP request like this (replace "techproducts" with the name of the core you are working with):
 
 [tabs#deletesnapshot]
 ======
@@ -361,9 +419,27 @@ curl -X DELETE http://localhost:8983/api/cores/techproducts/snapshots/commit1
 ====
 ======
 
-=== DELETE Parameters
+=== DELETESNAPSHOT Parameters
 
-The DELETE action allows the following parameters:
+The DELETESNAPSHOT action allows the following parameters:
+
+`commitName`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The commit name to be deleted.
+
+`core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the core whose snapshot we want to delete.
 
 `async`::
 +
@@ -374,7 +450,7 @@ The DELETE action allows the following parameters:
 +
 Request ID to track this action which will be processed asynchronously.
 
-=== DELETE Response
+=== DELETESNAPSHOT Response
 
 The response will include the status of the request, the core name, and the name of the snapshot that was deleted.
 If the status is anything other than "success", an error message will explain why the request failed.

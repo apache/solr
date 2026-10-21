@@ -149,7 +149,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       int expectedDocsForFirstBackup = totalIndexedDocs;
       CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
           .setLocation(backupLocation)
-          .setIncremental(true)
           .setRepositoryName(BACKUP_REPO_NAME)
           .processAndWait(cluster.getSolrClient(), 100);
       long timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
@@ -159,7 +158,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       t = System.nanoTime();
       CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
           .setLocation(backupLocation)
-          .setIncremental(true)
           .setRepositoryName(BACKUP_REPO_NAME)
           .processAndWait(cluster.getSolrClient(), 100);
       timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
@@ -339,7 +337,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         CollectionAdminRequest.Backup backup =
             CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
                 .setLocation(backupLocation)
-                .setIncremental(true)
                 .setMaxNumberBackupPoints(3)
                 .setRepositoryName(BACKUP_REPO_NAME);
         if (random().nextBoolean()) {
@@ -773,7 +770,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
               .setLocation(backupLocation)
-              .setIncremental(true)
               .setMaxNumberBackupPoints(maxNumberOfBackupToKeep)
               .setRepositoryName(BACKUP_REPO_NAME);
       if (random().nextBoolean()) {

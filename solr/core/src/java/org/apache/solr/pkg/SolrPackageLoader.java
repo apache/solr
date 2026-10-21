@@ -39,7 +39,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.FileStoreUtils;
 import org.slf4j.Logger;
@@ -81,7 +80,7 @@ public class SolrPackageLoader implements Closeable {
     return Map.of();
   }
 
-  public void refreshPackageConf() {
+  public synchronized void refreshPackageConf() {
     log.debug(
         "{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.pkgs.znodeVersion);
 
@@ -106,9 +105,7 @@ public class SolrPackageLoader implements Closeable {
         }
       }
     }
-    for (SolrCore core : coreContainer.getCores()) {
-      core.getPackageListeners().packagesUpdated(updated);
-    }
+    coreContainer.forEachLoadedCore(core -> core.getPackageListeners().packagesUpdated(updated));
     myCopy = packageAPI.pkgs;
   }
 
@@ -142,13 +139,11 @@ public class SolrPackageLoader implements Closeable {
     return changed;
   }
 
-  public void notifyListeners(String pkg) {
+  public synchronized void notifyListeners(String pkg) {
     SolrPackage p = packageClassLoaders.get(pkg);
     if (p != null) {
       List<SolrPackage> l = List.of(p);
-      for (SolrCore core : coreContainer.getCores()) {
-        core.getPackageListeners().packagesUpdated(l);
-      }
+      coreContainer.forEachLoadedCore(core -> core.getPackageListeners().packagesUpdated(l));
     }
   }
 

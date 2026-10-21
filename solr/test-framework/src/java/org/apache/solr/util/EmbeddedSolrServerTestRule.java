@@ -16,16 +16,19 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.embedded.EmbeddedSolrBackend;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
@@ -35,16 +38,6 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   private static final String CORE_DIR_PROP = "coreRootDirectory";
-  private EmbeddedSolrServer adminClient = null;
-
-  /**
-   * Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property if
-   * necessary
-   */
-  @Override
-  protected void after() {
-    if (adminClient != null) adminClient.getCoreContainer().shutdown();
-  }
 
   /**
    * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
@@ -80,8 +73,8 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   /** Starts Solr with custom NodeConfig */
   public void startSolr(NodeConfig nodeConfig) {
     var container = new CoreContainer(nodeConfig);
-    adminClient = new EmbeddedSolrServer(container, null);
-    container.load(); // do after setting adminClient so that after() can shutdown the container
+    backend = new EmbeddedSolrBackend(container);
+    container.load(); // do after setting this.backend so that after() can shutdown the container
   }
 
   /** Returns a NodeConfigBuilder with default settings for test configuration */
@@ -93,21 +86,13 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
-  /** Provides an EmbeddedSolrServer instance for administration actions */
-  @Override
-  public EmbeddedSolrServer getAdminClient() {
-    if (adminClient == null) {
-      throw new RuntimeException("Solr must be started first");
-    }
-    return adminClient;
-  }
-
   @Override
   public EmbeddedSolrServer getSolrClient(String collection) {
     return new EmbeddedSolrServer(getCoreContainer(), collection);
   }
 
-  public CoreContainer getCoreContainer() {
-    return getAdminClient().getCoreContainer();
+  @Override
+  protected void createColl(NewCollectionBuilder b) throws SolrServerException, IOException {
+    createCollStandalone(b);
   }
 }

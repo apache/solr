@@ -190,12 +190,11 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
-        assertEquals(
-            "Replica " + r.getName() + " not up to date",
-            numDocs,
-            replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
-      }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      assertEquals(
+          "Replica " + r.getName() + " not up to date",
+          numDocs,
+          replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
     }
   }
 
