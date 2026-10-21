@@ -81,9 +81,6 @@ public class S3StorageClient {
   // S3 has a hard limit of 1000 keys per batch delete request
   private static final int MAX_KEYS_PER_BATCH_DELETE = 1000;
 
-  // Content type of the zero-byte directory marker objects written by older Solr versions
-  private static final String S3_DIR_CONTENT_TYPE = "application/x-directory";
-
   // Error messages returned by S3 for a key not found.
   private static final Set<String> NOT_FOUND_CODES = Set.of("NoSuchKey", "404 Not Found");
 
@@ -309,11 +306,11 @@ public class S3StorageClient {
 
   private boolean hasObjectsUnderPrefix(String prefix) throws S3Exception {
     try {
-      return s3Client
+      // listObjectsV2's prefix already guarantees every returned key starts with it.
+      return !s3Client
           .listObjectsV2(b -> b.bucket(bucketName).prefix(prefix).maxKeys(1))
           .contents()
-          .stream()
-          .anyMatch(o -> o.key().startsWith(prefix));
+          .isEmpty();
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -328,15 +325,11 @@ public class S3StorageClient {
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
     try {
+      // sanitizedFilePath rejects a trailing '/', so a successful HEAD here can never land on a
+      // directory marker object (whose key always ends in '/'); it's always a real file.
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
-      String contentType = objectMetadata.contentType();
-
-      if (StrUtils.isNullOrEmpty(contentType)
-          || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
-        return objectMetadata.contentLength();
-      }
-      throw new S3Exception("Path is Directory");
+      return objectMetadata.contentLength();
     } catch (NoSuchKeyException nske) {
       // Only pay for the extra listing when the file is missing
       if (isDirectory(s3Path)) {

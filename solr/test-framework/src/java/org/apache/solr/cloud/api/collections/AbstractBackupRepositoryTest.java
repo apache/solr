@@ -188,11 +188,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.createDirectory(level2DeeplyNestedUri);
       repo.createDirectory(level3DeeplyNestedUri);
       repo.createDirectory(level4DeeplyNestedUri);
-      if (!repo.supportsEmptyDirectories()) {
-        // Keep nest2 (and therefore nest1) non-empty once nest3 is deleted
-        addFile(repo, repo.resolve(level2DeeplyNestedUri, "file.txt"));
-        addFile(repo, repo.resolve(level4DeeplyNestedUri, "file.txt"));
-      }
+      // Keep nest2 (and therefore nest1) non-empty once nest3 is deleted
+      keepNonEmptyIfNeeded(repo, level2DeeplyNestedUri, level4DeeplyNestedUri);
       repo.deleteDirectory(level3DeeplyNestedUri);
       assertTrue(repo.exists(level1DeeplyNestedUri));
       assertTrue(repo.exists(level2DeeplyNestedUri));
@@ -248,11 +245,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.createDirectory(otherDir1Uri);
       repo.createDirectory(otherDir2Uri);
       repo.createDirectory(otherDir3Uri);
-      if (!repo.supportsEmptyDirectories()) {
-        // Without empty directories, otherDir1 and otherDir2 only show up once they hold a file
-        addFile(repo, repo.resolve(otherDir1Uri, "file.txt"));
-        addFile(repo, repo.resolve(otherDir2Uri, "file.txt"));
-      }
+      // Without empty directories, otherDir1 and otherDir2 only show up once they hold a file
+      keepNonEmptyIfNeeded(repo, otherDir1Uri, otherDir2Uri);
       addFile(repo, file1Uri);
       addFile(repo, file2Uri);
 
@@ -400,6 +394,20 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       os.write(100);
       os.write(101);
       os.write(102);
+    }
+  }
+
+  /**
+   * On a repository that can't hold empty directories, seeds a file under each given directory so
+   * it (and, transitively, its ancestors) stays non-empty for the rest of the test. No-op when the
+   * repository supports real empty directories.
+   */
+  private void keepNonEmptyIfNeeded(BackupRepository repo, URI... dirs) throws IOException {
+    if (repo.supportsEmptyDirectories()) {
+      return;
+    }
+    for (URI dir : dirs) {
+      addFile(repo, repo.resolve(dir, "file.txt"));
     }
   }
 
