@@ -115,6 +115,20 @@ public class V2ApiUtils {
 
   public static void squashObjectIntoNamedList(
       NamedList<Object> destination, Object o, boolean trimHeader) {
+    squashObjectIntoNamedList(destination, o, trimHeader, false);
+  }
+
+  /**
+   * Like {@link #squashObjectIntoNamedList(NamedList, Object, boolean)}, but renders {@code
+   * Boolean} leaf values as their String form ("true"/"false") instead of a JSON boolean.
+   *
+   * <p>Use only when a V1 API must preserve a legacy String-typed boolean field that the same data
+   * now exposes as a properly-typed {@code Boolean} on its v2 response POJO - see {@code
+   * ReplicationHandler#getReplicationDetails}, whose {@code isLeader}/{@code isFollower}/etc.
+   * fields have always been Strings in the V1 {@code command=details} response.
+   */
+  public static void squashObjectIntoNamedList(
+      NamedList<Object> destination, Object o, boolean trimHeader, boolean stringifyBooleans) {
     final var ew =
         new EntryWriter() {
           @Override
@@ -123,7 +137,7 @@ public class V2ApiUtils {
             if (trimHeader && kStr.equals("responseHeader")) {
               return null;
             }
-            destination.add(kStr, convertReflectWriteableValue(value));
+            destination.add(kStr, convertReflectWriteableValue(value, stringifyBooleans));
             return this; // returning "this" means we can't use a lambda :-(
           }
         };
@@ -139,16 +153,19 @@ public class V2ApiUtils {
         });
   }
 
-  private static Object convertReflectWriteableValue(Object value) {
+  private static Object convertReflectWriteableValue(Object value, boolean stringifyBooleans) {
+    if (stringifyBooleans && value instanceof Boolean bool) {
+      return bool.toString();
+    }
     if (value instanceof ReflectWritable) {
       NamedList<Object> result = new SimpleOrderedMap<>();
-      squashObjectIntoNamedList(result, value, true);
+      squashObjectIntoNamedList(result, value, true, stringifyBooleans);
       return result;
     }
     if (value instanceof List<?> list) {
       List<Object> objects = new ArrayList<>(list.size());
       for (Object item : list) {
-        objects.add(convertReflectWriteableValue(item));
+        objects.add(convertReflectWriteableValue(item, stringifyBooleans));
       }
       return objects;
     }

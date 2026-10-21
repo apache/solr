@@ -330,8 +330,13 @@ public class ReplicationHandler extends RequestHandlerBase
       populateCommitInfo(rsp);
     } else if (command.equals(CMD_DETAILS)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-          rsp, coreReplicationAPI.fetchReplicationDetails(solrParams.getBool("follower", true)));
+      // stringifyBooleans=true: V1's command=details has always rendered isLeader/isFollower/etc.
+      // as Strings, while the v2 API exposes them as proper JSON booleans.
+      V2ApiUtils.squashObjectIntoNamedList(
+          rsp.getValues(),
+          coreReplicationAPI.fetchReplicationDetails(solrParams.getBool("follower", true)),
+          true,
+          true);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
@@ -1035,8 +1040,8 @@ public class ReplicationHandler extends RequestHandlerBase
     details.indexSize = NumberUtils.readableSize(core.getIndexSize());
     details.indexPath = core.getIndexDir();
     details.commits = getCommitDetails();
-    details.isLeader = String.valueOf(isLeader);
-    details.isFollower = String.valueOf(isFollower);
+    details.isLeader = isLeader;
+    details.isFollower = isFollower;
     CommitVersionInfo vInfo = getIndexVersion();
     details.indexVersion = null == vInfo ? 0 : vInfo.version;
     details.generation = null == vInfo ? 0 : vInfo.generation;
@@ -1046,7 +1051,7 @@ public class ReplicationHandler extends RequestHandlerBase
     if (isLeader) {
       if (includeConfFiles != null) leader.confFiles = includeConfFiles;
       leader.replicateAfter = getReplicateAfterStrings();
-      leader.replicationEnabled = String.valueOf(replicationEnabled.get());
+      leader.replicationEnabled = replicationEnabled.get();
     }
 
     if (isLeader && commit != null) {
@@ -1081,9 +1086,9 @@ public class ReplicationHandler extends RequestHandlerBase
       addReplicationProperties(follower, props);
 
       follower.currentDate = new Date().toString();
-      follower.isPollingDisabled = String.valueOf(isPollingDisabled());
+      follower.isPollingDisabled = isPollingDisabled();
       boolean isReplicating = isReplicating();
-      follower.isReplicating = String.valueOf(isReplicating);
+      follower.isReplicating = isReplicating;
       if (isReplicating) {
         try {
           long bytesToDownload = 0;

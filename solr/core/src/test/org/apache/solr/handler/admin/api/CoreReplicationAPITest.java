@@ -76,8 +76,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   @Test
   public void testFetchReplicationDetails() {
     ReplicationDetails details = new ReplicationDetails();
-    details.isLeader = "true";
-    details.isFollower = "false";
+    details.isLeader = true;
+    details.isFollower = false;
     details.indexVersion = 42L;
     details.generation = 7L;
     ReplicationDetailsResponse expectedResponse =
@@ -89,7 +89,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     ReplicationDetailsResponse withDefaultFollower =
         coreReplicationAPI.fetchReplicationDetails(null);
     assertSame(expectedResponse, withDefaultFollower);
-    assertEquals("true", withDefaultFollower.details.isLeader);
+    assertEquals(Boolean.TRUE, withDefaultFollower.details.isLeader);
     assertEquals(Long.valueOf(42L), withDefaultFollower.details.indexVersion);
 
     ReplicationDetailsResponse withFollowerTrue = coreReplicationAPI.fetchReplicationDetails(true);
