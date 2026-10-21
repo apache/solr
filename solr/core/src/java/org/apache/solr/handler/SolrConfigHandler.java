@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -82,7 +81,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.api.GetConfig;
-import org.apache.solr.handler.admin.api.GetConfigAPI;
+import org.apache.solr.handler.admin.api.GetParamSets;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -197,19 +196,10 @@ public class SolrConfigHandler extends RequestHandlerBase
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
-          if (parts.size() == 3) {
-            RequestParams params = req.getCore().getSolrConfig().getRequestParams();
-            RequestParams.ParamSet p = params.getParams(parts.get(2));
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put(ZNODEVER, params.getZnodeVersion());
-            if (p != null) {
-              m.put(RequestParams.NAME, Map.of(parts.get(2), p));
-            }
-            resp.add(SolrQueryResponse.NAME, m);
-          } else {
-            resp.add(SolrQueryResponse.NAME, req.getCore().getSolrConfig().getRequestParams());
-          }
-
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+              resp, parts.size()==3
+              ? new GetParamSets(req).getParamSets(parts.get(2))
+              : new GetParamSets(req).getParamSets());
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
@@ -950,7 +940,6 @@ public class SolrConfigHandler extends RequestHandlerBase
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));
     return apis;
@@ -958,7 +947,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(GetConfig.class);
+    return List.of(GetConfig.class, GetParamSets.class);
   }
 
   @Override

@@ -33,7 +33,7 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
 
-    // The v2 config/params API needs to know up front whether ":core" is a collection name
+    // The v2 config/paramsets API needs to know up front whether ":core" is a collection name
     // (SolrCloud) or an actual core name (standalone/user-managed) -- there's no equivalent of
     // v1's flexible core-or-collection routing.
     $scope.paramSetIndexType = function() {
@@ -64,7 +64,7 @@ solrAdminApp.controller('ParamSetsController',
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
         var apiPayload = {
-          "set": success.response.params
+          "set": success.params
         };
         // remove json key that is defined as "", it can't be submitted via the API.
         var paramsetName = Object.keys(apiPayload.set)[0];
@@ -96,7 +96,7 @@ solrAdminApp.controller('ParamSetsController',
         delete success.$promise;
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
-        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
+        $scope.paramsetList = success.params ? Object.keys(success.params) : [];
       }
 
       function failure (failure) {

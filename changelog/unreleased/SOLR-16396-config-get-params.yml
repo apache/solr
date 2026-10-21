@@ -1,6 +1,6 @@
-title: >
+title:
   Migrate remaining GET params and paramsets to JAX-RS.
-type:
+type: changed
 authors:
   - name: Jalaz Kumar
     nick: jaykay12

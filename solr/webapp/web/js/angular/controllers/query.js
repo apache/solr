@@ -43,7 +43,7 @@ solrAdminApp.controller('QueryController',
 
       var params = {};
       params.core = $routeParams.core;
-      // The v2 config/params API needs to know up front whether ":core" is a collection name
+      // The v2 config/paramsets API needs to know up front whether ":core" is a collection name
       // (SolrCloud) or an actual core name (standalone/user-managed); see paramsets.js for details.
       params.indexType = $scope.isCloudEnabled ? "collections" : "cores";
       params.wt = "json";
@@ -56,7 +56,7 @@ solrAdminApp.controller('QueryController',
         $scope.responseStatus = "success";
         delete success.$promise;
         delete success.$resolved;
-        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
+        $scope.paramsetList = success.params ? Object.keys(success.params) : [];
       }
 
       function failure (failure) {
