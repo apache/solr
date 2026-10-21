@@ -728,7 +728,7 @@ When using the Backup & Restore Collections API Calls, the **`location`** option
 All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
 
 Location Creation::
-The location doesn't need to exist prior to backup; it is created automatically when the first file is written. 
+The location doesn't need to exist prior to backup; it is created automatically when the first file is written.
 However, restoring, listing, or deleting backups requires an existing location with at least one object.
 
 Empty Location::
