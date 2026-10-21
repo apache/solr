@@ -44,22 +44,23 @@ public class BasicAuthenticationRefGuideExamplesTest extends SolrCloudAuthTestCa
   private static final String PASSWORD = "SolrRocks";
 
   private static final String SECURITY_JSON =
-      "{\n"
-          + "  \"authentication\":{\n"
-          + "   \"blockUnknown\": true,\n"
-          + "   \"class\":\"solr.BasicAuthPlugin\",\n"
-          + "   \"credentials\":{\"solr\":\"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
-          + "  },\n"
-          + "  \"authorization\":{\n"
-          + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
-          + "   \"permissions\":[\n"
-          + " {\"name\":\"security-edit\", \"role\":\"admin\"},\n"
-          + " {\"name\":\"collection-admin-edit\", \"role\":\"admin\"},\n"
-          + " {\"name\":\"core-admin-edit\", \"role\":\"admin\"}\n"
-          + "   ],\n"
-          + "   \"user-role\":{\"solr\":\"admin\"}\n"
-          + "  }\n"
-          + "}";
+      """
+      {
+        "authentication":{
+          "blockUnknown": true,
+          "class":"solr.BasicAuthPlugin",
+          "credentials":{"solr":"JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw="}
+        },
+        "authorization":{
+          "class":"solr.RuleBasedAuthorizationPlugin",
+          "permissions":[
+            {"name":"security-edit", "role":"admin"},
+            {"name":"collection-admin-edit", "role":"admin"},
+            {"name":"core-admin-edit", "role":"admin"}
+          ],
+          "user-role":{"solr":"admin"}
+        }
+      }""";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
