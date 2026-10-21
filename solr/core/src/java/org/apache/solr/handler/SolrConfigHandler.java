@@ -197,9 +197,10 @@ public class SolrConfigHandler extends RequestHandlerBase
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-              resp, parts.size()==3
-              ? new GetParamSets(req).getParamSets(parts.get(2))
-              : new GetParamSets(req).getParamSets());
+              resp,
+              parts.size() == 3
+                  ? new GetParamSets(req).getParamSets(parts.get(2))
+                  : new GetParamSets(req).getParamSets());
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
