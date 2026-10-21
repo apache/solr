@@ -162,6 +162,32 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3");
 
+    // Weighted RRF: a higher weight on lexical2 flips the winner from 1 to 3.
+    // Unweighted (k=60): 1=1/61+1/62, 3=1/63+1/61, 2=1/62+1/63  -> order 1, 3, 2.
+    // lexical1=1, lexical2=3: 3=1/63+3/61, 1=1/61+3/62, 2=1/62+3/63 -> order 3, 1, 2.
+    rsp =
+        query(
+            "/search",
+            params(
+                CommonParams.JSON,
+                """
+                {
+                  "queries": {
+                    "lexical1": {"lucene": {"query": "id:(1^=10 OR 2^=5 OR 3^=1)"}},
+                    "lexical2": {"lucene": {"query": "id:(3^=10 OR 1^=5 OR 2^=1)"}}
+                  },
+                  "limit": 3,
+                  "fields": ["id", "score", "title"],
+                  "params": {
+                    "combiner": true,
+                    "combiner.query": ["lexical1", "lexical2"],
+                    "combiner.rrf.weight.lexical1": "1",
+                    "combiner.rrf.weight.lexical2": "3"
+                  }
+                }"""));
+    assertEquals(3, rsp.getResults().size());
+    assertFieldValues(rsp.getResults(), id, "3", "1", "2");
+
     // Multiple queries with sort
     rsp =
         query(

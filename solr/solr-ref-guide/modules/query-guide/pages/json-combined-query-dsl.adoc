@@ -79,6 +79,11 @@ The query structure is similar to JSON Query DSL except for how multiple queries
    Any other algorithm can be configured using xref:json-combined-query-dsl.adoc#combiner-algorithm-plugin[plugin].
 `combiner.rrf.k` | Default: `60`::
    The k parameter in the RRF algorithm.
+`combiner.rrf.weight.<queryName>` | Default: `1.0`::
+   A positive multiplier applied to the reciprocal rank contribution of the query named `<queryName>` (where `<queryName>` is an entry in `combiner.query`).
+   If omitted, the query's weight is `1.0`, so all queries contribute equally by default.
+   Weights are multipliers, not percentages, and need not sum to `1.0`; a weight of `2.0` makes a query twice as influential as a weight of `1.0`.
+   Use this to bias the fusion toward one list, for example to keep an exact lexical match above a merely similar vector match.
 
 [NOTE]
 ====
@@ -141,6 +146,49 @@ final JsonQueryRequest query =
         .withParam("combiner.algorithm", "rrf")
         .withParam("combiner.rrf.k", "15");
 QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
+----
+====
+======
+
+=== Weighted RRF Example
+
+To bias the fusion toward the lexical query, give it a higher weight than the vector query.
+The weight multiplies that query's reciprocal rank contribution; omitting a weight leaves it at the default `1.0`.
+
+[tabs#json-query-with-weights]
+======
+curl::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+    "queries": {
+        "lexical1": {
+            "lucene": {
+                "query": "name:apache"
+            }
+        },
+        "vector": {
+            "knn": {
+                "f": "vector",
+                "topK" :5,
+                "query": "[0.1,-0.34,0.89,0.02]"
+            }
+        }
+    },
+    "limit": 5,
+    "fields": ["id", "score", "name"],
+    "params": {
+        "combiner": true,
+        "combiner.query": ["lexical1", "vector"],
+        "combiner.algorithm": "rrf",
+        "combiner.rrf.k": "15",
+        "combiner.rrf.weight.lexical1": "2.0",
+        "combiner.rrf.weight.vector": "1.0"
+    }
+}'
 ----
 ====
 ======
