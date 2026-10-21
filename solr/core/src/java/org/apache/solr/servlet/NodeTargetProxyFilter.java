@@ -75,15 +75,17 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
     if (!cores.isZooKeeperAware()) {
+      // note: we could adapt this filter to support standalone mode with AllowListUrlChecker
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, TARGET_NODE_HEADER + " header requires SolrCloud");
+          SolrException.ErrorCode.BAD_REQUEST,
+          TARGET_NODE_HEADER + " header/param requires SolrCloud");
     }
     String ownNodeName = cores.getZkController().getNodeName();
     String resolvedNode = resolvePeerShorthand(targetNode, ownNodeName);
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     if (!zkStateReader.getClusterState().getLiveNodes().contains(resolvedNode)) {
       throw new SolrException(
-          SolrException.ErrorCode.NOT_FOUND, "Unknown or non-live node: " + resolvedNode);
+          SolrException.ErrorCode.BAD_REQUEST, "Unknown or non-live node: " + resolvedNode);
     }
     if (resolvedNode.equals(ownNodeName)) {
       return false; // already on the target node; let it process normally
