@@ -338,8 +338,8 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   task.environment TEST_OUTPUT_DIR: integrationTestOutput
   task.environment TEST_FAILURE_DIR: solrTestFailuresDir
   task.environment BATS_LIB_PREFIX: batsLibsDir
-  if (usePicocli) {
-    task.environment SOLR_PICOCLI: 'true'
+  if (!usePicocli) {
+    task.environment SOLR_PICOCLI: 'false'
   }
 }
 
