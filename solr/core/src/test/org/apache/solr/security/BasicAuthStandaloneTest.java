@@ -26,9 +26,16 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -40,6 +47,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -150,6 +159,59 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
         HttpClientUtil.close(httpClient);
         solrClient.close();
       }
+    }
+  }
+
+  @Test
+  public void testConcurrentEdits() throws Exception {
+    String authzPrefix = "/admin/authorization";
+    HttpClient httpClient = HttpClientUtil.createClient(null);
+    try {
+      concurrentEdits(httpClient, buildUrl(jetty.getLocalPort(), "/solr") + authzPrefix);
+    } finally {
+      HttpClientUtil.close(httpClient);
+    }
+  }
+
+  private void concurrentEdits(HttpClient httpClient, String url) throws Exception {
+    securityConfHandler.persistConf(
+        new SecurityConfHandler.SecurityConfig()
+            .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
+    securityConfHandler.securityConfEdited();
+    verifySecurityStatus(httpClient, url, "authorization.enabled", "true", 20);
+
+    int numEdits = 20;
+    // Release all edits at once so they overlap, like the Admin UI's per-permission POSTs. The
+    // await timeout fails the test instead of hanging if the pool ever has fewer threads than
+    // numEdits.
+    CyclicBarrier barrier = new CyclicBarrier(numEdits);
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            numEdits, new SolrNamedThreadFactory("securityEdit"));
+    try {
+      List<Future<?>> futures = new ArrayList<>();
+      for (int i = 0; i < numEdits; i++) {
+        String command = "{'set-user-role': {'user" + i + "': ['dev']}}";
+        futures.add(
+            executor.submit(
+                () -> {
+                  barrier.await(30, TimeUnit.SECONDS);
+                  doHttpPost(httpClient, url, command, "solr", "SolrRocks");
+                  return null;
+                }));
+      }
+      for (Future<?> future : futures) {
+        future.get();
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+
+    Map<?, ?> authz =
+        (Map<?, ?>) securityConfHandler.getSecurityConfig(false).getData().get("authorization");
+    Map<?, ?> userRoles = (Map<?, ?>) authz.get("user-role");
+    for (int i = 0; i < numEdits; i++) {
+      assertTrue("missing user" + i + " in " + userRoles, userRoles.containsKey("user" + i));
     }
   }
 
