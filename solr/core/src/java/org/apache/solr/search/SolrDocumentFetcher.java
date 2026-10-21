@@ -831,7 +831,7 @@ public class SolrDocumentFetcher {
         return null;
       } else if (returnFields.hasPatternMatching()) {
         for (String s : getAllStored()) {
-          if (returnFields.wantsField(s)) {
+          if (returnFields.wantsLuceneField(s)) {
             storedFields.add(s);
           }
         }
@@ -875,8 +875,10 @@ public class SolrDocumentFetcher {
           }
         }
       } else if (returnFields.hasPatternMatching()) {
-        for (String s : getNonStoredDVs(true)) {
-          if (returnFields.wantsField(s)) {
+        for (String s : getNonStoredDVs(false)) {
+          // a glob only matches useDocValuesAsStored fields, unlike naming the field explicitly
+          if (returnFields.isExplicitLuceneField(s)
+              || (getNonStoredDVs(true).contains(s) && returnFields.wantsLuceneField(s))) {
             result.add(s);
           }
         }

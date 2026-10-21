@@ -195,14 +195,6 @@ public class SolrReturnFields extends ReturnFields {
     if (!renamedNotCopied.isEmpty()) {
       renameFields = renamedNotCopied;
     }
-    if (!_wantsAllFields && !globs.isEmpty()) {
-      // TODO??? need to fill up the fields with matching field names in the index
-      // and add them to okFieldNames?
-      // maybe just get all fields?
-      // this would disable field selection optimization... i think that is OK
-      fields.clear(); // this will get all fields, and use wantsField to limit
-    }
-
     if (augmenters.size() == 1) {
       transformer = augmenters.getTransformer(0);
     } else if (augmenters.size() > 1) {
@@ -526,7 +518,8 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public Set<String> getLuceneFieldNames(boolean ignoreWantsAll) {
     if (ignoreWantsAll) return fields;
-    else return (_wantsAllFields || fields.isEmpty()) ? null : fields;
+    // with globs, get all fields, and use wantsField to limit
+    else return (_wantsAllFields || !globs.isEmpty() || fields.isEmpty()) ? null : fields;
   }
 
   @Override
@@ -562,6 +555,27 @@ public class SolrReturnFields extends ReturnFields {
       }
     }
     return false;
+  }
+
+  @Override
+  public boolean wantsLuceneField(String field) {
+    if (_wantsAllFields || fields.contains(field)) {
+      return true;
+    }
+    if (reqFieldNames != null && reqFieldNames.contains(field)) {
+      return false; // the name of a pseudo field
+    }
+    for (String s : globs) {
+      if (GlobPatternUtil.matches(s, field)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean isExplicitLuceneField(String field) {
+    return fields.contains(field);
   }
 
   @Override

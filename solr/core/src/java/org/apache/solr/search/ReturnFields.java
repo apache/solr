@@ -44,10 +44,10 @@ public abstract class ReturnFields {
    * Set of field names with their exact names from the lucene index.
    *
    * @param ignoreWantsAll If true, it returns any additional specified field names, in spite of
-   *     also wanting all fields. Example: when fl=*,field1, returns ["field1"]. If false, the
-   *     method returns null when all fields are wanted. Example: when fl=*,field1, returns null.
-   *     Note that this method returns null regardless of ignoreWantsAll if all fields are requested
-   *     and no explicit field names are specified.
+   *     also wanting all fields or globs. Example: when fl=*,field1, returns ["field1"]. If false,
+   *     the method returns null when all fields are wanted or globs are used. Example: when
+   *     fl=*,field1, returns null. Note that this method returns null regardless of ignoreWantsAll
+   *     if all fields are requested and no explicit field names are specified.
    */
   public abstract Set<String> getLuceneFieldNames(boolean ignoreWantsAll);
 
@@ -103,6 +103,20 @@ public abstract class ReturnFields {
    * </code> even if the specified name is needed as an "extra" field for use by transformers.
    */
   public abstract boolean wantsField(String name);
+
+  /**
+   * Returns <code>true</code> if the value of the specified index field is needed, either to return
+   * or for use by transformers. This is <code>false</code> for a field that only shares its name
+   * with a pseudo field (e.g. an alias or a transformer), unless <code>*</code> was requested.
+   */
+  public abstract boolean wantsLuceneField(String field);
+
+  /**
+   * Returns <code>true</code> if the specified index field was named explicitly (including as the
+   * source of an alias, or a field a transformer needs), rather than only matched by a glob or
+   * <code>*</code>.
+   */
+  public abstract boolean isExplicitLuceneField(String field);
 
   /** Returns <code>true</code> if all fields should be returned <em>to the external client</em>. */
   public abstract boolean wantsAllFields();

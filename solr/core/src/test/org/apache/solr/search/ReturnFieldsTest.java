@@ -337,6 +337,46 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertEquals(5, ((DocTransformers) rf.getTransformer()).size()); // 4 rename and score
   }
 
+  @Test
+  public void testWantsLuceneField() {
+    ReturnFields rf = new SolrReturnFields(req("fl", "id,newName:name,store:[geo f=store]"));
+    assertTrue(rf.wantsLuceneField("id"));
+    assertTrue(rf.isExplicitLuceneField("id"));
+    assertTrue(rf.wantsLuceneField("name")); // alias source
+    assertTrue(rf.isExplicitLuceneField("name"));
+    assertFalse(rf.wantsLuceneField("newName")); // alias
+    assertFalse(rf.isExplicitLuceneField("newName"));
+    assertTrue(rf.wantsLuceneField("store")); // read by the transformer
+    assertTrue(rf.isExplicitLuceneField("store"));
+    assertFalse(rf.wantsLuceneField("xxx"));
+
+    // transformer named like a field it doesn't read
+    rf = new SolrReturnFields(req("fl", "id,subject:[docid]"));
+    assertFalse(rf.wantsLuceneField("subject"));
+    assertFalse(rf.isExplicitLuceneField("subject"));
+
+    // with globs
+    rf = new SolrReturnFields(req("fl", "id,aaa*,newName:name,aaa_s:[docid],[geo f=store]"));
+    assertTrue(rf.wantsLuceneField("id"));
+    assertTrue(rf.isExplicitLuceneField("id"));
+    assertTrue(rf.wantsLuceneField("aaaxxx"));
+    assertFalse(rf.isExplicitLuceneField("aaaxxx"));
+    assertTrue(rf.wantsLuceneField("name"));
+    assertTrue(rf.isExplicitLuceneField("name"));
+    assertFalse(rf.wantsLuceneField("newName"));
+    assertFalse(rf.wantsLuceneField("aaa_s")); // pseudo field, despite the glob
+    assertTrue(rf.wantsLuceneField("store"));
+    assertTrue(rf.isExplicitLuceneField("store"));
+    assertFalse(rf.wantsLuceneField("xxx"));
+
+    // with *
+    rf = new SolrReturnFields(req("fl", "*,name,subject:[docid]"));
+    assertTrue(rf.wantsLuceneField("xxx"));
+    assertFalse(rf.isExplicitLuceneField("xxx"));
+    assertTrue(rf.wantsLuceneField("subject"));
+    assertTrue(rf.isExplicitLuceneField("name"));
+  }
+
   // hyphens in field names are not supported in all contexts, but we wanted
   // the simplest case of fl=foo-bar to work
   @Test
@@ -465,7 +505,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
             new SolrReturnFields(req()),
             new SolrReturnFields(req("fl", "*")),
             new SolrReturnFields(req("fl", "*,score")),
-            new SolrReturnFields(req("fl", "id,subword,uniq,foo_*,store_*")),
+            new SolrReturnFields(req("fl", "id,subword,uniq,foo_*,store*")),
             new SolrReturnFields(req("fl", allFieldNames + ",bogus1,bogus2,bogus3")))) {
 
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
