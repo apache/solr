@@ -1,0 +1,10 @@
+title: >
+  When fl has globs (e.g. fl=*_s,myfield), an explicitly named docValues field with useDocValuesAsStored=false
+  is now returned, and fields read by document transformers like [json f=...] are now loaded.
+  Fields that are only alias or transformer names are no longer needlessly loaded.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#5188
+    url: https://github.com/apache/solr/pull/5188
