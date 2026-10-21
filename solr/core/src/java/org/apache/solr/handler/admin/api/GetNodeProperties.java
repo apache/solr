@@ -53,7 +53,9 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
   public NodePropertiesResponse getNodeProperties(String nodes) {
     final NodePropertiesResponse response = instantiateJerseyResponse(NodePropertiesResponse.class);
-    if (proxyToNodes(response, nodes)) {
+    final var req = new NodeApi.GetNodeProperties();
+    req.setNodes(nodes);
+    if (V2SolrRequestBasedProxy.proxyToNodes(coreContainer, req, response)) {
       return response;
     }
     response.systemProperties = collectProperties(null);
@@ -75,28 +77,6 @@ public class GetNodeProperties extends JerseyResource implements NodePropertiesA
     final NodePropertiesResponse response = instantiateJerseyResponse(NodePropertiesResponse.class);
     response.systemProperties = collectProperties(propertyName);
     return response;
-  }
-
-  private boolean proxyToNodes(NodePropertiesResponse response, String nodes) {
-    try {
-      if (coreContainer != null) {
-        final var req = new NodeApi.GetNodeProperties();
-        req.setNodes(nodes);
-        final var reqProxy =
-            new V2SolrRequestBasedProxy<NodePropertiesResponse>(coreContainer, req) {
-              @Override
-              public void processTypedProxiedResponse(
-                  String nodeName, NodePropertiesResponse proxiedResponse) {
-                response.remoteNodeData.put(nodeName, proxiedResponse);
-              }
-            };
-        return reqProxy.proxyRequest();
-      }
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
-    }
-    return false;
   }
 
   /** Collect redacted system properties, optionally limited to a single named property. */

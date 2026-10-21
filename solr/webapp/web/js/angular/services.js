@@ -120,13 +120,13 @@ solrAdminServices.factory('Metrics',
         if (!isRemote()) {
           return data;
         }
+        // @JsonAnyGetter flattens the server's remoteNodeData map, so a proxied node's payload
+        // lands directly under its node name at the top level of the response - never nested
+        // under a literal "remoteNodeData" key.
         var body = (response && response.body) || data || {};
         var nodePayload = body[state.selectedNode];
         if (nodePayload) {
           return nodePayload;
-        }
-        if (data && data.remoteNodeData && data.remoteNodeData[state.selectedNode]) {
-          return data.remoteNodeData[state.selectedNode];
         }
         return data;
       }

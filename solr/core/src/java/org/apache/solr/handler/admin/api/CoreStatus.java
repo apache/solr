@@ -29,7 +29,6 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.CoreApis;
 import org.apache.solr.client.api.model.CoreStatusResponse;
 import org.apache.solr.client.solrj.request.CoresApi;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -65,37 +64,15 @@ public class CoreStatus extends CoreAdminAPIBase implements CoreApis.GetStatus {
   @Override
   @PermissionName(CORE_READ_PERM)
   public CoreStatusResponse getAllCoreStatus(Boolean indexInfo, String nodes) throws IOException {
-    if (nodes != null && !nodes.isEmpty()) {
-      final CoreStatusResponse response = instantiateJerseyResponse(CoreStatusResponse.class);
-      if (proxyToNodes(response, indexInfo, nodes)) {
-        return response;
-      }
+    final CoreStatusResponse response = instantiateJerseyResponse(CoreStatusResponse.class);
+    final var req = new CoresApi.GetAllCoreStatus();
+    req.setIndexInfo(indexInfo);
+    req.setNodes(nodes);
+    if (V2SolrRequestBasedProxy.proxyToNodes(coreContainer, req, response)) {
+      return response;
     }
     final var indexInfoNeeded = indexInfo == null ? INDEX_INFO_DEFAULT_VALUE : indexInfo;
     return fetchStatusInfo(coreContainer, null, indexInfoNeeded);
-  }
-
-  private boolean proxyToNodes(CoreStatusResponse response, Boolean indexInfo, String nodes) {
-    try {
-      if (coreContainer != null) {
-        final var req = new CoresApi.GetAllCoreStatus();
-        req.setIndexInfo(indexInfo);
-        req.setNodes(nodes);
-        final var reqProxy =
-            new V2SolrRequestBasedProxy<CoreStatusResponse>(coreContainer, req) {
-              @Override
-              public void processTypedProxiedResponse(
-                  String nodeName, CoreStatusResponse proxiedResponse) {
-                response.remoteNodeData.put(nodeName, proxiedResponse);
-              }
-            };
-        return reqProxy.proxyRequest();
-      }
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
-    }
-    return false;
   }
 
   @Override

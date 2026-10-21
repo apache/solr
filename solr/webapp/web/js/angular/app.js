@@ -562,7 +562,13 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
-    loadCoresForSelectedNode(pageType);
+    // In cloud mode, the post-listClusterNodes call below is the only fetch that needs to run
+    // (it waits for NodeTarget to resolve the selected node first); this eager call only serves
+    // standalone mode, where that cloud-only code path never runs. Before isCloudEnabled is known
+    // (very first load), fire it anyway so standalone mode isn't left without any fetch at all.
+    if (!$scope.isCloudEnabled) {
+      loadCoresForSelectedNode(pageType);
+    }
 
     SystemV2.getNodeSystemInfo({}, function(error, data, response) {
       $timeout(function() {
@@ -694,7 +700,8 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         $location.url('/');
         return;
       }
-      loadCoresForSelectedNode($scope.pageType === Constants.IS_CORE_PAGE ? Constants.IS_CORE_PAGE : Constants.IS_ROOT_PAGE);
+      // $route.reload() re-instantiates the current controller, which runs resetMenu() and
+      // fetches cores itself; a manual fetch here would just be discarded before it can render.
       $route.reload();
     }
   };

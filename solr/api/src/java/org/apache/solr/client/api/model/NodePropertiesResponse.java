@@ -16,33 +16,17 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Response body for {@code GET /api/node/properties} and {@code GET
  * /api/node/properties/{propertyName}}.
  */
-public class NodePropertiesResponse extends SolrJerseyResponse {
+public class NodePropertiesResponse extends NodeProxyingJerseyResponse {
 
   public static final String SYSTEM_PROPERTIES = "system.properties";
-
-  // Object, not NodePropertiesResponse, since @JsonAnySetter below also feeds this map raw values.
-  public Map<String, Object> remoteNodeData = new LinkedHashMap<>();
-
-  @JsonAnyGetter
-  public Map<String, Object> remoteNodeData() {
-    return remoteNodeData;
-  }
-
-  @JsonAnySetter
-  public void setRemoteNodeResponse(String field, Object value) {
-    remoteNodeData.put(field, value);
-  }
 
   @Schema(description = "JRE system properties for the Solr node. Secret values are redacted.")
   @JsonProperty(SYSTEM_PROPERTIES)

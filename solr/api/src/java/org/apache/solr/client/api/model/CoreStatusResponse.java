@@ -16,27 +16,11 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class CoreStatusResponse extends SolrJerseyResponse {
-
-  // Object, not CoreStatusResponse, since @JsonAnySetter below also feeds this map raw values.
-  public Map<String, Object> remoteNodeData = new LinkedHashMap<>();
-
-  @JsonAnyGetter
-  public Map<String, Object> remoteNodeData() {
-    return remoteNodeData;
-  }
-
-  @JsonAnySetter
-  public void setRemoteNodeResponse(String field, Object value) {
-    remoteNodeData.put(field, value);
-  }
+public class CoreStatusResponse extends NodeProxyingJerseyResponse {
 
   // Map values are often exceptions on the server side, but often serialized as strings.
   @JsonProperty public Map<String, Object> initFailures;
