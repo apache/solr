@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected Path securityJsonPath;
-
   private final Object securityJsonLock = new Object();
 
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
@@ -144,7 +143,11 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
           "Failed persisting security.json to " + securityJsonPath,
           e);
     } finally {
-      Files.deleteIfExists(tmpPath);
+      try {
+        Files.deleteIfExists(tmpPath);
+      } catch (IOException e) {
+        log.warn("Could not remove temporary file {}", tmpPath, e);
+      }
     }
   }
 
