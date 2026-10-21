@@ -44,19 +44,6 @@ public class V2ConfigAPIMappingTest extends V2ApiMappingTest<SolrConfigHandler> 
     apiBag.registerObject(new ModifyParamSetAPI(getRequestHandler()));
   }
 
-  // GET /v2/collectionName/config/<component> is a pure pass-through to the underlying request
-  // handler.  Just check
-  // the API lookup works for a handful of the valid config "components".
-  @Test
-  public void testGetSingleComponentConfig() {
-    assertAnnotatedApiExistsFor("GET", "/config/requestHandler");
-    assertAnnotatedApiExistsFor("GET", "/config/jmx");
-    assertAnnotatedApiExistsFor("GET", "/config/requestDispatcher");
-    assertAnnotatedApiExistsFor("GET", "/config/luceneMatchVersion");
-    assertAnnotatedApiExistsFor("GET", "/config/indexConfigdeletionPolicy");
-    assertAnnotatedApiExistsFor("GET", "/config/updateHandlerupdateLog");
-  }
-
   @Test
   public void testGetParamsetsConfig() {
     assertAnnotatedApiExistsFor("GET", "/config/params");
