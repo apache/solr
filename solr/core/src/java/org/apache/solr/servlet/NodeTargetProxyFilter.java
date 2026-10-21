@@ -49,7 +49,7 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
   public static final String TARGET_NODE_HEADER = "X-Solr-targetNode";
 
   @Override
-  protected void doFilter(HttpServletRequest req, HttpServletResponse resp, FilterChain chain)
+  protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
       throws IOException, ServletException {
     // also accept it as a query param on GET requests, for convenience when a header can't
     // easily be set (e.g. a browser address bar)
@@ -61,13 +61,13 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
         && queryString.contains(TARGET_NODE_HEADER)) {
       targetNode = SolrRequestParsers.parseQueryString(queryString).get(TARGET_NODE_HEADER);
     }
-    if (targetNode == null || targetNode.isBlank() || !proxyToNode(targetNode, req, resp)) {
-      chain.doFilter(req, resp);
+    if (targetNode == null || targetNode.isBlank() || !proxyToNode(targetNode, req, res)) {
+      chain.doFilter(req, res);
     }
   }
 
   /** Returns true if the request was proxied to {@code targetNode}. */
-  private boolean proxyToNode(String targetNode, HttpServletRequest req, HttpServletResponse resp) {
+  private boolean proxyToNode(String targetNode, HttpServletRequest req, HttpServletResponse res) {
     CoreContainer cores;
     try {
       cores = getCores();
@@ -100,7 +100,7 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
     try {
       HttpClient httpClient =
           ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
-      HttpSolrProxy.doHttpProxy(httpClient, req, resp, url);
+      HttpSolrProxy.doHttpProxy(httpClient, req, res, url);
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
