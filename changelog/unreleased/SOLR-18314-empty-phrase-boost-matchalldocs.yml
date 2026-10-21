@@ -1,0 +1,11 @@
+title: Fix the eDisMax parser adding an empty phrase field (pf) boost clause when no phrase qualifies
+  for the boost, such as for single-term queries or q=*:*. The empty SHOULD clause did not affect
+  scoring but defeated the single-clause MatchAllDocsQuery optimization; it is now omitted, so q=*:*
+  reduces to a MatchAllDocsQuery even when pf is set.
+type: fixed
+authors:
+  - name: Ian Springer
+    nick: ianspringer
+links:
+  - name: SOLR-18314
+    url: https://issues.apache.org/jira/browse/SOLR-18314

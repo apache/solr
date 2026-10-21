@@ -16,13 +16,19 @@
  */
 package org.apache.solr.search;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -198,7 +204,12 @@ public class DisMaxQParser extends QParser {
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
 
       Query phrase = getPhraseQuery(userQuery, pp);
-      if (null != phrase) {
+      // A single-term phrase boost imposes no adjacency constraint, so skip it, as eDisMax does.
+      // Require both a single user term and a single analyzed term: analyzers such as CJK, ngram,
+      // WordDelimiterGraph, and multi-word synonyms can split one input term into several tokens,
+      // and a multi-word query can analyze to one token (e.g. an exact-match keyword or string
+      // field). Either way the phrase boost is meaningful.
+      if (null != phrase && !(isSingleUserTerm(userQuery) && isEffectivelySingleTerm(phrase))) {
         query.add(phrase, BooleanClause.Occur.SHOULD);
       }
     }
@@ -233,6 +244,45 @@ public class DisMaxQParser extends QParser {
       return null;
     }
     return phrase;
+  }
+
+  /** Returns true if the user query, ignoring quotes, is a single whitespace-free term. */
+  private static boolean isSingleUserTerm(String userQuery) {
+    String term = userQuery.replace("\"", "").strip();
+    return !term.isEmpty() && term.codePoints().noneMatch(Character::isWhitespace);
+  }
+
+  /**
+   * Returns true if the parsed phrase query boils down to a single analyzed position in every
+   * field, in which case the phrase boost imposes no adjacency constraint. The parser produces a
+   * {@link DisjunctionMaxQuery} over per-field {@link BoostQuery}-wrapped queries; we inspect the
+   * underlying query shape so that analyzers which split a single input term into multiple tokens
+   * keep their phrase boost. Synonyms at a single position count as a single term when built as a
+   * {@link SynonymQuery} ({@code synonymQueryStyle=as_same_term}) or {@link DisjunctionMaxQuery}
+   * ({@code pick_best}); the {@link BooleanQuery} that {@code as_distinct_terms} builds is kept, as
+   * eDisMax's {@code minClauseSize} gate also keeps it. Unrecognized shapes (and {@code null})
+   * conservatively return false (keep the boost).
+   */
+  @VisibleForTesting
+  static boolean isEffectivelySingleTerm(Query query) {
+    if (query instanceof BoostQuery boostQuery) {
+      return isEffectivelySingleTerm(boostQuery.getQuery());
+    }
+    if (query instanceof DisjunctionMaxQuery dmq) {
+      // Every field's clause is a single term (or synonymQueryStyle=pick_best synonyms).
+      return !dmq.getDisjuncts().isEmpty()
+          && dmq.getDisjuncts().stream().allMatch(DisMaxQParser::isEffectivelySingleTerm);
+    }
+    if (query instanceof TermQuery || query instanceof SynonymQuery) {
+      return true;
+    }
+    if (query instanceof PhraseQuery phraseQuery) {
+      return phraseQuery.getTerms().length < 2;
+    }
+    if (query instanceof MultiPhraseQuery multiPhraseQuery) {
+      return multiPhraseQuery.getTermArrays().length < 2;
+    }
+    return false;
   }
 
   protected Query getUserQuery(

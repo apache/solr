@@ -245,4 +245,126 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p.matcher(resp).find());
     assertTrue(p_bool.matcher(resp).find());
   }
+
+  // SOLR-18314: the pf phrase boost is dropped for single-term queries, i.e. a single user term
+  // that also analyzes to a single token. A single input term whose analysis yields multiple tokens
+  // must keep its phrase boost, whether from WordDelimiter splitting "wi-fi" into "wi fi" or a
+  // multi-word synonym expanding "usa" into "united states of america". So must a multi-word query
+  // that analyzes to a single token on a string pf field (an exact-match boost). Unlike eDisMax,
+  // the classic DisMax parser has no minClauseSize gate, so this is enforced by inspecting the
+  // user query and the parsed phrase query.
+  //
+  // CJK is an important example of a query with no spaces that can still parse to multiple terms.
+  // However, we don't add a dedicated CJK test: CJK analysis of a single input term produces the
+  // same multi-term PhraseQuery that the "wi-fi" case already exercises, so it would cover no new
+  // code path while requiring a CJK analyzer to be configured in the test schema.
+  @Test
+  public void testSingleTermPhraseBoost() throws Exception {
+    // Single analyzed token: the pf phrase boost imposes no adjacency, so only the unboosted qf
+    // clause should appear in the parsed query.
+    String resp =
+        h.query(
+            req(
+                "q",
+                "wireless",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword",
+                "pf",
+                "subword^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "single-term query should keep its qf clause",
+        Pattern.compile("\\(subword:wireless\\)(?!\\^)").matcher(resp).find());
+    assertFalse(
+        "single-term query should not produce a phrase boost",
+        Pattern.compile("subword:wireless\\)\\^10\\.0").matcher(resp).find());
+
+    // Whitespace-free query that analyzes into multiple tokens: the phrase boost is meaningful and
+    // must be retained. The qf clause is also the phrase "wi fi" here (this schema's version
+    // defaults autoGeneratePhraseQueries to true), so match the pf clause by the handler's ps=100
+    // slop and the pf boost.
+    resp =
+        h.query(
+            req(
+                "q",
+                "wi-fi",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword",
+                "pf",
+                "subword^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-token query should retain its phrase boost",
+        Pattern.compile("subword:\"wi fi\"~100\\)\\^10\\.0").matcher(resp).find());
+
+    // With autoGeneratePhraseQueries="false" (the default since schema 1.4), the qf clause for
+    // "wi-fi" is a plain disjunction of its tokens, so the pf boost is the only adjacency signal.
+    // Gating on the user query's clause count (one, since there's no whitespace) would wrongly drop
+    // it; this is also the shape of CJK bigram queries.
+    resp =
+        h.query(
+            req(
+                "q",
+                "wi-fi",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword_noautophrase",
+                "pf",
+                "subword_noautophrase^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "qf clause should not be a phrase without autoGeneratePhraseQueries",
+        Pattern.compile("subword_noautophrase:wi subword_noautophrase:fi").matcher(resp).find());
+    assertTrue(
+        "multi-token query should retain its phrase boost without autoGeneratePhraseQueries",
+        Pattern.compile("subword_noautophrase:\"wi fi\"~100\\)\\^10\\.0").matcher(resp).find());
+
+    // A single input term expanded by a multi-word synonym ("usa" => "united states of america")
+    // likewise analyzes into multiple tokens, so its phrase boost must be retained.
+    resp =
+        h.query(
+            req(
+                "q",
+                "usa",
+                "qt",
+                "/dismax",
+                "qf",
+                "text_syn",
+                "pf",
+                "text_syn^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-word synonym query should retain its phrase boost",
+        Pattern.compile("text_syn:\"united states of america\"~100\\)\\^10\\.0")
+            .matcher(resp)
+            .find());
+
+    // A multi-word query on a string pf field analyzes to a single exact-match term, which is the
+    // only signal ranking an exact match first, so its phrase boost must be retained.
+    resp =
+        h.query(
+            req(
+                "q",
+                "hello world",
+                "qt",
+                "/dismax",
+                "qf",
+                "subword",
+                "pf",
+                "foo_s^10",
+                CommonParams.DEBUG_QUERY,
+                "true"));
+    assertTrue(
+        "multi-word query should retain its exact-match phrase boost",
+        Pattern.compile("foo_s:hello world\\)\\^10\\.0").matcher(resp).find());
+  }
 }
