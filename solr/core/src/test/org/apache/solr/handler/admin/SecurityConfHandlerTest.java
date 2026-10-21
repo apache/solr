@@ -352,6 +352,43 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
         Files.getPosixFilePermissions(securityJson));
   }
 
+  /** An edit in a read-only SOLR_HOME still succeeds when security.json itself is writable. */
+  public void testEditInPlaceWhenSolrHomeIsReadOnly() throws Exception {
+    assumeWorkingMockito();
+    Path solrHome = createTempDir("securityConfHandlerLocalReadOnly");
+    assumeTrue(
+        "POSIX file permissions are not supported on this file system",
+        solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
+    Path securityJson = solrHome.resolve("security.json");
+    String seed =
+        "{\"authentication\":{\"class\":\"solr.BasicAuthPlugin\","
+            + "\"credentials\":{\"solr\":\"solr\"}},"
+            + "\"authorization\":{\"class\":\"solr.RuleBasedAuthorizationPlugin\",\"user-role\":{}}}";
+    Files.write(securityJson, seed.getBytes(StandardCharsets.UTF_8));
+    Files.setPosixFilePermissions(
+        solrHome, EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE));
+    try {
+      assumeFalse("the directory is writable for this user", Files.isWritable(solrHome));
+
+      CoreContainer cc = mock(CoreContainer.class);
+      when(cc.getSolrHome()).thenReturn(solrHome);
+      when(cc.getAuthorizationPlugin()).thenReturn(new RuleBasedAuthorizationPlugin());
+      SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(cc);
+      postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
+
+      assertTrue(
+          "edit was not persisted",
+          Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
+    } finally {
+      Files.setPosixFilePermissions(
+          solrHome,
+          EnumSet.of(
+              PosixFilePermission.OWNER_READ,
+              PosixFilePermission.OWNER_WRITE,
+              PosixFilePermission.OWNER_EXECUTE));
+    }
+  }
+
   private static void postAuthorizationEdit(SecurityConfHandler handler, String command)
       throws Exception {
     SolrQueryRequestBase req = new SolrQueryRequestBase(null, new ModifiableSolrParams());
