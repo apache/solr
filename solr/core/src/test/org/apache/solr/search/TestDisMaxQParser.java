@@ -59,9 +59,8 @@ public class TestDisMaxQParser extends SolrTestCase {
     assertTrue(
         DisMaxQParser.isEffectivelySingleTerm(new BoostQuery(term("subject", "wireless"), 10f)));
 
-    // Synonyms at a single position, as built by each synonymQueryStyle: as_same_term (the
-    // default) builds a SynonymQuery, pick_best a DisjunctionMaxQuery, and as_distinct_terms a
-    // BooleanQuery of SHOULD clauses.
+    // Synonyms at a single position: synonymQueryStyle=as_same_term (the default) builds a
+    // SynonymQuery and pick_best a DisjunctionMaxQuery.
     assertTrue(
         DisMaxQParser.isEffectivelySingleTerm(
             new SynonymQuery.Builder("subject")
@@ -74,9 +73,6 @@ public class TestDisMaxQParser extends SolrTestCase {
                 new DisjunctionMaxQuery(
                     List.of(term("subject", "tv"), term("subject", "television")), 0f),
                 10f)));
-    assertTrue(
-        DisMaxQParser.isEffectivelySingleTerm(
-            should(term("subject", "tv"), term("subject", "television"))));
 
     // Degenerate one-position phrases (QueryBuilder emits a TermQuery or SynonymQuery instead, but
     // these are equally single-term).
@@ -129,12 +125,19 @@ public class TestDisMaxQParser extends SolrTestCase {
     // Unrecognized shapes conservatively keep the boost rather than silently dropping it.
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(new MatchAllDocsQuery()));
 
-    // Only all-SHOULD BooleanQueries are synonym disjunctions; required clauses are not.
+    // synonymQueryStyle=as_distinct_terms builds a BooleanQuery for single-position synonyms;
+    // eDisMax's minClauseSize gate keeps it too, so the parsers agree.
+    assertFalse(
+        DisMaxQParser.isEffectivelySingleTerm(
+            should(term("subject", "tv"), term("subject", "television"))));
     BooleanQuery required =
         new BooleanQuery.Builder()
             .add(term("subject", "wireless"), BooleanClause.Occur.MUST)
             .build();
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(required));
+
+    // An empty disjunction is not vacuously single-term.
+    assertFalse(DisMaxQParser.isEffectivelySingleTerm(new DisjunctionMaxQuery(List.of(), 0f)));
 
     // null is a valid input (parse() can return it) and must not throw.
     assertFalse(DisMaxQParser.isEffectivelySingleTerm(null));

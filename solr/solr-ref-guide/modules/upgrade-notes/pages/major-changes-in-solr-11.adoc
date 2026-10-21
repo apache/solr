@@ -25,6 +25,17 @@ This page highlights the most important changes including new features and chang
 Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
 For example, if you are currently using Solr 10.1, you should review changes made in all subsequent 10.x releases in addition to the 11.0-specific changes on this page.
 
+== Changes in Default Behavior
+
+=== DisMax Phrase Field Boost for Single-Term Queries
+
+The DisMax query parser no longer applies the phrase field (`pf`) boost to single-term queries, bringing it in line with the eDisMax parser.
+A query is single-term when it is one whitespace-free term that analyzes to a single token in every `pf` field.
+A term that analyzes to several tokens (for example via CJK, ngram, WordDelimiterGraph, or multi-word synonym analysis) keeps its phrase boost, as does a multi-word query on a keyword or string `pf` field.
+
+This can change the ranking of single-term DisMax queries, most noticeably where a `pf` field is not also in `qf`, since that field no longer contributes to the score at all.
+To keep boosting single-term matches in such a field, add it to `qf` or use a `bq` boost query.
+
 == Removed Features
 
 === Overseer Roles API

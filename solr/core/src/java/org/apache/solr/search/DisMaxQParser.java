@@ -257,9 +257,11 @@ public class DisMaxQParser extends QParser {
    * field, in which case the phrase boost imposes no adjacency constraint. The parser produces a
    * {@link DisjunctionMaxQuery} over per-field {@link BoostQuery}-wrapped queries; we inspect the
    * underlying query shape so that analyzers which split a single input term into multiple tokens
-   * keep their phrase boost. Synonyms at a single position count as a single term, whichever {@code
-   * synonymQueryStyle} built them. Unrecognized shapes (and {@code null}) conservatively return
-   * false (keep the boost).
+   * keep their phrase boost. Synonyms at a single position count as a single term when built as a
+   * {@link SynonymQuery} ({@code synonymQueryStyle=as_same_term}) or {@link DisjunctionMaxQuery}
+   * ({@code pick_best}); the {@link BooleanQuery} that {@code as_distinct_terms} builds is kept, as
+   * eDisMax's {@code minClauseSize} gate also keeps it. Unrecognized shapes (and {@code null})
+   * conservatively return false (keep the boost).
    */
   @VisibleForTesting
   static boolean isEffectivelySingleTerm(Query query) {
@@ -268,13 +270,8 @@ public class DisMaxQParser extends QParser {
     }
     if (query instanceof DisjunctionMaxQuery dmq) {
       // Every field's clause is a single term (or synonymQueryStyle=pick_best synonyms).
-      return dmq.getDisjuncts().stream().allMatch(DisMaxQParser::isEffectivelySingleTerm);
-    }
-    if (query instanceof BooleanQuery booleanQuery) {
-      // synonymQueryStyle=as_distinct_terms synonyms at a single position
-      return booleanQuery.clauses().stream()
-          .allMatch(
-              c -> c.occur() == BooleanClause.Occur.SHOULD && isEffectivelySingleTerm(c.query()));
+      return !dmq.getDisjuncts().isEmpty()
+          && dmq.getDisjuncts().stream().allMatch(DisMaxQParser::isEffectivelySingleTerm);
     }
     if (query instanceof TermQuery || query instanceof SynonymQuery) {
       return true;
