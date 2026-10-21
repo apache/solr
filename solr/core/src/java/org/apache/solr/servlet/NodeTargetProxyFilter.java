@@ -117,12 +117,12 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
   /**
    * If {@code targetNode} is all digits, it's an ordinal shorthand: {@code ownNodeName}'s first
    * hostname label is expected to end in {@code -<digits>}, which gets replaced. Otherwise, if it
-   * has no '.', it's a bare peer hostname; expand it using {@code ownNodeName}'s domain suffix and
-   * {@code :port_context}. Otherwise, returned unchanged.
+   * has no '.' or ':', it's a bare peer hostname; expand it using {@code ownNodeName}'s domain
+   * suffix and {@code :port_context}. Otherwise, returned unchanged.
    */
   static String resolvePeerShorthand(String targetNode, String ownNodeName) {
-    if (targetNode.contains(".")) {
-      return targetNode;
+    if (targetNode.contains(".") || targetNode.contains(":")) {
+      return targetNode; // already a full node name
     }
     int colonIdx = ownNodeName.indexOf(':');
     String ownHost = ownNodeName.substring(0, colonIdx);

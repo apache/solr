@@ -95,10 +95,10 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUnknownNodeIs404() throws Exception {
+  public void testUnknownNodeIs400() throws Exception {
     HttpURLConnection conn = open(receivingNode.getBaseUrl() + "/admin/info/system?wt=json");
     conn.setRequestProperty(TARGET_NODE_HEADER, "no.such.host:1234_solr");
-    assertEquals(404, conn.getResponseCode());
+    assertEquals(400, conn.getResponseCode());
     conn.disconnect();
   }
 
@@ -114,6 +114,10 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
     assertEquals(
         "otherhost:3000_solr",
         NodeTargetProxyFilter.resolvePeerShorthand("otherhost", "myhost:3000_solr"));
+    // complete node names with dotless hosts are preserved
+    assertEquals(
+        "solr2:8983_solr",
+        NodeTargetProxyFilter.resolvePeerShorthand("solr2:8983_solr", "solr1:8983_solr"));
   }
 
   private static HttpURLConnection open(String url) throws Exception {
