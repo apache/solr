@@ -334,6 +334,7 @@ public class ExecutorUtil {
     @Override
     public void execute(final Runnable command) {
       final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
+      final boolean submitterIsSolrServerThread = isSolrServerThread();
       StringBuilder contextString = new StringBuilder();
       if (submitterContext != null) {
         Collection<String> values = submitterContext.values();
@@ -370,7 +371,11 @@ public class ExecutorUtil {
       }
       super.execute(
           () -> {
-            isServerPool.set(Boolean.TRUE);
+            if (submitterIsSolrServerThread) {
+              isServerPool.set(Boolean.TRUE);
+            } else {
+              isServerPool.remove();
+            }
             if (ctx != null) {
               for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).set(ctx.get(i));
             }
@@ -424,13 +429,25 @@ public class ExecutorUtil {
     }
   }
 
-  private static final ThreadLocal<Boolean> isServerPool = new ThreadLocal<>();
+  private static final InheritableThreadLocal<Boolean> isServerPool =
+      new InheritableThreadLocal<>();
 
-  /// this tells whether a thread is owned/run by solr or not.
+  /**
+   * Returns whether the current thread is doing work for this Solr node.
+   *
+   * <p>This includes request handling, node startup, and work spawned from those contexts,
+   * including child threads created from them.
+   */
   public static boolean isSolrServerThread() {
     return Boolean.TRUE.equals(isServerPool.get());
   }
 
+  /**
+   * Sets whether the current thread is doing work for this Solr node.
+   *
+   * <p>Use {@code TRUE} for request handling, node startup, and work spawned from those contexts.
+   * Use {@code null} to clear.
+   */
   public static void setServerThreadFlag(Boolean flag) {
     if (flag == null) isServerPool.remove();
     else isServerPool.set(flag);
