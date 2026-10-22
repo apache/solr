@@ -121,6 +121,7 @@ public class SchemaManager {
     synchronized (req.getSchema().getSchemaUpdateLock()) {
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
+        boolean additiveOnly = canApplyWithoutReload(operations, managedIndexSchema);
         for (SchemaChange op : operations) {
           OpType opType = OpType.get(op.operationType);
           try {
@@ -135,7 +136,7 @@ public class SchemaManager {
           }
         }
         if (!errors.isEmpty()) break;
-        if (canApplyWithoutReload(operations)) {
+        if (additiveOnly) {
           try {
             managedIndexSchema.persistManagedSchema(false);
             latestVersion = managedIndexSchema.getSchemaZkVersion();
@@ -216,9 +217,22 @@ public class SchemaManager {
     return errors;
   }
 
-  private static boolean canApplyWithoutReload(List<SchemaChange> operations) {
+  /**
+   * Whether the batch only adds schema elements, so it can be applied without a core reload. The v2
+   * single-field endpoint tags additions as upsert-field; such an operation is additive only when
+   * its target is absent from the schema this round started with. Classification is against that
+   * round-start schema, not the batch's intermediate state: what matters for the reload decision is
+   * the net effect on the schema the core had before the request.
+   */
+  private static boolean canApplyWithoutReload(List<SchemaChange> operations, IndexSchema schema) {
     for (SchemaChange op : operations) {
       OpType opType = OpType.get(op.operationType);
+      if (opType == OpType.UPSERT_FIELD) {
+        opType =
+            schema.getFields().containsKey(((UpsertFieldOperation) op).name)
+                ? OpType.REPLACE_FIELD
+                : OpType.ADD_FIELD;
+      }
       if (opType != OpType.ADD_FIELD
           && opType != OpType.ADD_DYNAMIC_FIELD
           && opType != OpType.ADD_COPY_FIELD) {

@@ -30,8 +30,10 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -136,6 +138,55 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
         coreIdsBefore.keySet().stream()
             .anyMatch(name -> !coreIdsBefore.get(name).equals(coreIdsAfter.get(name))));
     assertEveryReplicaLatestSchema(collection, s -> s.getFieldOrNull("doomed_field") == null);
+  }
+
+  @Test
+  public void testV2AddFieldDoesNotReloadCore() throws Exception {
+    String collection = "v2_addfield_noreload";
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 2).process(client);
+    cluster.waitForActiveCollection(collection, 1, 2);
+    Map<String, UUID> coreIdsBefore = snapshotCoreIds(collection);
+
+    v2AddField(collection, "v2_live", Map.of("type", "string"));
+    assertEquals(coreIdsBefore, snapshotCoreIds(collection));
+    assertEveryReplicaLatestSchema(collection, s -> s.getFieldOrNull("v2_live") != null);
+
+    client.add(collection, sdoc("id", "v2-1", "v2_live", "v"));
+    client.commit(collection);
+    assertEquals(
+        1, client.query(collection, new SolrQuery("v2_live:v")).getResults().getNumFound());
+  }
+
+  @Test
+  public void testV2UpsertExistingFieldStillReloadsCore() throws Exception {
+    String collection = "v2_upsert_reload";
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 2).process(client);
+    cluster.waitForActiveCollection(collection, 1, 2);
+    addStringField("existing_field", collection, client);
+    Map<String, UUID> coreIdsBefore = snapshotCoreIds(collection);
+
+    v2AddField(collection, "existing_field", Map.of("type", "string", "stored", true));
+
+    // The core handling the request reloads before responding. Whether other replicas also reload
+    // depends on whether their schema watch fires before the conf dir listener.
+    Map<String, UUID> coreIdsAfter = snapshotCoreIds(collection);
+    assertTrue(
+        coreIdsBefore.keySet().stream()
+            .anyMatch(name -> !coreIdsBefore.get(name).equals(coreIdsAfter.get(name))));
+    assertEveryReplicaLatestSchema(collection, s -> s.getFieldOrNull("existing_field").stored());
+  }
+
+  private void v2AddField(String collection, String fieldName, Map<String, Object> body)
+      throws IOException, SolrServerException {
+    V2Response rsp =
+        new V2Request.Builder("/collections/" + collection + "/schema/fields/" + fieldName)
+            .PUT()
+            .withPayload(body)
+            .build()
+            .process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
   }
 
   private void assertEveryReplicaLatestSchema(String collection, Predicate<IndexSchema> expectation)
