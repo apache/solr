@@ -35,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.AddCopyFieldOperation;
 import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
@@ -106,11 +108,15 @@ public class SchemaManager {
 
   private List<Map<String, Object>> doOperations(List<SchemaChange> operations)
       throws InterruptedException, IOException, KeeperException {
+    if (operations.isEmpty()) {
+      return List.of();
+    }
     TimeOut timeOut = new TimeOut(updateTimeOut, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
     List<Map<String, Object>> errors = new ArrayList<>();
     int latestVersion = -1;
+    boolean appliedWithoutReload = false;
 
     synchronized (req.getSchema().getSchemaUpdateLock()) {
       while (!timeOut.hasTimedOut()) {
@@ -129,6 +135,21 @@ public class SchemaManager {
           }
         }
         if (!errors.isEmpty()) break;
+        if (canApplyWithoutReload(operations)) {
+          try {
+            managedIndexSchema.persistManagedSchema(false);
+            latestVersion = managedIndexSchema.getSchemaZkVersion();
+            core.setLatestSchema(managedIndexSchema);
+            appliedWithoutReload = true;
+          } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+            log.info("Schema was modified by another node. Retrying..");
+            continue;
+          } catch (SolrException e) {
+            log.warn(errorMsg);
+            errors = List.of(Map.of(CommandOperation.ERR_MSGS, errorMsg + e.getMessage()));
+          }
+          break;
+        }
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         if (loader instanceof ZkSolrResourceLoader zkLoader) {
           StringWriter sw = new StringWriter();
@@ -184,12 +205,46 @@ public class SchemaManager {
       // replicas. This reduces the likelihood of a (time-limited) distributed deadlock during
       // concurrent schema updates.
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
+    } else if (appliedWithoutReload) {
+      // Outside the schema update lock: autowarming can take a long time.
+      openSearcherWithLatestSchema(core);
     }
     if (errors.isEmpty() && timeOut.hasTimedOut()) {
       log.warn("{} Timed out", errorMsg);
       errors = List.of(Map.of(CommandOperation.ERR_MSGS, errorMsg + "Timed out."));
     }
     return errors;
+  }
+
+  private static boolean canApplyWithoutReload(List<SchemaChange> operations) {
+    for (SchemaChange op : operations) {
+      OpType opType = OpType.get(op.operationType);
+      if (opType != OpType.ADD_FIELD
+          && opType != OpType.ADD_DYNAMIC_FIELD
+          && opType != OpType.ADD_COPY_FIELD) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Lets queries see the new schema without a commit in standalone mode (SOLR-13795). In SolrCloud,
+   * replicas pick it up on their next searcher reopen.
+   */
+  private static void openSearcherWithLatestSchema(SolrCore core) throws InterruptedException {
+    Future<?>[] waitSearcher = new Future<?>[1];
+    try {
+      core.getSearcher(true, false, waitSearcher);
+      if (waitSearcher[0] != null) {
+        waitSearcher[0].get();
+      }
+    } catch (ExecutionException | SolrException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Schema was persisted, but the searcher could not be reopened",
+          e);
+    }
   }
 
   private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {

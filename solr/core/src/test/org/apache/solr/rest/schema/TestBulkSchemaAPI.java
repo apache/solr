@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.misc.SweetSpotSimilarity;
@@ -42,6 +43,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.LogListener;
@@ -1230,6 +1232,59 @@ public class TestBulkSchemaAPI extends RestTestBase {
     query.addFacetField("newstringtestfield");
     int size = getSolrClient().query(query).getResults().size();
     assertEquals(1, size);
+  }
+
+  @Test
+  public void testAdditiveChangesDoNotReloadCore() throws Exception {
+    getSolrClient().add(Arrays.asList(sdoc("id", "1", "term_s", "tux")));
+    getSolrClient().commit(true, true);
+    UUID coreIdBefore = coreUniqueId();
+
+    new SchemaRequest.AddField(Map.of("name", "live_field", "type", "string"))
+        .process(getSolrClient());
+    new SchemaRequest.AddDynamicField(Map.of("name", "*_live", "type", "string"))
+        .process(getSolrClient());
+    new SchemaRequest.AddCopyField("live_field", List.of("copy_live")).process(getSolrClient());
+
+    assertEquals(coreIdBefore, coreUniqueId());
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1")) {
+      IndexSchema latest = core.getLatestSchema();
+      assertNotNull(latest.getFieldOrNull("live_field"));
+      assertNotNull(latest.getFieldOrNull("color_live"));
+      assertEquals(1, latest.getCopyFieldsList("live_field").size());
+      assertSame(latest, core.withSearcher(s -> s.getSchema()));
+    }
+
+    SolrQuery query = new SolrQuery("*:*");
+    query.addFacetField("live_field");
+    query.addFacetField("color_live");
+    assertEquals(1, getSolrClient().query(query).getResults().getNumFound());
+  }
+
+  @Test
+  public void testMixedCommandsStillReloadCore() throws Exception {
+    UUID coreIdBefore = coreUniqueId();
+    assertJPost(
+        "/schema",
+        "{\n"
+            + "  'add-field-type':{'name':'mixed_type','class':'solr.StrField'},\n"
+            + "  'add-field':{'name':'mixed_field','type':'mixed_type'}\n"
+            + "}",
+        "/responseHeader/status==0");
+    assertNotEquals(coreIdBefore, coreUniqueId());
+  }
+
+  @Test
+  public void testEmptyRequestDoesNotReloadCore() throws Exception {
+    UUID coreIdBefore = coreUniqueId();
+    assertJPost("/schema", "{}", "/responseHeader/status==0");
+    assertEquals(coreIdBefore, coreUniqueId());
+  }
+
+  private static UUID coreUniqueId() {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1")) {
+      return core.uniqueId;
+    }
   }
 
   @Test
