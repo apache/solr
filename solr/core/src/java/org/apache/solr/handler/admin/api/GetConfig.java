@@ -47,8 +47,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.jersey.NullKeyTolerantMap;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.SolrPluginUtils;
@@ -301,7 +301,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       List<PackageListeners.Listener> listeners =
           req.getCore().getPackageListeners().getListeners();
       for (PackageListeners.Listener listener : listeners) {
-        Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+        Map<String, PackageStore.PkgVersion> infos = listener.packageDetails();
         if (infos == null || infos.isEmpty()) continue;
         infos.forEach(
             (s, mapWriter) -> {
