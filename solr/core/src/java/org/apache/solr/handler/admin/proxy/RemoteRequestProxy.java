@@ -53,6 +53,8 @@ public abstract class RemoteRequestProxy {
   protected static final String PARAM_NODES = "nodes";
 
   protected final CoreContainer coreContainer;
+
+  // Per-request state: each request builds a fresh proxy instance, so this is never shared.
   private final Set<String> failedNodes = new TreeSet<>();
 
   public RemoteRequestProxy(CoreContainer container) {
