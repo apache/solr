@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,10 +34,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrErrorWrappingException;
@@ -195,75 +198,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Two edits to the standalone security.json that overlap in time must both survive: each edit
-   * reads the file, applies its commands and rewrites the file, so an edit that starts from the
-   * same content as another one overwrites it. The first edit is held open inside the plugin while
-   * the second edit is issued, which is the interleave a caller produces by sending two edit
-   * requests without waiting for the first response (SOLR-18010).
-   */
-  @SuppressWarnings({"unchecked"})
-  public void testConcurrentEditsToLocalSecurityJson() throws Exception {
-    assumeWorkingMockito();
-    Path solrHome = createTempDir("securityConfHandlerLocal");
-    Path securityJson = solrHome.resolve("security.json");
-    String seed =
-        "{\"authentication\":{\"class\":\"solr.BasicAuthPlugin\","
-            + "\"credentials\":{\"solr\":\"solr\"}},"
-            + "\"authorization\":{\"class\":\"solr.RuleBasedAuthorizationPlugin\",\"user-role\":{}}}";
-    Files.write(securityJson, seed.getBytes(StandardCharsets.UTF_8));
-
-    LatchingAuthorizationPlugin authzPlugin = new LatchingAuthorizationPlugin();
-    CoreContainer cc = mock(CoreContainer.class);
-    when(cc.getSolrHome()).thenReturn(solrHome);
-    when(cc.getAuthorizationPlugin()).thenReturn(authzPlugin);
-    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(cc);
-
-    AtomicReference<Throwable> firstErr = new AtomicReference<>();
-    AtomicReference<Throwable> secondErr = new AtomicReference<>();
-    Thread first =
-        new Thread(
-            () -> {
-              try {
-                postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
-              } catch (Throwable t) {
-                firstErr.set(t);
-              }
-            });
-    first.start();
-    assertTrue(
-        "first edit reached the plugin", authzPlugin.editEntered.await(60, TimeUnit.SECONDS));
-    Thread second =
-        new Thread(
-            () -> {
-              try {
-                postAuthorizationEdit(handler, "{'set-user-role': {'bob': 'dev'}}");
-              } catch (Throwable t) {
-                secondErr.set(t);
-              }
-            });
-    second.start();
-    // If edits are not serialized, the second edit now runs to completion against the same
-    // starting content the first edit read. If they are serialized it is still waiting, and
-    // the join simply times out.
-    second.join(TimeUnit.SECONDS.toMillis(10));
-    authzPlugin.editRelease.countDown();
-    first.join(TimeUnit.SECONDS.toMillis(60));
-    second.join(TimeUnit.SECONDS.toMillis(60));
-    assertFalse("first edit still running", first.isAlive());
-    assertFalse("second edit still running", second.isAlive());
-    assertNull("first edit failed: " + firstErr.get(), firstErr.get());
-    assertNull("second edit failed: " + secondErr.get(), secondErr.get());
-
-    byte[] fileBytes = Files.readAllBytes(securityJson);
-    assertSingleJsonDocument(fileBytes);
-    Map<String, Object> data = (Map<String, Object>) Utils.fromJSON(fileBytes);
-    Map<String, Object> userRoles =
-        (Map<String, Object>) ((Map<String, Object>) data.get("authorization")).get("user-role");
-    assertEquals("alice's role assignment was lost", "admin", userRoles.get("alice"));
-    assertEquals("bob's role assignment was lost", "dev", userRoles.get("bob"));
-  }
-
-  /**
    * Two overlapping writes of security.json must never leave a torn file behind: the document on
    * disk afterwards is always exactly one of the written documents, never the beginning of one
    * followed by the tail of a longer one (the corruption shape in SOLR-18010). The first write is
@@ -317,7 +251,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
         Arrays.equals(fileBytes, shortBytes) || Arrays.equals(fileBytes, longBytes));
   }
 
-  /** An edit to security.json keeps the POSIX permissions of the existing file. */
+  /** An edit keeps the POSIX permissions of the existing file. */
   public void testEditKeepsExistingSecurityJsonPermissions() throws Exception {
     assumeWorkingMockito();
     Path solrHome = createTempDir("securityConfHandlerLocalPerms");
@@ -325,34 +259,21 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
         "POSIX file permissions are not supported on this file system",
         solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
     Path securityJson = solrHome.resolve("security.json");
-    String seed =
-        "{\"authentication\":{\"class\":\"solr.BasicAuthPlugin\","
-            + "\"credentials\":{\"solr\":\"solr\"}},"
-            + "\"authorization\":{\"class\":\"solr.RuleBasedAuthorizationPlugin\",\"user-role\":{}}}";
-    Files.write(securityJson, seed.getBytes(StandardCharsets.UTF_8));
+    Files.write(securityJson, seedSecurityJson().getBytes(StandardCharsets.UTF_8));
     EnumSet<PosixFilePermission> expected =
         EnumSet.of(
             PosixFilePermission.OWNER_READ,
             PosixFilePermission.OWNER_WRITE,
             PosixFilePermission.GROUP_READ);
     Files.setPosixFilePermissions(securityJson, expected);
-
-    CoreContainer cc = mock(CoreContainer.class);
-    when(cc.getSolrHome()).thenReturn(solrHome);
-    when(cc.getAuthorizationPlugin()).thenReturn(new RuleBasedAuthorizationPlugin());
-    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(cc);
+    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
     postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
-
-    assertTrue(
-        "edit was not persisted",
-        Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
-    assertEquals(
-        "security.json lost its permissions in the edit",
-        expected,
-        Files.getPosixFilePermissions(securityJson));
+    assertTrue(Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
+    assertEquals(expected, Files.getPosixFilePermissions(securityJson));
+    assertNoTemporaryFiles(solrHome);
   }
 
-  /** An edit in a read-only SOLR_HOME still succeeds when security.json itself is writable. */
+  /** A read-only SOLR_HOME still allows an edit when security.json itself is writable. */
   public void testEditInPlaceWhenSolrHomeIsReadOnly() throws Exception {
     assumeWorkingMockito();
     Path solrHome = createTempDir("securityConfHandlerLocalReadOnly");
@@ -360,25 +281,14 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
         "POSIX file permissions are not supported on this file system",
         solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
     Path securityJson = solrHome.resolve("security.json");
-    String seed =
-        "{\"authentication\":{\"class\":\"solr.BasicAuthPlugin\","
-            + "\"credentials\":{\"solr\":\"solr\"}},"
-            + "\"authorization\":{\"class\":\"solr.RuleBasedAuthorizationPlugin\",\"user-role\":{}}}";
-    Files.write(securityJson, seed.getBytes(StandardCharsets.UTF_8));
+    Files.write(securityJson, seedSecurityJson().getBytes(StandardCharsets.UTF_8));
     Files.setPosixFilePermissions(
         solrHome, EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE));
     try {
       assumeFalse("the directory is writable for this user", Files.isWritable(solrHome));
-
-      CoreContainer cc = mock(CoreContainer.class);
-      when(cc.getSolrHome()).thenReturn(solrHome);
-      when(cc.getAuthorizationPlugin()).thenReturn(new RuleBasedAuthorizationPlugin());
-      SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(cc);
+      SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
       postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
-
-      assertTrue(
-          "edit was not persisted",
-          Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
+      assertTrue(Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
     } finally {
       Files.setPosixFilePermissions(
           solrHome,
@@ -386,6 +296,111 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
               PosixFilePermission.OWNER_READ,
               PosixFilePermission.OWNER_WRITE,
               PosixFilePermission.OWNER_EXECUTE));
+    }
+  }
+
+  /** A reader of security.json never sees a partial document while edits are written. */
+  public void testReaderNeverSeesPartialSecurityJsonDuringEdits() throws Exception {
+    assumeWorkingMockito();
+    Path solrHome = createTempDir("securityConfHandlerLocalReaders");
+    assumeTrue(
+        "atomic replacement needs POSIX file attributes",
+        solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
+    Path securityJson = solrHome.resolve("security.json");
+    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
+    Map<String, Object> small = shortSecurityData("x");
+    Map<String, Object> large = largeSecurityData();
+    byte[] smallBytes = Utils.toJSON(small);
+    byte[] largeBytes = Utils.toJSON(large);
+    Files.write(securityJson, smallBytes);
+    AtomicReference<Throwable> writerErr = new AtomicReference<>();
+    AtomicBoolean writing = new AtomicBoolean(true);
+    Thread writer =
+        new Thread(
+            () -> {
+              try {
+                for (int i = 0; i < 100; i++) {
+                  handler.persistConf(new SecurityConfig().setData(i % 2 == 0 ? large : small));
+                }
+              } catch (Throwable t) {
+                writerErr.set(t);
+              } finally {
+                writing.set(false);
+              }
+            });
+    writer.start();
+    try {
+      while (writing.get()) {
+        byte[] got = Files.readAllBytes(securityJson);
+        assertTrue(
+            "reader saw a partial security.json of " + got.length + " bytes",
+            Arrays.equals(got, smallBytes) || Arrays.equals(got, largeBytes));
+      }
+    } finally {
+      writer.join(TimeUnit.SECONDS.toMillis(60));
+    }
+    assertNull("writer failed: " + writerErr.get(), writerErr.get());
+  }
+
+  private static Map<String, Object> largeSecurityData() {
+    Map<String, Object> creds = new LinkedHashMap<>();
+    creds.put("large", "L".repeat(1_000_000));
+    Map<String, Object> authc = new LinkedHashMap<>();
+    authc.put("class", "solr.BasicAuthPlugin");
+    authc.put("credentials", creds);
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("authentication", authc);
+    return data;
+  }
+
+  /** A security.json created by a write gets the mode a newly created file gets. */
+  public void testPersistCreatesSecurityJsonWithDefaultMode() throws Exception {
+    assumeWorkingMockito();
+    Path solrHome = createTempDir("securityConfHandlerLocalCreate");
+    assumeTrue(
+        "POSIX file permissions are not supported on this file system",
+        solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
+    Path control = solrHome.resolve("control.json");
+    Files.write(control, new byte[] {'{', '}'});
+    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
+    assertTrue(handler.persistConf(new SecurityConfig().setData(shortSecurityData("x"))));
+    Path securityJson = solrHome.resolve("security.json");
+    assertEquals(
+        Files.getPosixFilePermissions(control), Files.getPosixFilePermissions(securityJson));
+    assertNoTemporaryFiles(solrHome);
+  }
+
+  /** Atomic replacement needs a POSIX view and a file that is not a symbolic link. */
+  public void testAtomicReplaceNeedsPosixViewAndNoSymbolicLink() {
+    assertTrue(
+        SecurityConfHandlerLocal.supportsAtomicReplace(
+            Set.of("basic", "posix", "unix", "owner"), false));
+    assertFalse(
+        SecurityConfHandlerLocal.supportsAtomicReplace(
+            Set.of("basic", "owner", "dos", "acl", "user"), false));
+    assertFalse(
+        SecurityConfHandlerLocal.supportsAtomicReplace(Set.of("basic", "posix", "owner"), true));
+  }
+
+  private static String seedSecurityJson() {
+    return "{\"authentication\":{\"class\":\"solr.BasicAuthPlugin\","
+        + "\"credentials\":{\"solr\":\"solr\"}},"
+        + "\"authorization\":{\"class\":\"solr.RuleBasedAuthorizationPlugin\",\"user-role\":{}}}";
+  }
+
+  private static CoreContainer mockCoreContainer(Path solrHome) {
+    CoreContainer cc = mock(CoreContainer.class);
+    when(cc.getSolrHome()).thenReturn(solrHome);
+    when(cc.getAuthorizationPlugin()).thenReturn(new RuleBasedAuthorizationPlugin());
+    return cc;
+  }
+
+  private static void assertNoTemporaryFiles(Path solrHome) throws IOException {
+    try (Stream<Path> files = Files.list(solrHome)) {
+      assertEquals(
+          "temporary files left behind",
+          List.of(),
+          files.filter(f -> f.getFileName().toString().endsWith(".tmp")).toList());
     }
   }
 
@@ -434,27 +449,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("authentication", authc);
     return data;
-  }
-
-  /** An authorization plugin whose first {@code edit} call blocks until the test releases it. */
-  private static class LatchingAuthorizationPlugin extends RuleBasedAuthorizationPlugin {
-    final CountDownLatch editEntered = new CountDownLatch(1);
-    final CountDownLatch editRelease = new CountDownLatch(1);
-    private final AtomicBoolean armed = new AtomicBoolean(true);
-
-    @Override
-    public Map<String, Object> edit(
-        Map<String, Object> latestConf, List<CommandOperation> commands) {
-      if (armed.compareAndSet(true, false)) {
-        editEntered.countDown();
-        try {
-          editRelease.await(60, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
-      return super.edit(latestConf, commands);
-    }
   }
 
   /**

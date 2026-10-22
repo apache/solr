@@ -1,7 +1,0 @@
-title: Standalone security.json is replaced through a temporary file, so a process crash during an edit no longer leaves a partly written file; the file keeps its permissions and no longer stores internal version metadata. Symbolic links and directories that cannot take a new file are still written in place.
-type: fixed
-authors:
-  - name: Nick Shanin
-links:
-  - name: SOLR-18010
-    url: https://issues.apache.org/jira/browse/SOLR-18010
