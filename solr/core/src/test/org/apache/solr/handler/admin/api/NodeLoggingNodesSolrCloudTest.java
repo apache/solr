@@ -112,8 +112,7 @@ public class NodeLoggingNodesSolrCloudTest extends SolrCloudTestCase {
     req.addLogLevelChange(new LogLevelChange(TEST_LOGGER, "WARN"));
     req.setNodes("no-such-host.invalid:9999_solr");
 
-    try (HttpJettySolrClient client =
-        new HttpJettySolrClient.Builder(jetty(0).getBaseUrl().toString()).build()) {
+    try (HttpJettySolrClient client = client(0)) {
       final RemoteSolrException e =
           expectThrows(RemoteSolrException.class, () -> req.process(client));
       assertEquals(400, e.code());
@@ -131,21 +130,23 @@ public class NodeLoggingNodesSolrCloudTest extends SolrCloudTestCase {
     return cluster.getJettySolrRunners().get(idx);
   }
 
+  private static HttpJettySolrClient client(int idx) {
+    return new HttpJettySolrClient.Builder(jetty(idx).getBaseUrl().toString()).build();
+  }
+
   private static LoggingResponse putLogLevel(
       int targetIdx, String nodes, String logger, String level) throws Exception {
     final var req = new LoggingApi.ModifyLocalLogLevel();
     req.addLogLevelChange(new LogLevelChange(logger, level));
     req.setNodes(nodes);
-    try (HttpJettySolrClient client =
-        new HttpJettySolrClient.Builder(jetty(targetIdx).getBaseUrl().toString()).build()) {
+    try (HttpJettySolrClient client = client(targetIdx)) {
       return req.process(client);
     }
   }
 
   private static ListLevelsResponse getLogLevels(int targetIdx) throws Exception {
     final var req = new LoggingApi.ListAllLoggersAndLevels();
-    try (HttpJettySolrClient client =
-        new HttpJettySolrClient.Builder(jetty(targetIdx).getBaseUrl().toString()).build()) {
+    try (HttpJettySolrClient client = client(targetIdx)) {
       return req.process(client);
     }
   }

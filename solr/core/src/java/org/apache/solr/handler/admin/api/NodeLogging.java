@@ -24,10 +24,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_P
 import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
@@ -43,6 +40,7 @@ import org.apache.solr.client.solrj.request.LoggingApi;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.proxy.RemoteRequestProxy;
 import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.logging.LogWatcher;
@@ -112,6 +110,11 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
    * Applies the given log level changes on other nodes, mirroring how {@link GetNodeSystemInfo}
    * fans its request out. The receiving node does not apply the changes locally; it is covered only
    * if the resolved node set includes it, in which case it calls itself over HTTP.
+   *
+   * <p>{@link RemoteRequestProxy#validateNodeNames} rejects an unknown node name before any request
+   * goes out, so a broadcast either reaches every named node or none of them; a node that stops
+   * responding after that point (timeout, error, or leaving the live set mid-request) is instead
+   * reported via {@link RemoteRequestProxy#getFailedNodes()}.
    */
   private void proxyLevelChangesToNodes(
       LoggingResponse response, String nodes, List<LogLevelChange> requestBody) {
@@ -131,24 +134,8 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
               response.remoteNodeData.put(nodeName, proxiedResponse);
             }
           };
-      final Collection<String> destinationNodes = reqProxy.getDestinationNodes();
-      // Fail before sending anything if a named node is not part of the cluster; otherwise the
-      // broadcast would fail partway through, after earlier nodes already applied the change.
-      final Set<String> liveNodes =
-          coreContainer.getZkController().zkStateReader.getClusterState().getLiveNodes();
-      final List<String> unknownNodes =
-          destinationNodes.stream().filter(node -> !liveNodes.contains(node)).sorted().toList();
-      if (!unknownNodes.isEmpty()) {
-        throw new SolrException(
-            BAD_REQUEST, "Requested nodes are not part of the cluster: " + unknownNodes);
-      }
       reqProxy.proxyRequest();
-      // The proxy logs and skips nodes that error or time out; surface those nodes here so a
-      // partial broadcast is visible in the response instead of silent.
-      final var failedNodes = new ArrayList<>(destinationNodes);
-      failedNodes.removeAll(response.remoteNodeData.keySet());
-      Collections.sort(failedNodes);
-      response.failedNodes = failedNodes;
+      response.failedNodes = reqProxy.getFailedNodes();
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {

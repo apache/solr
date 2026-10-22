@@ -17,18 +17,9 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 
 /** Generic logging response that includes the name of the log watcher (e.g. "Log4j2") */
 public class LoggingResponse extends NodeProxyingJerseyResponse {
   @JsonProperty("watcher")
   public String watcherName;
-
-  /**
-   * Nodes that were asked to apply a broadcast request (via the 'nodes' parameter) but did not
-   * return a response, e.g. because they timed out or errored. Null for requests that were not
-   * broadcast, and empty when every requested node responded.
-   */
-  @JsonProperty("failedNodes")
-  public List<String> failedNodes;
 }

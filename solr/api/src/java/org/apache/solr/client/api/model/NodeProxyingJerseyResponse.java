@@ -18,7 +18,9 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,4 +44,13 @@ public class NodeProxyingJerseyResponse extends SolrJerseyResponse {
   public void setRemoteNodeResponse(String field, Object value) {
     remoteNodeData.put(field, value);
   }
+
+  /**
+   * Nodes that were asked to apply a broadcast request (via the 'nodes' parameter) but did not
+   * return a response, e.g. because they timed out or errored (see {@code
+   * RemoteRequestProxy#getFailedNodes()}). Null for requests that were not broadcast, and empty
+   * when every requested node responded.
+   */
+  @JsonProperty("failedNodes")
+  public List<String> failedNodes;
 }
