@@ -21,6 +21,7 @@ github:
   # Cap how many pull requests a contributor without write access may have open at once.
   # See https://github.com/apache/infrastructure-asfyaml#pr_creation_cap
   pull_requests:
+    del_branch_on_merge: true
     creation_cap:
       enabled: true
       max_open_pull_requests: 7
