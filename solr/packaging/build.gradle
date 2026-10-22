@@ -343,33 +343,16 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   }
 }
 
+// TODO: Remove this when cleaning up commons-cli
 task integrationTests(type: BatsTask) {
+  description = 'Runs the BATS suites for the CLI powered by commons-cli.'
   configureBatsTask(it, 'test-output', false)
 }
 
-// The same suites run against the experimental picocli CLI. Deliberately a curated list rather
-// than the whole suite, so the run stays short. A change that ports another tool to picocli
-// should add that tool's .bats file here.
+// The same suites run against the picocli CLI.
 task integrationTestsPicocli(type: BatsTask) {
-  description = 'Runs the BATS suites for the migrated commands against the experimental picocli CLI.'
+  description = 'Runs the BATS suites for the CLI powered by PicoCLI.'
   configureBatsTask(it, 'test-output-picocli', true)
-  // A suite belongs here only when every command it invokes has been migrated, not merely the
-  // command under test. test_auth.bats, for example, uses `solr assert` to wait for startup, so
-  // it cannot join until the assert command is migrated. test_help.bats asserts the exact wording
-  // of the commons-cli help output, which the picocli implementation words differently.
-  testFiles = [
-      'test/test_version.bats',
-      'test/test_status.bats',
-      'test/test_create.bats',
-      'test/test_delete_collection.bats',
-      'test/test_zk.bats',
-      'test/test_auth.bats',
-      'test/test_modules.bats',
-      'test/test_security_manager.bats',
-      'test/test_healthcheck.bats',
-      'test/test_postlogs.bats',
-      'test/test_extraction.bats',
-  ]
 }
 
 abstract class BatsTask extends Exec {
