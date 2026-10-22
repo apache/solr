@@ -83,7 +83,7 @@ solrAdminApp.controller('LoggingController',
 )
 
 .controller('LoggingLevelController',
-  function($scope, $timeout, Logging, LoggingV2, ApiErrorHandler, NodeTarget) {
+  function($scope, $timeout, LoggingV2, ApiErrorHandler, NodeTarget) {
     $scope.resetMenu("logging-levels");
 
     var packageOf = function(logger) {
@@ -142,14 +142,15 @@ solrAdminApp.controller('LoggingController',
       if (!$scope.isPermitted(permissions.CONFIG_EDIT_PERM)) {
         return;
       }
-      var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
       var doSetLevel = function() {
-        var params = {set: setString};
+        var opts = {logLevelChange: [{logger: logger.name, level: newLevel}]};
+        // Broadcast in SolrCloud; omit in standalone (handled locally).
         if ($scope.isCloudEnabled) {
-          params.nodes = "all";
+          opts.nodes = "all";
         }
-        Logging.setLevel(params, function(data) {
+        LoggingV2.modifyLocalLogLevel(opts, function(error, data, response) {
+          if (error) { ApiErrorHandler.handle(response); return; }
           $scope.refresh();
         });
       };

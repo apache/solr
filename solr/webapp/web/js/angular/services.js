@@ -95,7 +95,6 @@ solrAdminServices.factory('Metrics',
         localNode: null,
         selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
         liveNodes: [],
-        // Set after mode detection and (in cloud) live-node discovery so withNodes() is correct.
         ready: false
       };
 
@@ -103,15 +102,18 @@ solrAdminServices.factory('Metrics',
         return !!(state.selectedNode && state.localNode && state.selectedNode !== state.localNode);
       }
 
-      function nodesParam() {
-        return isRemote() ? state.selectedNode : undefined;
+      function persistSelected() {
+        if (state.selectedNode) {
+          sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
       }
 
       function withNodes(opts) {
         opts = opts || {};
-        var nodes = nodesParam();
-        if (nodes) {
-          opts.nodes = nodes;
+        if (isRemote()) {
+          opts.nodes = state.selectedNode;
         }
         return opts;
       }
@@ -120,15 +122,9 @@ solrAdminServices.factory('Metrics',
         if (!isRemote()) {
           return data;
         }
-        // @JsonAnyGetter flattens the server's remoteNodeData map, so a proxied node's payload
-        // lands directly under its node name at the top level of the response - never nested
-        // under a literal "remoteNodeData" key.
+        // Proxied payload is under the node name (@JsonAnyGetter), not remoteNodeData.
         var body = (response && response.body) || data || {};
-        var nodePayload = body[state.selectedNode];
-        if (nodePayload) {
-          return nodePayload;
-        }
-        return data;
+        return body[state.selectedNode] || data;
       }
 
       function publish() {
@@ -172,11 +168,7 @@ solrAdminServices.factory('Metrics',
         state.liveNodes = (nodes || []).slice().sort();
         if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
           state.selectedNode = state.localNode || state.liveNodes[0] || null;
-          if (state.selectedNode) {
-            sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
-          } else {
-            sessionStorage.removeItem(STORAGE_KEY);
-          }
+          persistSelected();
         }
         publish();
         markReady();
@@ -187,7 +179,7 @@ solrAdminServices.factory('Metrics',
           return false;
         }
         state.selectedNode = nodeName;
-        sessionStorage.setItem(STORAGE_KEY, nodeName);
+        persistSelected();
         publish();
         return true;
       }
@@ -196,7 +188,7 @@ solrAdminServices.factory('Metrics',
         state.localNode = null;
         state.selectedNode = null;
         state.liveNodes = [];
-        sessionStorage.removeItem(STORAGE_KEY);
+        persistSelected();
         publish();
         markReady();
       }
@@ -204,7 +196,6 @@ solrAdminServices.factory('Metrics',
       return {
         state: state,
         isRemote: isRemote,
-        nodesParam: nodesParam,
         withNodes: withNodes,
         unwrap: unwrap,
         setLocalNode: setLocalNode,
@@ -212,8 +203,7 @@ solrAdminServices.factory('Metrics',
         selectNode: selectNode,
         clear: clear,
         markReady: markReady,
-        whenReady: whenReady,
-        isReady: function() { return state.ready; }
+        whenReady: whenReady
       };
     }])
 .factory('CollectionsV2',
@@ -311,12 +301,6 @@ solrAdminServices.factory('Metrics',
       }
     };
  }])
-.factory('Logging',
-  ['$resource', function($resource) {
-    return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "setLevel": {}
-      });
-  }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
     // Tree browsing (formerly "simple"/"detail") moved to ZookeeperReadV2; this factory now only

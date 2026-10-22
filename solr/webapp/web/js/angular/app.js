@@ -204,7 +204,7 @@ solrAdminApp.config([
 })
 .filter('highlight', function($sce) {
   return function(input, lang) {
-    if (lang && input && lang!="txt" && lang!="csv") return hljs.highlight(lang, input).value;
+    if (lang && input && hljs.getLanguage(lang)) return hljs.highlight(input, {language: lang}).value;
     return input;
   }
 })
@@ -562,10 +562,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
-    // In cloud mode, the post-listClusterNodes call below is the only fetch that needs to run
-    // (it waits for NodeTarget to resolve the selected node first); this eager call only serves
-    // standalone mode, where that cloud-only code path never runs. Before isCloudEnabled is known
-    // (very first load), fire it anyway so standalone mode isn't left without any fetch at all.
+    // Standalone never hits listClusterNodes; fetch cores here (also before mode is known).
     if (!$scope.isCloudEnabled) {
       loadCoresForSelectedNode(pageType);
     }
@@ -574,9 +571,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $timeout(function() {
         if (error) {
           ApiErrorHandler.handle(response);
-          // The mode could not be determined. Treat the node as standalone so that
-          // pages waiting for isCloudEnabled to settle (e.g. the logging page) fall
-          // back to local-only behavior instead of waiting forever.
+          // Settle mode so pages waiting on isCloudEnabled do not hang.
           $scope.isCloudEnabled = false;
           NodeTarget.clear();
           return;
@@ -679,19 +674,54 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
     $scope.pageType = pageType;
+    // logging-levels is cluster-wide (nodes=all), so omit it from the Node badge pages.
     $scope.isNodeScopedPage =
       (pageType === Constants.IS_CORE_PAGE && !NodeTarget.isRemote()) ||
-      /^(index|logging|logging-levels|java-props|threads|cores)$/.test(page);
+      /^(index|logging|java-props|threads|cores)$/.test(page);
     $scope.currentUser = sessionStorage.getItem("auth.username");
     $scope.http401 = sessionStorage.getItem("http401");
   };
 
-  $scope.nodeLabel = function(node) {
-    if (!node) {
-      return '';
+  // Keep long node names scrollable in the open Chosen list; #menu-wrapper steals wheel otherwise.
+  var bindNodeResultsWheel = function(el) {
+    if (!el || el.getAttribute('data-node-wheel') === '1') {
+      return;
     }
-    return node === $scope.localNode ? node + ' (this node)' : node;
+    el.setAttribute('data-node-wheel', '1');
+    el.addEventListener('wheel', function(e) {
+      var canX = el.scrollWidth > el.clientWidth;
+      var canY = el.scrollHeight > el.clientHeight;
+      var absX = Math.abs(e.deltaX);
+      var absY = Math.abs(e.deltaY);
+      if (canX && (e.shiftKey || absX > absY || !canY)) {
+        el.scrollLeft += (e.shiftKey && !e.deltaX) ? e.deltaY : (e.deltaX || e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+      } else if (canY) {
+        e.stopPropagation();
+      }
+    }, {passive: false});
   };
+  var syncNodeSelectorTitle = function() {
+    var chosen = document.querySelector('#node_selector_select_chosen > a.chosen-single');
+    if (chosen) {
+      chosen.title = $scope.selectedNode || '';
+    }
+  };
+  $scope.$watch('selectedNode', function() {
+    $timeout(syncNodeSelectorTitle);
+  });
+  $scope.$watchCollection('liveNodes', function() {
+    $timeout(syncNodeSelectorTitle);
+  });
+  angular.element(document).on('chosen:showing_dropdown', '#node_selector_select', function() {
+    $timeout(function() {
+      bindNodeResultsWheel(document.querySelector('#node_selector_select_chosen .chosen-results'));
+    });
+  });
+  $scope.$on('$destroy', function() {
+    angular.element(document).off('chosen:showing_dropdown', '#node_selector_select');
+  });
 
   $scope.onSelectedNodeChange = function() {
     if (NodeTarget.selectNode($scope.selectedNode)) {
@@ -700,8 +730,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         $location.url('/');
         return;
       }
-      // $route.reload() re-instantiates the current controller, which runs resetMenu() and
-      // fetches cores itself; a manual fetch here would just be discarded before it can render.
+      // reload re-runs resetMenu / core fetch for the new target
       $route.reload();
     }
   };

@@ -33,14 +33,12 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
   @Before
   public void clearPersistedNodeSelection() {
     ensureCloudCluster();
-    // openPage boots via index.html; clear any selection left by a prior test in this JVM
     driver.get(baseUrl + "/index.html#/");
     waitFor(By.cssSelector("#content > *"));
     ((JavascriptExecutor) driver)
         .executeScript("sessionStorage.removeItem('adminui.selectedNode');");
   }
 
-  /** Selects another live node through the Chosen node picker. */
   private void selectNode(String nodeName) {
     chosenSelect("node_selector_select", nodeName);
   }
@@ -62,9 +60,7 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
     assertTrue(
         "badge should mark remote targeting",
         waitFor(By.id("selected-node-badge")).getAttribute("class").contains("remote"));
-    waitForTextContains(By.id("node-selector-hint"), "Node screens only");
 
-    // full reload must restore the remote target before the dashboard fetch
     driver.navigate().refresh();
     waitFor(By.cssSelector("#content #index"));
     waitForTextContains(DASHBOARD_NODE, remoteNode);
@@ -83,7 +79,6 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
     selectNode(remoteNode);
     waitForTextContains(DASHBOARD_NODE, remoteNode);
 
-    // in-app navigation must keep the picker selection (sessionStorage) and show the badge
     click(By.cssSelector("#menu #java-properties a"));
     waitFor(By.id("java-properties"));
     waitFor(By.cssSelector("#java-properties li"));
@@ -93,7 +88,7 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
   }
 
   @Test
-  public void testLoggingLevelsScreenFollowsSelectedNode() {
+  public void testLoggingLevelsHidesNodeBadge() {
     String remoteNode = cluster.getJettySolrRunner(1).getNodeName();
 
     openPage("", By.id("index"));
@@ -105,9 +100,9 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
     click(By.cssSelector("#menu #logging .level a"));
     waitFor(By.id("loggingtree"));
 
-    waitForTextContains(By.cssSelector("#selected-node-badge .badge-value"), remoteNode);
-    assertTrue(waitFor(By.id("selected-node-badge")).getAttribute("class").contains("remote"));
-    waitForTextContains(By.id("node-selector-hint"), "Node screens only");
+    assertFalse(
+        "Node badge should stay hidden on logging levels",
+        driver.findElement(By.id("selected-node-badge")).isDisplayed());
     assertNoSevereConsoleErrors();
   }
 }

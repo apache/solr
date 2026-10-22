@@ -80,7 +80,11 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
                 response.remoteNodeData.put(nodeName, proxiedResponse);
               }
             };
-        return reqProxy.proxyRequest();
+        boolean proxied = reqProxy.proxyRequest();
+        if (proxied) {
+          response.failedNodes = reqProxy.getFailedNodes();
+        }
+        return proxied;
       }
     } catch (Exception e) {
       throw new SolrException(

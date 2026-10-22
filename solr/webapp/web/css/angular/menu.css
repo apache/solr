@@ -98,6 +98,14 @@ limitations under the License.
   max-width: 100%;
 }
 
+/* Keep Chosen drops inside the 150px sidebar (base Chosen uses width:auto). */
+#menu-wrapper .chosen-container-single .chosen-drop
+{
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 #menu-wrapper .chosen-container-single .chosen-single
 {
   height: 25px;
@@ -113,6 +121,19 @@ limitations under the License.
   line-height: 24px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#menu-wrapper #node-selector .chosen-results
+{
+  max-height: 220px;
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#menu-wrapper #node-selector .chosen-results li
+{
   white-space: nowrap;
 }
 
@@ -149,28 +170,6 @@ limitations under the License.
 #node-selector select
 {
   width: 100%;
-}
-
-#node-selector #node-selector-label
-{
-  color: #c0c0c0;
-  font-size: 11px;
-  font-weight: bold;
-  margin: 0 0 4px 2px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-#node-selector #node-selector-hint
-{
-  color: #8D8D8D;
-  font-size: 11px;
-  margin: 6px 0 0 2px;
-}
-
-#node-selector #node-selector-hint.remote
-{
-  color: #c47a00;
 }
 
 #core-selector #has-no-cores a,

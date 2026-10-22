@@ -65,7 +65,7 @@ limitations under the License.
   <script src="libs/angular-route.min.js?_=${version}"></script>
   <script src="libs/angular-cookies.min.js?_=${version}"></script>
   <script src="libs/ngtimeago.js?_=${version}"></script>
-  <script src="libs/highlight.js?_=${version}"></script>
+  <script src="libs/highlight.js-11.12.0.min.js?_=${version}"></script>
   <script src="libs/d3.js?_=${version}"></script>
   <script src="libs/ui-grid.min.js?_=${version}"></script>
   <script src="libs/solr/index.js"></script>
@@ -115,9 +115,10 @@ limitations under the License.
 
       <div id="selected-node-badge"
            ng-show="!http401 && isCloudEnabled && liveNodes.length > 1 && selectedNode && isNodeScopedPage"
-           ng-class="{remote: viewingRemoteNode}">
+           ng-class="{remote: viewingRemoteNode}"
+           title="{{ selectedNode }}">
         <span class="badge-label">Node</span>
-        <span class="badge-value">{{ nodeLabel(selectedNode) }}</span>
+        <span class="badge-value">{{ selectedNode }}</span>
       </div>
 
     </div>
@@ -222,20 +223,16 @@ limitations under the License.
 
               <li id="node-selector-item" class="menu-control" ng-if="isCloudEnabled && liveNodes.length > 1">
                 <div id="node-selector">
-                  <label id="node-selector-label" for="node_selector_select">Node</label>
                   <div id="has-nodes">
                     <select id="node_selector_select"
-                            aria-labelledby="node-selector-label"
+                            aria-label="Node"
                             placeholder-text-single="'Select node'"
                             ng-model="$parent.selectedNode"
                             chosen
                             search-contains="true"
                             ng-change="onSelectedNodeChange()"
-                            ng-options="node as nodeLabel(node) for node in liveNodes"></select>
+                            ng-options="node for node in liveNodes"></select>
                   </div>
-                  <p id="node-selector-hint" ng-class="{remote: viewingRemoteNode}">
-                    {{ viewingRemoteNode ? 'Remote node (Node screens only)' : 'This node (Node screens only)' }}
-                  </p>
                 </div>
               </li>
 
