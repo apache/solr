@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrErrorWrappingException;
@@ -54,6 +55,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 
+@SuppressFileSystems({"ExtrasFS", "WindowsFS"})
 public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -332,7 +334,13 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     int reads = 0;
     try {
       while (writing.get()) {
-        byte[] got = Files.readAllBytes(securityJson);
+        byte[] got;
+        try {
+          got = Files.readAllBytes(securityJson);
+        } catch (IOException e) {
+          // NFS reports a stale handle when the file is replaced during a read
+          continue;
+        }
         assertTrue(
             "reader saw a partial security.json of " + got.length + " bytes",
             Arrays.equals(got, smallBytes) || Arrays.equals(got, largeBytes));
