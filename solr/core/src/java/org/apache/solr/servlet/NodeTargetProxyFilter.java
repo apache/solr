@@ -17,6 +17,10 @@
 
 package org.apache.solr.servlet;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
@@ -24,17 +28,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.eclipse.jetty.client.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * If the request carries the {@link #TARGET_NODE_HEADER} header naming a different live node,
@@ -44,6 +50,8 @@ import org.eclipse.jetty.client.HttpClient;
  * to a specific node even when reached through a load balancer that hides which node answers.
  */
 public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Header naming a live node (as it appears in ZK live_nodes) to proxy this request to. Two
@@ -97,9 +105,10 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
           };
     }
 
-    if (targetNode == null || targetNode.isBlank() || !proxyToNode(targetNode, req, res)) {
-      chain.doFilter(req, res);
+    if (targetNode != null && !targetNode.isBlank() && proxyToNode(targetNode, req, res)) {
+      return;
     }
+    chain.doFilter(req, res);
   }
 
   private static List<String> filterHeaderNamesToList(HttpServletRequest req) {
@@ -124,26 +133,31 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
     return queryString; // could be empty string
   }
 
-  /** Returns true if the request was proxied to {@code targetNode}. */
-  private boolean proxyToNode(String targetNode, HttpServletRequest req, HttpServletResponse res) {
+  /**
+   * Returns true if the request was handled here: proxied to {@code targetNode}, or answered with
+   * an error. Reports errors itself, since an exception would be treated by {@link
+   * AuthenticationFilter}, our caller, as an authentication failure.
+   */
+  private boolean proxyToNode(String targetNode, HttpServletRequest req, HttpServletResponse res)
+      throws IOException {
     CoreContainer cores;
     try {
       cores = getCores();
     } catch (UnavailableException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core Container Unavailable");
+      res.sendError(SERVICE_UNAVAILABLE.code, "Core Container Unavailable");
+      return true;
     }
     if (!cores.isZooKeeperAware()) {
       // note: we could adapt this filter to support standalone mode with AllowListUrlChecker
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          TARGET_NODE_HEADER + " header/param requires SolrCloud");
+      res.sendError(BAD_REQUEST.code, TARGET_NODE_HEADER + " header/param requires SolrCloud");
+      return true;
     }
     String ownNodeName = cores.getZkController().getNodeName();
     String resolvedNode = resolvePeerShorthand(targetNode, ownNodeName);
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     if (!zkStateReader.getClusterState().getLiveNodes().contains(resolvedNode)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Unknown or non-live node: " + resolvedNode);
+      res.sendError(BAD_REQUEST.code, "Unknown or non-live node: " + resolvedNode);
+      return true;
     }
     if (resolvedNode.equals(ownNodeName)) {
       return false; // already on the target node; let it process normally
@@ -159,10 +173,8 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
           ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
       HttpSolrProxy.doHttpProxy(httpClient, req, res, url);
     } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Error proxying request to node: " + resolvedNode,
-          e);
+      log.warn("Error proxying request to node {}", resolvedNode, e);
+      res.sendError(SERVER_ERROR.code, "Error proxying request to node: " + resolvedNode);
     } catch (Error e) {
       throw e;
     } catch (Throwable e) {
