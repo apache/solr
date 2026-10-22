@@ -86,8 +86,7 @@ public class OtelRuntimeJvmMetrics {
     // solr.metrics.jvm.* system property instead of hardcoding true/true here.
     Experimental.setEmitExperimentalMetrics(builder, true);
     Experimental.setEmitExperimentalJfrMetrics(builder, true);
-    // A JDK bug, fixed in later releases, makes JMX return no system CPU utilization.
-    // So we get CPU utilization from JFR instead
+    // Get CPU utilization from JFR instead of JMX to work around JDK bugs
     Experimental.setJfrMetrics(
         builder,
         IncludeExclude.builder().setIncluded(List.of("jvm.system.cpu.utilization")).build());
