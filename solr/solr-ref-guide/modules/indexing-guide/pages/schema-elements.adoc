@@ -95,7 +95,7 @@ However, `uniqueKey` will continue to work, as long as the field is properly use
 Similarity is a Lucene class used to score a document in searching.
 
 Each collection has one "global" Similarity.
-By default, Solr uses an implicit {solr-javadocs}/core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] which allows individual field types to be configured with a "per-type" specific Similarity and implicitly uses `BM25Similarity` for any field type which does not have an explicit Similarity.
+By default, Solr uses an implicit {solr-javadocs}/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] which allows individual field types to be configured with a "per-type" specific Similarity and implicitly uses `BM25Similarity` for any field type which does not have an explicit Similarity.
 
 This default behavior can be overridden by declaring a top level `<similarity/>` element in your schema, outside of any single field type.
 This similarity declaration can either refer directly to the name of a class with a no-argument constructor, such as in this example showing `BM25Similarity`:
@@ -123,7 +123,7 @@ When using the similarity factory, it is possible to specify optional initializa
 ----
 
 In most cases, specifying global level similarity like this will cause an error if your schema also includes field type specific `<similarity/>` declarations.
-One key exception to this is that you may explicitly declare a {solr-javadocs}/core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] and specify what that default behavior will be for all field types that do not declare an explicit Similarity using the name of field type (specified by `defaultSimFromFieldType`) that _is_ configured with a specific similarity:
+One key exception to this is that you may explicitly declare a {solr-javadocs}/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] and specify what that default behavior will be for all field types that do not declare an explicit Similarity using the name of field type (specified by `defaultSimFromFieldType`) that _is_ configured with a specific similarity:
 
 [source,xml]
 ----
@@ -160,4 +160,4 @@ In the example above `IBSimilarityFactory` (using the Information-Based model) w
 If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default.
 
 In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory` etc.
-For details, see the Solr Javadocs for the {solr-javadocs}/core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].
+For details, see the Solr Javadocs for the {solr-javadocs}/org/apache/solr/schema/SimilarityFactory.html[similarity factories].

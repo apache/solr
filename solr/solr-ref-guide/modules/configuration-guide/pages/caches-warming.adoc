@@ -186,7 +186,7 @@ You can locate and use your cache object by name by calling the `SolrIndexSearch
                           regenerator="org.mycompany.mypackage.MyRegenerator" />
 ----
 
-If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements {solr-javadocs}/core/org/apache/solr/search/CacheRegenerator.html[`solr.search.CacheRegenerator`].
+If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements {solr-javadocs}/org/apache/solr/search/CacheRegenerator.html[`solr.search.CacheRegenerator`].
 You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items.
 Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator"`.
 
