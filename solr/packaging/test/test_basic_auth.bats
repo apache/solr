@@ -24,7 +24,7 @@ setup() {
   solr start -Dsolr.packages.enabled=true
 
   # The auth command exports some system variables that are injected as basic auth username and password,
-  solr auth enable --type basicAuth --credentials name:password
+  SOLR_INCLUDE=/force/credentials/to/be/supplied solr auth enable --type basicAuth --credentials name:password
 
   solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
