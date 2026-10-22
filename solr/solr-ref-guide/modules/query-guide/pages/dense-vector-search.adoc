@@ -348,12 +348,10 @@ This vector type is best utilized for data sets consisting of large amounts of h
 Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
 
 [source,xml]
-<fieldType name="binary_quantized_vector" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4"/>
+<fieldType name="binary_quantized_vector" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
 <field name="vector" type="binary_quantized_vector" indexed="true" stored="true"/>
 
-BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField` with the only notable exception being
-`similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
-param.
+BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField`.
 
 NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorField`.
 
