@@ -29,11 +29,13 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -163,15 +165,20 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
       return false; // already on the target node; let it process normally
     }
 
-    String url = zkStateReader.getBaseUrlForNodeName(resolvedNode) + pathAfterContext(req);
-    String queryString = req.getQueryString();
-    if (queryString != null) {
-      url = url + "?" + queryString;
+    URI uri;
+    try {
+      uri = targetUri(zkStateReader.getBaseUrlForNodeName(resolvedNode), req);
+    } catch (SolrException e) {
+      res.sendError(e.code(), e.getMessage());
+      return true;
+    } catch (IllegalArgumentException e) {
+      res.sendError(BAD_REQUEST.code, "Invalid request URI");
+      return true;
     }
     try {
       HttpClient httpClient =
           ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
-      HttpSolrProxy.doHttpProxy(httpClient, req, res, url);
+      HttpSolrProxy.doHttpProxy(httpClient, req, res, uri);
     } catch (Exception e) {
       log.warn("Error proxying request to node {}", resolvedNode, e);
       res.sendError(SERVER_ERROR.code, "Error proxying request to node: " + resolvedNode);
@@ -181,6 +188,16 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
       throw new RuntimeException(e);
     }
     return true;
+  }
+
+  /**
+   * The request's URI on another node. The path is reused as received (still encoded). The query is
+   * re-encoded because Jetty accepts characters in it, like '{' or '|', that a URI rejects.
+   */
+  private static URI targetUri(String baseUrl, HttpServletRequest req) {
+    String query = req.getQueryString();
+    query = query == null ? "" : SolrRequestParsers.parseQueryString(query).toQueryString();
+    return URI.create(baseUrl + pathAfterContext(req) + query);
   }
 
   /** The still-encoded request path with the context path removed. Starts with "/". */

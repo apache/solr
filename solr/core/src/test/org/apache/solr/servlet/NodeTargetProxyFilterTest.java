@@ -32,6 +32,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -171,6 +172,22 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
     req.addHeader(TARGET_NODE_HEADER, receivingNode.getNodeName());
     NamedList<Object> rsp = targetNode.getSolrClient().request(req);
     assertEquals("/solr/" + COLLECTION + "/echo" + encodedPath, rsp.get("requestURI"));
+  }
+
+  /** Jetty accepts query characters that are invalid in a URI (e.g. a local-params '{'). */
+  @Test
+  public void testUnencodedQueryCharsProxied() throws Exception {
+    var httpClient = targetNode.getSolrClient().getHttpClient();
+    var rsp =
+        httpClient
+            .newRequest(targetNode.getBaseUrl().toString())
+            .path("/solr/" + COLLECTION + "/echo?wt=json&foo={!x}|b^2")
+            .headers(h -> h.add(TARGET_NODE_HEADER, receivingNode.getNodeName()))
+            .send();
+    assertEquals(200, rsp.getStatus());
+    Map<?, ?> params =
+        (Map<?, ?>) ((Map<?, ?>) Utils.fromJSONString(rsp.getContentAsString())).get("params");
+    assertEquals("{!x}|b^2", params.get("foo"));
   }
 
   @Test
