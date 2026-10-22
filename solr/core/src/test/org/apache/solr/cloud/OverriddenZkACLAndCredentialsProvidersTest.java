@@ -58,7 +58,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("solrcloud.skip.autorecovery", "true");
+    System.setProperty("test.solr.cloud.replica.autorecovery.skip.enabled", "true");
   }
 
   @Override
