@@ -37,7 +37,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -406,19 +405,19 @@ public class TimeRoutedAlias extends RoutedAlias {
       startTime = DateMathParser.parseMath(new Date(), start).toInstant();
       SolrCore core = cmd.getReq().getCore();
       ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
-      Aliases aliases = zkStateReader.getAliases();
-      Map<String, String> props = new HashMap<>(aliases.getCollectionAliasProperties(aliasName));
       start = DateTimeFormatter.ISO_INSTANT.format(startTime);
-      props.put(ROUTER_START, start);
+      final String fixedStart = start;
 
       // This could race, but it only occurs when the alias is first used and the values produced
       // should all be identical and who wins won't matter (baring cases of Date Math involving
       // seconds, which is pretty far fetched). Putting this in a separate thread to ensure that any
-      // failed races don't cause documents to get rejected.
+      // failed races don't cause documents to get rejected. The modification must be applied to the
+      // aliases it is given, which are current, so that it doesn't undo other changes to aliases.
       core.runAsync(
           () ->
               zkStateReader.aliasesManager.applyModificationAndExportToZk(
-                  (a) -> aliases.cloneWithCollectionAliasProperties(aliasName, props)));
+                  (a) ->
+                      a.cloneWithCollectionAliasProperties(aliasName, ROUTER_START, fixedStart)));
     }
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(
