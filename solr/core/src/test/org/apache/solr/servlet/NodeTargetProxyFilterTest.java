@@ -34,6 +34,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.junit.BeforeClass;
@@ -79,7 +80,13 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
           .asIterator()
           .forEachRemaining(name -> headers.put(name, httpReq.getHeader(name)));
       rsp.add("headers", headers);
+      rsp.add("requestURI", httpReq.getRequestURI());
       rsp.add("params", new SimpleOrderedMap<>(req.getParams()));
+    }
+
+    @Override
+    public SolrRequestHandler getSubHandler(String subPath) {
+      return this;
     }
 
     @Override
@@ -164,6 +171,21 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
     Map<?, ?> params = (Map<?, ?>) rsp.get("params");
     assertEquals("bar", params.get("foo"));
     assertFalse(params.containsKey(TARGET_NODE_HEADER));
+  }
+
+  /** The path is proxied as received, still encoded. */
+  @Test
+  public void testEncodedPathPreserved() throws Exception {
+    // the replica is on receivingNode, so the proxied request is served directly (no further hop)
+    String encodedPath = "/a%20b%23c";
+    HttpURLConnection conn =
+        open(targetNode.getBaseUrl() + "/" + COLLECTION + "/echo" + encodedPath + "?wt=json");
+    conn.setRequestProperty(TARGET_NODE_HEADER, receivingNode.getNodeName());
+    assertEquals(200, conn.getResponseCode());
+    Map<?, ?> rsp =
+        (Map<?, ?>) Utils.fromJSONString(new String(conn.getInputStream().readAllBytes(), UTF_8));
+    conn.disconnect();
+    assertEquals("/solr/" + COLLECTION + "/echo" + encodedPath, rsp.get("requestURI"));
   }
 
   @Test

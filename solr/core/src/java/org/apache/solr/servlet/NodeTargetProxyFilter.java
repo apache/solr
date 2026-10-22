@@ -149,8 +149,7 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
       return false; // already on the target node; let it process normally
     }
 
-    String url =
-        zkStateReader.getBaseUrlForNodeName(resolvedNode) + ServletUtils.getPathAfterContext(req);
+    String url = zkStateReader.getBaseUrlForNodeName(resolvedNode) + pathAfterContext(req);
     String queryString = req.getQueryString();
     if (queryString != null) {
       url = url + "?" + queryString;
@@ -170,6 +169,11 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
       throw new RuntimeException(e);
     }
     return true;
+  }
+
+  /** The still-encoded request path with the context path removed. Starts with "/". */
+  private static String pathAfterContext(HttpServletRequest req) {
+    return req.getRequestURI().substring(req.getContextPath().length());
   }
 
   /**
