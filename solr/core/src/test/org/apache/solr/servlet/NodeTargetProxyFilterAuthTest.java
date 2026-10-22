@@ -40,7 +40,15 @@ public class NodeTargetProxyFilterAuthTest extends SolrCloudAuthTestCase {
         "authentication": {
           "blockUnknown": true,
           "class": "solr.BasicAuthPlugin",
-          "credentials": {"solr": "JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw="}
+          "credentials": {
+            "solr": "JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=",
+            "limited": "JeRyxP8A3dVWhFgFbf/Eg2RXmuoU8BE5gbNQyxmGAJQ= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw="
+          }
+        },
+        "authorization": {
+          "class": "solr.RuleBasedAuthorizationPlugin",
+          "user-role": {"solr": "admin"},
+          "permissions": [{"name": "all", "role": "admin"}]
         }
       }
       """;
@@ -78,6 +86,15 @@ public class NodeTargetProxyFilterAuthTest extends SolrCloudAuthTestCase {
     var req = systemInfoRequest(targetNode.getNodeName());
     var e = expectThrows(SolrException.class, () -> receivingNode.getSolrClient().request(req));
     assertEquals(401, e.code());
+  }
+
+  /** The target node authorizes the original caller, not the proxying node. */
+  @Test
+  public void testProxiedRequestAuthorizedAsCaller() {
+    var req = systemInfoRequest(targetNode.getNodeName());
+    req.setBasicAuthCredentials("limited", PASSWORD);
+    var e = expectThrows(SolrException.class, () -> receivingNode.getSolrClient().request(req));
+    assertEquals(403, e.code());
   }
 
   private static GenericSolrRequest systemInfoRequest(String targetNodeName) {
