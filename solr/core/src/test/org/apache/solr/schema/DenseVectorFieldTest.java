@@ -94,6 +94,14 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
+  public void fieldTypeDefinition_hnswMOutOfRange_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-hnsw-m.xml",
+        "DenseVectorField maxConn must be positive and less than or equal to 512; maxConn=0: vector");
+  }
+
+  @Test
   public void fieldTypeDefinition_nullSimilarityDistance_shouldUseDefaultSimilarityEuclidean()
       throws Exception {
     try {

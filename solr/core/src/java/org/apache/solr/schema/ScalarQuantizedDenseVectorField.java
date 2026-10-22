@@ -121,22 +121,6 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     }
   }
 
-  @Override
-  public void checkSchemaField(final SchemaField field) throws SolrException {
-    super.checkSchemaField(field);
-
-    try {
-      // format does not expose any validation, however by constructing
-      // we will run lucene level argument validation
-      buildKnnVectorsFormat();
-    } catch (IllegalArgumentException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName() + " " + e.getMessage() + ": " + field.getName(),
-          e);
-    }
-  }
-
   public int getBits() {
     return bits;
   }

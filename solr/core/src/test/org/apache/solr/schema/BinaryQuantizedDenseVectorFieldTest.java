@@ -46,6 +46,14 @@ public class BinaryQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
         "knnAlgorithm 'flat' is not supported for BinaryQuantizedDenseVectorField");
   }
 
+  @Test
+  public void fieldDefinition_hnswEfConstructionOutOfRange_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-bq-hnsw-ef-construction.xml",
+        "BinaryQuantizedDenseVectorField beamWidth must be positive and less than or equal to 3200; beamWidth=3201: v_bq");
+  }
+
   // there are no major interface differences between BinaryBitQuantizedDenseVectorField and
   // DenseVectorField
   // so we can rely on those tests for validation cases

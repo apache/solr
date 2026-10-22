@@ -158,7 +158,7 @@ Controls how many of the nearest neighbor candidates are connected to the new no
 For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `M` is defined.
 +
 Accepted values:
-Any integer.
+An integer between `1` and `512`.
 
 `hnswEfConstruction`::
 +
@@ -174,7 +174,7 @@ It is the number of nearest neighbor candidates to track while searching the gra
 For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `efConstruction` is defined.
 +
 Accepted values:
-Any integer.
+An integer between `1` and `3200`.
 
 `DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
 
