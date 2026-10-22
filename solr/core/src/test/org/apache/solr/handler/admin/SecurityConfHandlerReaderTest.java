@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,6 +47,7 @@ public class SecurityConfHandlerReaderTest extends SolrTestCase {
 
   /** A reader of security.json never sees a partial document while edits are written. */
   public void testReaderNeverSeesPartialSecurityJsonDuringEdits() throws Exception {
+    assumeWorkingMockito();
     Path solrHome = createTempDir("securityConfHandlerLocalReaders");
     assumeTrue(
         "atomic replacement needs POSIX file attributes",
