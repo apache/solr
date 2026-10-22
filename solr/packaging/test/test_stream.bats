@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -e techproducts
+  solr start -e techproducts --solr-home "${SOLR_HOME}"
   SOLR_INCLUDE=/force/credentials/to/be/supplied solr auth enable --type basicAuth --credentials name:password
 }
 
