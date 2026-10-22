@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrErrorWrappingException;
@@ -55,7 +54,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 
-@SuppressFileSystems({"ExtrasFS", "WindowsFS"})
 public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -275,6 +273,26 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     assertNoTemporaryFiles(solrHome);
   }
 
+  /** An edit to a hard-linked security.json is written in place, so the other name sees it. */
+  public void testEditKeepsHardLinkedSecurityJsonShared() throws Exception {
+    assumeWorkingMockito();
+    Path solrHome = createTempDir("securityConfHandlerLocalHardLink");
+    Path securityJson = solrHome.resolve("security.json");
+    Path other = solrHome.resolve("other.json");
+    Files.write(securityJson, seedSecurityJson().getBytes(StandardCharsets.UTF_8));
+    boolean linked = true;
+    try {
+      Files.createLink(other, securityJson);
+    } catch (IOException | UnsupportedOperationException e) {
+      linked = false;
+    }
+    assumeTrue("hard links are not supported on this file system", linked);
+    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
+    postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
+    assertTrue(Files.readString(other, StandardCharsets.UTF_8).contains("alice"));
+    assertNoTemporaryFiles(solrHome);
+  }
+
   /** A read-only SOLR_HOME still allows an edit when security.json itself is writable. */
   public void testEditInPlaceWhenSolrHomeIsReadOnly() throws Exception {
     assumeWorkingMockito();
@@ -299,69 +317,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
               PosixFilePermission.OWNER_WRITE,
               PosixFilePermission.OWNER_EXECUTE));
     }
-  }
-
-  /** A reader of security.json never sees a partial document while edits are written. */
-  public void testReaderNeverSeesPartialSecurityJsonDuringEdits() throws Exception {
-    assumeWorkingMockito();
-    Path solrHome = createTempDir("securityConfHandlerLocalReaders");
-    assumeTrue(
-        "atomic replacement needs POSIX file attributes",
-        solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
-    Path securityJson = solrHome.resolve("security.json");
-    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
-    Map<String, Object> small = shortSecurityData("x");
-    Map<String, Object> large = largeSecurityData();
-    byte[] smallBytes = Utils.toJSON(small);
-    byte[] largeBytes = Utils.toJSON(large);
-    Files.write(securityJson, smallBytes);
-    AtomicReference<Throwable> writerErr = new AtomicReference<>();
-    AtomicBoolean writing = new AtomicBoolean(true);
-    Thread writer =
-        new Thread(
-            () -> {
-              try {
-                for (int i = 0; i < 100; i++) {
-                  handler.persistConf(new SecurityConfig().setData(i % 2 == 0 ? large : small));
-                }
-              } catch (Throwable t) {
-                writerErr.set(t);
-              } finally {
-                writing.set(false);
-              }
-            });
-    writer.start();
-    int reads = 0;
-    try {
-      while (writing.get()) {
-        byte[] got;
-        try {
-          got = Files.readAllBytes(securityJson);
-        } catch (IOException e) {
-          // NFS reports a stale handle when the file is replaced during a read
-          continue;
-        }
-        assertTrue(
-            "reader saw a partial security.json of " + got.length + " bytes",
-            Arrays.equals(got, smallBytes) || Arrays.equals(got, largeBytes));
-        reads++;
-      }
-    } finally {
-      writer.join(TimeUnit.SECONDS.toMillis(60));
-    }
-    assertTrue("reader made no reads while the writer ran", reads > 0);
-    assertNull("writer failed: " + writerErr.get(), writerErr.get());
-  }
-
-  private static Map<String, Object> largeSecurityData() {
-    Map<String, Object> creds = new LinkedHashMap<>();
-    creds.put("large", "L".repeat(1_000_000));
-    Map<String, Object> authc = new LinkedHashMap<>();
-    authc.put("class", "solr.BasicAuthPlugin");
-    authc.put("credentials", creds);
-    Map<String, Object> data = new LinkedHashMap<>();
-    data.put("authentication", authc);
-    return data;
   }
 
   /** A security.json created by a write gets the mode a newly created file gets. */

@@ -176,10 +176,16 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
     }
   }
 
-  private boolean atomicReplaceSupported() {
+  private boolean atomicReplaceSupported() throws IOException {
     return supportsAtomicReplace(
-        securityJsonPath.getFileSystem().supportedFileAttributeViews(),
-        Files.isSymbolicLink(securityJsonPath));
+            securityJsonPath.getFileSystem().supportedFileAttributeViews(),
+            Files.isSymbolicLink(securityJsonPath))
+        && !hasHardLinks();
+  }
+
+  private boolean hasHardLinks() throws IOException {
+    return Files.exists(securityJsonPath)
+        && (int) Files.getAttribute(securityJsonPath, "unix:nlink") > 1;
   }
 
   static boolean supportsAtomicReplace(Set<String> fileAttributeViews, boolean symbolicLink) {

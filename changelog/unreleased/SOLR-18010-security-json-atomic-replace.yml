@@ -1,4 +1,4 @@
-title: Standalone security.json is replaced through a synced temporary file on POSIX file systems, so a process crash during an edit leaves the previous file in place. Symbolic links and other file systems are written in place as before.
+title: Standalone security.json is replaced through a synced temporary file on POSIX file systems, so a process crash during an edit leaves the previous file in place. Symbolic links, hard-linked files and file systems without POSIX attributes are written in place as before.
 type: fixed
 authors:
   - name: Nick Shanin
