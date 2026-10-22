@@ -28,9 +28,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -46,6 +50,8 @@ import org.slf4j.LoggerFactory;
 /** Security Configuration Handler which works on standalone local files */
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Set<PosixFilePermission> OWNER_READ_WRITE =
+      EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
   protected Path securityJsonPath;
   private final Object securityJsonLock = new Object();
 
@@ -126,8 +132,9 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
     Path tmpPath =
         securityJsonPath.resolveSibling(
             securityJsonPath.getFileName() + "." + UUID.randomUUID() + ".tmp");
+    boolean replacing = Files.exists(securityJsonPath);
     try {
-      Files.createFile(tmpPath);
+      Files.createFile(tmpPath, temporaryFileAttributes(replacing));
     } catch (AccessDeniedException e) {
       log.warn(
           "Could not create a temporary file next to {}, writing it in place", securityJsonPath, e);
@@ -168,6 +175,12 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
         log.warn("Could not remove temporary file {}", tmpPath, e);
       }
     }
+  }
+
+  private static FileAttribute<?>[] temporaryFileAttributes(boolean replacing) {
+    return replacing
+        ? new FileAttribute<?>[] {PosixFilePermissions.asFileAttribute(OWNER_READ_WRITE)}
+        : new FileAttribute<?>[0];
   }
 
   private void writeInPlace(byte[] json) throws IOException {
