@@ -211,7 +211,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
   }
 
-  /** internal use only */
+  /**
+   * FOR INTERNAL USE: The underlying Jetty HttpClient. Warning: a request created directly from it
+   * doesn't have some settings applied that {@link #decorateRequest(Request, SolrRequest, boolean)}
+   * will do. Call {@link #applyListeners} to apply the listeners.
+   */
   public HttpClient getHttpClient() {
     return httpClient;
   }
@@ -638,9 +642,8 @@ public class HttpJettySolrClient extends HttpSolrClient {
   }
 
   /**
-   * Applies this client's request listeners (e.g. internode authentication and tracing) to a
-   * request created directly from {@link #getHttpClient()} instead of via {@link
-   * #request(SolrRequest)}.
+   * FOR INTERNAL USE: Applies this client's request listeners (e.g. internode authentication and
+   * tracing) to a request created directly from {@link #getHttpClient()}.
    */
   public void applyListeners(Request req) {
     for (HttpListenerFactory factory : listenerFactory) {
