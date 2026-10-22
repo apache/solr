@@ -88,6 +88,13 @@ teardown() {
   assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Deprecated system property disable.config.edit has been replaced by solr.api.config.edit.enabled'
 }
 
+@test "solr.xml referencing a deprecated system property logs a deprecation warning" {
+  # solr.xml still contains the legacy ${solr.hideStackTrace:false} token; setting only the
+  # replacement property here should still resolve correctly and log a warning. See SOLR-17864.
+  solr start -Dsolr.responses.stacktrace.enabled=false
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'A config file still references the deprecated system property solr.hideStackTrace; it was replaced by solr.responses.stacktrace.enabled'
+}
+
 @test "start with custom jetty options" {
   export ENABLE_REMOTE_JMX_OPTS=true
   export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
