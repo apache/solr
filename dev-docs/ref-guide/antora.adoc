@@ -81,7 +81,7 @@ Note that upgrading picocli can change the generated wording without any annotat
 
 === Adding docs for a new tool
 
-The new command will automatically appear in the generated pages, in the navigation and in the command table on `pages/cli/index.adoc` when running `./gradlew generateCliDocs`.
+The new command will automatically appear in the generated pages, in the navigation and in the command table on `pages/cli/index.adoc` when running `gradlew generateCliDocs`.
 
 `pages/cli/index.adoc` is the only hand-written page in that directory; everything matching `solr-*.adoc` is generated and must not be edited by hand.
 `solr-control-script-reference.adoc` documents the default (commons-cli) implementation and should not gain per-command links to the generated pages while the picocli implementation is experimental.
