@@ -21,11 +21,18 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.eclipse.jetty.client.HttpClient;
 
@@ -51,19 +58,70 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
   @Override
   protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
       throws IOException, ServletException {
+
+    String targetNode = req.getHeader(TARGET_NODE_HEADER);
+
     // also accept it as a query param on GET requests, for convenience when a header can't
     // easily be set (e.g. a browser address bar)
-    String targetNode = req.getHeader(TARGET_NODE_HEADER);
     String queryString = req.getQueryString();
-    if (targetNode == null
-        && "GET".equals(req.getMethod())
+    if ("GET".equals(req.getMethod())
         && queryString != null
-        && queryString.contains(TARGET_NODE_HEADER)) {
-      targetNode = SolrRequestParsers.parseQueryString(queryString).get(TARGET_NODE_HEADER);
+        && queryString.contains(TARGET_NODE_HEADER)) { // cheap; avoid double-parse
+      SolrParams params = SolrRequestParsers.parseQueryString(queryString);
+      if (targetNode != null && params.get(TARGET_NODE_HEADER) != null) {
+        res.sendError(400, TARGET_NODE_HEADER + " must EITHER be a header or url param");
+        return;
+      }
+      targetNode = params.get(TARGET_NODE_HEADER);
+      if (targetNode != null) {
+        queryString = filterQueryString(params);
+      }
     }
+
+    // wrap the request to filter out the header & param.
+    //   NOTE: we assume downstream processing only accesses such data via what we override !!
+    if (targetNode != null) {
+      final List<String> headerNames = filterHeaderNamesToList(req); // cheap
+      final String finalQueryString = queryString; // filtered already if needed
+      req =
+          new HttpServletRequestWrapper(req) {
+            @Override
+            public Enumeration<String> getHeaderNames() {
+              return Collections.enumeration(headerNames);
+            }
+
+            @Override
+            public String getQueryString() {
+              return finalQueryString;
+            }
+          };
+    }
+
     if (targetNode == null || targetNode.isBlank() || !proxyToNode(targetNode, req, res)) {
       chain.doFilter(req, res);
     }
+  }
+
+  private static List<String> filterHeaderNamesToList(HttpServletRequest req) {
+    List<String> headerNames = new ArrayList<>();
+    var headerNamesEnum = req.getHeaderNames();
+    while (headerNamesEnum.hasMoreElements()) {
+      String headerName = headerNamesEnum.nextElement();
+      if (!headerName.equalsIgnoreCase(TARGET_NODE_HEADER)) {
+        headerNames.add(headerName);
+      }
+    }
+    return headerNames;
+  }
+
+  private static String filterQueryString(SolrParams params) {
+    ModifiableSolrParams modifiableSolrParams = ModifiableSolrParams.of(params);
+    modifiableSolrParams.remove(TARGET_NODE_HEADER);
+    String queryString = modifiableSolrParams.toQueryString();
+    if (queryString.startsWith("?")) {
+      queryString = queryString.substring(1);
+    }
+    return queryString; // could be empty string
   }
 
   /** Returns true if the request was proxied to {@code targetNode}. */

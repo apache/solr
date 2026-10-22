@@ -24,10 +24,18 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,11 +46,51 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
   private static JettySolrRunner receivingNode;
   private static JettySolrRunner targetNode;
 
+  /** A collection with its only replica on {@link #receivingNode}. */
+  private static final String COLLECTION = "coll";
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     receivingNode = cluster.getJettySolrRunner(0);
     targetNode = cluster.getJettySolrRunner(1);
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1)
+        .setCreateNodeSet(receivingNode.getNodeName())
+        .process(cluster.getSolrClient());
+    cluster
+        .getSolrClient()
+        .request(
+            new ConfigRequest(
+                "{'add-requesthandler': {'name': '/echo', 'class': '"
+                    + EchoHandler.class.getName()
+                    + "'}}"),
+            COLLECTION);
+  }
+
+  /** Echoes the headers and params of the HTTP request as seen by the handler. */
+  public static class EchoHandler extends RequestHandlerBase {
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
+      Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+      var httpReq = req.getHttpSolrCall().getReq();
+      httpReq
+          .getHeaderNames()
+          .asIterator()
+          .forEachRemaining(name -> headers.put(name, httpReq.getHeader(name)));
+      rsp.add("headers", headers);
+      rsp.add("params", new SimpleOrderedMap<>(req.getParams()));
+    }
+
+    @Override
+    public String getDescription() {
+      return "echoes request headers and params";
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext ctx) {
+      return Name.ALL;
+    }
   }
 
   @Test
@@ -85,6 +133,37 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
     conn.setFixedLengthStreamingMode(0);
     conn.getOutputStream().close();
     assertEquals(receivingNode.getNodeName(), respondingNode(conn));
+  }
+
+  /**
+   * The only replica is on the receiving node, so the target node forwards the request back to it.
+   * The targeting directive must be consumed, or the request would bounce back and forth.
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testDirectiveConsumedWhenTargetForwardsToReplica() throws Exception {
+    boolean useHeader = random().nextBoolean();
+    String url = receivingNode.getBaseUrl() + "/" + COLLECTION + "/echo?wt=json&foo=bar";
+    if (!useHeader) {
+      url += "&" + TARGET_NODE_HEADER + "=" + URLEncoder.encode(targetNode.getNodeName(), UTF_8);
+    }
+    HttpURLConnection conn = open(url);
+    conn.setRequestProperty("X-Other", "kept");
+    if (useHeader) {
+      conn.setRequestProperty(TARGET_NODE_HEADER, targetNode.getNodeName());
+    }
+    assertEquals(200, conn.getResponseCode());
+    Map<?, ?> rsp =
+        (Map<?, ?>) Utils.fromJSONString(new String(conn.getInputStream().readAllBytes(), UTF_8));
+    conn.disconnect();
+
+    Map<String, Object> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    headers.putAll((Map<String, ?>) rsp.get("headers"));
+    assertEquals("kept", headers.get("X-Other"));
+    assertFalse(headers.containsKey(TARGET_NODE_HEADER));
+    Map<?, ?> params = (Map<?, ?>) rsp.get("params");
+    assertEquals("bar", params.get("foo"));
+    assertFalse(params.containsKey(TARGET_NODE_HEADER));
   }
 
   @Test
