@@ -22,11 +22,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.channels.FileChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -124,7 +128,7 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
             securityJsonPath.getFileName() + "." + UUID.randomUUID() + ".tmp");
     try {
       Files.createFile(tmpPath);
-    } catch (IOException e) {
+    } catch (AccessDeniedException e) {
       log.warn(
           "Could not create a temporary file next to {}, writing it in place", securityJsonPath, e);
       writeInPlace(json);
@@ -134,12 +138,19 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
       Files.write(tmpPath, json);
       syncFile(tmpPath);
       if (Files.exists(securityJsonPath)) {
-        copyPermissions(tmpPath);
         if (!hasSameOwner(tmpPath)) {
           log.warn("{} is owned by another user, writing it in place", securityJsonPath);
           writeInPlace(json);
           return;
         }
+        try {
+          copyGroup(tmpPath);
+        } catch (IOException e) {
+          log.warn("Could not keep the group of {}, writing it in place", securityJsonPath, e);
+          writeInPlace(json);
+          return;
+        }
+        copyPermissions(tmpPath);
       }
       try {
         moveTemporaryFile(tmpPath);
@@ -194,6 +205,12 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
 
   private void copyPermissions(Path tmpPath) throws IOException {
     Files.setPosixFilePermissions(tmpPath, Files.getPosixFilePermissions(securityJsonPath));
+  }
+
+  private void copyGroup(Path tmpPath) throws IOException {
+    GroupPrincipal group =
+        Files.readAttributes(securityJsonPath, PosixFileAttributes.class).group();
+    Files.getFileAttributeView(tmpPath, PosixFileAttributeView.class).setGroup(group);
   }
 
   private boolean hasSameOwner(Path tmpPath) throws IOException {
