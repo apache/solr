@@ -24,6 +24,7 @@ setup() {
   solr start -Dsolr.packages.enabled=true
 
   # The auth command exports some system variables that are injected as basic auth username and password,
+  # however that defeats our test so fake that out via --solr-include-file param specifing a bogus path.
   SOLR_INCLUDE=/force/credentials/to/be/supplied solr auth enable --type basicAuth --credentials name:password
 
   solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
