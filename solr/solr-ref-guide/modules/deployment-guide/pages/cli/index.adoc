@@ -94,7 +94,7 @@ The commands below have been migrated and have a reference page generated from t
 
 == Known Changes
 
-In addition to the commands that have not been migrated yet:
+These are the changes in default CLI behavior as compared to 9.x and 10.1.
 
 * On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
 * `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
