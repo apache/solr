@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: LoadAverageCircuitBreaker now caches its sampled value for a short TTL, so it stops re-polling the OS load average per request at high RPS.
+title: LoadAverageCircuitBreaker now caches its sampled load average instead of re-polling it on every request.
 type: fixed
 authors:
   - name: Mark Robert Miller

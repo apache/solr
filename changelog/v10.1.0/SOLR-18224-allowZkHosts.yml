@@ -1,12 +1,4 @@
-title: >-
-  New solr.xml setting allowZkHosts limits which ZooKeeper connection strings
-  a cross-collection join or streaming expression may use (zkHost or
-  solrConnection); an HTTP(s) solrConnection must be a live node or be listed
-  in allowUrls. The local SolrCloud ensemble is always allowed. zkHost
-  and solrUrl are now mutually exclusive in a single cross-collection join
-  clause. The local ensemble is matched verbatim, including any chroot: a node
-  started with `-DzkHost=zk1:2181/solr` allows `zkHost="zk1:2181/solr"` but not
-  `zkHost="zk1:2181"` unless listed in `allowZkHosts`.
+title: New solr.xml setting allowZkHosts restricts the ZooKeeper hosts that cross-collection joins and streaming expressions may connect to.
 type: changed
 authors:
   - name: Mark Robert Miller

@@ -1,6 +1,4 @@
-title: >-
-  /update/extract (ExtractingRequestHandler) now requires the "update"
-  permission rather than "read", since it indexes documents.
+title: The /update/extract handler now requires the update permission.
 type: changed
 authors:
   - name: Mark Robert Miller
