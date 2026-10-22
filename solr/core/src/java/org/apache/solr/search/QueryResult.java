@@ -26,6 +26,7 @@ public class QueryResult {
   private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
+  private CursorMark previousCursorMark;
   private Boolean maxHitsTerminatedEarly;
   private Long approximateTotalHits;
 
@@ -90,12 +91,39 @@ public class QueryResult {
     return docListAndSet;
   }
 
-  public void setNextCursorMark(CursorMark next) {
+  public void setCursorMarkResult(CursorMark previous, CursorMark next) {
+    this.previousCursorMark = previous;
     this.nextCursorMark = next;
+  }
+
+  public void setCursorMarkNoResults(CursorMark providedCursorMark, int numRequested) {
+    if (providedCursorMark != null) {
+      if (numRequested == 0) {
+        // No docs were requested, so we don't have information on anything other than what the user provided
+        if (providedCursorMark.isReverse()) {
+          setCursorMarkResult(providedCursorMark, null);
+        } else {
+          setCursorMarkResult(null, providedCursorMark);
+        }
+      } else {
+        // Documents were requested, but none were returned, so we are either at the beginning or end of the results
+        if (providedCursorMark.isReverse()) {
+          // If doing a reverse cursorMark, and we have no results, then the nextCursorMark should be "*" as we have reverse-cursed through all documents, and a cursorMark should start from the beginning of the list
+          setCursorMarkResult(providedCursorMark, providedCursorMark.initial(false));
+        } else {
+          // If doing a non-reverse cursorMark, and we have no results, then the previousCursorMark should be "<" as we have cursed through all documents, and a reverse cursorMark should start from the end of the list
+          setCursorMarkResult(providedCursorMark.initial(true), providedCursorMark);
+        }
+      }
+    }
   }
 
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
+  }
+
+  public CursorMark getPreviousCursorMark() {
+    return previousCursorMark;
   }
 
   public Boolean getTerminatedEarly() {

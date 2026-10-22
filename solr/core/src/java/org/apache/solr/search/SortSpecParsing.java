@@ -217,6 +217,39 @@ public class SortSpecParsing {
     return vs;
   }
 
+  static ValueSource reverse(QParser parser, StrParser sp, int start) throws SyntaxError {
+    ValueSource vs;
+    if (parser instanceof FunctionQParser fparser) {
+      fparser.setParseToEnd(false);
+
+      vs = fparser.parseAsValueSource();
+
+      if (fparser.localParams != null) {
+        if (fparser.valFollowedParams) {
+          // need to find the end of the function query via the string parser
+          int leftOver = fparser.sp.end - fparser.sp.pos;
+          sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
+        } else {
+          // the value was via the "v" param in localParams, so we need to find
+          // the end of the local params themselves to pick up where we left off
+          sp.pos = start + fparser.localParamsEnd;
+        }
+      } else {
+        // need to find the end of the function query via the string parser
+        int leftOver = fparser.sp.end - fparser.sp.pos;
+        sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
+      }
+    } else {
+      // A QParser that's not for function queries.
+      // It must have been specified via local params.
+      vs = parser.parseAsValueSource();
+
+      assert parser.getLocalParams() != null;
+      sp.pos = start + parser.localParamsEnd;
+    }
+    return vs;
+  }
+
   private static SortSpec newEmptySortSpec() {
     return new SortSpec(null, List.of());
   }

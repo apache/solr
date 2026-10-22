@@ -1688,7 +1688,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
         if (0 == cmd.getSupersetMaxDoc()) {
           // this is the only case where `cursorMark && !needSort`
-          qr.setNextCursorMark(cmd.getCursorMark());
+          qr.setCursorMarkNoResults(cmd.getCursorMark(), cmd.getLen());
         } else {
           // cursorMark should always add a `uniqueKey` sort field tie-breaker, which
           // should prevent `needSort` from ever being false in conjunction with
@@ -1756,7 +1756,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /**
    * Helper method for extracting the {@link FieldDoc} sort values from a {@link TopFieldDocs} when
-   * available and making the appropriate call to {@link QueryResult#setNextCursorMark} when
+   * available and making the appropriate call to {@link QueryResult#setCursorMarkResult} when
    * applicable.
    *
    * @param qr <code>QueryResult</code> to modify
@@ -1769,12 +1769,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // ...but that has non-trivial queryResultCache implications
     // See: SOLR-5595
 
-    if (null == qc.getCursorMark()) {
+    CursorMark cursorMark = qc.getCursorMark();
+    if (cursorMark == null) {
       // nothing to do, short circuit out
       return;
     }
-
-    final CursorMark lastCursorMark = qc.getCursorMark();
 
     // if we have a cursor, then we have a sort that at minimum involves uniqueKey..
     // so we must have a TopFieldDocs containing FieldDoc[]
@@ -1784,15 +1783,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (0 == scoreDocs.length) {
       // no docs on this page, re-use existing cursor mark
-      qr.setNextCursorMark(lastCursorMark);
+      qr.setCursorMarkNoResults(cursorMark, qc.getLen());
     } else {
-      ScoreDoc lastDoc = scoreDocs[scoreDocs.length - 1];
-      assert lastDoc instanceof FieldDoc : "FieldDoc cursor constraint violated";
+      ScoreDoc firstDoc = scoreDocs[0];
+      assert firstDoc instanceof FieldDoc : "FieldDoc cursor constraint violated on first doc";
+      List<Object> firstFields = Arrays.asList(((FieldDoc) firstDoc).fields);
+      CursorMark previousCursorMark = cursorMark.createPrevious(firstFields);
 
-      List<Object> lastFields = Arrays.<Object>asList(((FieldDoc) lastDoc).fields);
-      CursorMark nextCursorMark = lastCursorMark.createNext(lastFields);
-      assert null != nextCursorMark : "null nextCursorMark";
-      qr.setNextCursorMark(nextCursorMark);
+      ScoreDoc lastDoc = scoreDocs[scoreDocs.length - 1];
+      assert lastDoc instanceof FieldDoc : "FieldDoc cursor constraint violated on last doc";
+
+      List<Object> lastFields = Arrays.asList(((FieldDoc) lastDoc).fields);
+      CursorMark nextCursorMark = cursorMark.createNext(lastFields);
+
+      qr.setCursorMarkResult(previousCursorMark, nextCursorMark);
     }
   }
 
@@ -1815,8 +1819,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return new TopScoreDocCollectorManager(len, minNumFound).newCollector();
     } else {
       // we have a sort
-      final Sort weightedSort = weightSort(cmd.getSort());
-      final CursorMark cursor = cmd.getCursorMark();
+      Sort weightedSort = weightSort(cmd.getSort());
+      CursorMark cursor = cmd.getCursorMark();
+      if (cursor != null && cursor.isReverse()) {
+        weightedSort = weightedSort.reverse();
+      }
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
       return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)
@@ -1886,7 +1893,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           new DocSlice(
               0, 0, new int[0], new float[0], totalHits, maxScore, TotalHits.Relation.EQUAL_TO);
       // no docs on this page, so cursor doesn't change
-      qr.setNextCursorMark(cmd.getCursorMark());
+      qr.setCursorMarkNoResults(cmd.getCursorMark(), cmd.getLen());
     } else {
       if (log.isDebugEnabled()) {
         log.debug("calling from 2, query: {}", query.getClass());
@@ -2000,8 +2007,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       docList =
           new DocSlice(
               0, 0, new int[0], new float[0], set.size(), maxScore, TotalHits.Relation.EQUAL_TO);
-      // no docs on this page, so cursor doesn't change
-      qr.setNextCursorMark(cmd.getCursorMark());
+
+      qr.setCursorMarkNoResults(cmd.getCursorMark(), cmd.getLen());
     } else {
       final TopDocs topDocs;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, getTaskExecutor())) {
@@ -2091,7 +2098,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // SOLR-2923
       qr.getDocListAndSet().docList =
           new DocSlice(0, 0, new int[0], null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
-      qr.setNextCursorMark(cmd.getCursorMark());
+      qr.setCursorMarkNoResults(cmd.getCursorMark(), cmd.getLen());
       return;
     }
 
