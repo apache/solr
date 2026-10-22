@@ -27,6 +27,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -35,6 +38,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -266,10 +270,64 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
             PosixFilePermission.OWNER_WRITE,
             PosixFilePermission.GROUP_READ);
     Files.setPosixFilePermissions(securityJson, expected);
+    Object fileKey = Files.readAttributes(securityJson, BasicFileAttributes.class).fileKey();
+    GroupPrincipal group = Files.readAttributes(securityJson, PosixFileAttributes.class).group();
     SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
     postAuthorizationEdit(handler, "{'set-user-role': {'alice': 'admin'}}");
     assertTrue(Files.readString(securityJson, StandardCharsets.UTF_8).contains("alice"));
     assertEquals(expected, Files.getPosixFilePermissions(securityJson));
+    assertEquals(group, Files.readAttributes(securityJson, PosixFileAttributes.class).group());
+    assertNotEquals(
+        "security.json was written in place, not replaced",
+        fileKey,
+        Files.readAttributes(securityJson, BasicFileAttributes.class).fileKey());
+    assertNoTemporaryFiles(solrHome);
+  }
+
+  /** While an edit is written, the temporary file is no wider than the existing security.json. */
+  public void testTemporaryFileIsNoWiderThanExistingSecurityJson() throws Exception {
+    assumeWorkingMockito();
+    Path solrHome = createTempDir("securityConfHandlerLocalTmpMode");
+    assumeTrue(
+        "POSIX file permissions are not supported on this file system",
+        solrHome.getFileSystem().supportedFileAttributeViews().contains("posix"));
+    Path securityJson = solrHome.resolve("security.json");
+    Files.write(securityJson, seedSecurityJson().getBytes(StandardCharsets.UTF_8));
+    Set<PosixFilePermission> existing =
+        EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
+    Files.setPosixFilePermissions(securityJson, existing);
+    SecurityConfHandlerLocal handler = new SecurityConfHandlerLocal(mockCoreContainer(solrHome));
+    Map<String, Object> bulk = bulkSecurityData();
+    Set<Set<PosixFilePermission>> seen = ConcurrentHashMap.newKeySet();
+    AtomicBoolean writing = new AtomicBoolean(true);
+    Thread watcher =
+        new Thread(
+            () -> {
+              while (writing.get()) {
+                try (Stream<Path> files = Files.list(solrHome)) {
+                  for (Path file :
+                      files.filter(f -> f.getFileName().toString().endsWith(".tmp")).toList()) {
+                    seen.add(Files.getPosixFilePermissions(file));
+                  }
+                } catch (IOException e) {
+                  // the temporary file was renamed or deleted between the listing and the read
+                }
+              }
+            });
+    watcher.start();
+    try {
+      for (int i = 0; i < 3; i++) {
+        handler.persistConf(new SecurityConfig().setData(bulk));
+      }
+    } finally {
+      writing.set(false);
+      watcher.join(TimeUnit.SECONDS.toMillis(60));
+    }
+    assertFalse("the watcher never saw a temporary file", seen.isEmpty());
+    for (Set<PosixFilePermission> mode : seen) {
+      assertTrue(
+          "temporary file mode " + mode + " is wider than " + existing, existing.containsAll(mode));
+    }
     assertNoTemporaryFiles(solrHome);
   }
 
@@ -409,6 +467,17 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     }
     Map<String, Object> creds = new LinkedHashMap<>();
     creds.put("longuser", pad.toString());
+    Map<String, Object> authc = new LinkedHashMap<>();
+    authc.put("class", "solr.BasicAuthPlugin");
+    authc.put("credentials", creds);
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("authentication", authc);
+    return data;
+  }
+
+  private static Map<String, Object> bulkSecurityData() {
+    Map<String, Object> creds = new LinkedHashMap<>();
+    creds.put("bulk", "B".repeat(8_000_000));
     Map<String, Object> authc = new LinkedHashMap<>();
     authc.put("class", "solr.BasicAuthPlugin");
     authc.put("credentials", creds);
