@@ -1,0 +1,7 @@
+title: V2 logging API can broadcast log level changes to multiple nodes, and the Admin UI logging screen now uses it.
+type: added
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-15823
+    url: https://issues.apache.org/jira/browse/SOLR-15823
