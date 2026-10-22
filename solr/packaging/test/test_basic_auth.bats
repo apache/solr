@@ -73,7 +73,7 @@ run solr create -c COLL_NAME
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
-  run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
 
   # Test export
