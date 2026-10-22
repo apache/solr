@@ -17,20 +17,21 @@
 
 package org.apache.solr.servlet;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.servlet.NodeTargetProxyFilter.TARGET_NODE_HEADER;
 
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URLEncoder;
 import java.util.Map;
 import java.util.TreeMap;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -41,7 +42,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests {@link NodeTargetProxyFilter}. */
-@SolrTestCaseJ4.SuppressSSL
 public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
 
   private static JettySolrRunner receivingNode;
@@ -102,44 +102,34 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
 
   @Test
   public void testHeaderProxiesToTargetNode() throws Exception {
-    HttpURLConnection conn = open(receivingNode.getBaseUrl() + "/admin/info/system?wt=json");
-    conn.setRequestProperty(TARGET_NODE_HEADER, targetNode.getNodeName());
-    assertEquals(targetNode.getNodeName(), respondingNode(conn));
+    var req = systemInfoRequest(SolrRequest.METHOD.GET, params());
+    req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());
+    assertEquals(targetNode.getNodeName(), respondingNode(receivingNode, req));
   }
 
   @Test
   public void testHeaderProxiesV2() throws Exception {
-    HttpURLConnection conn = open(receivingNode.getBaseURLV2() + "/node/system");
-    conn.setRequestProperty(TARGET_NODE_HEADER, targetNode.getNodeName());
-    assertEquals(targetNode.getNodeName(), respondingNode(conn));
+    var req = new V2Request.Builder("/node/system").GET().build();
+    req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());
+    assertEquals(targetNode.getNodeName(), respondingNode(receivingNode, req));
   }
 
   @Test
   public void testQueryParamProxiesGet() throws Exception {
-    HttpURLConnection conn =
-        open(
-            receivingNode.getBaseUrl()
-                + "/admin/info/system?wt=json&"
-                + TARGET_NODE_HEADER
-                + "="
-                + URLEncoder.encode(targetNode.getNodeName(), UTF_8));
-    assertEquals(targetNode.getNodeName(), respondingNode(conn));
+    var req =
+        systemInfoRequest(
+            SolrRequest.METHOD.GET, params().set(TARGET_NODE_HEADER, targetNode.getNodeName()));
+    assertEquals(targetNode.getNodeName(), respondingNode(receivingNode, req));
   }
 
   @Test
   public void testQueryParamIgnoredForPost() throws Exception {
-    HttpURLConnection conn =
-        open(
-            receivingNode.getBaseUrl()
-                + "/admin/info/system?wt=json&"
-                + TARGET_NODE_HEADER
-                + "="
-                + URLEncoder.encode(targetNode.getNodeName(), UTF_8));
-    conn.setRequestMethod("POST");
-    conn.setDoOutput(true);
-    conn.setFixedLengthStreamingMode(0);
-    conn.getOutputStream().close();
-    assertEquals(receivingNode.getNodeName(), respondingNode(conn));
+    // a body forces the params onto the URL's query string
+    var req =
+        systemInfoRequest(
+                SolrRequest.METHOD.POST, params().set(TARGET_NODE_HEADER, targetNode.getNodeName()))
+            .withContent(new byte[0], "text/plain");
+    assertEquals(receivingNode.getNodeName(), respondingNode(receivingNode, req));
   }
 
   /**
@@ -149,28 +139,25 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @Test
   public void testDirectiveConsumedWhenTargetForwardsToReplica() throws Exception {
+    var params = params();
     boolean useHeader = random().nextBoolean();
-    String url = receivingNode.getBaseUrl() + "/" + COLLECTION + "/echo?wt=json&foo=bar";
     if (!useHeader) {
-      url += "&" + TARGET_NODE_HEADER + "=" + URLEncoder.encode(targetNode.getNodeName(), UTF_8);
+      params.set(TARGET_NODE_HEADER, targetNode.getNodeName());
     }
-    HttpURLConnection conn = open(url);
-    conn.setRequestProperty("X-Other", "kept");
+    var req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + COLLECTION + "/echo", params);
+    req.addHeader("X-Other", "kept");
     if (useHeader) {
-      conn.setRequestProperty(TARGET_NODE_HEADER, targetNode.getNodeName());
+      req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());
     }
-    assertEquals(200, conn.getResponseCode());
-    Map<?, ?> rsp =
-        (Map<?, ?>) Utils.fromJSONString(new String(conn.getInputStream().readAllBytes(), UTF_8));
-    conn.disconnect();
+    NamedList<Object> rsp = receivingNode.getSolrClient().request(req);
 
     Map<String, Object> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     headers.putAll((Map<String, ?>) rsp.get("headers"));
     assertEquals("kept", headers.get("X-Other"));
     assertFalse(headers.containsKey(TARGET_NODE_HEADER));
-    Map<?, ?> params = (Map<?, ?>) rsp.get("params");
-    assertEquals("bar", params.get("foo"));
-    assertFalse(params.containsKey(TARGET_NODE_HEADER));
+    NamedList<?> echoedParams = (NamedList<?>) rsp.get("params");
+    assertEquals("bar", echoedParams.get("foo"));
+    assertNull(echoedParams.get(TARGET_NODE_HEADER));
   }
 
   /** The path is proxied as received, still encoded. */
@@ -178,29 +165,27 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
   public void testEncodedPathPreserved() throws Exception {
     // the replica is on receivingNode, so the proxied request is served directly (no further hop)
     String encodedPath = "/a%20b%23c";
-    HttpURLConnection conn =
-        open(targetNode.getBaseUrl() + "/" + COLLECTION + "/echo" + encodedPath + "?wt=json");
-    conn.setRequestProperty(TARGET_NODE_HEADER, receivingNode.getNodeName());
-    assertEquals(200, conn.getResponseCode());
-    Map<?, ?> rsp =
-        (Map<?, ?>) Utils.fromJSONString(new String(conn.getInputStream().readAllBytes(), UTF_8));
-    conn.disconnect();
+    var req =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, "/" + COLLECTION + "/echo" + encodedPath, params());
+    req.addHeader(TARGET_NODE_HEADER, receivingNode.getNodeName());
+    NamedList<Object> rsp = targetNode.getSolrClient().request(req);
     assertEquals("/solr/" + COLLECTION + "/echo" + encodedPath, rsp.get("requestURI"));
   }
 
   @Test
   public void testTargetingSelfIsHandledLocally() throws Exception {
-    HttpURLConnection conn = open(receivingNode.getBaseUrl() + "/admin/info/system?wt=json");
-    conn.setRequestProperty(TARGET_NODE_HEADER, receivingNode.getNodeName());
-    assertEquals(receivingNode.getNodeName(), respondingNode(conn));
+    var req = systemInfoRequest(SolrRequest.METHOD.GET, params());
+    req.addHeader(TARGET_NODE_HEADER, receivingNode.getNodeName());
+    assertEquals(receivingNode.getNodeName(), respondingNode(receivingNode, req));
   }
 
   @Test
-  public void testUnknownNodeIs400() throws Exception {
-    HttpURLConnection conn = open(receivingNode.getBaseUrl() + "/admin/info/system?wt=json");
-    conn.setRequestProperty(TARGET_NODE_HEADER, "no.such.host:1234_solr");
-    assertEquals(400, conn.getResponseCode());
-    conn.disconnect();
+  public void testUnknownNodeIs400() {
+    var req = systemInfoRequest(SolrRequest.METHOD.GET, params());
+    req.addHeader(TARGET_NODE_HEADER, "no.such.host:1234_solr");
+    var e = expectThrows(SolrException.class, () -> receivingNode.getSolrClient().request(req));
+    assertEquals(400, e.code());
   }
 
   @Test
@@ -221,15 +206,17 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
         NodeTargetProxyFilter.resolvePeerShorthand("solr2:8983_solr", "solr1:8983_solr"));
   }
 
-  private static HttpURLConnection open(String url) throws Exception {
-    return (HttpURLConnection) URI.create(url).toURL().openConnection();
+  private static GenericSolrRequest systemInfoRequest(
+      SolrRequest.METHOD method, SolrParams params) {
+    return new GenericSolrRequest(
+        method, "/admin/info/system", SolrRequest.SolrRequestType.ADMIN, params);
   }
 
-  /** Returns the "node" field from a system-info response. */
-  private static String respondingNode(HttpURLConnection conn) throws Exception {
-    assertEquals(200, conn.getResponseCode());
-    String body = new String(conn.getInputStream().readAllBytes(), UTF_8);
-    conn.disconnect();
-    return (String) ((Map<?, ?>) Utils.fromJSONString(body)).get("node");
+  private static ModifiableSolrParams params() {
+    return new ModifiableSolrParams().set("foo", "bar"); // including an arbitrary pair
+  }
+
+  private static String respondingNode(JettySolrRunner node, SolrRequest<?> req) throws Exception {
+    return (String) node.getSolrClient().request(req).get("node");
   }
 }
