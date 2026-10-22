@@ -29,9 +29,11 @@ More examples of SolrCLI in use are available throughout this Guide, particularl
 ====
 This page documents the `bin/solr` script as it behaves by default.
 
-A re-implementation of the command line interface, built on picocli, is also included in this release.
-It is enabled by default, and the options it accepts differ in places from those documented here.
-See xref:cli/index.adoc[] if you would like to try it.
+SolrCLI is built over PicoCLI & is enabled by default. See xref:cli/index.adoc[] if you would like to try it, each subcommand has its dedicated reference guide for usage.
+
+However, if you face any issue, feel free to use the commons-cli which you can enable using a flag.
+
+
 ====
 
 == Starting and Stopping

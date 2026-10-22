@@ -21,7 +21,6 @@ Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to ht
 Both implementations ship together and the older commons-cli one can be enabled on request.
 
 
-
 == Disabling It
 
 Set `SOLR_PICOCLI` in your `solr.in.sh` (or `solr.in.cmd` on Windows):
@@ -39,9 +38,9 @@ SOLR_TOOL_OPTS="-Dsolr.picocli=false" bin/solr status
 ----
 
 
-== Migrated Commands
+== List of Commands
 
-The commands below have been migrated and have a reference page generated from their source annotations.
+These following commands now have a reference page generated from their source annotations.
 
 // CLI-DOCS-TABLE-START
 [cols="1",options="header"]
@@ -92,7 +91,7 @@ The commands below have been migrated and have a reference page generated from t
 |===
 // CLI-DOCS-TABLE-END
 
-== Known Changes
+== Migration Changes
 
 These are the changes in default CLI behavior as compared to 9.x and 10.1.
 
