@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -160,6 +161,52 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
     assertFieldValues(rsp.getResults(), id, "5", "7", "2", "6", "3");
+  }
+
+  /**
+   * Tests numFound and numFoundExact for fused results, including a truncated fusion pool and a
+   * count-only request.
+   *
+   * @throws Exception if any error occurs during the test execution
+   */
+  @Test
+  @ShardsFixed(num = 2)
+  public void testNumFound() throws Exception {
+    prepareIndexDocs();
+    String queries =
+        "{\"queries\":"
+            + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(1^=6 OR 2^=5 OR 3^=4 OR 4^=3 OR 5^=2 OR 6^=1)\"}},"
+            + "\"lexical2\":{\"lucene\":{\"query\":\"id:(5^=6 OR 6^=5 OR 7^=4 OR 8^=3 OR 9^=2 OR 10^=1)\"}}},"
+            + "\"limit\":%d,"
+            + "\"fields\":[\"id\",\"score\"],"
+            + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
+
+    // both queries match 6 docs, overlapping on docs 5 and 6, so the fused result has 10 distinct
+    // docs; numFound is that distinct count, exact since no list was truncated
+    QueryResponse rsp =
+        query(
+            CommonParams.JSON, String.format(Locale.ROOT, queries, 10), CommonParams.QT, "/search");
+    assertEquals(10, rsp.getResults().getNumFound());
+    assertEquals(Boolean.TRUE, rsp.getResults().getNumFoundExact());
+
+    // the fusion pool (start + rows = 2) truncates each 6-match list to its top 2; numFound never
+    // drops below the largest sub-query's match count (6) and is reported inexact because the
+    // fused pool holds only a subset of the matches
+    rsp =
+        query(
+            CommonParams.JSON, String.format(Locale.ROOT, queries, 2), CommonParams.QT, "/search");
+    assertEquals(2, rsp.getResults().size());
+    assertEquals(6, rsp.getResults().getNumFound());
+    assertEquals(Boolean.FALSE, rsp.getResults().getNumFoundExact());
+
+    // count-only: rows=0 leaves the fusion pool empty, but numFound still reports the largest
+    // sub-query's match count rather than the pool size of 0
+    rsp =
+        query(
+            CommonParams.JSON, String.format(Locale.ROOT, queries, 0), CommonParams.QT, "/search");
+    assertEquals(0, rsp.getResults().size());
+    assertEquals(6, rsp.getResults().getNumFound());
+    assertEquals(Boolean.FALSE, rsp.getResults().getNumFoundExact());
   }
 
   /**
