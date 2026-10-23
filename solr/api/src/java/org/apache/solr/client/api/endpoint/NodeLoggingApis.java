@@ -35,8 +35,12 @@ public interface NodeLoggingApis {
   @Path("/levels")
   @Operation(
       summary = "List all log-levels for the target node.",
+      description =
+          "If the 'nodes' parameter is provided, the listing is instead collected from "
+              + "each of the named nodes (or from every live node, if 'nodes' is 'all'), and "
+              + "the response reports the per-node results.",
       tags = {"logging"})
-  ListLevelsResponse listAllLoggersAndLevels();
+  ListLevelsResponse listAllLoggersAndLevels(@QueryParam("nodes") String nodes);
 
   @PUT
   @Path("/levels")
