@@ -33,7 +33,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
@@ -483,10 +482,10 @@ public class SolrCmdDistributor implements Closeable {
     public int statusCode = -1;
 
     /**
-     * NOTE: This is the request that happened to be executed when this error was <b>triggered</b>
-     * the error, but because of how {@link StreamingSolrClients} uses {@link
-     * ConcurrentUpdateBaseSolrClient} it might not actaully be the request that <b>caused</b> the
-     * error -- multiple requests are merged &amp; processed as a sequential batch.
+     * The request this error is recorded against. When a {@link StreamingSolrClients} stream fails,
+     * the error is recorded once against each request that was merged into the stream, because a
+     * stream-level failure cannot be narrowed down to the single request whose update the remote
+     * node rejected.
      */
     public Req req;
 
