@@ -20,6 +20,7 @@ package org.apache.solr.client.api.util;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.servers.Server;
 
 @OpenAPIDefinition(
     info =
@@ -27,5 +28,8 @@ import io.swagger.v3.oas.annotations.info.License;
             title = "v2 API",
             description = "OpenAPI spec for Solr's v2 API endpoints",
             license = @License(name = "ASL 2.0"),
-            version = SolrVersion.LATEST_STRING))
+            version = SolrVersion.LATEST_STRING),
+    // A relative URL keeps API-explorer tooling (e.g. Swagger UI) same-origin with
+    // whichever node ends up serving it, so "try it out" calls need no CORS setup.
+    servers = @Server(url = "/api", description = "This Solr node"))
 public class ApiMetadata {}
