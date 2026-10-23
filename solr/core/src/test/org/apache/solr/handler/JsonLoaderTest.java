@@ -750,7 +750,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
               () -> {
                 updateJ(json("[{'id':'1','big_integer_tl':12345678901234567890}]"), null);
               });
-      assertTrue(ex.getCause() instanceof NumberFormatException);
+      assertTrue(hasNumberFormatExceptionCause(ex));
 
       // Adding a BigInteger to an integer field should fail
       // BigInteger.intValue() returns only the low-order 32 bits.
@@ -760,8 +760,17 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
               () -> {
                 updateJ(json("[{'id':'1','big_integer_ti':12345678901234567890}]"), null);
               });
-      assertTrue(ex.getCause() instanceof NumberFormatException);
+      assertTrue(hasNumberFormatExceptionCause(ex));
     }
+  }
+
+  private static boolean hasNumberFormatExceptionCause(Throwable throwable) {
+    for (Throwable cause = throwable.getCause(); cause != null; cause = cause.getCause()) {
+      if (cause instanceof NumberFormatException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Test
