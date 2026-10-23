@@ -117,8 +117,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         new ModifiableSolrParams()
             .set(CommonParams.FL, "id,[elevated]")
             .set(CommonParams.SORT, "id asc")
-            .set(QueryElevationParams.FORCE_ELEVATION, true)
-            .add(params);
+            .set(QueryElevationParams.FORCE_ELEVATION, true);
+    requestParams.add(params);
     List<String> ids = new ArrayList<>(elevatedIds);
     ids.addAll(matchingIds);
     List<String> assertions = new ArrayList<>();
