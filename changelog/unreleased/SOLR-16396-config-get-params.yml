@@ -1,5 +1,5 @@
 title:
-  Migrate GET paramsets v2 API to JAX-RS.
+  Migrate GET paramsets v2 API to JAX-RS. v2 GET /config/params is now GET /config/paramsets.
 type: changed
 authors:
   - name: Jalaz Kumar
