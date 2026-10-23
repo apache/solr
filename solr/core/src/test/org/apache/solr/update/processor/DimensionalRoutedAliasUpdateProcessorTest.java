@@ -23,6 +23,7 @@ import static org.apache.solr.client.solrj.request.CollectionAdminRequest.create
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -127,7 +128,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap("tabby", "calico"));
 
     testFailedDocument("shorthair", "2017-10-23T00:00:00Z", "couldn't be routed");
-    testFailedDocument("shorthair", "2020-10-23T00:00:00Z", "too far in the future");
+    testFailedDocument("shorthair", tooFarInTheFuture(), "too far in the future");
     testFailedDocument(null, "2019-07-02T00:00:00Z", "Route value is null");
     testFailedDocument("foo__CRA__bar", "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
     testFailedDocument("fóóCRAóóbar", "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
@@ -278,18 +279,22 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap("shorthair", "tabby", "calico"));
 
     // verify that all the documents ended up in the right collections.
+    // [shard] is requested with style='urls' because the replica core URLs
+    // contain the collection name, which encodes the category and the day
+    // each document should have been routed to. The default [shard] style
+    // returns only the shard id, which names neither.
     QueryResponse resp =
         solrClient.query(
             getAlias(),
             params(
                 "q", "*:*",
                 "rows", "100",
-                "fl", "*,[shard]",
+                "fl", "*,shard:[shard style='urls']",
                 "sort", "id asc"));
     SolrDocumentList results = resp.getResults();
     assertEquals(18, results.getNumFound());
     for (SolrDocument result : results) {
-      String shard = String.valueOf(result.getFieldValue("[shard]"));
+      String shard = String.valueOf(result.getFieldValue("shard"));
       String cat = String.valueOf(result.getFieldValue("cat_s"));
       Date date = (Date) result.getFieldValue("timestamp_dt");
       String day = date.toInstant().toString().split("T")[0];
@@ -349,7 +354,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap("tabby", "calico"));
 
     testFailedDocument("shorthair", "2017-10-23T00:00:00Z", "couldn't be routed");
-    testFailedDocument("shorthair", "2020-10-23T00:00:00Z", "too far in the future");
+    testFailedDocument("shorthair", tooFarInTheFuture(), "too far in the future");
     testFailedDocument(null, "2019-07-02T00:00:00Z", "Route value is null");
     testFailedDocument("foo__CRA__bar", "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
     testFailedDocument("fóóCRAóóbar", "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
@@ -502,18 +507,22 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap("shorthair", "tabby", "calico"));
 
     // verify that all the documents ended up in the right collections.
+    // [shard] is requested with style='urls' because the replica core URLs
+    // contain the collection name, which encodes the category and the day
+    // each document should have been routed to. The default [shard] style
+    // returns only the shard id, which names neither.
     QueryResponse resp =
         solrClient.query(
             getAlias(),
             params(
                 "q", "*:*",
                 "rows", "100",
-                "fl", "*,[shard]",
+                "fl", "*,shard:[shard style='urls']",
                 "sort", "id asc"));
     SolrDocumentList results = resp.getResults();
     assertEquals(18, results.getNumFound());
     for (SolrDocument result : results) {
-      String shard = String.valueOf(result.getFieldValue("[shard]"));
+      String shard = String.valueOf(result.getFieldValue("shard"));
       String cat = String.valueOf(result.getFieldValue("cat_s"));
       Date date = (Date) result.getFieldValue("timestamp_dt");
       String day = date.toInstant().toString().split("T")[0];
@@ -601,6 +610,14 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     assertEquals(expectNumFound, totalNumFound);
 
     assertEquals("COLS FOUND:" + cols, expectedCols.length, cols.size());
+  }
+
+  // Computed relative to now so the document is always beyond router.maxFutureMs and is
+  // rejected by TimeRoutedAlias.validateRouteValue. A fixed "future" date eventually becomes
+  // the past; the document is then routed instead, and creating the collections between the
+  // alias start and that date one day at a time stalls the update until it times out.
+  private static String tooFarInTheFuture() {
+    return Instant.now().plus(30, ChronoUnit.DAYS).toString();
   }
 
   private void testFailedDocument(String category, String timestamp, String errorMsg)

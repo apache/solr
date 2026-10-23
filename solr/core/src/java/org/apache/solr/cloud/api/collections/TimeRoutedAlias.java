@@ -218,8 +218,8 @@ public class TimeRoutedAlias extends RoutedAlias {
   @Override
   String[] formattedRouteValues(SolrInputDocument doc) {
     String routeField = getRouteField();
-    Date fieldValue = (Date) doc.getFieldValue(routeField);
-    String dest = calcCandidateCollection(fieldValue.toInstant()).getDestinationCollection();
+    Instant fieldValue = parseRouteKey(doc.getFieldValue(routeField));
+    String dest = calcCandidateCollection(fieldValue).getDestinationCollection();
     int nonValuePrefix =
         getAliasName().length() + getRoutedAliasType().getSeparatorPrefix().length();
     return new String[] {dest.substring(nonValuePrefix)};
