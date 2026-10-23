@@ -72,6 +72,14 @@ public abstract class DocTransformer {
   }
 
   /**
+   * Like {@link #getRawFields()}, but each entry is a glob pattern (as accepted in {@code fl}); any
+   * field whose name matches is written raw.
+   */
+  public Collection<String> getRawFieldGlobs() {
+    return Set.of();
+  }
+
+  /**
    * Indicates if this transformer requires access to the underlying index to perform its functions.
    *
    * <p>In some situations (notably RealTimeGet) this method <i>may</i> be called before {@link

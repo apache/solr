@@ -53,6 +53,14 @@ public class DocTransformers extends DocTransformer {
         .collect(Collectors.toList());
   }
 
+  @Override
+  public Collection<String> getRawFieldGlobs() {
+    return children.stream()
+        .map(DocTransformer::getRawFieldGlobs)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
+  }
+
   public void addTransformer(DocTransformer a) {
     children.add(a);
   }
