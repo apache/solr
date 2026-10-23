@@ -88,6 +88,124 @@ solrAdminServices.factory('Metrics',
       }
       return {handle: handle};
     }])
+.factory('NodeTarget',
+    ['$rootScope', function($rootScope) {
+      var STORAGE_KEY = 'adminui.selectedNode';
+      var state = {
+        localNode: null,
+        selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
+        liveNodes: [],
+        ready: false
+      };
+
+      function isRemote() {
+        return !!(state.selectedNode && state.localNode && state.selectedNode !== state.localNode);
+      }
+
+      function persistSelected() {
+        if (state.selectedNode) {
+          sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      function withNodes(opts) {
+        opts = opts || {};
+        if (isRemote()) {
+          opts.nodes = state.selectedNode;
+        }
+        return opts;
+      }
+
+      function unwrap(data, response) {
+        if (!isRemote()) {
+          return data;
+        }
+        // Proxied payload is under the node name (@JsonAnyGetter), not remoteNodeData.
+        var body = (response && response.body) || data || {};
+        return body[state.selectedNode] || data;
+      }
+
+      function publish() {
+        $rootScope.localNode = state.localNode;
+        $rootScope.selectedNode = state.selectedNode;
+        $rootScope.liveNodes = state.liveNodes;
+        $rootScope.viewingRemoteNode = isRemote();
+      }
+
+      function markReady() {
+        if (!state.ready) {
+          state.ready = true;
+          publish();
+        }
+      }
+
+      function whenReady(fn) {
+        if (state.ready) {
+          fn();
+          return angular.noop;
+        }
+        var unwatch = $rootScope.$watch(function() { return state.ready; }, function(ready) {
+          if (!ready) {
+            return;
+          }
+          unwatch();
+          fn();
+        });
+        return unwatch;
+      }
+
+      function setLocalNode(nodeName) {
+        state.localNode = nodeName;
+        if (!state.selectedNode) {
+          state.selectedNode = nodeName;
+        }
+        publish();
+      }
+
+      function setLiveNodes(nodes) {
+        state.liveNodes = (nodes || []).slice().sort();
+        if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+          state.selectedNode = state.localNode || state.liveNodes[0] || null;
+          persistSelected();
+        }
+        publish();
+        markReady();
+      }
+
+      function selectNode(nodeName) {
+        if (!nodeName || nodeName === state.selectedNode) {
+          return false;
+        }
+        state.selectedNode = nodeName;
+        persistSelected();
+        publish();
+        return true;
+      }
+
+      function clear() {
+        state.localNode = null;
+        state.selectedNode = null;
+        state.liveNodes = [];
+        persistSelected();
+        publish();
+        markReady();
+      }
+
+      return {
+        state: state,
+        isRemote: isRemote,
+        withNodes: withNodes,
+        unwrap: unwrap,
+        setLocalNode: setLocalNode,
+        setLiveNodes: setLiveNodes,
+        selectNode: selectNode,
+        clear: clear,
+        markReady: markReady,
+        whenReady: whenReady
+      };
+    }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';

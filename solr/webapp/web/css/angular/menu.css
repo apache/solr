@@ -21,16 +21,24 @@ limitations under the License.
 {
   position: fixed;
   top: 120px;
+  bottom: 8px;
+  left: 30px;
   width: 150px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scroll #menu-wrapper
 {
-  position: absolute;
-  top: 90px;
+  position: fixed;
+  top: 120px;
+  bottom: 8px;
+  left: 30px;
 }
 
-.has-environment #menu-wrapper
+.has-environment #menu-wrapper,
+.has-environment.scroll #menu-wrapper
 {
   top: 160px;
 }
@@ -43,16 +51,111 @@ limitations under the License.
   text-overflow: ellipsis;
 }
 
+#menu .menu-section
+{
+  margin-top: 14px;
+  padding: 8px 4px 4px 8px;
+  border-bottom: 1px solid #d8d8d8;
+  color: #888;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#menu .menu-section:first-of-type,
+#menu #login + div > .menu-section:first-child
+{
+  margin-top: 6px;
+}
+
+#menu .menu-control
+{
+  border-bottom: 0;
+  padding-top: 6px;
+  padding-bottom: 8px;
+}
+
 #core-selector,#collection-selector
 {
-  margin-top: 20px;
+  margin-top: 8px;
   padding-right: 10px;
+  box-sizing: border-box;
+}
+
+#node-selector
+{
+  margin: 0;
+  padding-right: 10px;
+  box-sizing: border-box;
 }
 
 #core-selector .chosen-container,
-#collection-selector .chosen-container
+#collection-selector .chosen-container,
+#node-selector .chosen-container
 {
   width: 100% !important;
+  max-width: 100%;
+}
+
+/* Keep Chosen drops inside the 150px sidebar (base Chosen uses width:auto). */
+#menu-wrapper .chosen-container-single .chosen-drop
+{
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#menu-wrapper .chosen-container-single .chosen-single
+{
+  height: 25px;
+  line-height: 24px;
+  padding: 0 0 0 8px;
+  box-sizing: border-box;
+}
+
+#menu-wrapper .chosen-container-single .chosen-single span
+{
+  display: block;
+  margin-right: 26px;
+  line-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#menu-wrapper #node-selector .chosen-results
+{
+  max-height: 220px;
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#menu-wrapper #node-selector .chosen-results li
+{
+  white-space: nowrap;
+}
+
+#menu-wrapper .chosen-container-single .chosen-single div
+{
+  height: 100%;
+}
+
+#menu-wrapper .chosen-container-single .chosen-single div b
+{
+  background: url("../../img/chosen-sprite.png") no-repeat 0 2px;
+}
+
+#menu-wrapper .chosen-container-active.chosen-with-drop .chosen-single div b
+{
+  background-position: -18px 2px;
+}
+
+#menu-wrapper .chosen-container .chosen-results
+{
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 #core-selector a,
@@ -63,7 +166,8 @@ limitations under the License.
 }
 
 #core-selector select,
-#collection-selector select
+#collection-selector select,
+#node-selector select
 {
   width: 100%;
 }
@@ -267,14 +371,14 @@ limitations under the License.
 #menu #collections.global p a { background-image: url( ../../img/ico/documents-stack.png ); }
 #menu #cores.global p a { background-image: url( ../../img/ico/databases.png ); }
 
-#menu #cloud.global p a { background-image: url( ../../img/ico/network-cloud.png ); }
-#menu #cloud.global .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
-#menu #cloud.global .nodes a { background-image: url( ../../img/solr-ico.png ); }
-#menu #cloud.global .zkstatus a { background-image: url( ../../img/ico/node-leader.png ); }
-#menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
+#menu #cloud-nodes.global p a { background-image: url( ../../img/solr-ico.png ); }
+#menu #cloud-tree.global p a { background-image: url( ../../img/ico/folder-tree.png ); }
+#menu #cloud-zkstatus.global p a { background-image: url( ../../img/ico/node-leader.png ); }
+#menu #cloud-graph.global p a { background-image: url( ../../img/ico/molecule.png ); }
 
 #menu #schema-designer.global p a { background-image: url( ../../img/ico/book-open-text.png ); }
-#menu #security.global p a { background-image: url( ../../img/ico/users.png ); }
+#menu #security.global p a,
+#menu #security-standalone.global p a { background-image: url( ../../img/ico/users.png ); }
 
 .sub-menu .ping.error a
 {
