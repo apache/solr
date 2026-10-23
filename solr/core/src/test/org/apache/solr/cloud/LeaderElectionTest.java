@@ -39,7 +39,10 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -284,6 +287,54 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     firstContext.cancelElection();
     Thread.sleep(1000);
     assertEquals("new leader was not registered", url2, getLeaderUrl("collection2", "slice1"));
+  }
+
+  @Test
+  public void testRepeatedWatchFailureIsRaisedInsteadOfRetriedForever() throws Exception {
+    String nodeName = "127.0.0.1:80_solr";
+    ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
+
+    LeaderElector first = new LeaderElector(zkClient);
+    ElectionContext firstContext =
+        new ShardLeaderElectionContextBase(
+            first,
+            "slice1",
+            "collection2",
+            "dummynode1",
+            watchTestProps(nodeName, "1"),
+            zkController);
+    first.setup(firstContext);
+    first.joinElection(firstContext, false);
+
+    SolrZkClient failingWatch = Mockito.spy(zkClient);
+    Mockito.doThrow(new KeeperException.NoAuthException())
+        .when(failingWatch)
+        .getData(Mockito.anyString(), Mockito.any(Watcher.class), Mockito.<Stat>any());
+    LeaderElector second = new LeaderElector(failingWatch);
+    ElectionContext secondContext =
+        new ShardLeaderElectionContextBase(
+            second,
+            "slice1",
+            "collection2",
+            "dummynode2",
+            watchTestProps(nodeName, "2"),
+            zkController);
+    second.setup(secondContext);
+
+    assertThrows(
+        KeeperException.NoAuthException.class, () -> second.joinElection(secondContext, false));
+    Mockito.verify(failingWatch, Mockito.times(LeaderElector.MAX_WATCH_FAILURES))
+        .getData(Mockito.anyString(), Mockito.any(Watcher.class), Mockito.<Stat>any());
+  }
+
+  private ZkNodeProps watchTestProps(String nodeName, String coreName) {
+    return new ZkNodeProps(
+        ZkStateReader.NODE_NAME_PROP,
+        nodeName,
+        ZkStateReader.BASE_URL_PROP,
+        zkStateReader.getBaseUrlForNodeName(nodeName),
+        ZkStateReader.CORE_NAME_PROP,
+        coreName);
   }
 
   private String getLeaderUrl(final String collection, final String slice)
