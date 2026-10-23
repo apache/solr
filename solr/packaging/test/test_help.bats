@@ -23,24 +23,24 @@ setup() {
 
 @test "solr help flag prints help" {
   run -1 solr --help
-  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  assert_output --regexp '[Uu]sage: (solr COMMAND OPTIONS|bin/solr)'
   refute_output --partial 'ERROR'
 }
 @test "solr with no flags prints help" {
   run -1 solr
-  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  assert_output --regexp '[Uu]sage: (solr COMMAND OPTIONS|bin/solr)'
   refute_output --partial 'ERROR'
 }
 
 @test "start help flag prints help" {
   run solr start --help
-  assert_output --partial 'Usage: solr start'
+  assert_output --regexp '[Uu]sage: (bin/)?solr start'
   refute_output --partial 'ERROR'
 }
 
 @test "start h flag prints help" {
   run solr start -h
-  assert_output --partial 'Usage: solr start'
+  assert_output --regexp '[Uu]sage: (bin/)?solr start'
   refute_output --partial 'ERROR: Hostname is required when using the -h option!'
 }
 
@@ -48,13 +48,14 @@ setup() {
 
 @test "stop help flag prints help" {
   run solr stop --help
-  assert_output --partial 'Usage: solr stop'
+  assert_output --regexp '[Uu]sage: (bin/)?solr stop'
   refute_output --partial 'ERROR'
 }
 
 @test "restart help flag prints help" {
+[ -z "$SOLR_PICOCLI" ] || skip "restart is not migrated to picocli yet"
   run solr restart --help
-  assert_output --partial 'Usage: solr restart'
+  assert_output --regexp '[Uu]sage: (bin/)?solr restart'
   refute_output --partial 'ERROR'
 }
 
