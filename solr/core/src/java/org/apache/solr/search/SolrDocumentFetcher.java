@@ -90,6 +90,8 @@ public class SolrDocumentFetcher {
 
   private final boolean enableLazyFieldLoading;
 
+  private final boolean enableDocValuesIteratorCache;
+
   private final SolrCache<Integer, Document> documentCache;
 
   private final Set<String> allStored;
@@ -126,6 +128,7 @@ public class SolrDocumentFetcher {
     this.searcher = template.searcher;
     this.nLeaves = template.nLeaves;
     this.enableLazyFieldLoading = template.enableLazyFieldLoading;
+    this.enableDocValuesIteratorCache = template.enableDocValuesIteratorCache;
     this.documentCache = template.documentCache;
     this.nonStoredDVsUsedAsStored = template.nonStoredDVsUsedAsStored;
     this.allNonStoredDVs = template.allNonStoredDVs;
@@ -162,6 +165,7 @@ public class SolrDocumentFetcher {
 
     // lazy loading makes no sense if we don't have a `documentCache`
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading && documentCache != null;
+    this.enableDocValuesIteratorCache = solrConfig.enableDocValuesIteratorCache;
 
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
@@ -226,6 +230,15 @@ public class SolrDocumentFetcher {
 
   public boolean isLazyFieldLoadingEnabled() {
     return enableLazyFieldLoading;
+  }
+
+  boolean isDocValuesIteratorCacheEnabled() {
+    return enableDocValuesIteratorCache;
+  }
+
+  /** Builds a request-scoped DocValues iterator cache, honoring {@code solrconfig.xml}. */
+  public DocValuesIteratorCache createDocValuesIteratorCache() {
+    return new DocValuesIteratorCache(searcher, enableDocValuesIteratorCache);
   }
 
   public SolrCache<Integer, Document> getDocumentCache() {
@@ -794,7 +807,7 @@ public class SolrDocumentFetcher {
         dvFields.addAll(storedFields);
         storedFields.clear();
       }
-      reuseDvIters = dvFields.isEmpty() ? null : new DocValuesIteratorCache(searcher);
+      reuseDvIters = dvFields.isEmpty() ? null : createDocValuesIteratorCache();
     }
 
     /**
