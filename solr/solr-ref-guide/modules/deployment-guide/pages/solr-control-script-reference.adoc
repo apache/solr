@@ -28,7 +28,7 @@ More examples of SolrCLI in use are available throughout this Guide, particularl
 [NOTE]
 ====
 By default, `bin/solr` uses a picocli-based implementation.
-See xref:cli/index.adoc[] for the reference of its command and options.
+See xref:cli/index.adoc[] for the reference for its commands and options.
 
 The sections below describe the legacy Apache Commons CLI implementation, which you can switch to by setting `SOLR_PICOCLI=false` in case you run into a problem with the default.
 Options and the output may differ from the default CLI.
