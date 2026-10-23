@@ -25,6 +25,7 @@
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="high_dimensional_float_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="FLOAT32"/>
   <fieldType name="high_dimensional_byte_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="BYTE"/>
+  <fieldType name="knn_vector_binary_quantized" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
   <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
@@ -41,6 +42,7 @@
   <field name="vector2" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector_byte_encoding" type="knn_vector_byte_encoding" indexed="true" stored="true" />
   <field name="vector_byte_multivalued" type="knn_vector_byte_encoding" indexed="true" stored="true" multiValued="true"/>
+  <field name="vector_binary_quantized" type="knn_vector_binary_quantized" indexed="true" stored="true" />
   <field name="2048_byte_vector" type="high_dimensional_byte_knn_vector" indexed="true" stored="true" />
   <field name="2048_float_vector" type="high_dimensional_float_knn_vector" indexed="true" stored="true" />
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
