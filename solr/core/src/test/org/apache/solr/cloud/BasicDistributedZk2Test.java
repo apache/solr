@@ -157,19 +157,23 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       SolrZkClient expiredZkClient =
           cloudJetty.jetty.getCoreContainer().getZkController().getZkClient();
       CountDownLatch sessionExpired = new CountDownLatch(1);
+      OnDisconnect expiryListener =
+          expired -> {
+            if (expired) {
+              sessionExpired.countDown();
+            }
+          };
       expiredZkClient
           .getCuratorFramework()
           .getConnectionStateListenable()
-          .addListener(
-              (OnDisconnect)
-                  (expired -> {
-                    if (expired) {
-                      sessionExpired.countDown();
-                    }
-                  }));
+          .addListener(expiryListener);
       chaosMonkey.expireSession(cloudJetty.jetty);
       assertTrue("session did not expire", sessionExpired.await(30, TimeUnit.SECONDS));
       expiredZkClient.getCuratorFramework().blockUntilConnected(30, TimeUnit.SECONDS);
+      expiredZkClient
+          .getCuratorFramework()
+          .getConnectionStateListenable()
+          .removeListener(expiryListener);
 
       indexr("id", docId + 1, t1, "slip this doc in");
 
