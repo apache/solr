@@ -99,6 +99,13 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     super.distribSetUp();
   }
 
+  // The monkey spares leaders only, so an update sent to any replica can hit a stopped node.
+  @Override
+  protected CloudSolrClient createCloudClient(String defaultCollection) {
+    return createNewCloudSolrClient(
+        zkServer.getZkAddress(), defaultCollection, true, 30000, 120000);
+  }
+
   public ChaosMonkeySafeLeaderWithPullReplicasTest() {
     super();
     numPullReplicas = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;
