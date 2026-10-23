@@ -18,6 +18,8 @@ package org.apache.solr.search;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -114,6 +116,31 @@ public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
     params.add("group.topgroups.sort_i", "50");
     QueryResponse shardRsp = new QueryRequest(params).process(clients.get(0));
     assertShardCount(shardRsp, "analytics section missing for grouped second phase shard query", 3);
+  }
+
+  @Test
+  @ShardsFixed(num = 3)
+  public void testGroupedReleasesOnlyPermittedDocs() throws Exception {
+    indexDocs();
+
+    // Shard 0 holds sort_i 5, 50 and 1. The release filter keeps only sort_i below 10.
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!releaseoncomplete}");
+    params.add("group", "true");
+    params.add("group.field", "sort_i");
+    params.add("group.distributed.first", "true");
+    params.add("group.ngroups", "true");
+    QueryResponse shardRsp = new QueryRequest(params).process(clients.get(0));
+    NamedList<?> firstPhase = (NamedList<?>) shardRsp.getResponse().get("firstPhase");
+    NamedList<?> sortI = (NamedList<?>) firstPhase.get("sort_i");
+    assertEquals(2, sortI.get("groupCount"));
+    NamedList<?> topGroups = (NamedList<?>) sortI.get("topGroups");
+    Set<String> groups = new HashSet<>();
+    for (int i = 0; i < topGroups.size(); i++) {
+      groups.add(topGroups.getName(i));
+    }
+    assertEquals(Set.of("5", "1"), groups);
   }
 
   private void indexDocs() throws Exception {
