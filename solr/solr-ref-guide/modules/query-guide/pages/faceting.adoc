@@ -207,7 +207,7 @@ For multi-valued fields, a hybrid approach is used that uses term filters from t
 The letters `fc` stand for field cache.
 +
 `fcs`::: Per-segment field faceting for single-valued string fields.
-Enable with `facet.method=fcs` and control the number of threads used with the `threads` local parameter.
+Enable with `facet.method=fcs` and control the number of threads used with the `threads` local parameter. The default is `1`, which counts one segment at a time on the facet executor. `threads=0` counts segments on the request thread, and a negative value means no limit.
 This parameter allows faceting to be faster in the presence of rapid index changes.
 
 +
@@ -276,6 +276,7 @@ The maximum number of parallel threads used to load the underlying fields used i
 +
 Omitting this parameter or specifying the thread count as `0` will not spawn any threads, and only the main request thread will be used.
 Specifying a negative number of threads will create up to `Integer.MAX_VALUE` threads.
+This setting controls field loading only. With `facet.method=fcs`, segment counting uses the `threads` local parameter instead, which defaults to `1`, so `facet.threads=0` does not by itself keep segment tasks off the facet executor.
 
 == Range Faceting
 
