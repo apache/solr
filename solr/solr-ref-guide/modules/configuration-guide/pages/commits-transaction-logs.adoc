@@ -271,6 +271,7 @@ The minimum number of update records to keep across all the transaction log file
 |===
 +
 The maximum number of transaction log files to keep.
+If `numRecordsToKeep` is set and `maxNumLogsToKeep` is not, the default is `1000` instead, so that the configured number of records is not cut short by the file limit.
 
 `syncLevel`::
 +
