@@ -16,14 +16,14 @@
  limitations under the License.
 -->
 
-<!-- Test schema file for BinaryQuantizedDenseVectorField -->
+<!-- Test schema file for DenseVectorField -->
 
-<schema name="bad-schema-densevector-bq-hnsw-ef-construction" version="1.7">
+<schema name="bad-schema-densevector-hnsw-ef-construction" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
-  <fieldType name="knn_vector_binary_quantized" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4" hnswEfConstruction="3201"/>
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" hnswEfConstruction="3201"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="v_bq" type="knn_vector_binary_quantized" indexed="true" stored="true"/>
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>
