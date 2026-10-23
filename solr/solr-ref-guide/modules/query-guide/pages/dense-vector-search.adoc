@@ -313,6 +313,8 @@ As a specific type of DenseVectorField, this field type supports `knnAlgorithm` 
 
 NOTE: Scalar quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized, and with `knnAlgorithm="flat"` they do not support the KNN query parsers. Use `vectorSimilarity()` function queries instead.
 
+NOTE: Quantization requires the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]. With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory`, this field type is accepted but its vectors are stored unquantized, without any warning.
+
 Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
 
 [source,xml]
@@ -357,6 +359,8 @@ Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
 BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField`.
 
 NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorField`.
+
+NOTE: Quantization requires the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]. With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory`, this field type is accepted but its vectors are stored unquantized, without any warning.
 
 [[query-hnsw-fields]]
 == Querying Vectors in Navigable Small-world Graphs
