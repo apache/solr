@@ -1,0 +1,9 @@
+title: >
+  LogUpdateProcessorFactory now logs the same request details in the slow-update warning as in the INFO summary instead of
+  clearing them after the INFO message.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-16910
+    url: https://issues.apache.org/jira/browse/SOLR-16910
