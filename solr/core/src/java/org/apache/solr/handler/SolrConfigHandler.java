@@ -71,6 +71,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -197,12 +198,12 @@ public class SolrConfigHandler extends RequestHandlerBase
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
           // V1 nests the paramsets payload under "response"
-          NamedList<Object> paramSets = new NamedList<>();
+          NamedList<Object> paramSets = new SimpleOrderedMap<>();
           V2ApiUtils.squashIntoNamedListWithoutHeader(
               paramSets,
               parts.size() == 3
-                  ? new GetParamSets(req).getParamSets(parts.get(2))
-                  : new GetParamSets(req).getParamSets());
+                  ? new GetParamSets(req).getParamSet(parts.get(2))
+                  : new GetParamSets(req).listParamSets());
           resp.add(SolrQueryResponse.NAME, paramSets);
         } else {
           if (ZNODEVER.equals(parts.get(1))) {

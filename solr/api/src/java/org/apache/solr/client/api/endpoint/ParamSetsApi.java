@@ -35,7 +35,7 @@ public interface ParamSetsApi {
     @Operation(
         summary = "Fetch all request param sets",
         tags = {"param-sets"})
-    ParamSetsResponse getParamSets();
+    ParamSetsResponse listParamSets();
 
     @GET
     @Path("/{paramSetName}")
@@ -43,7 +43,7 @@ public interface ParamSetsApi {
     @Operation(
         summary = "Fetch a single request param set",
         tags = {"param-sets"})
-    ParamSetsResponse getParamSets(
+    ParamSetsResponse getParamSet(
         @PathParam("paramSetName") @Parameter(description = "Name of the param set")
             String paramSetName);
   }
