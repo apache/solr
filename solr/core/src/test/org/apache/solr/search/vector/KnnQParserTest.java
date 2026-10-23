@@ -311,6 +311,20 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void rerankOversample_preFilterMatchingNoDocs_shouldReturnNoResults() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_binary_quantized topK=5 rerankOversample=3 preFilter='id:nonexistent'}"
+                + vectorToSearch,
+            "fl",
+            "id"),
+        "//result[@numFound='0']");
+  }
+
+  @Test
   public void topKMissing_shouldReturnDefaultTopK() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
