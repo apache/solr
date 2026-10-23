@@ -135,7 +135,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               }]
             }]
           }}}
-          """
+          """;
       String json =
           String.format(
               Locale.ROOT, template, rootId, childLabel, rootId + 1, grandChildLabel, rootId + 2);
