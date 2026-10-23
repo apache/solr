@@ -21,11 +21,22 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.Before;
@@ -1265,6 +1276,158 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertFailedU(adoc(doc));
   }
 
+  @Test
+  public void testRepeatedAddFieldOfOperationsIsAtomicUpdate() throws Exception {
+    // each addField call appends another operation map; the XML writer folds them into one map,
+    // javabin keeps them as a collection of maps
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", Map.of("add", "ddd"));
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      SolrInputDocument merged = new AtomicUpdateDocumentMerger(req).merge(update, existing);
+      assertEquals(
+          List.of("bbb", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
+    }
+  }
+
+  @Test
+  public void testRepeatedAddFieldOfOperationsViaJavabin() throws Exception {
+    // The ticket's wire path: a SolrJ client writing javabin sends one addField per operation
+    // map, and javabin (unlike the XML writer, which folds them into one map) keeps them as a
+    // collection of maps. Sent through the real update handler, the update must still land as
+    // an atomic update on the stored document.
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "7");
+    doc.setField("cat", new String[] {"aaa", "ccc"});
+    assertU(adoc(doc));
+    assertU(commit());
+
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", Map.of("add", "ddd"));
+
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.add(update);
+    SolrQueryRequestBase req =
+        new SolrQueryRequestBase(h.getCore(), new MultiMapSolrParams(new HashMap<>()));
+    try {
+      req.setContentStreams(List.of(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
+      UpdateRequestHandler handler = new UpdateRequestHandler();
+      handler.init(new NamedList<>());
+      handler.handleRequestBody(req, new SolrQueryResponse());
+    } finally {
+      req.close();
+    }
+    assertU(commit());
+
+    assertQ(
+        req("q", "id:7"),
+        "//result[@numFound='1']",
+        "count(//arr[@name='cat']/str)=2",
+        "//arr[@name='cat']/str[1][.='bbb']",
+        "//arr[@name='cat']/str[2][.='ddd']");
+  }
+
+  @Test
+  public void testMixedFieldPlainValueFirstIsRejected() throws Exception {
+    // A field that mixes a plain value with an operation map is rejected whichever value
+    // comes first. Here the plain value comes first: before the merger scanned every
+    // value, the field was not recognized as atomic at all and the operation map was
+    // indexed as a plain value.
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", "plain");
+    update.addField("cat", Map.of("add", "ddd"));
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> new AtomicUpdateDocumentMerger(req).merge(update, existing));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("mixes atomic update operations"));
+    }
+  }
+
+  @Test
+  public void testMixedFieldOperationMapFirstIsRejected() throws Exception {
+    // The same mixed field with the operation map first: the merger already rejected
+    // this order, and it keeps the same error shape as the plain-first order.
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", "plain");
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> new AtomicUpdateDocumentMerger(req).merge(update, existing));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("mixes atomic update operations"));
+    }
+  }
+
+  @Test
+  public void testRepeatedOperationsWithPlainFieldStillMerge() throws Exception {
+    // Control for the mixed-field rejection: repeated operation maps on one field still
+    // apply, and a separate field holding only plain values is still set as-is. Only
+    // mixing within one field is rejected.
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("set", "bbb"));
+    update.addField("cat", Map.of("add", "ddd"));
+    update.addField("title", "aaa");
+    update.addField("title", "ccc");
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa", "ccc"});
+
+    try (SolrQueryRequest req = req()) {
+      SolrInputDocument merged = new AtomicUpdateDocumentMerger(req).merge(update, existing);
+      assertEquals(
+          List.of("bbb", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
+      assertEquals(
+          List.of("aaa", "ccc"), new ArrayList<Object>(merged.getField("title").getValues()));
+
+      // a document with no operation maps at all is not an atomic update
+      SolrInputDocument plainDoc = new SolrInputDocument();
+      plainDoc.setField("id", "8");
+      plainDoc.addField("cat", "plain");
+      AddUpdateCommand plainCmd = new AddUpdateCommand(req);
+      plainCmd.solrDoc = plainDoc;
+      assertFalse(AtomicUpdateDocumentMerger.isAtomicUpdate(plainCmd));
+    }
+  }
+
   public void testAtomicUpdatesOnDateFields() {
     String[] dateFieldNames = {"simple_tdt1", "simple_tdts", "simple_tdtdv1", "simple_tdtdvs"};
 
@@ -1726,5 +1889,57 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         req("q", "id:9999", "indent", "true"),
         "//result[@numFound = '1']",
         "//doc/arr[@name='cat']/str[.='new_value']");
+  }
+
+  @Test
+  public void testAtomicUpdateWithChildDocuments() throws Exception {
+    // A field holding child documents is a plain value, not a set of atomic update
+    // operations: a child document is a Map (SolrDocumentBase), so without a guard the
+    // merger reads the child's own field names as operation names and fails the update
+    // with "Unknown operation". Child document fields must be set as-is, as they were
+    // before repeated operation maps were recognized.
+    SolrInputDocument childA = new SolrInputDocument();
+    childA.setField("id", "7a");
+    childA.setField("name", "child-a");
+    SolrInputDocument childB = new SolrInputDocument();
+    childB.setField("id", "7b");
+    childB.setField("name", "child-b");
+
+    SolrInputDocument update = new SolrInputDocument();
+    update.setField("id", "7");
+    update.addField("cat", Map.of("add", "ddd"));
+    update.addField("children", childA);
+    update.addField("children", childB);
+
+    SolrInputDocument existing = new SolrInputDocument();
+    existing.setField("id", "7");
+    existing.setField("cat", new String[] {"aaa"});
+
+    try (SolrQueryRequest req = req()) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = update;
+      assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
+
+      AtomicUpdateDocumentMerger merger = new AtomicUpdateDocumentMerger(req);
+      SolrInputDocument merged = merger.merge(update, existing);
+      assertEquals(
+          List.of("aaa", "ddd"), new ArrayList<Object>(merged.getField("cat").getValues()));
+      assertEquals(2, merged.getField("children").getValues().size());
+      assertSame(childA, merged.getField("children").getFirstValue());
+
+      // a single child document in a field is likewise a plain set, not an operation map
+      SolrInputDocument singleUpdate = new SolrInputDocument();
+      singleUpdate.setField("id", "9");
+      singleUpdate.addField("cat", Map.of("set", "zzz"));
+      singleUpdate.setField("child", childA);
+
+      SolrInputDocument singleExisting = new SolrInputDocument();
+      singleExisting.setField("id", "9");
+      singleExisting.setField("cat", new String[] {"aaa"});
+
+      SolrInputDocument singleMerged = merger.merge(singleUpdate, singleExisting);
+      assertEquals(List.of("zzz"), new ArrayList<Object>(singleMerged.getField("cat").getValues()));
+      assertSame(childA, singleMerged.getField("child").getFirstValue());
+    }
   }
 }
