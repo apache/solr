@@ -218,7 +218,12 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
         streamContext != null ? (Map<String, List<String>>) streamContext.get("shards") : null;
     if (shardsMap != null) {
       // Manual Sharding
-      shards = shardsMap.get(collection);
+      List<String> configuredShards = shardsMap.get(collection);
+      if (configuredShards == null) {
+        return List.of();
+      }
+
+      shards = new ArrayList<>(configuredShards);
       final Object core = streamContext.isLocal() ? streamContext.get("core") : null;
       if (core != null) {
         shards.removeIf(shardUrl -> !shardUrl.contains((CharSequence) core));
