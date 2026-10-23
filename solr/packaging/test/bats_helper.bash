@@ -103,16 +103,16 @@ wait_for() {
   local interval="${2:-1}"     # Default 1 second between retries
   shift 2                      # Remove timeout and interval from args
   local command=("$@")         # Remaining args are the command to execute
-
+  
   local end_time=$(($(date +%s) + timeout))
-
+  
   while [ $(date +%s) -lt $end_time ]; do
     if "${command[@]}"; then
       return 0
     fi
     sleep "$interval"
   done
-
+  
   return 1  # Timeout reached
 }
 
