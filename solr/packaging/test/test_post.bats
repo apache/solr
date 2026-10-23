@@ -39,7 +39,11 @@ teardown() {
 @test "Check help command" {
 
   run solr post
-  assert_output --partial 'Missing required option'
+  if [ -n "${SOLR_PICOCLI:-}" ]; then
+    assert_output --partial "Missing required option: '--name=<name>'"
+  else
+    assert_output --partial 'Missing required option: c'
+  fi
 
   run solr post -h
   assert_output --partial 'usage: bin/solr post'
