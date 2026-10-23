@@ -1,5 +1,5 @@
 title: >
-  Fixing BATs(Integration Tests) for PicoCLI migration- #5204
+  All BATs Integration Tests now run against the picocli CLI
 type: fixed
 authors:
   - name: Jalaz Kumar
@@ -7,3 +7,4 @@ authors:
 links:
   - name: SOLR-18566
     url: https://issues.apache.org/jira/browse/SOLR-18566
+    
