@@ -79,4 +79,4 @@ If you do find one of these, here's what you should do:
 ## Additional Information
 
 You can review the https://github.com/apache/solr/blob/main/CONTRIBUTING.md[contribution guide] for information on how to contribute.
-There are also additional helpful docs https://github.com/apache/solr/blob/main/help[in the help directory].
+There are also additional helpful docs https://github.com/apache/solr/tree/main/dev-docs[in the dev-docs directory].
