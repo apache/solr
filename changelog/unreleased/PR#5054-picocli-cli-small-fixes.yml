@@ -1,10 +1,14 @@
 title: >
   The SOLR_CONNECTION environment variable (solr.connection system property) is now honored by the
-  bin/solr commands as documented.
+  bin/solr commands as documented. Fixed Integration Tests(BATs) for PicoCLI cutover.
 type: fixed
 authors:
   - name: Jan Høydahl
     nick: janhoy
+  - name: Jalaz Kumar
+    nick: jaykay12
 links:
   - name: PR#5054
     url: https://github.com/apache/solr/pull/5054
+  - name: PR#5204
+    url: https://github.com/apache/solr/pull/5204
