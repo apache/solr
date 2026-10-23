@@ -136,7 +136,7 @@ public class HttpSolrCall {
 
   // The states of client that is invalid in this request
   // What's in the URL path; might reference a collection/alias or a Solr core name
-  protected String origCorename;
+  protected String coreOrCollection;
   // The list of SolrCloud collections if in SolrCloud (usually 1)
   protected List<String> collectionsList;
   // The collection passed to getCoreByCollection, if that is how the core was selected
@@ -254,19 +254,19 @@ public class HttpSolrCall {
     // Parse a core or collection name from the path and attempt to see if it's a core name
     int idx = path.indexOf('/', 1);
     if (idx > 1) {
-      origCorename = path.substring(1, idx);
+      coreOrCollection = path.substring(1, idx);
 
       // Try to resolve a Solr core name
-      core = cores.getCore(origCorename);
+      core = cores.getCore(coreOrCollection);
       if (core != null) {
         normalizeAndSetPath(path.substring(idx));
       } else {
         // extra mem barriers, so don't look at this before trying to get core
-        if (cores.isCoreLoading(origCorename)) {
+        if (cores.isCoreLoading(coreOrCollection)) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is loading");
         }
         // the core may have just finished loading
-        core = cores.getCore(origCorename);
+        core = cores.getCore(coreOrCollection);
         if (core != null) {
           normalizeAndSetPath(path.substring(idx));
         } else {
@@ -279,7 +279,7 @@ public class HttpSolrCall {
 
     if (cores.isZooKeeperAware()) {
       // The path supplies routing candidates; collection may only narrow a multi-destination path.
-      String def = core != null ? core.getCoreDescriptor().getCollectionName() : origCorename;
+      String def = core != null ? core.getCoreDescriptor().getCollectionName() : coreOrCollection;
       collectionsList = resolveCollectionListOrAlias(def);
       String collectionParam = queryParams.get(COLLECTION_PROP);
       if (collectionsList.size() > 1 && collectionParam != null) {
@@ -611,7 +611,7 @@ public class HttpSolrCall {
   }
 
   protected String getCoreOrColName() {
-    String coreOrColName = HttpSolrCall.this.origCorename;
+    String coreOrColName = HttpSolrCall.this.coreOrCollection;
     if (coreOrColName == null && getCore() != null) {
       coreOrColName = getCore().getName();
     }
@@ -997,8 +997,8 @@ public class HttpSolrCall {
             continue;
           }
 
-          if (origCorename != null) {
-            coreUrl = replica.getBaseUrl() + "/" + origCorename;
+          if (coreOrCollection != null) {
+            coreUrl = replica.getBaseUrl() + "/" + coreOrCollection;
           } else {
             coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {
