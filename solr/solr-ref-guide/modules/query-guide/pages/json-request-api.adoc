@@ -31,7 +31,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query" : "memory",
   "filter" : "inStock:true"
@@ -51,7 +51,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-json-query-simple]
 
 JSON objects are typically sent in the request body, but they can also be sent as values for `json`-prefixed query parameters.  This can be used to override or supplement values specified in the request body.  For example the query parameter `json.limit=5` will override any `limit` value provided in the JSON request body.  You can also specify the entire JSON body in a single `json` query parameter, as shown in the example below:
 [source,bash]
-curl http://localhost:8983/solr/techproducts/query -d 'json={"query":"memory"}'
+curl 'http://localhost:8983/solr/techproducts/query' -d 'json={"query":"memory"}'
 
 === JSON Parameter Merging
 If multiple `json` parameters are provided in a single request, Solr attempts to merge the parameter values together before processing the request.
@@ -99,7 +99,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "memory",
   "limit": 5,     // this single-valued parameter was overwritten.
@@ -127,7 +127,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&rows=1&
+curl 'http://localhost:8983/solr/techproducts/query' -d 'q=*:*&rows=1&
   json.facet.avg_price="avg(price)"&
   json.facet.top_cats={type:terms,field:"cat",limit:3}'
 ----
@@ -151,7 +151,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "limit": 1,
@@ -225,7 +225,7 @@ curl::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/techproducts/query?fl=name,price"-d '
+curl 'http://localhost:8983/solr/techproducts/query?fl=name,price'-d '
 {
   params: {
     q: "memory",
@@ -249,7 +249,7 @@ Parameters placed in a `params` block act as if they were added verbatim to the 
 
 [source,bash]
 ----
-curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1"
+curl 'http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1'
 ----
 
 Usage of `queries` key is described in xref:json-query-dsl.adoc#additional-queries[Additional Queries].
@@ -266,7 +266,7 @@ curl::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory" -d '
+curl 'http://localhost:8983/solr/techproducts/query?FIELD=text&TERM=memory' -d '
 {
   query:"${FIELD}:${TERM}",
 }'
