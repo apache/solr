@@ -986,7 +986,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertU(commit());
 
     // the sixth check is ExpandComponent.process inside the expand search: the expand post filter
-    // collector has been created but has not completed yet, so the limit exception leaves the search
+    // collector has been created but has not completed yet, so the limit exception leaves the
+    // search
     CallerSpecificQueryLimit limit =
         new CallerSpecificQueryLimit(List.of("ExpandComponent.process:6"));
     CompleteTrackingQParserPlugin.reset();
@@ -1010,6 +1011,28 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "every post filter collector must have complete() called",
         CompleteTrackingQParserPlugin.CREATED.get(),
         CompleteTrackingQParserPlugin.COMPLETED.get());
+  }
+
+  @Test
+  public void testExpandReleasesOnlyPermittedDocsFromPostFilterCompletion() {
+    assertU(adoc("id", "1", "group_s", "g1", "test_i", "5"));
+    assertU(adoc("id", "2", "group_s", "g1", "test_i", "6"));
+    assertU(adoc("id", "3", "group_s", "g1", "test_i", "50"));
+    assertU(adoc("id", "4", "group_s", "g2", "test_i", "7"));
+    assertU(adoc("id", "5", "group_s", "g2", "test_i", "8"));
+    assertU(adoc("id", "6", "group_s", "g2", "test_i", "70"));
+    assertU(commit());
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fq", "{!collapse field=group_s}",
+            "fq", "{!releaseoncomplete}",
+            "expand", "true",
+            "expand.rows", "10"),
+        "count(/response/result/doc)=2",
+        "count(//lst[@name='expanded']//doc)=2",
+        "count(//lst[@name='expanded']//doc[str[@name='id'][.='3' or .='6']])=0");
   }
 
   @Test
