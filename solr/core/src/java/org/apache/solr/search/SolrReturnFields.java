@@ -384,8 +384,8 @@ public class SolrReturnFields extends ReturnFields {
               augmenters.addTransformer(t);
             }
           } else {
-            // throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown DocTransformer:
-            // "+augmenterName);
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Unknown DocTransformer: " + augmenterName);
           }
           addField(field, disp, augmenters, true);
           continue;
