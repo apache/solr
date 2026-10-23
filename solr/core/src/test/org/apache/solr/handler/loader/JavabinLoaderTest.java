@@ -18,8 +18,6 @@ package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -168,7 +166,10 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
       assertFalse(ex.getMessage().contains("secret customer value"));
       assertEquals(500, ex.code());
 
-      try (LogListener errors = LogListener.error(JavabinLoader.class)) {
+      try (LogListener errors =
+              LogListener.error(JavabinLoader.class).substring("ERROR adding document [doc=7]");
+          LogListener leakedValues =
+              LogListener.error(JavabinLoader.class).substring("secret customer value")) {
         var logger = LoggerFactory.getLogger(JavabinLoader.class);
         NamedList<Object> errorInfo = new NamedList<>();
         assertEquals(500, ResponseUtils.getErrorInfo(ex, errorInfo, logger, false));
@@ -179,14 +180,13 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
         assertNotNull(typedErrorInfo.trace);
         assertFalse(Utils.toJSONString(typedErrorInfo).contains("secret customer value"));
         assertEquals(2, errors.getCount());
-        while (!errors.getQueue().isEmpty()) {
-          var event = errors.getQueue().poll();
-          assertNotNull(event.getThrown());
-          StringWriter trace = new StringWriter();
-          event.getThrown().printStackTrace(new PrintWriter(trace));
-          assertTrue(trace.toString().contains("ERROR adding document [doc=7]"));
-          assertFalse(trace.toString().contains("secret customer value"));
+        int leakedValueCount = leakedValues.getCount();
+        assertEquals("500 Exception", errors.pollMessage());
+        assertEquals("500 Exception", errors.pollMessage());
+        while (leakedValues.pollMessage() != null) {
+          // Drain matches before asserting to avoid close-time secondary failures.
         }
+        assertEquals("Sensitive value present in ERROR log", 0, leakedValueCount);
       }
       assertNull(ex.getCause());
     } finally {

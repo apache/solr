@@ -19,8 +19,6 @@ package org.apache.solr.update;
 import static org.hamcrest.core.Is.is;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -151,24 +149,34 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   @LogLevel("org.apache.solr.update.DocumentBuilder=INFO")
   public void testFailedUpdateDoesNotLogFieldValue() {
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("Error adding field 'weight'")) {
+            LogListener.error(RequestHandlerBase.class).substring("Error adding field 'weight'");
+        LogListener leakedValues =
+            LogListener.error(RequestHandlerBase.class).substring("not-a-number-secret");
+        LogListener documentIds =
+            LogListener.error(RequestHandlerBase.class).substring("[doc=123]")) {
       assertFailedU(adoc("id", "123", "weight", "not-a-number-secret"));
       assertEquals(1, errors.getCount());
-      var event = errors.getQueue().poll();
-      assertNotNull(event);
-      assertNotNull(event.getThrown());
-      StringWriter trace = new StringWriter();
-      event.getThrown().printStackTrace(new PrintWriter(trace));
-      assertTrue(trace.toString().contains("[doc=123]"));
-      assertTrue(trace.toString().contains("Error adding field 'weight'"));
-      assertFalse(trace.toString().contains("not-a-number-secret"));
+      assertEquals(1, documentIds.getCount());
+      String message = errors.pollMessage();
+      assertNotNull(message);
+      assertFalse(message.contains("not-a-number-secret"));
+      assertNotNull(documentIds.pollMessage());
+      int leakedValueCount = leakedValues.getCount();
+      while (leakedValues.pollMessage() != null) {
+        // Drain matches before asserting to avoid close-time secondary failures.
+      }
+      assertEquals("Sensitive value present in ERROR log", 0, leakedValueCount);
     }
   }
 
   @Test
   @LogLevel("org.apache.solr.update.DocumentBuilder=TRACE")
   public void testFieldErrorDetailsAreAvailableAtTrace() {
-    try (LogListener traces = LogListener.trace(DocumentBuilder.class)) {
+    try (LogListener valueTraces =
+            LogListener.trace(DocumentBuilder.class).substring("not-a-number-secret");
+        LogListener exceptionTraces =
+            LogListener.trace(DocumentBuilder.class)
+                .substring(NumberFormatException.class.getName())) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "123");
       doc.addField("weight", "not-a-number-secret");
@@ -177,11 +185,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
               SolrException.class,
               () -> DocumentBuilder.toDocument(doc, h.getCore().getLatestSchema()));
       assertNull(ex.getCause());
-      assertEquals(1, traces.getCount());
-      var event = traces.getQueue().poll();
-      assertNotNull(event);
-      assertTrue(event.getMessage().getFormattedMessage().contains("not-a-number-secret"));
-      assertTrue(event.getThrown() instanceof NumberFormatException);
+      assertEquals(1, valueTraces.getCount());
+      assertEquals(1, exceptionTraces.getCount());
+      String traceMessage = valueTraces.pollMessage();
+      assertNotNull(traceMessage);
+      assertTrue(traceMessage.contains("not-a-number-secret"));
+      assertNotNull(exceptionTraces.pollMessage());
     }
   }
 
