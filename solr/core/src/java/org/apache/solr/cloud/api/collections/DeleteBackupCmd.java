@@ -169,6 +169,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
 
     List<ShardBackupId> shardBackupIds =
         Arrays.stream(repository.listAllOrEmpty(shardBackupMetadataDir))
+            .filter(sbi -> sbi.endsWith(ShardBackupId.FILENAME_SUFFIX))
             .map(sbi -> ShardBackupId.fromShardMetadataFilename(sbi))
             .collect(Collectors.toList());
     for (ShardBackupId shardBackupId : shardBackupIds) {
