@@ -44,6 +44,22 @@ public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
 
   @Override
   public Object doWork(Object... values) throws IOException {
+    Checker checker = validateValues(values);
+
+    for (int idx = 1; idx < values.length; ++idx) {
+      if (!checker.test(values[idx - 1], values[idx])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Validates the arity, nullness and types of the values, returning the checker constructed from
+   * the first value.
+   */
+  protected Checker validateValues(Object... values) throws IOException {
     if (values.length < 2) {
       String message = null;
       if (1 == values.length) {
@@ -81,13 +97,7 @@ public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
                   .collect(Collectors.joining(","))));
     }
 
-    for (int idx = 1; idx < values.length; ++idx) {
-      if (!checker.test(values[idx - 1], values[idx])) {
-        return false;
-      }
-    }
-
-    return true;
+    return checker;
   }
 
   public interface Checker {
