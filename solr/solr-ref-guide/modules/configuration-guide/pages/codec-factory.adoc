@@ -59,6 +59,23 @@ Example:
 </codecFactory>
 ----
 
+=== org.apache.solr.cuvs.CuVSCodecFactory
+
+`CuVSCodecFactory`, provided by the `cuvs` module, uses an NVIDIA GPU to build the HNSW graph of `DenseVectorField` fields configured with `knnAlgorithm="cagra_hnsw"`.
+All other fields are handled as by `solr.SchemaCodecFactory`, and accepts the same options.
+
+See xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] for requirements, installation and the `cuvs*` field type parameters.
+
+WARNING: GPU acceleration does not work in Solr 10.1.
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#cuvs-gpu-acceleration-broken[Major Changes in Solr 10] for details.
+
+Example:
+
+[source,xml]
+----
+<codecFactory class="org.apache.solr.cuvs.CuVSCodecFactory"/>
+----
+
 === solr.SimpleTextCodecFactory
 
 This factory for Lucene's {solr-javadocs}/core/org/apache/solr/core/SimpleTextCodecFactory.html[`SimpleTextCodecFactory`] produces a plain text human-readable index format.
