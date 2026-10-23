@@ -125,7 +125,14 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** Replaces the current schema snapshot with the latest from the core. */
   void updateSchemaToLatest();
 
-  /** Returns a string representing all the important parameters. Suitable for logging. */
+  /**
+   * Returns a string representing the original request parameters (see {@link
+   * #getOriginalParams()}). Suitable for logging. For a request built from HTTP request parameters,
+   * this excludes configured defaults, appends and invariants, and it is not affected by {@link
+   * #setParams(SolrParams)}; use {@link #getParams()} for the current effective parameters. A
+   * request built from already merged parameters, such as a cross-core join sub-request, can
+   * include them.
+   */
   String getParamString();
 
   /**
