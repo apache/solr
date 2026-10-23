@@ -197,7 +197,6 @@ public class SolrConfigHandler extends RequestHandlerBase
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
-          // V1 nests the paramsets payload under "response"
           NamedList<Object> paramSets = new SimpleOrderedMap<>();
           V2ApiUtils.squashIntoNamedListWithoutHeader(
               paramSets,

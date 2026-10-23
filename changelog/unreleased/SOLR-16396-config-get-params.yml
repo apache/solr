@@ -1,5 +1,5 @@
 title:
-  Migrate remaining GET params and paramsets to JAX-RS.
+  Migrate GET paramsets v2 API to JAX-RS.
 type: changed
 authors:
   - name: Jalaz Kumar

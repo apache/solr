@@ -113,6 +113,7 @@ public class TestSolrConfigHandler extends RestTestBase {
   private static List<String> paramSetsPath(RestTestHarness harness, String... keys) {
     List<String> path = new ArrayList<>();
     if (!harness.getBaseURL().contains("/____v2/")) path.add("response");
+    path.add("params");
     path.addAll(asList(keys));
     return path;
   }
@@ -668,18 +669,10 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "x", "a"),
-        "A val",
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "x", "a"), "A val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "x", "b"),
-        "B val",
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "x", "b"), "B val", TIMEOUT_S);
 
     payload =
         "{\n"
@@ -729,11 +722,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "y", "c"),
-        "CY val",
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "c"), "CY val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness, "/dump1?useParams=y", asList("params", "c"), "CY val", TIMEOUT_S);
@@ -762,16 +751,12 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "y", "c"),
+        paramSetsPath(harness, "y", "c"),
         "CY val modified",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "y", "e"),
-        "EY val",
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "e"), "EY val", TIMEOUT_S);
 
     payload =
         " {\n"
@@ -784,26 +769,14 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "y", "p"),
-        "P val",
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "p"), "P val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "y", "c"),
-        null,
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "c"), null, TIMEOUT_S);
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        harness,
-        "/config/" + paramSetsKey,
-        paramSetsPath(harness, "params", "y", "p"),
-        null,
-        TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "p"), null, TIMEOUT_S);
 
     payload =
         "{\n"
