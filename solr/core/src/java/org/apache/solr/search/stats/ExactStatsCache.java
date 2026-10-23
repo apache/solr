@@ -114,14 +114,21 @@ public class ExactStatsCache extends StatsCache {
       // response's "shard" is really a shardURL, or even a list of URLs
       String shard = r.getShard();
       SolrResponse res = r.getSolrResponse();
+      NamedList<Object> nl = res.getResponse();
+      if (nl == null) {
+        // the shard response has no body, so there are no stats to merge
+        if (log.isDebugEnabled()) {
+          log.debug("Empty response from shard={}", shard);
+        }
+        continue;
+      }
       if (res.getException() != null) {
         log.debug("Exception response={}", res);
         continue;
       }
-      if (res.getResponse().get(ShardParams.SHARD_NAME) != null) {
-        shard = (String) res.getResponse().get(ShardParams.SHARD_NAME);
+      if (nl.get(ShardParams.SHARD_NAME) != null) {
+        shard = (String) nl.get(ShardParams.SHARD_NAME);
       }
-      NamedList<Object> nl = res.getResponse();
 
       String termStatsString = (String) nl.get(TERM_STATS_KEY);
       if (termStatsString != null) {
