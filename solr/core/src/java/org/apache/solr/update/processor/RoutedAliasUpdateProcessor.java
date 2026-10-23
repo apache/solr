@@ -132,18 +132,19 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName)
-      throws KeeperException {
+  private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
     ZkStateReader zkStateReader = req.getCoreContainer().getZkController().getZkStateReader();
     Map<String, String> aliasProperties =
         zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     if (aliasProperties.isEmpty()) {
-      // our cached aliases may be stale (e.g. a watch was missed), so check ZK before failing
+      // our cached aliases may be stale (e.g. a watch was missed), so check ZK before failing.
+      // Like HttpSolrCall, a failed refresh isn't propagated: we then fail as if the alias is gone.
       try {
         zkStateReader.aliasesManager.update();
+      } catch (KeeperException e) {
+        log.error("Error trying to update aliases while resolving routed alias {}", aliasName, e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       aliasProperties = zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     }
