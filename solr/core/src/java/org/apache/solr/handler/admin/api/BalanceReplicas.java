@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.params.CollectionParams.NODES;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -65,7 +64,6 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
     final Map<String, Object> remoteMessage = new HashMap<>();
     if (requestBody != null) {
       insertIfNotNull(remoteMessage, NODES, requestBody.nodes);
-      insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
     }
 
     return new ZkNodeProps(remoteMessage);
