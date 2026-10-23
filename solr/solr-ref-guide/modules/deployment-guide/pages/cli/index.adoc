@@ -17,13 +17,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to https://picocli.info/[picocli].
-Both implementations ship together and the older commons-cli one can be enabled on request.
+The `bin/solr` command line tool is built on https://picocli.info/[picocli].
+This page and the per-command pages linked below are the references for its commands and options.
+Run `bin/solr <command> --help` for the same information in the command line.
 
+== Falling back to the legacy CLI
 
-== Disabling It
+The previous Apache Commons CLI implementation still ships with Solr.
+Use it only as an escape hatch if you run into a problem with the default CLI, and please report the problem to the Solr project.
+Its options and output differ in places; see xref:solr-control-script-reference.adoc[] for its documentation.
 
-Set `SOLR_PICOCLI` in your `solr.in.sh` (or `solr.in.cmd` on Windows):
+To switch, Set `SOLR_PICOCLI` in your `solr.in.sh` (or `solr.in.cmd` on Windows):
 
 [source,bash]
 ----
@@ -38,9 +42,9 @@ SOLR_TOOL_OPTS="-Dsolr.picocli=false" bin/solr status
 ----
 
 
-== List of Commands
+== Commands
 
-These following commands now have a reference page generated from their source annotations.
+Each command has a reference page generated from its source annotations.
 
 // CLI-DOCS-TABLE-START
 [cols="1",options="header"]
