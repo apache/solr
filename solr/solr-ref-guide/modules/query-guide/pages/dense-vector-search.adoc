@@ -490,12 +490,12 @@ Here's an example of a `knn` search using the early termination with input param
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: 1
+|Optional |Default: none
 |===
 +
 If provided, the query will retrieve a candidate pool of documents equal to topK multiplied by the rerankOversample value provided. The candidate set of documents will then be rescored with their raw vector values, and reranked down to a topK result set.
 
-Recommended for use only with quantized dense vector types, particularly binary quantized.
+Only to be used with quantized dense vector types, particularly binary quantized.
 +
 Accepted values:
 Any int >= 1

@@ -47,7 +47,6 @@ public class KnnQParser extends AbstractVectorQParserBase {
   // multiplier applied to topK to decide how many candidates to collect before re-ranking them
   // down to topK results
   protected static final String RERANK_OVERSAMPLE = "rerankOversample";
-  protected static final int DEFAULT_RERANK_OVERSAMPLE = 1;
 
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
   // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
@@ -108,14 +107,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
     return new EarlyTerminationParams(enabled, saturationThreshold, patience);
   }
 
-  public int getRerankOversample() {
-    final int rerankOversample = localParams.getInt(RERANK_OVERSAMPLE, DEFAULT_RERANK_OVERSAMPLE);
-    if (rerankOversample < 1) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "rerankOversample (" + rerankOversample + ") must be >= 1");
-    }
-    return rerankOversample;
+  public Integer getRerankOversample() {
+    return localParams.getInt(RERANK_OVERSAMPLE);
   }
 
   protected Query getSeedQuery() throws SolrException, SyntaxError {
@@ -140,7 +133,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
-    final int rerankOversample = getRerankOversample();
+    final int rerankOversample = denseVectorType.resolveRerankOversample(getRerankOversample());
 
     final int candidateTopK;
     try {
@@ -181,8 +174,6 @@ public class KnnQParser extends AbstractVectorQParserBase {
           BlockJoinParentQParser.getCachedBitSetProducer(
               req, subQuery(allParentsQuery, null).getQuery());
       final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQueries);
-
-      denseVectorType.checkRerankOversampleSupported(vectorField, rerankOversample);
 
       Query acceptedChildren =
           getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);

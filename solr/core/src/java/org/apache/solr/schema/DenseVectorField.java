@@ -492,22 +492,29 @@ public class DenseVectorField extends FloatPointField {
         SolrException.ErrorCode.BAD_REQUEST, "Vector encoding not supported for function queries.");
   }
 
-  /**
-   * Re-ranking compares candidates against the raw full precision vectors, which is only possible
-   * for FLOAT32 encoded fields: a BYTE encoded field has no higher precision representation to
-   * re-rank against.
-   *
-   * @throws SolrException if oversampling was requested for a field that cannot support it
-   */
-  public void checkRerankOversampleSupported(String fieldName, int rerankOversample) {
-    if (rerankOversample > 1 && vectorEncoding != VectorEncoding.FLOAT32) {
+  public boolean isQuantized() {
+    return false;
+  }
+
+  public int resolveRerankOversample(Integer rerankOversample) {
+    if (rerankOversample == null) {
+      return 1;
+    }
+    if (rerankOversample < 1) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "rerankOversample is only supported for FLOAT32 vector encoding; field '"
-              + fieldName
-              + "' uses "
-              + vectorEncoding);
-  /** Throws if this field type does not support the KNN query parsers. */
+          "rerankOversample (" + rerankOversample + ") must be >= 1");
+    }
+    if (!isQuantized()) {
+      log.warn(
+          "Ignoring rerankOversample={} for fieldType '{}': re-ranking only improves recall on quantized dense vector fields",
+          rerankOversample,
+          getTypeName());
+      return 1;
+    }
+    return rerankOversample;
+  }
+
   public void checkKnnQueryParsersSupported() throws SolrException {
     if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
       throw new SolrException(
@@ -550,8 +557,6 @@ public class DenseVectorField extends FloatPointField {
       int rerankOversample) {
 
     checkKnnQueryParsersSupported();
-
-    checkRerankOversampleSupported(fieldName, rerankOversample);
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
