@@ -16,15 +16,22 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.apache.solr.client.api.model.ListLevelsResponse;
 import org.apache.solr.client.api.model.LogLevelChange;
 import org.apache.solr.client.api.model.LogLevelInfo;
 import org.apache.solr.client.api.model.LoggingResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.LoggingApi;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,6 +52,8 @@ public class NodeLoggingNodesSolrCloudTest extends SolrCloudTestCase {
 
   private static final String TEST_LOGGER =
       "org.apache.solr.handler.admin.api.NodeLoggingNodesSolrCloudTest";
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @BeforeClass
   public static void setupCluster() throws Exception {
