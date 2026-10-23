@@ -2044,6 +2044,7 @@ public class ZkController implements Closeable {
 
       if (context != null) {
         context.cancelElection();
+        context.close();
       }
     }
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
