@@ -275,6 +275,19 @@ Each applies only to the specific writer, such that `[json]` only applies to `wt
 fl=id,source_s:[json]&wt=json
 ----
 
+A glob placed before one of these transformers writes every returned field whose name matches the glob raw, under its own name:
+
+[source,plain]
+----
+fl=id,*_json:[json]&wt=json
+----
+
+* Fields that do not match the glob are written as usual.
+* The glob must name the fields. `fl=*:[json]` is rejected with a 400 error; use a pattern such as `*_json:[json]`. Only `[json]` and `[xml]` can follow a glob.
+* The glob is matched against the names in the response. A field returned under a display name, such as `p:payload_json`, is written raw only if that name matches the glob. Use `p:[json f=payload_json]` to write it raw.
+* A glob takes effect only when the transformer's writer matches `wt`. For example, `fl=*_json:[xml]&wt=json` returns the fields as plain values.
+* The `/export` handler ignores the raw marking, so a glob there returns the same values as the plain glob.
+
 
 === [subquery]
 
