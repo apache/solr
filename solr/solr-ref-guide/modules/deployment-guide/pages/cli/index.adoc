@@ -101,12 +101,12 @@ These are the changes in default CLI behavior as compared to 9.x and 10.1.
 
 * On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
 * `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
-  The default implementation accepts `-v` for it.
+  The legacy CLI accepts `-v` for it.
 * `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
-  This matches the default implementation, but means `--fail-on-exists false` does not disable the check.
-* Error messages for invalid or mutually exclusive options are worded differently from the default implementation.
+  This matches the legacy CLI, but means `--fail-on-exists false` does not disable the check.
+* Error messages for invalid or mutually exclusive options are worded differently from the legacy CLI.
 * Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
-* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the default implementation prints.
+* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the legacy CLI prints.
   That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
 == Reporting Problems
