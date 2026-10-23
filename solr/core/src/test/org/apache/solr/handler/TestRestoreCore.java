@@ -16,19 +16,27 @@
  */
 package org.apache.solr.handler;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -229,5 +237,115 @@ public class TestRestoreCore extends SolrTestCaseJ4 {
     // make sure we can write to the index again
     nDocs = BackupRestoreUtils.indexDocs(leaderClient, "collection1", docsSeed);
     BackupRestoreUtils.verifyDocs(nDocs, leaderClient, DEFAULT_TEST_CORENAME);
+  }
+
+  @Test
+  public void testFailedRestoreKeepsNonDefaultIndexPointer() throws Exception {
+    int nDocs = BackupRestoreUtils.indexDocs(leaderClient, "collection1", docsSeed);
+
+    String location = createTempDir().toString();
+    leaderJetty.getCoreContainer().getAllowPaths().add(Path.of(location));
+    String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
+    String params =
+        "&name="
+            + snapshotName
+            + "&location="
+            + URLEncoder.encode(location, StandardCharsets.UTF_8);
+    String baseUrl = leaderJetty.getBaseUrl().toString();
+
+    TestReplicationHandlerBackup.runBackupCommand(
+        leaderJetty, ReplicationHandler.CMD_BACKUP, params);
+
+    final BackupStatusChecker backupStatus =
+        new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+    final String backupDirName = backupStatus.waitForBackupSuccess(snapshotName, 30);
+
+    // A successful restore switches the core to a non-default index directory, named by the
+    // "index" property of index.properties in the data dir. The test harness keeps the index
+    // in an in-memory directory, so the pointer is read through the directory factory rather
+    // than from the filesystem.
+    TestReplicationHandlerBackup.runBackupCommand(
+        leaderJetty, ReplicationHandler.CMD_RESTORE, params);
+
+    while (!TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
+      Thread.sleep(1000);
+    }
+    BackupRestoreUtils.verifyDocs(nDocs, leaderClient, DEFAULT_TEST_CORENAME);
+
+    final String restoredIndexDirName;
+    try (SolrCore core = leaderJetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+      restoredIndexDirName = readIndexProperty(core);
+    }
+    assertNotNull(
+        "index.properties should name the restored index directory", restoredIndexDirName);
+    assertTrue(restoredIndexDirName.startsWith("restore."));
+
+    // Remove the segments file so that the backup index is corrupted. Restoring it must fail
+    // after index.properties has been switched, and the rollback must leave the previous
+    // pointer in place instead of deleting index.properties.
+    final Path backupIndexPath = Path.of(location, backupDirName);
+    assertTrue("Does not exist: " + backupIndexPath, Files.exists(backupIndexPath));
+    try (DirectoryStream<Path> stream =
+        Files.newDirectoryStream(backupIndexPath, IndexFileNames.SEGMENTS + "*")) {
+      Path segmentFileName = stream.iterator().next();
+      Files.delete(segmentFileName);
+    }
+
+    TestReplicationHandlerBackup.runBackupCommand(
+        leaderJetty, ReplicationHandler.CMD_RESTORE, params);
+
+    expectThrows(
+        AssertionError.class,
+        () -> {
+          for (int i = 0; i < 10; i++) {
+            // this will throw an assertion once we get what we expect
+            TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
+            Thread.sleep(50);
+          }
+          // if we never got an assertion let expectThrows complain
+        });
+
+    final String pointerAfterFailure;
+    try (SolrCore core = leaderJetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+      pointerAfterFailure = readIndexProperty(core);
+    }
+    assertEquals(
+        "A failed restore must not lose the previous index.properties pointer",
+        restoredIndexDirName,
+        pointerAfterFailure);
+
+    // The core must still serve the index it had before the failed restore.
+    BackupRestoreUtils.verifyDocs(nDocs, leaderClient, DEFAULT_TEST_CORENAME);
+  }
+
+  /**
+   * Returns the value of the "index" property in the core's index.properties file, or null when the
+   * core has no such file. Read through the directory factory because the test directory factory is
+   * in-memory.
+   */
+  private static String readIndexProperty(SolrCore core) throws IOException {
+    Directory dir =
+        core.getDirectoryFactory()
+            .get(
+                core.getDataDir(),
+                DirectoryFactory.DirContext.META_DATA,
+                core.getSolrConfig().indexConfig.lockType);
+    try {
+      IndexInput input;
+      try {
+        input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, IOContext.DEFAULT);
+      } catch (FileNotFoundException | NoSuchFileException e) {
+        return null;
+      }
+      try (input) {
+        byte[] bytes = new byte[(int) input.length()];
+        input.readBytes(bytes, 0, bytes.length);
+        Properties props = new Properties();
+        props.load(new StringReader(new String(bytes, StandardCharsets.UTF_8)));
+        return props.getProperty("index");
+      }
+    } finally {
+      core.getDirectoryFactory().release(dir);
+    }
   }
 }
