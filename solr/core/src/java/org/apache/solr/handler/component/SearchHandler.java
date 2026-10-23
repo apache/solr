@@ -148,6 +148,31 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
+  public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    super.handleRequest(req, rsp);
+    CoreContainer cc = req.getCoreContainer();
+    List<SearchRequestListener> listeners = cc == null ? List.of() : cc.getSearchRequestListeners();
+    if (listeners.isEmpty()
+        || !notifiesSearchRequestListeners()
+        || req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      return;
+    }
+    SearchRequestInfo info = SearchRequestInfo.from(req, rsp);
+    for (SearchRequestListener listener : listeners) {
+      try {
+        listener.onRequestEnd(info);
+      } catch (Exception e) {
+        log.warn("SearchRequestListener {} failed", listener.getClass().getName(), e);
+      }
+    }
+  }
+
+  /** Whether requests to this handler are reported to {@link SearchRequestListener}s. */
+  protected boolean notifiesSearchRequestListeners() {
+    return true;
+  }
+
+  @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
     return PermissionNameProvider.Name.READ_PERM;
   }
