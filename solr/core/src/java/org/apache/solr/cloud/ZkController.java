@@ -2043,8 +2043,8 @@ public class ZkController implements Closeable {
       ElectionContext context = electionContexts.remove(new ContextKey(collection, coreNodeName));
 
       if (context != null) {
-        context.cancelElection();
         context.close();
+        context.cancelElection();
       }
     }
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();

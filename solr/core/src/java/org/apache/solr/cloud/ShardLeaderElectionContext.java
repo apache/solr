@@ -60,6 +60,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   private volatile boolean isClosed = false;
 
+  // Cancellation must see the election node created by an in-flight rejoin.
+  private final Object rejoinLock = new Object();
+
   private final ExecutorService rejoinExecutor =
       ExecutorUtil.newMDCAwareSingleLazyThreadExecutor(
           new SolrNamedThreadFactory("leaderRejoin"), 10, TimeUnit.SECONDS);
@@ -96,14 +99,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
-    try (SolrCore core = cc.getCore(coreName)) {
-      if (core != null) {
-        core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
+    synchronized (rejoinLock) {
+      String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
+      try (SolrCore core = cc.getCore(coreName)) {
+        if (core != null) {
+          core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
+        }
       }
-    }
 
-    super.cancelElection();
+      super.cancelElection();
+    }
   }
 
   @Override
@@ -194,7 +199,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
           if (!waitForEligibleBecomeLeaderAfterTimeout(
               zkShardTerms, coreNodeName, leaderVoteWait)) {
-            rejoinLeaderElection(core);
+            rejoinLeaderElection();
             return;
           } else {
             // only log an error if this replica win the election
@@ -251,7 +256,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
         if (!success) {
-          rejoinLeaderElection(core);
+          rejoinLeaderElection();
           return;
         }
       }
@@ -324,7 +329,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
             // we could not publish ourselves as leader - try and rejoin election
             try {
-              rejoinLeaderElection(core);
+              rejoinLeaderElection();
             } catch (SessionExpiredException exc) {
               throw new SolrException(
                   ErrorCode.SERVER_ERROR,
@@ -489,7 +494,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  private void rejoinLeaderElection(SolrCore core) throws InterruptedException, KeeperException {
+  void rejoinLeaderElection() throws InterruptedException, KeeperException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown() || isClosed) {
       log.debug("Not rejoining election because CoreContainer is closed");
@@ -508,15 +513,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
 
   private void joinElectionAfterRejoin() {
-    if (isClosed) {
-      return;
-    }
-    try {
-      leaderElector.joinElection(this, true);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    } catch (KeeperException | RuntimeException e) {
-      log.error("Failed to rejoin the election", e);
+    synchronized (rejoinLock) {
+      if (isClosed) {
+        return;
+      }
+      try {
+        try {
+          leaderElector.joinElection(this, true);
+        } finally {
+          if (isClosed) {
+            cancelElection();
+          }
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (KeeperException | RuntimeException e) {
+        log.error("Failed to rejoin the election", e);
+      }
     }
   }
 }

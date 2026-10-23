@@ -2,6 +2,8 @@ title: >
   Leader election rejoins after a failed sync or leader publish now run on their own thread instead
   of nesting on the caller's thread, so repeated rejoins no longer grow the stack toward
   StackOverflowError.
+  Closing and cancelling a replica's election waits for an in-flight rejoin to finish so it
+  cannot leave a stale election participant behind.
 type: fixed
 authors:
   - name: Nick Shanin
