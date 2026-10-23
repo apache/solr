@@ -30,6 +30,10 @@ License: ISC https://github.com/d3/d3/blob/main/LICENSE
 This product includes the highlight.js Javascript library created by Ivan Sagalaev
 Copyright (c) 2006, Ivan Sagalaev, https://github.com/isagalaev/highlight.js
 
+This product includes the Swagger UI JavaScript library.
+Copyright 2020-2021 SmartBear Software Inc., https://github.com/swagger-api/swagger-ui
+License: Apache License 2.0
+
 This product includes the Chosen Javascript library created by Patrick Filler
 Copyright (c) 2011-2014 by Harvest, https://github.com/harvesthq/chosen
 

@@ -1,0 +1,46 @@
+= Browsing the V2 API with Swagger UI
+
+Solr's v2 (JAX-RS) API is described by an OpenAPI spec that's generated at build time
+from the `@Operation`-annotated interfaces in `solr/api/src/java/.../client/api/endpoint`
+(the same spec that feeds the generated JS/Python SolrJ clients).
+You can point a local https://swagger.io/tools/swagger-ui/[Swagger UI] instance at that
+spec to browse the API and fire live "Try it out" requests against a running Solr, without
+writing any client code.
+
+== Usage
+
+First, start a local Solr, e.g. via `./gradlew dev` and `bin/solr start -c`.
+
+Then run:
+
+[source,bash]
+----
+./dev-tools/scripts/launch-api-explorer.sh
+----
+
+and open `\http://localhost:8983/solr/ui/openapi/index.html`.
+
+The script regenerates the spec (`./gradlew :solr:api:resolve`), fetches a local copy of
+`swagger-ui-dist` via npm, and writes the page alongside Solr's other static Admin UI
+resources, under the running instance's `server/solr-webapp/webapp/ui/openapi/` directory.
+Re-run the script any time you've rebuilt the server (e.g. after checking out a different
+branch) to refresh the spec and pick up any new or changed endpoints.
+
+If you're pointing at a Solr instance whose webapp lives somewhere other than
+`solr/packaging/build/dev/server/solr-webapp/webapp` (the default for `./gradlew dev`),
+pass its path as the first argument.
+
+== Notes
+
+* The generated files live under a gradle build directory and under the Solr instance's
+  own server directory - they are not tracked by git and won't survive a `clean` or a
+  fresh `bin/solr start` against a different instance.
+* The page is served from the same origin as the API it's exploring
+  (`http://localhost:8983/solr/ui/openapi/...` calling `http://localhost:8983/api/...`),
+  which avoids any CORS setup. It has to be placed under `/ui/*` specifically, since
+  that's one of the few paths the Admin UI's `web.xml` maps to a static-file servlet -
+  anywhere else falls through to Solr's own request-handling servlet and 404s.
+* Solr sends a `Content-Security-Policy: script-src 'self' ...` header (no
+  `'unsafe-inline'`) on every response, so the page's Swagger UI init code has to live in
+  its own same-origin `.js` file rather than an inline `<script>` block - an inline block
+  is silently never executed under that policy.
