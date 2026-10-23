@@ -347,9 +347,6 @@ task integrationTests(type: BatsTask) {
   configureBatsTask(it, 'test-output', false)
 }
 
-// The same suites run against the experimental picocli CLI. Deliberately a curated list rather
-// than the whole suite, so the run stays short. A change that ports another tool to picocli
-// should add that tool's .bats file here.
 task integrationTestsPicocli(type: BatsTask) {
   description = 'Runs the BATS suites for the migrated commands against the experimental picocli CLI.'
   configureBatsTask(it, 'test-output-picocli', true)

@@ -53,7 +53,7 @@ setup() {
 }
 
 @test "restart help flag prints help" {
-[ -z "$SOLR_PICOCLI" ] || skip "restart is not migrated to picocli yet"
+[ -z "${SOLR_PICOCLI:-}" ] || skip "restart is not migrated to picocli yet"
   run solr restart --help
   assert_output --regexp '[Uu]sage: (bin/)?solr restart'
   refute_output --partial 'ERROR'
