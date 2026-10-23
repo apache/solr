@@ -26,10 +26,27 @@ import org.slf4j.LoggerFactory;
 public class LoggingInfoStream extends InfoStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final String coreName;
+
+  public LoggingInfoStream() {
+    this(null);
+  }
+
+  /**
+   * @param coreName if not null, the name of the core is added to every message
+   */
+  public LoggingInfoStream(String coreName) {
+    this.coreName = coreName;
+  }
+
   @Override
   public void message(String component, String message) {
-    if (log.isInfoEnabled()) {
-      log.info("[{}][{}]: {}", component, Thread.currentThread().getName(), message);
+    if (coreName == null) {
+      if (log.isInfoEnabled()) {
+        log.info("[{}][{}]: {}", component, Thread.currentThread().getName(), message);
+      }
+    } else if (log.isInfoEnabled()) {
+      log.info("[{}][{}][{}]: {}", coreName, component, Thread.currentThread().getName(), message);
     }
   }
 
