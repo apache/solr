@@ -22,6 +22,7 @@ public interface QueryElevationParams {
   String ENABLE = "enableElevation";
   String EXCLUSIVE = "exclusive";
   String FORCE_ELEVATION = "forceElevation";
+  String ELEVATE_Q = "elevate.q";
   String IDS = "elevateIds";
   String EXCLUDE = "excludeIds";
 

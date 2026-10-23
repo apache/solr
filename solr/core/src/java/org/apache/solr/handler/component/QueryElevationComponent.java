@@ -547,13 +547,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   protected Elevation getElevation(ResponseBuilder rb) {
     SolrParams localParams = rb.getQparser().getLocalParams();
-    String queryString =
-        localParams == null ? rb.getQueryString() : localParams.get(QueryParsing.V);
+    SolrParams params = rb.req.getParams();
+    String queryString = getElevationQueryString(params, localParams, rb.getQueryString());
     if (queryString == null || rb.getQuery() == null) {
       return null;
     }
 
-    SolrParams params = rb.req.getParams();
     String paramElevatedIds = params.get(QueryElevationParams.IDS);
     String paramExcludedIds = params.get(QueryElevationParams.EXCLUDE);
     if (paramElevatedIds != null || paramExcludedIds != null) {
@@ -566,6 +565,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       IndexReader reader = rb.req.getSearcher().getIndexReader();
       return getElevationProvider(reader, rb.req.getCore()).getElevationForQuery(queryString);
     }
+  }
+
+  static String getElevationQueryString(
+      SolrParams params, SolrParams localParams, String queryString) {
+    String parserQueryString =
+        localParams == null ? queryString : localParams.get(QueryParsing.V);
+    return params.get(QueryElevationParams.ELEVATE_Q, parserQueryString);
   }
 
   private void setQuery(ResponseBuilder rb, Elevation elevation) {
