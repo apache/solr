@@ -528,6 +528,12 @@ public class V2HttpCall extends HttpSolrCall {
     return api;
   }
 
+  @Override
+  protected boolean shouldAuthorize() {
+    // JAX-RS resources are authorized by SolrRequestAuthorizer, which knows their permission
+    return api != null && super.shouldAuthorize();
+  }
+
   public Map<String, String> getUrlParts() {
     return parts;
   }

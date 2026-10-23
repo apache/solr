@@ -1,0 +1,9 @@
+title: >
+  v2 APIs implemented in JAX-RS are now authorized once, by their declared permission. Previously a
+  catch-all "all" rule in security.json could reject users holding the API's predefined permission.
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-18579
+    url: https://issues.apache.org/jira/browse/SOLR-18579
