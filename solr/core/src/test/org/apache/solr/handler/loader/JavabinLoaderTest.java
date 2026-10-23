@@ -17,6 +17,7 @@
 package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,12 +25,14 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -114,5 +117,44 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.4 + "']",
         "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.4 + "']",
         "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.4 + "']");
+  }
+
+  @Test
+  public void testIOExceptionDoesNotLeakDocumentContents() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "7");
+    doc.addField("name", "secret customer value");
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(doc);
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+
+    UpdateRequestProcessor failingProcessor =
+        new BufferingRequestProcessor(null) {
+          @Override
+          public void processAdd(AddUpdateCommand cmd) throws IOException {
+            throw new IOException("simulated failure for secret customer value");
+          }
+        };
+
+    SolrQueryRequest req = req();
+    try {
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  new JavabinLoader()
+                      .load(
+                          req,
+                          new SolrQueryResponse(),
+                          new ContentStreamBase.ByteArrayStream(os.toByteArray(), "test"),
+                          failingProcessor));
+      assertEquals("ERROR adding document [doc=7]", ex.getMessage());
+      assertFalse(ex.getMessage().contains("secret customer value"));
+    } finally {
+      req.close();
+    }
   }
 }

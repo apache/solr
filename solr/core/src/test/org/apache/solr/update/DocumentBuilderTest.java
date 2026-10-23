@@ -112,6 +112,35 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExceptionMessagesDoNotLeakFieldValues() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "123");
+    doc.addField("weight", "not-a-number-secret");
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
+    assertTrue(ex.getMessage().contains("Error adding field 'weight'"));
+    assertFalse(ex.getMessage().contains("not-a-number-secret"));
+
+    SolrInputDocument multiValueDoc = new SolrInputDocument();
+    multiValueDoc.addField("id", "456");
+    multiValueDoc.addField("weight", "secret-one");
+    multiValueDoc.addField("weight", "secret-two");
+    SolrException multiValueEx =
+        expectThrows(
+            SolrException.class,
+            () -> DocumentBuilder.toDocument(multiValueDoc, core.getLatestSchema()));
+    assertTrue(
+        multiValueEx
+            .getMessage()
+            .contains("multiple values encountered for non multiValued field weight"));
+    assertFalse(multiValueEx.getMessage().contains("secret-one"));
+    assertFalse(multiValueEx.getMessage().contains("secret-two"));
+  }
+
+  @Test
   public void testMultiField() {
     SolrCore core = h.getCore();
 
@@ -417,10 +446,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=0] Error adding field 'vector3'='[1.1, 2.1, 3.1, 4.1]' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
+    assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector3'"));
   }
 
   @Test
@@ -438,10 +464,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
+    assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector4'"));
     assertThat(
         thrown.getCause().getCause().getMessage(),
         is(

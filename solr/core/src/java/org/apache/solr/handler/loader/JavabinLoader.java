@@ -38,6 +38,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -123,7 +124,9 @@ public class JavabinLoader extends ContentStreamLoader {
               addCmd.clear();
             } catch (IOException e) {
               throw new SolrException(
-                  SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document, e);
+                  SolrException.ErrorCode.SERVER_ERROR,
+                  "ERROR adding document" + describeDocument(req, document),
+                  e);
             }
           }
         };
@@ -139,6 +142,15 @@ public class JavabinLoader extends ContentStreamLoader {
         delete(req, update, processor);
       }
     }
+  }
+
+  /** The document's unique key for an error message, without any other field values. */
+  private static String describeDocument(SolrQueryRequest req, SolrInputDocument document) {
+    SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
+    if (uniqueKeyField == null) {
+      return "";
+    }
+    return " [doc=" + document.getFieldValue(uniqueKeyField.getName()) + "]";
   }
 
   @SuppressWarnings(

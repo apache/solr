@@ -22,6 +22,7 @@ import javax.xml.xpath.XPathConstants;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.util.LogListener;
@@ -57,6 +58,16 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     assertNotNull(h.getCore().getLatestSchema().getFieldOrNull(RANK_1));
     assertEquals(
         RankField.class, h.getCore().getLatestSchema().getField(RANK_1).getType().getClass());
+  }
+
+  public void testCreateFieldErrorDoesNotLeakFieldValue() {
+    RankField type = (RankField) h.getCore().getLatestSchema().getField(RANK_1).getType();
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> type.createField(RANK_1, "not-a-float-secret", null));
+    assertTrue(ex.getMessage().contains("Error while creating field '" + RANK_1 + "'"));
+    assertTrue(ex.getMessage().contains("Expecting float."));
+    assertFalse(ex.getMessage().contains("not-a-float-secret"));
   }
 
   public void testBadFormat() {
