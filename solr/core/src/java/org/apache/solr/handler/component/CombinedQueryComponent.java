@@ -340,10 +340,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 instanceof List<?> docList
             && docList.get(queryIndex) instanceof SolrDocumentList solrDocumentList) {
           docs = Objects.requireNonNull(solrDocumentList);
-          queryNumFound += docs.getNumFound();
-          if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
-            hitCountIsExact = false;
-          }
         }
         failedShardCount +=
             addShardInfo(
@@ -381,14 +377,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           maxHitsTerminatedEarly = true;
         }
 
-        Object ath =
-            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
-        if (ath == null) {
-          queryApproximateTotalHits += queryNumFound;
-        } else {
-          queryApproximateTotalHits += ((Number) ath).longValue();
-        }
-
         @SuppressWarnings("unchecked")
         NamedList<List<Object>> sortFieldValues =
             (NamedList<List<Object>>)
@@ -399,9 +387,26 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         }
 
         boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
+        // decided before the totals below: a skipped shard adds nothing to this query's totals,
+        // and its hits are unreported, so the merged count cannot be exact
         if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
+          hitCountIsExact = false;
           continue;
         }
+
+        queryNumFound += docs.getNumFound();
+        if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
+          hitCountIsExact = false;
+        }
+
+        Object ath =
+            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY);
+        if (ath == null) {
+          queryApproximateTotalHits += docs.getNumFound();
+        } else {
+          queryApproximateTotalHits += ((Number) ath).longValue();
+        }
+
         NamedList<List<Object>> unmarshalledSortFieldValues =
             needsUnmarshalling
                 ? unmarshalSortValues(ss, sortFieldValues, schema)
