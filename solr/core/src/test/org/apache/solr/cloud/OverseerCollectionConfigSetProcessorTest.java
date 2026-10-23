@@ -1505,8 +1505,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
   /**
    * Verify that when marking an async task as running in ZooKeeper fails with an unexpected
-   * KeeperException, the collection lock taken for that task is released. Otherwise no later task
-   * for the collection could acquire it.
+   * KeeperException, the collection lock taken for that task is released, otherwise no later task
+   * for the collection could acquire it. The async ID must also be removed from the running map,
+   * since the write may have succeeded, otherwise the retry would never execute the task.
    */
   @Test
   public void testRunningMapFailureReleasesCollectionLock() throws Exception {
@@ -1535,7 +1536,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                 asyncId));
     try {
       queue.add(new QueueEvent("runningMapFailTask", Utils.toJSON(collAMessage), null));
-      verify(runningMapMock, timeout(MAX_WAIT_MS).atLeastOnce()).put(eq(asyncId), any());
+      // the async ID is removed after the lock is released
+      verify(runningMapMock, timeout(MAX_WAIT_MS).atLeastOnce()).remove(asyncId);
     } finally {
       processor.close();
       processorThread.interrupt();
