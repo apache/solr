@@ -1184,6 +1184,9 @@ public class SolrQuery extends ModifiableSolrParams {
     for (String name : this.getParameterNames()) {
       q.setParam(name, this.getParams(name));
     }
+    if (this.sortClauses != null) {
+      q.sortClauses = new ArrayList<>(this.sortClauses);
+    }
     return q;
   }
 
