@@ -112,20 +112,23 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("grandchild", grandChild.getFieldValue("child_s"));
   }
 
-  public void testTrimFieldsRecurseIntoNestedDocumentsOnlyWhenParentSelected() throws Exception {
-    // The "trim-fields" chain selects only name and foo_t. A child document given
-    // as the value of the unselected child_doc field is left untouched, even for
-    // fields the selector names, while a child document under the selected foo_t
-    // field is mutated like any other selected field's value.
+  public void testTrimFieldsRecurseIntoUnselectedParentFields() throws Exception {
+    final SolrInputDocument grandChild = new SolrInputDocument();
+    grandChild.addField("name", " grandchild ");
+    grandChild.addField("bar_s", " unchanged grandchild ");
+
     final SolrInputDocument childUnderUnselected = new SolrInputDocument();
     childUnderUnselected.addField("name", " unselected child ");
     childUnderUnselected.addField("foo_t", " unselected text ");
+    childUnderUnselected.addField("bar_s", " unchanged child ");
+    childUnderUnselected.addField("grandchild_doc", grandChild);
 
     final SolrInputDocument childUnderSelected = new SolrInputDocument();
     childUnderSelected.addField("name", " selected child ");
 
     final SolrInputDocument root = new SolrInputDocument();
     root.addField("name", " root ");
+    root.addField("bar_s", " unchanged root ");
     root.addField("child_doc", childUnderUnselected);
     root.addField("foo_t", childUnderSelected);
 
@@ -133,9 +136,13 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
     assertEquals("root", root.getFieldValue("name"));
-    assertEquals(" unselected child ", childUnderUnselected.getFieldValue("name"));
-    assertEquals(" unselected text ", childUnderUnselected.getFieldValue("foo_t"));
+    assertEquals("unselected child", childUnderUnselected.getFieldValue("name"));
+    assertEquals("unselected text", childUnderUnselected.getFieldValue("foo_t"));
     assertEquals("selected child", childUnderSelected.getFieldValue("name"));
+    assertEquals("grandchild", grandChild.getFieldValue("name"));
+    assertEquals(" unchanged root ", root.getFieldValue("bar_s"));
+    assertEquals(" unchanged child ", childUnderUnselected.getFieldValue("bar_s"));
+    assertEquals(" unchanged grandchild ", grandChild.getFieldValue("bar_s"));
   }
 
   public void testUniqValues() throws Exception {
@@ -1285,7 +1292,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals(3, grandChild.getFieldValue("count_field"));
   }
 
-  public void testMutatingProcessorsRecurseIntoNestedDocuments() throws Exception {
+  public void testMutatingProcessorsVisitSharedNestedDocumentsOnce() throws Exception {
     final SolrInputDocument grandChild = new SolrInputDocument();
     grandChild.addField("child_s", "grandchild");
 
@@ -1295,6 +1302,8 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     final SolrInputDocument root = new SolrInputDocument();
     root.addField("root_s", "root");
+    root.addField("children", child);
+    root.addField("other_children", child);
     root.addChildDocument(child);
 
     final UpdateRequestProcessor noOpNext = new UpdateRequestProcessor(null) {};
@@ -1318,6 +1327,31 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("mutated-root", root.getFieldValue("root_s"));
     assertEquals("mutated-child", child.getFieldValue("child_s"));
     assertEquals("mutated-grandchild", grandChild.getFieldValue("child_s"));
+  }
+
+  public void testRemovedChildFieldIsNotTraversed() throws Exception {
+    final SolrInputDocument child = doc(f("child_s", "unchanged"));
+    final SolrInputDocument root = doc(f("children", child));
+    final FieldMutatingUpdateProcessor processor =
+        new FieldMutatingUpdateProcessor(
+            fname -> fname.equals("children") || fname.endsWith("_s"), null) {
+          @Override
+          protected SolrInputField mutate(SolrInputField src) {
+            if (src.getName().equals("children")) {
+              return null;
+            }
+            final SolrInputField dest = new SolrInputField(src.getName());
+            dest.setValue("mutated");
+            return dest;
+          }
+        };
+    final AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = root;
+
+    processor.processAdd(cmd);
+
+    assertFalse(root.containsKey("children"));
+    assertEquals("unchanged", child.getFieldValue("child_s"));
   }
 
   private void doSimpleDelimTest(final String chain, final String delim) throws Exception {

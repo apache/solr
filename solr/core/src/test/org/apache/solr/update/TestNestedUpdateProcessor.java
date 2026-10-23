@@ -118,6 +118,37 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testParseSelectedDatesInNestedDocuments() throws Exception {
+    for (boolean labelled : new boolean[] {true, false}) {
+      int rootId = labelled ? 166550 : 166560;
+      String childLabel = labelled ? "children" : "_childDocuments_";
+      String grandChildLabel = labelled ? "grandchildren" : "_childDocuments_";
+      String json =
+          """
+          {"add":{"doc":{
+            "id":"%d", "date_dt":"2015-10-02T14:52:37", "untouched_s":" keep spaces ",
+            "%s":[{
+              "id":"%d", "date_dt":"2015-10-02T14:52:37", "untouched_s":" keep spaces ",
+              "%s":[{
+                "id":"%d", "date_dt":"2015-10-02T14:52:37", "untouched_s":" keep spaces "
+              }]
+            }]
+          }}}
+          """
+              .formatted(rootId, childLabel, rootId + 1, grandChildLabel, rootId + 2);
+
+      updateJ(json, params("update.chain", "parse-selected-nested-date"));
+      assertU(commit());
+
+      assertQ(
+          req("q", "_root_:" + rootId, "fl", "id,date_dt,untouched_s"),
+          "//result[@numFound='3']",
+          "count(//date[@name='date_dt'][.='2015-10-02T14:52:37Z'])=3",
+          "count(//str[@name='untouched_s'][.=' keep spaces '])=3");
+    }
+  }
+
+  @Test
   public void testDeeplyNestedURPGrandChild() throws Exception {
     final String[] tests = {
       "/response/docs/[0]/id=='4'",
