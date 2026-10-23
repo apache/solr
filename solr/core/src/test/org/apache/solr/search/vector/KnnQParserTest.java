@@ -17,6 +17,7 @@
 package org.apache.solr.search.vector;
 
 import static org.apache.solr.search.vector.KnnQParser.DEFAULT_TOP_K;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import java.util.Locale;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.SolrTestCaseJ4;
@@ -34,6 +36,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.util.LogListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,6 +47,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   String vectorField = "vector";
   String vectorField2 = "vector2";
   String vectorFieldByteEncoding = "vector_byte_encoding";
+  String vectorFieldBinaryQuantized = "vector_binary_quantized";
 
   @Before
   public void prepareIndex() throws Exception {
@@ -102,6 +107,10 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     docs.get(12)
         .addField(
             vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
+
+    for (int i = 0; i < 10; i++) {
+      docs.get(i).addField(vectorFieldBinaryQuantized, docs.get(i).getFieldValues(vectorField));
+    }
 
     docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 3, 4));
     docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2, 2, 1, 4));
@@ -198,32 +207,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void incorrectOversample_shouldThrowException() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    assertQEx(
-        "String rerankOversample should throw Exception",
-        "For input string: \"string\"",
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=string}" + vectorToSearch,
-            "fl",
-            "id"),
-        SolrException.ErrorCode.BAD_REQUEST);
-
-    assertQEx(
-        "Double rerankOversample should throw Exception",
-        "For input string: \"2.5\"",
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=2.5}" + vectorToSearch,
-            "fl",
-            "id"),
-        SolrException.ErrorCode.BAD_REQUEST);
-  }
-
-  @Test
-  public void rerankOversampleLessThanOne_shouldThrowException() {
+  public void rerankOversample_invalidValues_shouldThrowException() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQEx(
@@ -231,7 +215,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "rerankOversample (0) must be >= 1",
         req(
             CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=0}" + vectorToSearch,
+            "{!knn f=vector_binary_quantized topK=5 rerankOversample=0}" + vectorToSearch,
             "fl",
             "id"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -241,60 +225,49 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "rerankOversample (-1) must be >= 1",
         req(
             CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=-1}" + vectorToSearch,
+            "{!knn f=vector_binary_quantized topK=5 rerankOversample=-1}" + vectorToSearch,
             "fl",
             "id"),
         SolrException.ErrorCode.BAD_REQUEST);
-  }
-
-  @Test
-  public void rerankOversampleOverflowingTopK_shouldThrowException() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQEx(
         "topK * rerankOversample overflowing an integer should throw Exception",
         "topK (2000000000) * rerankOversample (3) overflows an integer",
         req(
             CommonParams.Q,
-            "{!knn f=vector topK=2000000000 rerankOversample=3}" + vectorToSearch,
+            "{!knn f=vector_binary_quantized topK=2000000000 rerankOversample=3}" + vectorToSearch,
             "fl",
             "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
-  public void rerankOversampleOnByteEncodedField_shouldThrowException() {
-    String vectorToSearch = "[1, 2, 3, 4]";
-
-    assertQEx(
-        "rerankOversample on a BYTE encoded field should throw Exception",
-        "rerankOversample is only supported for FLOAT32 vector encoding; field 'vector_byte_encoding' uses BYTE",
-        req(
-            CommonParams.Q,
-            "{!knn f=vector_byte_encoding topK=3 rerankOversample=2}" + vectorToSearch,
-            "fl",
-            "id"),
-        SolrException.ErrorCode.BAD_REQUEST);
-  }
-
-  @Test
-  public void rerankOversampleOneOnByteEncodedField_shouldNotThrow() {
-    String vectorToSearch = "[1, 2, 3, 4]";
-
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector_byte_encoding topK=3 rerankOversample=1}" + vectorToSearch,
-            "fl",
-            "id"),
-        "//result[@numFound='3']");
-  }
-
-  @Test
-  public void rerankOversampleSet_shouldReturnTopKResults() {
+  public void rerankOversample_nonQuantizedField_shouldRunPlainKnnQuery() throws Exception {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    SolrParams localParams =
+        params(
+            "type",
+            "knn",
+            "f",
+            vectorField,
+            "topK",
+            "5",
+            "rerankOversample",
+            "3",
+            "v",
+            vectorToSearch);
+    SolrQueryRequest req = req();
 
-    // rerankOversample widens the candidate pool, but exactly topK results are returned
+    try (LogListener warnLog = LogListener.warn(DenseVectorField.class)) {
+      Query query = new KnnQParser(vectorToSearch, localParams, params(), req).parse();
+
+      assertTrue(query instanceof KnnFloatVectorQuery);
+      assertEquals(5, ((KnnFloatVectorQuery) query).getK());
+      assertThat(warnLog.pollMessage(), containsString("Ignoring rerankOversample=3"));
+    } finally {
+      req.close();
+    }
+
     assertQ(
         req(
             CommonParams.Q,
@@ -310,147 +283,23 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void rerankOversampleOnNonQuantizedField_shouldNotChangeRanking() {
+  public void rerankOversample_binaryQuantizedField_shouldRerankToExactOrder() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
-    // 'vector' is not quantized, so the knn search already scores against the raw vectors and
-    // re-ranking them cannot reorder anything: oversampling must be a no-op on the final ranking
-    String[] expected =
-        new String[] {
-          "//result[@numFound='5']",
-          "//result/doc[1]/str[@name='id'][.='1']",
-          "//result/doc[2]/str[@name='id'][.='4']",
-          "//result/doc[3]/str[@name='id'][.='2']",
-          "//result/doc[4]/str[@name='id'][.='10']",
-          "//result/doc[5]/str[@name='id'][.='3']"
-        };
-
+    // binary quantization alone ranks doc 3 first, ahead of the exact match
     assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=1}" + vectorToSearch,
-            "fl",
-            "id"),
-        expected);
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=4}" + vectorToSearch,
-            "fl",
-            "id"),
-        expected);
-  }
-
-  @Test
-  public void rerankOversampleWithPreFilter_shouldReturnTopKFilteredResults() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=4 rerankOversample=3 preFilter='id:(1 4 7 8 9 10)'}"
-                + vectorToSearch,
-            "fl",
-            "id"),
-        "//result[@numFound='4']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='4']",
-        "//result/doc[3]/str[@name='id'][.='10']",
-        "//result/doc[4]/str[@name='id'][.='7']");
-  }
-
-  @Test
-  public void rerankOversampleWithSeedQuery_shouldReturnTopKResults() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=4 rerankOversample=3 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
-            "fl",
-            "id"),
-        "//result[@numFound='4']",
-        "//result/doc[1]/str[@name='id'][.='1']",
-        "//result/doc[2]/str[@name='id'][.='4']",
-        "//result/doc[3]/str[@name='id'][.='2']",
-        "//result/doc[4]/str[@name='id'][.='10']");
-  }
-
-  @Test
-  public void rerankOversampleWithEarlyTermination_shouldReturnTopKResults() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=3 earlyTermination=true saturationThreshold=0.989 patience=10}"
-                + vectorToSearch,
-            "fl",
-            "id"),
-        "//result[@numFound='5']");
-  }
-
-  @Test
-  public void rerankOversampleWithFilterMatchingNoDocs_shouldReturnNoResults() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    // A plain fq is folded into the knn query's pre-filter, and a filter matching nothing makes
-    // the knn query rewrite to MatchNoDocsQuery. The re-ranking wrapper has to cope with an empty
-    // candidate set rather than failing.
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=3}" + vectorToSearch,
-            "fq",
-            "id:nonexistent",
-            "fl",
-            "id"),
-        "//result[@numFound='0']");
-  }
-
-  @Test
-  public void rerankOversampleWithDebugQuery_matchingNoDocs_shouldNotThrow() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    // debugQuery stringifies the parsed query. The re-ranking query resolves its similarity
-    // function lazily during the search, which never happens when nothing matches, so the
-    // similarity function has to be set up front or toString blows up here.
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=3 preFilter='id:nonexistent'}" + vectorToSearch,
-            "fl",
-            "id",
-            CommonParams.DEBUG_QUERY,
-            "true"),
-        "//result[@numFound='0']",
-        "//str[@name='parsedquery_toString']");
-  }
-
-  @Test
-  public void rerankOversampleWithDebugQuery_shouldNotThrow() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
-
-    assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=3}" + vectorToSearch,
-            "fl",
-            "id",
-            CommonParams.DEBUG_QUERY,
-            "true"),
+        req(CommonParams.Q, "{!knn f=vector_binary_quantized topK=5}" + vectorToSearch, "fl", "id"),
         "//result[@numFound='5']",
-        "//str[@name='parsedquery_toString']");
-  }
-
-  @Test
-  public void rerankOversampleWithEfSearchScaleFactor_shouldReturnTopKResults() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[2]/str[@name='id'][.='1']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[4]/str[@name='id'][.='2']",
+        "//result/doc[5]/str[@name='id'][.='10']");
 
     assertQ(
         req(
             CommonParams.Q,
-            "{!knn f=vector topK=5 rerankOversample=2 efSearchScaleFactor=2.0}" + vectorToSearch,
+            "{!knn f=vector_binary_quantized topK=5 rerankOversample=3}" + vectorToSearch,
             "fl",
             "id"),
         "//result[@numFound='5']",

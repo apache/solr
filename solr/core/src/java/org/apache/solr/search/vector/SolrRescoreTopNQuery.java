@@ -54,10 +54,11 @@ public class SolrRescoreTopNQuery extends RescoreTopNQuery {
     final Query rewrittenInner = indexSearcher.rewrite(innerQuery);
     if (rewrittenInner instanceof MatchNoDocsQuery) {
       return rewrittenInner;
+    } else {
+      // Delegate using the already rewritten inner query rather than calling super.rewrite(), which
+      // would rewrite innerQuery a second time. That matters because rewriting a knn query runs the
+      // whole vector search; rewriting its result is a no-op.
+      return new RescoreTopNQuery(rewrittenInner, valuesSource, n).rewrite(indexSearcher);
     }
-    // Delegate using the already rewritten inner query rather than calling super.rewrite(), which
-    // would rewrite innerQuery a second time. That matters because rewriting a knn query runs the
-    // whole vector search; rewriting its result is a no-op.
-    return new RescoreTopNQuery(rewrittenInner, valuesSource, n).rewrite(indexSearcher);
   }
 }

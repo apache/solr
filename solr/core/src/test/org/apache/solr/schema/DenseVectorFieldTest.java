@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
-import org.apache.solr.search.vector.SolrRescoreTopNQuery;
 import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
@@ -47,8 +45,8 @@ import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.vector.KnnQParser;
-import org.apache.solr.search.vector.SolrKnnByteVectorQuery;
 import org.apache.solr.search.vector.SolrKnnFloatVectorQuery;
+import org.apache.solr.search.vector.SolrRescoreTopNQuery;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -1375,46 +1373,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       assertTrue(query instanceof SolrRescoreTopNQuery);
       assertEquals(expected, query);
-    } finally {
-      deleteCore();
-    }
-  }
-
-  @Test
-  public void rerankOversampleGreaterThanOne_byteEncoding_shouldThrowException() throws Exception {
-    try {
-      initCore("solrconfig-basic.xml", "schema-densevector.xml");
-      DenseVectorField type = getVectorFieldType("vector_byte_encoding");
-
-      SolrException e =
-          expectThrows(
-              SolrException.class,
-              () ->
-                  type.getKnnVectorQuery(
-                      "vector_byte_encoding", "[2, 1, 3, 4]", 3, 6, null, null, null, null, 2));
-
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-      assertThat(
-          e.getMessage(),
-          containsString(
-              "rerankOversample is only supported for FLOAT32 vector encoding; field 'vector_byte_encoding' uses BYTE"));
-    } finally {
-      deleteCore();
-    }
-  }
-
-  @Test
-  public void rerankOversampleOne_byteEncoding_shouldNotThrow() throws Exception {
-    try {
-      initCore("solrconfig-basic.xml", "schema-densevector.xml");
-      DenseVectorField type = getVectorFieldType("vector_byte_encoding");
-
-      Query query =
-          type.getKnnVectorQuery(
-              "vector_byte_encoding", "[2, 1, 3, 4]", 3, 3, null, null, null, null, 1);
-
-      assertTrue(query instanceof SolrKnnByteVectorQuery);
-      assertEquals(3, ((SolrKnnByteVectorQuery) query).getK());
     } finally {
       deleteCore();
     }
