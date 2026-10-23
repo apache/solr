@@ -338,7 +338,12 @@ Here is how it looks like using various formats:
 
 ==== Subquery Result Fields
 
-To appear in subquery document list, a field should be specified in both `fl` parameters: in the main `fl` (despite the main result documents have no this field), and in subquery's `fl` (e.g., `foo.fl`).
+To appear in a subquery document, a field should be specified in both `fl` parameters: in the main `fl` (even if the field should not appear in the main result document),
+and in the subquery's `fl` (e.g., `foo.fl`).
+
+Fields used as `row.__fieldname__` inputs in subquery parameters are requested automatically by the transformer.
+You do not need to include these fields in the main `fl` just to pass their values to the subquery.
+Include a field in the main `fl` if it should also appear in the main result document.
 
 Wildcards can be used in one or both of these parameters.
 For example, if field `title` should appear in categories subquery, it can be done via one of these ways:
