@@ -115,3 +115,13 @@ wait_for() {
   
   return 1  # Timeout reached
 }
+
+# Utility function for asserting between the commons-cli wording ($1), or, when running against the picocli CLI, the picocli wording ($2)
+# Todo: Remove this once commons-cli cleanup happens
+assert_output_for_cli() {
+  if [ -n "${SOLR_PICOCLI:-}" ]; then
+    assert_output --partial "$2"
+  else
+    assert_output --partial "$1"
+  fi
+}

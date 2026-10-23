@@ -177,6 +177,9 @@ public class AuthTool extends ToolBase {
       names = {"--solr-include-file"},
       paramLabel = "FILE",
       required = true,
+      // Always supplied by bin/solr (from SOLR_INCLUDE); hidden because a user-supplied copy would
+      // be a duplicate, which picocli rejects.
+      hidden = true,
       description =
           "The Solr include file which contains overridable environment variables for configuring Solr configurations. Defaults to solr.in.sh or solr.in.cmd.")
   private String solrIncludeFile;
