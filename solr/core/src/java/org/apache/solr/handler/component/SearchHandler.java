@@ -791,7 +791,9 @@ public class SearchHandler extends RequestHandlerBase
         rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, cursorStr);
       }
     }
-    if (rb.isDebug()) {
+    // SOLR-8020: do not add a second "debug" section (or hide the real one) when a component
+    // already contributed it before the limit was hit
+    if (rb.isDebug() && rb.rsp.getValues().get("debug") == null) {
       NamedList<Object> debug = new NamedList<>();
       debug.add("explain", new NamedList<>());
       rb.rsp.add("debug", debug);
