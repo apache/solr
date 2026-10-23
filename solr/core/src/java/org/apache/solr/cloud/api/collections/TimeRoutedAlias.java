@@ -413,11 +413,15 @@ public class TimeRoutedAlias extends RoutedAlias {
       // seconds, which is pretty far fetched). Putting this in a separate thread to ensure that any
       // failed races don't cause documents to get rejected. The modification must be applied to the
       // aliases it is given, which are current, so that it doesn't undo other changes to aliases.
+      // If the alias has been deleted meanwhile, there is nothing to update.
       core.runAsync(
           () ->
               zkStateReader.aliasesManager.applyModificationAndExportToZk(
                   (a) ->
-                      a.cloneWithCollectionAliasProperties(aliasName, ROUTER_START, fixedStart)));
+                      a.hasAlias(aliasName)
+                          ? a.cloneWithCollectionAliasProperties(
+                              aliasName, ROUTER_START, fixedStart)
+                          : a));
     }
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(
