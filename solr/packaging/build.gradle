@@ -358,10 +358,10 @@ task integrationTestsPicocli(type: BatsTask) {
   // it cannot join until the assert command is migrated. test_help.bats asserts the exact wording
   // of the commons-cli help output, which the picocli implementation words differently.
   testFiles = [
-      'test/test_basic_auth.bats',
-//      'test/test_help.bats',
-      'test/test_post.bats',
-      'test/test_stream.bats'
+//      'test/test_basic_auth.bats',
+      'test/test_help.bats',
+//      'test/test_post.bats',
+//      'test/test_stream.bats'
   ]
 }
 

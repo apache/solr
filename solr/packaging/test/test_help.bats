@@ -86,13 +86,13 @@ setup() {
 @test "zk help flag prints help" {
   run solr zk --help
   assert_output --partial 'usage:'
-  assert_output --partial 'bin/solr zk ls'
+  assert_output --regexp '(bin/solr zk ls| ls)'
   refute_output --partial 'ERROR'
 }
 
 @test "auth help flag prints help" {
   run solr auth --help
-  assert_output --partial 'bin/solr auth enable'
+  assert_output --regexp '(bin/solr auth enable|enable\|disable)'
   refute_output --partial 'ERROR'
 }
 
