@@ -43,6 +43,7 @@ import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.lucene.tests.mockfile.FilterFileChannel;
@@ -358,7 +359,7 @@ public class SecurityConfHandlerFailurePathsTest extends SolrTestCase {
             throw new IOException("injected group failure");
           }
         }
-        if (group == FAKE_GROUP) {
+        if (Objects.equals(group, FAKE_GROUP)) {
           return;
         }
         view.setGroup(group);
