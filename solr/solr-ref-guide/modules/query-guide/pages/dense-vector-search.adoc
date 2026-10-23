@@ -85,6 +85,7 @@ The dimension of the dense vector to pass in.
 +
 Accepted values:
 Any positive integer.
+Values above 1024 log a warning and require the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]; `LuceneDefaultCodecFactory` and `SimpleTextCodecFactory` reject them when documents are indexed.
 
 [[similarityFunction-caveats]]`similarityFunction`::
 +
