@@ -72,19 +72,18 @@ public class TestShardResponseLogging extends SolrTestCase {
       assertFalse(
           "sensitive query/key value reached warning: " + message, message.contains(secretTerm));
       assertFalse(
-          "response value reached warning: " + message,
-          message.contains("private response value"));
+          "response value reached warning: " + message, message.contains("private response value"));
       assertTrue(message, message.contains("missing response section response"));
       assertTrue(message, message.contains("response has 2 top-level entries"));
       assertTrue(
-          message,
-          message.contains("shard request purpose " + ShardRequest.PURPOSE_GET_TOP_IDS));
+          message, message.contains("shard request purpose " + ShardRequest.PURPOSE_GET_TOP_IDS));
     }
   }
 
   @Test
   public void testCorruptedResponseWithNullNodeNameUsesSanitizedShardAddress() {
-    final String shardAddress = "http://user:password@localhost:8983/solr?token=customer_secret_term";
+    final String shardAddress =
+        "http://user:password@localhost:8983/solr?token=customer_secret_term";
     final String safeShardName = "localhost:8983";
 
     final ShardRequest shardRequest = new ShardRequest();
