@@ -494,8 +494,8 @@ Here's an example of a `knn` search using the early termination with input param
 |===
 +
 If provided, the query will retrieve a candidate pool of documents equal to topK multiplied by the rerankOversample value provided. The candidate set of documents will then be rescored with their raw vector values, and reranked down to a topK result set.
-
-Only to be used with quantized dense vector types, particularly binary quantized.
++
+Only supported for `ScalarQuantizedDenseVectorField` and `BinaryQuantizedDenseVectorField`, and particularly recommended for binary quantized fields. For other dense vector field types, the parameter is ignored and a normal `knn` query is executed.
 +
 Accepted values:
 Any int >= 1
