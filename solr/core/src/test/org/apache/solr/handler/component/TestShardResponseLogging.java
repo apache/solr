@@ -31,13 +31,14 @@ import org.junit.Test;
 public class TestShardResponseLogging extends SolrTestCase {
 
   @Test
-  public void testCorruptedResponseWarningDoesNotLogTheQuery() {
+  public void testCorruptedResponseWarningDoesNotLogRequestOrResponseData() {
     final String secretTerm = "customer_secret_term";
     final String nodeName = "node1:8983_solr";
 
     final ShardRequest shardRequest = new ShardRequest();
     shardRequest.params = new ModifiableSolrParams();
     shardRequest.params.set("q", "name:" + secretTerm);
+    shardRequest.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
 
     final NamedList<Object> header = new NamedList<>();
     header.add("status", 0);
@@ -47,6 +48,7 @@ public class TestShardResponseLogging extends SolrTestCase {
     header.add("params", new SimpleOrderedMap<>(shardRequest.params));
     final NamedList<Object> body = new NamedList<>();
     body.add(SolrQueryResponse.RESPONSE_HEADER_KEY, header);
+    body.add("name:" + secretTerm, "private response value");
     final SolrResponseBase solrResponse = new SolrResponseBase();
     solrResponse.setResponse(body);
 
@@ -67,13 +69,23 @@ public class TestShardResponseLogging extends SolrTestCase {
       final String message = warnLog.pollMessage();
       assertNotNull("expected a corrupted response warning", message);
       assertTrue(message, message.contains(nodeName));
-      assertFalse(message, message.contains(secretTerm));
+      assertFalse(
+          "sensitive query/key value reached warning: " + message, message.contains(secretTerm));
+      assertFalse(
+          "response value reached warning: " + message,
+          message.contains("private response value"));
+      assertTrue(message, message.contains("missing response section response"));
+      assertTrue(message, message.contains("response has 2 top-level entries"));
+      assertTrue(
+          message,
+          message.contains("shard request purpose " + ShardRequest.PURPOSE_GET_TOP_IDS));
     }
   }
 
   @Test
-  public void testCorruptedResponseWithNullNodeNameUsesShardAddress() {
-    final String shardAddress = "http://localhost:8983/solr";
+  public void testCorruptedResponseWithNullNodeNameUsesSanitizedShardAddress() {
+    final String shardAddress = "http://user:password@localhost:8983/solr?token=customer_secret_term";
+    final String safeShardName = "localhost:8983";
 
     final ShardRequest shardRequest = new ShardRequest();
     shardRequest.params = new ModifiableSolrParams();
@@ -89,7 +101,7 @@ public class TestShardResponseLogging extends SolrTestCase {
     final ShardResponse shardResponse = new ShardResponse();
     shardResponse.setShardRequest(shardRequest);
     shardResponse.setSolrResponse(solrResponse);
-    shardResponse.setShard("shard1");
+    shardResponse.setShard(shardAddress);
     shardResponse.setShardAddress(shardAddress);
     // The node name is left null, as it is once a node has stopped; both the warning and
     // the exception should fall back to the shard address instead of printing "null".
@@ -105,14 +117,34 @@ public class TestShardResponseLogging extends SolrTestCase {
 
       final String message = warnLog.pollMessage();
       assertNotNull("expected a corrupted response warning", message);
-      assertTrue(message, message.contains(shardAddress));
+      assertTrue(message, message.contains(safeShardName));
+      assertFalse(
+          "sensitive shard URL reached warning: " + message, message.contains(shardAddress));
+      assertFalse(
+          "shard credentials reached warning: " + message, message.contains("user:password"));
+      assertFalse(
+          "shard query reached warning: " + message, message.contains("customer_secret_term"));
+      assertTrue(ex.getMessage(), ex.getMessage().contains("shard: " + safeShardName));
+      assertFalse(
+          "sensitive shard URL reached exception: " + ex.getMessage(),
+          ex.getMessage().contains("user:password"));
+      assertFalse(
+          "sensitive shard query reached exception: " + ex.getMessage(),
+          ex.getMessage().contains("customer_secret_term"));
 
       // The method wraps the "absent" exception in its catch block, so the message that
       // names the node rides as the cause.
       assertNotNull("expected a cause on the thrown exception", ex.getCause());
       final String causeMessage = ex.getCause().getMessage();
-      assertTrue(causeMessage, causeMessage.contains("is absent in response from " + shardAddress));
+      assertTrue(
+          causeMessage, causeMessage.contains("is absent in response from " + safeShardName));
       assertFalse(causeMessage, causeMessage.contains("from null"));
+      assertFalse(
+          "shard credentials reached exception cause: " + causeMessage,
+          causeMessage.contains("user:password"));
+      assertFalse(
+          "shard query reached exception cause: " + causeMessage,
+          causeMessage.contains("customer_secret_term"));
     }
   }
 }

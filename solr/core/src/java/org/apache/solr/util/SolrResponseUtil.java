@@ -17,9 +17,7 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.net.URI;
 import java.util.Objects;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -55,18 +53,18 @@ public class SolrResponseUtil {
                     SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           return null;
         } else {
-          String nodeName =
-              srsp.getNodeName() != null ? srsp.getNodeName() : srsp.getShardAddress();
+          String shardIdentifier = getShardIdentifierForLogging(srsp);
           log.warn(
-              "corrupted response on {} : response contains keys {}, shard request purpose {}",
-              nodeName,
-              responseKeyNames(response),
+              "corrupted response on {} : missing response section {}, response has {} top-level entries, shard request purpose {}",
+              shardIdentifier,
+              shardResponseKey,
+              response.size(),
               srsp.getShardRequest().purpose);
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               shardResponseKey
                   + " is absent in response from "
-                  + nodeName
+                  + shardIdentifier
                   + ", but "
                   + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
                   + " isn't set in the response.");
@@ -78,21 +76,34 @@ public class SolrResponseUtil {
       } else {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to read " + shardResponseKey + " info for shard: " + srsp.getShard(),
+            "Unable to read "
+                + shardResponseKey
+                + " info for shard: "
+                + getShardIdentifierForLogging(srsp),
             ex);
       }
     }
   }
 
-  /**
-   * The top-level key names of a shard response, for logging. The values are left out on purpose:
-   * the response header can echo the request params, the query text included.
-   */
-  private static List<String> responseKeyNames(NamedList<?> response) {
-    List<String> keyNames = new ArrayList<>(response.size());
-    for (Map.Entry<String, ?> entry : response) {
-      keyNames.add(entry.getKey());
+  private static String getShardIdentifierForLogging(ShardResponse srsp) {
+    String nodeName = srsp.getNodeName();
+    if (nodeName != null) {
+      return nodeName;
     }
-    return keyNames;
+    String shardAddress = srsp.getShardAddress();
+    if (shardAddress == null) {
+      return "unknown";
+    }
+    try {
+      URI uri = URI.create(shardAddress);
+      String host = uri.getHost();
+      if (host == null) {
+        return "unknown";
+      }
+      int port = uri.getPort();
+      return port == -1 ? host : host + ":" + port;
+    } catch (IllegalArgumentException e) {
+      return "unknown";
+    }
   }
 }
