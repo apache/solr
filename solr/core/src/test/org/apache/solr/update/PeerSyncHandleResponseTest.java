@@ -19,9 +19,11 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.SocketException;
 import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -95,6 +97,53 @@ public class PeerSyncHandleResponseTest extends SolrTestCase {
                   new SolrCoreInitializationException("collection1", new IOException("boom"))));
 
       assertFalse(peerSync.handleResponse(response));
+    }
+  }
+
+  @Test
+  public void testPeerSyncStillFailsCoreInitFailureWhenCantReachIsNotSuccess() throws Exception {
+    assertFalse(
+        handleVersionsFailure(
+            false,
+            serverError(
+                new SolrCoreInitializationException("collection1", new IOException("boom")))));
+  }
+
+  @Test
+  public void testPeerSyncCountsServiceUnavailableFromVersionRequestAsSuccess() throws Exception {
+    assertTrue(
+        handleVersionsFailure(
+            true, new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "boom")));
+  }
+
+  @Test
+  public void testPeerSyncStillFailsServiceUnavailableWhenCantReachIsNotSuccess() throws Exception {
+    assertFalse(
+        handleVersionsFailure(
+            false, new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "boom")));
+  }
+
+  @Test
+  public void testPeerSyncCountsRefusedConnectionFromVersionRequestAsSuccess() throws Exception {
+    assertTrue(
+        handleVersionsFailure(
+            true, new SolrServerException(new SocketException("Connection refused"))));
+  }
+
+  @Test
+  public void testPeerSyncStillFailsRefusedConnectionWhenCantReachIsNotSuccess() throws Exception {
+    assertFalse(
+        handleVersionsFailure(
+            false, new SolrServerException(new SocketException("Connection refused"))));
+  }
+
+  private boolean handleVersionsFailure(boolean cantReachIsSuccess, Throwable exception)
+      throws Exception {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1");
+        PeerSync peerSync =
+            new PeerSync(core, List.of("http://example.com/solr/core"), 10, cantReachIsSuccess)) {
+      return peerSync.handleResponse(
+          failedResponse(PeerSync.SHARD_REQUEST_PURPOSE_GET_VERSIONS, exception));
     }
   }
 
