@@ -1,0 +1,7 @@
+title: "fl: digit-leading names such as 1001_s are fields when the schema defines them; with a * catch-all, numbers such as 1.5 are too"
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-4374
+    url: https://issues.apache.org/jira/browse/SOLR-4374

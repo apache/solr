@@ -237,6 +237,32 @@ public class SolrReturnFields extends ReturnFields {
     return null;
   }
 
+  /**
+   * Like {@link #getFieldName}, for a name that starts with a digit. A leading digit is ambiguous
+   * with a numeric constant, so the name is only accepted if the schema defines it (explicitly or
+   * through a dynamic field); otherwise the parser position is left untouched.
+   */
+  private static String getDigitLeadingFieldName(StrParser sp, SolrQueryRequest req) {
+    sp.eatws();
+    int idStart = sp.pos;
+    if (sp.pos >= sp.end || !Character.isDigit(sp.val.charAt(sp.pos))) {
+      return null;
+    }
+    while (sp.pos < sp.end) {
+      char ch = sp.val.charAt(sp.pos);
+      if (!Character.isJavaIdentifierPart(ch) && ch != '.' && ch != '-') {
+        break;
+      }
+      sp.pos++;
+    }
+    String name = sp.val.substring(idStart, sp.pos);
+    if (req.getSchema().getFieldTypeNoEx(name) != null) {
+      return name;
+    }
+    sp.pos = idStart;
+    return null;
+  }
+
   private void add(
       String fl,
       Deque<DeferredRenameEntry> deferred,
@@ -258,6 +284,9 @@ public class SolrReturnFields extends ReturnFields {
         // short circuit test for a really simple field name
         String key = null;
         String field = getFieldName(sp);
+        if (field == null) {
+          field = getDigitLeadingFieldName(sp, req);
+        }
         char ch = sp.ch();
 
         if (field != null) {
