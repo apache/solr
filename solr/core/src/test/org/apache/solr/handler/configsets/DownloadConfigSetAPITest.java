@@ -22,9 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import jakarta.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -91,5 +94,55 @@ public class DownloadConfigSetAPITest extends SolrTestCase {
       assertEquals("application/zip", response.getMediaType().toString());
       assertNull(response.getHeaderString("Content-Disposition"));
     }
+  }
+
+  @Test
+  public void testZipConfigSetUsesForwardSlashEntryNames() throws Exception {
+    Path configDir = configSetBase.resolve("nestedconfig");
+    Files.createDirectories(configDir.resolve("lang"));
+    Files.writeString(configDir.resolve("solrconfig.xml"), "<config/>", StandardCharsets.UTF_8);
+    Files.writeString(
+        configDir.resolve("lang").resolve("stopwords_en.txt"), "a\n", StandardCharsets.UTF_8);
+
+    byte[] zipBytes = DownloadConfigSet.zipConfigSet(configSetService, "nestedconfig");
+    assertTrue(zipBytes.length > 0);
+
+    boolean foundSolrConfig = false;
+    boolean foundStopWords = false;
+    boolean foundLangDir = false;
+    try (ZipInputStream stream = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+      ZipEntry entry;
+      while ((entry = stream.getNextEntry()) != null) {
+        String entryName = entry.getName();
+        assertFalse(
+            "ZIP entry names must use / and must not be empty: " + entryName, entryName.isEmpty());
+        assertFalse("ZIP must not include a nameless root directory", "/".equals(entryName));
+        assertFalse("ZIP entry names must use / not \\: " + entryName, entryName.contains("\\"));
+        if ("solrconfig.xml".equals(entryName)) {
+          foundSolrConfig = true;
+        } else if ("lang/stopwords_en.txt".equals(entryName)) {
+          foundStopWords = true;
+        } else if ("lang/".equals(entryName)) {
+          foundLangDir = true;
+        }
+      }
+    }
+    assertTrue("Did not find solrconfig.xml in downloaded configset", foundSolrConfig);
+    assertTrue("Did not find lang/stopwords_en.txt in downloaded configset", foundStopWords);
+    assertTrue("Did not find lang/ directory entry in downloaded configset", foundLangDir);
+  }
+
+  @Test
+  public void testToZipEntryNameUsesForwardSlashAndSkipsRoot() {
+    Path root = Path.of("configset-root");
+    assertNull(DownloadConfigSet.toZipEntryName(root, root, true));
+    assertEquals("lang/", DownloadConfigSet.toZipEntryName(root, root.resolve("lang"), true));
+    assertEquals(
+        "lang/stopwords_en.txt",
+        DownloadConfigSet.toZipEntryName(
+            root, root.resolve("lang").resolve("stopwords_en.txt"), false));
+    assertEquals(
+        "lang/stopwords_en.txt",
+        DownloadConfigSet.toZipEntryName(root, root.resolve("lang\\stopwords_en.txt"), false));
   }
 }
