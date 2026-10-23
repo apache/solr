@@ -424,6 +424,34 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
 
   /** Two contributing sub-queries with exact counts (3 and 2): the merged count is not exact. */
   @Test
+  public void scoreOnlyPartialShardWithoutPerQueryListIsSkipped() {
+    SolrDocument b1 = doc("b1", 3.0f), b2 = doc("b2", 2.0f), b3 = doc("b3", 1.0f);
+    ShardResponse shard1 =
+        shardResponse(
+            "shard1",
+            header(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE),
+            docList(0, true),
+            null,
+            null);
+    ShardResponse shard2 =
+        shardResponse(
+            "shard2",
+            header(),
+            docList(3, true, b1, b2, b3),
+            List.of(docList(3, true, b1, b2, b3)),
+            null);
+    ResponseBuilder rb = newResponseBuilder(scoreSortSpec(), "q0");
+    cqc.mergeIds(rb, shardRequest(shard1, shard2));
+    assertEquals("numFound", 3, rb.getResponseDocs().getNumFound());
+    assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
+    assertEquals("response size", 3, rb.getResponseDocs().size());
+    assertEquals(
+        "partialResults",
+        Boolean.TRUE,
+        rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+  }
+
+  @Test
   public void multipleContributingSubQueriesCountDistinctDocsExactly() {
     SolrDocument c1 = doc("c1", 5.0f), c2 = doc("c2", 4.0f), c3 = doc("c3", 3.0f);
     SolrDocument d1 = doc("d1", 2.0f), d2 = doc("d2", 1.0f);

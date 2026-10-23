@@ -389,8 +389,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
         // decided before the totals below: a skipped shard adds nothing to this query's totals,
         // and its hits are unreported, so the merged count cannot be exact
-        if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
+        if (docs == null
+            || (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling)) {
           hitCountIsExact = false;
+          thereArePartialResults = true;
           continue;
         }
 
