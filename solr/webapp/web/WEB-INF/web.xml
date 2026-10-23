@@ -61,6 +61,15 @@
     <servlet-name>SolrServlet</servlet-name>
   </filter-mapping>
 
+  <filter>
+    <filter-name>NodeTargetProxyFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.NodeTargetProxyFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>NodeTargetProxyFilter</filter-name>
+    <servlet-name>SolrServlet</servlet-name>
+  </filter-mapping>
+
   <servlet>
     <servlet-name>SolrServlet</servlet-name>
     <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
