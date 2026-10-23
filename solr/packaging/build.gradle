@@ -353,16 +353,6 @@ task integrationTests(type: BatsTask) {
 task integrationTestsPicocli(type: BatsTask) {
   description = 'Runs the BATS suites for the migrated commands against the experimental picocli CLI.'
   configureBatsTask(it, 'test-output-picocli', true)
-  // A suite belongs here only when every command it invokes has been migrated, not merely the
-  // command under test. test_auth.bats, for example, uses `solr assert` to wait for startup, so
-  // it cannot join until the assert command is migrated. test_help.bats asserts the exact wording
-  // of the commons-cli help output, which the picocli implementation words differently.
-  testFiles = [
-      'test/test_basic_auth.bats',
-      'test/test_help.bats',
-      'test/test_post.bats',
-      'test/test_stream.bats'
-  ]
 }
 
 abstract class BatsTask extends Exec {
