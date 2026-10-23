@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
+
 import groovy.json.JsonOutput
 import javax.inject.Inject
-import org.gradle.process.ExecOperations
 import org.apache.tools.ant.util.TeeOutputStream
 
 apply plugin: 'java'
@@ -592,15 +592,6 @@ def ASF_LICENSE_HEADER = """\
 // under the License.
 """
 
-def EXPERIMENTAL_NOTICE = """\
-[WARNING]
-====
-This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
-For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
-See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
-====
-"""
-
 def DO_NOT_EDIT_NOTICE = """\
 //
 // DO NOT EDIT -- this page is auto-generated from picocli annotations.
@@ -719,7 +710,7 @@ String markRequiredOptionsAndArgs(String content) {
 // Post-process a raw ManPageGenerator AsciiDoc file for Antora compatibility.
 // The title lives inside the man-section-header block, so we replace the whole
 // header block with an Antora-compatible page title + attributes.
-String postProcessCliManPage(File rawFile, Set stems, String asfHeader, String doNotEditNotice, String experimentalNotice) {
+String postProcessCliManPage(File rawFile, Set stems, String asfHeader, String doNotEditNotice) {
   def content = rawFile.text
   def baseName = rawFile.name.replace('.adoc', '')
   def newTitle = cliFileNameToTitle(baseName, stems)
@@ -775,7 +766,7 @@ String postProcessCliManPage(File rawFile, Set stems, String asfHeader, String d
 
   // Inserted last, after the blanket 'xref:solr-' -> 'xref:cli/solr-' rewrite above, which would
   // otherwise redirect this notice's own link into pages/cli/.
-  content = content.replace(":page-toclevels: 2\n", ":page-toclevels: 2\n\n" + experimentalNotice)
+  content = content.replace(":page-toclevels: 2\n", ":page-toclevels: 2\n\n")
 
   return asfHeader + doNotEditNotice + "\n" + content.stripTrailing() + "\n"
 }
@@ -862,7 +853,7 @@ task generateCliDocs {
     def stems = rawFiles.collect { it.name.replace('.adoc', '') } as Set
 
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, stems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
+      def processed = postProcessCliManPage(rawFile, stems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE)
       new File(destDir, rawFile.name).text = processed
     }
 
@@ -919,7 +910,7 @@ task checkCliDocsUpToDate {
     def issues = []
 
     rawFiles.each { rawFile ->
-      def processed = postProcessCliManPage(rawFile, stems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE, EXPERIMENTAL_NOTICE)
+      def processed = postProcessCliManPage(rawFile, stems, ASF_LICENSE_HEADER, DO_NOT_EDIT_NOTICE)
       def committed = new File(committedDir, rawFile.name)
       if (!committed.exists()) {
         issues << "MISSING committed file (new command): ${rawFile.name}"

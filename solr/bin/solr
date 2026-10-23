@@ -828,10 +828,10 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -h|--help)
-            if [[ "${SOLR_PICOCLI:-}" == "true" ]]; then
-                run_tool "$SCRIPT_CMD" --help
+            if [[ "${SOLR_PICOCLI:-}" == "false" ]]; then
+              print_usage "$SCRIPT_CMD"
             else
-                print_usage "$SCRIPT_CMD"
+              run_tool "$SCRIPT_CMD" --help
             fi
             exit 0
         ;;

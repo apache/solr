@@ -36,19 +36,14 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.2
 
-=== Snapshot commands are now `bin/solr snapshot` sub-commands
+=== Solr CLI now uses PicoCLI
 
-The `snapshot-create`, `snapshot-delete`, `snapshot-describe`, `snapshot-export` and `snapshot-list` commands of the experimental picocli command line interface are replaced by the sub-commands of `bin/solr snapshot`:
-
-[source,bash]
-----
-bin/solr snapshot create -c mycollection --snapshot-name snap1
-bin/solr snapshot list -c mycollection
-----
+Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to https://picocli.info/[picocli].
 
 The old spellings still work and are hidden from the help and from this guide.
 They are deprecated in Solr 10.2 and are removed in Solr 11.0.
 The default command line interface is not changed.
+
 
 == Solr 10.1
 
