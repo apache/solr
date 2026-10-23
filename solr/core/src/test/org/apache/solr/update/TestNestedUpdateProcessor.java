@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -123,7 +124,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
       int rootId = labelled ? 166550 : 166560;
       String childLabel = labelled ? "children" : "_childDocuments_";
       String grandChildLabel = labelled ? "grandchildren" : "_childDocuments_";
-      String json =
+      String template =
           """
           {"add":{"doc":{
             "id":"%d", "date_dt":"2015-10-02T14:52:37", "untouched_s":" keep spaces ",
@@ -135,7 +136,9 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
             }]
           }}}
           """
-              .formatted(rootId, childLabel, rootId + 1, grandChildLabel, rootId + 2);
+      String json =
+          String.format(
+              Locale.ROOT, template, rootId, childLabel, rootId + 1, grandChildLabel, rootId + 2);
 
       updateJ(json, params("update.chain", "parse-selected-nested-date"));
       assertU(commit());
