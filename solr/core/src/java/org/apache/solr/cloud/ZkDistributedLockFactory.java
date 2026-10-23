@@ -26,7 +26,7 @@ import org.apache.zookeeper.data.Stat;
 
 abstract class ZkDistributedLockFactory {
 
-  private static final int MAX_CREATE_ATTEMPTS = 3;
+  static final int MAX_CREATE_ATTEMPTS = 3;
 
   private final SolrZkClient zkClient;
   private final String rootPath;
@@ -39,15 +39,17 @@ abstract class ZkDistributedLockFactory {
   protected DistributedLock doCreateLock(
       boolean isWriteLock, String lockPath, String lockIdToMirror) {
     try {
-      for (int attempt = 1; attempt < MAX_CREATE_ATTEMPTS; attempt++) {
+      for (int attempt = 1; ; attempt++) {
         try {
           return newLock(isWriteLock, lockPath, lockIdToMirror);
         } catch (KeeperException.NoNodeException e) {
+          if (attempt == MAX_CREATE_ATTEMPTS) {
+            throw e;
+          }
           // Lock dirs are containers, so ZK drops them when empty. Recreate and try again.
           makeLockPath(lockPath);
         }
       }
-      return newLock(isWriteLock, lockPath, lockIdToMirror);
     } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {

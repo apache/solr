@@ -21,8 +21,10 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.zookeeper.CreateMode;
@@ -247,6 +249,50 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
         assertTrue(removed.get());
         assertTrue(lock.isAcquired());
         lock.release();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  /** Lock creation gives up once the lock dir keeps disappearing on every attempt. */
+  @Test
+  public void testLockCreationGivesUpAfterMaxAttempts() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      AtomicInteger lockNodeCreates = new AtomicInteger();
+      try (SolrZkClient zkClient =
+          new SolrZkClient(
+              new SolrZkClient.Builder()
+                  .withUrl(server.getZkAddress())
+                  .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)) {
+            @Override
+            public String create(String path, byte[] data, CreateMode createMode)
+                throws KeeperException, InterruptedException {
+              if (createMode == CreateMode.EPHEMERAL_SEQUENTIAL
+                  && lockNodeCreates.incrementAndGet()
+                      <= ZkDistributedLockFactory.MAX_CREATE_ATTEMPTS) {
+                throw new KeeperException.NoNodeException(path);
+              }
+              return super.create(path, data, createMode);
+            }
+          }) {
+        ZkDistributedCollectionLockFactory factory =
+            new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () ->
+                    factory.createLock(
+                        true,
+                        CollectionParams.LockLevel.COLLECTION,
+                        COLLECTION_NAME,
+                        null,
+                        null,
+                        null));
+        assertTrue(e.getCause() instanceof KeeperException.NoNodeException);
+        assertEquals(ZkDistributedLockFactory.MAX_CREATE_ATTEMPTS, lockNodeCreates.get());
       }
     } finally {
       server.shutdown();
