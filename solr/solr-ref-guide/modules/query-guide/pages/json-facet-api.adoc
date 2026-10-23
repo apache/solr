@@ -209,7 +209,7 @@ Larger values can increase the accuracy of the final "Top Terms" returned when t
 The default of `-1` causes a heuristic to be applied based on other options specified.
 |`mincount` |Only return buckets with a count of at least this number. Defaults to `1`.
 |`missing` |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to `false`.
-|`numBuckets` |A boolean. If `true`, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to `false`.
+|`numBuckets` |A boolean. If `true`, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). In a distributed request this is a hyper-log-log estimate that ignores `mincount`, see <<hll-precision,the precision of `hll`>>. Defaults to `false`.
 |`allBuckets` |A boolean. If `true`, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different from a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to `false`.
 |`prefix` |Only produce buckets for terms starting with the specified prefix.
 |`facet` |Aggregations, metrics or nested facets that will be calculated for every returned bucket
@@ -582,6 +582,13 @@ Instead, they calculate something over all the documents in the domain.
 |stddev |`stddev(rent)` |standard deviation of field or function
 |relatedness |`relatedness('popularity:[100 TO *]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries). This is primarily for use when building <<relatedness-and-semantic-knowledge-graphs,Semantic Knowledge Graphs>>.
 |===
+
+[[hll-precision]]
+In a distributed request, `hll` and `numBuckets` count up to 768 values exactly; above that they return an estimate with a standard error of about 1.15%.
+Two system properties raise the precision, at the cost of bigger responses from the shards:
+
+* `solr.facet.hll.log2m` (default `13`): the number of registers as a power of 2. Each step up divides the error by √2 and doubles the sketch (6KB at `13`, 48KB at `16`). All nodes of a cluster must use the same value.
+* `solr.facet.hll.expthresh` (default `-1`): up to 2^(expthresh - 1) values are counted exactly, at 8 bytes per value per shard. The maximum, `18`, counts up to 131,072 values exactly. `-1` counts exactly while that takes less room than the registers.
 
 Numeric aggregation functions such as `avg` can be on any numeric field, or on a xref:function-queries.adoc[nested function] of multiple numeric fields such as `avg(div(popularity,price))`.
 

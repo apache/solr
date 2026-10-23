@@ -21,6 +21,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
@@ -37,19 +38,33 @@ public class HLLAgg extends StrAggValueSource {
     factory = new HLLFactory();
   }
 
-  // factory for the hyper-log-log algorithm.
+  /**
+   * Creates the hyper-log-log sketches that shards return for {@code hll()} and {@code numBuckets}
+   * in a distributed request. With the defaults a sketch counts up to 768 values exactly and takes
+   * at most 6KB; above that the count is an estimate with a standard error of about 1.15%. The
+   * system properties {@value #LOG2M_PROPERTY} and {@value #EXPTHRESH_PROPERTY} trade bigger shard
+   * responses for a more exact count. All nodes of a cluster need the same log2m: sketches of
+   * different sizes do not merge correctly.
+   */
   // TODO: make stats component HllOptions inherit from this?
   public static class HLLFactory {
-    int log2m = 13;
+    /** The number of registers as a power of 2: the standard error is 1.04 / sqrt(2^log2m). */
+    public static final String LOG2M_PROPERTY = "solr.facet.hll.log2m";
+
+    /**
+     * Up to 2^(expthresh - 1) values, a sketch keeps their hashes and counts them exactly. -1 (the
+     * default) keeps them while they take less room than the registers, 0 never keeps them, and the
+     * maximum is 18.
+     */
+    public static final String EXPTHRESH_PROPERTY = "solr.facet.hll.expthresh";
+
+    int log2m = EnvUtils.getPropertyAsInteger(LOG2M_PROPERTY, 13);
     int regwidth = 6;
+    int expthresh = EnvUtils.getPropertyAsInteger(EXPTHRESH_PROPERTY, -1);
 
     public HLL getHLL() {
       return new HLL(
-          log2m,
-          regwidth,
-          -1 /* auto explict threshold */,
-          false /* no sparse representation */,
-          HLLType.EMPTY);
+          log2m, regwidth, expthresh, false /* no sparse representation */, HLLType.EMPTY);
     }
   }
 
