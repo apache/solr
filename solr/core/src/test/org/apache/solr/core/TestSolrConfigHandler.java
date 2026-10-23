@@ -26,6 +26,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +107,14 @@ public class TestSolrConfigHandler extends RestTestBase {
   private static String fullConfigKey(
       RestTestHarness harness, String internalName, String externalName) {
     return harness.getBaseURL().contains("/____v2/") ? externalName : internalName;
+  }
+
+  // The v2 paramset response is flat, while v1 nests it under "response"
+  private static List<String> paramSetsPath(RestTestHarness harness, String... keys) {
+    List<String> path = new ArrayList<>();
+    if (!harness.getBaseURL().contains("/____v2/")) path.add("response");
+    path.addAll(asList(keys));
+    return path;
   }
 
   public void testProperty() throws Exception {
@@ -661,14 +670,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "x", "a"),
+        paramSetsPath(harness, "params", "x", "a"),
         "A val",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "x", "b"),
+        paramSetsPath(harness, "params", "x", "b"),
         "B val",
         TIMEOUT_S);
 
@@ -717,12 +726,12 @@ public class TestSolrConfigHandler extends RestTestBase {
             + "             }\n"
             + "  }";
 
-    TestSolrConfigHandler.runConfigCommand(harness, "/config/" + paramSetsKey, payload);
+    TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "y", "c"),
+        paramSetsPath(harness, "params", "y", "c"),
         "CY val",
         TIMEOUT_S);
 
@@ -748,19 +757,19 @@ public class TestSolrConfigHandler extends RestTestBase {
             + "             }\n"
             + "  }";
 
-    TestSolrConfigHandler.runConfigCommand(harness, "/config/" + paramSetsKey, payload);
+    TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "y", "c"),
+        paramSetsPath(harness, "params", "y", "c"),
         "CY val modified",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "y", "e"),
+        paramSetsPath(harness, "params", "y", "e"),
         "EY val",
         TIMEOUT_S);
 
@@ -773,26 +782,26 @@ public class TestSolrConfigHandler extends RestTestBase {
             + "             }\n"
             + "  }";
 
-    TestSolrConfigHandler.runConfigCommand(harness, "/config/" + paramSetsKey, payload);
+    TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "y", "p"),
+        paramSetsPath(harness, "params", "y", "p"),
         "P val",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "y", "c"),
+        paramSetsPath(harness, "params", "y", "c"),
         null,
         TIMEOUT_S);
     payload = " {'delete' : 'y'}";
-    TestSolrConfigHandler.runConfigCommand(harness, "/config/" + paramSetsKey, payload);
+    TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
         harness,
         "/config/" + paramSetsKey,
-        asList("response", "params", "y", "p"),
+        paramSetsPath(harness, "params", "y", "p"),
         null,
         TIMEOUT_S);
 
