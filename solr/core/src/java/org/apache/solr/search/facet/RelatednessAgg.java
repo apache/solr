@@ -747,7 +747,7 @@ public class RelatednessAgg extends AggValueSource {
    * <p>See Also:
    *
    * <ul>
-   *   <li><a href="https://s.apache.org/Mfu2">java-user@lucene Message-ID:
+   *   <li><a href="https://marc.info/?l=lucene-user&m=115100347731196">java-user@lucene Message-ID:
    *       449AEB60.4070300@alias-i.com</a>
    *   <li><a
    *       href="https://lingpipe-blog.com/2006/03/29/interesting-phrase-extraction-binomial-hypothesis-testing-vs-coding-loss/">Phrase
