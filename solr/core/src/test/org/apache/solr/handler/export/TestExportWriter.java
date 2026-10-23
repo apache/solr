@@ -1348,6 +1348,27 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertEquals(3, docs.size());
     assertEquals(Map.of("id", "1", "x", 10, "v", "a,b"), docs.get(0));
 
+    // a pseudo-field named like a non-exportable field doesn't fetch that field
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export", "q", "*:*", "fl", "id,str_s_stored:[value v=a]", "sort", "id asc"));
+    assertEquals(3, docs.size());
+    assertEquals(Map.of("id", "1", "str_s_stored", "a"), docs.get(0));
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export",
+                    "q",
+                    "*:*",
+                    "fl",
+                    "id,*_stored,str_s_stored:[value v=a]",
+                    "sort",
+                    "id asc"));
+    assertEquals(Map.of("id", "1", "str_s_stored", "a"), docs.get(0));
+
     // transformed fields are visible to streaming expressions
     docs =
         (List<Map<String, Object>>)
@@ -1586,6 +1607,12 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "Expected error message to contain hint about includeStoredFields",
         resp.contains("includeStoredFields=true"));
     assertTrue("Expected error message to mention the field", resp.contains("str_s_stored"));
+
+    // ... even alongside a glob
+    resp =
+        h.query(
+            reqWithPath("/export", "q", "*:*", "fl", "id,int*,str_s_stored", "sort", "intdv asc"));
+    assertTrue(resp, resp.contains("includeStoredFields=true"));
   }
 
   @Test
@@ -1865,5 +1892,69 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertJsonEquals(
         resp,
         "{\"responseHeader\":{\"status\":0},\"response\":{\"numFound\":1,\"docs\":[{\"id\":\"1\",\"group_s_dv\":\"A\",\"intdv\":10}]}}");
+  }
+
+  @Test
+  public void testRawGlobOnExportMatchesThePlainGlob() throws Exception {
+    assertU(adoc("id", "rawglob1", "str_s_stored", "a"));
+    assertU(commit());
+    String plain =
+        h.query(
+            reqWithPath(
+                "/export",
+                "q",
+                "id:rawglob1",
+                "fl",
+                "id,*_stored",
+                "sort",
+                "id asc",
+                "wt",
+                "json"));
+    String raw =
+        h.query(
+            reqWithPath(
+                "/export",
+                "q",
+                "id:rawglob1",
+                "fl",
+                "id,*_stored:[json]",
+                "sort",
+                "id asc",
+                "wt",
+                "json"));
+    assertTrue(plain, plain.contains("rawglob1"));
+    assertEquals(plain, raw);
+  }
+
+  @Test
+  public void testRawGlobOnExportSkipsAGlobMatchOfANonExportableField() throws Exception {
+    assertU(adoc("id", "rawglob2", "sortabledv", "x"));
+    assertU(commit());
+    String plain =
+        h.query(
+            reqWithPath(
+                "/export",
+                "q",
+                "id:rawglob2",
+                "fl",
+                "id,sortabledv*",
+                "sort",
+                "id asc",
+                "wt",
+                "json"));
+    String raw =
+        h.query(
+            reqWithPath(
+                "/export",
+                "q",
+                "id:rawglob2",
+                "fl",
+                "id,sortabledv*:[json]",
+                "sort",
+                "id asc",
+                "wt",
+                "json"));
+    assertTrue(plain, plain.contains("rawglob2"));
+    assertEquals(plain, raw);
   }
 }
