@@ -68,7 +68,7 @@ and the last element of the <src> path will be appended unless <src> also ends i
   Required to look up configuration for compressing state.json.
 
 *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
 
 *-u*, *--credentials*=_<credentials>_::
   Credentials in the format username:password. Example: --credentials solr:SolrRocks

@@ -53,7 +53,9 @@ public class ZkMkrootTool extends ToolBase {
           .desc("Raise an error if the root exists.  Defaults to false.")
           .get();
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -139,7 +141,7 @@ public class ZkMkrootTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHost = zkOpts.resolveZkHost();
+    String zkHost = connectionOptions.resolveZkHost(credentialsOptions.credentials);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

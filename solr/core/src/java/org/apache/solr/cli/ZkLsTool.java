@@ -40,7 +40,9 @@ import picocli.CommandLine;
 public class ZkLsTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @CommandLine.Parameters(
       index = "0",
@@ -106,7 +108,7 @@ public class ZkLsTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHost = zkOpts.resolveZkHost();
+    String zkHost = connectionOptions.resolveZkHost(credentialsOptions.credentials);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

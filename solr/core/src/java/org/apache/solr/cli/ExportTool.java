@@ -99,7 +99,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -112,7 +112,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option OUTPUT_OPTION =
       Option.builder()
           .longOpt("output")
@@ -126,7 +126,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
@@ -139,7 +139,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COMPRESS_OPTION =
       Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").get();
 
@@ -147,7 +147,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option LIMIT_OPTION =
       Option.builder()
           .longOpt("limit")
@@ -160,7 +160,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option QUERY_OPTION =
       Option.builder()
           .longOpt("query")
@@ -173,7 +173,7 @@ public class ExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option FIELDS_OPTION =
       Option.builder()
           .longOpt("fields")
@@ -194,21 +194,12 @@ public class ExportTool extends ToolBase {
       String limit) {}
 
   // --- picocli fields ---
-  // The connection group is mandatory (multiplicity "1"): the commons-cli path throws
-  // IllegalArgumentException when no connection target is given, so ArgGroup enforces the same
-  // requirement declaratively.
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.Option(
-      names = {"-c", "--name"},
-      required = true,
-      paramLabel = "NAME",
-      description = "Name of the collection.")
-  private String nameOpt;
+  @picocli.CommandLine.Mixin private CollectionNameOptions collectionNameOptions;
 
   @picocli.CommandLine.Option(
       names = "--output",
@@ -841,7 +832,11 @@ public class ExportTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String url = resolveSolrUrl(credentialsOptions.credentials) + "/solr/" + nameOpt;
+    connectionOptions.requireExplicitConnection();
+    String url =
+        connectionOptions.resolveSolrUrl(credentialsOptions.credentials)
+            + "/solr/"
+            + collectionNameOptions.name;
     ExportParams params =
         new ExportParams(
             url,
@@ -854,15 +849,5 @@ public class ExportTool extends ToolBase {
             String.valueOf(limitOpt));
     export(params);
     return 0;
-  }
-
-  private String resolveSolrUrl(String credentials) throws Exception {
-    String solrUrlArg = connectionOptions.effectiveSolrUrl();
-    if (solrUrlArg != null) {
-      return CLIUtils.normalizeSolrUrl(solrUrlArg);
-    }
-    return CLIUtils.solrUrlFromConnection(
-        CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.effectiveZkHost()),
-        credentials);
   }
 }
