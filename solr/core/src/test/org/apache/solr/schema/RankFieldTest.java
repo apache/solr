@@ -74,7 +74,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
 
   public void testBadFormat() {
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("Error adding field '" + RANK_1 + "'")) {
+        LogListener.error(RequestHandlerBase.class)
+            .substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, "foo"));
 
       assertFailedU(adoc("id", "1", RANK_1, "1.2.3"));
@@ -83,7 +84,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     }
 
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("Error adding field '" + RANK_1 + "'")) {
+        LogListener.error(RequestHandlerBase.class)
+            .substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.POSITIVE_INFINITY)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.NEGATIVE_INFINITY)));
@@ -94,7 +96,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     }
 
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("Error adding field '" + RANK_1 + "'")) {
+        LogListener.error(RequestHandlerBase.class)
+            .substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-0.0f)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-1f)));

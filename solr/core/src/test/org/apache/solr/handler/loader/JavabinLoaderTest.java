@@ -168,7 +168,8 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
         var logger = LoggerFactory.getLogger(JavabinLoader.class);
         NamedList<Object> errorInfo = new NamedList<>();
         assertEquals(500, ResponseUtils.getErrorInfo(ex, errorInfo, logger, false));
-        assertNotNull("Exercise response traces, not just the outer message", errorInfo.get("trace"));
+        assertNotNull(
+            "Exercise response traces, not just the outer message", errorInfo.get("trace"));
         assertFalse(Utils.toJSONString(errorInfo).contains("secret customer value"));
         var typedErrorInfo = ResponseUtils.getTypedErrorInfo(ex, logger, false);
         assertNotNull(typedErrorInfo.trace);

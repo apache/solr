@@ -726,7 +726,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 assertU(adoc(doc));
               });
 
-      assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
+      assertThat(
+          thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
       assertNull(thrown.getCause());
 
       SolrInputDocument doc1 = new SolrInputDocument();
@@ -741,7 +742,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 assertU(adoc(doc1));
               });
 
-      assertThat(thrown.getMessage(), is("ERROR: [doc=1] Error adding field 'vector_byte_encoding'"));
+      assertThat(
+          thrown.getMessage(), is("ERROR: [doc=1] Error adding field 'vector_byte_encoding'"));
       assertNull(thrown.getCause());
     } finally {
       deleteCore();
@@ -794,7 +796,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               () -> {
                 assertU(adoc(doc));
               });
-      assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
+      assertThat(
+          thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
       assertNull(thrown.getCause());
     } finally {
       deleteCore();
@@ -817,7 +820,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 assertU(adoc(doc));
               });
 
-      assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
+      assertThat(
+          thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
       assertNull(thrown.getCause());
     } finally {
       deleteCore();
