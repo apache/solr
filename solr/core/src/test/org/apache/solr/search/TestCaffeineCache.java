@@ -70,8 +70,9 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
-
-    assertNull(lfuCache.get(1)); // first item put in should be the first out
+    // Exactly one entry is evicted; which one is up to Caffeine's eviction policy.
+    assertEquals(100, lfuCache.size());
+    assertEquals(1L, nl.get("evictions"));
 
     // Test autowarming
     newLFUCache.init(params, initObj, regenerator);
@@ -88,7 +89,7 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(1L, nl.get("inserts"));
     assertEquals(0L, nl.get("evictions"));
 
-    assertEquals(7L, nl.get("cumulative_lookups"));
+    assertEquals(6L, nl.get("cumulative_lookups"));
     assertEquals(4L, nl.get("cumulative_hits"));
     assertEquals(102L, nl.get("cumulative_inserts"));
   }
