@@ -40,7 +40,7 @@ teardown() {
 
   run solr post
   if [ -n "${SOLR_PICOCLI:-}" ]; then
-    assert_output --partial "Missing required option: '--name=<name>'"
+    assert_output --partial "Missing required option: '--name=name'"
   else
     assert_output --partial 'Missing required option: c'
   fi
