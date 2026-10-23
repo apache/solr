@@ -18,6 +18,8 @@ package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,13 +30,19 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.ResponseUtils;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 public class JavabinLoaderTest extends SolrTestCaseJ4 {
   @BeforeClass
@@ -120,6 +128,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @LogLevel("org.apache.solr.handler.loader.JavabinLoader=INFO")
   public void testIOExceptionDoesNotLeakDocumentContents() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "7");
@@ -153,6 +162,28 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
                           failingProcessor));
       assertEquals("ERROR adding document [doc=7]", ex.getMessage());
       assertFalse(ex.getMessage().contains("secret customer value"));
+      assertEquals(500, ex.code());
+
+      try (LogListener errors = LogListener.error(JavabinLoader.class)) {
+        var logger = LoggerFactory.getLogger(JavabinLoader.class);
+        NamedList<Object> errorInfo = new NamedList<>();
+        assertEquals(500, ResponseUtils.getErrorInfo(ex, errorInfo, logger, false));
+        assertNotNull("Exercise response traces, not just the outer message", errorInfo.get("trace"));
+        assertFalse(Utils.toJSONString(errorInfo).contains("secret customer value"));
+        var typedErrorInfo = ResponseUtils.getTypedErrorInfo(ex, logger, false);
+        assertNotNull(typedErrorInfo.trace);
+        assertFalse(Utils.toJSONString(typedErrorInfo).contains("secret customer value"));
+        assertEquals(2, errors.getCount());
+        while (!errors.getQueue().isEmpty()) {
+          var event = errors.getQueue().poll();
+          assertNotNull(event.getThrown());
+          StringWriter trace = new StringWriter();
+          event.getThrown().printStackTrace(new PrintWriter(trace));
+          assertTrue(trace.toString().contains("ERROR adding document [doc=7]"));
+          assertFalse(trace.toString().contains("secret customer value"));
+        }
+      }
+      assertNull(ex.getCause());
     } finally {
       req.close();
     }

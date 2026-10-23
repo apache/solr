@@ -1,4 +1,4 @@
-title: Error messages for a failed document add no longer include the field values or the document contents, only the document id and the field name; the error messages raised while creating a field from a value are covered as well, and the values are logged at TRACE level instead
+title: Document construction and javabin add error messages omit field values and document contents, retaining the document id and field name where available. Value-bearing causes are omitted from these exceptions so ordinary error logs and response traces do not expose them; conversion and javabin failure details are available at TRACE level instead.
 type: changed
 authors:
   - name: Nick Shanin

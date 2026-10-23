@@ -281,11 +281,12 @@ public class DocumentBuilder {
       } catch (SolrException ex) {
         String message = getFieldErrorMessage(doc, schema, name);
         traceFieldError(message, field, ex);
-        throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()), message, ex);
+        // Causes can contain field values and are logged and serialized by request handlers.
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()), message);
       } catch (Exception ex) {
         String message = getFieldErrorMessage(doc, schema, name);
         traceFieldError(message, field, ex);
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message, ex);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
       }
 
       // make sure the field was used somehow...

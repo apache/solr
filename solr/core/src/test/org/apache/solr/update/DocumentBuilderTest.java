@@ -19,6 +19,8 @@ package org.apache.solr.update;
 import static org.hamcrest.core.Is.is;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -36,7 +38,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,7 +109,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertTrue("should have document ID", ex.getMessage().indexOf("doc=123") > 0);
-    assertTrue("cause is number format", ex.getCause() instanceof NumberFormatException);
+    assertNull("value-bearing parse errors must not escape through causes", ex.getCause());
 
     // now make sure it is OK
     doc.setField("weight", "1.34");
@@ -123,6 +128,8 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             SolrException.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertTrue(ex.getMessage().contains("Error adding field 'weight'"));
     assertFalse(ex.getMessage().contains("not-a-number-secret"));
+    assertEquals(400, ex.code());
+    assertNull(ex.getCause());
 
     SolrInputDocument multiValueDoc = new SolrInputDocument();
     multiValueDoc.addField("id", "456");
@@ -138,6 +145,44 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             .contains("multiple values encountered for non multiValued field weight"));
     assertFalse(multiValueEx.getMessage().contains("secret-one"));
     assertFalse(multiValueEx.getMessage().contains("secret-two"));
+  }
+
+  @Test
+  @LogLevel("org.apache.solr.update.DocumentBuilder=INFO")
+  public void testFailedUpdateDoesNotLogFieldValue() {
+    try (LogListener errors =
+        LogListener.error(RequestHandlerBase.class).substring("Error adding field 'weight'")) {
+      assertFailedU(adoc("id", "123", "weight", "not-a-number-secret"));
+      assertEquals(1, errors.getCount());
+      var event = errors.getQueue().poll();
+      assertNotNull(event);
+      assertNotNull(event.getThrown());
+      StringWriter trace = new StringWriter();
+      event.getThrown().printStackTrace(new PrintWriter(trace));
+      assertTrue(trace.toString().contains("[doc=123]"));
+      assertTrue(trace.toString().contains("Error adding field 'weight'"));
+      assertFalse(trace.toString().contains("not-a-number-secret"));
+    }
+  }
+
+  @Test
+  @LogLevel("org.apache.solr.update.DocumentBuilder=TRACE")
+  public void testFieldErrorDetailsAreAvailableAtTrace() {
+    try (LogListener traces = LogListener.trace(DocumentBuilder.class)) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "123");
+      doc.addField("weight", "not-a-number-secret");
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> DocumentBuilder.toDocument(doc, h.getCore().getLatestSchema()));
+      assertNull(ex.getCause());
+      assertEquals(1, traces.getCount());
+      var event = traces.getQueue().poll();
+      assertNotNull(event);
+      assertTrue(event.getMessage().getFormattedMessage().contains("not-a-number-secret"));
+      assertTrue(event.getThrown() instanceof NumberFormatException);
+    }
   }
 
   @Test
@@ -465,9 +510,6 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
     assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector4'"));
-    assertThat(
-        thrown.getCause().getCause().getMessage(),
-        is(
-            "incorrect vector dimension. The vector value has size 4 while it is expected a vector with size 5"));
+    assertNull(thrown.getCause());
   }
 }

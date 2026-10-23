@@ -68,11 +68,13 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     assertTrue(ex.getMessage().contains("Error while creating field '" + RANK_1 + "'"));
     assertTrue(ex.getMessage().contains("Expecting float."));
     assertFalse(ex.getMessage().contains("not-a-float-secret"));
+    assertEquals(400, ex.code());
+    assertNull(ex.getCause());
   }
 
   public void testBadFormat() {
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("Expecting float")) {
+        LogListener.error(RequestHandlerBase.class).substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, "foo"));
 
       assertFailedU(adoc("id", "1", RANK_1, "1.2.3"));
@@ -81,7 +83,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     }
 
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("must be finite")) {
+        LogListener.error(RequestHandlerBase.class).substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.POSITIVE_INFINITY)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.NEGATIVE_INFINITY)));
@@ -92,7 +94,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     }
 
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("must be a positive")) {
+        LogListener.error(RequestHandlerBase.class).substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-0.0f)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-1f)));

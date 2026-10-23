@@ -119,8 +119,7 @@ public class RankField extends FieldType {
       }
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Error while creating field '" + name + "'. Expecting float.",
-          nfe);
+          "Error while creating field '" + name + "'. Expecting float.");
     }
     // Internally, we always use the same field
     return new FeatureField(INTERNAL_RANK_FIELD_NAME, name, featureValue);

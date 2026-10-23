@@ -372,7 +372,7 @@ public class DenseVectorField extends FloatPointField {
         log.trace("Error while creating field '{}' from value '{}'", field, value, e);
       }
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "'", e);
+          SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "'");
     }
   }
 
