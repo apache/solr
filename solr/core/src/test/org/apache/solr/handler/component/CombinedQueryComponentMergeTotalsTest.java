@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CombinerParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,8 +46,8 @@ import org.mockito.Mockito;
  * Tests for the totals that {@link CombinedQueryComponent#mergeIds} reports: a partial shard that
  * the merge skips contributes nothing to its query's totals, the approximateTotalHits fallback adds
  * each shard's own count, and the merged exactness flag is true only when every contributing shard
- * reports an exact count and only one sub-query contributes to the merge. Fabricated shard
- * responses are driven through {@code mergeIds} directly.
+ * reports an exact count and no shard's hits were left out. Fabricated shard responses are driven
+ * through {@code mergeIds} directly.
  */
 public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
 
@@ -416,13 +417,7 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
     assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
   }
 
-  /*
-   * The merged numFound stays the largest single sub-query count. Counting the distinct
-   * documents that match any sub-query instead is the follow-up in SOLR-18541; until it
-   * lands, the case below pins that a multi-sub-query merge does not call that count exact.
-   */
-
-  /** Two contributing sub-queries with exact counts (3 and 2): the merged count is not exact. */
+  /** A partial shard with no per-query entry under a score-only sort is skipped: inexact. */
   @Test
   public void scoreOnlyPartialShardWithoutPerQueryListIsSkipped() {
     SolrDocument b1 = doc("b1", 3.0f), b2 = doc("b2", 2.0f), b3 = doc("b3", 1.0f);
@@ -460,12 +455,42 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
             "shard1",
             header(),
             docList(5, true, c1, c2, c3, d1, d2),
-            List.of(docList(3, true, c1, c2, c3), docList(2, true, d1, d2)),
+            List.of(docList(3, true, c1, c2, c3), docList(3, true, c1, d1, d2)),
             null);
     ResponseBuilder rb = newResponseBuilder(scoreSortSpec(), "q0", "q1");
     cqc.mergeIds(rb, shardRequest(shard1));
     assertEquals("numFound", 5, rb.getResponseDocs().getNumFound());
     assertEquals("numFoundExact", Boolean.TRUE, rb.getResponseDocs().getNumFoundExact());
     assertEquals("response size", 5, rb.getResponseDocs().size());
+  }
+
+  /** A shard that errored leaves its hits out, so the merged count is inexact. */
+  @Test
+  public void erroredShardClearsExactness() {
+    SolrDocument b1 = doc("b1", 3.0f), b2 = doc("b2", 2.0f), b3 = doc("b3", 1.0f);
+    ShardResponse shard1 = new ShardResponse();
+    shard1.setShard("shard1");
+    shard1.setException(new RuntimeException("shard unavailable"));
+    ShardResponse shard2 =
+        shardResponse(
+            "shard2",
+            header(),
+            docList(3, true, b1, b2, b3),
+            List.of(docList(3, true, b1, b2, b3)),
+            null);
+    currentRequest =
+        SolrTestCaseJ4.req(
+            CombinerParams.COMBINER_QUERY, "q0", ShardParams.SHARDS_TOLERANT, "true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
+    ResponseBuilder rb = new ResponseBuilder(currentRequest, rsp, List.of(cqc));
+    rb.setSortSpec(scoreSortSpec());
+    cqc.mergeIds(rb, shardRequest(shard1, shard2));
+    assertEquals("numFound", 3, rb.getResponseDocs().getNumFound());
+    assertEquals("numFoundExact", Boolean.FALSE, rb.getResponseDocs().getNumFoundExact());
+    assertEquals(
+        "partialResults",
+        Boolean.TRUE,
+        rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 }

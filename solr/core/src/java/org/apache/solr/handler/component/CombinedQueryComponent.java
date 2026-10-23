@@ -346,6 +346,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
                 shardInfo, failedShardCount, srsp, rb, queriesToCombineKeys[queryIndex], docs);
         if (srsp.getException() != null) {
           thereArePartialResults = true;
+          hitCountIsExact = false;
           continue;
         }
 
@@ -389,10 +390,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
         // decided before the totals below: a skipped shard adds nothing to this query's totals,
         // and its hits are unreported, so the merged count cannot be exact
-        if (docs == null
-            || (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling)) {
+        if (thisResponseIsPartial
+            && (docs == null || (sortFieldValues.size() == 0 && needsUnmarshalling))) {
           hitCountIsExact = false;
-          thereArePartialResults = true;
           continue;
         }
 
