@@ -271,6 +271,75 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
     Assert.assertEquals(200, response.getStatus());
   }
 
+  @Test
+  public void testGetMetricsAcceptHeaderWithMediaRangeList() {
+    // The header a Prometheus scraper actually sends: a list of media ranges with q values.
+    String prometheusScraperAccept =
+        "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,"
+            + "text/plain;version=1.0.0;q=0.5,text/plain;version=0.0.4;q=0.3,*/*;q=0.1";
+
+    ContentResponse response = requestWithAccept(prometheusScraperAccept);
+    Assert.assertEquals(200, response.getStatus());
+    Assert.assertEquals(PrometheusResponseWriter.MEDIA_TYPE_OPEN_METRICS, response.getMediaType());
+
+    // No space after the semicolon, as emitted by most clients
+    response = requestWithAccept("text/plain;version=0.0.4");
+    Assert.assertEquals(200, response.getStatus());
+    Assert.assertEquals(PrometheusResponseWriter.MEDIA_TYPE_PROMETHEUS, response.getMediaType());
+
+    response = requestWithAccept("*/*");
+    Assert.assertEquals(200, response.getStatus());
+    Assert.assertEquals(PrometheusResponseWriter.MEDIA_TYPE_PROMETHEUS, response.getMediaType());
+  }
+
+  @Test
+  public void testGetMetricsUnsupportedAcceptHeader() {
+    ContentResponse response = requestWithAccept("application/json");
+    Assert.assertEquals(400, response.getStatus());
+  }
+
+  @Test
+  public void testMetricsFormatNegotiation() {
+    Assert.assertEquals(MetricUtils.PROMETHEUS_METRICS_WT, GetMetrics.metricsFormat(null));
+    Assert.assertEquals(MetricUtils.PROMETHEUS_METRICS_WT, GetMetrics.metricsFormat(""));
+    Assert.assertEquals(MetricUtils.PROMETHEUS_METRICS_WT, GetMetrics.metricsFormat("*/*"));
+    Assert.assertEquals(
+        MetricUtils.PROMETHEUS_METRICS_WT,
+        GetMetrics.metricsFormat(PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS));
+    Assert.assertEquals(
+        MetricUtils.OPEN_METRICS_WT,
+        GetMetrics.metricsFormat(PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS));
+    Assert.assertEquals(
+        MetricUtils.OPEN_METRICS_WT,
+        GetMetrics.metricsFormat("application/openmetrics-text;version=1.0.0,text/plain;q=0.3"));
+    // OpenMetrics 0.0.1 is not produced, so the Prometheus text format answers it
+    Assert.assertEquals(
+        MetricUtils.PROMETHEUS_METRICS_WT,
+        GetMetrics.metricsFormat("application/openmetrics-text;version=0.0.1"));
+    Assert.assertNull(GetMetrics.metricsFormat("application/json"));
+  }
+
+  private static ContentResponse requestWithAccept(String acceptHeader) {
+    try {
+      return jettyHttpClient
+          .newRequest(metricsV2Url)
+          .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
+          .method(HttpMethod.GET)
+          .headers(
+              new Consumer<Mutable>() {
+
+                @Override
+                public void accept(Mutable arg0) {
+                  arg0.add(HttpHeader.ACCEPT, acceptHeader);
+                }
+              })
+          .send();
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      Assert.fail("Should not throw exception: " + e.getClass() + ".  message: " + e.getMessage());
+      return null;
+    }
+  }
+
   private static String readMaxOut(byte[] bytes) throws IOException {
     int max = bytes.length > MAX_OUTPUT ? MAX_OUTPUT : bytes.length;
     String str = "";
