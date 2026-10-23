@@ -515,7 +515,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       leaderElector.joinElection(this, true);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-    } catch (KeeperException e) {
+    } catch (KeeperException | RuntimeException e) {
       log.error("Failed to rejoin the election", e);
     }
   }
