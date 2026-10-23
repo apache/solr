@@ -62,8 +62,6 @@ public class RawValueTransformerFactory extends TransformerFactory
   }
 
   @Override
-  @SuppressWarnings(
-      "ReferenceEquality") // QueryResponseWriter identity, not equality, is what matters here
   public DocTransformer create(
       String display,
       SolrParams params,
@@ -80,22 +78,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     if (!copy) {
       renamedFields.put(field, display);
     }
-    // When a 'wt' is specified in the transformer, only apply it to the same wt
-    boolean apply = true;
-    if (applyToWT != null) {
-      String qwt = req.getParams().get(CommonParams.WT);
-      if (qwt == null) {
-        QueryResponseWriter qw = req.getCore().getQueryResponseWriter(req);
-        QueryResponseWriter dw = req.getCore().getQueryResponseWriter(applyToWT);
-        if (qw != dw) {
-          apply = false;
-        }
-      } else {
-        apply = applyToWT.equals(qwt);
-      }
-    }
-
-    if (apply) {
+    if (appliesTo(req)) {
       return new RawTransformer(field, display, copy);
     }
 
@@ -104,6 +87,54 @@ public class RawValueTransformerFactory extends TransformerFactory
       return new DocTransformer.NoopFieldTransformer(field);
     }
     return new RenameFieldTransformer(field, display, copy);
+  }
+
+  /** When a 'wt' is specified in the transformer, it only applies to the same wt */
+  @SuppressWarnings("ReferenceEquality") // QueryResponseWriter identity is what matters here
+  private boolean appliesTo(SolrQueryRequest req) {
+    if (applyToWT == null) {
+      return true;
+    }
+    String qwt = req.getParams().get(CommonParams.WT);
+    if (qwt == null) {
+      QueryResponseWriter qw = req.getCore().getQueryResponseWriter(req);
+      QueryResponseWriter dw = req.getCore().getQueryResponseWriter(applyToWT);
+      return qw == dw;
+    }
+    return applyToWT.equals(qwt);
+  }
+
+  /**
+   * Creates the transformer for {@code glob:[name]}: every returned field whose name matches the
+   * glob is written raw, under its own name.
+   *
+   * @return null if this transformer does not apply to the request's response writer
+   */
+  public DocTransformer createForGlob(String glob, SolrQueryRequest req) {
+    return appliesTo(req) ? new GlobRawTransformer(glob) : null;
+  }
+
+  static class GlobRawTransformer extends DocTransformer {
+    final String glob;
+
+    GlobRawTransformer(String glob) {
+      this.glob = glob;
+    }
+
+    @Override
+    public String getName() {
+      return glob;
+    }
+
+    @Override
+    public Collection<String> getRawFieldGlobs() {
+      return Set.of(glob);
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
+      // values are untouched; the response writer writes the matching fields raw
+    }
   }
 
   static class RawTransformer extends DocTransformer {

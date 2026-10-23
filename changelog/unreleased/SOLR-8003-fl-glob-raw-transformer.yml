@@ -1,0 +1,9 @@
+title: >
+  The fl parameter accepts a glob in front of a raw value transformer, for example fl=*_json:[json], which
+  writes every returned field matching the glob raw instead of failing with "Error parsing fieldname".
+type: added
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-8003
+    url: https://issues.apache.org/jira/browse/SOLR-8003

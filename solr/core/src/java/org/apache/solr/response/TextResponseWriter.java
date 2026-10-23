@@ -22,6 +22,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -31,6 +32,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
@@ -65,6 +67,7 @@ public abstract class TextResponseWriter implements TextWriter {
 
   private final TextResponseWriter rawShim;
   private final Set<String> rawFields;
+  private final List<String> rawFieldGlobs;
   private final ReturnFields rawReturnFields;
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -79,14 +82,19 @@ public abstract class TextResponseWriter implements TextWriter {
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
     DocTransformer rootDocTransformer = returnFields.getTransformer();
-    Collection<String> rawFields;
-    if (rootDocTransformer == null || (rawFields = rootDocTransformer.getRawFields()).isEmpty()) {
+    Collection<String> rawFields =
+        rootDocTransformer == null ? Set.of() : rootDocTransformer.getRawFields();
+    Collection<String> rawGlobs =
+        rootDocTransformer == null ? Set.of() : rootDocTransformer.getRawFieldGlobs();
+    if (rawFields.isEmpty() && rawGlobs.isEmpty()) {
       this.rawFields = null;
+      this.rawFieldGlobs = List.of();
       this.rawShim = null;
       this.rawReturnFields = NO_RAW_FIELDS;
     } else {
       this.rawFields =
           rawFields.size() == 1 ? Set.of(rawFields.iterator().next()) : new HashSet<>(rawFields);
+      this.rawFieldGlobs = List.copyOf(rawGlobs);
       this.rawShim = new RawShimTextResponseWriter(this);
       this.rawReturnFields = returnFields;
     }
@@ -102,6 +110,7 @@ public abstract class TextResponseWriter implements TextWriter {
     this.doIndent = indent;
     this.rawShim = null;
     this.rawFields = null;
+    this.rawFieldGlobs = List.of();
     this.rawReturnFields = null;
   }
 
@@ -111,7 +120,18 @@ public abstract class TextResponseWriter implements TextWriter {
    */
   @SuppressWarnings("ReferenceEquality") // strict object identity is intentional, see javadoc above
   protected final boolean shouldWriteRaw(String fname, ReturnFields returnFields) {
-    return rawReturnFields == returnFields && rawFields.contains(fname);
+    if (rawReturnFields != returnFields) {
+      return false;
+    }
+    if (rawFields.contains(fname)) {
+      return true;
+    }
+    for (String glob : rawFieldGlobs) {
+      if (GlobPatternUtil.matches(glob, fname)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
