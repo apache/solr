@@ -98,7 +98,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-hnsw-m.xml",
-        "DenseVectorField maxConn must be positive and less than or equal to 512; maxConn=0: vector");
+        "DenseVectorField hnswM must be positive and less than or equal to 512; hnswM=0: vector");
   }
 
   @Test

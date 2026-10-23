@@ -51,7 +51,7 @@ public class BinaryQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-densevector-bq-hnsw-ef-construction.xml",
-        "BinaryQuantizedDenseVectorField beamWidth must be positive and less than or equal to 3200; beamWidth=3201: v_bq");
+        "BinaryQuantizedDenseVectorField hnswEfConstruction must be positive and less than or equal to 3200; hnswEfConstruction=3201: v_bq");
   }
 
   // there are no major interface differences between BinaryBitQuantizedDenseVectorField and

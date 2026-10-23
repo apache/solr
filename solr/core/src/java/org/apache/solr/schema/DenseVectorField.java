@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
 import org.apache.lucene.document.FieldType;
@@ -80,6 +81,8 @@ public class DenseVectorField extends FloatPointField {
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
   static final String HNSW_M = "hnswM";
   static final String HNSW_EF_CONSTRUCTION = "hnswEfConstruction";
+  private static final Pattern LUCENE_MAX_CONN = Pattern.compile("\\bmaxConn\\b");
+  private static final Pattern LUCENE_BEAM_WIDTH = Pattern.compile("\\bbeamWidth\\b");
   static final String VECTOR_ENCODING = "vectorEncoding";
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
@@ -349,9 +352,22 @@ public class DenseVectorField extends FloatPointField {
     } catch (IllegalArgumentException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName() + " " + e.getMessage() + ": " + field.getName(),
+          getClass().getSimpleName()
+              + " "
+              + toSolrParamNames(e.getMessage())
+              + ": "
+              + field.getName(),
           e);
     }
+  }
+
+  /** Replaces Lucene's HNSW argument names with the corresponding Solr parameter names. */
+  private static String toSolrParamNames(String luceneMessage) {
+    if (luceneMessage == null) {
+      return null;
+    }
+    String message = LUCENE_MAX_CONN.matcher(luceneMessage).replaceAll(HNSW_M);
+    return LUCENE_BEAM_WIDTH.matcher(message).replaceAll(HNSW_EF_CONSTRUCTION);
   }
 
   @Override
