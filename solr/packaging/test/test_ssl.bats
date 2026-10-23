@@ -100,7 +100,7 @@ teardown() {
 
   # Just test that curl can connect via insecure or via a custom host header
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
-  assert_output --partial 'no alternative certificate subject name matches target host name'
+  assert_output --partial 'no alternative certificate subject name matches target host'
 
   # Just test that curl can connect via insecure or via a custom host header
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
