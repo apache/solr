@@ -93,7 +93,9 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals(3.0, hitDatapoint + missDatapoint, 0.001); // total lookups
     assertEquals(2.0, hitDatapoint, 0.001);
     assertEquals(101.0, insertDatapoint, 0.001);
-    assertNull(lfuCache.get(1));
+    // Exactly one entry is evicted; which one is up to Caffeine's eviction policy.
+    assertEquals(100, lfuCache.size());
+    assertEquals(1.0, evictionsDatapoint, 0.001);
 
     // Test autowarming
     newLFUCache.init(params, initObj, regenerator);
@@ -115,11 +117,11 @@ public class TestCaffeineCache extends SolrTestCase {
     var newInsertDatapoint = cumInsertDatapoint - insertDatapoint;
     var newEvictionDatapoint = cumEvictionsDatapoint - evictionsDatapoint;
     assertEquals(3.0, newHitDatapoint + missDatapoint, 0.001); // total lookups
-    assertEquals(2.0, newMissDatapoint, 0.001);
+    assertEquals(1.0, newMissDatapoint, 0.001);
     assertEquals(1.0, newInsertDatapoint, 0.001);
     assertEquals(0.0, newEvictionDatapoint, 0.001);
 
-    assertEquals(7.0, cumHitDatapoint + cumMissDatapoint, 0.001); // total cumulative lookups
+    assertEquals(6.0, cumHitDatapoint + cumMissDatapoint, 0.001); // total cumulative lookups
     assertEquals(4.0, cumHitDatapoint, 0.001);
     assertEquals(102.0, cumInsertDatapoint, 0.001);
 

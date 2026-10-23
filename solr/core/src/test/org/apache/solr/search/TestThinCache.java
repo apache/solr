@@ -148,7 +148,12 @@ public class TestThinCache extends SolrTestCaseJ4 {
     assertEquals(2L, hits);
     assertEquals(101L, inserts);
 
-    assertNull(lfuCache.get(1)); // first item put in should be the first out
+    // Exactly one entry is evicted; which one is up to Caffeine's eviction policy.
+    // lfuCache isn't registered for removals here, so check the backing cache's size.
+    assertEquals(100, backing.size());
+
+    // The backing is full; make room so warming doesn't evict the new cache's own entries.
+    backing.setMaxSize(200);
 
     // Test autowarming
     newLFUCache.init(Map.of("autowarmCount", "25"), initObj, regenerator);
@@ -164,7 +169,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     var newmiss = getNodeCacheLookups(metricManager, registry, newLfuCacheName, "miss");
     var newinserts = getNodeCacheOp(metricManager, registry, newLfuCacheName, "inserts");
     var evictions = getNodeCacheOp(metricManager, registry, newLfuCacheName, "evictions");
-    assertEquals(7L, newhits + newmiss);
+    assertEquals(6L, newhits + newmiss);
     assertEquals(4L, newhits);
     assertEquals(102L, newinserts);
     assertEquals(0L, evictions);
