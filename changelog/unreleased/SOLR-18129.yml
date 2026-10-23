@@ -1,0 +1,7 @@
+title: "Config API: accumulate duplicate JSON keys in request-handler defaults, appends and invariants instead of dropping all but the last value"
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18129
+    url: https://issues.apache.org/jira/browse/SOLR-18129
