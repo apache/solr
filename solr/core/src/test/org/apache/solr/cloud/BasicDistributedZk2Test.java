@@ -20,6 +20,7 @@ import static org.apache.solr.cloud.SolrCloudTestCase.configurePrsDefault;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -33,7 +34,9 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.OnDisconnect;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -151,15 +154,22 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
       // expire a session...
       CloudJettyRunner cloudJetty = shardToJetty.get(SHARD1).get(0);
-      chaosMonkey.expireSession(cloudJetty.jetty);
-      // Wait until the jetty is reconnected, otherwise the following index command could fail
-      cloudJetty
-          .jetty
-          .getCoreContainer()
-          .getZkController()
-          .getZkClient()
+      SolrZkClient expiredZkClient =
+          cloudJetty.jetty.getCoreContainer().getZkController().getZkClient();
+      CountDownLatch sessionExpired = new CountDownLatch(1);
+      expiredZkClient
           .getCuratorFramework()
-          .blockUntilConnected(30, TimeUnit.SECONDS);
+          .getConnectionStateListenable()
+          .addListener(
+              (OnDisconnect)
+                  (expired -> {
+                    if (expired) {
+                      sessionExpired.countDown();
+                    }
+                  }));
+      chaosMonkey.expireSession(cloudJetty.jetty);
+      assertTrue("session did not expire", sessionExpired.await(30, TimeUnit.SECONDS));
+      expiredZkClient.getCuratorFramework().blockUntilConnected(30, TimeUnit.SECONDS);
 
       indexr("id", docId + 1, t1, "slip this doc in");
 
