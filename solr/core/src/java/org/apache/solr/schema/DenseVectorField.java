@@ -589,12 +589,12 @@ public class DenseVectorField extends FloatPointField {
                 ? new SolrKnnByteVectorQuery(
                     fieldName,
                     vectorBuilder.getByteVector(),
-                    candidateTopK,
+                    topK,
                     efSearch,
                     filterQuery,
                     searchStrategy)
                 : new SolrKnnByteVectorQuery(
-                    fieldName, vectorBuilder.getByteVector(), candidateTopK, efSearch, filterQuery);
+                    fieldName, vectorBuilder.getByteVector(), topK, efSearch, filterQuery);
         break;
       default:
         throw new SolrException(

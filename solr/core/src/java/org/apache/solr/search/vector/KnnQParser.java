@@ -207,11 +207,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
               topK);
         case BYTE:
           return new DiversifyingChildrenByteKnnVectorQuery(
-              vectorField,
-              vectorBuilder.getByteVector(),
-              acceptedChildren,
-              candidateTopK,
-              allParentsBitSet);
+              vectorField, vectorBuilder.getByteVector(), acceptedChildren, topK, allParentsBitSet);
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
