@@ -106,6 +106,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
         throw new IllegalStateException("All required fields must be set");
       }
 
+      SearchGroupsFieldCommand.checkGroupable(field);
       return new TopGroupsFieldCommand(
           query,
           field,
