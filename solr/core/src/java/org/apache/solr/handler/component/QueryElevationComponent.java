@@ -569,8 +569,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   static String getElevationQueryString(
       SolrParams params, SolrParams localParams, String queryString) {
-    String parserQueryString =
-        localParams == null ? queryString : localParams.get(QueryParsing.V);
+    String parserQueryString = localParams == null ? queryString : localParams.get(QueryParsing.V);
     return params.get(QueryElevationParams.ELEVATE_Q, parserQueryString);
   }
 
