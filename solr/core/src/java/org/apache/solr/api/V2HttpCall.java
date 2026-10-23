@@ -132,9 +132,8 @@ public class V2HttpCall extends HttpSolrCall {
       if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
-        String collectionStr = queryParams.get(COLLECTION_PROP, origCorename);
-        collectionsList =
-            resolveCollectionListOrAlias(collectionStr); // &collection= takes precedence
+        String collectionStr = origCorename;
+        collectionsList = resolveCollectionListOrAlias(collectionStr);
         if (collectionsList.isEmpty()) {
           if (!path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(

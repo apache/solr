@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -277,11 +278,23 @@ public class HttpSolrCall {
     }
 
     if (cores.isZooKeeperAware()) {
-      // init collectionList (usually one name but not when there are aliases)
+      // The path supplies routing candidates; collection may only narrow a multi-destination path.
       String def = core != null ? core.getCoreDescriptor().getCollectionName() : origCorename;
-      collectionsList =
-          resolveCollectionListOrAlias(
-              queryParams.get(COLLECTION_PROP, def)); // &collection= takes precedence
+      collectionsList = resolveCollectionListOrAlias(def);
+      String collectionParam = queryParams.get(COLLECTION_PROP);
+      if (collectionsList.size() > 1 && collectionParam != null) {
+        Set<String> requestedCollections =
+            new HashSet<>(resolveCollectionListOrAlias(collectionParam));
+        List<String> disambiguatedCollections = new ArrayList<>();
+        for (String collection : collectionsList) {
+          if (requestedCollections.contains(collection)) {
+            disambiguatedCollections.add(collection);
+          }
+        }
+        if (!disambiguatedCollections.isEmpty()) {
+          collectionsList = disambiguatedCollections;
+        }
+      }
 
       if (core == null) {
         // lookup core from collection, or route away if need to
