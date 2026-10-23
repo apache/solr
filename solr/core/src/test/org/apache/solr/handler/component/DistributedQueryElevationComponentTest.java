@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.List;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -72,6 +73,28 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     handle.put("shards.qt", SKIP);
     handle.put("shards", SKIP);
     handle.put("q", SKIP);
+
+    for (String queryString : List.of("solr", "{!lucene v=$searchQuery}")) {
+      QueryResponse elevationResponse =
+          query(
+              "/elevate",
+              params(
+                  "q", queryString,
+                  "searchQuery", "solr",
+                  "elevate.q", "YYYY",
+                  "shards.qt", "/elevate",
+                  "fl", "id,[elevated]",
+                  "forceElevation", "true",
+                  "sort", "id desc"));
+      assertEquals(3, elevationResponse.getResults().getNumFound());
+      assertEquals(3, elevationResponse.getResults().size());
+      for (int i = 0; i < 3; i++) {
+        SolrDocument doc = elevationResponse.getResults().get(i);
+        assertEquals(List.of("1", "2", "7").get(i), doc.getFieldValue("id"));
+        assertEquals(i < 2, doc.getFieldValue("[elevated]"));
+      }
+    }
+
     query(
         "/elevate",
         params(

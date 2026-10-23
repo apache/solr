@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -96,6 +98,156 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   // TODO should be @After ?
   private void delete() {
     deleteCore();
+  }
+
+  private void initElevateQDocuments() throws Exception {
+    init("schema11.xml");
+    assertU(adoc("id", "1", "text", "XXXX"));
+    assertU(adoc("id", "2", "text", "YYYY"));
+    assertU(adoc("id", "3", "text", "MMMM"));
+    assertU(adoc("id", "5", "text", "NNNN"));
+    assertU(adoc("id", "6", "text", "MMMM"));
+    assertU(adoc("id", "7", "text", "AAAA"));
+    assertU(commit());
+  }
+
+  private void assertElevationRequest(
+      SolrParams params, List<String> elevatedIds, List<String> matchingIds) {
+    ModifiableSolrParams requestParams =
+        new ModifiableSolrParams()
+            .set(CommonParams.FL, "id,[elevated]")
+            .set(CommonParams.SORT, "id asc")
+            .set(QueryElevationParams.FORCE_ELEVATION, true)
+            .add(params);
+    List<String> ids = new ArrayList<>(elevatedIds);
+    ids.addAll(matchingIds);
+    List<String> assertions = new ArrayList<>();
+    assertions.add("//result[@name='response'][@numFound='" + ids.size() + "']");
+    for (int i = 0; i < ids.size(); i++) {
+      String doc = "//result[@name='response']/doc[" + (i + 1) + "]";
+      assertions.add(doc + "/str[@name='id'][.='" + ids.get(i) + "']");
+      assertions.add(doc + "/bool[@name='[elevated]'][.='" + (i < elevatedIds.size()) + "']");
+    }
+    assertQ(
+        params.toString(),
+        reqWithPath("/elevate", requestParams),
+        assertions.toArray(String[]::new));
+  }
+
+  @Test
+  public void testElevateQOverridesSearchQuery() throws Exception {
+    try {
+      initElevateQDocuments();
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "XXXX"), List.of("1"), List.of("3", "6"));
+      assertElevationRequest(params("q", "MMMM"), List.of(), List.of("3", "6"));
+      assertElevationRequest(params("q", "AAAA", "elevate.q", "XXXX"), List.of("1"), List.of("7"));
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevateQOverridesLocalParserQuery() throws Exception {
+    try {
+      initElevateQDocuments();
+      for (String query :
+          List.of(
+              "{!lucene}MMMM",
+              "{!lucene v=$searchQuery}",
+              "{!lucene elevate.q=AAAA v=$searchQuery}",
+              "{!edismax qf=text v=$searchQuery}")) {
+        assertElevationRequest(
+            params("q", query, "searchQuery", "MMMM", "elevate.q", "YYYY"),
+            List.of("1", "2"),
+            List.of("3", "6"));
+      }
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevateQFallbackUsesParsedQuery() throws Exception {
+    try {
+      initElevateQDocuments();
+      for (String query :
+          List.of(
+              "YYYY",
+              "{!lucene}YYYY",
+              "{!lucene v=$searchQuery}",
+              "{!lucene elevate.q=AAAA v=$searchQuery}",
+              "{!edismax qf=text v=$searchQuery}")) {
+        assertElevationRequest(
+            params("q", query, "searchQuery", "YYYY"), List.of("1", "2"), List.of());
+      }
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevateQEmptyAndUnknownDoNotFallback() throws Exception {
+    try {
+      initElevateQDocuments();
+      for (String query : List.of("YYYY", "{!lucene v=$searchQuery}")) {
+        for (String elevationQuery : List.of("", "notconfigured")) {
+          assertElevationRequest(
+              params("q", query, "searchQuery", "YYYY", "elevate.q", elevationQuery),
+              List.of(),
+              List.of("2"));
+        }
+      }
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevateQUsesAnalyzerAndConfiguredExclusions() throws Exception {
+    try {
+      initElevateQDocuments();
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "xxxx xxxx"), List.of("5"), List.of("3"));
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevateQRespectsElevationControls() throws Exception {
+    try {
+      initElevateQDocuments();
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "XXXX", "enableElevation", "false"),
+          List.of(),
+          List.of("3", "6"));
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "XXXX", "elevateOnlyDocsMatchingQuery", "true"),
+          List.of(),
+          List.of("3", "6"));
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "XXXX", "exclusive", "true"), List.of("1"), List.of());
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testElevateQRespectsExplicitIdsAndFilters() throws Exception {
+    try {
+      initElevateQDocuments();
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "YYYY", "elevateIds", "7", "excludeIds", "6"),
+          List.of("7"),
+          List.of("3"));
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "YYYY", "excludeIds", "6"), List.of(), List.of("3"));
+      assertElevationRequest(
+          params("q", "MMMM", "elevate.q", "YYYY", "fq", "id:3"), List.of(), List.of("3"));
+    } finally {
+      delete();
+    }
   }
 
   @Test

@@ -140,11 +140,16 @@ If you only want to elevate the docs that are part of the search result, set thi
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: existing query text
+|Optional |Default: parsed query text
 |===
 +
-Specifies the query text used to match an entry in `elevate.xml`, while leaving the actual search query unchanged.
-If omitted, query elevation uses the current query text as before.
+Specifies the query text used to match an entry in `elevate.xml`, using the configured `queryFieldType` analyzer, without replacing the search query in `q`.
+For example, `q=title:solr&elevate.q=solr` searches for `title:solr` but looks up elevation rules for `solr`.
+Supply `elevate.q` as a request parameter, not inside the query parser's local parameters.
+It takes precedence over both `q` and the parser's local `v` value for elevation lookup only.
+If omitted, elevation uses the parser's local `v` value when local parameters are present, or otherwise the query text in `q`.
+An explicitly empty value does not fall back to `q`.
+The `elevateIds` and `excludeIds` request parameters bypass the configured elevation rules and take precedence over `elevate.q`.
 
 === The elevate.xml File
 
