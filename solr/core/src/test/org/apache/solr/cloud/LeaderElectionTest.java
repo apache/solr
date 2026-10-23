@@ -291,6 +291,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRepeatedWatchFailureIsRaisedInsteadOfRetriedForever() throws Exception {
+    assumeWorkingMockito();
     String nodeName = "127.0.0.1:80_solr";
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
 
