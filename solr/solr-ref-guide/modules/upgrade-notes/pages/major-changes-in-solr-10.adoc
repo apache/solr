@@ -193,7 +193,7 @@ The SSL client authentication system properties have been renamed. Solr 10.0 has
 
 The environment variables `SOLR_SSL_NEED_CLIENT_AUTH` and `SOLR_SSL_WANT_CLIENT_AUTH` are unchanged.
 
-The `bin/post` and `bin/postlogs` scripts have been removed. Use `bin/solr post` and `bin/solr postlogs` instead.
+The `bin/postlogs` script has been removed. Use `bin/solr postlogs` instead.
 
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
 
