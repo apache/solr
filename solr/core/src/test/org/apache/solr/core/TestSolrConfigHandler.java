@@ -674,6 +674,9 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.testForResponseElement(
         harness, "/config/" + paramSetsKey, paramSetsPath(harness, "x", "b"), "B val", TIMEOUT_S);
 
+    String missing = harness.query("/config/" + paramSetsKey + "/nonExistentParamSet");
+    assertTrue(missing, missing.contains("No paramset found with the name: nonExistentParamSet"));
+
     payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/d', registerPath :'/solr,/v2' , 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n"
