@@ -179,6 +179,13 @@ These environment variables are also removed in Solr 10, and Solr does not warn 
 * `SOLR_ADMIN_UI_DISABLED` has no environment variable replacement. To disable the Admin UI, set the system property `solr.ui.enabled=false`, for example in `SOLR_OPTS`. `SOLR_UI_ENABLED` controls only the new Admin UI module.
 * `SOLR_WAIT_FOR_ZK` has no environment variable replacement. Pass the system property `-Dsolr.cloud.wait.for.zk.seconds` instead.
 
+Two environment variables control the new Admin UI in Solr 10.0, and they do not affect the classic Admin UI:
+
+* `SOLR_UI_ENABLED=false` does not load the new Admin UI module. The start script reads this variable and adds `--module=new-ui` only when it is not `false`.
+* `SOLR_UI_EXPERIMENTAL_ENABLED=false` also does not load the new Admin UI module. Either variable set to `false` has the same effect.
+
+The classic Admin UI is controlled by the system property `solr.ui.enabled`, not by `SOLR_UI_ENABLED`.
+
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
 
 === Solr CLI and Scripts
