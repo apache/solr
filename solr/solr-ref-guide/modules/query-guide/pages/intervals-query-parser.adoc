@@ -664,7 +664,7 @@ Example:
 The `match`, `all_of`, and `any_of` rules accept an optional `filter` parameter.
 A filter restricts matches based on the positional relationship between the source interval and a second (filter) interval.
 
-The `filter` object contains exactly one of the following operators as its key, mapped to a nested rule object:
+The `filter` object contains exactly one of the following operators as its key, mapped to a nested rule object (except `script`, which is mapped to an object with a `source` property containing the expression):
 
 [%autowidth,frame=none]
 |===
@@ -693,6 +693,9 @@ The `filter` object contains exactly one of the following operators as its key, 
 
 |`overlapping`
 |Source must overlap the filter interval.
+
+|`script`
+|Source interval is kept only when a script evaluates to a non-zero value for it.
 |===
 
 Example — match "solr" only when it appears after "apache":
@@ -704,6 +707,53 @@ Example — match "solr" only when it appears after "apache":
     "query": "solr",
     "filter": {
       "after": { "term": { "value": "apache" } }
+    }
+  }
+}
+----
+
+=== `script` Filter Operator
+
+The `script` filter operator evaluates a Lucene Expressions script for each candidate interval and keeps the interval only when the script returns a non-zero value.
+The script is a xref:expression-value-source-parser.adoc[Lucene Expressions] JavaScript expression and exposes the current interval through the following variables:
+
+[%autowidth,frame=none]
+|===
+|Variable |Description
+
+|`interval.start`
+|The start position of the current interval.
+
+|`interval.end`
+|The end position of the current interval.
+
+|`interval.gap`
+|The number of gaps within the current interval (between its immediate sub-intervals).
+|===
+
+Example — match "solr" only when it appears at the start of the field:
+
+[source,json]
+----
+{
+  "match": {
+    "query": "solr",
+    "filter": {
+      "script": { "source": "interval.start == 0" }
+    }
+  }
+}
+----
+
+Example — match a phrase only when it spans a single position:
+
+[source,json]
+----
+{
+  "match": {
+    "query": "apache solr",
+    "filter": {
+      "script": { "source": "interval.end - interval.start == 1" }
     }
   }
 }
