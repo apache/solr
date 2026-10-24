@@ -491,4 +491,21 @@ public final class CLIUtils {
   public static boolean isWindows() {
     return (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
   }
+
+  /** Console print using green color */
+  public static void formatGreen(StringBuilder sb, Object message) {
+    format(sb, CLIUtils.GREEN, message);
+  }
+
+  public static void format(StringBuilder sb, Object message) {
+    format(sb, null, message);
+  }
+
+  public static void format(StringBuilder sb, String color, Object message) {
+    if (color != null) {
+      sb.append(color + message + CLIUtils.RESET + "\n");
+    } else {
+      sb.append(message + "\n");
+    }
+  }
 }
