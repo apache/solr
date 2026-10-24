@@ -318,7 +318,10 @@ public class ReplicationHandler extends RequestHandlerBase
       if (restoreStatus.restoreStatus.exception != null) {
         // V1 reports a failed restore as an error response
         rsp.getValues().remove(STATUS);
-        reportErrorOnResponse(rsp, "Unabled to read restorestatus", new Exception(restoreStatus.restoreStatus.exception));
+        reportErrorOnResponse(
+            rsp,
+            "Unabled to read restorestatus",
+            new Exception(restoreStatus.restoreStatus.exception));
       }
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
       deleteSnapshot(new ModifiableSolrParams(solrParams), rsp);
@@ -664,7 +667,10 @@ public class ReplicationHandler extends RequestHandlerBase
     response.restoreStatus.snapshotName = currentRestoreName;
     if (future.isDone()) {
       try {
-        response.restoreStatus.status = future.get() ? RestoreStatusResponse.RestoreState.SUCCESS : RestoreStatusResponse.RestoreState.FAILED;
+        response.restoreStatus.status =
+            future.get()
+                ? RestoreStatusResponse.RestoreState.SUCCESS
+                : RestoreStatusResponse.RestoreState.FAILED;
       } catch (Exception e) {
         response.restoreStatus.status = RestoreStatusResponse.RestoreState.FAILED;
         response.restoreStatus.exception = e.getMessage();

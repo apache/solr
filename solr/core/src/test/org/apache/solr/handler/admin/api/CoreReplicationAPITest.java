@@ -121,7 +121,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetCommits() throws Exception {
-    CommitsResponse.CommitDetails commit = new CommitsResponse.CommitDetails(42L, 7L, List.of("segments_7", "_0.cfs"));
+    CommitsResponse.CommitDetails commit =
+        new CommitsResponse.CommitDetails(42L, 7L, List.of("segments_7", "_0.cfs"));
     CommitsResponse expected = new CommitsResponse();
     expected.status = "OK";
     expected.commits = List.of(commit);
