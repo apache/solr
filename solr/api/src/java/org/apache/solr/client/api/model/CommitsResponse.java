@@ -45,10 +45,10 @@ public class CommitsResponse extends SolrJerseyResponse {
 
     public CommitDetails() {}
 
-    public CommitDetails(long l, long l1, List<String> segments7) {
-      this.indexVersion = l;
-      this.generation = l1;
-      this.filelist = segments7;
+    public CommitDetails(long indexVersion, long generation, List<String> filelist) {
+      this.indexVersion = indexVersion;
+      this.generation = generation;
+      this.filelist = filelist;
     }
   }
 }

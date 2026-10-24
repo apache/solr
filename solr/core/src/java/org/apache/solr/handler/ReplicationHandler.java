@@ -320,7 +320,7 @@ public class ReplicationHandler extends RequestHandlerBase
         rsp.getValues().remove(STATUS);
         reportErrorOnResponse(
             rsp,
-            "Unabled to read restorestatus",
+            "Unable to read restorestatus",
             new Exception(restoreStatus.restoreStatus.exception));
       }
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {

@@ -58,7 +58,7 @@ public interface ReplicationApis {
   @Operation(
       summary = "Return the status of the most recent restore operation.",
       tags = {"replication"})
-  RestoreStatusResponse fetchRestoreStatus() throws IOException;
+  RestoreStatusResponse fetchRestoreStatus();
 
   @GET
   @CoreApiParameters
@@ -66,7 +66,7 @@ public interface ReplicationApis {
   @Operation(
       summary = "Return the index commit points retained by the specified core.",
       tags = {"replication"})
-  CommitsResponse fetchCommits() throws IOException;
+  CommitsResponse fetchCommits();
 
   @GET
   @CoreApiParameters

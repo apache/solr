@@ -55,13 +55,13 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
 
   @Override
   @PermissionName(CORE_READ_PERM)
-  public RestoreStatusResponse fetchRestoreStatus() throws IOException {
+  public RestoreStatusResponse fetchRestoreStatus() {
     return doFetchRestoreStatus();
   }
 
   @Override
   @PermissionName(CORE_READ_PERM)
-  public CommitsResponse fetchCommits() throws IOException {
+  public CommitsResponse fetchCommits() {
     return doFetchCommits();
   }
 
