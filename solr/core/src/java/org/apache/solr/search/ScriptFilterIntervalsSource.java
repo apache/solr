@@ -253,9 +253,25 @@ public class ScriptFilterIntervalsSource extends FilteredIntervalsSource {
                 return source.gaps();
               }
             });
+    boolean found = false;
+    while (source.next()) {
+      if (evaluator.accept()) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return null;
+    }
     return new IntervalMatchesIterator() {
+      private boolean first = true;
+
       @Override
       public boolean next() throws IOException {
+        if (first) {
+          first = false;
+          return true;
+        }
         while (source.next()) {
           if (evaluator.accept()) {
             return true;
