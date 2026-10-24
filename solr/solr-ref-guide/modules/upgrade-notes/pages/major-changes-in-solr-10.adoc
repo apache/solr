@@ -170,7 +170,14 @@ Standard `solr.xml` configuration used by `MiniSolrCloudCluster` turns off metri
 
 The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` System Property are deprecated and will be removed in a future release. Please update your configuration to use `SOLR_HOST_BIND` and `-Dsolr.host.bind` instead.
 
-The previous `SOLR_HOST` and `host` are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
+The previous `SOLR_HOST` environment variable is removed. Solr 10 does not read it and does not print a warning. Use `SOLR_HOST_ADVERTISE` instead, or the system property `solr.host.advertise`.
+
+These environment variables are also removed in Solr 10, and Solr does not warn when they are set:
+
+* `SOLR_PORT` is replaced by `SOLR_PORT_LISTEN`.
+* `SOLR_REQUESTLOG_ENABLED` is replaced by `SOLR_LOGS_REQUESTLOG_ENABLED`.
+* `SOLR_ADMIN_UI_DISABLED` is replaced by `SOLR_UI_ENABLED`, which has the opposite sense: `SOLR_UI_ENABLED=false` disables the Admin UI.
+* `SOLR_WAIT_FOR_ZK` has no environment variable replacement. Pass the system property `-Dsolr.cloud.wait.for.zk.seconds` instead.
 
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
 
