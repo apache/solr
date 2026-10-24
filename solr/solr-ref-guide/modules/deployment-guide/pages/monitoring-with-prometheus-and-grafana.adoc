@@ -14,6 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+[IMPORTANT]
+====
+*Work in progress — the artifacts shipped today are placeholders.*
+
+Solr 10 removed the standalone `solr-exporter` (the `prometheus-exporter` module) and now exposes metrics natively, under OpenTelemetry-based metric names.
+Dashboards and alert rules written against the old exporter therefore do not work on Solr 10 or later: the process they scraped is gone, and the metric names and labels they query have changed.
+Solr's own dashboard and alert rules are consequently being built from scratch, panel by panel and rule by rule.
+
+What is in `solr/monitoring/` right now is a two-panel dashboard and a single alert, present to prove the generation pipeline works — not a monitoring setup to deploy.
+The dashboard worth deploying arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534], the alert rules in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535], and the OTLP Collector guidance in https://issues.apache.org/jira/browse/SOLR-18536[SOLR-18536].
+Expect both files, and this page, to change substantially before they are useful.
+====
+
 Solr ships two monitoring artifacts in `solr/monitoring/`:
 
 * `grafana-solr-dashboard.json` — a Grafana dashboard
@@ -22,12 +35,6 @@ Solr ships two monitoring artifacts in `solr/monitoring/`:
 Import these into your own Prometheus + Grafana installation.
 Solr exposes all metrics natively, so no exporter process is required.
 For the full list of available metrics see xref:metrics-reporting.adoc[].
-
-[WARNING]
-====
-Both artifacts are currently placeholders — a two-panel dashboard and a single alert — that exist to prove the build pipeline works.
-The dashboard worth deploying arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534] and the alert rules in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535].
-====
 
 .Solr monitoring architecture — Prometheus pull path and OTLP push path
 image::monitoring-with-prometheus-and-grafana/solr-monitoring-diagram.png[Solr monitoring architecture diagram,800]
