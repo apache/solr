@@ -1,9 +1,7 @@
 title: >
-  CombinedQueryComponent.mergeIds: a skipped partial shard no longer contributes
-  its totals to the merged response, a skipped or errored shard clears
-  numFoundExact, a partial shard with no per-query entry is skipped instead of
-  failing the merge, and the approximateTotalHits fallback adds each shard's own
-  count instead of the running total.
+  Combined queries: skipped or failed shard responses no longer add to numFound or
+  approximateTotalHits and mark numFoundExact false; approximateTotalHits no longer
+  double-counts across shards.
 type: fixed
 authors:
   - name: Nick Shanin

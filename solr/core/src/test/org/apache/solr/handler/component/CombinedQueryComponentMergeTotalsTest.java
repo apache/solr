@@ -232,49 +232,6 @@ public class CombinedQueryComponentMergeTotalsTest extends SolrTestCase {
     assertEquals("response size", 3, rb.getResponseDocs().size());
   }
 
-  /** Same setup as above, asserting only the approximate total (10 + 5 = 15 before the fix). */
-  @Test
-  public void skippedPartialShardApproximateTotalExcluded() {
-    SolrDocument a1 = doc("a1", 2.0f), a2 = doc("a2", 1.0f);
-    SolrDocument b1 = doc("b1", 3.0f), b2 = doc("b2", 2.0f), b3 = doc("b3", 1.0f);
-    NamedList<List<Object>> sortValues = new NamedList<>();
-    sortValues.add("intDefault", List.<Object>of("1", "2", "3"));
-    ShardResponse shard1 =
-        shardResponse(
-            "shard1",
-            header(
-                SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY,
-                Boolean.TRUE,
-                SolrQueryResponse.RESPONSE_HEADER_MAX_HITS_TERMINATED_EARLY_KEY,
-                Boolean.TRUE,
-                SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY,
-                10L),
-            docList(4, true, a1, a2),
-            List.of(docList(4, true, a1, a2)),
-            null);
-    ShardResponse shard2 =
-        shardResponse(
-            "shard2",
-            header(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, 5L),
-            docList(3, true, b1, b2, b3),
-            List.of(docList(3, true, b1, b2, b3)),
-            sortValues);
-    SchemaField intField = currentRequestSchemaField("intDefault");
-    SortSpec sortSpec =
-        new SortSpec(
-            new Sort(new SortField("intDefault", SortField.Type.INT)), List.of(intField), 10, 0);
-    ResponseBuilder rb = newResponseBuilder(sortSpec, "q0");
-    cqc.mergeIds(rb, shardRequest(shard1, shard2));
-    assertEquals(
-        "approximateTotalHits",
-        5L,
-        rb.rsp
-            .getResponseHeader()
-            .get(SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY));
-    assertEquals("response size", 3, rb.getResponseDocs().size());
-  }
-
-  /** Two skipped partial shards; one reports hits, so the merged count is inexact. */
   @Test
   public void skippedPartialShardWithHitsClearsExactness() {
     SolrDocument a1 = doc("a1", 2.0f), a2 = doc("a2", 1.0f);
