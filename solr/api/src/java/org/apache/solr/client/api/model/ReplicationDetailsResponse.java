@@ -47,7 +47,7 @@ public class ReplicationDetailsResponse extends SolrJerseyResponse {
     public String indexPath;
 
     @JsonProperty("commits")
-    public List<CommitDetails> commits;
+    public List<CommitsResponse.CommitDetails> commits;
 
     @JsonProperty("isLeader")
     public Boolean isLeader;
@@ -70,17 +70,6 @@ public class ReplicationDetailsResponse extends SolrJerseyResponse {
     /** Optional snapshot/backup stats (heterogeneous NamedList from the handler). */
     @JsonProperty("backup")
     public Object backup;
-  }
-
-  public static class CommitDetails implements ReflectWritable {
-    @JsonProperty("indexVersion")
-    public Long indexVersion;
-
-    @JsonProperty("generation")
-    public Long generation;
-
-    @JsonProperty("filelist")
-    public List<String> filelist;
   }
 
   public static class LeaderDetails implements ReflectWritable {

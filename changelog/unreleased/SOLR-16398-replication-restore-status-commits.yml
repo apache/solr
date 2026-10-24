@@ -1,6 +1,6 @@
 title: >
-  Replication phase2 - TBA
-type:
+  Add V2 JAX-RS APIs for GET replication restore status and commits.
+type: added
 authors:
   - name: Jalaz Kumar
     nick: jaykay12

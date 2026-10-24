@@ -75,13 +75,14 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.CommitsResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
-import org.apache.solr.client.api.model.ReplicationDetailsResponse.CommitDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
+import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -311,7 +312,14 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
       restore(new ModifiableSolrParams(solrParams), rsp, req);
     } else if (command.equalsIgnoreCase(CMD_RESTORE_STATUS)) {
-      populateRestoreStatus(rsp);
+      final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
+      final RestoreStatusResponse restoreStatus = coreReplicationAPI.fetchRestoreStatus();
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, restoreStatus);
+      if (restoreStatus.restoreStatus.exception != null) {
+        // V1 reports a failed restore as an error response
+        rsp.getValues().remove(STATUS);
+        reportErrorOnResponse(rsp, "Unabled to read restorestatus", new Exception(restoreStatus.restoreStatus.exception));
+      }
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
       deleteSnapshot(new ModifiableSolrParams(solrParams), rsp);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
@@ -327,7 +335,8 @@ public class ReplicationHandler extends RequestHandlerBase
         reportErrorOnResponse(rsp, "No follower configured", null);
       }
     } else if (command.equals(CMD_SHOW_COMMITS)) {
-      populateCommitInfo(rsp);
+      final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, coreReplicationAPI.fetchCommits());
     } else if (command.equals(CMD_DETAILS)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
       // stringifyBooleans=true: V1's command=details has always rendered isLeader/isFollower/etc.
@@ -642,42 +651,35 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
-  private void populateRestoreStatus(SolrQueryResponse rsp) {
-    NamedList<Object> restoreStatus = new SimpleOrderedMap<>();
-    if (restoreFuture == null) {
-      restoreStatus.add(STATUS, "No restore actions in progress");
-      rsp.add(CMD_RESTORE_STATUS, restoreStatus);
-      rsp.add(STATUS, OK_STATUS);
-      return;
+  public RestoreStatusResponse getRestoreStatusResponse() {
+    RestoreStatusResponse response = new RestoreStatusResponse();
+    response.restoreStatus = new RestoreStatusResponse.RestoreStatus();
+    response.status = OK_STATUS;
+    Future<Boolean> future = restoreFuture;
+    if (future == null) {
+      response.restoreStatus.status = RestoreStatusResponse.RestoreState.NOT_STARTED;
+      return response;
     }
 
-    restoreStatus.add("snapshotName", currentRestoreName);
-    if (restoreFuture.isDone()) {
+    response.restoreStatus.snapshotName = currentRestoreName;
+    if (future.isDone()) {
       try {
-        boolean success = restoreFuture.get();
-        if (success) {
-          restoreStatus.add(STATUS, SUCCESS);
-        } else {
-          restoreStatus.add(STATUS, FAILED);
-        }
+        response.restoreStatus.status = future.get() ? RestoreStatusResponse.RestoreState.SUCCESS : RestoreStatusResponse.RestoreState.FAILED;
       } catch (Exception e) {
-        restoreStatus.add(STATUS, FAILED);
-        restoreStatus.add(EXCEPTION, e.getMessage());
-        rsp.add(CMD_RESTORE_STATUS, restoreStatus);
-        reportErrorOnResponse(rsp, "Unable to read restorestatus", e);
-        return;
+        response.restoreStatus.status = RestoreStatusResponse.RestoreState.FAILED;
+        response.restoreStatus.exception = e.getMessage();
       }
     } else {
-      restoreStatus.add(STATUS, "In Progress");
+      response.restoreStatus.status = RestoreStatusResponse.RestoreState.IN_PROGRESS;
     }
-
-    rsp.add(CMD_RESTORE_STATUS, restoreStatus);
-    rsp.add(STATUS, OK_STATUS);
+    return response;
   }
 
-  private void populateCommitInfo(SolrQueryResponse rsp) {
-    rsp.add(CMD_SHOW_COMMITS, getCommits());
-    rsp.add(STATUS, OK_STATUS);
+  public CommitsResponse getCommitsResponse() {
+    CommitsResponse response = new CommitsResponse();
+    response.commits = getCommitDetails();
+    response.status = OK_STATUS;
+    return response;
   }
 
   private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
@@ -1237,10 +1239,10 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("unchecked")
-  private List<CommitDetails> getCommitDetails() {
-    List<CommitDetails> commits = new ArrayList<>();
+  private List<CommitsResponse.CommitDetails> getCommitDetails() {
+    List<CommitsResponse.CommitDetails> commits = new ArrayList<>();
     for (NamedList<Object> namedList : getCommits()) {
-      CommitDetails commitDetail = new CommitDetails();
+      CommitsResponse.CommitDetails commitDetail = new CommitsResponse.CommitDetails();
       commitDetail.indexVersion = (Long) namedList.get("indexVersion");
       commitDetail.generation = (Long) namedList.get(GENERATION);
       commitDetail.filelist = (List<String>) namedList.get(CMD_GET_FILE_LIST);
@@ -1684,10 +1686,6 @@ public class ReplicationHandler extends RequestHandlerBase
       throw new SolrException(ErrorCode.SERVER_ERROR, INTERVAL_ERR_MSG);
     }
   }
-
-  private static final String SUCCESS = "success";
-
-  private static final String FAILED = "failed";
 
   public static final String EXCEPTION = "exception";
 
