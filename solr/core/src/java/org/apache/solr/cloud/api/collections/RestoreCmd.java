@@ -254,44 +254,67 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           rc.backupCollectionState);
       // note: when createCollection() returns, the collection exists (no race)
 
-      // Restore collection properties
-      rc.backupManager.uploadCollectionProperties(rc.restoreCollectionName);
+      DocCollection restoreCollection;
+      List<ReplicaPosition> replicaPositions;
+      try {
+        // Restore collection properties
+        rc.backupManager.uploadCollectionProperties(rc.restoreCollectionName);
 
-      DocCollection restoreCollection =
-          rc.zkStateReader.getClusterState().getCollection(rc.restoreCollectionName);
-      markAllShardsAsConstruction(restoreCollection);
+        restoreCollection =
+            rc.zkStateReader.getClusterState().getCollection(rc.restoreCollectionName);
+        markAllShardsAsConstruction(restoreCollection);
 
-      List<String> sliceNames = new ArrayList<>();
-      restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
+        List<String> sliceNames = new ArrayList<>();
+        restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
 
-      List<ReplicaPosition> replicaPositions =
-          getReplicaPositions(rc.restoreCollectionName, rc.nodeList, sliceNames);
+        replicaPositions = getReplicaPositions(rc.restoreCollectionName, rc.nodeList, sliceNames);
 
-      createSingleReplicaPerShard(
-          results,
-          restoreCollection,
-          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
-          replicaPositions);
-      Object failures = results.get("failure");
-      if (failures != null && ((SimpleOrderedMap<?>) failures).size() > 0) {
-        log.error("Restore failed to create initial replicas.");
-        CollectionHandlingUtils.cleanupCollection(
-            rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
-        return;
+        createSingleReplicaPerShard(
+            results,
+            restoreCollection,
+            rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+            replicaPositions);
+        Object failures = results.get("failure");
+        if (failures != null && ((SimpleOrderedMap<?>) failures).size() > 0) {
+          log.error("Restore failed to create initial replicas.");
+          CollectionHandlingUtils.cleanupCollection(
+              rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
+          return;
+        }
+
+        // refresh the location copy of collection state
+        restoreCollection =
+            rc.zkStateReader.getClusterState().getCollection(rc.restoreCollectionName);
+        requestShardsToRestore(
+            results,
+            restoreCollection,
+            rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+            rc.backupProperties,
+            rc.backupPath,
+            rc.repo,
+            rc.shardHandler);
+        // An async request doesn't abort when restoring a shard fails, it only records a failure.
+        // Any failure here is from restoring the shards, since none was recorded before.
+        failures = results.get("failure");
+        if (failures != null && ((SimpleOrderedMap<?>) failures).size() > 0) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not restore shard");
+        }
+        markAllShardsAsActive(restoreCollection);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw e;
+      } catch (Exception e) {
+        // Until its shards are marked active, the collection can't be used. Delete it, as for a
+        // failure to create the initial replicas, so that a retry restores to a new collection
+        // instead of finding this one and leaving its shards under construction.
+        try {
+          CollectionHandlingUtils.cleanupCollection(
+              rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
+        } catch (Exception cleanupException) {
+          e.addSuppressed(cleanupException);
+        }
+        throw e;
       }
-
-      // refresh the location copy of collection state
-      restoreCollection =
-          rc.zkStateReader.getClusterState().getCollection(rc.restoreCollectionName);
-      requestShardsToRestore(
-          results,
-          restoreCollection,
-          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
-          rc.backupProperties,
-          rc.backupPath,
-          rc.repo,
-          rc.shardHandler);
-      markAllShardsAsActive(restoreCollection);
       addReplicasToShards(
           results,
           restoreCollection,
