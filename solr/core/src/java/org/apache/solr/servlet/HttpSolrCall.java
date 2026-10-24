@@ -605,7 +605,7 @@ public class HttpSolrCall {
     return coreOrColName;
   }
 
-  private boolean shouldAuthorize() {
+  protected boolean shouldAuthorize() {
     if (PublicKeyHandler.PATH.equals(path)) return false;
     // admin/info/key is the path where public key is exposed . it is always unsecured
     if (StrUtils.isNullOrEmpty(path) || "/".equals(path) || "/solr/".equals(path))
