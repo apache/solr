@@ -1,0 +1,35 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// config.libsonnet — settings you can override without editing the dashboard
+// or alert sources.
+//
+// Every key here is consumed by dashboards/ or alerts/; nothing is declared
+// ahead of its use. To override, import the mixin and patch _config:
+//
+//   (import 'mixin.libsonnet') + { _config+:: { solrSelector: 'job="my-solr"' } }
+
+{
+  _config:: {
+    // Label selector that identifies Solr targets in your Prometheus. Applied to
+    // every dashboard query and alert expression, so JVM metrics scraped from
+    // other Java services are not mistaken for Solr's.
+    solrSelector: 'job="solr"',
+
+    // Window for rate() queries, and the preselected value of the dashboard's
+    // Interval dropdown. Raise it for sparse scrape intervals.
+    rateInterval: '5m',
+  },
+}
