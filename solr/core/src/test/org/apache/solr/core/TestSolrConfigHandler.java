@@ -26,6 +26,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +107,15 @@ public class TestSolrConfigHandler extends RestTestBase {
   private static String fullConfigKey(
       RestTestHarness harness, String internalName, String externalName) {
     return harness.getBaseURL().contains("/____v2/") ? externalName : internalName;
+  }
+
+  // The v2 paramset response is flat, while v1 nests it under "response"
+  private static List<String> paramSetsPath(RestTestHarness harness, String... keys) {
+    List<String> path = new ArrayList<>();
+    if (!harness.getBaseURL().contains("/____v2/")) path.add("response");
+    path.add("params");
+    path.addAll(asList(keys));
+    return path;
   }
 
   public void testProperty() throws Exception {
@@ -646,6 +656,8 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public void testReqParams() throws Exception {
     RestTestHarness harness = restTestHarness;
+    String paramSetsKey = fullConfigKey(harness, "params", "paramsets");
+
     String payload =
         " {\n"
             + "  'set' : {'x': {"
@@ -657,10 +669,13 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "x", "a"), "A val", TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "x", "a"), "A val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "x", "b"), "B val", TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "x", "b"), "B val", TIMEOUT_S);
+
+    String missing = harness.query("/config/" + paramSetsKey + "/nonExistentParamSet");
+    assertTrue(missing, missing.contains("No paramset found with the name: nonExistentParamSet"));
 
     payload =
         "{\n"
@@ -710,7 +725,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "y", "c"), "CY val", TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "c"), "CY val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
         harness, "/dump1?useParams=y", asList("params", "c"), "CY val", TIMEOUT_S);
@@ -738,13 +753,13 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.testForResponseElement(
         harness,
-        "/config/params",
-        asList("response", "params", "y", "c"),
+        "/config/" + paramSetsKey,
+        paramSetsPath(harness, "y", "c"),
         "CY val modified",
         TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "y", "e"), "EY val", TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "e"), "EY val", TIMEOUT_S);
 
     payload =
         " {\n"
@@ -757,14 +772,14 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "y", "p"), "P val", TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "p"), "P val", TIMEOUT_S);
 
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "y", "c"), null, TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "c"), null, TIMEOUT_S);
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(harness, "/config/params", payload);
     TestSolrConfigHandler.testForResponseElement(
-        harness, "/config/params", asList("response", "params", "y", "p"), null, TIMEOUT_S);
+        harness, "/config/" + paramSetsKey, paramSetsPath(harness, "y", "p"), null, TIMEOUT_S);
 
     payload =
         "{\n"

@@ -159,8 +159,13 @@ curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName
 
 == Viewing Request Parameters
 
-To see the paramsets that have been created, you can use the `/config/params` endpoint to read the contents of `params.json`, or use the name in the request:
+To see the paramsets that have been created, we can read the contents of `params.json`, or request a single paramset by name:
 
+[tabs#viewparamsets]
+======
+V1 API::
++
+====
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/config/params
@@ -168,6 +173,26 @@ curl http://localhost:8983/solr/techproducts/config/params
 #Or use the paramset name
 curl http://localhost:8983/solr/techproducts/config/params/myQueries
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/config/paramsets
+
+#Or use the paramset name
+curl http://localhost:8983/api/collections/techproducts/config/paramsets/myQueries
+----
+
+Creating, updating and deleting paramsets still uses `POST api/collections/techproducts/config/params`.
+
+====
+
+Both APIs returns a `404` if the named paramset does not exists.
+
+======
 
 == The useParams Parameter
 

@@ -63,8 +63,8 @@ public class AdminUiParamsetsScreenTest extends AdminUiTestBase {
   private String paramsetRows(String name) {
     try {
       Object rows =
-          adminApi("/" + COLLECTION + "/config/params/" + name, params())
-              ._get(List.of("response", "params", name, "rows"), "");
+          adminApi("/" + COLLECTION + "/config/paramsets/" + name, params())
+              ._get(List.of("params", name, "rows"), "");
       return rows == null ? "" : rows.toString();
     } catch (Exception e) {
       throw new RuntimeException(e);
