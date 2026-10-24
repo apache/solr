@@ -82,7 +82,6 @@ import org.apache.solr.client.api.model.ReplicationDetailsResponse.CommitDetails
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
-import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -339,12 +338,10 @@ public class ReplicationHandler extends RequestHandlerBase
           true,
           true);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
-      new CoreReplication(core, req, rsp)
-          .setReplicationEnabled(new ReplicationEnabledRequestBody(true));
+      setReplicationEnabled(true);
       rsp.add(STATUS, OK_STATUS);
     } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
-      new CoreReplication(core, req, rsp)
-          .setReplicationEnabled(new ReplicationEnabledRequestBody(false));
+      setReplicationEnabled(false);
       rsp.add(STATUS, OK_STATUS);
     }
   }

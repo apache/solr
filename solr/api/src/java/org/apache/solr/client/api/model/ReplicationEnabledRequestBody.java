@@ -18,6 +18,9 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Request body for enabling and disabling index replication from leader to the followers
+ */
 public class ReplicationEnabledRequestBody {
 
   public ReplicationEnabledRequestBody() {}
@@ -27,5 +30,5 @@ public class ReplicationEnabledRequestBody {
   }
 
   @JsonProperty(required = true)
-  public boolean enabled;
+  public Boolean enabled;
 }
