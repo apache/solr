@@ -28,7 +28,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * HTTP tests for {@code GET /api/cores/coreName/replication/restore} via the generated SolrJ
+ * HTTP tests for {@code GET /api/cores/coreName/replication/restore/status} via the generated SolrJ
  * request.
  */
 public class FetchRestoreStatusAPITest extends SolrTestCase {

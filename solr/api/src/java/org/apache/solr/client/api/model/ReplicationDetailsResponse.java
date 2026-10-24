@@ -19,6 +19,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
+import org.apache.solr.client.api.model.CommitsResponse.CommitDetails;
 import org.apache.solr.client.api.util.ReflectWritable;
 
 public class ReplicationDetailsResponse extends SolrJerseyResponse {
@@ -47,7 +48,7 @@ public class ReplicationDetailsResponse extends SolrJerseyResponse {
     public String indexPath;
 
     @JsonProperty("commits")
-    public List<CommitsResponse.CommitDetails> commits;
+    public List<CommitDetails> commits;
 
     @JsonProperty("isLeader")
     public Boolean isLeader;

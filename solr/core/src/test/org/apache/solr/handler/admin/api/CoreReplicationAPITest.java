@@ -31,6 +31,7 @@ import java.util.List;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CommitsResponse;
+import org.apache.solr.client.api.model.CommitsResponse.CommitDetails;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
@@ -103,7 +104,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGetRestoreStatus() throws Exception {
+  public void testGetRestoreStatus() {
     RestoreStatusResponse expected = new RestoreStatusResponse();
     expected.status = "OK";
     expected.restoreStatus = new RestoreStatusResponse.RestoreStatus();
@@ -120,9 +121,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGetCommits() throws Exception {
-    CommitsResponse.CommitDetails commit =
-        new CommitsResponse.CommitDetails(42L, 7L, List.of("segments_7", "_0.cfs"));
+  public void testGetCommits() {
+    CommitDetails commit = new CommitDetails(42L, 7L, List.of("segments_7", "_0.cfs"));
     CommitsResponse expected = new CommitsResponse();
     expected.status = "OK";
     expected.commits = List.of(commit);

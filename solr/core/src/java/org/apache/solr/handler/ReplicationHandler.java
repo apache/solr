@@ -76,6 +76,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.CommitsResponse;
+import org.apache.solr.client.api.model.CommitsResponse.CommitDetails;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
@@ -83,6 +84,8 @@ import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetai
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
+import org.apache.solr.client.api.model.RestoreStatusResponse.RestoreState;
+import org.apache.solr.client.api.model.RestoreStatusResponse.RestoreStatus;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -656,27 +659,24 @@ public class ReplicationHandler extends RequestHandlerBase
 
   public RestoreStatusResponse getRestoreStatusResponse() {
     RestoreStatusResponse response = new RestoreStatusResponse();
-    response.restoreStatus = new RestoreStatusResponse.RestoreStatus();
+    response.restoreStatus = new RestoreStatus();
     response.status = OK_STATUS;
     Future<Boolean> future = restoreFuture;
     if (future == null) {
-      response.restoreStatus.status = RestoreStatusResponse.RestoreState.NOT_STARTED;
+      response.restoreStatus.status = RestoreState.NOT_STARTED;
       return response;
     }
 
     response.restoreStatus.snapshotName = currentRestoreName;
     if (future.isDone()) {
       try {
-        response.restoreStatus.status =
-            future.get()
-                ? RestoreStatusResponse.RestoreState.SUCCESS
-                : RestoreStatusResponse.RestoreState.FAILED;
+        response.restoreStatus.status = future.get() ? RestoreState.SUCCESS : RestoreState.FAILED;
       } catch (Exception e) {
-        response.restoreStatus.status = RestoreStatusResponse.RestoreState.FAILED;
+        response.restoreStatus.status = RestoreState.FAILED;
         response.restoreStatus.exception = e.getMessage() != null ? e.getMessage() : e.toString();
       }
     } else {
-      response.restoreStatus.status = RestoreStatusResponse.RestoreState.IN_PROGRESS;
+      response.restoreStatus.status = RestoreState.IN_PROGRESS;
     }
     return response;
   }
@@ -1245,10 +1245,10 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("unchecked")
-  private List<CommitsResponse.CommitDetails> getCommitDetails() {
-    List<CommitsResponse.CommitDetails> commits = new ArrayList<>();
+  private List<CommitDetails> getCommitDetails() {
+    List<CommitDetails> commits = new ArrayList<>();
     for (NamedList<Object> namedList : getCommits()) {
-      CommitsResponse.CommitDetails commitDetail = new CommitsResponse.CommitDetails();
+      CommitDetails commitDetail = new CommitDetails();
       commitDetail.indexVersion = (Long) namedList.get("indexVersion");
       commitDetail.generation = (Long) namedList.get(GENERATION);
       commitDetail.filelist = (List<String>) namedList.get(CMD_GET_FILE_LIST);
