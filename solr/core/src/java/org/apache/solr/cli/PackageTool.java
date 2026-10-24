@@ -16,10 +16,10 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.printGreen;
-import static org.apache.solr.cli.SolrCLI.printRed;
 import static org.apache.solr.cli.CLIUtils.format;
 import static org.apache.solr.cli.CLIUtils.formatGreen;
+import static org.apache.solr.cli.SolrCLI.printGreen;
+import static org.apache.solr.cli.SolrCLI.printRed;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
