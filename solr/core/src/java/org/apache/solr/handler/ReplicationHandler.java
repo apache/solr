@@ -673,7 +673,7 @@ public class ReplicationHandler extends RequestHandlerBase
                 : RestoreStatusResponse.RestoreState.FAILED;
       } catch (Exception e) {
         response.restoreStatus.status = RestoreStatusResponse.RestoreState.FAILED;
-        response.restoreStatus.exception = e.getMessage();
+        response.restoreStatus.exception = e.getMessage() != null ? e.getMessage() : e.toString();
       }
     } else {
       response.restoreStatus.status = RestoreStatusResponse.RestoreState.IN_PROGRESS;
