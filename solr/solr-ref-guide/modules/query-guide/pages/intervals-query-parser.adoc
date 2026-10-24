@@ -745,13 +745,14 @@ Example — match "solr" only when it appears at the start of the field:
 }
 ----
 
-Example — match a phrase only when it spans a single position:
+Example — match a phrase only when it spans two adjacent positions:
 
 [source,json]
 ----
 {
   "match": {
     "query": "apache solr",
+    "ordered": true,
     "filter": {
       "script": { "source": "interval.end - interval.start == 1" }
     }
