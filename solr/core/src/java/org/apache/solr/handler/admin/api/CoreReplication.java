@@ -22,9 +22,11 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import org.apache.solr.client.api.endpoint.ReplicationApis;
+import org.apache.solr.client.api.model.CommitsResponse;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -49,6 +51,18 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
     // Boxed (rather than the primitive boolean used elsewhere for similar flags) so this method
     // can also be called directly, bypassing the JAX-RS @DefaultValue, with no value supplied.
     return doFetchReplicationDetails(follower == null || follower);
+  }
+
+  @Override
+  @PermissionName(CORE_READ_PERM)
+  public RestoreStatusResponse fetchRestoreStatus() {
+    return doFetchRestoreStatus();
+  }
+
+  @Override
+  @PermissionName(CORE_READ_PERM)
+  public CommitsResponse fetchCommits() {
+    return doFetchCommits();
   }
 
   @Override
