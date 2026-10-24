@@ -197,13 +197,15 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
               .map(JettySolrRunner::getLocalPort)
               .collect(Collectors.toSet());
       try {
-        expectThrows(
-            SolrException.class,
-            () ->
-                CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-                    .setLocation(backupLocation)
-                    .setRepositoryName(ERROR_BACKUP_REPO_NAME)
-                    .process(solrClient));
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () ->
+                    CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+                        .setLocation(backupLocation)
+                        .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+                        .process(solrClient));
+        assertTrue(e.getMessage(), e.getMessage().contains("Could not restore shard"));
         assertFalse(
             CollectionAdminRequest.listCollections(solrClient).contains(restoreCollectionName));
 
