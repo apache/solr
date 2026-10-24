@@ -114,7 +114,7 @@ public interface ReplicationApis {
   @PUT
   @CoreApiParameters
   @Operation(
-      summary = "Enabled or disable replication.",
+      summary = "Enable or disable replication.",
       tags = {"replication"})
   SolrJerseyResponse setReplicationEnabled(
       @RequestBody(required = true) ReplicationEnabledRequestBody requestBody);
