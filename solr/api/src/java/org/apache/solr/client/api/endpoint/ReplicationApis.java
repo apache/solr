@@ -117,7 +117,5 @@ public interface ReplicationApis {
       summary = "Enabled or disable replication.",
       tags = {"replication"})
   SolrJerseyResponse setReplicationEnabled(
-      @RequestBody(required = true)
-      ReplicationEnabledRequestBody requestBody);
-
+      @RequestBody(required = true) ReplicationEnabledRequestBody requestBody);
 }

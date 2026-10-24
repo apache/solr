@@ -87,6 +87,6 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   @Override
   @PermissionName(UPDATE_PERM)
   public SolrJerseyResponse setReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
-    return null;
+    return doSetReplicationEnabled(requestBody);
   }
 }

@@ -102,11 +102,12 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return replicationHandler.getReplicationDetails(showFollowerDetails);
   }
 
-  protected SolrJerseyResponse setReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
+  protected SolrJerseyResponse doSetReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
     ensureRequiredRequestBodyProvided(requestBody);
     ensureRequiredParameterProvided("enabled", requestBody.enabled);
-    ReplicationHandler replicationHandler = (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
-    replicationHandler;
+    ReplicationHandler replicationHandler =
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+    replicationHandler.setReplicationEnabled(requestBody.enabled);
     return instantiateJerseyResponse(SolrJerseyResponse.class);
   }
 

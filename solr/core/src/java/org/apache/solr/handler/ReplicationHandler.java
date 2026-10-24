@@ -339,9 +339,13 @@ public class ReplicationHandler extends RequestHandlerBase
           true,
           true);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
-      setReplicationEnabled(req, rsp, true);
+      new CoreReplication(core, req, rsp)
+          .setReplicationEnabled(new ReplicationEnabledRequestBody(true));
+      rsp.add(STATUS, OK_STATUS);
     } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
-      setReplicationEnabled(req, rsp, false);
+      new CoreReplication(core, req, rsp)
+          .setReplicationEnabled(new ReplicationEnabledRequestBody(false));
+      rsp.add(STATUS, OK_STATUS);
     }
   }
 
@@ -1028,11 +1032,6 @@ public class ReplicationHandler extends RequestHandlerBase
 
   public void setReplicationEnabled(boolean enabled) {
     replicationEnabled.set(enabled);
-  }
-
-  private void setReplicationEnabled(SolrQueryRequest req, SolrQueryResponse rsp, boolean enabled) {
-    new CoreReplication(core, req, rsp).setReplicationEnabled(new ReplicationEnabledRequestBody(enabled));
-    rsp.add(STATUS, OK_STATUS);
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
