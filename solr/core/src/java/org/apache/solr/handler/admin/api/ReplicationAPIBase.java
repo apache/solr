@@ -105,13 +105,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   protected RestoreStatusResponse doFetchRestoreStatus() throws IOException {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
-    return null;
+    return replicationHandler.getRestoreStatusResponse();
   }
 
   protected CommitsResponse doFetchCommits() throws IOException {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
-    return null;
+    return replicationHandler.getCommitsResponse();
   }
 
   protected IndexVersionResponse doFetchIndexVersion() throws IOException {

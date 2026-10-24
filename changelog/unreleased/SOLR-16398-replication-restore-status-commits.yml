@@ -1,5 +1,4 @@
-title: >
-  Add V2 JAX-RS APIs for GET replication restore status and commits.
+title: Add V2 JAX-RS APIs for GET replication restore status and commits.
 type: added
 authors:
   - name: Jalaz Kumar
