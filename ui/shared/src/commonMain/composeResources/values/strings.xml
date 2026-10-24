@@ -111,4 +111,7 @@
   <string name="label_auto_add_replicas">Auto Add Replicas</string>
   <string name="state_enabled">Enabled</string>
   <string name="state_disabled">Disabled</string>
+  <string name="title_create_collection">Create Collection</string>
+  <string name="label_shards">Shards</string>
+  <string name="action_create_collection">Create</string>
 </resources>
