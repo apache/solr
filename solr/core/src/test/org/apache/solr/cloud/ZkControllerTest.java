@@ -59,6 +59,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -217,6 +218,104 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
       zkController.close();
       cc.shutdown();
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testStartupWaitsForLeftoverEphemeralNodesToDisappear() throws Exception {
+    final String staleRoleEntry = ephemeralNodeRolePath(NodeRoles.Role.OVERSEER);
+    runWithLeftoverEphemeralNodes(
+        "testStartupWaitsForLeftoverEphemeralNodes",
+        staleRoleEntry,
+        (zkController, otherClient, leftoverPaths) -> {
+          // Remove the leftovers shortly after the check starts waiting on them
+          Thread deleter =
+              new Thread(
+                  () -> {
+                    try {
+                      Thread.sleep(1000);
+                      for (String path : leftoverPaths) {
+                        otherClient.delete(path, -1);
+                      }
+                    } catch (Exception e) {
+                      throw new RuntimeException(e);
+                    }
+                  });
+          deleter.start();
+          try {
+            // Returns normally once everything is gone
+            zkController.checkForExistingEphemeralNode();
+          } finally {
+            deleter.join();
+          }
+          for (String path : leftoverPaths) {
+            assertFalse(path + " should be gone", otherClient.exists(path));
+          }
+        });
+  }
+
+  @Test
+  public void testStartupFailsIfLeftoverEphemeralNodeNeverDisappears() throws Exception {
+    final String staleRoleEntry = ephemeralNodeRolePath(NodeRoles.Role.OVERSEER);
+    runWithLeftoverEphemeralNodes(
+        "testStartupFailsIfLeftoverEphemeralNode",
+        staleRoleEntry,
+        (zkController, otherClient, leftoverPaths) -> {
+          // Only the role entry is left behind, so the message must name it specifically
+          SolrException e =
+              expectThrows(SolrException.class, zkController::checkForExistingEphemeralNode);
+          assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
+          assertTrue(
+              "Message should name the leftover path: " + e.getMessage(),
+              e.getMessage().contains(staleRoleEntry));
+        });
+  }
+
+  /** The path of this test node's entry under a mode of 'role' that the node isn't using itself */
+  private static String ephemeralNodeRolePath(NodeRoles.Role role) {
+    String unusedMode = NodeRoles.MODE_PREFERRED; // default roles use 'allowed'
+    assertTrue(role.supportedModes().contains(unusedMode));
+    return NodeRoles.getZNodeForRoleMode(role, unusedMode) + "/" + TEST_NODE_NAME;
+  }
+
+  private static final String TEST_NODE_NAME = "127.0.0.1:8983_solr";
+
+  @FunctionalInterface
+  private interface LeftoverNodesCheck {
+    void run(ZkController zkController, SolrZkClient otherClient, List<String> leftoverPaths)
+        throws Exception;
+  }
+
+  /**
+   * Starts a ZkController, removes its own ephemeral entries, then has a different ZK client create
+   * the given ephemeral paths (simulating a previous process with the same node name that hasn't
+   * fully gone away) before running 'check'.
+   */
+  private void runWithLeftoverEphemeralNodes(
+      String dirName, String leftoverPath, LeftoverNodesCheck check) throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir(dirName));
+    try {
+      server.run();
+      CoreContainer cc = getCoreContainer();
+      // Short session timeout, as the check waits for twice the session timeout
+      CloudConfig cloudConfig =
+          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).setZkClientTimeout(3000).build();
+      ZkController zkController = new ZkController(cc, server.getZkAddress(), 3000, cloudConfig);
+      try (SolrZkClient otherClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        assertEquals(TEST_NODE_NAME, zkController.getNodeName());
+        zkController.removeEphemeralLiveNode();
+        otherClient.create(leftoverPath, null, CreateMode.EPHEMERAL);
+        check.run(zkController, otherClient, List.of(leftoverPath));
+      } finally {
+        zkController.close();
+        cc.shutdown();
+      }
     } finally {
       server.shutdown();
     }
