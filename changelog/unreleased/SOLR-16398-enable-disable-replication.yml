@@ -1,0 +1,9 @@
+title:
+  Add V2 JAX-RS API to enable or disable replication
+type: added
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-16398
+    url: https://issues.apache.org/jira/browse/SOLR-16398

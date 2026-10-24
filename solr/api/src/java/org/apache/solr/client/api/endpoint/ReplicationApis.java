@@ -22,8 +22,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
@@ -32,6 +34,8 @@ import java.io.IOException;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
 @Path("/cores/{coreName}/replication")
@@ -106,4 +110,12 @@ public interface ReplicationApis {
       @Parameter(description = "The generation number of the index", required = false)
           @QueryParam("generation")
           Long gen);
+
+  @PUT
+  @CoreApiParameters
+  @Operation(
+      summary = "Enable or disable replication.",
+      tags = {"replication"})
+  SolrJerseyResponse setReplicationEnabled(
+      @RequestBody(required = true) ReplicationEnabledRequestBody requestBody);
 }

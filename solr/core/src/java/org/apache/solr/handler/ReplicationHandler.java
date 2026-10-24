@@ -338,10 +338,10 @@ public class ReplicationHandler extends RequestHandlerBase
           true,
           true);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
-      replicationEnabled.set(true);
+      setReplicationEnabled(true);
       rsp.add(STATUS, OK_STATUS);
     } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
-      replicationEnabled.set(false);
+      setReplicationEnabled(false);
       rsp.add(STATUS, OK_STATUS);
     }
   }
@@ -1025,6 +1025,10 @@ public class ReplicationHandler extends RequestHandlerBase
         timeElapsedMetric,
         bytesDownloadedMetric,
         downloadSpeedMetric);
+  }
+
+  public void setReplicationEnabled(boolean enabled) {
+    replicationEnabled.set(enabled);
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
