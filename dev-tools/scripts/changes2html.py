@@ -18,14 +18,24 @@
 #
 
 """
-Transforms Solr's CHANGELOG.md into Changes.html
+Transforms Solr's CHANGELOG.md into Changes.html.
 
-Input is from CHANGELOG.md, output is to STDOUT
+By default, output is written to STDOUT. Release tooling can pass --output-dir
+to write Changes.html and its stylesheets to a directory for packaging.
 """
 
-import sys
+import argparse
 import re
+import shutil
+import sys
 from pathlib import Path
+
+
+STYLESHEETS = (
+    'ChangesFancyStyle.css',
+    'ChangesSimpleStyle.css',
+    'ChangesFixedWidthStyle.css',
+)
 
 
 class ChangelogParser:
@@ -776,36 +786,59 @@ class HTMLGenerator:
         return ''.join(html_parts)
 
 
-def main():
-    """Main entry point"""
-    if len(sys.argv) < 2:
-        # Try to read from CHANGELOG.md in current directory
-        changelog_file = Path('CHANGELOG.md')
-        if not changelog_file.exists():
-            print("Usage: changes2html.py <changelog-file>", file=sys.stderr)
-            sys.exit(1)
-    else:
-        changelog_file = Path(sys.argv[1])
-
+def render_changes_html(changelog_file):
+    """Render a changelog file and return its HTML."""
+    changelog_file = Path(changelog_file)
     if not changelog_file.exists():
-        print(f"Error: {changelog_file} not found", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(changelog_file)
 
-    # Read changelog
     with open(changelog_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Parse
     parser = ChangelogParser()
     parser.parse(content)
 
-    # Generate HTML
     generator = HTMLGenerator()
-    html = generator.generate(parser.releases, parser.title, parser.preamble)
+    return generator.generate(parser.releases, parser.title, parser.preamble)
 
-    # Output
-    sys.stdout.reconfigure(encoding='utf-8') #UTF-8 encoding for Windows compatibility
-    print(html)
+
+def write_changes_html(changelog_file, output_dir):
+    """Write Changes.html and its stylesheets into output_dir."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    html = render_changes_html(changelog_file)
+    output_file = output_dir / 'Changes.html'
+    with output_file.open('w', encoding='utf-8') as f:
+        print(html, file=f)
+
+    stylesheet_dir = Path(__file__).parent / 'changes-to-html'
+    for stylesheet in STYLESHEETS:
+        shutil.copyfile(stylesheet_dir / stylesheet, output_dir / stylesheet)
+
+    return output_file
+
+
+def main():
+    """Main entry point"""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('changelog_file', nargs='?', default='CHANGELOG.md')
+    parser.add_argument(
+        '--output-dir',
+        type=Path,
+        help='write Changes.html and stylesheets to this directory instead of STDOUT',
+    )
+    args = parser.parse_args()
+
+    try:
+        if args.output_dir:
+            write_changes_html(args.changelog_file, args.output_dir)
+        else:
+            html = render_changes_html(args.changelog_file)
+            sys.stdout.reconfigure(encoding='utf-8') #UTF-8 encoding for Windows compatibility
+            print(html)
+    except FileNotFoundError as error:
+        parser.error(f"{error.args[0]} not found")
 
 
 if __name__ == '__main__':

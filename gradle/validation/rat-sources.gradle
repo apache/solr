@@ -181,6 +181,8 @@ allprojects {
           exclude "dev-tools/scripts/cloud.sh"
           exclude "dev-tools/scripts/README.md"
           exclude "dev-tools/scripts/create_line_file_docs.py"
+          exclude "dev-tools/scripts/changes-to-html"
+          exclude "dev-tools/scripts/changes-to-html/**"
 
           // Exclude new CHANGELOG and version-summary for each release
           exclude "CHANGELOG.md"
