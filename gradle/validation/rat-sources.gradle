@@ -179,10 +179,6 @@ allprojects {
           exclude "dev-tools/scripts/cloud.sh"
           exclude "dev-tools/scripts/README.md"
           exclude "dev-tools/scripts/create_line_file_docs.py"
-          // Moved Changes stylesheets: dev-tools is not released, so no
-          // license header is required. The originals were covered by the
-          // gradle/documentation exclusion above; the moved copies need
-          // the same treatment here.
           exclude "dev-tools/scripts/changes-to-html"
           exclude "dev-tools/scripts/changes-to-html/**"
 
