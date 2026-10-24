@@ -146,7 +146,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
             joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev",
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             random().nextBoolean() ? "true" : "false"),
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}");
 
@@ -159,7 +159,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
             "id_s_dv",
             "sort",
             "id_s_dv asc",
-            "debugQuery",
+            "debug",
             random().nextBoolean() ? "true" : "false"),
         "/response=={'numFound':3,'docs':[{'id_s_dv':'1'},{'id_s_dv':'4'},{'id_s_dv':'5'}]}");
     assertFalse(fromCore.isClosed());
@@ -175,7 +175,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
             "id",
             "fq",
             "name:john",
-            "debugQuery",
+            "debug",
             random().nextBoolean() ? "true" : "false"),
         "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}");
   }

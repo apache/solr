@@ -128,7 +128,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
   }
 
   public void testRangeOtherWhitebox() throws Exception {
@@ -235,7 +235,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
     doDateFacets(client);
   }
 
@@ -363,7 +363,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
     doRangeFacetWithRanges(client);
   }
 
@@ -447,7 +447,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
     doRangeFacetWithRangesInNewFormat(client);
   }
 
@@ -598,7 +598,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
     doFacetValueTypeValidation(client);
   }
 

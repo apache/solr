@@ -102,29 +102,17 @@ public class ReRankQParserPlugin extends QParserPlugin {
         }
       }
 
-      // HACK: The code below should not be used. It is preserved for backcompat
-      // on the slim remote chance that someone is using ReRankQParserPlugin
-      // w/o using SearchHandler+ResponseBuilder
-      //
-      // (It's also wrong, and doesn't account for thigns like debug=true
-      // or debug=all ... but as stated: it's for esoteric backcompat purposes
-      // only, so we're not going to change it and start returning "true"
-      // if existing code doesn't expect it
-
-      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
-
-      if (!debugQuery) {
-        String[] debugParams = params.getParams(CommonParams.DEBUG);
-        if (debugParams != null) {
-          for (String debugParam : debugParams) {
-            if ("true".equals(debugParam)) {
-              debugQuery = true;
-              break;
-            }
+      // HACK: The code below is only for the slim chance that this parser is used without
+      // SearchHandler+ResponseBuilder. In that case, honor the debug settings in the request.
+      String[] debugParams = params.getParams(CommonParams.DEBUG);
+      if (debugParams != null) {
+        for (String debugParam : debugParams) {
+          if ("all".equalsIgnoreCase(debugParam) || "true".equalsIgnoreCase(debugParam)) {
+            return true;
           }
         }
       }
-      return debugQuery;
+      return false;
     }
 
     public ReRankQParser(

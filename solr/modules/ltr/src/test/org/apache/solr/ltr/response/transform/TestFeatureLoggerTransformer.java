@@ -136,7 +136,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=sparse]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
@@ -167,7 +167,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query2.setQuery("*:*");
     query2.add("fl", "*, score,features:[fv format=sparse]");
     query2.add("rows", "10");
-    query2.add("debugQuery", "true");
+    query2.add("debug", "true");
     query2.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     expectedFeatureVectors =
@@ -202,7 +202,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=dense]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
@@ -236,7 +236,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -281,7 +281,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=dense logAll=true]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -327,7 +327,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=sparse]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq",
@@ -374,7 +374,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=dense]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -420,7 +420,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w5' format=dense]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -467,7 +467,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w5' format=sparse]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq", "{!ltr model=modelA model=_OriginalRanking_ reRankDocs=10 efi.user_query='w5'}");
@@ -531,7 +531,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
 
@@ -578,7 +578,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w8' format=sparse]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -618,7 +618,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,features:[fv store=featureStore2 format=sparse]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
 

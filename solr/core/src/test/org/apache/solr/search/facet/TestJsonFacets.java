@@ -1463,7 +1463,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   @Test
   public void testStats() throws Exception {
-    doStats(Client.localClient, params("debugQuery", Boolean.toString(random().nextBoolean())));
+    doStats(Client.localClient, params("debug", Boolean.toString(random().nextBoolean())));
   }
 
   @Test
@@ -1473,7 +1473,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
     doStats(client, params());
   }
 
@@ -1943,7 +1943,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test for presence of debugging info
     ModifiableSolrParams debugP = params(p);
-    debugP.set("debugQuery", "true");
+    debugP.set("debug", "true");
     client.testJQ(
         params(
             debugP,
@@ -3722,7 +3722,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     final SolrInstances nodes = new SolrInstances(1, "solrconfig-tlog.xml", "schema_latest.xml");
     try {
       final Client client = nodes.getClient(random().nextInt());
-      client.queryDefaults().set("debugQuery", Boolean.toString(random().nextBoolean()));
+      client.queryDefaults().set("debug", Boolean.toString(random().nextBoolean()));
       doTestPrelimSorting(client, extraAgg, extraSubFacet);
     } finally {
       nodes.stop();
@@ -3762,7 +3762,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           .queryDefaults()
           .set(
               "shards", nodes.getShards(),
-              "debugQuery", Boolean.toString(random().nextBoolean()));
+              "debug", Boolean.toString(random().nextBoolean()));
       doTestPrelimSorting(client, extraAgg, extraSubFacet);
     } finally {
       nodes.stop();
@@ -4318,7 +4318,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);
@@ -4953,7 +4953,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
     doFacetValueTypeValidation(client);
   }
 

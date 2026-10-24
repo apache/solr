@@ -60,9 +60,9 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     handle.put("timestamp", SKIPVAL);
 
     if (aDocId != null) {
-      dfQuery("q", "id:" + aDocId, "debugQuery", "true", "fl", "*,score");
+      dfQuery("q", "id:" + aDocId, "debug", "true", "fl", "*,score");
     }
-    dfQuery("q", "a_t:one", "debugQuery", "true", "fl", "*,score");
+    dfQuery("q", "a_t:one", "debug", "true", "fl", "*,score");
 
     // add another document
     for (int i = 0; i < clients.size(); i++) {
@@ -76,9 +76,9 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     commit();
 
     if (aDocId != null) {
-      dfQuery("q", "{!cache=false}id:" + aDocId, "debugQuery", "true", "fl", "*,score");
+      dfQuery("q", "{!cache=false}id:" + aDocId, "debug", "true", "fl", "*,score");
     }
-    dfQuery("q", "a_t:one a_t:four", "debugQuery", "true", "fl", "*,score");
+    dfQuery("q", "a_t:one a_t:four", "debug", "true", "fl", "*,score");
 
     checkDistribStatsException();
   }

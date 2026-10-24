@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -44,7 +45,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   public void testBasicInterface() {
     // make sure the basics are in place
     assertQ(
-        req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
+        req("q", "*:*", CommonParams.DEBUG, "true"),
         "//str[@name='rawquerystring']='*:*'",
         "//str[@name='querystring']='*:*'",
         "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
@@ -63,11 +64,28 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='process']/double[@name='time']");
   }
 
+  @Test
+  public void testLegacyDebugQueryParameterIgnored() {
+    assertQ(req("q", "*:*", "debugQuery", "true"), "count(//lst[@name='debug'])=0");
+  }
+
+  @Test
+  public void testSolrQueryShowDebugInfoUsesDebugParameter() {
+    SolrQuery query = new SolrQuery("*:*");
+    query.setShowDebugInfo(true);
+    assertEquals("true", query.get(CommonParams.DEBUG));
+    assertNull(query.get("debugQuery"));
+
+    query.setShowDebugInfo(false);
+    assertEquals("false", query.get(CommonParams.DEBUG));
+    assertNull(query.get("debugQuery"));
+  }
+
   // Test the ability to specify which pieces to include
 
   @Test
   public void testPerItemInterface() {
-    // Same as debugQuery = true
+    // Same as debug=true
     assertQ(
         req("q", "*:*", "debug", "true"),
         "//str[@name='rawquerystring']='*:*'",
@@ -170,7 +188,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       sreq.params = new ModifiableSolrParams();
       sreq.purpose = ShardRequest.PURPOSE_GET_FIELDS;
       sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
-      // expecting the same results with debugQuery=true or debug=track
+      // expecting the same results with debug=true or debug=track
       if (random().nextBoolean()) {
         rb.setDebug(true);
       } else {
@@ -182,7 +200,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
         rb.setDebugResults(random().nextBoolean());
       }
       component.modifyRequest(rb, null, sreq);
-      // if the request has debugQuery=true or debug=track, the sreq should get debug=track always
+      // if the request has debug=true or debug=track, the sreq should get debug=track always
       assertTrue(
           Arrays.asList(sreq.params.getParams(CommonParams.DEBUG)).contains(CommonParams.TRACK));
       // the purpose must be added as readable param to be included in the shard logs
@@ -205,7 +223,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
       rb.isDistrib = true;
 
-      // expecting the same results with debugQuery=true or debug=track
+      // expecting the same results with debug=true or debug=track
       if (random().nextBoolean()) {
         rb.setDebug(true);
       } else {
@@ -236,31 +254,23 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
 
     // test that both boosts are represented in a double-boost scenario
     assertQ(
-        req("debugQuery", "true", "indent", "true", "rows", "0", "q", "(foo_s:aaa^3)^4"),
+        req("debug", "true", "indent", "true", "rows", "0", "q", "(foo_s:aaa^3)^4"),
         "//str[@name='parsedquery'][.='foo_s:aaa^3.0^4.0']");
 
     // test to see that extra parens are avoided
     assertQ(
-        req("debugQuery", "true", "indent", "true", "rows", "0", "q", "+foo_s:aaa^3 -bar_s:bbb^0"),
+        req("debug", "true", "indent", "true", "rows", "0", "q", "+foo_s:aaa^3 -bar_s:bbb^0"),
         "//str[@name='parsedquery'][.='+foo_s:aaa^3.0 -bar_s:bbb^0.0']");
 
     // test that parens are added when needed
     assertQ(
-        req(
-            "debugQuery",
-            "true",
-            "indent",
-            "true",
-            "rows",
-            "0",
-            "q",
-            "foo_s:aaa (bar_s:bbb baz_s:ccc)"),
+        req("debug", "true", "indent", "true", "rows", "0", "q", "foo_s:aaa (bar_s:bbb baz_s:ccc)"),
         "//str[@name='parsedquery'][.='foo_s:aaa (bar_s:bbb baz_s:ccc)']");
 
     // test boosts on subqueries
     assertQ(
         req(
-            "debugQuery",
+            "debug",
             "true",
             "indent",
             "true",
@@ -272,7 +282,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
 
     // test constant score query boost exists
     assertQ(
-        req("debugQuery", "true", "indent", "true", "rows", "0", "q", "foo_s:aaa^=3"),
+        req("debug", "true", "indent", "true", "rows", "0", "q", "foo_s:aaa^=3"),
         "//str[@name='parsedquery'][contains(.,'3.0')]");
   }
 

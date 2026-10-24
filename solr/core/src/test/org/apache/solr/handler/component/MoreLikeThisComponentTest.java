@@ -298,7 +298,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.BOOST, "true");
 
     params.set(CommonParams.Q, "id:44");
-    params.set(CommonParams.DEBUG_QUERY, "true");
+    params.set(CommonParams.DEBUG, "true");
     SolrQueryRequest mltreq = new SolrQueryRequestBase(h.getCore(), params);
     assertQ(
         "morelike this - harrison ford",
@@ -308,7 +308,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']",
         "//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/lst[@name='explain']/str[@name='45']");
 
-    params.remove(CommonParams.DEBUG_QUERY);
+    params.remove(CommonParams.DEBUG);
     params.set(CommonParams.Q, "{!field f=id}44");
     mltreq.close();
     mltreq = new SolrQueryRequestBase(h.getCore(), params);
@@ -326,7 +326,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
 
     params.set(CommonParams.Q, "id:44");
-    params.set(CommonParams.DEBUG_QUERY, "true");
+    params.set(CommonParams.DEBUG, "true");
     SolrQueryRequest mltreq = new SolrQueryRequestBase(h.getCore(), params);
     assertQ(
         "morelike this - harrison ford",
@@ -338,7 +338,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='interestingTerms']/lst[1][count(*)>0]",
         "//lst[@name='interestingTerms']/lst[1]/float[.>1.0]");
 
-    params.remove(CommonParams.DEBUG_QUERY);
+    params.remove(CommonParams.DEBUG);
     params.set(CommonParams.Q, "{!field f=id}44");
     mltreq.close();
     mltreq = new SolrQueryRequestBase(h.getCore(), params);
@@ -360,7 +360,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     params.set(MoreLikeThisParams.INTERESTING_TERMS, "list");
 
     params.set(CommonParams.Q, "id:44");
-    params.set(CommonParams.DEBUG_QUERY, "true");
+    params.set(CommonParams.DEBUG, "true");
 
     SolrQueryRequest mltreq = new SolrQueryRequestBase(h.getCore(), params);
     assertQ(
@@ -373,7 +373,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='interestingTerms']/arr[@name='44'][count(*)>0]",
         "//lst[@name='interestingTerms']/arr[@name='44']/str[.='name:Harrison']");
 
-    params.remove(CommonParams.DEBUG_QUERY);
+    params.remove(CommonParams.DEBUG);
     params.set(CommonParams.Q, "{!field f=id}44");
     mltreq.close();
     mltreq = new SolrQueryRequestBase(h.getCore(), params);

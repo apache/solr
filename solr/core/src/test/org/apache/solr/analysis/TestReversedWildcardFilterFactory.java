@@ -184,13 +184,13 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
         "no reverse, no false positive",
         req(
             "q", "+id:1 +three:[* TO a]",
-            "debugQuery", "true"),
+            "debug", "true"),
         "//result[@numFound=0]");
     {
       String reverseField = random().nextBoolean() ? "one" : "two";
       assertQ(
           "false positive",
-          req("q", "+id:1 +" + reverseField + ":[* TO a]", "debugQuery", "true"),
+          req("q", "+id:1 +" + reverseField + ":[* TO a]", "debug", "true"),
           "//result[@numFound=0]");
     }
     assertQ("false positive", req("+id:1 +two:*zemog*"), "//result[@numFound=0]");

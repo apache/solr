@@ -1098,13 +1098,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=5}" + vectorToSearch,
-            "fl",
-            "id",
-            "debugQuery",
-            "true"),
+        req(CommonParams.Q, "{!knn f=vector topK=5}" + vectorToSearch, "fl", "id", "debug", "true"),
         "//result[@numFound='5']",
         "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][5])']");
   }
@@ -1121,7 +1115,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "{!knn f=vector topK=5 earlyTermination=false}" + vectorToSearch,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "//result[@numFound='5']",
         "//str[@name='parsedquery'][.='SolrKnnFloatVectorQuery(SolrKnnFloatVectorQuery:vector[1.0,...][5])']");
@@ -1155,7 +1149,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "{!knn f=vector topK=10 earlyTermination=true}" + vectorToSearch,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "//result[@numFound='10']",
         "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
@@ -1189,7 +1183,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             explicitPatience);
 
     assertQ(
-        req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
+        req(CommonParams.Q, query, "fl", "id", "debug", "true"),
         "//result[@numFound='10']",
         "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
   }
@@ -1222,7 +1216,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             explicitPatience);
 
     assertQ(
-        req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
+        req(CommonParams.Q, query, "fl", "id", "debug", "true"),
         "//result[@numFound='5']",
         "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
   }
@@ -1254,7 +1248,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             explicitPatience);
 
     assertQ(
-        req(CommonParams.Q, query, "fl", "id", "debugQuery", "true"),
+        req(CommonParams.Q, query, "fl", "id", "debug", "true"),
         "//result[@numFound='10']",
         "//str[@name='parsedquery'][.='" + expectedParsedQuery + "']");
   }
@@ -1332,7 +1326,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "{!knn f=vector topK=4 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "//result[@numFound='4']",
         "//str[@name='parsedquery'][.='SeededKnnVectorQuery(SeededKnnVectorQuery{seed=id:1 id:4 id:7 id:8 id:9, seedWeight=null, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][4]})']");
@@ -1352,7 +1346,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "{!knn f=vector_byte_encoding topK=4 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "//result[@numFound='4']");
   }
@@ -1398,7 +1392,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "{!knn f=vector topK=4}" + seedVectorToSearch,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "//result[@numFound='4']");
   }
@@ -1417,7 +1411,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
                 + vectorToSearch,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         // Verify that 4 documents are returned
         "//result[@numFound='4']",

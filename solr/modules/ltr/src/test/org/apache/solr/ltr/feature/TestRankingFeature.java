@@ -105,7 +105,7 @@ public class TestRankingFeature extends TestRerankBase {
     // Normal term match
 
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
-    query.set("debugQuery", "on");
+    query.set("debug", "true");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");

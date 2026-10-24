@@ -360,7 +360,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     removeAllExistingCircuitBreakers();
 
     assertQ(
-        req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
+        req("q", "*:*", CommonParams.DEBUG, "true"),
         "//str[@name='rawquerystring']='*:*'",
         "//str[@name='querystring']='*:*'",
         "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
@@ -381,7 +381,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
     assertQ(
-        req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
+        req("q", "*:*", CommonParams.DEBUG, "true"),
         "//str[@name='rawquerystring']='*:*'",
         "//str[@name='querystring']='*:*'",
         "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",

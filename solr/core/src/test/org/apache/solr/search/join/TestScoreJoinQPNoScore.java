@@ -87,7 +87,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
     // test debugging TODO no debug in JoinUtil
     //  assertJQ(req("q","{!join from=dept_ss to=dept_id_s"+whateverScore()+"}title_s:MTS",
-    // "fl","id", "debugQuery","true")
+    // "fl","id", "debug","true")
     //      ,"/debug/join/{!join from=dept_ss
     // to=dept_id_s"+whateverScore()+"}title_s:MTS=={'_MATCH_':'fromSetSize,toSetSize',
     // 'fromSetSize':2, 'toSetSize':3}"
@@ -132,7 +132,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
             "{!join from=dept_ss to=dept_id_s" + whateverScore() + "}title_s:MTS",
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}");
 
@@ -152,7 +152,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
             "qq", "{!dismax}dave",
             "qf", "name_s",
             "fl", "id",
-            "debugQuery", "true"),
+            "debug", "true"),
         davesDepartments);
 
     // variable deref for sub-query parsing w/localparams
@@ -161,7 +161,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
             "q", "{!join from=dept_ss to=dept_id_s v=$qq" + whateverScore() + "}",
             "qq", "{!dismax qf=name_s}dave",
             "fl", "id",
-            "debugQuery", "true"),
+            "debug", "true"),
         davesDepartments);
 
     // defType local param to control sub-query parsing
@@ -170,7 +170,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
             "q", "{!join from=dept_ss to=dept_id_s defType=dismax" + whateverScore() + "}dave",
             "qf", "name_s",
             "fl", "id",
-            "debugQuery", "true"),
+            "debug", "true"),
         davesDepartments);
 
     // find people that develop stuff - but limit via filter query to a name of "john"

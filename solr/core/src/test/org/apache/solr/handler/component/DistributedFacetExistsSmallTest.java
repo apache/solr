@@ -201,7 +201,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
 
     params.add("q", "*:*");
     params.add("rows", "0");
-    // params.add("debugQuery", "true");
+    // params.add("debug", "true");
     params.add("facet", "true");
     params.add("sort", "id asc");
 

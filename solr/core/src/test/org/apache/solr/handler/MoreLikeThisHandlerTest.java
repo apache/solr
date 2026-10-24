@@ -191,7 +191,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     }
 
     // test MoreLikeThis debug
-    params.set(CommonParams.DEBUG_QUERY, "true");
+    params.set(CommonParams.DEBUG, "all");
     try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(
           "morelike this - harrison ford",
@@ -203,7 +203,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     }
 
     // test that qparser plugins work
-    params.remove(CommonParams.DEBUG_QUERY);
+    params.remove(CommonParams.DEBUG);
     params.set(CommonParams.Q, "{!field f=id}44");
     try (SolrQueryRequest mltreq = new SolrQueryRequestBase(core, params)) {
       assertQ(mltreq, "//result/doc[1]/str[@name='id'][.='45']");
@@ -225,8 +225,15 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
       assertQ(mltreq, "//result/doc[1]/str[@name='id'][.='45']");
     }
 
+    // The legacy parameter must not enable debugging in the standalone handler.
+    params.set("debugQuery", "true");
+    try (SolrQueryRequest mltreq = withPath("/mlt", new SolrQueryRequestBase(core, params))) {
+      assertQ(mltreq, "//result/doc[1]/str[@name='id'][.='45']", "count(//lst[@name='debug'])=0");
+    }
+    params.remove("debugQuery");
+
     // test that debugging works (test for MoreLikeThis*Handler*)
-    params.set(CommonParams.DEBUG_QUERY, "true");
+    params.set(CommonParams.DEBUG, "all");
     try (SolrQueryRequest mltreq = withPath("/mlt", new SolrQueryRequestBase(core, params))) {
       assertQ(
           mltreq,

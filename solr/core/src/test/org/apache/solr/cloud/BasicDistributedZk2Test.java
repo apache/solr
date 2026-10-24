@@ -394,7 +394,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     }
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
-    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
+    // query("q","matchesnothing","fl","*,score", "debug", "true");
 
     // this should trigger a recovery phase on deadShard
     deadShard.jetty.start();
@@ -491,8 +491,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     handle.put("track", SKIP);
-    query("q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG_QUERY, "true");
-    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG, "true");
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, "true");
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);

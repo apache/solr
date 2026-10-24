@@ -94,7 +94,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
 
     String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replace("\n", " ");
@@ -329,7 +329,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=modelA efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
 
     String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replace("\n", " ");

@@ -137,7 +137,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.setQuery("title:bloomberg23");
     query.add("fl", "*,[fv]");
     query.add("rows", "3");
-    query.add("debugQuery", "on");
+    query.add("debug", "true");
     query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==0");
   }

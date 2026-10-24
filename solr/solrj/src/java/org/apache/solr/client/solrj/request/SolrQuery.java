@@ -1112,7 +1112,7 @@ public class SolrQuery extends ModifiableSolrParams {
   }
 
   public SolrQuery setShowDebugInfo(boolean showDebugInfo) {
-    this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
+    this.set(CommonParams.DEBUG, String.valueOf(showDebugInfo));
     return this;
   }
 

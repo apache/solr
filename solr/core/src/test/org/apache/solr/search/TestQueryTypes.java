@@ -414,8 +414,8 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
             "sqrt(v_f)^100 log(sum(v_f,1))^50",
             "bq",
             "{!prefix f=v_t}he",
-            CommonParams.DEBUG_QUERY,
-            "on"),
+            CommonParams.DEBUG,
+            "true"),
         "//result[@numFound='2']");
 
     // dismax query from std request handler, using local params

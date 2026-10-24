@@ -145,7 +145,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
     final boolean debugQuery = random().nextBoolean();
     if (debugQuery) {
-      query.add(CommonParams.DEBUG_QUERY, "true");
+      query.add(CommonParams.DEBUG, "true");
     }
 
     query.remove("fl");

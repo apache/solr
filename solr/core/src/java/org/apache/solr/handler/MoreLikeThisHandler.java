@@ -229,25 +229,20 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           rsp.add("facet_counts", FacetComponent.getFacetCounts(f));
         }
       }
-      boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
-
       boolean dbgQuery = false, dbgResults = false;
-      if (dbg == false) { // if it's true, we are doing everything anyway.
-        String[] dbgParams = req.getParams().getParams(CommonParams.DEBUG);
-        if (dbgParams != null) {
-          for (String dbgParam : dbgParams) {
-            if (dbgParam.equals(CommonParams.QUERY)) {
-              dbgQuery = true;
-            } else if (dbgParam.equals(CommonParams.RESULTS)) {
-              dbgResults = true;
-            }
+      String[] dbgParams = req.getParams().getParams(CommonParams.DEBUG);
+      if (dbgParams != null) {
+        for (String dbgParam : dbgParams) {
+          boolean debugAll = "all".equalsIgnoreCase(dbgParam) || "true".equalsIgnoreCase(dbgParam);
+          if (debugAll || CommonParams.QUERY.equals(dbgParam)) {
+            dbgQuery = true;
+          }
+          if (debugAll || CommonParams.RESULTS.equals(dbgParam)) {
+            dbgResults = true;
           }
         }
-      } else {
-        dbgQuery = true;
-        dbgResults = true;
       }
-      if (dbg == true) {
+      if (dbgQuery || dbgResults) {
         try {
           NamedList<Object> dbgInfo =
               DebugComponent.doStandardDebug(

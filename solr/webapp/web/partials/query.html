@@ -104,14 +104,14 @@ limitations under the License.
         </div>
       </fieldset>
 
-      <fieldset class="debugQuery optional">
+      <fieldset class="debug optional">
         <legend>
-          <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
-            <input type="checkbox" ng-model="val['debugQuery']" name="debugQuery" id="debugQuery" value="true">
-            debugQuery
+          <label for="debug" class="checkbox" title="Show timing and diagnostics.">
+            <input type="checkbox" ng-model="val['debug']" name="debug" id="debug" value="true">
+            debug
           </label>
         </legend>
-        <div class="fieldset" ng-show="val['debugQuery']">
+        <div class="fieldset" ng-show="val['debug']">
 
         <label for="debug_explain_structured" class="checkbox" title="Show Score explanations as nested structures.">
           <input type="checkbox" ng-model="val['debug.explain.structured']" name="debug.explain.structured" id="debug_explain_structured" value="true">

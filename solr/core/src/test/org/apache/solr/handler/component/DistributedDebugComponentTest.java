@@ -272,8 +272,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
 
   private void verifyDebugSections(SolrQuery query, SolrClient client)
       throws SolrServerException, IOException {
-    query.set("debugQuery", "true");
-    query.remove("debug");
+    query.set("debug", "all");
     QueryResponse response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
     assertInDebug(response, "track");
@@ -286,7 +285,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
     assertInDebug(response, "timing");
 
     query.set("debug", "true");
-    query.remove("debugQuery");
     response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
     assertInDebug(response, "track");

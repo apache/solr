@@ -83,12 +83,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
 
       SolrQuery queryWithoutRoute =
           new SolrQuery(
-              UpdateParams.COLLECTION,
-              collection,
-              "q",
-              "id:" + docId,
-              CommonParams.DEBUG_QUERY,
-              "on");
+              UpdateParams.COLLECTION, collection, "q", "id:" + docId, CommonParams.DEBUG, "true");
 
       // Query with _route_=<docId>.
       SolrQuery queryWithRoute = queryWithoutRoute.getCopy().setParam(ShardParams._ROUTE_, docId);

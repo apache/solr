@@ -153,7 +153,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
             "subject:hell^400",
             "bq",
             "subject:cool^4",
-            CommonParams.DEBUG_QUERY,
+            CommonParams.DEBUG,
             "true"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='666']",
@@ -225,7 +225,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "cool stuff",
                 "bq",
                 "subject:hell OR subject:cool",
-                CommonParams.DEBUG_QUERY,
+                CommonParams.DEBUG,
                 "true"));
     assertTrue(p.matcher(resp).find());
     assertFalse(p_bool.matcher(resp).find());
@@ -240,7 +240,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 "subject:hell OR subject:cool",
                 "bq",
                 "",
-                CommonParams.DEBUG_QUERY,
+                CommonParams.DEBUG,
                 "true"));
     assertTrue(p.matcher(resp).find());
     assertTrue(p_bool.matcher(resp).find());

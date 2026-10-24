@@ -477,7 +477,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "mm", "100%",
             "fq", "id:51",
             "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\"",
-            "debugQuery", "true"),
+            "debug", "true"),
         nor,
         "//str[@name='parsedquery_toString'][.='+(((text:queri) (text:\"geofilt d 20 sfield store pt 12 34 56 78\"))~2)']");
     // again; this time use embedded local-params style
@@ -549,7 +549,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     // stopword removal in conjunction with multi-word synonyms at query time break this test.
     // multi-word synonyms
     // remove id:50 which contans the false match
-    //     assertQ(req("defType", "edismax", "qf", "text_t", "indent","true", "debugQuery","true",
+    //     assertQ(req("defType", "edismax", "qf", "text_t", "indent","true", "debug","true",
     //     "q","-id:50 nyc"), oner
     //     );
 
@@ -799,18 +799,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     // Boosts from user fields
     assertQ(
-        req("defType", "edismax", "debugQuery", "true", "rows", "0", "q", "id:42"),
+        req("defType", "edismax", "debug", "true", "rows", "0", "q", "id:42"),
         "//str[@name='parsedquery_toString'][.='+id:42']");
 
     assertQ(
-        req("defType", "edismax", "debugQuery", "true", "rows", "0", "uf", "*^5.0", "q", "id:42"),
+        req("defType", "edismax", "debug", "true", "rows", "0", "uf", "*^5.0", "q", "id:42"),
         "//str[@name='parsedquery_toString'][.='+(id:42)^5.0']");
 
     assertQ(
         req(
             "defType",
             "edismax",
-            "debugQuery",
+            "debug",
             "true",
             "rows",
             "0",
@@ -821,7 +821,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//str[@name='parsedquery_toString'][.='+(name:foo)^2.0']");
 
     assertQ(
-        req("defType", "edismax", "debugQuery", "true", "rows", "0", "uf", "i*^5.0", "q", "id:42"),
+        req("defType", "edismax", "debug", "true", "rows", "0", "uf", "i*^5.0", "q", "id:42"),
         "//str[@name='parsedquery_toString'][.='+(id:42)^5.0']");
 
     assertQ(req("defType", "edismax", "uf", "-*", "q", "cannons", "qf", "text"), oner);
@@ -1152,7 +1152,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "qf", "a_s b_s",
             "defType", "edismax",
             "mm", "0",
-            "debugQuery", "true"),
+            "debug", "true"),
         "//*[@numFound='2']",
         "//str[@name='id'][.='144']",
         "//str[@name='id'][.='145']");
@@ -1263,7 +1263,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "pf3", "phrase_sw^10",
             "ps", "3",
             "fl", "score,*",
-            "debugQuery", "true",
+            "debug", "true",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s1']");
 
@@ -1277,7 +1277,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "pf3", "phrase_sw~2^222 phrase_sw^333",
             "ps", "3",
             "defType", "edismax",
-            "debugQuery", "true"),
+            "debug", "true"),
         "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc vvvv\"~1)^10.0')]",
         "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc vvvv\"~2)^20.0')]",
         "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx cccc vvvv\"~3)^30.0')]",
@@ -1383,7 +1383,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "pf2", "phrase_sw~2^22",
             "ps2", "4",
             "defType", "edismax",
-            "debugQuery", "true"),
+            "debug", "true"),
         "//str[@name='parsedquery'][contains(.,'(phrase_sw:\"zzzz xxxx\"~2)^22.0')]");
 
     String parsedquery =
@@ -1399,7 +1399,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "phrase_sw phrase1_sw",
                 "defType",
                 "edismax",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         "phrase field queries spanning multiple fields should be within their own dismax queries",
@@ -2315,7 +2315,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "edismax",
                 "sow",
                 "false",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         parsedquery,
@@ -2346,7 +2346,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "edismax",
                 "sow",
                 "true",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         parsedquery,
@@ -2375,7 +2375,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "barking curds of stigma",
                 "defType",
                 "edismax",
-                "debugQuery",
+                "debug",
                 "true")); // Default sow=false
     assertThat(
         parsedquery,
@@ -2513,7 +2513,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "edismax",
                 "sow",
                 "true",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         parsedquery,
@@ -2538,7 +2538,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "edismax",
                 "sow",
                 "false",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         parsedquery,
@@ -2565,7 +2565,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "true",
                 "mm",
                 "100%",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         parsedquery,
@@ -2593,7 +2593,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "false",
                 "mm",
                 "100%",
-                "debugQuery",
+                "debug",
                 "true"));
     assertThat(
         parsedquery,
@@ -2617,7 +2617,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                   "edismax",
                   "sow",
                   sow,
-                  "debugQuery",
+                  "debug",
                   "true"));
       assertThat(
           parsedquery,
@@ -3355,7 +3355,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("q", "olive AND other");
     params.add("qf", "subject^3 title");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
 
     // test valid field names
     String response = h.query(req(params));

@@ -242,7 +242,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf3", "text^10",
             "ps", "6",
             "fl", "score,*",
-            "debugQuery", "true",
+            "debug", "true",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='21']");
   }
@@ -286,7 +286,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf3", "text^10",
             "ps", "6",
             "fl", "score,*",
-            "debugQuery", "true",
+            "debug", "true",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='21']");
   }

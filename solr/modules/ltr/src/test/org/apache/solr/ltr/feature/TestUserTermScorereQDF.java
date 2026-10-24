@@ -86,7 +86,7 @@ public class TestUserTermScorereQDF extends TestRerankBase {
     query.add("fl", "*, score");
     query.add("rows", "2");
     query.add("rq", "{!ltr model=Term-matchedTitleDF reRankDocs=4}");
-    query.set("debugQuery", "on");
+    query.set("debug", "true");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='7'");

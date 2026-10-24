@@ -1523,8 +1523,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     handle.put("track", SKIP); // track is not included in single node search
-    query("q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG_QUERY, "true");
-    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG, "true");
+    query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, "true");
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
@@ -1689,7 +1689,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
-    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
+    // query("q","matchesnothing","fl","*,score", "debug", "true");
 
     // Thread.sleep(10000000000L);
 

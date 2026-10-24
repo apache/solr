@@ -298,4 +298,4 @@ Solr uses the *Noggit* JSON parser in its request API.  Noggit is capable of mor
 == Debugging
 
 If you want to see what your merged/parsed JSON looks like, you can turn on debugging (`debug=timing`), and it will come back under the "json" key along with the other debugging information.
-Note that `debug=true` and `debugQuery=true` can often have significant performance implications, and should be reserved for debugging.  Also note that `debug=query` has no effect on JSON facets in SolrCloud.
+Note that `debug=true` can often have significant performance implications, and should be reserved for debugging. Also note that `debug=query` has no effect on JSON facets in SolrCloud.
