@@ -612,7 +612,7 @@ V2 API::
 ====
 [source,bash]
 ----
-http://{followerHost}:{port}/api/cores/{coreName}/replication/restore
+http://{followerHost}:{port}/api/cores/{coreName}/replication/restore/status
 ----
 ====
 ======

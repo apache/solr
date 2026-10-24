@@ -54,7 +54,7 @@ public interface ReplicationApis {
 
   @GET
   @CoreApiParameters
-  @Path("/restore")
+  @Path("/restore/status")
   @Operation(
       summary = "Return the status of the most recent restore operation.",
       tags = {"replication"})
