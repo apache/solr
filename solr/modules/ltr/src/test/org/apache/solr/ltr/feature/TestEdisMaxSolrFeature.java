@@ -91,7 +91,7 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
     query.add("rows", "4");
 
     query.add("rq", "{!ltr model=EdisMax-model reRankDocs=4}");
-    query.set("debugQuery", "on");
+    query.set("debug", "true");
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
   }

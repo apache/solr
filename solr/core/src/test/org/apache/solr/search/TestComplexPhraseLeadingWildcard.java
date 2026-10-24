@@ -68,7 +68,7 @@ public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 {
             "q", "{!complexphrase inOrder=true}\"on* *ver\"",
             "df", field,
             "indent", "on",
-            "debugQuery", "true"),
+            "debug", "true"),
         expect("1", "2"));
 
     assertQ(req("q", "{!complexphrase inOrder=true}\"ON* *VER\"", "df", field), expect("1", "2"));

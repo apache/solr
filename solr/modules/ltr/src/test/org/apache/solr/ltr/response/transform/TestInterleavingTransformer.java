@@ -127,7 +127,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,interleavingPick:[interleaving]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -170,7 +170,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*, score,interleavingPick:[interleaving]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq", "{!ltr model=modelA model=_OriginalRanking_ reRankDocs=10 efi.user_query='w5'}");
@@ -218,7 +218,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
     query.add(
         "fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
@@ -272,7 +272,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
     query.add(
         "fl", "*, score,interleavingPick:[interleaving],features:[fv format=sparse logAll=true]");
     query.add("rows", "10");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq", "{!ltr model=modelA model=_OriginalRanking_ reRankDocs=10 efi.user_query='w5'}");

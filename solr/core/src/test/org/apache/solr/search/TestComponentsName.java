@@ -53,10 +53,10 @@ public class TestComponentsName extends SolrTestCaseJ4 {
         "/response/str[@name='component2'][.='bar']");
 
     assertQ(
-        "use debugQuery",
+        "use debug",
         req(
             "q", "*:*",
-            "debugQuery", "true"),
+            "debug", "true"),
         "//result[@numFound='2']",
         "/response/str[@name='component1'][.='foo']",
         "/response/str[@name='component2'][.='bar']",

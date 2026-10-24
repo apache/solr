@@ -104,14 +104,7 @@ public interface CommonParams {
   /** default query field */
   String DF = "df";
 
-  /** whether to include debug data for all components pieces, including doing explains */
-  String DEBUG_QUERY = "debugQuery";
-
-  /**
-   * Whether to provide debug info for specific items.
-   *
-   * @see #DEBUG_QUERY
-   */
+  /** Whether to provide debug info for specific items. */
   String DEBUG = "debug";
 
   /** {@link #DEBUG} value indicating an interest in debug output related to timing */

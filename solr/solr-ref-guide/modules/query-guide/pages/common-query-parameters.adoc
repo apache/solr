@@ -292,8 +292,6 @@ The `debug` parameter can be specified multiple times and supports the following
 * `debug=all`: return all available debug information about the request request.
 An alternative usage is `debug=true`.
 
-For backwards compatibility with older versions of Solr, `debugQuery=true` may instead be specified as an alternative way to indicate `debug=all`.
-
 The default behavior is not to include debugging information.
 
 == explainOther Parameter

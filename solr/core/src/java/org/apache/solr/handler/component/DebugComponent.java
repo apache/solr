@@ -163,7 +163,7 @@ public class DebugComponent extends SearchComponent {
       statsCache.sendGlobalStats(rb, sreq);
 
       if (rb.isDebugAll()) {
-        sreq.params.set(CommonParams.DEBUG_QUERY, "true");
+        sreq.params.set(CommonParams.DEBUG, "true");
       } else {
         if (rb.isDebugQuery()) {
           sreq.params.add(CommonParams.DEBUG, CommonParams.QUERY);
@@ -173,7 +173,6 @@ public class DebugComponent extends SearchComponent {
         }
       }
     } else {
-      sreq.params.set(CommonParams.DEBUG_QUERY, "false");
       sreq.params.set(CommonParams.DEBUG, "false");
     }
     if (rb.isDebugTimings()) {

@@ -174,7 +174,7 @@ public class TestJoin extends SolrTestCaseJ4 {
             buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"),
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}");
 
@@ -199,7 +199,7 @@ public class TestJoin extends SolrTestCaseJ4 {
             "name",
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         davesDepartments);
 
@@ -213,7 +213,7 @@ public class TestJoin extends SolrTestCaseJ4 {
             "{!dismax qf=name}dave",
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         davesDepartments);
 
@@ -227,7 +227,7 @@ public class TestJoin extends SolrTestCaseJ4 {
             "name",
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         davesDepartments);
 
@@ -294,7 +294,7 @@ public class TestJoin extends SolrTestCaseJ4 {
             "{!join from=dept_ss_dv to=dept_id_indexed_sdv}title:MTS",
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "/debug/join/{!join from=dept_ss_dv to=dept_id_indexed_sdv}title:MTS=={'_MATCH_':'fromSetSize,toSetSize', 'fromSetSize':2, 'toSetSize':3}");
 

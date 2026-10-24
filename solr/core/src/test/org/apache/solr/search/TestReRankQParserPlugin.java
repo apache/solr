@@ -133,6 +133,34 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testDebugResultsIgnoredWithoutResponseBuilder() throws Exception {
+    try (SolrQueryRequest request =
+        req(params("r_q", "id:1^=10", CommonParams.DEBUG, CommonParams.RESULTS))) {
+      AbstractReRankQuery query =
+          parseAndCast("{!rerank reRankQuery=$r_q reRankScale='0-1'}", request);
+      assertTrue(query.getCache());
+    }
+  }
+
+  @Test
+  public void testDebugAllWithoutResponseBuilder() throws Exception {
+    try (SolrQueryRequest request = req(params("r_q", "id:1^=10", CommonParams.DEBUG, "all"))) {
+      AbstractReRankQuery query =
+          parseAndCast("{!rerank reRankQuery=$r_q reRankScale='0-1'}", request);
+      assertFalse(query.getCache());
+    }
+  }
+
+  @Test
+  public void testLegacyDebugQueryIgnoredWithoutResponseBuilder() throws Exception {
+    try (SolrQueryRequest request = req(params("r_q", "id:1^=10", "debugQuery", "true"))) {
+      AbstractReRankQuery query =
+          parseAndCast("{!rerank reRankQuery=$r_q reRankScale='0-1'}", request);
+      assertTrue(query.getCache());
+    }
+  }
+
+  @Test
   public void testRerankReturnOriginalScore() throws Exception {
 
     assertU(delQ("*:*"));
@@ -1434,7 +1462,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
     assertQ(
         req(params),
         "*[count(//doc)=6]",
@@ -1475,7 +1503,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "4");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
     assertQ(
         req(params),
         "*[count(//doc)=4]",
@@ -1512,7 +1540,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
 
     assertQ(
         req(params),
@@ -1628,7 +1656,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
     assertQ(
         req(params),
         "*[count(//doc)=2]",
@@ -1668,7 +1696,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
     assertQ(
         req(params),
         "*[count(//doc)=6]",
@@ -1776,7 +1804,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
     assertQ(
         req(params),
         "*[count(//doc)=6]",

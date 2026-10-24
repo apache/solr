@@ -79,7 +79,6 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
 
   @Test
   public void testDebugTrue() throws Exception {
-    doTestReRankExplain(params(CommonParams.DEBUG_QUERY, "true"));
     doTestReRankExplain(params(CommonParams.DEBUG, "true"));
   }
 

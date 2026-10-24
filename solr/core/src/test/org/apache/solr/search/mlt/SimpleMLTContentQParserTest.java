@@ -99,8 +99,8 @@ public class SimpleMLTContentQParserTest extends SolrTestCaseJ4 {
             "id:31",
             "indent",
             "on",
-            "debugQuery",
-            "on"),
+            "debug",
+            "true"),
         "//result/doc[1]/str[@name='id'][.='30']",
         "//result/doc[2]/str[@name='id'][.='31']");
     assertQ(

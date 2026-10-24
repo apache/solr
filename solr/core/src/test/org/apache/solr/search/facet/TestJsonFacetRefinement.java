@@ -505,7 +505,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3); // we only use 2, but assert 3 to also test empty shard
@@ -613,7 +613,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3); // we only use 2, but assert 3 to also test empty shard
@@ -943,7 +943,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(
@@ -1015,7 +1015,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     final List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 2);
@@ -1232,7 +1232,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);
@@ -1990,7 +1990,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client
         .queryDefaults()
         .set("shards", servers.getShards())
-        .set("debugQuery", Boolean.toString(random().nextBoolean()));
+        .set("debug", Boolean.toString(random().nextBoolean()));
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);

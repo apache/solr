@@ -225,11 +225,7 @@ public class SearchHandler extends RequestHandlerBase
 
     rb.isDistrib = isDistrib(req, rb); // can change later nonetheless
 
-    boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
-    rb.setDebug(dbg);
-    if (dbg == false) { // if it's true, we are doing everything anyway.
-      SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
-    }
+    SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
 
     if (checkCircuitBreakers(req, rsp, rb)) {
       return; // Circuit breaker tripped, return immediately

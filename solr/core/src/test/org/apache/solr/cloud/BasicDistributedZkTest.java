@@ -686,9 +686,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     query(
         false,
         new Object[] {
-          "q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG_QUERY, "true"
+          "q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG, "true"
         });
-    query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true"});
+    query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, "true"});
     query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING});
     query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS});
     query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY});
@@ -735,7 +735,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
-    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
+    // query("q","matchesnothing","fl","*,score", "debug", "true");
 
     // would be better if these where all separate tests - but much, much
     // slower

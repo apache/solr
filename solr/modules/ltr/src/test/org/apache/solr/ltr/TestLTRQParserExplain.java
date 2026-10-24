@@ -48,7 +48,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
     query.add("rows", "2");
     query.add("rq", "{!ltr reRankDocs=2 model=linear2}");
     query.add("fl", "*,score");
@@ -65,7 +65,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
     query.add("rows", "4");
     query.add("rq", "{!ltr reRankDocs=4 model=6029760550880411648}");
     query.add("fl", "*,score");
@@ -95,7 +95,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
     SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
     query.add("rows", "4");
     query.add("rq", "{!ltr reRankDocs=4 model=linear-efi}");
     query.add("fl", "*,score");
@@ -134,7 +134,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
     SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
     query.add("rows", "4");
     query.add(
         "rq", "{!ltr reRankDocs=4 model=external_model_binary_feature efi.user_device_tablet=1}");
@@ -192,7 +192,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
     query.add("rows", "10");
     query.add("rq", "{!ltr reRankDocs=10 model=modelA model=modelB}");
     query.add("fl", "*,score");
@@ -320,7 +320,7 @@ model applied to features, sum of:
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.setParam("debugQuery", "on");
+    query.setParam("debug", "true");
     query.add("rows", "10");
     query.add("rq", "{!ltr reRankDocs=10 model=modelA model=_OriginalRanking_}");
     query.add("fl", "*,score");

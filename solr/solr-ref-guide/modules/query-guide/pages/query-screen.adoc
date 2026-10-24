@@ -73,7 +73,7 @@ Defaults to JSON if not specified.
 indent::
 Click this button to request that the Response Writer use indentation to make the responses more readable.
 
-debugQuery::
+debug::
 Click this button to augment the query response with debugging information, including "explain info" for each document returned.
 This debugging information is intended to be intelligible to the administrator or programmer.
 

@@ -258,8 +258,8 @@ For the dismax parser, one and two word queries require that all of the optional
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod+apple`
 
-Use the debugQuery option to see the parsed query, and the score explanations for each document.
+Use the `debug` parameter to see the parsed query, and the score explanations for each document.
 
-`\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod+gibberish&debugQuery=true`
+`\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod+gibberish&debug=true`
 
-`\http://localhost:8983/solr/techproducts/select?defType=dismax&q=video+card&debugQuery=true`
+`\http://localhost:8983/solr/techproducts/select?defType=dismax&q=video+card&debug=true`

@@ -1077,7 +1077,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             f,
             "fl",
             "id",
-            "debugQuery",
+            "debug",
             "true"),
         "/grouped/" + f + "/matches==10",
         "/debug/explain/8==",

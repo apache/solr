@@ -309,7 +309,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
             "chq",
             "child_s:l",
             "pq",
-            "parent_s:[* TO *]" // ,"debugQuery","on"
+            "parent_s:[* TO *]" // ,"debug","true"
             ),
         beParents);
 

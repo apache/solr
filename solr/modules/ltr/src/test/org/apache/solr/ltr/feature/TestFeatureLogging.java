@@ -78,7 +78,7 @@ public class TestFeatureLogging extends TestRerankBase {
     query.setQuery("title:bloomberg");
     query.add("fl", "id,popularity,[fv logAll=true]");
     query.add("rows", "3");
-    query.add("debugQuery", "on");
+    query.add("debug", "true");
     query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
 
     restTestHarness.query("/query" + query.toQueryString());
@@ -238,7 +238,7 @@ public class TestFeatureLogging extends TestRerankBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
     query.add("fl", "*,[fv]");
-    query.add("debugQuery", "on");
+    query.add("debug", "true");
 
     query.remove("fl");
     query.add("fl", "fv:[fv logAll=true]");

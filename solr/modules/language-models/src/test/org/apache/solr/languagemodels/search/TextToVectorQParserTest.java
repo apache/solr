@@ -398,7 +398,7 @@ public class TextToVectorQParserTest extends TestLanguageModelBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
-    query.add("debugQuery", "true");
+    query.add("debug", "true");
 
     double defaultSaturationThreshold = 0.995;
     int defaultPatience = 7;

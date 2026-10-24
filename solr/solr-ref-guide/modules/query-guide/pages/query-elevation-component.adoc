@@ -180,24 +180,24 @@ For debugging it may be useful to see results with and without the elevated docs
 To hide results, use `enableElevation=false`:
 
 [source,text]
-http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debug=true&enableElevation=true
 
 [source,text]
-http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=false
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debug=true&enableElevation=false
 
 === The forceElevation Parameter
 
 You can force elevation during runtime by adding `forceElevation=true` to the query URL:
 
 [source,text]
-http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true&forceElevation=true
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debug=true&enableElevation=true&forceElevation=true
 
 === The exclusive Parameter
 
 You can force Solr to return only the results specified in the elevation file by adding `exclusive=true` to the URL:
 
 [source,text]
-http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&exclusive=true
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debug=true&exclusive=true
 
 === The useConfiguredElevatedOrder Parameter
 

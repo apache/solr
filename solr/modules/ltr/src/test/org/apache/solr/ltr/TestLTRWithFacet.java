@@ -78,7 +78,7 @@ public class TestLTRWithFacet extends TestRerankBase {
         "/facet_counts/facet_fields/description==" + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
 
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
-    query.set("debugQuery", "on");
+    query.set("debug", "true");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='4'");
