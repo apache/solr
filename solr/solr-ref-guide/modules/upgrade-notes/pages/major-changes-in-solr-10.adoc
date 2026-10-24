@@ -176,7 +176,7 @@ These environment variables are also removed in Solr 10, and Solr does not warn 
 
 * `SOLR_PORT` is replaced by `SOLR_PORT_LISTEN`.
 * `SOLR_REQUESTLOG_ENABLED` is replaced by `SOLR_LOGS_REQUESTLOG_ENABLED`.
-* `SOLR_ADMIN_UI_DISABLED` is replaced by `SOLR_UI_ENABLED`, which has the opposite sense: `SOLR_UI_ENABLED=false` disables the Admin UI.
+* `SOLR_ADMIN_UI_DISABLED` has no environment variable replacement. To disable the Admin UI, set the system property `solr.ui.enabled=false`, for example in `SOLR_OPTS`. `SOLR_UI_ENABLED` controls only the new Admin UI module.
 * `SOLR_WAIT_FOR_ZK` has no environment variable replacement. Pass the system property `-Dsolr.cloud.wait.for.zk.seconds` instead.
 
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
