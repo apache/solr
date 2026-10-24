@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  TestCoordinatorRole.testNRTRestart waits for the first add to complete before stopping the PULL node
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-16630
+    url: https://issues.apache.org/jira/browse/SOLR-16630
