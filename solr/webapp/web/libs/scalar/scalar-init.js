@@ -15,14 +15,13 @@
  limitations under the License.
 */
 
-// Solr sends a `Content-Security-Policy: script-src 'self' ...` header (no
-// 'unsafe-inline') on every response, so this initialization has to live in its own
-// same-origin file - an inline <script> block in index.html is silently never executed.
-window.ui = SwaggerUIBundle({
+Scalar.createApiReference("#app", {
   url: "spec.json",
-  dom_id: "#swagger-ui",
-  deepLinking: true,
-  presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-  plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-  layout: "StandaloneLayout"
+  // Keep fonts local and send API requests directly to Solr.
+  withDefaultFonts: false,
+  proxyUrl: "",
+  agent: { disabled: true },
+  hideClientButton: true,
+  showDeveloperTools: "never",
+  telemetry: false
 });

@@ -47,7 +47,7 @@ Many libraries implement the JAX-RS spec: Solr currently uses the implementation
 These v2 API definitions consist of two parts: a JAX-RS annotated interface in the `api` module "defining" the API, and a class in `core` "implementing" the interface.
 Separating the API "definition" and "implementation" in this way allows us to only define each API in a single place, and use code generators to produce other API-related bits such as SolrJ code and ref-guide documentation.
 
-One of those other bits is an OpenAPI spec - see link:local-api-explorer.adoc[local-api-explorer.adoc] for how to browse it with Swagger UI against a running local Solr.
+One of those other bits is an OpenAPI spec - see link:local-api-explorer.adoc[local-api-explorer.adoc] for how to browse it with the API Explorer against a running local Solr.
 
 === Writing JAX-RS APIs
 

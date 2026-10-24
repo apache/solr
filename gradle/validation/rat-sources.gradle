@@ -229,14 +229,8 @@ allprojects {
           break
 
         case ":solr:webapp":
-          // Vendored swagger-ui-dist assets (see NOTICE.txt); webpack strips their own and
-          // their bundled dependencies' license headers out into the adjacent *.LICENSE.txt
-          // files (already excluded globally by the "**/*.txt" pattern above) instead of
-          // leaving a recognizable header in the minified file itself.
-          exclude "web/libs/swagger-ui/swagger-ui-bundle.js"
-          exclude "web/libs/swagger-ui/swagger-ui-standalone-preset.js"
-          exclude "web/libs/swagger-ui/swagger-ui.css"
-          exclude "web/libs/swagger-ui/index.css"
+          // Vendored Scalar bundle; license is retained in solr/licenses/scalar-LICENSE-MIT.txt.
+          exclude "web/libs/scalar/standalone.js"
           break
 
         case ":solr:solr-ref-guide":

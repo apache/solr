@@ -105,6 +105,13 @@ configure(project(':solr:server')) {
   }
 }
 
+configure(project(':solr:webapp')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    // Preserve upstream bundles and license notices without rewriting their contents.
+    sourceFiles.exclude 'web/libs/scalar/standalone.js'
+  }
+}
+
 configure(project(':solr:solr-ref-guide')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'modules/indexing-guide/examples/stemdict.txt' // requires tabs

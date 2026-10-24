@@ -54,7 +54,7 @@ dependencies {
     generatedJSClientBundle project(path: ":solr:webapp:js-client", configuration: "jsClientBundle")
   }
   uiBundle files(layout.buildDirectory.dir("generated/ui-resources")) { builtBy tasks.named('prepareUiResources') }
-  // Feeds the API Explorer (Swagger UI) static page under web/libs/swagger-ui/.
+  // Supplies the generated specification to the API Explorer.
   openapiSpec project(path: ":solr:api", configuration: "openapiSpec")
 
   // Browser-based tests of the AngularJS Admin UI (see src/test)
@@ -125,9 +125,9 @@ war {
     into "ui"
   })
 
-  // Feeds the API Explorer (Swagger UI) static page under web/libs/swagger-ui/.
+  // Supplies the generated specification to the API Explorer.
   from(configurations.openapiSpec, {
-    into "libs/swagger-ui"
+    into "libs/scalar"
     rename { "spec.json" }
   })
 }
