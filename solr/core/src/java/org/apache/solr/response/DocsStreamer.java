@@ -155,23 +155,20 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     assert null != schema;
     assert null != fields;
 
-    // can't just use fields.wantsField(String)
-    // because that doesn't include extra fields needed by transformers
-    final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
-
     JavaBinResponseWriter.MaskCharSeqSolrDocument masked = null;
     final SolrDocument out =
         ResultContext.READASBYTES.get() == null
             ? new SolrDocument()
             : (masked = new JavaBinResponseWriter.MaskCharSeqSolrDocument());
 
-    // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded when it's
-    // smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
-    // since Document.getFields(String) does a full (internal) iteration over the full
+    // NOTE: it would be tempting to try and optimize this to loop over the needed fields when
+    // they're smaller than the IndexableField[] in the Document -- but that's actually *less*
+    // efficient since Document.getFields(String) does a full (internal) iteration over the full
     // IndexableField[]. see SOLR-11891
     for (IndexableField f : doc.getFields()) {
       final String fname = f.name();
-      if (null == fieldNamesNeeded || fieldNamesNeeded.contains(fname)) {
+      // not wantsField, which excludes extra fields needed by transformers
+      if (fields.wantsLuceneField(fname)) {
         // Make sure multivalued fields are represented as lists
         Object existing = masked == null ? out.get(fname) : masked.getRaw(fname);
         if (existing == null) {

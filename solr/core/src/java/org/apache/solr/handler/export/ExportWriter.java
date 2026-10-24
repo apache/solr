@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -541,24 +540,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(req.getSearcher(), false);
     boolean includeStoredFields = req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
 
-    // Also fetch fields only a transformer reads, e.g. the f= of [geo]; wantsField excludes them
-    Set<String> fieldsToFetch =
-        solrReturnFields.getLuceneFieldNames() != null
-            ? solrReturnFields.getLuceneFieldNames()
-            : Set.of();
-    // Non-exportable fields named here error; ones matched only by a glob are skipped.
-    // Includes fieldsToFetch, since requested names hold an alias, not its source field.
-    Set<String> explicitlyNamedFields = new HashSet<>(fieldsToFetch);
-    if (solrReturnFields.getRequestedFieldNames() != null) {
-      explicitlyNamedFields.addAll(solrReturnFields.getRequestedFieldNames());
-    }
-
     List<FieldWriter> writers = new ArrayList<>();
     Set<SchemaField> docValueFields = new LinkedHashSet<>();
     Map<String, SchemaField> storedFields = new LinkedHashMap<>();
 
     for (String field : req.getSearcher().getFieldNames()) {
-      if (!solrReturnFields.wantsField(field) && !fieldsToFetch.contains(field)) {
+      if (!solrReturnFields.wantsLuceneField(field)) {
         continue;
       }
       SchemaField schemaField = req.getSchema().getField(field);
@@ -571,7 +558,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         // Field is stored-only (no usable DocValues)
         if (includeStoredFields) {
           storedFields.put(field, schemaField);
-        } else if (explicitlyNamedFields.contains(field)) {
+        } else if (solrReturnFields.isExplicitLuceneField(field)) {
           // Explicitly requested field without DocValues and includeStoredFields=false
           throw new IOException(
               schemaField
@@ -579,7 +566,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                   + "Try setting includeStoredFields=true to retrieve this field from stored values.");
         }
         // Else: glob matched stored-only field without includeStoredFields - silently skip
-      } else if (explicitlyNamedFields.contains(field)) {
+      } else if (solrReturnFields.isExplicitLuceneField(field)) {
         // Explicitly requested field that has neither DocValues nor stored
         if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
           throw new IOException(
