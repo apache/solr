@@ -172,6 +172,13 @@ The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` Syst
 
 The previous `SOLR_HOST` and `host` are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
 
+Two environment variables control the new Admin UI in Solr 10.0, and they do not affect the classic Admin UI:
+
+* `SOLR_UI_ENABLED=false` does not load the new Admin UI module. The start script reads this variable and adds `--module=new-ui` only when it is not `false`.
+* `SOLR_UI_EXPERIMENTAL_ENABLED=false` also does not load the new Admin UI module. Either variable set to `false` has the same effect.
+
+The classic Admin UI is controlled by the system property `solr.ui.enabled`, not by `SOLR_UI_ENABLED`.
+
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
 
 === Solr CLI and Scripts
