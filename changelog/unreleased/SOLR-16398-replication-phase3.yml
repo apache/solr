@@ -1,6 +1,6 @@
 title:
-  Replication Phase 3 - TBA
-type:
+  Add V2 JAX-RS API to enable or disable replication
+type: added
 authors:
   - name: Jalaz Kumar
     nick: jaykay12

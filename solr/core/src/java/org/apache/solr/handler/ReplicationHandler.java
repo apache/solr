@@ -82,6 +82,7 @@ import org.apache.solr.client.api.model.ReplicationDetailsResponse.CommitDetails
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -338,11 +339,9 @@ public class ReplicationHandler extends RequestHandlerBase
           true,
           true);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
-      replicationEnabled.set(true);
-      rsp.add(STATUS, OK_STATUS);
+      setReplicationEnabled(req, rsp, true);
     } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
-      replicationEnabled.set(false);
-      rsp.add(STATUS, OK_STATUS);
+      setReplicationEnabled(req, rsp, false);
     }
   }
 
@@ -1025,6 +1024,15 @@ public class ReplicationHandler extends RequestHandlerBase
         timeElapsedMetric,
         bytesDownloadedMetric,
         downloadSpeedMetric);
+  }
+
+  public void setReplicationEnabled(boolean enabled) {
+    replicationEnabled.set(enabled);
+  }
+
+  private void setReplicationEnabled(SolrQueryRequest req, SolrQueryResponse rsp, boolean enabled) {
+    new CoreReplication(core, req, rsp).setReplicationEnabled(new ReplicationEnabledRequestBody(enabled));
+    rsp.add(STATUS, OK_STATUS);
   }
 
   // TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is
