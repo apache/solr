@@ -168,9 +168,11 @@ configure(project(':solr:packaging')) {
   //    The "build" lifecycle phase is recorded (this is a "Build SBOM" in CISA's classification)
   //    and this post-processing step is listed in the tools, next to the CycloneDX plugin.
   // 2. Main component:
-  //    The Solr binary archive published on downloads.apache.org is identified by a "sid" purl
-  //    (a draft purl type for software distributed outside package registries,
-  //    see https://github.com/package-url/purl-spec/issues/516) and by the Solr CPE.
+  //    The Solr binary archive published on downloads.apache.org is identified by a "software-id" purl
+  //    (the purl type for software distributed outside package registries, see
+  //    https://github.com/package-url/purl-spec/blob/main/docs/decisions/001-Register-software-id-PURL-type.md),
+  //    named after the project key in the ASF release catalog (https://release-catalog.apache.org/solr/),
+  //    and by the Solr CPE.
   // 3. Removed components:
   //    Maven BOM/platform dependencies (purl qualifier "type=pom") and the internal ":platform"
   //    project are stripped: they are not part of the binary distribution and the plugin has no
@@ -261,7 +263,7 @@ configure(project(':solr:packaging')) {
       def rewrittenRefs = [:]
 
       Map<String, Object> mainComponent = json.metadata.component
-      def mainPurl = "pkg:sid/apache.org/solr/solr@${mainComponent.version}?edition=${edition}".toString()
+      def mainPurl = "pkg:software-id/apache.org/solr@${mainComponent.version}?edition=${edition}".toString()
       rewrittenRefs[mainComponent.'bom-ref'] = mainPurl
       mainComponent.remove('group')
       mainComponent.name = 'Apache Solr binary release'
