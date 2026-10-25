@@ -768,7 +768,8 @@ public class QueryComponent extends SearchComponent {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
     }
     if (null != rb.getPreviousCursorMark()) {
-      rb.rsp.add(CursorMarkParams.CURSOR_MARK_PREVIOUS, rb.getPreviousCursorMark().getSerializedTotem());
+      rb.rsp.add(
+          CursorMarkParams.CURSOR_MARK_PREVIOUS, rb.getPreviousCursorMark().getSerializedTotem());
     }
   }
 
@@ -1291,6 +1292,11 @@ public class QueryComponent extends SearchComponent {
       boolean hitCountIsExact,
       int offset) {
     final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(offset);
+    if (rb.getCursorMark() != null && rb.getCursorMark().isReverse()) {
+      for (ShardDoc doc : resultIds.values()) {
+        doc.positionInResponse = resultIds.size() - 1 - doc.positionInResponse;
+      }
+    }
 
     final SolrDocumentList responseDocs = new SolrDocumentList();
     if (maxScore != null) responseDocs.setMaxScore(maxScore);
@@ -1361,7 +1367,8 @@ public class QueryComponent extends SearchComponent {
         lastDocValues.add(lastDocFieldVals.get(lastDoc.orderInShard));
       }
     }
-    rb.setCursorMarkResult(cursorMark.createPrevious(firstDocValues), cursorMark.createNext(lastDocValues));
+    rb.setCursorMarkResult(
+        cursorMark.createPrevious(firstDocValues), cursorMark.createNext(lastDocValues));
   }
 
   protected NamedList<List<Object>> unmarshalSortValues(
@@ -1867,6 +1874,24 @@ public class QueryComponent extends SearchComponent {
     } catch (FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+    if (rb.getCursorMark() != null
+        && rb.getCursorMark().isReverse()
+        && result.getDocListAndSet() != null
+        && result.getDocListAndSet().docList != null
+        && !req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      // Shards keep collector order for merging. Only the final page is presented in normal order.
+      DocList docs = result.getDocListAndSet().docList;
+      int[] ids = new int[docs.size()];
+      float[] scores = docs.hasScores() ? new float[docs.size()] : null;
+      DocIterator iterator = docs.iterator();
+      for (int i = ids.length - 1; i >= 0; i--) {
+        ids[i] = iterator.nextDoc();
+        if (scores != null) scores[i] = iterator.score();
+      }
+      result.getDocListAndSet().docList =
+          new DocSlice(
+              0, ids.length, ids, scores, docs.matches(), docs.maxScore(), docs.hitCountRelation());
+    }
     rb.setResult(result);
 
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
@@ -1888,7 +1913,8 @@ public class QueryComponent extends SearchComponent {
         rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
       }
       if (null != rb.getPreviousCursorMark()) {
-        rb.rsp.add(CursorMarkParams.CURSOR_MARK_PREVIOUS, rb.getPreviousCursorMark().getSerializedTotem());
+        rb.rsp.add(
+            CursorMarkParams.CURSOR_MARK_PREVIOUS, rb.getPreviousCursorMark().getSerializedTotem());
       }
     }
 

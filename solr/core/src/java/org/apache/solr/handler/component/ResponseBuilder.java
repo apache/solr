@@ -557,25 +557,9 @@ public class ResponseBuilder {
   }
 
   public void setCursorMarkNoResults(CursorMark providedCursorMark, int numRequested) {
-    if (providedCursorMark != null) {
-      if (numRequested == 0) {
-        // No docs were requested, so we don't have information on anything other than what the user provided
-        if (providedCursorMark.isReverse()) {
-          setCursorMarkResult(providedCursorMark, null);
-        } else {
-          setCursorMarkResult(null, providedCursorMark);
-        }
-      } else {
-        // Documents were requested, but none were returned, so we are either at the beginning or end of the results
-        if (providedCursorMark.isReverse()) {
-          // If doing a reverse cursorMark, and we have no results, then the nextCursorMark should be "*" as we have reverse-cursed through all documents, and a cursorMark should start from the beginning of the list
-          setCursorMarkResult(providedCursorMark, providedCursorMark.initial(false));
-        } else {
-          // If doing a non-reverse cursorMark, and we have no results, then the previousCursorMark should be "<" as we have cursed through all documents, and a reverse cursorMark should start from the end of the list
-          setCursorMarkResult(providedCursorMark.initial(true), providedCursorMark);
-        }
-      }
-    }
+    QueryResult result = new QueryResult();
+    result.setCursorMarkNoResults(providedCursorMark, numRequested);
+    setCursorMarkResult(result.getPreviousCursorMark(), result.getNextCursorMark());
   }
 
   public void setCancellation(boolean isCancellation) {

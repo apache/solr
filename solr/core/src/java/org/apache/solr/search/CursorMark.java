@@ -28,11 +28,11 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -59,12 +59,7 @@ public final class CursorMark {
    */
   private List<Object> values = null;
 
-  /**
-   * The raw, unmarshalled, sort values (that correspond with the SortField's in the SortSpec) for
-   * knowing which docs this cursor should "search after". If this list is null, then we have no
-   * specific values to "search after" and we should start from the very beginning of the sorted
-   * list of documents matching the query.
-   */
+  /** Whether to collect documents before this boundary in the original requested order. */
   private boolean isReverse = false;
 
   /**
@@ -145,8 +140,7 @@ public final class CursorMark {
   }
 
   /**
-   * Generates an new CursorMark bound for use with the same {@link SortSpec} as the current
-   * CursorMark but using the new SortValues. This will reverse the SortValues and SortSpec to create a reverse-direction cursorMark
+   * Generates a reverse cursor using the first document's values and the original sort specification.
    */
   public CursorMark createPrevious(List<Object> firstSortValues) {
     final CursorMark next = new CursorMark(this, true);
@@ -154,10 +148,7 @@ public final class CursorMark {
     return next;
   }
 
-  /**
-   * Generates an new CursorMark bound for use with the same {@link SortSpec} and {@link #isReverse} as the current
-   * CursorMark but no SortValues, because there are no initial values.
-   */
+  /** Generates an initial cursor in the specified direction, without a document boundary. */
   public CursorMark initial(boolean isReverse) {
     return new CursorMark(this, isReverse);
   }
@@ -233,14 +224,31 @@ public final class CursorMark {
           ByteArrayInputStream in = new ByteArrayInputStream(rawData)) {
         Object rawUnmarshal = jbc.unmarshal(in);
         if (rawUnmarshal instanceof List) {
-          // TODO: Remove in future version, as all serialized cursorMarks will be Maps
           pieces = (List<Object>) rawUnmarshal;
         } else if (rawUnmarshal instanceof Map) {
           Map<String, Object> cursorMap = (Map<String, Object>) rawUnmarshal;
-          isReverse = (Boolean) cursorMap.getOrDefault("isReverse", Boolean.FALSE);
+          Object direction = cursorMap.getOrDefault("isReverse", Boolean.FALSE);
+          if (!(direction instanceof Boolean) || !(cursorMap.get("values") instanceof List)) {
+            throw new IllegalArgumentException(
+                "Cursor map requires a boolean direction and values list");
+          }
+          isReverse = (Boolean) direction;
           pieces = (List<Object>) cursorMap.get("values");
         } else {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "CursorMark could not be unmarshalled into a list or map, instead type was " + (rawUnmarshal == null ? "null" : rawUnmarshal.getClass().getName()));
+          throw new IllegalArgumentException("Cursor must decode to a values list or direction map");
+        }
+        // Preserve the existing codec round-trip handling for string and binary sort values.
+        for (Object piece : pieces) {
+          if (piece instanceof BytesRefBuilder
+              || piece instanceof BytesRef
+              || piece instanceof String) {
+            in.reset();
+            try (JavaBinCodec freshCodec = new JavaBinCodec()) {
+              Object fresh = freshCodec.unmarshal(in);
+              pieces = (List<Object>) (fresh instanceof Map<?, ?> map ? map.get("values") : fresh);
+            }
+            break;
+          }
         }
       }
     } catch (Exception ex) {
@@ -272,10 +280,7 @@ public final class CursorMark {
 
     this.values = new ArrayList<>(sortFields.length);
 
-    final BytesRef tmpBytes = new BytesRef();
     for (int i = 0; i < sortFields.length; i++) {
-
-      SortField curSort = sortFields[i];
       SchemaField curField = schemaFields.get(i);
       Object rawValue = pieces.get(i);
 
@@ -321,7 +326,9 @@ public final class CursorMark {
 
     try (JavaBinCodec jbc = new JavaBinCodec();
         ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
-      Map<String, Object> toSerialize = Map.of("values", marshalledValues, "isReverse", isReverse);
+      // Forward tokens retain the existing list encoding so older nodes can still read them.
+      Object toSerialize =
+          isReverse ? Map.of("values", marshalledValues, "isReverse", true) : marshalledValues;
       jbc.marshal(toSerialize, out);
       byte[] rawData = out.toByteArray();
       return Base64.getEncoder().encodeToString(rawData);

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_END;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
@@ -83,6 +84,93 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     ZkTestServer.putConfig("conf1", zkServer.getZkClient(), ZkTestServer.SOLRHOME, "elevate.xml");
+  }
+
+  @Test
+  public void testReverseCursorPaging() throws Exception {
+    del("*:*");
+    commit();
+    for (int i : new int[] {5, 2, 7, 0, 6, 1, 4, 3}) {
+      if (i % 3 == 0) {
+        indexDoc(sdoc("id", Integer.toString(i)));
+      } else {
+        indexDoc(
+            sdoc("id", Integer.toString(i), "str", "s" + (i % 2), "int", Integer.toString(i % 2)));
+      }
+    }
+    commit();
+    for (String sort :
+        List.of(
+            "id asc",
+            "id desc",
+            "str_last asc,id desc",
+            "str_first desc,id asc",
+            "int_dv_last asc,id asc",
+            "sum(int_dv,1) desc,id asc",
+            "score desc,id asc",
+            "score asc,id desc")) {
+      String query = sort.startsWith("score") ? "{!func}sum(int_dv,1)" : "*:*";
+      List<String> expected =
+          cloudClient
+              .query(params("q", query, "sort", sort, "rows", "20", "fl", "id"))
+              .getResults()
+              .stream()
+              .map(doc -> doc.getFieldValue("id").toString())
+              .toList();
+      for (boolean singlePass : new boolean[] {false, true}) {
+        for (boolean multiThreaded : new boolean[] {false, true}) {
+          SolrParams base =
+              params(
+                  "q", query,
+                  "sort", sort,
+                  "rows", "3",
+                  "fl", "id",
+                  "distrib.singlePass", Boolean.toString(singlePass),
+                  "multiThreaded", Boolean.toString(multiThreaded));
+          QueryResponse first = reversePage(base, CURSOR_MARK_START, expected.subList(0, 3));
+          QueryResponse second = reversePage(base, first.getNextCursorMark(), expected.subList(3, 6));
+          QueryResponse last = reversePage(base, second.getNextCursorMark(), expected.subList(6, 8));
+          QueryResponse back = reversePage(base, previousCursor(last), expected.subList(3, 6));
+          assertEquals(second.getNextCursorMark(), back.getNextCursorMark());
+          assertEquals(previousCursor(second), previousCursor(back));
+          reversePage(base, back.getNextCursorMark(), expected.subList(6, 8));
+          reversePage(base, previousCursor(back), expected.subList(0, 3));
+          reversePage(base, CURSOR_MARK_END, expected.subList(5, 8));
+          QueryResponse pastEnd = reversePage(base, last.getNextCursorMark(), List.of());
+          assertEquals(last.getNextCursorMark(), pastEnd.getNextCursorMark());
+          assertEquals(CURSOR_MARK_END, previousCursor(pastEnd));
+          QueryResponse beforeStart = reversePage(base, previousCursor(first), List.of());
+          assertEquals(previousCursor(first), previousCursor(beforeStart));
+          assertEquals(CURSOR_MARK_START, beforeStart.getNextCursorMark());
+          SolrParams zeroRows =
+              params(
+                  "q", query,
+                  "sort", sort,
+                  "rows", "0",
+                  "distrib.singlePass", Boolean.toString(singlePass),
+                  "multiThreaded", Boolean.toString(multiThreaded));
+          QueryResponse zeroForward = reversePage(zeroRows, second.getNextCursorMark(), List.of());
+          assertEquals(second.getNextCursorMark(), zeroForward.getNextCursorMark());
+          QueryResponse zeroReverse = reversePage(zeroRows, previousCursor(second), List.of());
+          assertEquals(previousCursor(second), previousCursor(zeroReverse));
+        }
+      }
+    }
+  }
+
+  private QueryResponse reversePage(SolrParams base, String cursor, List<String> expected)
+      throws Exception {
+    QueryResponse page = cloudClient.query(p(base, CURSOR_MARK_PARAM, cursor));
+    assertNotNull(page.getNextCursorMark());
+    assertNotNull(previousCursor(page));
+    assertEquals(
+        expected,
+        page.getResults().stream().map(doc -> doc.getFieldValue("id").toString()).toList());
+    return page;
+  }
+
+  private String previousCursor(QueryResponse page) {
+    return page.getPreviousCursorMark();
   }
 
   @Test

@@ -1785,12 +1785,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, re-use existing cursor mark
       qr.setCursorMarkNoResults(cursorMark, qc.getLen());
     } else {
-      ScoreDoc firstDoc = scoreDocs[0];
+      ScoreDoc firstDoc = scoreDocs[cursorMark.isReverse() ? scoreDocs.length - 1 : 0];
       assert firstDoc instanceof FieldDoc : "FieldDoc cursor constraint violated on first doc";
       List<Object> firstFields = Arrays.asList(((FieldDoc) firstDoc).fields);
       CursorMark previousCursorMark = cursorMark.createPrevious(firstFields);
 
-      ScoreDoc lastDoc = scoreDocs[scoreDocs.length - 1];
+      ScoreDoc lastDoc = scoreDocs[cursorMark.isReverse() ? 0 : scoreDocs.length - 1];
       assert lastDoc instanceof FieldDoc : "FieldDoc cursor constraint violated on last doc";
 
       List<Object> lastFields = Arrays.asList(((FieldDoc) lastDoc).fields);
@@ -1819,11 +1819,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return new TopScoreDocCollectorManager(len, minNumFound).newCollector();
     } else {
       // we have a sort
-      Sort weightedSort = weightSort(cmd.getSort());
-      CursorMark cursor = cmd.getCursorMark();
-      if (cursor != null && cursor.isReverse()) {
-        weightedSort = weightedSort.reverse();
-      }
+      final Sort weightedSort = weightSort(cmd.getSort());
+      final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
       return new TopFieldCollectorManager(weightedSort, len, searchAfter, minNumFound)

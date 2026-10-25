@@ -455,17 +455,13 @@ public class SearchHandler extends RequestHandlerBase
     // CursorMark state (This must happen after the prepare() of all components, because any
     // component may have modified the SortSpec)
     final SortSpec spec = rb.getSortSpec();
-    if (null != spec) {
-      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-      final String reverseCursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_REVERSE_PARAM);
-      if (null != cursorStr) {
-        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
-        cursorMark.parseSerializedTotem(cursorStr);
-        rb.setCursorMark(cursorMark);
-      } else if (null != reverseCursorStr) {
-        final CursorMark reverseCursorMark = new CursorMark(rb.req.getSchema(), spec);
-        reverseCursorMark.parseSerializedTotem(reverseCursorStr);
-        rb.setReverseCursorMark(reverseCursorMark);
+    final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+    if (null != spec && null != cursorStr) {
+      final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+      cursorMark.parseSerializedTotem(cursorStr);
+      rb.setCursorMark(cursorMark);
+      if (cursorMark.isReverse()) {
+        rb.setSortSpec(spec.reverse());
       }
     }
   }

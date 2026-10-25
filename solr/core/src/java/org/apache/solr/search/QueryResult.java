@@ -99,19 +99,17 @@ public class QueryResult {
   public void setCursorMarkNoResults(CursorMark providedCursorMark, int numRequested) {
     if (providedCursorMark != null) {
       if (numRequested == 0) {
-        // No docs were requested, so we don't have information on anything other than what the user provided
-        if (providedCursorMark.isReverse()) {
-          setCursorMarkResult(providedCursorMark, null);
-        } else {
-          setCursorMarkResult(null, providedCursorMark);
-        }
+        // No page boundary was observed. Keep the supplied boundary in both directions.
+        setCursorMarkResult(
+            providedCursorMark.createPrevious(providedCursorMark.getSortValues()),
+            providedCursorMark.createNext(providedCursorMark.getSortValues()));
       } else {
-        // Documents were requested, but none were returned, so we are either at the beginning or end of the results
+        // An empty page after requesting documents marks the beginning or end of the results.
         if (providedCursorMark.isReverse()) {
-          // If doing a reverse cursorMark, and we have no results, then the nextCursorMark should be "*" as we have reverse-cursed through all documents, and a cursorMark should start from the beginning of the list
+          // A forward request can restart from the beginning after an empty reverse page.
           setCursorMarkResult(providedCursorMark, providedCursorMark.initial(false));
         } else {
-          // If doing a non-reverse cursorMark, and we have no results, then the previousCursorMark should be "<" as we have cursed through all documents, and a reverse cursorMark should start from the end of the list
+          // A reverse request can restart from the end after an empty forward page.
           setCursorMarkResult(providedCursorMark.initial(true), providedCursorMark);
         }
       }
