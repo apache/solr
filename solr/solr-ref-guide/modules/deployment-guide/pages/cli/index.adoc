@@ -21,7 +21,7 @@ The `bin/solr` command line tool is built on https://picocli.info/[picocli].
 This page and the per-command pages linked below are the references for its commands and options.
 Run `bin/solr <command> --help` for the same information on the command line.
 
-== Falling back to the legacy CLI
+== Falling back to the Commons CLI
 
 The previous Apache Commons CLI implementation still ships with Solr.
 Use it only as an escape hatch if you run into a problem with the default CLI, and please report the problem to the Solr project.
@@ -99,7 +99,7 @@ Each command has its own reference page.
 ====
 Some options and behaviors changed from the Commons CLI.
 
-See xref:upgrade-notes:major-changes-in-solr-10.adoc#solr-cli-now-uses-picocli[Major Changes in Sol 10, Solr 10.2] for the full list.
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#solr-cli-now-uses-picocli[Major Changes in Solr 10, Solr 10.2] for the full list.
 ====
 
 == Reporting Problems

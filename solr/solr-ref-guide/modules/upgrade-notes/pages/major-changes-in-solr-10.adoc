@@ -41,14 +41,15 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to https://picocli.info/[picocli].
 
-* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
-* `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
-The legacy CLI accepts `-v` for it.
+picocli is now the default. Set `SOLR_PICOCLI=false` to fall back to Commons CLI.
+
+* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version. `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
+The Commons CLI accepts `-v` for it.
 * `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
-This matches the legacy CLI, but means `--fail-on-exists false` does not disable the check.
-* Error messages for invalid or mutually exclusive options are worded differently from the legacy CLI.
+This matches the Commons CLI, but means `--fail-on-exists false` does not disable the check.
+* Error messages for invalid or mutually exclusive options are worded differently.
 * Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
-* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the legacy CLI prints.
+* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the Commons CLI prints.
 That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
 == Solr 10.1
