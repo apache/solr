@@ -227,13 +227,24 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             () -> reader.getAliases().getZNodeVersion() == zkVersion);
     Aliases aliasesBeforeOtherAlias = reader.getAliases();
 
-    // another alias is created, and the node is put back to before it saw it, as if the
-    // document arrived before the node processed the aliases.json watch event
+    // another alias is created and a property is set on this one, and the node is put back to
+    // before it saw them, as if the document arrived before the node processed the watch events
     final String otherAlias = aliasName + "_other";
     CollectionAdminRequest.createAlias(otherAlias, collectionName).process(solrClient);
+    CollectionAdminRequest.setAliasProperty(aliasName)
+        .addProperty("foo", "bar")
+        .process(solrClient);
     new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
         .waitFor(
-            "node did not see the other alias", () -> reader.getAliases().hasAlias(otherAlias));
+            "node did not see the alias changes",
+            () ->
+                reader.getAliases().hasAlias(otherAlias)
+                    && "bar"
+                        .equals(
+                            reader
+                                .getAliases()
+                                .getCollectionAliasProperties(aliasName)
+                                .get("foo")));
     Field aliasesField = ZkStateReader.AliasesManager.class.getDeclaredField("aliases");
     aliasesField.setAccessible(true);
     aliasesField.set(reader.aliasesManager, aliasesBeforeOtherAlias);
@@ -253,6 +264,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
                             .getCollectionAliasProperties(aliasName)
                             .get(TimeRoutedAlias.ROUTER_START)));
     assertEquals(collectionName, clientReader.getAliases().getCollectionAliasMap().get(otherAlias));
+    assertEquals(
+        "bar", clientReader.getAliases().getCollectionAliasProperties(aliasName).get("foo"));
   }
 
   @Test
