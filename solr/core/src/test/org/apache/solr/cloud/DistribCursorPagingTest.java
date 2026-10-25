@@ -121,15 +121,23 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         for (boolean multiThreaded : new boolean[] {false, true}) {
           SolrParams base =
               params(
-                  "q", query,
-                  "sort", sort,
-                  "rows", "3",
-                  "fl", "id",
-                  "distrib.singlePass", Boolean.toString(singlePass),
-                  "multiThreaded", Boolean.toString(multiThreaded));
+                  "q",
+                  query,
+                  "sort",
+                  sort,
+                  "rows",
+                  "3",
+                  "fl",
+                  "id",
+                  "distrib.singlePass",
+                  Boolean.toString(singlePass),
+                  "multiThreaded",
+                  Boolean.toString(multiThreaded));
           QueryResponse first = reversePage(base, CURSOR_MARK_START, expected.subList(0, 3));
-          QueryResponse second = reversePage(base, first.getNextCursorMark(), expected.subList(3, 6));
-          QueryResponse last = reversePage(base, second.getNextCursorMark(), expected.subList(6, 8));
+          QueryResponse second =
+              reversePage(base, first.getNextCursorMark(), expected.subList(3, 6));
+          QueryResponse last =
+              reversePage(base, second.getNextCursorMark(), expected.subList(6, 8));
           QueryResponse back = reversePage(base, previousCursor(last), expected.subList(3, 6));
           assertEquals(second.getNextCursorMark(), back.getNextCursorMark());
           assertEquals(previousCursor(second), previousCursor(back));
@@ -144,11 +152,16 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
           assertEquals(CURSOR_MARK_START, beforeStart.getNextCursorMark());
           SolrParams zeroRows =
               params(
-                  "q", query,
-                  "sort", sort,
-                  "rows", "0",
-                  "distrib.singlePass", Boolean.toString(singlePass),
-                  "multiThreaded", Boolean.toString(multiThreaded));
+                  "q",
+                  query,
+                  "sort",
+                  sort,
+                  "rows",
+                  "0",
+                  "distrib.singlePass",
+                  Boolean.toString(singlePass),
+                  "multiThreaded",
+                  Boolean.toString(multiThreaded));
           QueryResponse zeroForward = reversePage(zeroRows, second.getNextCursorMark(), List.of());
           assertEquals(second.getNextCursorMark(), zeroForward.getNextCursorMark());
           QueryResponse zeroReverse = reversePage(zeroRows, previousCursor(second), List.of());

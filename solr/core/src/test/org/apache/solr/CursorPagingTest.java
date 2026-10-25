@@ -110,33 +110,49 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
         String query = sort.startsWith("score") ? "{!func}sum(int_dv,1)" : "*:*";
         Map<?, ?> all =
             (Map<?, ?>)
-                fromJSONString(
-                    assertJQ(req("q", query, "sort", sort, "rows", "20", "fl", "id")));
+                fromJSONString(assertJQ(req("q", query, "sort", sort, "rows", "20", "fl", "id")));
         List<String> expected = reversePageIds(all);
         Map<?, ?> first =
             reversePage(sort, 3, CURSOR_MARK_START, multiThreaded, expected.subList(0, 3));
         Map<?, ?> second =
             reversePage(
-                sort, 3, (String) first.get(CURSOR_MARK_NEXT), multiThreaded, expected.subList(3, 6));
+                sort,
+                3,
+                (String) first.get(CURSOR_MARK_NEXT),
+                multiThreaded,
+                expected.subList(3, 6));
         Map<?, ?> last =
             reversePage(
-                sort, 3, (String) second.get(CURSOR_MARK_NEXT), multiThreaded, expected.subList(6, 8));
+                sort,
+                3,
+                (String) second.get(CURSOR_MARK_NEXT),
+                multiThreaded,
+                expected.subList(6, 8));
         Map<?, ?> back =
             reversePage(
-                sort, 3, (String) last.get(CURSOR_MARK_PREVIOUS), multiThreaded, expected.subList(3, 6));
+                sort,
+                3,
+                (String) last.get(CURSOR_MARK_PREVIOUS),
+                multiThreaded,
+                expected.subList(3, 6));
         assertEquals(second.get(CURSOR_MARK_NEXT), back.get(CURSOR_MARK_NEXT));
         assertEquals(second.get(CURSOR_MARK_PREVIOUS), back.get(CURSOR_MARK_PREVIOUS));
         reversePage(
             sort, 3, (String) back.get(CURSOR_MARK_NEXT), multiThreaded, expected.subList(6, 8));
         reversePage(
-            sort, 3, (String) back.get(CURSOR_MARK_PREVIOUS), multiThreaded, expected.subList(0, 3));
+            sort,
+            3,
+            (String) back.get(CURSOR_MARK_PREVIOUS),
+            multiThreaded,
+            expected.subList(0, 3));
         reversePage(sort, 3, CURSOR_MARK_END, multiThreaded, expected.subList(5, 8));
         Map<?, ?> pastEnd =
             reversePage(sort, 3, (String) last.get(CURSOR_MARK_NEXT), multiThreaded, List.of());
         assertEquals(last.get(CURSOR_MARK_NEXT), pastEnd.get(CURSOR_MARK_NEXT));
         assertEquals(CURSOR_MARK_END, pastEnd.get(CURSOR_MARK_PREVIOUS));
         Map<?, ?> beforeStart =
-            reversePage(sort, 3, (String) first.get(CURSOR_MARK_PREVIOUS), multiThreaded, List.of());
+            reversePage(
+                sort, 3, (String) first.get(CURSOR_MARK_PREVIOUS), multiThreaded, List.of());
         assertEquals(first.get(CURSOR_MARK_PREVIOUS), beforeStart.get(CURSOR_MARK_PREVIOUS));
         assertEquals(CURSOR_MARK_START, beforeStart.get(CURSOR_MARK_NEXT));
         for (String key : List.of(CURSOR_MARK_NEXT, CURSOR_MARK_PREVIOUS)) {
@@ -156,12 +172,18 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             fromJSONString(
                 assertJQ(
                     req(
-                        "q", sort.startsWith("score") ? "{!func}sum(int_dv,1)" : "*:*",
-                        "sort", sort,
-                        "rows", Integer.toString(rows),
-                        "fl", "id",
-                        "multiThreaded", Boolean.toString(multiThreaded),
-                        CURSOR_MARK_PARAM, cursor)));
+                        "q",
+                        sort.startsWith("score") ? "{!func}sum(int_dv,1)" : "*:*",
+                        "sort",
+                        sort,
+                        "rows",
+                        Integer.toString(rows),
+                        "fl",
+                        "id",
+                        "multiThreaded",
+                        Boolean.toString(multiThreaded),
+                        CURSOR_MARK_PARAM,
+                        cursor)));
     assertNotNull(page.get(CURSOR_MARK_NEXT));
     assertNotNull(page.get(CURSOR_MARK_PREVIOUS));
     assertEquals(sort + " cursor=" + cursor, expected, reversePageIds(page));

@@ -140,7 +140,8 @@ public final class CursorMark {
   }
 
   /**
-   * Generates a reverse cursor using the first document's values and the original sort specification.
+   * Generates a reverse cursor using the first document's values and the original sort
+   * specification.
    */
   public CursorMark createPrevious(List<Object> firstSortValues) {
     final CursorMark next = new CursorMark(this, true);
@@ -235,7 +236,8 @@ public final class CursorMark {
           isReverse = (Boolean) direction;
           pieces = (List<Object>) cursorMap.get("values");
         } else {
-          throw new IllegalArgumentException("Cursor must decode to a values list or direction map");
+          throw new IllegalArgumentException(
+              "Cursor must decode to a values list or direction map");
         }
         // Preserve the existing codec round-trip handling for string and binary sort values.
         for (Object piece : pieces) {

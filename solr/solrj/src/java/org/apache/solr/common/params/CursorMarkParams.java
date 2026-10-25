@@ -23,9 +23,10 @@ package org.apache.solr.common.params;
 public interface CursorMarkParams {
 
   /**
-   * Param clients should specify indicating that they want a cursor based search. The value must
-   * be {@link #CURSOR_MARK_START} for the beginning, {@link #CURSOR_MARK_END} for the end, or a cursor
-   * returned through {@link #CURSOR_MARK_NEXT} or {@link #CURSOR_MARK_PREVIOUS} by an earlier search.
+   * Param clients should specify indicating that they want a cursor based search. The value must be
+   * {@link #CURSOR_MARK_START} for the beginning, {@link #CURSOR_MARK_END} for the end, or a cursor
+   * returned through {@link #CURSOR_MARK_NEXT} or {@link #CURSOR_MARK_PREVIOUS} by an earlier
+   * search.
    */
   String CURSOR_MARK_PARAM = "cursorMark";
 

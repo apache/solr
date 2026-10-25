@@ -101,7 +101,8 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       CursorMark forward = initial.createNext(List.of(id));
       try (JavaBinCodec codec = new JavaBinCodec()) {
         assertTrue(
-            codec.unmarshal(Base64.getDecoder().decode(forward.getSerializedTotem())) instanceof List);
+            codec.unmarshal(Base64.getDecoder().decode(forward.getSerializedTotem()))
+                instanceof List);
       }
       CursorMark reverse = initial.createPrevious(List.of(id));
       CursorMark parsed = new CursorMark(request.getSchema(), sort);
@@ -126,7 +127,8 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
           codec.marshal(invalid, output);
           String token = Base64.getEncoder().encodeToString(output.toByteArray());
           assertEquals(
-              400, expectThrows(SolrException.class, () -> parsed.parseSerializedTotem(token)).code());
+              400,
+              expectThrows(SolrException.class, () -> parsed.parseSerializedTotem(token)).code());
         }
       }
     }
