@@ -17,8 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import org.apache.lucene.tests.analysis.MockAnalyzer;
-import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -31,6 +29,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.intervals.IntervalMatchesIterator;
 import org.apache.lucene.queries.intervals.Intervals;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.solr.SolrTestCase;
 
 /** Tests {@link ScriptFilterIntervalsSource#matches}, which highlighting and explain rely on. */
