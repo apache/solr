@@ -187,6 +187,8 @@ public class HighlightAugmenterFactory extends TransformerFactory {
               : new SingleFieldHighlighter(searcher, params, field, query);
     }
 
+    // Identity is intended: the context must come from this exact request and query.
+    @SuppressWarnings("ReferenceEquality")
     private static Query getMainHighlightQuery(ResultContext context) {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       ResponseBuilder rb = info == null ? null : info.getResponseBuilder();
