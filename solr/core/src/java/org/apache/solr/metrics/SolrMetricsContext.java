@@ -160,9 +160,7 @@ public class SolrMetricsContext implements AutoCloseable {
 
   public ObservableLongGauge observableLongGauge(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    var observableLongGauge = observableLongGauge(metricName, description, callback, null);
-    closeables.add(observableLongGauge);
-    return observableLongGauge;
+    return observableLongGauge(metricName, description, callback, null);
   }
 
   public ObservableLongGauge observableLongGauge(
@@ -170,14 +168,15 @@ public class SolrMetricsContext implements AutoCloseable {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+    var observableLongGauge =
+        metricManager.observableLongGauge(registryName, metricName, description, callback, unit);
+    closeables.add(observableLongGauge);
+    return observableLongGauge;
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
       String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    var observableDoubleGauge = observableDoubleGauge(metricName, description, callback, null);
-    closeables.add(observableDoubleGauge);
-    return observableDoubleGauge;
+    return observableDoubleGauge(metricName, description, callback, null);
   }
 
   public ObservableDoubleGauge observableDoubleGauge(
@@ -185,15 +184,15 @@ public class SolrMetricsContext implements AutoCloseable {
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableDoubleGauge(
-        registryName, metricName, description, callback, unit);
+    var observableDoubleGauge =
+        metricManager.observableDoubleGauge(registryName, metricName, description, callback, unit);
+    closeables.add(observableDoubleGauge);
+    return observableDoubleGauge;
   }
 
   public ObservableLongCounter observableLongCounter(
       String metricName, String description, Consumer<ObservableLongMeasurement> callback) {
-    var observableLongCounter = observableLongCounter(metricName, description, callback, null);
-    closeables.add(observableLongCounter);
-    return observableLongCounter;
+    return observableLongCounter(metricName, description, callback, null);
   }
 
   public ObservableLongCounter observableLongCounter(
@@ -201,15 +200,15 @@ public class SolrMetricsContext implements AutoCloseable {
       String description,
       Consumer<ObservableLongMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableLongCounter(
-        registryName, metricName, description, callback, unit);
+    var observableLongCounter =
+        metricManager.observableLongCounter(registryName, metricName, description, callback, unit);
+    closeables.add(observableLongCounter);
+    return observableLongCounter;
   }
 
   public ObservableDoubleCounter observableDoubleCounter(
       String metricName, String description, Consumer<ObservableDoubleMeasurement> callback) {
-    var observableDoubleCounter = observableDoubleCounter(metricName, description, callback, null);
-    closeables.add(observableDoubleCounter);
-    return observableDoubleCounter;
+    return observableDoubleCounter(metricName, description, callback, null);
   }
 
   public ObservableDoubleCounter observableDoubleCounter(
@@ -217,8 +216,11 @@ public class SolrMetricsContext implements AutoCloseable {
       String description,
       Consumer<ObservableDoubleMeasurement> callback,
       OtelUnit unit) {
-    return metricManager.observableDoubleCounter(
-        registryName, metricName, description, callback, unit);
+    var observableDoubleCounter =
+        metricManager.observableDoubleCounter(
+            registryName, metricName, description, callback, unit);
+    closeables.add(observableDoubleCounter);
+    return observableDoubleCounter;
   }
 
   public ObservableLongMeasurement longGaugeMeasurement(String metricName, String description) {

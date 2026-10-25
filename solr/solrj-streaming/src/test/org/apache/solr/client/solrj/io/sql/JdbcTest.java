@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.TreeSet;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -115,6 +116,25 @@ public class JdbcTest extends SolrCloudTestCase {
     update.commit(cluster.getSolrClient(), collection);
 
     zkHost = cluster.getZkServer().getZkAddress();
+  }
+
+  @Test
+  public void testSuppliedSolrClientCache() throws Exception {
+    // Inside Solr, the driver must use the caller's cache rather than creating one.
+    try (SolrClientCache clientCache = new SolrClientCache()) {
+      Properties props = new Properties();
+      props.put(DriverImpl.SOLR_CLIENT_CACHE_PROP, clientCache);
+      try (Connection con =
+              DriverManager.getConnection(
+                  "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props);
+          Statement stmt = con.createStatement();
+          ResultSet rs = stmt.executeQuery("select id from " + COLLECTIONORALIAS + " limit 1")) {
+        assertTrue(rs.next());
+      }
+      // the cache is ours; closing the connection must not have closed it
+      assertNotNull(
+          clientCache.getCloudSolrClient(CloudSolrClient.CloudSolrClientConnection.parse(zkHost)));
+    }
   }
 
   @Test

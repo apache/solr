@@ -154,6 +154,26 @@ public class SolrException extends RuntimeException {
     return t;
   }
 
+  /** Cause chains are shallow in practice; the cap only guards against a cyclic chain. */
+  private static final int MAX_CAUSE_DEPTH = 100;
+
+  /**
+   * Whether {@code t} or anything in its cause chain is of the given type. Prefer this to {@link
+   * #getRootCause} when classifying a failure, since a transport may report it wrapped at any
+   * depth.
+   */
+  public static boolean hasCause(Throwable t, Class<? extends Throwable> type) {
+    int depth = 0;
+    for (Throwable cause = t;
+        cause != null && depth++ < MAX_CAUSE_DEPTH;
+        cause = cause.getCause()) {
+      if (type.isInstance(cause)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Ensure that the provided tragic exception is wrapped in a 5xx SolrException
    *

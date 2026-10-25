@@ -311,8 +311,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
     }
 
-    long numFound = 0;
     boolean hitCountIsExact = true;
+    boolean someQueryListTruncated = false;
+    long maxQueryNumFound = 0;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
     boolean maxHitsTerminatedEarly = false;
@@ -340,7 +341,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             && docList.get(queryIndex) instanceof SolrDocumentList solrDocumentList) {
           docs = Objects.requireNonNull(solrDocumentList);
           queryNumFound += docs.getNumFound();
-          hitCountIsExact = hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact());
+          if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
+            hitCountIsExact = false;
+          }
         }
         failedShardCount +=
             addShardInfo(
@@ -430,34 +433,32 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             shardDoc.scoreDependentFields = doc.getSubsetOfFields(scoreDependentFields);
           }
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
-          if (!queuePerQuery.push(shardDoc)) {
-            numFound--;
-          }
+          queuePerQuery.push(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
       List<ShardDoc> shardDocsPerQuery = new ArrayList<>(queuePerQuery.resultIds(0).values());
       shardDocsPerQuery.sort(Comparator.comparingInt(a -> a.positionInResponse));
       shardDocMap.put(queriesToCombineKeys[queryIndex], shardDocsPerQuery);
-      numFound = max(numFound, queryNumFound);
+      // a sub-query list is complete iff every match reached the fusion pool
+      someQueryListTruncated |= queryNumFound != shardDocsPerQuery.size();
+      maxQueryNumFound = max(maxQueryNumFound, queryNumFound);
       approximateTotalHits = max(approximateTotalHits, queryApproximateTotalHits);
     } // for each query to combine
 
-    rb.rsp.addToLog("hits", numFound);
-
     SolrDocumentList responseDocs = new SolrDocumentList();
-    responseDocs.setNumFound(numFound);
-    responseDocs.setNumFoundExact(hitCountIsExact);
+    responseDocs.setNumFoundExact(hitCountIsExact && !someQueryListTruncated);
     responseDocs.setStart(ss.getOffset());
 
-    rb.resultIds = computeResultIdsWithCombiner(rb, shardDocMap, responseDocs, sortFields);
+    rb.resultIds =
+        computeResultIdsWithCombiner(rb, shardDocMap, responseDocs, sortFields, maxQueryNumFound);
     rb.setResponseDocs(responseDocs);
+    rb.rsp.addToLog("hits", responseDocs.getNumFound());
 
     populateNextCursorMarkFromMergedShards(rb);
 
     if (thereArePartialResults) {
       rb.rsp
           .getResponseHeader()
-          .asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
@@ -474,10 +475,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly) && segmentTerminatedEarly) {
         rb.rsp
             .getResponseHeader()
-            .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        rb.rsp
-            .getResponseHeader()
-            .add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, true);
+            .put(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, true);
       }
     }
     if (maxHitsTerminatedEarly) {
@@ -574,8 +572,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
    * @param rb The ResponseBuilder containing the request and context, such as sort specifications.
    * @param shardDocMap A map from shard addresses to the list of documents returned by each shard.
    * @param responseDocs The final response document list, which will be populated with null
-   *     placeholders and have its max score set.
+   *     placeholders and have its numFound and max score set.
    * @param sortFields An array of field for sorting to be applied.
+   * @param maxQueryNumFound The largest sub-query's match count, summed across shards; a floor for
+   *     the reported numFound.
    * @return A map from document IDs to the corresponding ShardDoc objects for the documents in the
    *     final sorted page of results.
    */
@@ -583,12 +583,17 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       ResponseBuilder rb,
       Map<String, List<ShardDoc>> shardDocMap,
       SolrDocumentList responseDocs,
-      SortField[] sortFields) {
+      SortField[] sortFields,
+      long maxQueryNumFound) {
     String algorithm =
         rb.req.getParams().get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
     QueryAndResponseCombiner combinerStrategy =
         QueryAndResponseCombiner.getImplementation(algorithm, combiners);
     List<ShardDoc> combinedShardDocs = combinerStrategy.combine(shardDocMap, rb.req.getParams());
+
+    // the fused list is deduped by doc id, so its size is the distinct doc count; numFound is
+    // that count, but never below the largest sub-query's match count
+    responseDocs.setNumFound(max(maxQueryNumFound, combinedShardDocs.size()));
 
     // adding explanation for the ordered shard docs as debug info
     if (rb.isDebugResults()) {

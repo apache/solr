@@ -123,7 +123,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
   @Test
   public void testAddFieldTypeOperationRequiresTypeNameAndClass() {
     final var noTypeOp = new UpsertFieldTypeOperation();
-    noTypeOp.className = "solr.TextField";
+    noTypeOp.propertyClass = "solr.TextField";
     var thrown =
         expectThrows(
             SolrException.class,

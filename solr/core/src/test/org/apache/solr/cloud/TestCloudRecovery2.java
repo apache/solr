@@ -49,7 +49,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
   public void test() throws Exception {
     JettySolrRunner node1 = cluster.getJettySolrRunner(0);
     JettySolrRunner node2 = cluster.getJettySolrRunner(1);
-    try (SolrClient client1 = getHttpSolrClient(node1.getBaseUrl().toString())) {
+    {
+      SolrClient client1 = node1.getSolrClient();
 
       node2.stop();
       waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
@@ -63,9 +64,10 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       node2.start();
       waitForState("", COLLECTION, clusterShape(1, 2));
 
-      try (SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      {
         long numFound =
-            client
+            node2
+                .getSolrClient()
                 .query(COLLECTION, new SolrQuery("q", "*:*", "distrib", "false"))
                 .getResults()
                 .getNumFound();
@@ -80,9 +82,10 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       new UpdateRequest().add("id", "1", "num", "10").commit(client1, COLLECTION);
 
-      try (SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      {
         Object v =
-            client
+            node2
+                .getSolrClient()
                 .query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false"))
                 .getResults()
                 .get(0)
@@ -112,9 +115,10 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.start();
       waitForState("", COLLECTION, clusterShape(1, 2));
-      try (SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      {
         v =
-            client
+            node2
+                .getSolrClient()
                 .query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false"))
                 .getResults()
                 .get(0)
@@ -137,9 +141,10 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       node2.start();
       waitForState("", COLLECTION, clusterShape(1, 2));
 
-      try (SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      {
         v =
-            client
+            node2
+                .getSolrClient()
                 .query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false"))
                 .getResults()
                 .get(0)
@@ -166,18 +171,20 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
     node1.start();
     waitForState("", COLLECTION, clusterShape(1, 2));
-    try (SolrClient client = getHttpSolrClient(node1.getBaseUrl().toString())) {
+    {
       Object v =
-          client
+          node1
+              .getSolrClient()
               .query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false"))
               .getResults()
               .get(0)
               .get("num");
       assertEquals("30", v.toString());
     }
-    try (SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+    {
       Object v =
-          client
+          node2
+              .getSolrClient()
               .query(COLLECTION, new SolrQuery("q", "id:1", "distrib", "false"))
               .getResults()
               .get(0)

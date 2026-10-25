@@ -1,0 +1,43 @@
+= Major Changes in Solr 11
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr 11.0 is a major new release of Solr.
+
+This page highlights the most important changes including new features and changes in default behavior as well as previously deprecated features that have now been removed.
+
+== Solr 11 Upgrade Planning
+
+Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
+For example, if you are currently using Solr 10.1, you should review changes made in all subsequent 10.x releases in addition to the 11.0-specific changes on this page.
+
+== Removed Features
+
+=== Overseer Roles API
+
+The `ADDROLE` and `REMOVEROLE` Collections API commands have been removed, together with their V2 `add-role` and `remove-role` counterparts, the `CollectionAdminRequest.addRole` and `CollectionAdminRequest.removeRole` SolrJ methods, and the `roles` section of the `CLUSTERSTATUS` response.
+The `/roles.json` node in ZooKeeper is no longer read or written; an existing one is simply ignored and may be deleted.
+
+Overseer designates are now declared at startup with node roles, for example:
+
+[source,bash]
+----
+bin/solr start -Dsolr.node.roles=data:on,overseer:preferred
+----
+
+A node started this way asks the Overseer to re-run its node prioritization, so a preferred node takes over without waiting for the current Overseer to restart.
+Note that node roles are fixed for the lifetime of a node: unlike `ADDROLE`, they cannot be changed on a running node.

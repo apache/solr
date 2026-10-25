@@ -1,0 +1,12 @@
+title: >
+  `<metrics enabled="false"/>` in `solr.xml` now actually disables the metrics facility: no metric
+  exporter or JVM runtime metrics are set up, and instruments are created from a no-op OpenTelemetry
+  meter, so registries no longer accumulate metrics (and the memory they retain) for a disabled node.
+type: fixed
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhludnev
+    url: https://home.apache.org/phonebook.html?uid=mkhl
+links:
+  - name: SOLR-18455
+    url: https://issues.apache.org/jira/browse/SOLR-18455

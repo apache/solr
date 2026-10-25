@@ -78,7 +78,7 @@ public class ContentHashVersionProcessor extends UpdateRequestProcessor {
     super(next);
     this.core = req.getCore();
 
-    IndexSchema schema = core.getLatestSchema();
+    IndexSchema schema = req.getSchema();
     this.hashField = schema.getField(hashFieldName);
     this.dropSameDocuments = dropSameDocuments;
     this.rsp = rsp;

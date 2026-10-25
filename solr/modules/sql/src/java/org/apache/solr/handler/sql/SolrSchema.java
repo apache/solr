@@ -84,10 +84,6 @@ class SolrSchema extends AbstractSchema implements Closeable {
     isClosed = true;
   }
 
-  public boolean isClosed() {
-    return isClosed;
-  }
-
   @Override
   protected Map<String, Table> getTableMap() {
     CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(solrConnection);
@@ -160,8 +156,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
   RelDataType buildRowSchema(String collection) {
     // Temporary type factory, just for the duration of this method. Allowable
-    // because we're creating a proto-type, not a type; before being used, the
-    // proto-type will be copied into a real type factory.
+    // because we're creating a prototype, not a type; before being used, the
+    // prototype will be copied into a real type factory.
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
@@ -201,12 +197,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
       RelDataType type;
 
-      // We have to pass multi-valued fields through Calcite as SQL Type ANY
+      // We have to pass multivalued fields through Calcite as SQL Type ANY
       // Array doesn't work for aggregations! Calcite doesn't like GROUP BY on an ARRAY field
-      // but Solr happily computes aggs on a multi-valued field, so we have a paradigm mis-match and
-      // ANY is the best way to retain use of operators on multi-valued fields while still being
+      // but Solr happily computes aggs on a multivalued field, so we have a paradigm mismatch and
+      // ANY is the best way to retain use of operators on multivalued fields while still being
       // able
-      // to GROUP BY and project the multi-valued fields in results
+      // to GROUP BY and project the multivalued fields in results
       EnumSet<FieldFlag> flags = getFieldFlags(luceneFieldInfo);
       if (flags != null && flags.contains(FieldFlag.MULTI_VALUED)) {
         type = typeFactory.createSqlType(SqlTypeName.ANY);

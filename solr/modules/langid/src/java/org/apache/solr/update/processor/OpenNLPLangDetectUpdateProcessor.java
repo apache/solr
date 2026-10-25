@@ -59,7 +59,7 @@ public class OpenNLPLangDetectUpdateProcessor extends LanguageIdentifierUpdatePr
   protected List<DetectedLanguage> detectLanguage(Reader solrDocReader) {
     List<DetectedLanguage> languages = new ArrayList<>();
     String content = SolrInputDocumentReader.asString(solrDocReader);
-    if (content.length() != 0) {
+    if (!content.isEmpty()) {
       LanguageDetectorME ldme = new LanguageDetectorME(model);
       Language[] langs = ldme.predictLanguages(content);
       for (Language language : langs) {

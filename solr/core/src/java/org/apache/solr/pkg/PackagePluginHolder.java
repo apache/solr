@@ -90,6 +90,8 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting the same package Version instance, not just an equal one
   private synchronized void reload(SolrPackageLoader.SolrPackage pkg, SolrCore core) {
     String lessThan = core.getSolrConfig().maxPackageVersion(info.pkgName);
     SolrPackageLoader.SolrPackage.Version newest = pkg.getLatest(lessThan);

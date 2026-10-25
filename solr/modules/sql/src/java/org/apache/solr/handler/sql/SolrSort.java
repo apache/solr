@@ -33,6 +33,7 @@ import org.apache.calcite.rex.RexNode;
 /** Implementation of {@link org.apache.calcite.rel.core.Sort} relational expression in Solr. */
 class SolrSort extends Sort implements SolrRel {
 
+  @SuppressWarnings("ReferenceEquality")
   SolrSort(
       RelOptCluster cluster,
       RelTraitSet traitSet,
@@ -42,6 +43,7 @@ class SolrSort extends Sort implements SolrRel {
       RexNode fetch) {
     super(cluster, traitSet, child, collation, offset, fetch);
 
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
   }

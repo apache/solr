@@ -78,10 +78,9 @@ public class SolrStartup {
 
       solrRunner = new JettySolrRunner(tmpSolrHome.toString(), buildJettyConfig());
       solrRunner.start(false);
-      try (SolrClient client = solrRunner.newClient()) {
-        for (int i = 0; i < NUM_CORES; i++) {
-          createCore(client, "core-prefix-" + i);
-        }
+      SolrClient client = solrRunner.getSolrClient();
+      for (int i = 0; i < NUM_CORES; i++) {
+        createCore(client, "core-prefix-" + i);
       }
       solrRunner.stop();
     }

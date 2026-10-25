@@ -147,6 +147,8 @@ solrAdminApp.controller('LoginController',
               }
 
               if (errorText === "") {
+                // The V2 solrApi client picks these up automatically via the superagent plugin
+                // registered in app.js .config()                
                 sessionStorage.setItem("auth.username", payload['sub']);
                 sessionStorage.setItem("auth.header", "Bearer " + accessToken);
                 sessionStorage.removeItem("auth.statusText");

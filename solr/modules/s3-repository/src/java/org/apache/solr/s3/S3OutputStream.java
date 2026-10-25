@@ -151,7 +151,7 @@ public class S3OutputStream extends OutputStream {
     }
 
     // Flush is possible only if we have more data than the required part size
-    // If buffer size is lower than than, just skip
+    // If buffer size is lower, then just skip
     if (buffer.position() - buffer.arrayOffset() >= MIN_PART_SIZE) {
       uploadPart();
     }

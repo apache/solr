@@ -16,9 +16,15 @@
  */
 package org.apache.solr.core;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.tracing.TraceUtils;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,6 +34,35 @@ public class TestTracerConfigurator extends SolrTestCaseJ4 {
   public static void setUpProperties() {
     System.setProperty("otel.service.name", "something");
     System.setProperty("solr.otelDefaultConfigurator", "configuratorClassDoesNotExistTest");
+  }
+
+  @Before
+  public void resetOtel() {
+    OpenTelemetryConfigurator.resetForTest();
+  }
+
+  /** A {@code <tracerConfig>} in solr.xml takes precedence and supplies the OpenTelemetry. */
+  @Test
+  public void customConfiguratorTest() {
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    NodeConfig cfg =
+        new NodeConfig.NodeConfigBuilder("testNode", TEST_PATH())
+            .setTracerConfig(
+                new PluginInfo("tracerConfig", Map.of("class", Custom.class.getName())))
+            .build();
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
+    // not SimplePropagator, which is what the other code paths would have installed
+    assertSame(
+        W3CTraceContextPropagator.getInstance(),
+        GlobalOpenTelemetry.getPropagators().getTextMapPropagator());
+  }
+
+  public static class Custom extends OpenTelemetryConfigurator {
+    @Override
+    protected OpenTelemetry createOpenTelemetry() {
+      return OpenTelemetry.propagating(
+          ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
+    }
   }
 
   @Test

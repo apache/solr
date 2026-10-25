@@ -27,6 +27,8 @@ public class DualRegistryAttributedLongTimer extends AttributedLongTimer {
 
   private final AttributedLongTimer nodeTimer;
 
+  @SuppressWarnings(
+      "ReferenceEquality") // sanity check that two distinct histogram instances were passed in
   public DualRegistryAttributedLongTimer(
       LongHistogram coreHistogram,
       Attributes coreAttributes,

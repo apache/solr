@@ -24,10 +24,8 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_CONFIGSET;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
@@ -94,9 +92,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     requestBody.location =
         getAndValidateBackupLocation(requestBody.repository, requestBody.location);
 
-    if (requestBody.incremental == null) {
-      requestBody.incremental = Boolean.TRUE;
-    }
     if (requestBody.backupStrategy == null) {
       requestBody.backupStrategy = CollectionAdminParams.COPY_FILES_STRATEGY;
     }
@@ -125,9 +120,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     if (!StringUtils.isBlank(requestBody.backupStrategy)) {
       remoteMessage.put(INDEX_BACKUP_STRATEGY, remoteMessage.remove("backupStrategy"));
     }
-    if (!StringUtils.isBlank(requestBody.snapshotName)) {
-      remoteMessage.put(COMMIT_NAME, remoteMessage.remove("snapshotName"));
-    }
     return new ZkNodeProps(remoteMessage);
   }
 
@@ -138,8 +130,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     requestBody.repository = params.get(BACKUP_REPOSITORY);
     requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
     requestBody.backupStrategy = params.get(INDEX_BACKUP_STRATEGY);
-    requestBody.snapshotName = params.get(COMMIT_NAME);
-    requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
     requestBody.backupConfigset = params.getBool(BACKUP_CONFIGSET);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
     requestBody.extraProperties =

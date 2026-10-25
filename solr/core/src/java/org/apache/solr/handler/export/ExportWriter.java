@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BitSetIterator;
@@ -52,10 +54,12 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -64,7 +68,9 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.DoubleValueFieldType;
@@ -76,7 +82,10 @@ import org.apache.solr.schema.LongValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.search.DocIterationInfo;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocValuesIteratorCache;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
@@ -124,7 +133,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private int priorityQueueSize;
   StreamExpression streamExpression;
   StreamContext streamContext;
+  SolrReturnFields returnFields;
   List<FieldWriter> fieldWriters;
+  DocTransformer transformer;
   int totalHits = 0;
   FixedBitSet[] sets = null;
   PushWriter writer;
@@ -268,35 +279,38 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
     }
     SolrParams params = req.getParams();
-    String fl = params.get("fl");
 
-    String[] fields = null;
-
-    if (fl == null) {
+    if (params.get(CommonParams.FL) == null) {
       writeException(
           (new IOException(new SyntaxError("export field list (fl) must be specified."))),
           writer,
           true);
       return;
-    } else {
-      fields = fl.split(",");
-
-      for (int i = 0; i < fields.length; i++) {
-
-        fields[i] = fields[i].trim();
-
-        if (fields[i].equals("score")) {
-          writeException(
-              (new IOException(new SyntaxError("Scoring is not currently supported with xsort."))),
-              writer,
-              true);
-          return;
-        }
-      }
     }
 
     try {
-      fieldWriters = getFieldWriters(fields, req);
+      returnFields = new SolrReturnFields(req);
+    } catch (Exception e) {
+      writeException(e, writer, true);
+      return;
+    }
+
+    if (returnFields.wantsScore()) {
+      writeException(
+          (new IOException(new SyntaxError("Scoring is not currently supported with xsort."))),
+          writer,
+          true);
+      return;
+    }
+
+    try {
+      fieldWriters = getFieldWriters(returnFields, req);
+      transformer = returnFields.getTransformer();
+      if (transformer != null) {
+        transformer.setContext(
+            new ExportResultContext(
+                returnFields, searcher, info.getResponseBuilder().getQuery(), req));
+      }
     } catch (Exception e) {
       writeException(e, writer, true);
       return;
@@ -483,32 +497,72 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
+    if (transformer == null) {
+      for (FieldWriter fieldWriter : writers) {
+        fieldWriter.write(sortDoc, context, ew);
+      }
+      return;
+    }
+
+    SolrDocument doc = new SolrDocument();
+    EntryWriter docWriter =
+        new EntryWriter() {
+          @Override
+          public EntryWriter put(CharSequence k, Object v) {
+            doc.setField(k.toString(), materialize(v));
+            return this;
+          }
+        };
     for (FieldWriter fieldWriter : writers) {
-      fieldWriter.write(sortDoc, context, ew);
+      fieldWriter.write(sortDoc, context, docWriter);
+    }
+    transformer.transform(doc, sortDoc.docBase + sortDoc.docId, DocIterationInfo.NONE);
+    for (Map.Entry<String, Object> entry : doc) {
+      if (returnFields.wantsField(entry.getKey())) {
+        ew.put(entry.getKey(), entry.getValue());
+      }
     }
   }
 
-  public List<FieldWriter> getFieldWriters(String[] fields, SolrQueryRequest req)
+  /** Converts lazily written values to plain Java objects that can outlive the write call. */
+  static Object materialize(Object v) {
+    if (v instanceof IteratorWriter iteratorWriter) {
+      List<Object> lst = new ArrayList<>();
+      iteratorWriter.toList(lst);
+      return lst;
+    } else if (v instanceof MapWriter mapWriter) {
+      return new SimpleOrderedMap<>(mapWriter);
+    }
+    return v;
+  }
+
+  List<FieldWriter> getFieldWriters(SolrReturnFields solrReturnFields, SolrQueryRequest req)
       throws IOException {
     DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(req.getSearcher(), false);
-    SolrReturnFields solrReturnFields = new SolrReturnFields(fields, req);
     boolean includeStoredFields = req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
+
+    // Also fetch fields only a transformer reads, e.g. the f= of [geo]; wantsField excludes them
+    Set<String> fieldsToFetch =
+        solrReturnFields.getLuceneFieldNames() != null
+            ? solrReturnFields.getLuceneFieldNames()
+            : Set.of();
+    // Non-exportable fields named here error; ones matched only by a glob are skipped.
+    // Includes fieldsToFetch, since requested names hold an alias, not its source field.
+    Set<String> explicitlyNamedFields = new HashSet<>(fieldsToFetch);
+    if (solrReturnFields.getRequestedFieldNames() != null) {
+      explicitlyNamedFields.addAll(solrReturnFields.getRequestedFieldNames());
+    }
 
     List<FieldWriter> writers = new ArrayList<>();
     Set<SchemaField> docValueFields = new LinkedHashSet<>();
     Map<String, SchemaField> storedFields = new LinkedHashMap<>();
 
     for (String field : req.getSearcher().getFieldNames()) {
-      if (!solrReturnFields.wantsField(field)) {
+      if (!solrReturnFields.wantsField(field) && !fieldsToFetch.contains(field)) {
         continue;
       }
       SchemaField schemaField = req.getSchema().getField(field);
       FieldType fieldType = schemaField.getType();
-
-      Set<String> requestFieldNames =
-          solrReturnFields.getRequestedFieldNames() == null
-              ? Set.of()
-              : solrReturnFields.getRequestedFieldNames();
 
       if (canUseDocValues(schemaField, fieldType)) {
         // Prefer DocValues when available
@@ -517,7 +571,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         // Field is stored-only (no usable DocValues)
         if (includeStoredFields) {
           storedFields.put(field, schemaField);
-        } else if (requestFieldNames.contains(field)) {
+        } else if (explicitlyNamedFields.contains(field)) {
           // Explicitly requested field without DocValues and includeStoredFields=false
           throw new IOException(
               schemaField
@@ -525,7 +579,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                   + "Try setting includeStoredFields=true to retrieve this field from stored values.");
         }
         // Else: glob matched stored-only field without includeStoredFields - silently skip
-      } else if (requestFieldNames.contains(field)) {
+      } else if (explicitlyNamedFields.contains(field)) {
         // Explicitly requested field that has neither DocValues nor stored
         if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
           throw new IOException(
@@ -608,6 +662,47 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     return writers;
+  }
+
+  /** Context for transformers in {@code fl}; there is no {@link DocList} when exporting. */
+  private static final class ExportResultContext extends ResultContext {
+    private final ReturnFields returnFields;
+    private final SolrIndexSearcher searcher;
+    private final Query query;
+    private final SolrQueryRequest req;
+
+    ExportResultContext(
+        ReturnFields returnFields, SolrIndexSearcher searcher, Query query, SolrQueryRequest req) {
+      this.returnFields = returnFields;
+      this.searcher = searcher;
+      this.query = query;
+      this.req = req;
+    }
+
+    @Override
+    public DocList getDocList() {
+      return null;
+    }
+
+    @Override
+    public ReturnFields getReturnFields() {
+      return returnFields;
+    }
+
+    @Override
+    public SolrIndexSearcher getSearcher() {
+      return searcher;
+    }
+
+    @Override
+    public Query getQuery() {
+      return query;
+    }
+
+    @Override
+    public SolrQueryRequest getRequest() {
+      return req;
+    }
   }
 
   private static boolean canUseDocValues(SchemaField schemaField, FieldType fieldType) {
@@ -857,6 +952,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
     private void topDocs() throws IOException {
       try {
+        // null bitset = leaf was never collected
+        if (bits == null) {
+          index = -1;
+          return;
+        }
         queue.reset();
         SortDoc top = queue.top();
         this.sortDoc.setNextReader(context);

@@ -49,6 +49,21 @@ V1 API::
 ----
 http://localhost:8983/solr/techproducts/config
 ----
+
+The response is the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
+A plugin's *unnamed* child elements - for example, the anonymous `<processor>` entries inside an `updateRequestProcessorChain` that has no `name` attribute of its own - are grouped under an empty-string (`""`) key, matching the legacy behavior of `solrconfig.xml -> JSON` conversion:
+
+[source,json]
+----
+"updateRequestProcessorChain": [{
+    "name": "add-unknown-fields-to-the-schema",
+    "": [
+      {"class": "solr.LogUpdateProcessorFactory"},
+      {"class": "solr.DistributedUpdateProcessorFactory"},
+      {"class": "solr.RunUpdateProcessorFactory"}
+    ]
+}]
+----
 ====
 
 V2 API::
@@ -58,11 +73,28 @@ V2 API::
 ----
 http://localhost:8983/api/collections/techproducts/config
 ----
+
+The response is the same merged configuration as the V1 API, with three differences.
+
+First, a plugin's unnamed child elements are grouped under a self-describing `children` key instead of an empty string, since Solr's V2 JSON serialization library does not allow empty-string keys:
+
+[source,json]
+----
+"updateRequestProcessorChain": [{
+    "name": "add-unknown-fields-to-the-schema",
+    "children": [
+      {"class": "solr.LogUpdateProcessorFactory"},
+      {"class": "solr.DistributedUpdateProcessorFactory"},
+      {"class": "solr.RunUpdateProcessorFactory"}
+    ]
+}]
+----
+
+Second, the `searchComponent` and `queryResponseWriter` sections are renamed to their pluralized forms, `searchComponents` and `queryResponseWriters`, as described below.
+
+Third, the `requestHandler` section is similarly renamed to `requestHandlers`, matching the dedicated `/config/requestHandlers` endpoint described below.
 ====
 ======
-
-The response will be the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
-
 
 It's possible to restrict the returned configuration to a top-level section, such as, `query`, `requestHandler` or `updateHandler`.
 To do this, append the name of the section to the `config` endpoint.
@@ -83,7 +115,7 @@ V2 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/api/collections/techproducts/config/requestHandler
+http://localhost:8983/api/collections/techproducts/config/requestHandlers
 ----
 ====
 ======
@@ -92,7 +124,12 @@ The output will be details of each request handler defined in `solrconfig.xml`, 
 To see the configuration for implicit request handlers, add `expandParams=true` to the request.
 See the documentation for implicit request handlers linked above for examples using this command.
 
-The available top-level sections that can be added as path parameters are: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
+The available top-level sections that can be added as path parameters include: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
+(Other `solrconfig.xml` sections emitted by Solr may also be fetched the same way)
+
+In the V2 API, several multi-valued sections use pluralized path names (and the same plural as the response JSON key).
+
+V1 paths keep the singular / internal names unchanged.
 
 To further restrict the request to a single component within a top-level section, use the `componentName` request parameter.
 
@@ -113,12 +150,12 @@ V2 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/api/collections/techproducts/config/requestHandler?componentName=/select
+http://localhost:8983/api/collections/techproducts/config/requestHandlers?componentName=/select
 ----
 ====
 ======
 
-The output of this command will look similar to:
+The output of this command will look similar to(V1 nests under `requestHandler`; V2 under `requestHandlers`):
 
 [source,json]
 ----
@@ -133,7 +170,58 @@ The output of this command will look similar to:
 }
 ----
 
-The ability to restrict to objects within a top-level section is limited to request handlers (`requestHandler`), search components (`searchComponent`), and response writers (`queryResponseWriter`).
+By-name lookup applies to sections that are maps of named plugins, such as request handlers, search components, response writers etc.
+List-shaped sections like initParams, listeners, updateRequestProcessorChain etc cannot be filtered by name.
+
+For those name-keyed sections other than the request handler, the V2 API uses a path segment instead of the `componentName` request parameter, under the pluralized section names.
+For example, to return configuration for the `elevator` search component:
+
+[tabs#getnamedcomponent]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/techproducts/config/searchComponent?componentName=elevator
+----
+====
+V2 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/api/collections/techproducts/config/searchComponents/elevator
+----
+====
+======
+
+The same pattern applies to other named-key sections.
+For example, to return configuration for the `xslt` response writer:
+
+[tabs#getnamedwriter]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/techproducts/config/queryResponseWriter?componentName=xslt
+http://localhost:8983/solr/techproducts/config/updateProcessor?componentName=uuid
+----
+====
+V2 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/api/collections/techproducts/config/queryResponseWriters/xslt
+http://localhost:8983/api/collections/techproducts/config/updateProcessors/uuid
+----
+====
+======
+
+Request handlers are a special case and continue to use `componentName` in both APIs, as shown above.
 
 == Commands to Modify the Config
 
@@ -240,7 +328,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}'
 ----
 ====
 V2 API::
@@ -248,7 +336,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}'
 ----
 ====
 ======
@@ -299,7 +387,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}'
 ----
 ====
 
@@ -308,7 +396,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}'
 ----
 ====
 ======
@@ -379,14 +467,14 @@ To create a request handler, we can use the `add-requesthandler` command:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults":{ "x": "y" ,"a": "b", "rows":10 },
     "useParams": "x"
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 
 [tabs#addhandler]
@@ -396,14 +484,14 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": { "x": "y" ,"a": "b", "rows":10 },
     "useParams": "x"
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -412,14 +500,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": { "x": "y" ,"a": "b", "rows":10 },
     "useParams": "x"
   }
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -428,7 +516,7 @@ Make a call to the new request handler to check if it is registered:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
+curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
 ----
 
 And you should see the following as output:
@@ -455,14 +543,14 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "update-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": {"x": "new value for X", "rows": "20"},
     "useParams": "x"
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -471,14 +559,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "update-requesthandler": {
     "name": "/mypath",
     "class": "solr.DumpRequestHandler",
     "defaults": {"x": "new value for X", "rows": "20"},
     "useParams": "x"
   }
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -492,14 +580,14 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/myterms",
     "class": "solr.SearchHandler",
     "defaults": {"terms": true, "distrib":false},
     "components": ["terms"]
   }
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -508,14 +596,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/myterms",
     "class": "solr.SearchHandler",
     "defaults": {"terms": true, "distrib":false},
     "components": ["terms"]
   }
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -529,9 +617,9 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{
   "delete-requesthandler": "/myterms"
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -540,9 +628,9 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{
   "delete-requesthandler": "/myterms"
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -575,7 +663,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}'
 ----
 ====
 
@@ -584,7 +672,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}'
 ----
 ====
 ======
@@ -632,7 +720,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}'
 ----
 ====
 
@@ -641,7 +729,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}'
 ----
 ====
 ======
@@ -660,11 +748,11 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{"add-updateprocessor":
   {"name": "firstFld",
   "class": "solr.FirstFieldValueUpdateProcessorFactory",
   "fieldName": "test_s"}
-}' http://localhost:8983/solr/techproducts/config
+}'
 ----
 ====
 
@@ -673,11 +761,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{"add-updateprocessor":
   {"name": "firstFld",
   "class": "solr.FirstFieldValueUpdateProcessorFactory",
   "fieldName": "test_s"}
-}' http://localhost:8983/api/collections/techproducts/config
+}'
 ----
 ====
 ======
@@ -868,7 +956,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{}' http://localhost:8983/solr/techproducts/config
+curl 'http://localhost:8983/solr/techproducts/config' -H 'Content-type:application/json' -d '{}'
 ----
 ====
 
@@ -877,7 +965,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d '{}' http://localhost:8983/api/collections/techproducts/config
+curl 'http://localhost:8983/api/collections/techproducts/config' -H 'Content-type:application/json' -d '{}'
 ----
 ====
 ======

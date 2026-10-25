@@ -24,16 +24,18 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.testcontainers.containers.GenericContainer;
 
 /**
  * Integration tests for TikaServerExtractionBackend using a real Tika Server via Testcontainers.
@@ -60,35 +62,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static GenericContainer<?> tika;
-  private static String baseUrl;
-
-  @SuppressWarnings("resource")
-  @BeforeClass
-  public static void startTikaServer() {
-    Assume.assumeFalse(
-        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
-
-    try {
-      tika = new GenericContainer<>("apache/tika:3.2.3.0-full").withExposedPorts(9998);
-      tika.start();
-      baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
-    } catch (Throwable t) {
-      // Skip tests if Docker/Testcontainers are not available in the environment
-      Assume.assumeNoException("Docker/Testcontainers not available; skipping TikaServer tests", t);
-    }
-  }
-
-  @AfterClass
-  public static void stopTikaServer() {
-    if (tika != null) {
-      try {
-        tika.stop();
-      } catch (Throwable ignore) {
-      }
-      tika = null;
-    }
-  }
+  @ClassRule
+  public static final TikaServerContainerRule tikaContainer = new TikaServerContainerRule();
 
   private static ExtractionRequest newRequest(
       String resourceName,
@@ -109,8 +84,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractTextAndMetadata() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "Hello TestContainers".getBytes(StandardCharsets.UTF_8);
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
         ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
@@ -129,8 +104,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtractWithSaxHandlerXml() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = "Hello XML".getBytes(StandardCharsets.UTF_8);
       ExtractionRequest request = newRequest("test.txt", "text/plain", "xml");
       try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
@@ -151,8 +126,8 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPdfWithImageRecursive() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
-    try (TikaServerExtractionBackend backend = new TikaServerExtractionBackend(baseUrl)) {
+    try (TikaServerExtractionBackend backend =
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl())) {
       byte[] data = Files.readAllBytes(getFile("extraction/pdf-with-image.pdf"));
       // Enable recursive extraction and set header to extract images from PDF
       ExtractionRequest request =
@@ -182,11 +157,10 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxCharsLimitEnforced() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
     // Set a very small max chars limit and attempt to extract more than that
     long maxChars = 10L;
     try (TikaServerExtractionBackend backend =
-        new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl(), 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
               .getBytes(StandardCharsets.UTF_8);
@@ -205,10 +179,9 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxCharsLimitEnforcedWithSaxHandler() throws Exception {
-    Assume.assumeTrue("Tika server container not started", tika != null);
     long maxChars = 10L;
     try (TikaServerExtractionBackend backend =
-        new TikaServerExtractionBackend(baseUrl, 180, null, maxChars)) {
+        new TikaServerExtractionBackend(tikaContainer.getBaseUrl(), 180, null, maxChars)) {
       byte[] data =
           ("This content is definitely longer than ten characters.")
               .getBytes(StandardCharsets.UTF_8);
@@ -225,6 +198,66 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
             "Expected message to mention max size exceeded",
             e.getMessage().contains("exceeded the configured maximum size"));
       }
+    }
+  }
+
+  /**
+   * Races the last backend's close() (which stops the shared HttpClient) against construction of a
+   * new backend, which must end up with a working client rather than the one being stopped.
+   */
+  @Test
+  public void testConcurrentCloseAndAcquireSharedResources() throws Exception {
+    String baseUrl = tikaContainer.getBaseUrl();
+    int iterations = atLeast(25);
+    ExecutorService exec =
+        ExecutorUtil.newMDCAwareFixedThreadPool(2, new SolrNamedThreadFactory("tikaRace"));
+    try {
+      for (int i = 0; i < iterations; i++) {
+        TikaServerExtractionBackend last = new TikaServerExtractionBackend(baseUrl);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        Future<?> closer =
+            exec.submit(
+                () -> {
+                  barrier.await();
+                  last.close();
+                  return null;
+                });
+        Future<TikaServerExtractionBackend> opener =
+            exec.submit(
+                () -> {
+                  barrier.await();
+                  return new TikaServerExtractionBackend(baseUrl);
+                });
+        closer.get();
+        try (TikaServerExtractionBackend fresh = opener.get()) {
+          assertExtracts(fresh, "iteration " + i);
+        }
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(exec);
+    }
+  }
+
+  @Test
+  public void testCloseIsIdempotent() throws Exception {
+    String baseUrl = tikaContainer.getBaseUrl();
+    TikaServerExtractionBackend first = new TikaServerExtractionBackend(baseUrl);
+    try (TikaServerExtractionBackend second = new TikaServerExtractionBackend(baseUrl)) {
+      first.close();
+      first.close();
+      assertExtracts(second, "after double close");
+    }
+    try (TikaServerExtractionBackend third = new TikaServerExtractionBackend(baseUrl)) {
+      assertExtracts(third, "after all closed");
+    }
+  }
+
+  private void assertExtracts(TikaServerExtractionBackend backend, String marker) throws Exception {
+    byte[] data = ("Hello " + marker).getBytes(StandardCharsets.UTF_8);
+    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+      ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
+      assertNotNull(res);
+      assertTrue(res.getContent().contains("Hello " + marker));
     }
   }
 }

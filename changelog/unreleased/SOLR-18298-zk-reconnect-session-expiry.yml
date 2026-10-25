@@ -1,0 +1,8 @@
+title: ZkController no longer treats every ZooKeeper reconnect as session expiration. Re-election and core re-registration now run only after Curator reports ConnectionState.LOST, restoring Solr 9 behavior during ZK rolling restarts.
+type: fixed
+authors:
+  - name: Shrey Narayan (NextBrick)
+    url: https://nextbrick.com
+links:
+  - name: SOLR-18298
+    url: https://issues.apache.org/jira/browse/SOLR-18298

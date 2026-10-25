@@ -16,53 +16,18 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * @since solr 1.3
  */
 class SimpleQueryConverter extends SpellingQueryConverter {
 
+  private static final WhitespaceAnalyzer ANALYZER = new WhitespaceAnalyzer();
+
   @Override
-  public Collection<Token> convert(String origQuery) {
-    Collection<Token> result = new HashSet<>();
-
-    try (WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer();
-        TokenStream ts = analyzer.tokenStream("", origQuery)) {
-      // TODO: support custom attributes
-      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-      TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
-      FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
-      PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
-
-      ts.reset();
-
-      while (ts.incrementToken()) {
-        Token tok = new Token();
-        tok.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-        tok.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-        tok.setFlags(flagsAtt.getFlags());
-        tok.setPayload(payloadAtt.getPayload());
-        tok.setPositionIncrement(posIncAtt.getPositionIncrement());
-        tok.setType(typeAtt.type());
-        result.add(tok);
-      }
-      ts.end();
-      return result;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public TokenStream convert(String origQuery) {
+    return ANALYZER.tokenStream("", origQuery);
   }
 }

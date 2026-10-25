@@ -463,7 +463,6 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       String fl = fromField + "," + toField;
 
       joinParams.set("fl", fl);
-      joinParams.set("qt", "/export");
       joinParams.set(SORT, toField + " asc," + fromField + " asc");
 
       StringBuilder nodeQuery = new StringBuilder();
@@ -479,7 +478,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       try {
         stream =
             new UniqueStream(
-                new CloudSolrStream(solrConnection, collection, joinParams),
+                new CloudSolrStream(solrConnection, collection, "/export", joinParams),
                 new MultipleFieldEqualitor(
                     new FieldEqualitor(toField), new FieldEqualitor(fromField)));
         stream.setStreamContext(streamContext);

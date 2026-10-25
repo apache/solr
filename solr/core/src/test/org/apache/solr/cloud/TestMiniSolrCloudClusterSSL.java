@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -205,8 +206,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
                   }
                 });
         assertTrue(
-            "Expected an root cause SSL Exception, got: " + ex.toString(),
-            ex.getCause() instanceof SSLException);
+            "Expected an SSL Exception in the cause chain, got: " + ex,
+            SolrException.hasCause(ex, SSLException.class));
       }
     } finally {
       cluster.shutdown();
@@ -411,6 +412,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     if (random().nextBoolean()) {
       return HttpSolrClient.builder(url).build();
     } // else...
-    return getHttpSolrClient(url);
+    return new HttpJettySolrClient.Builder(url).build();
   }
 }

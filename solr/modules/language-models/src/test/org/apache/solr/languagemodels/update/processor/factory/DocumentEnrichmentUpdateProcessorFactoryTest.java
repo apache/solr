@@ -419,8 +419,7 @@ public class DocumentEnrichmentUpdateProcessorFactoryTest extends TestLanguageMo
       String outputFieldName,
       String prompt,
       SolrCore core,
-      String modelName)
-      throws Exception {
+      String modelName) {
 
     LargeLanguageModelStore.getManagedModelStore(core)
         .addModel(new SolrLargeLanguageModel(modelName, null, null));

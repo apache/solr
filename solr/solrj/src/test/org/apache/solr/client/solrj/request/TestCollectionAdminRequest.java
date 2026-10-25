@@ -17,13 +17,33 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /** Unit tests for {@link CollectionAdminRequest}. */
 public class TestCollectionAdminRequest extends SolrTestCase {
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testAdminRequestsChooseExplicitHttpMethods() {
+    CollectionAdminRequest<CollectionAdminResponse> legacyRequest =
+        new CollectionAdminRequest<>(CollectionAction.CREATE) {
+          @Override
+          protected CollectionAdminResponse createResponse(NamedList<Object> namedList) {
+            return new CollectionAdminResponse();
+          }
+        };
+    assertEquals(METHOD.POST, legacyRequest.getMethod());
+    assertEquals(
+        METHOD.POST, CollectionAdminRequest.createCollection("collection", null, 1, 1).getMethod());
+    assertEquals(METHOD.GET, new CollectionAdminRequest.List().getMethod());
+  }
 
   @Test
   public void testInvalidCollectionNameRejectedWhenCreatingCollection() {

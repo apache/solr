@@ -129,7 +129,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     assert !DistribPhase.FROMLEADER.equals(distribPhase);
 
     this.zkController = this.req.getCoreContainer().getZkController();
-    this.uniqueKeyField = this.req.getCore().getLatestSchema().getUniqueKeyField();
+    this.uniqueKeyField = this.req.getSchema().getUniqueKeyField();
     assert null != uniqueKeyField : "Factory didn't enforce uniqueKey field?";
   }
 

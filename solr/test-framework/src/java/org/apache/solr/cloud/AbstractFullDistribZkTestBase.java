@@ -49,16 +49,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.cli.ConfigSetUploadTool;
-import org.apache.solr.cli.DefaultToolRuntime;
-import org.apache.solr.cli.SolrCLI;
-import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CollectionScopedSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -99,6 +96,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
@@ -2223,19 +2221,16 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr)
       throws Exception {
 
-    Path fullConfDir = configSetDir.resolve(srcConfigSet);
-    String[] args =
-        new String[] {
-          "--conf-name", dstConfigName,
-          "--conf-dir", fullConfDir.toAbsolutePath().toString(),
-          "-z", zkAddr
-        };
-
-    ToolRuntime runtime = new DefaultToolRuntime();
-    ConfigSetUploadTool tool = new ConfigSetUploadTool(runtime);
-
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
-    assertEquals("Tool should have returned 0 for success, returned: " + res, 0, res);
+    Path confPath =
+        ConfigSetService.getConfigsetPath(
+            configSetDir.resolve(srcConfigSet).toString(), configSetDir.toString());
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkAddr)
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      zkClient.upConfig(confPath, dstConfigName);
+    }
   }
 
   @Override
@@ -2556,6 +2551,31 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     return commonCloudSolrClient;
   }
 
+  /** Returns the jetty identified by node name or base URL. */
+  protected JettySolrRunner getJetty(String nodeNameOrUrl) {
+    return MiniSolrCloudCluster.findJetty(allRunners(), nodeNameOrUrl);
+  }
+
+  /**
+   * Returns the jetty-owned client for the node hosting {@code replica}, scoped to that replica's
+   * core. The caller must not close it -- the jetty owns it.
+   */
+  protected SolrClient getSolrClient(Replica replica) {
+    return new CollectionScopedSolrClient(
+        MiniSolrCloudCluster.findReplicaJetty(allRunners(), replica).getSolrClient(),
+        replica.getCoreName());
+  }
+
+  /** All runners of this cluster; the control jetty is kept outside {@link #jettys}. */
+  private List<JettySolrRunner> allRunners() {
+    if (controlJetty == null) {
+      return jettys;
+    }
+    List<JettySolrRunner> all = new ArrayList<>(jettys);
+    all.add(controlJetty);
+    return all;
+  }
+
   protected CloudSolrClient getSolrClient(String collectionName) {
     return solrClientByCollection.computeIfAbsent(
         collectionName,
@@ -2816,7 +2836,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     String coreName = replica.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(replica.getBaseUrl())) {
+    try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

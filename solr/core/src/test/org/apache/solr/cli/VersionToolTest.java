@@ -28,14 +28,18 @@ public class VersionToolTest extends SolrCloudTestCase {
     configureCluster(1).configure();
   }
 
-  @Test
-  public void testClientVersionOnly() throws Exception {
-    String[] toolArgs = new String[] {"version"};
+  /** Runs the tool and returns everything it printed. Overridden to exercise the picocli path. */
+  protected String runVersionTool(String[] toolArgs) throws Exception {
     CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
     VersionTool tool = new VersionTool(runtime);
     tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+    return runtime.getOutput();
+  }
 
-    String output = runtime.getOutput();
+  @Test
+  public void testClientVersionOnly() throws Exception {
+    String output = runVersionTool(new String[] {"version"});
+
     assertTrue("Output should contain 'Client version:'", output.contains("Client version:"));
     assertFalse("Output should not contain 'Server version:'", output.contains("Server version:"));
   }
@@ -45,12 +49,8 @@ public class VersionToolTest extends SolrCloudTestCase {
     JettySolrRunner randomJetty = cluster.getRandomJetty(random());
     String baseUrl = randomJetty.getBaseUrl().toString();
 
-    String[] toolArgs = new String[] {"version", "--solr-url", baseUrl};
-    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    VersionTool tool = new VersionTool(runtime);
-    tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+    String output = runVersionTool(new String[] {"version", "--solr-url", baseUrl});
 
-    String output = runtime.getOutput();
     assertTrue("Output should contain 'Client version:'", output.contains("Client version:"));
     assertTrue("Output should contain 'Server version:'", output.contains("Server version:"));
   }

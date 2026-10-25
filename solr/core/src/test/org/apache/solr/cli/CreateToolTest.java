@@ -24,6 +24,11 @@ import org.junit.Test;
 
 public class CreateToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   private static final String collectionName = "testCreateCollectionWithBasicAuth";
 
   @BeforeClass
@@ -50,6 +55,6 @@ public class CreateToolTest extends SolrCloudTestCase {
       "--verbose"
     };
 
-    assertEquals(0, CLITestHelper.runTool(args, CreateTool.class));
+    assertEquals(0, runTool(args, CreateTool.class));
   }
 }

@@ -67,7 +67,7 @@ public class GCSInstallShardTest extends AbstractInstallShardTest {
   }
 
   @AfterClass
-  public static void tearDownClass() throws Exception {
+  public static void tearDownClass() {
     LocalStorageGCSBackupRepository.clearStashedStorage();
   }
 }

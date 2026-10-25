@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -167,6 +168,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
 
     List<ShardBackupId> shardBackupIds =
         Arrays.stream(repository.listAllOrEmpty(shardBackupMetadataDir))
+            .filter(sbi -> sbi.endsWith(ShardBackupId.FILENAME_SUFFIX))
             .map(sbi -> ShardBackupId.fromShardMetadataFilename(sbi))
             .collect(Collectors.toList());
     for (ShardBackupId shardBackupId : shardBackupIds) {
@@ -206,13 +208,14 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
             .map(ShardBackupId::getBackupMetadataFilename)
             .collect(Collectors.toList()));
     repository.delete(incBackupFiles.getIndexDir(), unusedFiles);
-    try {
-      for (BackupId backupId : backupIdsDeletes) {
-        repository.deleteDirectory(
-            repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId)));
+    for (BackupId backupId : backupIdsDeletes) {
+      URI zkStateDir =
+          repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId));
+      try {
+        repository.deleteDirectory(zkStateDir);
+      } catch (FileNotFoundException | NoSuchFileException e) {
+        // zk_backup_* is created after shard copy, so a failed incremental backup may not have it
       }
-    } catch (FileNotFoundException e) {
-      // ignore this
     }
 
     // add details to result before deleting backupPropFiles

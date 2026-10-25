@@ -1,0 +1,10 @@
+title: >
+  The OpenAPI spec no longer describes the same URL twice: the dynamic-field and filestore-file
+  endpoints each named their path parameter differently per HTTP method, so consumers of the spec
+  saw two colliding entries, each missing the other's operations.
+type: fixed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18504
+    url: https://issues.apache.org/jira/browse/SOLR-18504

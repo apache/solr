@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the ADDROLE and REMOVEROLE Collections API commands, their V2 add-role and remove-role counterparts, the CollectionAdminRequest.addRole and removeRole SolrJ methods, and the roles section of CLUSTERSTATUS. Overseer designates are now declared only at startup with node roles, for example -Dsolr.node.roles=data:on,overseer:preferred.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18370
+    url: https://issues.apache.org/jira/browse/SOLR-18370

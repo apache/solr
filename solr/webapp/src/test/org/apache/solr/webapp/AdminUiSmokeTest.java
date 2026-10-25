@@ -91,9 +91,7 @@ public class AdminUiSmokeTest extends AdminUiTestBase {
             coreName + "/plugins", By.id("plugins"),
             coreName + "/segments", By.id("segments"));
     screens.forEach(this::smoke);
-    // the ping widget on the overview answers 503 when no healthcheck file is configured,
-    // as is the case for the _default configset
-    smoke(coreName + "/core-overview", By.id("dashboard"), "/admin/ping");
+    smoke(coreName + "/core-overview", By.id("dashboard"));
   }
 
   private void smoke(String route, By anchor) {

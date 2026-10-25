@@ -124,8 +124,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   public void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) {
     if (!enabled) {
-      consumer.accept("error", "metrics collection is disabled");
-      return;
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE, "Metrics collection is disabled");
     }
 
     Set<String> metricNames = MetricUtils.readParamsAsSet(params, MetricUtils.METRIC_NAME_PARAM);

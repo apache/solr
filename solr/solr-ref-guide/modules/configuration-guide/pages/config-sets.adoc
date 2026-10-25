@@ -108,12 +108,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -v -X POST -H 'Content-type: application/json' -d '{
+curl -v 'http://localhost:8983/api/cores' -H 'Content-type: application/json' -d '{
   "create":[{
     "name": "mycore",
     "instanceDir": "path/to/instance",
     "configSet": "configSet2"}]}'
-    http://localhost:8983/api/cores
 ----
 ====
 ======

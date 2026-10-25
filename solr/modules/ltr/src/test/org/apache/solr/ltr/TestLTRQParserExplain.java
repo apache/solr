@@ -213,30 +213,78 @@ public class TestLTRQParserExplain extends TestRerankBase {
     int[] expectedInterleaved = new int[] {7, 6, 8, 9};
     String[] expectedExplains =
         new String[] {
-          "\n8.0 = LinearModel(name=modelB,"
-              + "featureWeights=[featureB1=2.0,featureB2=4.0,featureAB=8.0]) "
-              + "model applied to features, sum of:\n  "
-              + "0.0 = prod of:\n    2.0 = weight on feature\n    0.0 = SolrFeature [name=featureB1, params={fq=[{!terms f=popularity}5]}]\n  "
-              + "0.0 = prod of:\n    4.0 = weight on feature\n    0.0 = SolrFeature [name=featureB2, params={fq=[{!terms f=title}different]}]\n  "
-              + "8.0 = prod of:\n    8.0 = weight on feature\n    1.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
-          "\n12.0 = LinearModel(name=modelA,"
-              + "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) "
-              + "model applied to features, sum of:\n  "
-              + "3.0 = prod of:\n    3.0 = weight on feature\n    1.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  "
-              + "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  "
-              + "0.0 = prod of:\n    27.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
-          "\n9.0 = LinearModel(name=modelA,"
-              + "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) "
-              + "model applied to features, sum of:\n  "
-              + "0.0 = prod of:\n    3.0 = weight on feature\n    0.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  "
-              + "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  "
-              + "0.0 = prod of:\n    27.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
-          "\n2.0 = LinearModel(name=modelB,"
-              + "featureWeights=[featureB1=2.0,featureB2=4.0,featureAB=8.0]) "
-              + "model applied to features, sum of:\n  "
-              + "2.0 = prod of:\n    2.0 = weight on feature\n    1.0 = SolrFeature [name=featureB1, params={fq=[{!terms f=popularity}5]}]\n  "
-              + "0.0 = prod of:\n    4.0 = weight on feature\n    0.0 = SolrFeature [name=featureB2, params={fq=[{!terms f=title}different]}]\n  "
-              + "0.0 = prod of:\n    8.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n"
+"""
+
+8.0 = LinearModel(name=modelB,\
+featureWeights=[featureB1=2.0,featureB2=4.0,featureAB=8.0]) \
+model applied to features, sum of:
+  \
+0.0 = prod of:
+    2.0 = weight on feature
+    0.0 = SolrFeature [name=featureB1, params={fq=[{!terms f=popularity}5]}]
+  \
+0.0 = prod of:
+    4.0 = weight on feature
+    0.0 = SolrFeature [name=featureB2, params={fq=[{!terms f=title}different]}]
+  \
+8.0 = prod of:
+    8.0 = weight on feature
+    1.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]
+""",
+"""
+
+12.0 = LinearModel(name=modelA,\
+featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) \
+model applied to features, sum of:
+  \
+3.0 = prod of:
+    3.0 = weight on feature
+    1.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]
+  \
+9.0 = prod of:
+    9.0 = weight on feature
+    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]
+  \
+0.0 = prod of:
+    27.0 = weight on feature
+    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]
+""",
+"""
+
+9.0 = LinearModel(name=modelA,\
+featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) \
+model applied to features, sum of:
+  \
+0.0 = prod of:
+    3.0 = weight on feature
+    0.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]
+  \
+9.0 = prod of:
+    9.0 = weight on feature
+    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]
+  \
+0.0 = prod of:
+    27.0 = weight on feature
+    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]
+""",
+"""
+
+2.0 = LinearModel(name=modelB,\
+featureWeights=[featureB1=2.0,featureB2=4.0,featureAB=8.0]) \
+model applied to features, sum of:
+  \
+2.0 = prod of:
+    2.0 = weight on feature
+    1.0 = SolrFeature [name=featureB1, params={fq=[{!terms f=popularity}5]}]
+  \
+0.0 = prod of:
+    4.0 = weight on feature
+    0.0 = SolrFeature [name=featureB2, params={fq=[{!terms f=title}different]}]
+  \
+0.0 = prod of:
+    8.0 = weight on feature
+    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]
+"""
         };
 
     String[] tests = new String[16];
@@ -293,34 +341,84 @@ public class TestLTRQParserExplain extends TestRerankBase {
     int[] expectedInterleaved = new int[] {9, 7, 6, 8};
     String[] expectedExplains =
         new String[] {
-          "\n0.07662583 = weight(title:bloomberg in 3) [SchemaSimilarity], result of:\n  "
-              + "0.07662583 = score(freq=4.0), computed as boost * idf * tf from:\n    "
-              + "0.105360515 = idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:\n      4 = n, number of documents containing term\n      4 = N, total number of documents with field\n    "
-              + "0.72727275 = tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:\n      4.0 = freq, occurrences of term within document\n      "
-              + "1.2 = k1, term saturation parameter\n      "
-              + "0.75 = b, length normalization parameter\n      "
-              + "4.0 = dl, length of field\n      "
-              + "3.0 = avgdl, average length of field\n",
-          "\n36.0 = LinearModel(name=modelA,"
-              + "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) "
-              + "model applied to features, sum of:\n  "
-              + "0.0 = prod of:\n    3.0 = weight on feature\n    0.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  "
-              + "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  "
-              + "27.0 = prod of:\n    27.0 = weight on feature\n    1.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
-          "\n12.0 = LinearModel(name=modelA,"
-              + "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) "
-              + "model applied to features, sum of:\n  "
-              + "3.0 = prod of:\n    3.0 = weight on feature\n    1.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  "
-              + "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  "
-              + "0.0 = prod of:\n    27.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
-          "\n0.07525751 = weight(title:bloomberg in 2) [SchemaSimilarity], result of:\n  "
-              + "0.07525751 = score(freq=3.0), computed as boost * idf * tf from:\n    "
-              + "0.105360515 = idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:\n      4 = n, number of documents containing term\n      4 = N, total number of documents with field\n    "
-              + "0.71428573 = tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:\n      3.0 = freq, occurrences of term within document\n      "
-              + "1.2 = k1, term saturation parameter\n      "
-              + "0.75 = b, length normalization parameter\n      "
-              + "3.0 = dl, length of field\n      "
-              + "3.0 = avgdl, average length of field\n"
+"""
+
+0.07662583 = weight(title:bloomberg in 3) [SchemaSimilarity], result of:
+  \
+0.07662583 = score(freq=4.0), computed as boost * idf * tf from:
+    \
+0.105360515 = idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:
+      4 = n, number of documents containing term
+      4 = N, total number of documents with field
+    \
+0.72727275 = tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:
+      4.0 = freq, occurrences of term within document
+      \
+1.2 = k1, term saturation parameter
+      \
+0.75 = b, length normalization parameter
+      \
+4.0 = dl, length of field
+      \
+3.0 = avgdl, average length of field
+""",
+"""
+
+36.0 = LinearModel(name=modelA,\
+featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) \
+model applied to features, sum of:
+  \
+0.0 = prod of:
+    3.0 = weight on feature
+    0.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]
+  \
+9.0 = prod of:
+    9.0 = weight on feature
+    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]
+  \
+27.0 = prod of:
+    27.0 = weight on feature
+    1.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]
+""",
+"""
+
+12.0 = LinearModel(name=modelA,\
+featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) \
+model applied to features, sum of:
+  \
+3.0 = prod of:
+    3.0 = weight on feature
+    1.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]
+  \
+9.0 = prod of:
+    9.0 = weight on feature
+    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]
+  \
+0.0 = prod of:
+    27.0 = weight on feature
+    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]
+""",
+"""
+
+0.07525751 = weight(title:bloomberg in 2) [SchemaSimilarity], result of:
+  \
+0.07525751 = score(freq=3.0), computed as boost * idf * tf from:
+    \
+0.105360515 = idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:
+      4 = n, number of documents containing term
+      4 = N, total number of documents with field
+    \
+0.71428573 = tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:
+      3.0 = freq, occurrences of term within document
+      \
+1.2 = k1, term saturation parameter
+      \
+0.75 = b, length normalization parameter
+      \
+3.0 = dl, length of field
+      \
+3.0 = avgdl, average length of field
+"""
         };
 
     String[] tests = new String[16];

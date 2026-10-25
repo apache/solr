@@ -47,6 +47,26 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
   }
 
   @Test
+  public void testHealthStatusDisplay() {
+    openPage("~collections/" + COLLECTION, By.id("collections"));
+    waitForPageContains("shard1");
+
+    Map<String, By> healthDots =
+        Map.of(
+            "collection header", By.cssSelector("#collection-data h2 .health-dot"),
+            "shard header", By.cssSelector("#shard-data h2 .health-dot"));
+    healthDots.forEach(
+        (label, locator) -> {
+          WebElement dot = waitFor(locator);
+          assertTrue(
+              label + " health dot should be GREEN: " + dot.getAttribute("class"),
+              dot.getAttribute("class").contains("health-GREEN"));
+        });
+
+    assertNoSevereConsoleErrors();
+  }
+
+  @Test
   public void testCreateAndDeleteCollectionViaUi() throws Exception {
     String name = "uicreated";
     openPage("~collections", By.id("collections"));
@@ -142,8 +162,8 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
   @Test
   public void testReloadCollectionViaUi() throws Exception {
-    // reloading resets the core's start time; that proves the action end-to-end,
-    // unlike the UI success indicator which only flashes for a second
+    // Reloading resets the core's start time, and the success state remains visible long enough
+    // for a user to notice instead of disappearing after one second.
     String coreName = coreNameOnNode0(COLLECTION);
     Object startTimeBefore = coreStartTime(coreName);
 
@@ -152,6 +172,12 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
     waitUntil(
         "core start time should change after reload",
         () -> !startTimeBefore.equals(coreStartTime(coreName)));
+    WebElement reload = waitFor(By.cssSelector("#reload.success"));
+    assertEquals("Reloaded", reload.getText());
+    Thread.sleep(1500);
+    assertTrue(
+        "reload success should remain visible", reload.getAttribute("class").contains("success"));
+    assertEquals("Reloaded", reload.getText());
     assertNoSevereConsoleErrors();
   }
 
