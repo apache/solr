@@ -14,6 +14,10 @@ prior to running your regular precommit checks. This will reformat
 your code so that it complies with the convention and passes gradle
 'check' task.
 
+'tidy' also internally runs 'addLicenseHeaders', which prepends the ASF license header
+to newly added java files that lack one. You can run it on its own with
+`./gradlew addLicenseHeaders`. Other file types ned the header added by hand.
+
 IMPORTANT: There is *no* way to mark sections of the code as excluded
 from formatting. This is by design and cannot be altered. In vast
 majority of cases the formatter will do a great job of cleaning up the

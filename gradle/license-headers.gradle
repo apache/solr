@@ -35,9 +35,9 @@ tasks.register("addLicenseHeaders") {
         gitLines(['git', 'ls-files', '--others', '--exclude-standard'])
 
     candidates.unique().findAll { it.endsWith('.java') }.each { path ->
-      def file = new File(rootDir, path)
-      if (file.exists() && !file.text.contains('Licensed to the Apache Software Foundation')) {
-        file.text = header + file.text
+      def f = new File(rootDir, path)
+      if (f.exists() && !f.text.contains('Licensed to the Apache Software Foundation')) {
+        f.text = header + f.text
         logger.lifecycle("Added license header: ${path}")
       }
     }
