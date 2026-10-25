@@ -54,7 +54,7 @@ With this approach, the files in `/opt/solr` will remain untouched and all files
 
 === Create the Solr User
 
-Running Solr as `root` is not recommended for security reasons, and the xref:solr-control-script-reference.adoc#starting-and-stopping[`bin/solr start`] command will refuse to do so.
+Running Solr as `root` is not recommended for security reasons, and the xref:cli/solr-start.adoc[`bin/solr start`] command will refuse to do so.
 Consequently, you should determine the username of a system user that will own all of the Solr files and the running Solr process.
 By default, the installation script will create the *solr* user, but you can override this setting using the -u option.
 If your organization has specific requirements for creating new user accounts, then you should create the user before running the script.

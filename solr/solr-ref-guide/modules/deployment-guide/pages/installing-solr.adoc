@@ -188,7 +188,7 @@ bin/solr start -e techproducts
 ----
 
 Currently, the available examples you can run are: techproducts, schemaless, and cloud.
-See the section xref:solr-control-script-reference.adoc#running-with-example-configurations[Running with Example Configurations] for details on each example.
+See the section xref:cli/solr-start.adoc[Running with Example Configurations] for details on each example.
 
 .Going deeper with SolrCloud
 NOTE: Running the `cloud` example demonstrates running multiple nodes of Solr using xref:getting-started:cluster-types.adoc#solrcloud-clusters[SolrCloud] mode.

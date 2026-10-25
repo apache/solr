@@ -184,7 +184,7 @@ curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -
 ======
 
 If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
-You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
+You can use the xref:cli/solr-zk-upconfig.adoc[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
 
 === Creating Cores
 
