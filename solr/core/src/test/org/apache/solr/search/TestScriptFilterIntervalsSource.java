@@ -44,12 +44,10 @@ public class TestScriptFilterIntervalsSource extends SolrTestCase {
         Intervals.term("a"), expression, new ScriptFilterIntervalsSource.IntervalBindings());
   }
 
+  /** The caller must keep the reader open while consuming the returned iterator. */
   private static IntervalMatchesIterator matches(
-      Directory dir, ScriptFilterIntervalsSource source, int doc) throws IOException {
-    try (DirectoryReader reader = DirectoryReader.open(dir)) {
-      LeafReaderContext ctx = reader.leaves().get(0);
-      return source.matches(FIELD, ctx, doc);
-    }
+      LeafReaderContext ctx, ScriptFilterIntervalsSource source, int doc) throws IOException {
+    return source.matches(FIELD, ctx, doc);
   }
 
   private static Directory index(String... docs) throws IOException {
@@ -70,8 +68,9 @@ public class TestScriptFilterIntervalsSource extends SolrTestCase {
 
   public void testMatchesSkipsRejectedLeadingIntervals() throws Exception {
     // "a" occurs at positions 0, 2 and 3; only the later two satisfy start >= 2
-    try (Directory dir = index("a b a a")) {
-      IntervalMatchesIterator mi = matches(dir, filter("interval.start >= 2"), 0);
+    try (Directory dir = index("a b a a");
+        DirectoryReader reader = DirectoryReader.open(dir)) {
+      IntervalMatchesIterator mi = matches(reader.leaves().get(0), filter("interval.start >= 2"), 0);
       assertNotNull(mi);
       assertTrue(mi.next());
       assertEquals(2, mi.startPosition());
@@ -84,8 +83,9 @@ public class TestScriptFilterIntervalsSource extends SolrTestCase {
 
   public void testMatchesFirstAcceptedIntervalIsNotLost() throws Exception {
     // the first interval is accepted: it must be reported exactly once
-    try (Directory dir = index("a b a")) {
-      IntervalMatchesIterator mi = matches(dir, filter("interval.start == 0"), 0);
+    try (Directory dir = index("a b a");
+        DirectoryReader reader = DirectoryReader.open(dir)) {
+      IntervalMatchesIterator mi = matches(reader.leaves().get(0), filter("interval.start == 0"), 0);
       assertNotNull(mi);
       assertTrue(mi.next());
       assertEquals(0, mi.startPosition());
@@ -94,14 +94,16 @@ public class TestScriptFilterIntervalsSource extends SolrTestCase {
   }
 
   public void testMatchesNullWhenNoIntervalAccepted() throws Exception {
-    try (Directory dir = index("a b a")) {
-      assertNull(matches(dir, filter("interval.start > 10"), 0));
+    try (Directory dir = index("a b a");
+        DirectoryReader reader = DirectoryReader.open(dir)) {
+      assertNull(matches(reader.leaves().get(0), filter("interval.start > 10"), 0));
     }
   }
 
   public void testMatchesNullWhenNoTermInDocument() throws Exception {
-    try (Directory dir = index("a b", "c d")) {
-      assertNull(matches(dir, filter("interval.start >= 0"), 1));
+    try (Directory dir = index("a b", "c d");
+        DirectoryReader reader = DirectoryReader.open(dir)) {
+      assertNull(matches(reader.leaves().get(0), filter("interval.start >= 0"), 1));
     }
   }
 }
