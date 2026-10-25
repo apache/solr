@@ -319,7 +319,7 @@ class RatTask extends DefaultTask {
     }
     violations.each { logger.error(it.toString()) }
     if (!violations.isEmpty()) {
-      logger.error("\nFor new .java files, run the top-level './gradlew tidy' (or './gradlew addLicenseHeaders') to add license automatically. Other file types need manual addition")
+      logger.error("\nFor new .java files, run the top-level './gradlew tidy' (or './gradlew addLicenseHeaders') to add the license header automatically. Other file types need manual addition.")
     }
     project.failOrWarn("validation.rat.failOnError", "Detected license header issues", violations)
   }
