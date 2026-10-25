@@ -44,7 +44,7 @@ SOLR_TOOL_OPTS="-Dsolr.picocli=false" bin/solr status
 
 == Commands
 
-Each command has a reference page generated from its source annotations.
+Each command has its own reference page.
 
 // CLI-DOCS-TABLE-START
 [cols="1",options="header"]
