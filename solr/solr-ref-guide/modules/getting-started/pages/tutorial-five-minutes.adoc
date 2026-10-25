@@ -22,14 +22,6 @@ This exercise will walk you through how to start using Solr in just 5 Minutes!
 == Launch Solr
 To launch Solr, run: `bin/solr start` on Unix or MacOS; `bin\solr.cmd start` on Windows.
 
-To start another Solr node and have it join the cluster alongside the first node,
-
-[,bash]
-----
-bin/solr start -z localhost:9983 -p 8984
-----
-
-
 == Create a collection
 
 Like a database system holds data in tables, Solr holds data in collections. A collection can be created as follows:
