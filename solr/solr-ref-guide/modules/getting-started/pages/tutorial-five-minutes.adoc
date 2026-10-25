@@ -19,8 +19,17 @@
 
 This exercise will walk you through how to start using Solr in just 5 Minutes!
 
-== Launch Solr
-To launch Solr, run: `bin/solr start` on Unix or MacOS; `bin\solr.cmd start` on Windows.
+== Download and Launch Solr
+
+[source,bash,subs="attributes"]
+----
+curl -fsSL https://dlcdn.apache.org/solr/solr/{solr-full-version}/solr-{solr-full-version}-slim.tgz -o solr-{solr-full-version}-slim.tgz && \
+tar -xzf solr-{solr-full-version}-slim.tgz && \
+cd solr-{solr-full-version}-slim && \
+bin/solr start
+----
+
+On Windows download and unpack into a temp directory.  Start with `bin\solr start`.
 
 == Create a collection
 
@@ -146,3 +155,6 @@ You can now try searching your documents like:
 ----
 curl 'http://localhost:8983/solr/techproducts/select?q=name%3Alightning'
 ----
+
+== Shut Solr Down
+To stop Solr, run: `bin/solr stop` on Unix or MacOS; `bin\solr.cmd stop` on Windows.
