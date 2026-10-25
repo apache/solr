@@ -27,7 +27,10 @@ tasks.register("addLicenseHeaders") {
       try {
         def proc = cmd.execute(null, rootDir)
         def out = proc.text
-        proc.waitFor()
+        if (proc.waitFor() != 0) {
+          logger.warn("addLicenseHeaders: '${cmd.join(' ')}' failed; skipping")
+          return []
+        }
         return out.readLines()
       } catch (Exception e) {
         logger.warn("addLicenseHeaders: failed with error (${e.message}); skipping")
