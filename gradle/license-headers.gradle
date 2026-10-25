@@ -18,7 +18,7 @@
 // Adds the ASF license header to new Java files that lack one.
 // Apache RAT (gradlew rat) enforces headers but cannot fix them.
 tasks.register("addLicenseHeaders") {
-  group = "Verification"
+  group = "verification"
   description = "Prepends the ASF license header to Java files added on this branch (vs. main) or untracked, if missing."
 
   doLast {
@@ -42,4 +42,9 @@ tasks.register("addLicenseHeaders") {
       }
     }
   }
+}
+
+// Run as part of the top level `./gradlew tidy`
+rootProject.tasks.named("tidy").configure {
+  dependsOn "addLicenseHeaders"
 }
