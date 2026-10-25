@@ -385,16 +385,6 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
             } catch (KeeperException e) {
               // No Runner was created, so nothing else will release the lock.
               lock.unlock();
-              // The async ID may have been stored anyway (e.g. on a timeout). Remove it, or the
-              // retry would find the task already marked as running and never execute it.
-              try {
-                runningMap.remove(asyncId);
-              } catch (KeeperException removeException) {
-                e.addSuppressed(removeException);
-              } catch (InterruptedException removeException) {
-                Thread.currentThread().interrupt();
-                e.addSuppressed(removeException);
-              }
               throw e;
             }
             if (log.isDebugEnabled()) {
