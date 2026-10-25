@@ -50,5 +50,6 @@ teardown() {
   backup_dir_other="${backup_dir}-other"
   mkdir -p "${backup_dir_other}"
   run solr api --solr-url "http://localhost:${SOLR_PORT}/solr/admin/collections?action=BACKUP&name=test-fail&collection=COLL_NAME&location=file://${backup_dir_other}"
-  assert_output --partial 'access denied'
+  # Java 24+ has no security manager; Solr's allowPaths check rejects it instead
+  assert_output --regexp 'access denied|Could not backup all shards'
 }
