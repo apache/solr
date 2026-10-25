@@ -48,22 +48,35 @@ configure(project(':solr:packaging')) {
   // solr/webapp/web/libs, merged in by step 5 of the post-processing below.
   def vendoredLibsManifest = rootProject.file('solr/webapp/vendored-libs.json')
 
+  // The projects that ship their own lib/ directory in the full distribution. Each module
+  // resolves its runtime classpath on its own, so two modules may ship different versions of the
+  // same library (e.g. a newer httpclient5 in s3-repository than in sql). A single configuration
+  // would elect one version for all of them, so the full BOM resolves one pair of configurations
+  // per project (e.g. bomFullSql and bomFullSqlApi).
+  def fullDistributionProjects = rootProject.project(":solr:modules").childProjects.values().toList() +
+      [rootProject.project(':solr:cross-dc-manager')]
+  def bomFullName = { Project p -> "bomFull${p.name.split('-').collect { it.capitalize() }.join()}".toString() }
+  def bomFullApiName = { Project p -> "${bomFullName(p)}Api".toString() }
+
   // For the CycloneDX BOM generation
   configurations {
     bomSlim {
         canBeResolved = true
         canBeConsumed = false
     }
-    bomFull {
-        canBeResolved = true
-        canBeConsumed = false
-        extendsFrom bomSlim
-    }
-    // The same dependency graph resolved against the compile-time (java-api) variants of the
-    // external libraries, used only as the consistency source of bomFull below.
-    bomFullApi {
-        canBeResolved = true
-        canBeConsumed = false
+    fullDistributionProjects.each { p ->
+      // The server libraries plus those of one project
+      create(bomFullName(p)) {
+          canBeResolved = true
+          canBeConsumed = false
+          extendsFrom bomSlim
+      }
+      // The same dependency graph resolved against the compile-time (java-api) variants of the
+      // external libraries, used only as the consistency source of the configuration above.
+      create(bomFullApiName(p)) {
+          canBeResolved = true
+          canBeConsumed = false
+      }
     }
     // Child SBOMs of the UI bundles, merged into the distribution SBOMs by postProcessBom
     jsClientSbom {
@@ -80,17 +93,19 @@ configure(project(':solr:packaging')) {
         canBeConsumed = true
     }
   }
+  def bomFullConfigurations = fullDistributionProjects.collect { configurations.getByName(bomFullName(it)) }
+  def bomFullApiConfigurations = fullDistributionProjects.collect { configurations.getByName(bomFullApiName(it)) }
 
   // Request the standard JVM runtime variants, like runtimeClasspath does.
   //
   // The CycloneDX plugin resolves configurations leniently. Without these attributes,
   // variant-aware dependencies (e.g. Guava) and platform constraints (e.g. the Jersey BOM) fail to resolve
   // and silently disappear.
-  [configurations.bomSlim, configurations.bomFull, configurations.bomFullApi].each { conf ->
+  ([configurations.bomSlim] + bomFullConfigurations + bomFullApiConfigurations).each { conf ->
       conf.attributes {
           attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, Category.LIBRARY))
           attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage,
-              conf.name == 'bomFullApi' ? Usage.JAVA_API : Usage.JAVA_RUNTIME))
+              conf in bomFullApiConfigurations ? Usage.JAVA_API : Usage.JAVA_RUNTIME))
           attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
           attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling, Bundling.EXTERNAL))
           attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment, TargetJvmEnvironment.STANDARD_JVM))
@@ -101,45 +116,38 @@ configure(project(':solr:packaging')) {
   // module ships the compile-time version of a library even when a runtime-scoped dependency asks
   // for a newer one (e.g. avatica pins the joou-java-6 that calcite would bump). That consistency
   // is local to each project and does not travel across project boundaries, so the full BOM
-  // reproduces it here: bomFullApi resolves the same module projects, but walks their external
-  // dependencies through the java-api variants — the compile-time view in which runtime-scoped
-  // edges do not exist — and bomFull follows its versions. bomFullApi in turn follows bomSlim,
-  // because the distribution keeps the server versions of the libraries shared between the
-  // server and the modules (e.g. a module may pull in a newer slf4j-api than the one in
-  // server/lib/ext).
-  configurations.bomFullApi.shouldResolveConsistentlyWith(configurations.bomSlim)
-  configurations.bomFull.shouldResolveConsistentlyWith(configurations.bomFullApi)
+  // reproduces it here: the Api configuration of a project resolves the same project, but walks
+  // its external dependencies through the java-api variants — the compile-time view in which
+  // runtime-scoped edges do not exist — and the runtime configuration follows its versions. The Api
+  // configuration in turn follows bomSlim, because the distribution keeps the server versions of
+  // the libraries shared between the server and the modules (e.g. a module may pull in a newer
+  // slf4j-api than the one in server/lib/ext).
+  [bomFullConfigurations, bomFullApiConfigurations].transpose().each { conf, apiConf ->
+      apiConf.shouldResolveConsistentlyWith(configurations.bomSlim)
+      conf.shouldResolveConsistentlyWith(apiConf)
+  }
 
   dependencies {
-    rootProject.project(":solr:modules").childProjects.values().each { module ->
+    fullDistributionProjects.each { p ->
       // No "configuration:" here on purpose.
       //
-      // Gradle then selects the variant of the module that matches the attributes declared on the bom configurations above,
+      // Gradle then selects the variant of the project that matches the attributes declared on the bom configurations above,
       // just like it does for a runtime classpath ("variant-aware" resolution).
       // Naming a configuration would bypass attribute matching, and imported Maven BOMs (e.g. Jersey's) would no
       // longer provide the versions of their managed dependencies.
-      bomFull project(path: module.path)
+      add(bomFullName(p), project(path: p.path))
 
-      // The runtime variant of the module itself, so that its "implementation" dependencies are
-      // visible (the java-api variant of a project hides them), while everything below the module
+      // The runtime variant of the project itself, so that its "implementation" dependencies are
+      // visible (the java-api variant of a project hides them), while everything below the project
       // resolves with the compile-time (java-api) attributes of the configuration. Solr's own
-      // projects are excluded: each shipping project is already requested directly by this loop,
-      // and reaching one transitively as well would request its api variant next to the runtime
-      // variant requested here, which Gradle rejects as a capability conflict.
-      bomFullApi(project(path: module.path)) {
+      // projects are excluded: the libraries reached through them ship with those projects, not
+      // with this one (e.g. those of solr-core in the server, those of cross-dc in its module).
+      add(bomFullApiName(p), project(path: p.path)) {
         attributes {
           attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
         }
         exclude group: 'org.apache.solr'
       }
-    }
-
-    bomFull project(path: ':solr:cross-dc-manager')
-    bomFullApi(project(path: ':solr:cross-dc-manager')) {
-      attributes {
-        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
-      }
-      exclude group: 'org.apache.solr'
     }
 
     bomSlim project(path: ':solr:server', configuration: 'startJar')
@@ -440,8 +448,8 @@ configure(project(':solr:packaging')) {
       if (undescribedJars) {
           throw new GradleException("The ${edition} distribution ships JARs that no component of " +
               "${bomFile.name} describes:\n  " + undescribedJars.join("\n  ") + "\n" +
-              "The packaged versions have drifted from the ones the 'bom${edition.capitalize()}' " +
-              "configuration resolves, which also means they are not covered by solr/licenses.")
+              "The packaged versions have drifted from the ones the BOM configurations of ':solr:packaging' " +
+              "resolve, which also means they are not covered by solr/licenses.")
       }
       if (uiBundle != null) {
           uiBundle.evidence = [occurrences: uiLocations.sort().collect { [location: it] }]
@@ -471,12 +479,14 @@ configure(project(':solr:packaging')) {
       group = 'Bill of Materials'
       description = 'Generates CycloneDX BOM for the full Solr distribution'
 
-      includeConfigs = ['bomFull']
+      // The plugin merges the graphs of these configurations by coordinates, so a library
+      // shipped in two versions by two modules keeps a component for each.
+      includeConfigs = ['bomSlim'] + bomFullConfigurations*.name
       projectType = applicationComponentType
 
       // The plugin resolves the configuration leniently and without depending on it,
       // so the jars of Solr projects must be built first or their hashes are missing.
-      inputs.files(configurations.bomFull)
+      inputs.files(bomFullConfigurations)
           .withPropertyName('bomFullArtifacts')
           .withNormalizer(ClasspathNormalizer)
 
