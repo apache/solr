@@ -25,6 +25,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.SchemaField;
 
 /** SortSpec encapsulates a Lucene Sort and a count of the number of documents to return. */
@@ -55,6 +56,7 @@ public class SortSpec {
   }
 
   /** Returns the inverse order, retaining each field's value selection and missing-value policy. */
+  @SuppressForbidden(reason = "singletonList(null) is intentional")
   public SortSpec reverse() {
     SortField[] original = (sort == null ? Sort.RELEVANCE : sort).getSort();
     SortField[] reversed = new SortField[original.length];
