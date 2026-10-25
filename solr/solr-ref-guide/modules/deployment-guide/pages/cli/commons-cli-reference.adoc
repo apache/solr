@@ -16,6 +16,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
+== Falling back to the Commons CLI
+
+The previous Apache Commons CLI implementation still ships with Solr.
+Use this only as an escape hatch if you run into a problem with the default CLI, and please report the problem to the Solr project.
+
+To switch, set `SOLR_PICOCLI` in your `solr.in.sh` (or `solr.in.cmd` on Windows):
+
+[source,bash]
+----
+SOLR_PICOCLI=false
+----
+
+Or set the equivalent system property for a single invocation:
+
+[source,bash]
+----
+SOLR_TOOL_OPTS="-Dsolr.picocli=false" bin/solr status
+----
+
 == Starting and Stopping
 
 === Start and Restart
