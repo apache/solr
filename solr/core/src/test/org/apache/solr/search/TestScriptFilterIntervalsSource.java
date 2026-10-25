@@ -70,7 +70,8 @@ public class TestScriptFilterIntervalsSource extends SolrTestCase {
     // "a" occurs at positions 0, 2 and 3; only the later two satisfy start >= 2
     try (Directory dir = index("a b a a");
         DirectoryReader reader = DirectoryReader.open(dir)) {
-      IntervalMatchesIterator mi = matches(reader.leaves().get(0), filter("interval.start >= 2"), 0);
+      IntervalMatchesIterator mi =
+          matches(reader.leaves().get(0), filter("interval.start >= 2"), 0);
       assertNotNull(mi);
       assertTrue(mi.next());
       assertEquals(2, mi.startPosition());
@@ -85,7 +86,8 @@ public class TestScriptFilterIntervalsSource extends SolrTestCase {
     // the first interval is accepted: it must be reported exactly once
     try (Directory dir = index("a b a");
         DirectoryReader reader = DirectoryReader.open(dir)) {
-      IntervalMatchesIterator mi = matches(reader.leaves().get(0), filter("interval.start == 0"), 0);
+      IntervalMatchesIterator mi =
+          matches(reader.leaves().get(0), filter("interval.start == 0"), 0);
       assertNotNull(mi);
       assertTrue(mi.next());
       assertEquals(0, mi.startPosition());
