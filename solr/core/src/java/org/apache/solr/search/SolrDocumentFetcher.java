@@ -748,15 +748,17 @@ public class SolrDocumentFetcher {
     return allStored;
   }
 
+  /** Returns an unmodifiable set of all non-stored docValues field names. */
+  public Set<String> getNonStoredDVs() {
+    return allNonStoredDVs;
+  }
+
   /**
-   * Returns an unmodifiable set of non-stored docValues field names.
-   *
-   * @param onlyUseDocValuesAsStored If false, returns all non-stored docValues. If true, returns
-   *     only those non-stored docValues which have the {@link SchemaField#useDocValuesAsStored()}
-   *     flag true.
+   * Returns an unmodifiable set of the non-stored docValues field names that have the {@link
+   * SchemaField#useDocValuesAsStored()} flag true.
    */
-  public Set<String> getNonStoredDVs(boolean onlyUseDocValuesAsStored) {
-    return onlyUseDocValuesAsStored ? nonStoredDVsUsedAsStored : allNonStoredDVs;
+  public Set<String> getNonStoredDVsUsedAsStored() {
+    return nonStoredDVsUsedAsStored;
   }
 
   /**
@@ -863,22 +865,22 @@ public class SolrDocumentFetcher {
       // always return not null
       final Set<String> result = new HashSet<>();
       if (returnFields.wantsAllFields()) {
-        result.addAll(getNonStoredDVs(true));
+        result.addAll(getNonStoredDVsUsedAsStored());
         // check whether there are no additional fields
         Set<String> fieldNames = returnFields.getLuceneFieldNames(true);
         if (fieldNames != null) {
           // add all requested fields that may be useDocValuesAsStored=false
           for (String fl : fieldNames) {
-            if (getNonStoredDVs(false).contains(fl)) {
+            if (getNonStoredDVs().contains(fl)) {
               result.add(fl);
             }
           }
         }
       } else if (returnFields.hasPatternMatching()) {
-        for (String s : getNonStoredDVs(false)) {
+        for (String s : getNonStoredDVs()) {
           // a glob only matches useDocValuesAsStored fields, unlike naming the field explicitly
           if (returnFields.isExplicitLuceneField(s)
-              || (getNonStoredDVs(true).contains(s) && returnFields.wantsLuceneField(s))) {
+              || (getNonStoredDVsUsedAsStored().contains(s) && returnFields.wantsLuceneField(s))) {
             result.add(s);
           }
         }
@@ -889,7 +891,7 @@ public class SolrDocumentFetcher {
           // here we get all non-stored dv fields because even if a user has set
           // useDocValuesAsStored=false in schema, he may have requested a field
           // explicitly using the fl parameter
-          result.retainAll(getNonStoredDVs(false));
+          result.retainAll(getNonStoredDVs());
         }
       }
       return result;
