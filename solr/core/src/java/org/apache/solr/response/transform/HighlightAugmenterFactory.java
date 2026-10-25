@@ -35,9 +35,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.highlight.UnifiedSolrHighlighter;
 import org.apache.solr.highlight.UnifiedSolrHighlighter.SolrExtendedUnifiedHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterationInfo;
@@ -177,12 +179,29 @@ public class HighlightAugmenterFactory extends TransformerFactory {
     @Override
     public void setContext(ResultContext context) {
       super.setContext(context);
-      Query query = hlQuery != null ? hlQuery : context.getQuery();
+      Query query = hlQuery != null ? hlQuery : getMainHighlightQuery(context);
       SolrIndexSearcher searcher = context.getSearcher();
       highlighter =
           (query == null || searcher == null)
               ? null
               : new SingleFieldHighlighter(searcher, params, field, query);
+    }
+
+    private static Query getMainHighlightQuery(ResultContext context) {
+      SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+      ResponseBuilder rb = info == null ? null : info.getResponseBuilder();
+      // A custom result context may have a different query from the current request.
+      if (rb == null
+          || rb.req != context.getRequest()
+          || rb.getQuery() != context.getQuery()
+          || rb.getQparser() == null) {
+        return context.getQuery();
+      }
+      try {
+        return rb.getQparser().getHighlightQuery();
+      } catch (SyntaxError e) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+      }
     }
 
     @Override

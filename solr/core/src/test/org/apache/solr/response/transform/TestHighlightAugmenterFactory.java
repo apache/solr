@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -158,6 +159,88 @@ public class TestHighlightAugmenterFactory extends SolrTestCase {
     List<SolrDocument> docs = query("id,body_t:[hl],title_t:[hl tag.pre=* tag.post=*]");
     assertContains("<em>fox</em>", docs.getFirst().getFieldValue("body_t"));
     assertEquals("*Fox* story", docs.getFirst().getFieldValue("title_t"));
+  }
+
+  private static ModifiableSolrParams boostedQuery(boolean weightMatches) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "fox");
+    params.set("defType", "edismax");
+    params.set("qf", "body_t title_t");
+    params.set("bq", "body_t:cats");
+    params.set("fl", "id,body_hl:[hl f=body_t]");
+    params.set("sort", "id asc");
+    params.set("hl.weightMatches", weightMatches);
+    params.set("hl.defaultSummary", false);
+    params.set("hl.method", "unified");
+    params.set("hl.fl", "body_t");
+    return params;
+  }
+
+  private static void assertOnlyUserQueryHighlighted(QueryResponse response) {
+    List<SolrDocument> docs = response.getResults();
+    assertEquals(2, docs.size());
+    assertEquals("1", docs.getFirst().getFieldValue("id"));
+    assertEquals("2", docs.get(1).getFieldValue("id"));
+    assertContains("<em>fox</em>", docs.getFirst().getFieldValue("body_hl"));
+    assertFalse(
+        "Boost-only text must not be highlighted: " + docs.get(1),
+        docs.get(1).containsKey("body_hl"));
+    if (response.getHighlighting() != null) {
+      var highlights = response.getHighlighting().get("2");
+      assertTrue(String.valueOf(highlights), highlights == null || highlights.isEmpty());
+    }
+  }
+
+  @Test
+  public void testImplicitQueryUsesHighlightQuery() throws Exception {
+    for (boolean weightMatches : List.of(true, false)) {
+      for (boolean component : List.of(false, true)) {
+        ModifiableSolrParams params = boostedQuery(weightMatches);
+        params.set("hl", component);
+        assertOnlyUserQueryHighlighted(solrTestRule.getSolrClient().query(params));
+
+        params.set("hl.q", "fox");
+        assertOnlyUserQueryHighlighted(solrTestRule.getSolrClient().query(params));
+
+        params.remove("hl.q");
+        params.set("fl", "id,body_hl:[hl f=body_t q=fox]");
+        assertOnlyUserQueryHighlighted(solrTestRule.getSolrClient().query(params));
+      }
+    }
+  }
+
+  @Test
+  public void testImplicitQueryUsesMainParser() throws Exception {
+    ModifiableSolrParams params = boostedQuery(false);
+    params.remove("q");
+    params.set("q.alt", "{!lucene}body_t:fox OR title_t:fox");
+    assertOnlyUserQueryHighlighted(solrTestRule.getSolrClient().query(params));
+
+    params = boostedQuery(false);
+    params.remove("defType");
+    params.remove("qf");
+    params.remove("bq");
+    params.set("q", "{!edismax qf='body_t title_t' bq='body_t:cats'}fox");
+    assertOnlyUserQueryHighlighted(solrTestRule.getSolrClient().query(params));
+  }
+
+  @Test
+  public void testExplicitHighlightQueryOverridesMainQuery() throws Exception {
+    for (boolean weightMatches : List.of(true, false)) {
+      ModifiableSolrParams params = boostedQuery(weightMatches);
+      params.set("hl.q", "body_t:cats");
+      List<SolrDocument> docs = solrTestRule.getSolrClient().query(params).getResults();
+      assertEquals(2, docs.size());
+      assertFalse(docs.getFirst().containsKey("body_hl"));
+      assertContains("<em>cats</em>", docs.get(1).getFieldValue("body_hl"));
+
+      params.set("hl.q", "fox");
+      params.set("fl", "id,body_hl:[hl f=body_t q=body_t:cats]");
+      docs = solrTestRule.getSolrClient().query(params).getResults();
+      assertEquals(2, docs.size());
+      assertFalse(docs.getFirst().containsKey("body_hl"));
+      assertContains("<em>cats</em>", docs.get(1).getFieldValue("body_hl"));
+    }
   }
 
   @Test
