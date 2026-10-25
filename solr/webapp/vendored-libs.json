@@ -392,7 +392,7 @@
     },
     "d3.js": {
         "type": "library",
-        "bom-ref": "pkg:npm/d3@2.8.1",
+        "bom-ref": "pkg:npm/d3@7.9.0",
         "manufacturer": {
             "name": "Michael Bostock",
             "url": [
@@ -405,50 +405,27 @@
             }
         ],
         "name": "d3",
-        "version": "2.8.1",
+        "version": "7.9.0",
         "hashes": [
             {
                 "alg": "SHA-256",
-                "content": "435b386bb55c7fcd938584ebb3c4a64da3712a043fa267a1ed3da2ac22aa6ef7"
+                "content": "0c0d58be2106c14e242fc75bc09a17467800630751580665f6e9552a0c064ea2"
             }
         ],
         "licenses": [
             {
                 "license": {
-                    "id": "BSD-3-Clause"
+                    "id": "ISC"
                 }
             }
         ],
-        "purl": "pkg:npm/d3@2.8.1",
-        "pedigree": {
-            "ancestors": [
-                {
-                    "type": "library",
-                    "name": "d3",
-                    "version": "2.8.1",
-                    "purl": "pkg:npm/d3@2.8.1",
-                    "hashes": [
-                        {
-                            "alg": "SHA-256",
-                            "content": "d74d3335c81747cb3d2eed71c29a83ef6fe3fa523db15934cdfa5738624a2ea2"
-                        }
-                    ],
-                    "externalReferences": [
-                        {
-                            "type": "distribution",
-                            "url": "https://registry.npmjs.org/d3/-/d3-2.8.1.tgz"
-                        }
-                    ]
-                }
-            ],
-            "notes": "BSD-3-Clause licence text, 1433 bytes, prepended; removing it reproduces the ancestor (member d3.v2.js of the tarball) byte-for-byte."
-        }
+        "purl": "pkg:npm/d3@7.9.0"
     },
-    "highlight.js": {
+    "highlight.js-11.12.0.min.js": {
         "type": "library",
-        "bom-ref": "pkg:npm/highlight.js",
+        "bom-ref": "pkg:npm/highlight.js@11.12.0",
         "manufacturer": {
-            "name": "Ivan Sagalaev",
+            "name": "highlight.js",
             "url": [
                 "https://github.com/highlightjs/highlight.js"
             ]
@@ -456,14 +433,17 @@
         "authors": [
             {
                 "name": "Ivan Sagalaev"
+            },
+            {
+                "name": "Josh Goebel"
             }
         ],
         "name": "highlight.js",
-        "version": "unknown",
+        "version": "11.12.0",
         "hashes": [
             {
                 "alg": "SHA-256",
-                "content": "b0c3b1298c79a2d28a9a6bdae07f4fc878e7bc46f50e81338f881f3d6a61514f"
+                "content": "7b8c46adc38cf6468cf876e1a3b2f0aff2ca36f73d399e109eb333c7085e0626"
             }
         ],
         "licenses": [
@@ -473,16 +453,29 @@
                 }
             }
         ],
-        "purl": "pkg:npm/highlight.js",
+        "purl": "pkg:npm/highlight.js@11.12.0",
         "pedigree": {
             "ancestors": [
                 {
                     "type": "library",
                     "name": "highlight.js",
-                    "purl": "pkg:npm/highlight.js"
+                    "version": "11.12.0",
+                    "purl": "pkg:npm/highlight.js@11.12.0",
+                    "hashes": [
+                        {
+                            "alg": "SHA-256",
+                            "content": "accbfaaab745088609b4eea2bdca2ad62f1f1dd27304e0f8df65cfe0fe042143"
+                        }
+                    ],
+                    "externalReferences": [
+                        {
+                            "type": "distribution",
+                            "url": "https://registry.npmjs.org/highlight.js/-/highlight.js-11.12.0.tgz"
+                        }
+                    ]
                 }
             ],
-            "notes": "Custom subset build vendored in 2012 whose version is unknown to the SBOM author: the file carries no version marker and its 'var hljs=new function()' API predates 8.0. The version is recorded as \"unknown\" rather than omitted. Treat every highlight.js advisory as potentially applying."
+            "notes": "Custom subset build (core + json, xml and javascript languages, classPrefix ''), not byte-comparable to any published artifact. BSD-3-Clause licence header, 2113 bytes, prepended to the output of 'esbuild entry.js --bundle --minify --format=iife' with esbuild 0.28.2, which reproduces the body byte-for-byte from an entry module that imports 'highlight.js/lib/core' and 'highlight.js/lib/languages/{json,xml,javascript}', registers the three languages, calls configure({classPrefix: ''}) and assigns window.hljs, built in a package.json without a 'type' field. Any highlight.js 11.12.0 advisory applies unless it concerns a language absent from this build."
         }
     },
     "jquery-3.5.1.min.js": {
