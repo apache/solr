@@ -226,3 +226,4 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 apply from: file('gradle/node.gradle')
 
 apply from: file('gradle/changelog.gradle')
+apply from: file('gradle/license-headers.gradle')
