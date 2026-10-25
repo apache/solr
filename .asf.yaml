@@ -25,7 +25,9 @@ github:
     creation_cap:
       enabled: true
       max_open_pull_requests: 7
-      include_drafts: true
+      # This feature not yet supported in prod, enable once it is live
+      # See https://the-asf.slack.com/archives/CBX4TSBQ8/p1792688456355089 for status
+      #include_drafts: true
 
   # TODO: Add to this list for each new minor release
   protected_branches:
