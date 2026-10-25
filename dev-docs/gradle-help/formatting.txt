@@ -16,7 +16,7 @@ your code so that it complies with the convention and passes gradle
 
 'tidy' also internally runs 'addLicenseHeaders', which prepends the ASF license header
 to newly added java files that lack one. You can run it on its own with
-`./gradlew addLicenseHeaders`. Other file types ned the header added by hand.
+'./gradlew addLicenseHeaders'. Other file types need the header added by hand.
 
 IMPORTANT: There is *no* way to mark sections of the code as excluded
 from formatting. This is by design and cannot be altered. In vast
