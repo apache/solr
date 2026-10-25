@@ -69,6 +69,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     configString = CursorPagingTest.TEST_SOLRCONFIG_NAME;
     schemaString = CursorPagingTest.TEST_SCHEMAXML_NAME;
+    // Use two shards in standard test runs to exercise distributed merging.
+    sliceCount = 2;
+    fixShardCount(2);
   }
 
   @Override
