@@ -43,8 +43,9 @@ Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to ht
 
 picocli is now the default. Set `SOLR_PICOCLI=false` to fall back to Commons CLI.
 
-* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version. `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
-The Commons CLI accepts `-v` for it.
+* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
+* `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
+Before 10.2, `-v` was the short form of `--value`.
 * `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
 This matches the Commons CLI, but means `--fail-on-exists false` does not disable the check.
 * Error messages for invalid or mutually exclusive options are worded differently.
