@@ -22,12 +22,17 @@ tasks.register("addLicenseHeaders") {
   description = "Prepends the ASF license header to Java files added on this branch (vs. main) or untracked, if missing."
 
   doLast {
-    def header = file("gradle/validation/spotless/asl-header.txt").text
+    def header = file("gradle/validation/spotless/asl-header.txt").getText('UTF-8')
     def gitLines = { List<String> cmd ->
-      def proc = cmd.execute(null, rootDir)
-      def out = proc.text
-      proc.waitFor()
-      out.readLines()
+      try {
+        def proc = cmd.execute(null, rootDir)
+        def out = proc.text
+        proc.waitFor()
+        return out.readLines()
+      } catch (Exception e) {
+        logger.warn("addLicenseHeaders: failed with error (${e.message}); skipping")
+        return []
+      }
     }
 
     def candidates = gitLines(['git', 'diff', '--name-only', '--diff-filter=A', 'main...HEAD']) +
@@ -36,8 +41,12 @@ tasks.register("addLicenseHeaders") {
 
     candidates.unique().findAll { it.endsWith('.java') }.each { path ->
       def f = new File(rootDir, path)
-      if (f.exists() && !f.text.contains('Licensed to the Apache Software Foundation')) {
-        f.text = header + f.text
+      if (f.exists()) {
+        def content = f.getText('UTF-8')
+        if (content.contains('Licensed to the Apache Software Foundation')) {
+          return
+        }
+        f.write(header + content, 'UTF-8')
         logger.lifecycle("Added license header: ${path}")
       }
     }
