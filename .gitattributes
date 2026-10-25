@@ -9,3 +9,10 @@ versions.lock text eol=lf
 /.*               export-ignore
 /dev-docs         export-ignore
 AGENTS.md         export-ignore
+
+# Monitoring mixin generated outputs — always LF to ensure make regeneration is idempotent.
+solr/monitoring/grafana-solr-dashboard.json text eol=lf
+solr/monitoring/prometheus-solr-alerts.yml  text eol=lf
+
+# Contributor-only tooling, excluded from the source release like dev-docs.
+solr/monitoring/dev export-ignore
