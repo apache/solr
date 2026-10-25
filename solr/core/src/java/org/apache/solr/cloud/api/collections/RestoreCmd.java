@@ -311,6 +311,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           CollectionHandlingUtils.cleanupCollection(
               rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
         } catch (Exception cleanupException) {
+          if (cleanupException instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
           e.addSuppressed(cleanupException);
         }
         throw e;
