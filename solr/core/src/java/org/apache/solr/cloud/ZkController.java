@@ -1320,6 +1320,19 @@ public class ZkController implements Closeable {
     } catch (NoNodeException e) {
 
     }
+    cc.nodeRoles
+        .getRoles()
+        .forEach(
+            (role, mode) -> {
+              try {
+                zkClient.delete(
+                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName, -1, true);
+              } catch (KeeperException e) {
+
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
   }
 
   public String getNodeName() {

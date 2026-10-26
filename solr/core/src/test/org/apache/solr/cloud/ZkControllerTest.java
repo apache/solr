@@ -349,15 +349,6 @@ public class ZkControllerTest extends SolrCloudTestCase {
               .build()) {
         assertEquals(TEST_NODE_NAME, zkController.getNodeName());
         zkController.removeEphemeralLiveNode();
-        // 9x's removeEphemeralLiveNode doesn't remove the node-role entries; clear them here
-        for (NodeRoles.Role role : NodeRoles.Role.values()) {
-          for (String mode : role.supportedModes()) {
-            String rolePath = NodeRoles.getZNodeForRoleMode(role, mode) + "/" + TEST_NODE_NAME;
-            if (otherClient.exists(rolePath, true)) {
-              otherClient.delete(rolePath, -1, true);
-            }
-          }
-        }
         otherClient.create(leftoverPath, null, CreateMode.EPHEMERAL, true);
         check.run(zkController, otherClient, List.of(leftoverPath));
       } finally {
