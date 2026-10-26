@@ -92,7 +92,7 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
             collectionName, Boolean.TRUE.equals(requestBody.followAliases));
 
     requestBody.location =
-        getAndValidateBackupLocation(requestBody.repository, requestBody.location);
+        getAndValidateNewBackupLocation(requestBody.repository, requestBody.location);
 
     if (requestBody.incremental == null) {
       requestBody.incremental = Boolean.TRUE;
