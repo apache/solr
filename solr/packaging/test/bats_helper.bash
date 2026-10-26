@@ -97,6 +97,32 @@ collection_exists() {
   return 1
 }
 
+# A failed listing must not be mistaken for an absent child.
+assert_zk_child_absent() {
+  local parent=$1
+  local child=$2
+  local entry
+  run -0 solr zk ls "$parent" -z localhost:${ZK_PORT} || return 1
+  for entry in $output; do
+    refute test "$entry" = "$child" || return 1
+  done
+}
+
+# Match the collection status before the nested shard and replica statuses.
+assert_healthy() {
+  run "$@"
+  assert_success || return 1
+  assert_output --regexp '\{[[:space:]]*"collection"[[:space:]]*:[[:space:]]*"[^"]+"[[:space:]]*,[[:space:]]*"status"[[:space:]]*:[[:space:]]*"healthy"'
+}
+
+assert_tls_failure() {
+  local expected=$1
+  assert_failure || return 1
+  refute_output --partial 'Server refused connection' || return 1
+  refute_output --partial 'java.net.ConnectException' || return 1
+  assert_output --regexp "$expected"
+}
+
 # Utility function to retry a command until it succeeds or times out
 wait_for() {
   local timeout="${1:-30}"     # Default 30 seconds timeout

@@ -36,8 +36,10 @@ teardown() {
   solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
   solr assert --not-cloud http://localhost:${SOLR2_PORT} --timeout 5000
 
-  run bash -c 'solr stop --all 2>&1'
+  run -0 bash -c 'solr stop --all 2>&1'
   refute_output --partial 'forcefully killing'
+  solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000
 }
 
 @test "stop command for single port" {

@@ -32,16 +32,16 @@ teardown_file() {
 }
 
 @test "server does not compress response without Accept-Encoding header" {
-  run curl -s -D - -o /dev/null "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
-  refute_output --partial "Content-Encoding:"
+  run -0 curl -fsS -D - -o /dev/null "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
+  refute_output --regexp '[Cc]ontent-[Ee]ncoding:'
 }
 
 @test "server compresses response when Accept-Encoding: gzip is requested" {
-  run curl -s -D - -o /dev/null -H "Accept-Encoding: gzip" "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
-  assert_output --partial "gzip"
+  run -0 curl -fsS -D - -o /dev/null -H "Accept-Encoding: gzip" "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
+  assert_output --regexp '[Cc]ontent-[Ee]ncoding:[[:space:]]*gzip'
 }
 
 @test "compressed response can be decompressed and parsed" {
-  run curl -s --compressed "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
+  run -0 curl -fsS --compressed "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
   assert_output --partial '"status":0'
 }

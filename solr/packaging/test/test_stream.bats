@@ -110,7 +110,8 @@ teardown() {
   echo 'sort="price desc"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
 
-  run ! solr stream --execution local --header ${solr_stream_file}
+  run -1 solr stream --execution local --header --verbose ${solr_stream_file}
 
   assert_output --partial 'ERROR'
+  assert_output --regexp '(HTTP (code=)?401|Error 401|\(401\)|Unauthorized)'
 }

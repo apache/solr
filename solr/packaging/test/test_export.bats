@@ -30,31 +30,32 @@ teardown() {
 
 @test "Check export command" {
   run solr start -e techproducts
-  run solr export --solr-url http://localhost:${SOLR_PORT} --name techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output"
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} --name techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output"
 
   refute_output --partial 'Unrecognized option'
   assert_output --partial 'Export complete'
 
   assert [ -e ${BATS_TEST_TMPDIR}/output.json ]
 
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test"
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test"
   assert [ -e techproducts.json ]
   rm techproducts.json
 
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --format javabin
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --format javabin
   assert [ -e techproducts.javabin ]
   rm techproducts.javabin
 
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output.json"
+  rm "${BATS_TEST_TMPDIR}/output.json"
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}/output.json"
   assert [ -e ${BATS_TEST_TMPDIR}/output.json ]
 
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}"
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --output "${BATS_TEST_TMPDIR}"
   assert [ -e ${BATS_TEST_TMPDIR}/techproducts.json ]
 
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --format jsonl --output "${BATS_TEST_TMPDIR}/output"
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --format jsonl --output "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl ]
 
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --limit 10 --compress --format jsonl --output "${BATS_TEST_TMPDIR}/output"
+  run -0 solr export --solr-url http://localhost:${SOLR_PORT} -c techproducts --query "*:* -id:test" --limit 10 --compress --format jsonl --output "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl.gz ]
   assert_output --partial 'Total Docs exported: 10'
 
@@ -63,6 +64,8 @@ teardown() {
 @test "export fails on non cloud mode" {
   run solr start --user-managed
   run solr create -c COLL_NAME
-  run solr export --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME
+  solr assert --not-cloud http://localhost:${SOLR_PORT} --timeout 5000
+  run -1 solr export --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME --verbose
+  assert_output --partial 'not running in SolrCloud mode'
   refute_output --partial 'Export complete'
 }
