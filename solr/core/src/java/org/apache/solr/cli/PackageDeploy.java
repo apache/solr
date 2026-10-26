@@ -46,7 +46,7 @@ public class PackageDeploy extends PackageSubCommand {
       description = "Package name, optionally with :version.")
   private String packageNameAndVersion;
 
-  @picocli.CommandLine.Mixin private PackageTargetOptions target;
+  @picocli.CommandLine.Mixin private PackageTargetOptions targetOptions;
 
   @picocli.CommandLine.Option(
       names = {"-p", "--param"},
@@ -66,7 +66,7 @@ public class PackageDeploy extends PackageSubCommand {
 
   @Override
   public int callTool() throws Exception {
-    String missingTarget = target.missingTargetMessage("deploy");
+    String missingTarget = targetOptions.missingTargetMessage("deploy");
     if (missingTarget != null) {
       printRed(missingTarget);
       return 1;
@@ -76,8 +76,8 @@ public class PackageDeploy extends PackageSubCommand {
             packageTool.deploy(
                 packageManager,
                 packageNameAndVersion,
-                target.cluster,
-                target.collections,
+                targetOptions.cluster,
+                targetOptions.collections,
                 params,
                 update,
                 noPrompt));

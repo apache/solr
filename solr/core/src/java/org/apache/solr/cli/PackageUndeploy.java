@@ -43,18 +43,19 @@ public class PackageUndeploy extends PackageSubCommand {
       description = "Package name")
   private String packageName;
 
-  @picocli.CommandLine.Mixin private PackageTargetOptions target;
+  @picocli.CommandLine.Mixin private PackageTargetOptions targetOptions;
 
   @Override
   public int callTool() throws Exception {
-    String missingTarget = target.missingTargetMessage("undeploy");
+    String missingTarget = targetOptions.missingTargetMessage("undeploy");
     if (missingTarget != null) {
       printRed(missingTarget);
       return 1;
     }
     return runWithManagers(
         (packageManager, repositoryManager) ->
-            packageTool.undeploy(packageManager, packageName, target.cluster, target.collections));
+            packageTool.undeploy(
+                packageManager, packageName, targetOptions.cluster, targetOptions.collections));
   }
 
   @Override
