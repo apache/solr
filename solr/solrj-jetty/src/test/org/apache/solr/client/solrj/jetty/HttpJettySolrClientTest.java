@@ -22,8 +22,11 @@ import static org.hamcrest.core.StringContains.containsStringIgnoringCase;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -40,7 +43,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -55,6 +60,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -98,6 +105,69 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       fail("No exception thrown.");
     } catch (SolrServerException e) {
       assertIsTimeout(e);
+    }
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testRequestContentStreams() throws Exception {
+    var req =
+        new AbstractUpdateRequest(SolrRequest.METHOD.POST, "/update") {
+          @Override
+          public Collection<ContentStream> getContentStreams() {
+            return legacyStreams();
+          }
+        };
+    assertLegacyContentSent(new JavaBinRequestWriter(), req);
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testRequestWriterContentStreams() throws Exception {
+    var writer =
+        new RequestWriter() {
+          @Override
+          public ContentWriter getContentWriter(SolrRequest<?> req) {
+            return null;
+          }
+
+          @Override
+          public Collection<ContentStream> getContentStreams(SolrRequest<?> req) {
+            return legacyStreams();
+          }
+
+          @Override
+          public void write(SolrRequest<?> request, OutputStream os) {}
+
+          @Override
+          public String getUpdateContentType() {
+            return "text/plain";
+          }
+        };
+    assertLegacyContentSent(writer, new GenericSolrRequest(SolrRequest.METHOD.POST, "/update"));
+  }
+
+  @SuppressWarnings("deprecation")
+  private static Collection<ContentStream> legacyStreams() {
+    var stream = new ContentStreamBase.StringStream("legacy content");
+    stream.setContentType("text/plain");
+    return List.of(stream);
+  }
+
+  private void assertLegacyContentSent(RequestWriter writer, SolrRequest<?> req) throws Exception {
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (var client =
+        new HttpJettySolrClient.Builder(url)
+            .withDefaultCollection(DEFAULT_COLLECTION)
+            .withRequestWriter(writer)
+            .build()) {
+      try {
+        client.request(req);
+      } catch (RemoteSolrException ignored) {
+      }
+      assertEquals("legacy content", new String(DebugServlet.requestBody, StandardCharsets.UTF_8));
+    } finally {
+      DebugServlet.clear();
     }
   }
 
