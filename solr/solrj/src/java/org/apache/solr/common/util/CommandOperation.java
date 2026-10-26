@@ -297,7 +297,9 @@ public class CommandOperation {
     return new String(toJSON(Map.of(name, commandData)), StandardCharsets.UTF_8);
   }
 
-  /** @deprecated Parse the request payload with {@link #parse(Reader)} instead. */
+  /**
+   * @deprecated Parse the request payload with {@link #parse(Reader)} instead.
+   */
   @Deprecated(since = "10.1")
   public static List<CommandOperation> readCommands(
       Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
