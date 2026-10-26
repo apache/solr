@@ -337,22 +337,68 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
+  /** A configured attempt limit stopped failover, with the last failure retained as the cause. */
+  public static class AttemptLimitExceededException extends SolrServerException {
+    private static final long serialVersionUID = 1L;
+
+    private final int attempts;
+    private final int maxAttempts;
+
+    private AttemptLimitExceededException(int attempts, int maxAttempts, Exception cause) {
+      super(
+          "Request attempt limit exceeded: attempts=" + attempts + " maxAttempts=" + maxAttempts,
+          cause);
+      this.attempts = attempts;
+      this.maxAttempts = maxAttempts;
+    }
+
+    /** The number of attempts made by this execution, including the initial attempt. */
+    public int getAttempts() {
+      return attempts;
+    }
+
+    /** The configured attempt limit. */
+    public int getMaxAttempts() {
+      return maxAttempts;
+    }
+  }
+
+  private static class AttemptCounter {
+    private final Integer maxAttempts;
+    private int count;
+
+    private AttemptCounter(Integer maxAttempts) {
+      this.maxAttempts = maxAttempts;
+    }
+
+    private void checkLimit(Exception previousEx) throws AttemptLimitExceededException {
+      if (maxAttempts != null && count >= maxAttempts) {
+        throw new AttemptLimitExceededException(count, maxAttempts, previousEx);
+      }
+    }
+
+    private void recordAttempt(Exception previousEx) throws AttemptLimitExceededException {
+      checkLimit(previousEx);
+      count++;
+    }
+  }
+
   public static class EndpointIterator {
     Endpoint endpoint;
     List<Endpoint> skipped;
-    int numServersTried;
     Iterator<Endpoint> it;
     Iterator<Endpoint> skippedIt;
-    String exceptionMessage;
     long timeAllowedNano;
     long timeOutTime;
 
     final Map<String, EndpointWrapper> zombieServers;
     final Req req;
+    private final AttemptCounter attempts;
 
     public EndpointIterator(Req req, Map<String, EndpointWrapper> zombieServers) {
       this.it = req.getEndpoints().iterator();
       this.req = req;
+      this.attempts = new AttemptCounter(req.getNumServersToTry());
       this.zombieServers = zombieServers;
       this.timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
       this.timeOutTime = System.nanoTime() + timeAllowedNano;
@@ -365,11 +411,6 @@ public abstract class LBSolrClient extends SolrClient {
 
     private void fetchNext() {
       endpoint = null;
-      if (req.numServersToTry != null && numServersTried > req.numServersToTry) {
-        exceptionMessage = "Time allowed to handle this request exceeded";
-        return;
-      }
-
       while (it.hasNext()) {
         endpoint = it.next();
         // if the server is currently a zombie, just skip to the next one
@@ -418,26 +459,17 @@ public abstract class LBSolrClient extends SolrClient {
       if ((previousEx != null
               && previousEx.getMessage() != null
               && previousEx.getMessage().contains("Limits exceeded!"))
-          || (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime))) {
+          || (attempts.count > 0 && isTimeExceeded(timeAllowedNano, timeOutTime))) {
         throw new SolrServerException(
             "The processing limits for to this request were exceeded, see cause for details",
             previousEx);
       }
+      attempts.checkLimit(previousEx);
       if (endpoint == null) {
         throw new SolrServerException(
             "No live SolrServers available to handle this request" + suffix, previousEx);
       }
-      numServersTried++;
-      if (req.getNumServersToTry() != null && numServersTried > req.getNumServersToTry()) {
-        throw new SolrServerException(
-            "No live SolrServers available to handle this request:"
-                + " numServersTried="
-                + numServersTried
-                + " numServersToTry="
-                + req.getNumServersToTry()
-                + suffix,
-            previousEx);
-      }
+      attempts.recordAttempt(previousEx);
       Endpoint rs = endpoint;
       fetchNext();
       return rs;
@@ -455,6 +487,16 @@ public abstract class LBSolrClient extends SolrClient {
       this(request, endpoints, null);
     }
 
+    /**
+     * Wraps a request with eligible endpoints and an optional attempt limit.
+     *
+     * @param request the request to execute
+     * @param endpoints endpoints in failover order, with zombies deferred until after live servers
+     * @param numServersToTry maximum attempts per execution, including the initial attempt and
+     *     zombie fallback; null tries all eligible endpoints, and non-positive values allow no
+     *     attempts. Skipped endpoints do not count. Retries internal to the underlying HTTP client
+     *     are outside this limit.
+     */
     public Req(SolrRequest<?> request, Collection<Endpoint> endpoints, Integer numServersToTry) {
       this.request = request;
       this.endpoints = endpoints.stream().collect(Collectors.toList());
@@ -485,6 +527,7 @@ public abstract class LBSolrClient extends SolrClient {
       this.numDeadServersToTry = numDeadServersToTry;
     }
 
+    /** The maximum attempts per execution, or null to try all eligible endpoints. */
     public Integer getNumServersToTry() {
       return numServersToTry;
     }
@@ -560,7 +603,7 @@ public abstract class LBSolrClient extends SolrClient {
    * <p>Servers are queried in the exact order given (except servers currently in the dead pool are
    * skipped). If no live servers from the provided list remain to be tried, a number of previously
    * skipped dead servers will be tried. Req.getNumDeadServersToTry() controls how many dead servers
-   * will be tried.
+   * will be tried. All attempts count toward {@link Req#getNumServersToTry()} when configured.
    *
    * <p>If no live servers are found a SolrServerException is thrown.
    *
@@ -830,14 +873,26 @@ public abstract class LBSolrClient extends SolrClient {
     return request(request, collection, null);
   }
 
+  /**
+   * Executes a request with an optional limit shared by live-server and zombie attempts.
+   *
+   * @param request the request to execute
+   * @param collection the collection, unless overridden by the selected endpoint
+   * @param numServersToTry maximum attempts, including the initial attempt; null tries all
+   *     eligible endpoints, and non-positive values allow no attempts. Retries internal to the
+   *     underlying HTTP client are outside this limit.
+   * @return the response from the first successful attempt
+   * @throws AttemptLimitExceededException if the configured limit prevents further attempts
+   */
   public NamedList<Object> request(
       final SolrRequest<?> request, String collection, final Integer numServersToTry)
       throws SolrServerException, IOException {
     Exception ex = null;
     EndpointWrapper[] serverList = aliveServerList;
 
-    final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
-    int numServersTried = 0;
+    final int maxTries =
+        numServersToTry == null ? serverList.length : Math.min(serverList.length, numServersToTry);
+    final AttemptCounter attempts = new AttemptCounter(numServersToTry);
     Map<String, EndpointWrapper> justFailed = null;
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
@@ -845,7 +900,7 @@ public abstract class LBSolrClient extends SolrClient {
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
     long timeOutTime = System.nanoTime() + timeAllowedNano;
-    for (int attempts = 0; attempts < maxTries; attempts++) {
+    for (int i = 0; i < maxTries; i++) {
       timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
       if (timeAllowedExceeded) {
         break;
@@ -853,8 +908,8 @@ public abstract class LBSolrClient extends SolrClient {
 
       EndpointWrapper wrapper = pickServer(serverList, request);
       final var endpoint = wrapper.getEndpoint();
+      attempts.recordAttempt(ex);
       try {
-        ++numServersTried;
         // Choose the endpoint's core/collection over any specified by the user
         final var effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
@@ -898,8 +953,8 @@ public abstract class LBSolrClient extends SolrClient {
       if (!allServers.containsKey(wrapper.getEndpoint().toString())
           || (justFailed != null && justFailed.containsKey(wrapper.getEndpoint().toString())))
         continue;
+      attempts.recordAttempt(ex);
       try {
-        ++numServersTried;
         final String effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
         NamedList<Object> rsp =
@@ -926,16 +981,8 @@ public abstract class LBSolrClient extends SolrClient {
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
-        solrServerExceptionMessage =
-            "No live SolrServers available to handle this request:"
-                + " numServersTried="
-                + numServersTried
-                + " numServersToTry="
-                + numServersToTry.intValue();
-      } else {
-        solrServerExceptionMessage = "No live SolrServers available to handle this request";
-      }
+      attempts.checkLimit(ex);
+      solrServerExceptionMessage = "No live SolrServers available to handle this request";
     }
     if (ex == null) {
       throw new SolrServerException(solrServerExceptionMessage);
