@@ -327,6 +327,7 @@ public class ReplicationHandler extends RequestHandlerBase
         reportErrorOnResponse(rsp, "No follower configured", null);
       }
     } else if (command.equals(CMD_SHOW_COMMITS)) {
+      // Needs to be solved for
       populateCommitInfo(rsp);
     } else if (command.equals(CMD_DETAILS)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
