@@ -1,5 +1,5 @@
 title:
-  Add V2 JAX-RS API to enable or disable replication
+  Add V2 JAX-RS API to enable or disable replication (PUT /api/cores/coreName/replication, requires the core-admin-edit permission)
 type: added
 authors:
   - name: Jalaz Kumar

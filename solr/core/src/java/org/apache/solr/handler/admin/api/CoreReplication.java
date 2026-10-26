@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.StreamingOutput;
@@ -85,7 +85,7 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   }
 
   @Override
-  @PermissionName(UPDATE_PERM)
+  @PermissionName(CORE_EDIT_PERM)
   public SolrJerseyResponse setReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
     return doSetReplicationEnabled(requestBody);
   }
