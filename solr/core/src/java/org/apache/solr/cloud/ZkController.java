@@ -1176,6 +1176,8 @@ public class ZkController implements Closeable {
    *
    * <p>Covers both the {@code /live_nodes} entry and this node's entries under any {@code
    * /node_roles/<role>/<mode>}. Throws if any are still present after twice the ZK session timeout.
+   *
+   * @throws SolrException if ephemeral nodes were not all removed by the end of the waiting period
    */
   // package-private for testing
   void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
