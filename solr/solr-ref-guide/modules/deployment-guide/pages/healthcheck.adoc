@@ -68,7 +68,7 @@ In SolrCloud mode, the endpoint returns HTTP `200 OK` only if all of the followi
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health"
+curl 'http://localhost:8983/api/node/health'
 ----
 
 Healthy node:
@@ -99,7 +99,7 @@ This is useful as a readiness probe during a rolling restart, so an orchestrator
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health?requireHealthyCores=true"
+curl 'http://localhost:8983/api/node/health?requireHealthyCores=true'
 ----
 
 === User-Managed (Leader-Follower) Mode
@@ -109,7 +109,7 @@ Set `maxGenerationLag=<n>` to fail the healthcheck once a follower falls more th
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health?maxGenerationLag=100"
+curl 'http://localhost:8983/api/node/health?maxGenerationLag=100'
 ----
 
 Healthy node (all followers within the allowed lag):
