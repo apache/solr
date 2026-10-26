@@ -236,8 +236,7 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws IOException {
       byte[] body = request.getInputStream().readAllBytes();
-      capturedRequest.set(
-          new CapturedRequest(request.getMethod(), request.getContentType(), body));
+      capturedRequest.set(new CapturedRequest(request.getMethod(), request.getContentType(), body));
       response.setContentType("application/xml; charset=UTF-8");
       response
           .getOutputStream()
