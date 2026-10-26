@@ -65,6 +65,20 @@ public class SetReplicationEnabledAPITest extends SolrTestCase {
     assertEquals(Boolean.TRUE, fetchReplicationEnabledStatus());
   }
 
+  @Test
+  public void testNullEnabledIsRejectedAndStateUnchanged() throws Exception {
+    assertEquals(Boolean.TRUE, fetchReplicationEnabledStatus());
+
+    var request = new ReplicationApi.SetReplicationEnabled(CORE_NAME);
+    request.setEnabled(null);
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+
+    assertEquals(Boolean.TRUE, fetchReplicationEnabledStatus());
+  }
+
   private static void setReplicationEnabled(boolean enabled) throws Exception {
     var request = new ReplicationApi.SetReplicationEnabled(CORE_NAME);
     request.setEnabled(enabled);
