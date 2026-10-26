@@ -112,14 +112,17 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetReplicationEnabledRejectsNullBody() {
-    SolrException ex = expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(null));
+    SolrException ex =
+        expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(null));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
   }
 
   @Test
   public void testSetReplicationEnabledRejectsBadBody() {
     final var emptyBody = new ReplicationEnabledRequestBody();
-    SolrException ex = expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(emptyBody));
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(emptyBody));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
   }
 
