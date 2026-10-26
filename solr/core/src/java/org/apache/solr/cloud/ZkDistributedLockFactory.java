@@ -41,7 +41,9 @@ abstract class ZkDistributedLockFactory {
     try {
       for (int attempt = 1; ; attempt++) {
         try {
-          return newLock(isWriteLock, lockPath, lockIdToMirror);
+          return isWriteLock
+              ? new ZkDistributedLock.Write(zkClient, lockPath, lockIdToMirror)
+              : new ZkDistributedLock.Read(zkClient, lockPath, lockIdToMirror);
         } catch (KeeperException.NoNodeException e) {
           if (attempt == MAX_CREATE_ATTEMPTS) {
             throw e;
@@ -56,13 +58,6 @@ abstract class ZkDistributedLockFactory {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-  }
-
-  private DistributedLock newLock(boolean isWriteLock, String lockPath, String lockIdToMirror)
-      throws KeeperException, InterruptedException {
-    return isWriteLock
-        ? new ZkDistributedLock.Write(zkClient, lockPath, lockIdToMirror)
-        : new ZkDistributedLock.Read(zkClient, lockPath, lockIdToMirror);
   }
 
   protected StringBuilder getPathPrefix() {
