@@ -878,9 +878,9 @@ public abstract class LBSolrClient extends SolrClient {
    *
    * @param request the request to execute
    * @param collection the collection, unless overridden by the selected endpoint
-   * @param numServersToTry maximum attempts, including the initial attempt; null tries all
-   *     eligible endpoints, and non-positive values allow no attempts. Retries internal to the
-   *     underlying HTTP client are outside this limit.
+   * @param numServersToTry maximum attempts, including the initial attempt; null tries all eligible
+   *     endpoints, and non-positive values allow no attempts. Retries internal to the underlying
+   *     HTTP client are outside this limit.
    * @return the response from the first successful attempt
    * @throws AttemptLimitExceededException if the configured limit prevents further attempts
    */

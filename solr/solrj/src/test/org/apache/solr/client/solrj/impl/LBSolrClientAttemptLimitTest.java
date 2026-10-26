@@ -204,8 +204,7 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
         client.fail(ENDPOINTS.get(0));
         SolrServerException failure =
             expectThrows(
-                SolrServerException.class,
-                () -> client.request(new Req(request, ENDPOINTS, 3)));
+                SolrServerException.class, () -> client.request(new Req(request, ENDPOINTS, 3)));
         assertEquals(List.of(ENDPOINTS.get(0)), client.attempted);
         assertSame(client.failures.get(ENDPOINTS.get(0)), failure);
       }
@@ -218,8 +217,7 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
     assertEquals(limit, failure.getAttempts());
     assertEquals(limit, failure.getMaxAttempts());
     assertSame(
-        client.failures.get(client.attempted.get(client.attempted.size() - 1)),
-        failure.getCause());
+        client.failures.get(client.attempted.get(client.attempted.size() - 1)), failure.getCause());
   }
 
   private static class RecordingClient extends LBSolrClient {

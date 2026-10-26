@@ -91,8 +91,7 @@ public class LBAsyncSolrClientAttemptLimitTest extends SolrTestCase {
       req.setNumDeadServersToTry(1);
       ExecutionException failure =
           expectThrows(
-              ExecutionException.class,
-              () -> client.requestAsync(req).get(1, TimeUnit.MINUTES));
+              ExecutionException.class, () -> client.requestAsync(req).get(1, TimeUnit.MINUTES));
       assertEquals(List.of(ENDPOINTS.get(0)), client.attempted);
       assertSame(client.failures.get(ENDPOINTS.get(0)), failure.getCause());
     }
@@ -196,10 +195,7 @@ public class LBAsyncSolrClientAttemptLimitTest extends SolrTestCase {
         ExecutionException failure =
             expectThrows(
                 ExecutionException.class,
-                () ->
-                    client
-                        .requestAsync(new Req(request, ENDPOINTS, 3))
-                        .get(1, TimeUnit.MINUTES));
+                () -> client.requestAsync(new Req(request, ENDPOINTS, 3)).get(1, TimeUnit.MINUTES));
         assertSame(client.failures.get(ENDPOINTS.get(0)), failure.getCause());
         assertEquals(List.of(ENDPOINTS.get(0)), client.attempted);
       }
