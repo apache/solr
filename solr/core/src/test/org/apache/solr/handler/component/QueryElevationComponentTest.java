@@ -148,6 +148,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testElevateQOverridesFieldedSearchQuery() throws Exception {
+    try {
+      initElevateQDocuments();
+      assertElevationRequest(params("q", "text:MMMM"), List.of(), List.of("3", "6"));
+      assertElevationRequest(
+          params("q", "text:MMMM", "elevate.q", "YYYY"), List.of("1", "2"), List.of("3", "6"));
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
   public void testElevateQOverridesLocalParserQuery() throws Exception {
     try {
       initElevateQDocuments();
