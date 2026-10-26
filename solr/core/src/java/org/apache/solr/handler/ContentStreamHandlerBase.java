@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,6 +28,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Shares common code between various handlers that manipulate {@link
- * org.apache.solr.common.util.ContentStream} objects.
+ * org.apache.solr.util.ContentStream} objects.
  */
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
 
