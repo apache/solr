@@ -32,11 +32,9 @@ or testing.
 | `mixin/` | Jsonnet source (single source of truth used to regenerate the artifacts above) |
 | `dev/` | **Developer convenience only** — docker-compose stack for testing changes to the artifacts |
 
-> **Both artifacts are placeholders right now** — a two-panel dashboard and a single alert, which
-> exist to prove the build pipeline works end to end. The real dashboard arrives in
-> [SOLR-18534](https://issues.apache.org/jira/browse/SOLR-18534), the alert rules in
-> [SOLR-18535](https://issues.apache.org/jira/browse/SOLR-18535), and OTLP push support in
-> [SOLR-18536](https://issues.apache.org/jira/browse/SOLR-18536).
+> **The dashboard is still a placeholder**, enough to exercise the build pipeline. The real one
+> arrives in [SOLR-18534](https://issues.apache.org/jira/browse/SOLR-18534) and OTLP push support
+> in [SOLR-18536](https://issues.apache.org/jira/browse/SOLR-18536). The alert rules are complete.
 
 For the full integration guide see the Solr Reference Guide:
 **[Monitoring Solr with Prometheus and Grafana](../solr-ref-guide/modules/deployment-guide/pages/monitoring-with-prometheus-and-grafana.adoc)**
@@ -71,8 +69,21 @@ Validate locally before deploying:
 promtool check rules prometheus-solr-alerts.yml
 ```
 
-One placeholder rule is included: `SolrNodeDown`, which fires when a Solr target has failed to
-scrape for 2 minutes.
+The rules live in the group `SolrAlerts`. Every expression carries `solrSelector` and aggregates
+`by (instance)`, so a rule alerts and recovers per node:
+
+| Alert | Severity | Fires when | Setting |
+|---|---|---|---|
+| `SolrHighHeapUsage` | critical | `jvm_memory_used_bytes` / `jvm_memory_limit_bytes` (heap, summed over pools) above 90% for 2m | `heapUsageThreshold` |
+| `SolrJvmGcThrashing` | critical | `rate(jvm_gc_duration_seconds_sum)` over 10 s/min for 3m | `gcSecondsPerMinuteThreshold` |
+| `SolrLowDiskSpace` | critical | `solr_disk_space_megabytes` usable/total under 15% for 5m | `diskFreeThreshold` |
+| `SolrNodeDown` | warning | `up == 0` for 2m | — |
+| `SolrHighSearchLatency` | warning | p99 of `solr_core_requests_times_milliseconds` for `/select*`, `internal="false"`, above 1000 ms for 5m | `searchLatencyThresholdMs` |
+| `SolrHighErrorRate` | warning | `solr_core_requests_errors_total` / `solr_core_requests_total` over 1% for 5m | `errorRateThreshold` |
+| `SolrOverseerQueueBuildup` | warning | `solr_overseer_collection_work_queue_size` over 50 for 5m (SolrCloud only) | `overseerQueueThreshold` |
+| `SolrHighMmapRatio` | warning | Index size against `jvm_system_memory_bytes` minus heap, under 10% for 5m | `mmapRatioThreshold` |
+
+`rateInterval` sets the window for the `rate()` queries in the GC, latency and error-rate rules.
 
 ---
 
@@ -85,6 +96,7 @@ All tunable settings live in `mixin/config.libsonnet`:
   _config:: {
     solrSelector: 'job="solr"',   // label selector identifying Solr targets
     rateInterval: '5m',           // window for rate() queries
+    // ... one threshold per alert rule, see the table above
   },
 }
 ```

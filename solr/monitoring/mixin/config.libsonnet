@@ -31,5 +31,31 @@
     // Window for rate() queries, and the preselected value of the dashboard's
     // Interval dropdown. Raise it for sparse scrape intervals.
     rateInterval: '5m',
+
+    // Alert thresholds. Each is consumed by exactly one rule in alerts/.
+
+    // Fraction of maximum heap in use that fires SolrHighHeapUsage.
+    heapUsageThreshold: 0.9,
+
+    // Seconds of garbage collection per minute that fire SolrJvmGcThrashing.
+    gcSecondsPerMinuteThreshold: 10,
+
+    // Fraction of the partition still free that fires SolrLowDiskSpace.
+    diskFreeThreshold: 0.15,
+
+    // 99th percentile /select latency in milliseconds that fires
+    // SolrHighSearchLatency.
+    searchLatencyThresholdMs: 1000,
+
+    // Fraction of requests failing that fires SolrHighErrorRate.
+    errorRateThreshold: 0.01,
+
+    // Pending Overseer collection operations that fire
+    // SolrOverseerQueueBuildup.
+    overseerQueueThreshold: 50,
+
+    // Percentage of the index that still fits in memory outside the heap,
+    // below which SolrHighMmapRatio fires.
+    mmapRatioThreshold: 10,
   },
 }

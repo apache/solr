@@ -16,15 +16,9 @@
 
 [IMPORTANT]
 ====
-*Work in progress — the artifacts shipped today are placeholders.*
+Solr 10 removed the `solr-exporter` process and renamed the metrics, so dashboards and alert rules made for Solr 9 and earlier do not work.
 
-Solr 10 removed the standalone `solr-exporter` (the `prometheus-exporter` module) and now exposes metrics natively, under OpenTelemetry-based metric names.
-Dashboards and alert rules written against the old exporter therefore do not work on Solr 10 or later: the process they scraped is gone, and the metric names and labels they query have changed.
-Solr's own dashboard and alert rules are consequently being built from scratch, panel by panel and rule by rule.
-
-What is in `solr/monitoring/` right now is a two-panel dashboard and a single alert, present to prove the generation pipeline works — not a monitoring setup to deploy.
-The dashboard worth deploying arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534], the alert rules in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535], and the OTLP Collector guidance in https://issues.apache.org/jira/browse/SOLR-18536[SOLR-18536].
-Expect both files, and this page, to change substantially before they are useful.
+The alert rules below are current. The dashboard is still a placeholder; the real one arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534] and OTLP Collector guidance in https://issues.apache.org/jira/browse/SOLR-18536[SOLR-18536].
 ====
 
 Solr ships two monitoring artifacts in `solr/monitoring/`:
@@ -101,16 +95,22 @@ Validate the file before deploying it, and after any edit:
 promtool check rules prometheus-solr-alerts.yml
 ----
 
-Rules carry a `severity` label for routing in Alertmanager.
-One placeholder rule is included today:
+Each rule alerts per node and carries a `severity` label for routing in Alertmanager:
 
-[cols="2,1,3",options="header"]
+[cols="2,1,4,2",options="header"]
 |===
-| Alert | Severity | Fires when
-| `SolrNodeDown` | warning | A Solr target has failed to scrape for 2 minutes
+| Alert | Severity | Fires when | Setting
+| `SolrHighHeapUsage` | critical | Heap use above 90% for 2 minutes | `heapUsageThreshold`
+| `SolrJvmGcThrashing` | critical | Over 10 seconds of GC per minute for 3 minutes | `gcSecondsPerMinuteThreshold`
+| `SolrLowDiskSpace` | critical | Under 15% free on the Solr home partition for 5 minutes | `diskFreeThreshold`
+| `SolrNodeDown` | warning | Scrapes failing for 2 minutes | —
+| `SolrHighSearchLatency` | warning | `/select` p99 above 1000 ms for 5 minutes | `searchLatencyThresholdMs`
+| `SolrHighErrorRate` | warning | Over 1% of requests failing for 5 minutes | `errorRateThreshold`
+| `SolrOverseerQueueBuildup` | warning | Over 50 queued collection operations for 5 minutes (SolrCloud only) | `overseerQueueThreshold`
+| `SolrHighMmapRatio` | warning | Under 10% of the index fits in memory outside the heap for 5 minutes | `mmapRatioThreshold`
 |===
 
-NOTE: The rules covering heap, GC, disk, latency, error rate and SolrCloud health arrive in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535].
+To change a threshold, edit its setting in `mixin/config.libsonnet` and regenerate — see <<customizing>>.
 
 [[customizing]]
 == Customizing the Artifacts
