@@ -38,8 +38,8 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
 
   /**
-   * Number of bits to use for storage Must be 4 (half-byte) or 7 (signed-byte) per Lucene codec
-   * spec
+   * Number of bits to use for storage. Must match a Lucene {@code ScalarEncoding}: 1, 2, 4, 7
+   * (signed-byte) or 8 (unsigned-byte)
    */
   private int bits;
 

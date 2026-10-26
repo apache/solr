@@ -330,7 +330,13 @@ s|Optional |Default: `7`
 +
 The number of bits to use for each quantized dimension value
 +
-Accepted values: 4 (half byte) or 7 (unsigned byte).
+Accepted values:
++
+* `1`: one bit per dimension. It is the same encoding used by `BinaryQuantizedDenseVectorField`.
+* `2`: two bits per dimension.
+* `4`: half a byte per dimension.
+* `7`: seven bits per dimension (signed byte).
+* `8`: one unsigned byte per dimension.
 
 `NOTE:` Existing Solr 10 schemas may still contain legacy scalar-quantization parameters such as
 `confidenceInterval`, `dynamicConfidenceInterval`, or `compress`. They are now deprecated and ignored.
