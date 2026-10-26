@@ -181,6 +181,8 @@ An integer between `1` and `3200`.
 
 `DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
 
+A `DenseVectorField` can be the source of a `copyField` only if the destination is also a dense vector field with the same `vectorDimension`; otherwise indexing fails. `copyField` rules with `source="*"` skip vector fields.
+
 Here's how a `DenseVectorField` should be indexed when single valued:
 
 [tabs#densevectorfield-index]
