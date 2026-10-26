@@ -367,15 +367,52 @@ You can use the HTTP commands below to control the ReplicationHandler's operatio
 `enablereplication`::
 Enable replication on the "leader" for all its followers.
 +
+[tabs#enablereplication-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{leaderHost}:{port}/solr/{coreName}/replication?command=enablereplication
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT -H 'Content-Type: application/json' -d '{"enabled": true}' \
+http://{leaderHost}:{port}/api/cores/{coreName}/replication
+----
+====
+======
 
 `disablereplication`::
 Disable replication on the leader for all its followers.
 +
+[tabs#disablereplication-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{leaderHost}:{port}/solr/{coreName}/replication?command=disablereplication
+----
+====
 
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT -H 'Content-Type: application/json' -d '{"enabled": false}' \
+http://{leaderHost}:{port}/api/cores/{coreName}/replication
+----
+====
+======
 `indexversion`::
 Return the version of the latest replicatable index on the specified leader or follower.
 +
