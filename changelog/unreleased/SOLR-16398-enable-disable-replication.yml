@@ -4,6 +4,8 @@ type: added
 authors:
   - name: Jalaz Kumar
     nick: jaykay12
+  - name: Eric Pugh
+    nick: epugh
 links:
   - name: SOLR-16398
     url: https://issues.apache.org/jira/browse/SOLR-16398
