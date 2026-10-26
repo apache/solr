@@ -366,6 +366,8 @@ BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField
 
 NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorField`.
 
+NOTE: Binary quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized.
+
 NOTE: Quantization requires the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]. With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory`, this field type is accepted but its vectors are stored unquantized, without any warning.
 
 [[query-hnsw-fields]]
