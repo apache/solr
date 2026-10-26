@@ -20,7 +20,9 @@ import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.ContentStream;
 
 /**
  * A RequestWriter which writes requests in the javabin format
@@ -48,6 +50,16 @@ public class JavaBinRequestWriter extends RequestWriter {
     } else {
       return req.getContentWriter(JAVABIN_MIME);
     }
+  }
+
+  @Override
+  @Deprecated(since = "7.6")
+  public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
+    if (req instanceof UpdateRequest updateRequest) {
+      if (isEmpty(updateRequest)) return null;
+      throw new RuntimeException("This Should not happen");
+    }
+    return req.getContentStreams();
   }
 
   @Override

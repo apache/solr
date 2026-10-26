@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
@@ -31,6 +32,7 @@ import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
@@ -307,10 +309,19 @@ public class EmbeddedSolrServer extends SolrClient {
   }
 
   /** A list of streams, non-null. */
+  @SuppressWarnings("deprecation")
   private List<ContentStream> getContentStreams(SolrRequest<?> request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return List.of();
+    if (request instanceof ContentStreamUpdateRequest csur) {
+      final Collection<ContentStream> streams = csur.getContentStreams();
+      if (streams != null) return new ArrayList<>(streams);
+    }
 
     final RequestWriter.ContentWriter contentWriter = request.getContentWriter(null);
+    if (contentWriter == null) {
+      final Collection<ContentStream> streams = request.getContentStreams();
+      if (streams != null) return new ArrayList<>(streams);
+    }
 
     if (contentWriter instanceof RequestWriter.MultipartContentWriter multipartWriter) {
       List<ContentStream> parts = new ArrayList<>();

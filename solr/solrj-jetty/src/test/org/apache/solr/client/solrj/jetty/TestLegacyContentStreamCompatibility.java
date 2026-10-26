@@ -150,6 +150,12 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
 
   private void assertWriterOverride(boolean jdk, boolean xml) throws Exception {
     AtomicInteger calls = new AtomicInteger();
+    RequestWriter writer = streamOverrideWriter(xml, calls);
+    assertPostBody(jdk, writer, new LegacyStreamsRequest(), WRITER_BODY);
+    assertTrue("The custom writer's stream hook must be consulted", calls.get() > 0);
+  }
+
+  private RequestWriter streamOverrideWriter(boolean xml, AtomicInteger calls) {
     RequestWriter writer;
     if (xml) {
       writer =
@@ -170,8 +176,7 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
             }
           };
     }
-    assertPostBody(jdk, writer, new LegacyStreamsRequest(), WRITER_BODY);
-    assertTrue("The custom writer's stream hook must be consulted", calls.get() > 0);
+    return writer;
   }
 
   private void assertExplicitContentWriter(boolean jdk, String contentType) throws Exception {
@@ -180,9 +185,13 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
             SolrRequest.METHOD.POST, "/update", SolrRequest.SolrRequestType.UPDATE);
     request.setContentWriter(
         new RequestWriter.StringPayloadContentWriter(REQUEST_BODY, contentType));
-    CapturedRequest captured =
-        assertPostBody(jdk, new JavaBinRequestWriter(), request, REQUEST_BODY);
-    assertEquals(contentType, captured.contentType());
+    for (boolean xml : List.of(false, true)) {
+      AtomicInteger calls = new AtomicInteger();
+      CapturedRequest captured =
+          assertPostBody(jdk, streamOverrideWriter(xml, calls), request, REQUEST_BODY);
+      assertEquals(contentType, captured.contentType());
+      assertEquals("An explicit writer must take precedence over the stream hook", 0, calls.get());
+    }
   }
 
   private CapturedRequest assertPostBody(

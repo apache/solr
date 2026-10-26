@@ -427,30 +427,13 @@ public class ApiBag {
    * @return parsed list of commands
    * @throws IOException if there is an error while parsing the stream
    */
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings("deprecation")
   public static List<CommandOperation> readCommands(
       Iterable<ContentStream> streams,
       @SuppressWarnings({"rawtypes"}) NamedList resp,
       Set<String> singletonCommands)
       throws IOException {
-    if (streams == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
-    }
-    ArrayList<CommandOperation> ops = new ArrayList<>();
-    for (ContentStream stream : streams) {
-
-      if ("application/javabin".equals(stream.getContentType())) {
-        ops.addAll(CommandOperation.parse(stream.getStream(), singletonCommands));
-      } else {
-        ops.addAll(CommandOperation.parse(stream.getReader(), singletonCommands));
-      }
-    }
-    List<Map<String, Object>> errList = CommandOperation.captureErrors(ops);
-    if (!errList.isEmpty()) {
-      resp.add(CommandOperation.ERR_MSGS, errList);
-      return null;
-    }
-    return ops;
+    return CommandOperation.readCommands(streams, resp, singletonCommands);
   }
 
   public static List<CommandOperation> getCommandOperations(

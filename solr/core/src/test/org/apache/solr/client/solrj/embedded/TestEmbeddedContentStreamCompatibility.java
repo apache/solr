@@ -20,9 +20,13 @@ import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
@@ -53,14 +57,51 @@ public class TestEmbeddedContentStreamCompatibility extends SolrTestCase {
     assertAllDocuments(true);
   }
 
+  @Test
+  public void testGenericLegacyStreamsRetainAllDocuments() throws Exception {
+    GenericSolrRequest request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST, "/update", SolrRequest.SolrRequestType.UPDATE) {
+          @Override
+          public List<ContentStream> getContentStreams() {
+            return List.of(
+                new ContentStreamBase.StringStream(document("1"), "application/xml"),
+                new ContentStreamBase.StringStream(document("2"), "application/xml"));
+          }
+        };
+    assertAllDocuments(request);
+  }
+
+  @Test
+  public void testMultipartContentWriterTakesPrecedenceOverLegacyStreams() throws Exception {
+    GenericSolrRequest request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST, "/update", SolrRequest.SolrRequestType.UPDATE) {
+          @Override
+          public List<ContentStream> getContentStreams() {
+            throw new AssertionError("An explicit writer must take precedence over legacy streams");
+          }
+        };
+    request.setContentWriter(
+        (RequestWriter.MultipartContentWriter)
+            () ->
+                List.of(
+                    new RequestWriter.NamedPart(
+                        "first.xml",
+                        new RequestWriter.StringPayloadContentWriter(
+                            document("1"), "application/xml")),
+                    new RequestWriter.NamedPart(
+                        "second.xml",
+                        new RequestWriter.StringPayloadContentWriter(
+                            document("2"), "application/xml"))));
+    assertAllDocuments(request);
+  }
+
   private void assertAllDocuments(boolean named) throws Exception {
-    SolrClient client = solrTestRule.getSolrClient();
-    client.deleteByQuery("*:*");
     ContentStreamUpdateRequest request = new ContentStreamUpdateRequest("/update");
     for (String id : List.of("1", "2")) {
       ContentStreamBase stream =
-          new ContentStreamBase.StringStream(
-              "<add><doc><field name=\"id\">" + id + "</field></doc></add>", "application/xml");
+          new ContentStreamBase.StringStream(document(id), "application/xml");
       if (named) {
         stream.setName(id + ".xml");
       } else {
@@ -68,8 +109,13 @@ public class TestEmbeddedContentStreamCompatibility extends SolrTestCase {
       }
       request.addContentStream(stream);
     }
+    assertAllDocuments(request);
+  }
 
-    assertEquals(0, request.process(client).getStatus());
+  private void assertAllDocuments(SolrRequest<?> request) throws Exception {
+    SolrClient client = solrTestRule.getSolrClient();
+    client.deleteByQuery("*:*");
+    client.request(request);
     client.commit();
     SolrQuery query = new SolrQuery("*:*");
     query.setFields("id");
@@ -79,5 +125,9 @@ public class TestEmbeddedContentStreamCompatibility extends SolrTestCase {
     assertEquals(
         List.of("1", "2"),
         documents.stream().map(document -> document.getFieldValue("id")).toList());
+  }
+
+  private static String document(String id) {
+    return "<add><doc><field name=\"id\">" + id + "</field></doc></add>";
   }
 }

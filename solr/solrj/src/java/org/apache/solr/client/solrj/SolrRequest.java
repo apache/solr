@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -280,13 +279,7 @@ public abstract class SolrRequest<T> implements Serializable {
    *     send any format
    */
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-    Collection<ContentStream> streams;
-    try {
-      streams = getContentStreams();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-    return RequestWriter.contentWriterOf(streams);
+    return null;
   }
 
   /**
