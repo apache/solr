@@ -74,16 +74,23 @@ The rules live in the group `SolrAlerts`. Every expression carries `solrSelector
 
 | Alert | Severity | Fires when | Setting |
 |---|---|---|---|
-| `SolrHighHeapUsage` | critical | `jvm_memory_used_bytes` / `jvm_memory_limit_bytes` (heap, summed over pools) above 90% for 2m | `heapUsageThreshold` |
+| `SolrHighHeapUsage` | critical | `jvm_memory_used_bytes` / `jvm_memory_committed_bytes` (heap, summed over pools) above 90% for 2m | `heapUsageThreshold` |
 | `SolrJvmGcThrashing` | critical | `rate(jvm_gc_duration_seconds_sum)` over 10 s/min for 3m | `gcSecondsPerMinuteThreshold` |
 | `SolrLowDiskSpace` | critical | `solr_disk_space_megabytes` usable/total under 15% for 5m | `diskFreeThreshold` |
 | `SolrNodeDown` | warning | `up == 0` for 2m | — |
 | `SolrHighSearchLatency` | warning | p99 of `solr_core_requests_times_milliseconds` for `/select*`, `internal="false"`, above 1000 ms for 5m | `searchLatencyThresholdMs` |
 | `SolrHighErrorRate` | warning | `solr_core_requests_errors_total` / `solr_core_requests_total` over 1% for 5m | `errorRateThreshold` |
 | `SolrOverseerQueueBuildup` | warning | `solr_overseer_collection_work_queue_size` over 50 for 5m (SolrCloud only) | `overseerQueueThreshold` |
-| `SolrHighMmapRatio` | warning | Index size against `jvm_system_memory_bytes` minus heap, under 10% for 5m | `mmapRatioThreshold` |
+| `SolrHighMmapRatio` | warning | Index size against `jvm_system_memory_bytes` minus committed heap, under 10% for 5m | `mmapRatioThreshold` |
 
 `rateInterval` sets the window for the `rate()` queries in the GC, latency and error-rate rules.
+
+Two details the expressions depend on. Heap is measured against committed rather than
+`jvm_memory_limit_bytes`, because generational ZGC reports the whole `-Xmx` as the limit of both its
+young and old pool; committed is a partition of one heap under every collector, and `bin/solr` pins
+`-Xms` to `-Xmx`. The request counters and the latency histogram carry `core!=""`, because a handler
+with `aggregateNodeLevelMetricsEnabled` emits a node rollup under the same metric name, without the
+`core`, `collection` and `shard` attributes.
 
 ---
 

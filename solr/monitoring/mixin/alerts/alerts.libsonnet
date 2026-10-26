@@ -29,9 +29,14 @@ local alertsFor(cfg) = {
       name: 'SolrAlerts',
       rules: [
 
+        // Committed, not jvm_memory_limit_bytes: generational ZGC reports the
+        // whole -Xmx as the limit of both its young and old pool, so summing
+        // limits doubles the heap and the rule never fires. Committed is always
+        // a partition of one heap, whatever the collector, and bin/solr pins
+        // -Xms to -Xmx, so committed is the maximum heap on a Solr node. Where
+        // the two differ, this reads as "how full is the heap as sized now".
         // The inner max collapses pools reported by more than one OTel scope,
-        // which differ by Solr version. Pools are summed on both sides: under
-        // G1 only one pool reports a limit, and that limit is the whole -Xmx.
+        // which differ by Solr version.
         {
           alert: 'SolrHighHeapUsage',
           expr: |||
@@ -43,7 +48,7 @@ local alertsFor(cfg) = {
             /
             sum by (instance) (
               max by (instance, jvm_memory_pool_name) (
-                jvm_memory_limit_bytes{%(solrSelector)s,jvm_memory_type="heap"}
+                jvm_memory_committed_bytes{%(solrSelector)s,jvm_memory_type="heap"}
               )
             )
             > %(threshold)g
@@ -53,8 +58,8 @@ local alertsFor(cfg) = {
           annotations: {
             summary: 'Solr node {{ $labels.instance }} has high JVM heap usage',
             description: |||
-              Node {{ $labels.instance }} is using {{ $value | humanizePercentage }} of its maximum
-              JVM heap (threshold: %(threshold)s%%). Raise -Xmx, or reduce cache sizes.
+              Node {{ $labels.instance }} is using {{ $value | humanizePercentage }} of its JVM
+              heap (threshold: %(threshold)s%%). Raise -Xmx, or reduce cache sizes.
             ||| % { threshold: std.floor(cfg.heapUsageThreshold * 100) },
           },
         },
@@ -126,14 +131,16 @@ local alertsFor(cfg) = {
 
         // internal="false" drops the shard requests a distributed search fans
         // out, which would otherwise be counted alongside the request that
-        // issued them.
+        // issued them. core!="" drops the node rollup that a handler with
+        // aggregateNodeLevelMetricsEnabled emits under this same metric name,
+        // which would weight the quantile towards the cores that enable it.
         {
           alert: 'SolrHighSearchLatency',
           expr: |||
             histogram_quantile(0.99,
               sum by (le, instance) (
                 rate(
-                  solr_core_requests_times_milliseconds_bucket{%(solrSelector)s,handler=~"/select.*",internal="false"}[%(rateInterval)s]
+                  solr_core_requests_times_milliseconds_bucket{%(solrSelector)s,handler=~"/select.*",internal="false",core!=""}[%(rateInterval)s]
                 )
               )
             )
@@ -157,12 +164,13 @@ local alertsFor(cfg) = {
 
         // Counts client (4xx) and server (5xx) failures alike; add
         // source="server" to the errors selector to ignore malformed requests.
+        // core!="" drops the node rollups, as in the latency rule above.
         {
           alert: 'SolrHighErrorRate',
           expr: |||
-            sum by (instance) (rate(solr_core_requests_errors_total{%(solrSelector)s}[%(rateInterval)s]))
+            sum by (instance) (rate(solr_core_requests_errors_total{%(solrSelector)s,core!=""}[%(rateInterval)s]))
             /
-            sum by (instance) (rate(solr_core_requests_total{%(solrSelector)s}[%(rateInterval)s]))
+            sum by (instance) (rate(solr_core_requests_total{%(solrSelector)s,core!=""}[%(rateInterval)s]))
             > %(threshold)g
           ||| % {
             threshold: cfg.errorRateThreshold,
@@ -201,6 +209,9 @@ local alertsFor(cfg) = {
         },
 
         // How much of the index fits in the memory left for the page cache.
+        // Committed heap is what is actually denied to the page cache, and
+        // MetricUtils.bytesToMegabytes() divides by 1024^2, so the physical
+        // memory is converted the same way before the two are compared.
         // The trailing guard keeps the rule silent when jvm_system_memory_bytes
         // is missing or zero, which would make available memory look negative.
         {
@@ -212,11 +223,11 @@ local alertsFor(cfg) = {
                   max by (instance) (jvm_system_memory_bytes{%(solrSelector)s,state="total"})
                   - sum by (instance) (
                     max by (instance, jvm_memory_pool_name) (
-                      jvm_memory_limit_bytes{%(solrSelector)s,jvm_memory_type="heap"}
+                      jvm_memory_committed_bytes{%(solrSelector)s,jvm_memory_type="heap"}
                     )
                   )
                 )
-                / 1e6
+                / (1024 * 1024)
                 / sum by (instance) (solr_core_index_size_megabytes{%(solrSelector)s})
                 * 100,
                 100

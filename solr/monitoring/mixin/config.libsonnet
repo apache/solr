@@ -34,7 +34,9 @@
 
     // Alert thresholds. Each is consumed by exactly one rule in alerts/.
 
-    // Fraction of maximum heap in use that fires SolrHighHeapUsage.
+    // Fraction of the committed heap in use that fires SolrHighHeapUsage.
+    // bin/solr pins -Xms to -Xmx, so that is the maximum heap; where they
+    // differ, the rule measures the heap as currently sized.
     heapUsageThreshold: 0.9,
 
     // Seconds of garbage collection per minute that fire SolrJvmGcThrashing.
