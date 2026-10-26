@@ -54,6 +54,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -121,6 +122,7 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
+import org.apache.solr.handler.component.SearchRequestListener;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesigner;
 import org.apache.solr.jersey.InjectionFactories;
@@ -210,6 +212,23 @@ public class CoreContainer {
 
   public JerseyAppHandlerCache getJerseyAppHandlerCache() {
     return appHandlersByConfigSetId;
+  }
+
+  private final List<SearchRequestListener> searchRequestListeners = new CopyOnWriteArrayList<>();
+
+  /** Register to be notified after each search a client sends to this node. */
+  public void addSearchRequestListener(SearchRequestListener listener) {
+    searchRequestListeners.add(listener);
+  }
+
+  /** Remove a listener added with {@link #addSearchRequestListener}. */
+  public boolean removeSearchRequestListener(SearchRequestListener listener) {
+    return searchRequestListeners.remove(listener);
+  }
+
+  /** The registered listeners. Empty unless a module adds one. */
+  public List<SearchRequestListener> getSearchRequestListeners() {
+    return Collections.unmodifiableList(searchRequestListeners);
   }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */

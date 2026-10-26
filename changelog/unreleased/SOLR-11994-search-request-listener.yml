@@ -1,0 +1,8 @@
+title: Add a SearchRequestListener hook so modules can observe each completed search a client sends, on the node that coordinated it.
+type: added
+authors:
+  - name: Amrit Sarkar
+  - name: Nick Shanin
+links:
+  - name: SOLR-11994
+    url: https://issues.apache.org/jira/browse/SOLR-11994
