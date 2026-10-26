@@ -187,7 +187,7 @@ The same can be achieved using a Unix pipe with a single request as follows:
 
 [source,bash]
 ----
-(cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet" --header "Content-Type:application/octet-stream" --data-binary @-
+(cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl 'http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet' --header "Content-Type:application/octet-stream" --data-binary @-
 ----
 ====
 

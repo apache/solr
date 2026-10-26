@@ -377,7 +377,7 @@ Now you get 12 results:
 
 Using curl, this query would look like this:
 
-`curl "http://localhost:8983/solr/techproducts/select?q=cat:electronics"`
+`curl 'http://localhost:8983/solr/techproducts/select?q=cat:electronics'`
 
 === Phrase Search
 

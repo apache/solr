@@ -225,7 +225,7 @@ curl::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/query?fl=name,price'-d '
+curl 'http://localhost:8983/solr/techproducts/query?fl=name,price' -d '
 {
   params: {
     q: "memory",
