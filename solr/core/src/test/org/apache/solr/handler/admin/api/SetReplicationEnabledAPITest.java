@@ -32,8 +32,7 @@ public class SetReplicationEnabledAPITest extends SolrTestCase {
 
   private static final String CORE_NAME = "setReplicationEnabledApiTestCore";
 
-  @ClassRule
-  public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolr() throws Exception {
