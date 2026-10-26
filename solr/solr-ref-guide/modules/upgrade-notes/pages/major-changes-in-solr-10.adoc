@@ -172,19 +172,26 @@ The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` Syst
 
 The previous `SOLR_HOST` environment variable is removed. Solr 10 does not read it and does not print a warning. Use `SOLR_HOST_ADVERTISE` instead, or the system property `solr.host.advertise`.
 
-These environment variables are also removed in Solr 10, and Solr does not warn when they are set:
+These environment variables are also no longer used by the Solr 10 start scripts, which do not warn when they are set:
 
 * `SOLR_PORT` is replaced by `SOLR_PORT_LISTEN`.
 * `SOLR_REQUESTLOG_ENABLED` is replaced by `SOLR_LOGS_REQUESTLOG_ENABLED`.
-* `SOLR_ADMIN_UI_DISABLED` has no environment variable replacement. To disable the Admin UI, set the system property `solr.ui.enabled=false`, for example in `SOLR_OPTS`. `SOLR_UI_ENABLED` controls only the new Admin UI module.
-* `SOLR_WAIT_FOR_ZK` has no environment variable replacement. Pass the system property `-Dsolr.cloud.wait.for.zk.seconds` instead.
 
-Two environment variables control the new Admin UI in Solr 10.0, and they do not affect the classic Admin UI:
+The start scripts no longer translate `SOLR_ADMIN_UI_DISABLED` or `SOLR_WAIT_FOR_ZK` into JVM options.
+However, when these variables are exported to the Solr JVM, Java's environment-to-property mapping still accepts them as deprecated aliases and logs warnings:
 
-* `SOLR_UI_ENABLED=false` does not load the new Admin UI module. The start script reads this variable and adds `--module=new-ui` only when it is not `false`.
-* `SOLR_UI_EXPERIMENTAL_ENABLED=false` also does not load the new Admin UI module. Either variable set to `false` has the same effect.
+* `SOLR_ADMIN_UI_DISABLED=true` maps to `solr.ui.enabled=false`. Prefer `-Dsolr.ui.enabled=false` in `SOLR_OPTS`, or export `SOLR_UI_ENABLED=false`.
+* `SOLR_WAIT_FOR_ZK` maps to `solr.cloud.wait.for.zk.seconds`. Prefer exporting `SOLR_CLOUD_WAIT_FOR_ZK_SECONDS`, or setting `-Dsolr.cloud.wait.for.zk.seconds` in `SOLR_OPTS`.
 
-The classic Admin UI is controlled by the system property `solr.ui.enabled`, not by `SOLR_UI_ENABLED`.
+An unexported assignment in `solr.in.sh` is visible to the start script but is not inherited by the JVM.
+For the Java settings above, use `export` or pass the system property through `SOLR_OPTS`.
+
+Two environment variables control loading the new Admin UI module in Solr 10.0:
+
+* `SOLR_UI_ENABLED=false` prevents the start script from adding `--module=new-ui`. When exported, it also maps to `solr.ui.enabled=false` and disables the classic Admin UI.
+* `SOLR_UI_EXPERIMENTAL_ENABLED=false` also prevents loading the new Admin UI module. Use this switch to disable only the new module.
+
+The classic Admin UI is controlled by the system property `solr.ui.enabled`, which can be set directly or through the exported `SOLR_UI_ENABLED` variable.
 
 The SSL client authentication system properties have been renamed. Solr 10.0 has no alias for the old names, so setting them has no effect:
 
