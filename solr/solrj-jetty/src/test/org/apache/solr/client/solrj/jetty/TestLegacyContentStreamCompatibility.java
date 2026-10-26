@@ -16,11 +16,16 @@
  */
 package org.apache.solr.client.solrj.jetty;
 
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -37,7 +42,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
@@ -52,6 +56,8 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
   private static final String REQUEST_BODY = "original-request-body";
   private static final String WRITER_BODY = "custom-writer-body";
   private static final String CONTENT_TYPE = "text/plain";
+  private static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
+  private static final AtomicReference<CapturedRequest> capturedRequest = new AtomicReference<>();
 
   @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
@@ -59,15 +65,14 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
   public static void beforeClass() throws Exception {
     JettyConfig config =
         JettyConfig.builder()
-            .withServlet(new ServletHolder(DebugServlet.class), "/legacy-content/*")
+            .withServlet(new ServletHolder(RawBodyServlet.class), "/legacy-content/*")
             .build();
     solrTestRule.startSolr(createTempDir(), new Properties(), config);
   }
 
   @After
   public void clearServlet() {
-    DebugServlet.clear();
-    DebugServlet.requestBody = null;
+    capturedRequest.set(null);
   }
 
   @Test
@@ -112,12 +117,22 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
 
   @Test
   public void testJettyContentWriterControl() throws Exception {
-    assertExplicitContentWriter(false);
+    assertExplicitContentWriter(false, CONTENT_TYPE);
   }
 
   @Test
   public void testJdkContentWriterControl() throws Exception {
-    assertExplicitContentWriter(true);
+    assertExplicitContentWriter(true, CONTENT_TYPE);
+  }
+
+  @Test
+  public void testJettyFormContentWriterControl() throws Exception {
+    assertExplicitContentWriter(false, FORM_CONTENT_TYPE);
+  }
+
+  @Test
+  public void testJdkFormContentWriterControl() throws Exception {
+    assertExplicitContentWriter(true, FORM_CONTENT_TYPE);
   }
 
   private void assertLegacyRequestBody(boolean jdk, RequestWriter writer) throws Exception {
@@ -159,23 +174,21 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
     assertTrue("The custom writer's stream hook must be consulted", calls.get() > 0);
   }
 
-  private void assertExplicitContentWriter(boolean jdk) throws Exception {
+  private void assertExplicitContentWriter(boolean jdk, String contentType) throws Exception {
     GenericSolrRequest request =
         new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update", SolrRequest.SolrRequestType.UPDATE);
     request.setContentWriter(
-        new RequestWriter.StringPayloadContentWriter(REQUEST_BODY, CONTENT_TYPE));
-    assertPostBody(jdk, new JavaBinRequestWriter(), request, REQUEST_BODY);
+        new RequestWriter.StringPayloadContentWriter(REQUEST_BODY, contentType));
+    CapturedRequest captured =
+        assertPostBody(jdk, new JavaBinRequestWriter(), request, REQUEST_BODY);
+    assertEquals(contentType, captured.contentType());
   }
 
-  private void assertPostBody(
+  private CapturedRequest assertPostBody(
       boolean jdk, RequestWriter writer, SolrRequest<?> request, String expectedBody)
       throws Exception {
-    DebugServlet.clear();
-    DebugServlet.requestBody = null;
-    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    DebugServlet.responseBodyByQueryFragment.put(
-        "", "<response><lst name=\"responseHeader\"><int name=\"status\">0</int></lst></response>");
+    capturedRequest.set(null);
     String url = solrTestRule.getBaseUrl() + "/legacy-content";
     try (SolrClient client =
         jdk
@@ -190,10 +203,47 @@ public class TestLegacyContentStreamCompatibility extends SolrTestCase {
                 .withResponseParser(new XMLResponseParser())
                 .build()) {
       client.request(request);
-      assertEquals("post", DebugServlet.lastMethod);
-      assertNotNull("The servlet must capture the POST body", DebugServlet.requestBody);
-      assertArrayEquals(expectedBody.getBytes(StandardCharsets.UTF_8), DebugServlet.requestBody);
-      assertEquals(CONTENT_TYPE, DebugServlet.headers.get("content-type"));
+      CapturedRequest captured = capturedRequest.get();
+      assertNotNull("The servlet must capture the POST body", captured);
+      assertEquals("POST", captured.method());
+      // Record the legacy content type separately from the request-body assertion.
+      System.out.println(
+          "Captured POST: client="
+              + client.getClass().getSimpleName()
+              + ", writer="
+              + writer.getClass().getName()
+              + ", contentType="
+              + captured.contentType()
+              + ", body="
+              + new String(captured.body(), StandardCharsets.UTF_8));
+      assertArrayEquals(expectedBody.getBytes(StandardCharsets.UTF_8), captured.body());
+      return captured;
+    }
+  }
+
+  private record CapturedRequest(String method, String contentType, byte[] body) {}
+
+  /** Captures bytes before any servlet parameter parsing can consume a form-encoded body. */
+  public static class RawBodyServlet extends HttpServlet {
+
+    @Override
+    protected void doHead(HttpServletRequest request, HttpServletResponse response) {
+      response.setContentType("application/xml; charset=UTF-8");
+      response.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws IOException {
+      byte[] body = request.getInputStream().readAllBytes();
+      capturedRequest.set(
+          new CapturedRequest(request.getMethod(), request.getContentType(), body));
+      response.setContentType("application/xml; charset=UTF-8");
+      response
+          .getOutputStream()
+          .write(
+              "<response><lst name=\"responseHeader\"><int name=\"status\">0</int></lst></response>"
+                  .getBytes(StandardCharsets.UTF_8));
     }
   }
 
