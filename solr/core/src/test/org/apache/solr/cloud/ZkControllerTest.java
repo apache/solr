@@ -231,6 +231,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         staleRoleEntry,
         (zkController, otherClient, leftoverPaths) -> {
           // Remove the leftovers shortly after the check starts waiting on them
+          AtomicReference<Exception> deleterFailure = new AtomicReference<>();
           Thread deleter =
               new Thread(
                   () -> {
@@ -240,19 +241,22 @@ public class ZkControllerTest extends SolrCloudTestCase {
                         otherClient.delete(path, -1);
                       }
                     } catch (Exception e) {
-                      throw new RuntimeException(e);
+                      deleterFailure.set(e);
                     }
                   });
           deleter.start();
           try {
             // Returns normally once everything is gone
             zkController.checkForExistingEphemeralNode();
+            for (String path : leftoverPaths) {
+              assertFalse(
+                  path + " should be gone when the check returns", otherClient.exists(path));
+            }
           } finally {
-            deleter.join();
+            deleter.join(TimeUnit.SECONDS.toMillis(30));
           }
-          for (String path : leftoverPaths) {
-            assertFalse(path + " should be gone", otherClient.exists(path));
-          }
+          assertFalse("Deleter thread did not finish", deleter.isAlive());
+          assertNull("Deleter thread failed", deleterFailure.get());
         });
   }
 
