@@ -62,7 +62,7 @@ Across a large corpora, these "multi-vector" representations of the original sem
 Apache Solr supports multiple relative field types designed to support dense vector search with navigable small world graphs:
 
 === DenseVectorField
-The dense vector field gives the possibility of indexing and searching dense vectors of float elements.
+The dense vector field gives the possibility of indexing and searching dense vectors of float or byte elements.
 
 For example:
 
