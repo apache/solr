@@ -57,7 +57,7 @@ public class TestEmbeddedContentStreamCompatibility extends SolrTestCase {
     SolrClient client = solrTestRule.getSolrClient();
     client.deleteByQuery("*:*");
     ContentStreamUpdateRequest request = new ContentStreamUpdateRequest("/update");
-    for (String id : List.of("first", "second")) {
+    for (String id : List.of("1", "2")) {
       ContentStreamBase stream =
           new ContentStreamBase.StringStream(
               "<add><doc><field name=\"id\">" + id + "</field></doc></add>", "application/xml");
@@ -77,7 +77,7 @@ public class TestEmbeddedContentStreamCompatibility extends SolrTestCase {
     SolrDocumentList documents = client.query(query).getResults();
     assertEquals("Both content streams must be indexed", 2L, documents.getNumFound());
     assertEquals(
-        List.of("first", "second"),
+        List.of("1", "2"),
         documents.stream().map(document -> document.getFieldValue("id")).toList());
   }
 }
