@@ -284,8 +284,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     try (var client = createNewSolrClient(leader.getBaseUrl(), leader.getCoreName())) {
       QueryResponse local =
           client.query(
-              params(
-                  "q", "*:*", "distrib", "false", "sort", "id asc", "rows", "20", "fl", "id"));
+              params("q", "*:*", "distrib", "false", "sort", "id asc", "rows", "20", "fl", "id"));
       assertEquals(shard, expected.size(), local.getResults().getNumFound());
       assertEquals(
           shard,
