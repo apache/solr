@@ -594,7 +594,6 @@ For file system repository, location defaults to core's dataDir (data directory)
 
 `restorestatus`::
 Check the status of a running restore operation.
-
 +
 [tabs#restorestatus-request]
 ======
@@ -612,7 +611,7 @@ V2 API::
 ====
 [source,bash]
 ----
-http://{followerHost}:{port}/api/cores/{coreName}/replication/restore/status
+http://{leaderHost}:{port}/api/cores/{coreName}/replication/restore/status
 ----
 ====
 ======
