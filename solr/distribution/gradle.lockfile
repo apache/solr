@@ -2,4 +2,4 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :solr:distribution:dependencies --write-locks
-empty=changesHtml,docker,jarValidation,openApiSpecFile
+empty=changesHtml,docker,jarValidation,openApiSpecFile,sbom

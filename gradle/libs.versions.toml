@@ -76,6 +76,9 @@ commons-codec = "1.22.1"
 commons-io = "2.22.0"
 cuvs-java = "26.08.1"
 cuvs-lucene = "25.12.0"
+cyclonedx = "3.0.2"
+# @keep npm tool generating the SBOM of the OpenAPI JS client, installed by :solr:webapp:js-client
+cyclonedx-npm = "6.0.0"
 diffplug-spotless = "8.10.0"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
@@ -188,6 +191,7 @@ xerial-snappy = "1.1.10.8"
 [plugins]
 barfuin-jacocolog = { id = "org.barfuin.gradle.jacocolog", version.ref = "barfuin-jacocolog" }
 benmanes-versions = { id = "io.github.ben-manes.versions", version.ref = "benmanes-versions" }
+cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
 logchange = { id = "dev.logchange", version.ref = "logchange" }

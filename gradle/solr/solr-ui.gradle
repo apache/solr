@@ -126,13 +126,16 @@ tasks.register('verifyUiWasm') {
 }
 
 def uiFromSourceOutputDir = file("$rootDir/ui/webApp/build/dist/wasmJs/productionExecutable")
+def uiFromSourceSbomFile = file("$rootDir/ui/webApp/build/cyclonedx/bom.json")
 def uiWebResourcesDir = layout.buildDirectory.dir('generated/ui-resources')
+def uiSbomDir = layout.buildDirectory.dir('generated/ui-sbom')
 
 // UI module lives at solr/ui — a sibling of webapp under the same root build.
 tasks.register('buildUiFromSource') {
   inputs.dir(file("$rootDir/ui/shared/src"))
   inputs.dir(file("$rootDir/ui/webApp/src"))
   outputs.dir(uiFromSourceOutputDir)
+  outputs.file(uiFromSourceSbomFile)
   doLast {
     def connector = GradleConnector.newConnector()
         .forProjectDirectory(file("$rootDir/ui"))
@@ -141,7 +144,7 @@ tasks.register('buildUiFromSource') {
     def connection = connector.connect()
     try {
       connection.newBuild()
-          .forTasks(':webApp:wasmJsBrowserDistribution')
+          .forTasks(':webApp:wasmJsBrowserDistribution', ':webApp:cyclonedxUi')
           .setStandardOutput(System.out)
           .setStandardError(System.err)
           .run()
@@ -160,8 +163,37 @@ tasks.register('prepareUiResources', Sync) {
     doFirst { logger.lifecycle("Solr Admin UI: building from source (solr.ui.buildFromSource=true)") }
   } else {
     dependsOn tasks.named('verifyUiWasm')
-    from zipTree(uiWasmZip)
+    from(zipTree(uiWasmZip)) {
+      exclude 'bom.json'
+    }
     doFirst { logger.lifecycle("Solr Admin UI: using downloaded artifact for commit ${uiCommit}") }
+  }
+}
+
+// CycloneDX SBOM of the UI bundle ("bom.json" in the root of the zip), merged into the
+// distribution SBOMs by :solr:packaging. Artifacts published before it was added lack it.
+tasks.register('prepareUiSbom', Sync) {
+  into uiSbomDir
+
+  if (buildFromSource) {
+    dependsOn tasks.named('buildUiFromSource')
+    from uiFromSourceSbomFile
+  } else {
+    dependsOn tasks.named('verifyUiWasm')
+    from(zipTree(uiWasmZip)) {
+      include 'bom.json'
+    }
+  }
+}
+
+configurations.create("uiSbom") {
+  canBeConsumed = true
+  canBeResolved = false
+}
+
+artifacts {
+  add("uiSbom", uiSbomDir) {
+    builtBy("prepareUiSbom")
   }
 }
 
