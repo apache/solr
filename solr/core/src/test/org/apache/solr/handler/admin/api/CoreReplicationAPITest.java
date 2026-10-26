@@ -30,11 +30,14 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CommitsResponse;
+import org.apache.solr.client.api.model.CommitsResponse.CommitDetails;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
+import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -98,6 +101,39 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     ReplicationDetailsResponse withFollowerFalse =
         coreReplicationAPI.fetchReplicationDetails(false);
     assertSame(expectedResponse, withFollowerFalse);
+  }
+
+  @Test
+  public void testGetRestoreStatus() {
+    RestoreStatusResponse expected = new RestoreStatusResponse();
+    expected.status = "OK";
+    expected.restoreStatus = new RestoreStatusResponse.RestoreStatus();
+    expected.restoreStatus.snapshotName = "snapshot.test";
+    expected.restoreStatus.status = RestoreStatusResponse.RestoreState.FAILED;
+    expected.restoreStatus.exception = "restore failed";
+    when(mockReplicationHandler.getRestoreStatusResponse()).thenReturn(expected);
+
+    RestoreStatusResponse actual = coreReplicationAPI.doFetchRestoreStatus();
+    assertEquals(expected.status, actual.status);
+    assertEquals(expected.restoreStatus.snapshotName, actual.restoreStatus.snapshotName);
+    assertEquals(expected.restoreStatus.status, actual.restoreStatus.status);
+    assertEquals(expected.restoreStatus.exception, actual.restoreStatus.exception);
+  }
+
+  @Test
+  public void testGetCommits() {
+    CommitDetails commit = new CommitDetails(42L, 7L, List.of("segments_7", "_0.cfs"));
+    CommitsResponse expected = new CommitsResponse();
+    expected.status = "OK";
+    expected.commits = List.of(commit);
+    when(mockReplicationHandler.getCommitsResponse()).thenReturn(expected);
+
+    CommitsResponse actual = coreReplicationAPI.doFetchCommits();
+    assertEquals(expected.status, actual.status);
+    assertEquals(1, actual.commits.size());
+    assertEquals(expected.commits.getFirst().indexVersion, actual.commits.getFirst().indexVersion);
+    assertEquals(expected.commits.getFirst().generation, actual.commits.getFirst().generation);
+    assertEquals(expected.commits.getFirst().filelist, actual.commits.getFirst().filelist);
   }
 
   @Test
