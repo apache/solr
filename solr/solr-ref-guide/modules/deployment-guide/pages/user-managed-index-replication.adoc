@@ -413,6 +413,7 @@ http://{leaderHost}:{port}/api/cores/{coreName}/replication
 ----
 ====
 ======
+
 `indexversion`::
 Return the version of the latest replicatable index on the specified leader or follower.
 +
