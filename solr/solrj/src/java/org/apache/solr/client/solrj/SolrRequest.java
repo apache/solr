@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.security.Principal;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +35,7 @@ import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -277,6 +280,20 @@ public abstract class SolrRequest<T> implements Serializable {
    *     send any format
    */
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+    Collection<ContentStream> streams;
+    try {
+      streams = getContentStreams();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return RequestWriter.contentWriterOf(streams);
+  }
+
+  /**
+   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
+   */
+  @Deprecated(since = "7.2")
+  public Collection<ContentStream> getContentStreams() throws IOException {
     return null;
   }
 

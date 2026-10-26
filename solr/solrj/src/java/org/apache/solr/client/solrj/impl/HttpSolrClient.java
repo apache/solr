@@ -164,6 +164,20 @@ public abstract class HttpSolrClient extends SolrClient {
     return params;
   }
 
+  /**
+   * @deprecated ContentStream is deprecated; see {@link #isMultipart(RequestWriter.ContentWriter)}.
+   */
+  @Deprecated(since = "10.1")
+  protected boolean isMultipart(Collection<ContentStream> streams) {
+    boolean isMultipart = false;
+    if (streams != null) {
+      boolean hasNullStreamName = false;
+      hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
+      isMultipart = !hasNullStreamName && streams.size() > 1;
+    }
+    return isMultipart;
+  }
+
   protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {
     return contentWriter instanceof RequestWriter.MultipartContentWriter;
   }
@@ -186,7 +200,8 @@ public abstract class HttpSolrClient extends SolrClient {
   }
 
   protected void validateGetRequest(SolrRequest<?> solrRequest) throws IOException {
-    RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+    RequestWriter.ContentWriter contentWriter =
+        requestWriter.getContentWriterOrStreams(solrRequest);
     if (contentWriter != null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
     }

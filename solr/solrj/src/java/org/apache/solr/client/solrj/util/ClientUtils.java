@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -32,6 +33,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.XML;
 
 /**
@@ -43,6 +46,22 @@ public class ClientUtils {
   public static final String TEXT_JSON = "application/json; charset=UTF-8";
 
   public static final String DEFAULT_PATH = "/select";
+
+  /**
+   * Take a string and make it an iterable ContentStream
+   *
+   * @deprecated ContentStream is deprecated; use a {@link
+   *     org.apache.solr.client.solrj.request.RequestWriter.ContentWriter}.
+   */
+  @Deprecated(since = "10.1")
+  public static Collection<ContentStream> toContentStreams(
+      final String str, final String contentType) {
+    if (str == null) return null;
+
+    ContentStreamBase ccc = new ContentStreamBase.StringStream(str);
+    ccc.setContentType(contentType);
+    return List.of(ccc);
+  }
 
   /**
    * Create the full URL for a SolrRequest (excepting query parameters) as a String

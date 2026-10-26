@@ -16,7 +16,9 @@
  */
 package org.apache.solr.client.solrj;
 
+import java.io.IOException;
 import java.security.Principal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +26,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 /** A {@link SolrRequest} that wrappeds all method calls to a wrapped instance. */
@@ -155,6 +158,12 @@ public class WrappedSolrRequest<T> extends SolrRequest<T> {
   @Override
   public ApiVersion getApiVersion() {
     return wrapped.getApiVersion();
+  }
+
+  @Override
+  @Deprecated(since = "10.1")
+  public Collection<ContentStream> getContentStreams() throws IOException {
+    return wrapped.getContentStreams();
   }
 
   @Override

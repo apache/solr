@@ -749,7 +749,8 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
         || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
-      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+      RequestWriter.ContentWriter contentWriter =
+          requestWriter.getContentWriterOrStreams(solrRequest);
 
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;

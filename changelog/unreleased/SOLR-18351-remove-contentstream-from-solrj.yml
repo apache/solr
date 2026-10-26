@@ -1,12 +1,10 @@
 title: >
-  SolrJ no longer uses the deprecated ContentStream anywhere; it writes request content only via
-  RequestWriter.ContentWriter. ContentStreamUpdateRequest is replaced by
-  ContentWriterUpdateRequest, ConfigSetAdminRequest.Upload.setUploadStream by setUploadContent,
-  and ClientUtils.toContentStreams is removed. ContentStream itself stays in SolrJ, still
-  deprecated -- moving it out is left to a later release. Uploading a file no longer gunzips .gz
-  content or guesses a missing content type the way the old ContentStream path did, so pass the
-  content type explicitly.
-type: removed
+  SolrJ clients now write request content only via RequestWriter.ContentWriter, no longer via the
+  deprecated ContentStream. Deprecated ContentStreamUpdateRequest in favor of the new
+  ContentWriterUpdateRequest, and ConfigSetAdminRequest.Upload.setUploadStream in favor of
+  setUploadContent. ContentStream-based RequestWriter, SolrRequest and ClientUtils methods are
+  deprecated and no longer used by SolrJ clients.
+type: deprecated
 authors:
   - name: Serhiy Bzhezytskyy
 links:

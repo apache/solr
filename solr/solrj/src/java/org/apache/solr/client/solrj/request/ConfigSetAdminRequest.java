@@ -19,9 +19,8 @@ package org.apache.solr.client.solrj.request;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -30,6 +29,8 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase.FileStream;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -140,6 +141,12 @@ public abstract class ConfigSetAdminRequest<
   public static class Upload extends ConfigSetSpecificAdminRequest<Upload> {
     private static final String NO_STREAM_ERROR = "There must be content or a File to Upload";
 
+    /**
+     * @deprecated Use {@link #setUploadContent}; this is only set by {@link #setUploadStream}.
+     */
+    @Deprecated(since = "10.1")
+    protected ContentStream stream;
+
     protected RequestWriter.ContentWriter contentWriter;
     protected String filePath;
 
@@ -180,19 +187,11 @@ public abstract class ConfigSetAdminRequest<
      *
      * @see #setUploadContent
      */
-    public final Upload setUploadFile(final Path file, final String contentType) {
-      return setUploadContent(
-          new RequestWriter.ContentWriter() {
-            @Override
-            public void write(OutputStream os) throws IOException {
-              Files.copy(file, os);
-            }
-
-            @Override
-            public String getContentType() {
-              return contentType;
-            }
-          });
+    public final Upload setUploadFile(final Path file, final String contentType)
+        throws IOException {
+      final FileStream fileStream = new FileStream(file);
+      fileStream.setContentType(contentType);
+      return setUploadStream(fileStream);
     }
 
     /**
@@ -238,8 +237,28 @@ public abstract class ConfigSetAdminRequest<
       return getThis();
     }
 
+    /**
+     * Specify the ContentStream to upload.
+     *
+     * @deprecated Use {@link #setUploadContent}.
+     */
+    @Deprecated(since = "10.1")
+    public final Upload setUploadStream(final ContentStream stream) {
+      this.stream = stream;
+      return getThis();
+    }
+
+    @Override
+    @Deprecated(since = "10.1")
+    public Collection<ContentStream> getContentStreams() throws IOException {
+      return java.util.List.of(stream);
+    }
+
     @Override
     public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      if (null == contentWriter && null != stream) {
+        return super.getContentWriter(expectedType);
+      }
       if (null == contentWriter) {
         throw new NullPointerException(NO_STREAM_ERROR);
       }
@@ -250,7 +269,7 @@ public abstract class ConfigSetAdminRequest<
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
 
-      if (null == contentWriter) {
+      if (null == contentWriter && null == stream) {
         throw new NullPointerException(NO_STREAM_ERROR);
       }
 

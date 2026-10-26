@@ -291,7 +291,8 @@ public class HttpJdkSolrClient extends HttpSolrClient {
       ModifiableSolrParams queryParams)
       throws IOException, URISyntaxException {
 
-    final RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+    final RequestWriter.ContentWriter contentWriter =
+        requestWriter.getContentWriterOrStreams(solrRequest);
 
     String contentType = "application/x-www-form-urlencoded";
     if (contentWriter != null && contentWriter.getContentType() != null) {
