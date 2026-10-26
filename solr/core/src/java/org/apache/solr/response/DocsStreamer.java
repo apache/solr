@@ -167,8 +167,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     // IndexableField[]. see SOLR-11891
     for (IndexableField f : doc.getFields()) {
       final String fname = f.name();
-      // not wantsField, which excludes extra fields needed by transformers
-      if (fields.wantsLuceneField(fname)) {
+      // not returnsField, which excludes extra fields needed by transformers
+      if (fields.loadsField(fname)) {
         // Make sure multivalued fields are represented as lists
         Object existing = masked == null ? out.get(fname) : masked.getRaw(fname);
         if (existing == null) {

@@ -32,7 +32,7 @@ public abstract class ReturnFields {
    * pass this to {@link SolrDocumentFetcher#doc(int, Set)}.
    *
    * <p>NOTE: In some situations, this method may return <code>null</code> even if {@link
-   * #wantsAllFields()} is <code>false</code>. For example: When glob expressions are used ({@link
+   * #returnsAllFields()} is <code>false</code>. For example: When glob expressions are used ({@link
    * #hasPatternMatching}), it is safer to request all field names then to attempt to resolve the
    * globs against all possible dynamic field names in the index.
    *
@@ -98,31 +98,59 @@ public abstract class ReturnFields {
   }
 
   /**
-   * Returns <code>true</code> if the specified field should be returned <em>to the external
-   * client</em> -- either using its own name, or via an alias. This method returns <code>false
-   * </code> even if the specified name is needed as an "extra" field for use by transformers.
-   */
-  public abstract boolean wantsField(String name);
-
-  /**
    * Returns <code>true</code> if the value of the specified index field is needed, either to return
    * or for use by transformers. This is <code>false</code> for a field that only shares its name
    * with a pseudo field (e.g. an alias or a transformer), unless <code>*</code> was requested.
    */
-  public abstract boolean wantsLuceneField(String field);
+  public abstract boolean loadsField(String field);
 
   /**
    * Returns <code>true</code> if the specified index field was named explicitly (including as the
    * source of an alias, or a field a transformer needs), rather than only matched by a glob or
    * <code>*</code>.
    */
-  public abstract boolean isExplicitLuceneField(String field);
+  public abstract boolean loadsFieldExplicitly(String field);
+
+  /**
+   * Returns <code>true</code> if the specified name should be returned <em>to the external
+   * client</em>: a field's own name, an alias, or the name of a transformer's output.
+   *
+   * <p>The value returned under a name is not necessarily the index field of that name. It is a
+   * label that may be sourced from the same field, another field, or a transformer computing it
+   * from anything. This returns <code>false</code> for a field that is only needed as an "extra"
+   * field for use by transformers, see {@link #loadsField}.
+   */
+  public abstract boolean returnsField(String name);
+
+  /**
+   * @deprecated use {@link #returnsField}
+   */
+  @Deprecated
+  public boolean wantsField(String name) {
+    return returnsField(name);
+  }
 
   /** Returns <code>true</code> if all fields should be returned <em>to the external client</em>. */
-  public abstract boolean wantsAllFields();
+  public abstract boolean returnsAllFields();
+
+  /**
+   * @deprecated use {@link #returnsAllFields}
+   */
+  @Deprecated
+  public boolean wantsAllFields() {
+    return returnsAllFields();
+  }
 
   /** Returns <code>true</code> if the score should be returned. */
-  public abstract boolean wantsScore();
+  public abstract boolean returnsScore();
+
+  /**
+   * @deprecated use {@link #returnsScore}
+   */
+  @Deprecated
+  public boolean wantsScore() {
+    return returnsScore();
+  }
 
   /** Returns <code>true</code> if the fieldnames should be picked with a pattern */
   public abstract boolean hasPatternMatching();

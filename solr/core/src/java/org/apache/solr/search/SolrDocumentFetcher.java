@@ -829,11 +829,11 @@ public class SolrDocumentFetcher {
     private Set<String> calcStoredFieldsForReturn(ReturnFields returnFields) {
       final Set<String> storedFields = new HashSet<>();
       Set<String> fnames = returnFields.getLuceneFieldNames();
-      if (returnFields.wantsAllFields()) {
+      if (returnFields.returnsAllFields()) {
         return null;
       } else if (returnFields.hasPatternMatching()) {
         for (String s : getAllStored()) {
-          if (returnFields.wantsLuceneField(s)) {
+          if (returnFields.loadsField(s)) {
             storedFields.add(s);
           }
         }
@@ -864,7 +864,7 @@ public class SolrDocumentFetcher {
     private Set<String> calcDocValueFieldsForReturn(ReturnFields returnFields) {
       // always return not null
       final Set<String> result = new HashSet<>();
-      if (returnFields.wantsAllFields()) {
+      if (returnFields.returnsAllFields()) {
         result.addAll(getNonStoredDVsUsedAsStored());
         // check whether there are no additional fields
         Set<String> fieldNames = returnFields.getLuceneFieldNames(true);
@@ -879,8 +879,8 @@ public class SolrDocumentFetcher {
       } else if (returnFields.hasPatternMatching()) {
         for (String s : getNonStoredDVs()) {
           // a glob only matches useDocValuesAsStored fields, unlike naming the field explicitly
-          if (returnFields.isExplicitLuceneField(s)
-              || (getNonStoredDVsUsedAsStored().contains(s) && returnFields.wantsLuceneField(s))) {
+          if (returnFields.loadsFieldExplicitly(s)
+              || (getNonStoredDVsUsedAsStored().contains(s) && returnFields.loadsField(s))) {
             result.add(s);
           }
         }
