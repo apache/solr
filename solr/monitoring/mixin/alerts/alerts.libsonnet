@@ -115,17 +115,50 @@ local alertsFor(cfg) = {
 
         // Covers a node that is down, one that is unreachable, and one with
         // metrics collection switched off — every rule above goes blind.
+        //
+        // Two branches, because 'up' only describes what Prometheus scrapes.
+        // Where Solr pushes over OTLP, the scrape target is the collector, and
+        // it stays up while every node behind it dies; what stops is the data.
+        // The second branch therefore alerts on a node that reported within
+        // the lookback but has sent nothing for the window. It also covers a
+        // scraped node that drops out of service discovery, which 'up' cannot
+        // report either because the target stops existing.
+        //
+        // max_over_time, not offset: it keeps a node visible on the left after
+        // its series has gone stale, which is exactly the state being detected.
+        // The aggregations are what drop __name__, so both branches carry the
+        // same label set and 'or' deduplicates them rather than raising two
+        // alerts for one node.
         {
           alert: 'SolrNodeDown',
-          expr: 'up{%s} == 0' % cfg.solrSelector,
+          expr: |||
+            max by (job, instance) (up{%(solrSelector)s} == 0)
+            or
+            (
+              count by (job, instance) (
+                max_over_time(solr_cores_loaded{%(solrSelector)s}[%(lookback)s])
+              )
+              unless
+              count by (job, instance) (
+                max_over_time(solr_cores_loaded{%(solrSelector)s}[%(window)s])
+              )
+            )
+          ||| % {
+            solrSelector: cfg.solrSelector,
+            lookback: cfg.nodeReportingLookback,
+            window: cfg.nodeReportingWindow,
+          },
           'for': '2m',
           labels: { severity: 'warning' },
           annotations: {
-            summary: 'Solr node {{ $labels.instance }} is not responding to scrapes',
+            summary: 'Solr node {{ $labels.instance }} is down or has stopped reporting',
             description: |||
-              Prometheus has failed to scrape {{ $labels.instance }} for 2 minutes.
-              Either the node is down or its metrics endpoint is unreachable.
-            |||,
+              {{ $labels.instance }} is failing scrapes, or has sent no metrics for
+              %(window)s. Either the node is down, its metrics endpoint is unreachable, or
+              metrics collection is switched off. Where metrics arrive through an
+              OpenTelemetry collector, the label names the collector rather than the node
+              unless Solr sends service.instance.id.
+            ||| % { window: cfg.nodeReportingWindow },
           },
         },
 

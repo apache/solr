@@ -75,10 +75,24 @@ groups:
   - alert: SolrNodeDown
     annotations:
       description: |
-        Prometheus has failed to scrape {{ $labels.instance }} for 2 minutes.
-        Either the node is down or its metrics endpoint is unreachable.
-      summary: Solr node {{ $labels.instance }} is not responding to scrapes
-    expr: up{job="solr"} == 0
+        {{ $labels.instance }} is failing scrapes, or has sent no metrics for
+        5m. Either the node is down, its metrics endpoint is unreachable, or
+        metrics collection is switched off. Where metrics arrive through an
+        OpenTelemetry collector, the label names the collector rather than the node
+        unless Solr sends service.instance.id.
+      summary: Solr node {{ $labels.instance }} is down or has stopped reporting
+    expr: |
+      max by (job, instance) (up{job="solr"} == 0)
+      or
+      (
+        count by (job, instance) (
+          max_over_time(solr_cores_loaded{job="solr"}[1h])
+        )
+        unless
+        count by (job, instance) (
+          max_over_time(solr_cores_loaded{job="solr"}[5m])
+        )
+      )
     for: 2m
     labels:
       severity: warning

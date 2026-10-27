@@ -103,12 +103,16 @@ Each rule alerts per node and carries a `severity` label for routing in Alertman
 | `SolrHighHeapUsage` | critical | Heap use above 90% for 2 minutes | `heapUsageThreshold`
 | `SolrJvmGcThrashing` | critical | Over 10 seconds of GC per minute for 3 minutes | `gcSecondsPerMinuteThreshold`
 | `SolrLowDiskSpace` | critical | Under 15% free on the Solr home partition for 5 minutes | `diskFreeThreshold`
-| `SolrNodeDown` | warning | Scrapes failing for 2 minutes | —
+| `SolrNodeDown` | warning | Scrapes failing, or no metrics received for 5 minutes, for 2 minutes | `nodeReportingWindow`, `nodeReportingLookback`
 | `SolrHighSearchLatency` | warning | `/select` p99 above 1000 ms for 5 minutes | `searchLatencyThresholdMs`
 | `SolrHighErrorRate` | warning | Over 1% of requests failing for 5 minutes | `errorRateThreshold`
 | `SolrOverseerQueueBuildup` | warning | Over 50 queued collection operations for 5 minutes (SolrCloud only) | `overseerQueueThreshold`
 | `SolrHighMmapRatio` | warning | Under 10% of the index fits in memory outside the heap for 5 minutes | `mmapRatioThreshold`
 |===
+
+`SolrNodeDown` has two branches, because `up` only describes what Prometheus scrapes.
+Where Solr pushes metrics to an OpenTelemetry collector, the scrape target is the collector, which stays up while the nodes behind it stop, so the rule also alerts on a node that reported within `nodeReportingLookback` but has sent nothing for `nodeReportingWindow`.
+That branch names the collector rather than the node, until the nodes themselves report a `service.instance.id` resource attribute for the collector to derive an `instance` label from.
 
 To change a threshold, edit its setting in `mixin/config.libsonnet` and regenerate — see <<customizing>>.
 

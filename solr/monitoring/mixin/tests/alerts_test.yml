@@ -130,6 +130,8 @@ tests:
     input_series:
       - series: 'up{job="solr",instance="solr1:8983"}'
         values: '1 1 0 0 0 0'
+      - series: 'solr_cores_loaded{job="solr",instance="solr1:8983",category="CONTAINER",type="permanent"}'
+        values: '2 2 2 2 2 2'
     alert_rule_test:
       - eval_time: 5m
         alertname: SolrNodeDown
@@ -139,7 +141,56 @@ tests:
               instance: solr1:8983
               job: solr
             exp_annotations:
-              summary: 'Solr node solr1:8983 is not responding to scrapes'
+              summary: 'Solr node solr1:8983 is down or has stopped reporting'
               description: |
-                Prometheus has failed to scrape solr1:8983 for 2 minutes.
-                Either the node is down or its metrics endpoint is unreachable.
+                solr1:8983 is failing scrapes, or has sent no metrics for
+                5m. Either the node is down, its metrics endpoint is unreachable, or
+                metrics collection is switched off. Where metrics arrive through an
+                OpenTelemetry collector, the label names the collector rather than the node
+                unless Solr sends service.instance.id.
+
+  # Pushed metrics: the scrape target is the collector, so 'up' stays 1 while
+  # the node behind it dies. What stops is the data, which is what must alert.
+  # _ marks the sample as missing, which is what a node that stopped pushing
+  # looks like once the collector has expired its last value.
+  - interval: 1m
+    name: node stops pushing while the collector stays up
+    input_series:
+      - series: 'up{job="solr",instance="otel-collector:9464"}'
+        values: '1+0x20'
+      - series: 'solr_cores_loaded{job="solr",instance="solr1:8983",category="CONTAINER",type="permanent"}'
+        values: '2 2 2 2 2 _ _ _ _ _ _ _ _ _ _ _'
+    alert_rule_test:
+      # Nothing yet: the node has been quiet for less than the 5m window.
+      - eval_time: 7m
+        alertname: SolrNodeDown
+        exp_alerts: []
+      # Quiet for over 5m, and firing for longer than the 2m 'for'.
+      - eval_time: 13m
+        alertname: SolrNodeDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: solr1:8983
+              job: solr
+            exp_annotations:
+              summary: 'Solr node solr1:8983 is down or has stopped reporting'
+              description: |
+                solr1:8983 is failing scrapes, or has sent no metrics for
+                5m. Either the node is down, its metrics endpoint is unreachable, or
+                metrics collection is switched off. Where metrics arrive through an
+                OpenTelemetry collector, the label names the collector rather than the node
+                unless Solr sends service.instance.id.
+
+  # A healthy node must not alert from either branch.
+  - interval: 1m
+    name: healthy node does not alert
+    input_series:
+      - series: 'up{job="solr",instance="solr1:8983"}'
+        values: '1+0x20'
+      - series: 'solr_cores_loaded{job="solr",instance="solr1:8983",category="CONTAINER",type="permanent"}'
+        values: '2+0x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: SolrNodeDown
+        exp_alerts: []
