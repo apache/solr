@@ -72,6 +72,8 @@ solrAdminApp.controller('ReplicationController',
 // populated from an internal NamedList round-trip to the leader's own v1 endpoint, so its nested
 // booleans are always the legacy stringified "true"/"false" regardless of which API version served
 // the outer response. Accept either form rather than tracking which fields come from which source.
+// TODO: once that internal leader fetch also goes through a typed v2 path (no more stringified
+// booleans anywhere in this response), drop this and compare against `true` directly.
 var isTruthy = function(value) {
     return value === true || value === 'true';
 };
