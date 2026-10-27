@@ -30,13 +30,48 @@ Exported by the OpenTelemetry SDK itself, so it is configured with the standard 
 
 xref:metrics-reporting.adoc#otlp[Metrics over OTLP]::
 Solr's own metrics, pushed periodically.
-Solr builds and owns the meter providers these come from -- it has to, so that the `/metrics` endpoints can read them -- so they are configured with `solr.metrics.otlp*` properties, with their own endpoint and protocol settings.
+Solr builds and owns the meter providers these come from -- it has to, so that the `/metrics` endpoints can read them -- so they are configured with `solr.metrics.otlp*` properties, each of which also accepts its standard `OTEL_*` equivalent.
 
 Only tracing goes through `GlobalOpenTelemetry`.
 A Java agent therefore takes over tracing but not Solr's metrics, which keep their own configuration and exporter either way.
 
 NOTE: The `opentelemetry` module turns the autoconfigured SDK's metrics and logs exporters off (`otel.metrics.exporter=none`, `otel.logs.exporter=none`) so they cannot duplicate or conflict with the above.
-Setting `OTEL_METRICS_EXPORTER` or `OTEL_LOGS_EXPORTER` has no effect and logs a warning.
+`OTEL_METRICS_EXPORTER` is still read, but by Solr's own metric exporter rather than by the SDK; `OTEL_LOGS_EXPORTER` has no effect and logs a warning.
+
+<<resource-attributes,Resource attributes>> are shared: both signals describe the same node.
+
+[[resource-attributes]]
+== Resource Attributes
+
+Resource attributes identify the node the telemetry came from, and are resolved once for both signals from the standard configuration:
+
+[source,bash]
+----
+OTEL_SERVICE_NAME=solr
+OTEL_RESOURCE_ATTRIBUTES=service.namespace=search,deployment.environment.name=prod
+----
+
+Solr supplies three of them when they are not configured:
+
+[cols="2,3",options="header"]
+|===
+| Attribute | Default
+
+| `service.name`
+| `solr`
+
+| `service.instance.id`
+| The node's `host:port`
+
+| `host.name`
+| The host Solr advertises
+|===
+
+`service.instance.id` is the node's address rather than a random id on purpose: Prometheus derives the `instance` label from it, and `job` from `service.name`, so a pushed series lands under the same labels as a direct scrape of that node.
+On the xref:metrics-reporting.adoc[`/metrics`] endpoints the whole resource appears as the `target_info` series.
+
+The SDK's optional resource detectors, which add `host.*`, `os.*`, `process.*` and `container.id`, are not shipped.
+Add the `io.opentelemetry.instrumentation:opentelemetry-resources` JAR to the module's lib directory to have them picked up.
 
 == Integration Options
 

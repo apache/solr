@@ -16,10 +16,8 @@
  */
 package org.apache.solr.opentelemetry;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +37,6 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.setProperty("otelnothere", "bar");
     System.setProperty("otel.k1", "prop-k1");
     System.setProperty("otel.k3", "prop-k3");
-    System.setProperty("solr.host.advertise", "my.solr.host");
     instance = new OtelTracerConfigurator(currentEnv);
   }
 
@@ -73,15 +70,6 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     instance.setDefaultIfNotConfigured("OTEL_YEY", "default");
     assertEquals("default", instance.getCurrentOtelConfig().get("OTEL_YEY"));
     assertEquals("prop-k1", instance.getCurrentOtelConfig().get("OTEL_K1"));
-  }
-
-  @Test
-  public void testResourceAttributes() throws Exception {
-    System.setProperty("otel.resource.attributes", "foo=bar,ILLEGAL-LACKS-VALUE,");
-    instance.prepareConfiguration(new NamedList<>());
-    assertEquals(
-        List.of("host.name=my.solr.host", "foo=bar"),
-        List.of(EnvUtils.getProperty("otel.resource.attributes").split(",")));
   }
 
   @Test
