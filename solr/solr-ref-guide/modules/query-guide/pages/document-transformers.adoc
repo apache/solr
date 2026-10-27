@@ -411,6 +411,41 @@ As such, you needn't mark the field as stored, which would be redundant.
 In a sense this double-storage between docValues and stored-value storage isn't unique to spatial but with polygonal geometry it can be a lot of data, and furthermore you'd like to avoid storing it in a verbose format (like GeoJSON or WKT).
 
 
+=== [hl] - HighlightAugmenterFactory
+
+Highlights one field of each document using the xref:highlighting.adoc#unified-highlighter[Unified Highlighter], and adds the snippets to the document as a list.
+If the field is single-valued and one snippet is requested (the default), the snippet is added as a single value instead of a list.
+Unlike the highlight component, the snippets are inline in each document instead of in a separate `highlighting` section of the response.
+
+The field to highlight is given by the `f` parameter; if omitted, it's the transformer's name (its alias).
+For example, `fl=id,body_hl:[hl f=body]` adds `body_hl` with snippets of `body`, without returning the full `body`.
+And `fl=id,body:[hl]` returns snippets of `body` as `body`.
+List multiple instances to highlight multiple fields: `fl=id,body:[hl],title:[hl snippets=3]`.
+
+[source,plain]
+----
+q=body:fox&fl=id,body:[hl]
+----
+
+[source,json]
+----
+{ "response":{"numFound":1,"start":0,"docs":[
+      {
+        "id":"1",
+        "body":"The quick brown <em>fox</em> jumps over the lazy dog."}]
+}}
+----
+
+If nothing in the field is highlighted, the result depends on the name:
+
+* If the name is the field (e.g., `body:[hl]`), the field's original value is returned, so the field is returned either highlighted or as-is.
+* Otherwise (e.g., `body_hl:[hl f=body]`), the result is an empty list, or absent when a single value would have been returned.
+* With `defaultSummary=true`, the leading text of the field is returned as a snippet instead.
+
+The highlighting is configured by the request's xref:highlighting.adoc[highlighting parameters], such as `hl.tag.pre`; `hl=true` is not needed.
+They can be overridden for one transformer, including any per-field form like `f.body.hl.snippets`, by giving them without the `hl.` prefix, e.g. `[hl f=body snippets=3 tag.pre='<b>' tag.post='</b>']`, or `q` to highlight a query other than the main one.
+
+
 === [features] - LTRFeatureLoggerTransformerFactory
 
 The "LTR" prefix stands for xref:learning-to-rank.adoc[].
