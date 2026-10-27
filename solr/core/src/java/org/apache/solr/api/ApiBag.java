@@ -427,7 +427,7 @@ public class ApiBag {
    * @return parsed list of commands
    * @throws IOException if there is an error while parsing the stream
    */
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({"deprecation", "unchecked"})
   public static List<CommandOperation> readCommands(
       Iterable<ContentStream> streams,
       @SuppressWarnings({"rawtypes"}) NamedList resp,
