@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.ExternalPaths;
@@ -57,9 +58,10 @@ public class SetReplicationEnabledAPITest extends SolrTestCase {
     assertEquals(Boolean.TRUE, fetchReplicationEnabledStatus());
 
     var request = new ReplicationApi.SetReplicationEnabled(CORE_NAME);
-    SolrException ex =
+    RemoteSolrException ex =
         expectThrows(
-            SolrException.class, () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+            RemoteSolrException.class,
+            () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
 
     assertEquals(Boolean.TRUE, fetchReplicationEnabledStatus());
@@ -71,9 +73,10 @@ public class SetReplicationEnabledAPITest extends SolrTestCase {
 
     var request = new ReplicationApi.SetReplicationEnabled(CORE_NAME);
     request.setEnabled(null);
-    SolrException ex =
+    RemoteSolrException ex =
         expectThrows(
-            SolrException.class, () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
+            RemoteSolrException.class,
+            () -> request.process(solrTestRule.getSolrClient(CORE_NAME)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
 
     assertEquals(Boolean.TRUE, fetchReplicationEnabledStatus());
