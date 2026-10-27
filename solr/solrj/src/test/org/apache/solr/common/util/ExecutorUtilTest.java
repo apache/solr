@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.ExecutorUtil.ExecutorTerminationTimeoutException;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
@@ -52,9 +53,9 @@ public class ExecutorUtilTest extends SolrTestCase {
   public void testExecutorUtilAwaitsTerminationWhenTaskIgnoresInterupt() throws Exception {
 
     final Worker w = new Worker(false);
+    final String poolName = this.getClass().getSimpleName() + "non-interruptable";
     final ExecutorService executorService =
-        ExecutorUtil.newMDCAwareSingleThreadExecutor(
-            new SolrNamedThreadFactory(this.getClass().getSimpleName() + "non-interruptable"));
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory(poolName));
     try {
       final Future<Boolean> f = executorService.submit(w);
 
@@ -63,11 +64,16 @@ public class ExecutorUtilTest extends SolrTestCase {
       assertTrue(
           "Worker not interupted by shutdown in a sane amount of time",
           w.awaitWorkerInteruptedAtLeastOnce());
-      assertThrows(
-          RuntimeException.class,
-          () ->
-              ExecutorUtil.awaitTermination(
-                  executorService, MAX_AWAIT_TERMINATION_ARG_MS, TimeUnit.MILLISECONDS));
+      RuntimeException timeout =
+          assertThrows(
+              ExecutorTerminationTimeoutException.class,
+              () ->
+                  ExecutorUtil.awaitTermination(
+                      executorService, MAX_AWAIT_TERMINATION_ARG_MS, TimeUnit.MILLISECONDS));
+      assertTrue(
+          timeout.getMessage(),
+          timeout.getMessage().startsWith("Timeout waiting for pool to shutdown. "));
+      assertTrue(timeout.getMessage(), timeout.getMessage().contains("[poolName=" + poolName + "]"));
 
       assertFalse("Worker should not finish due to shutdown or awaitTermination", f.isDone());
       assertTrue("test sanity check: WTF? how did we get here?", w.getNumberOfInterupts() > 0);

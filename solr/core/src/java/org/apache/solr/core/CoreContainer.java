@@ -93,6 +93,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ExecutorUtil.ExecutorTerminationTimeoutException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -1314,7 +1315,7 @@ public class CoreContainer {
           } finally {
             try {
               ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
-            } catch (RuntimeException e) {
+            } catch (ExecutorTerminationTimeoutException e) {
               // A close task that outlives the pool's termination budget must not abort the
               // rest of shutdown. The closes after this block (the plugin closes, the
               // container handlers and the root metrics context) are the only release path
