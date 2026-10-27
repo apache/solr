@@ -33,6 +33,7 @@ teardown_file() {
 
 @test "server does not compress response without Accept-Encoding header" {
   run -0 curl -fsS -D - -o /dev/null "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=100"
+  assert_output --regexp '^HTTP/[0-9.]+ 200([[:space:]]|$)'
   refute_output --regexp '[Cc]ontent-[Ee]ncoding:'
 }
 
