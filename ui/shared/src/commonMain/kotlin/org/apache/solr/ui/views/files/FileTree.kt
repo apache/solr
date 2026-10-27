@@ -29,9 +29,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -157,10 +159,14 @@ private fun FileTreeRow(
             )
         } else {
             Spacer(Modifier.width(20.dp))
-            FileTypeIcon(
-                fileType = node.name.substringAfterLast('.', ""),
-                modifier = Modifier.size(16.dp),
-            )
+            CompositionLocalProvider(
+                LocalContentColor provides if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else LocalContentColor.current,
+            ) {
+                FileTypeIcon(
+                    fileType = node.name.substringAfterLast('.', ""),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
         Spacer(Modifier.width(8.dp))
         Text(
