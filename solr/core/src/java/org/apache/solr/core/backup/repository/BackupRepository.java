@@ -167,6 +167,20 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   void deleteDirectory(URI path) throws IOException;
 
   /**
+   * Whether this repository can hold an empty directory.
+   *
+   * <p>Object stores such as S3 have no real directories: a directory only exists while at least
+   * one file is stored under its path, and {@link #createDirectory(URI)} persists nothing. Such
+   * repositories return false, which lets a backup be written to a location that does not exist
+   * yet.
+   *
+   * @return true if a directory created by {@link #createDirectory(URI)} exists while it is empty
+   */
+  default boolean supportsEmptyDirectories() {
+    return true;
+  }
+
+  /**
    * Copy a file from specified <code>sourceDir</code> to the destination repository (i.e. backup).
    *
    * @param sourceDir The source directory hosting the file to be copied.

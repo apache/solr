@@ -85,7 +85,7 @@ The following is an example of parameters being sent through the POST form to `/
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query" : "memory",
   "filter" : "inStock:true"

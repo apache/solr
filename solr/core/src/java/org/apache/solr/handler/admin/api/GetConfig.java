@@ -67,7 +67,28 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "codecFactory",
           "query",
           "searchComponent",
-          "queryResponseWriter");
+          "queryResponseWriter",
+          "luceneMatchVersion",
+          "initParams",
+          "listener",
+          "requestDispatcher",
+          "jmx",
+          "queryParser",
+          "valueSourceParser",
+          "transformer",
+          "updateProcessor",
+          "updateRequestProcessorChain",
+          "queryConverter",
+          "cache",
+          "circuitBreaker",
+          "expressible",
+          "schemaFactory",
+          "restManager",
+          "statsCache",
+          "recoveryStrategy",
+          "indexReaderFactory",
+          "indexConfigdeletionPolicy",
+          "updateHandlerupdateLog");
 
   public static final String REQUEST_HANDLERS = "requestHandlers";
 
@@ -77,7 +98,15 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
       Map.of(
           "searchComponents", "searchComponent",
-          "queryResponseWriters", "queryResponseWriter");
+          "queryResponseWriters", "queryResponseWriter",
+          "listeners", "listener",
+          "queryParsers", "queryParser",
+          "valueSourceParsers", "valueSourceParser",
+          "transformers", "transformer",
+          "updateProcessors", "updateProcessor",
+          "queryConverters", "queryConverter",
+          "expressibles", "expressible",
+          "caches", "cache");
 
   // Same, but for the full /config dump's top-level keys, which also renames requestHandler.
   // Derived from the map above so the two can't drift apart.
@@ -239,10 +268,16 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
       String componentName,
       boolean meta,
       SolrQueryRequest req) {
-    Map pluginNameVsPluginInfo = (Map) configMap.get(component);
-    if (pluginNameVsPluginInfo == null) {
+    Object sectionValue = configMap.get(component);
+    if (sectionValue == null) {
       return;
     }
+    if (!(sectionValue instanceof Map) && !(sectionValue instanceof MapWriter)) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          component + " does not support filtering by componentName");
+    }
+    Map pluginNameVsPluginInfo = (Map) sectionValue;
 
     Object o =
         pluginNameVsPluginInfo instanceof MapWriter
@@ -335,7 +370,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return reqHandlersMap;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   private Map<String, Object> expandUseParams(SolrQueryRequest req, Object plugin) {
     Map<String, Object> pluginInfo;
     if (plugin instanceof Map) {
