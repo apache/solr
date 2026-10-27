@@ -7,8 +7,8 @@
 <!-- !!! ⚠️ DO NOT MODIFY THIS FILE, YOUR CHANGES WILL BE LOST ⚠️ !!! -->
 
 
-[10.1.0]
---------
+[10.1.0] - 2026-10-27
+---------------------
 
 ### Added (65 changes)
 

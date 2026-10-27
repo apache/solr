@@ -10,8 +10,8 @@
 This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. [https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc)
 
 
-[10.1.0]
---------
+[10.1.0] - 2026-10-27
+---------------------
 
 ### Added (65 changes)
 
