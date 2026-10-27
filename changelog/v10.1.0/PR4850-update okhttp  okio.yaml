@@ -1,7 +1,0 @@
-title: Update OkHttp & Okio
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4850
-  url: https://github.com/apache/solr/pull/4850
