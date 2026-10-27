@@ -1,0 +1,86 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# alertmanager.yml — Example Alertmanager routing configuration for Solr alerts.
+#
+# Two-tier severity routing:
+#   severity: critical  → critical-receiver  (intended for: PagerDuty, OpsGenie, paging on-call)
+#   severity: warning   → warning-receiver   (intended for: Slack, email, non-urgent notification)
+#
+# Replace the stub "null" receivers with your real notification integrations.
+# See https://prometheus.io/docs/alerting/latest/configuration/ for receiver examples.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  # Default receiver for any alert not matched by child routes.
+  receiver: "default"
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    # Critical alerts — page the on-call engineer immediately.
+    # Solr critical alerts: SolrHighHeapUsage, SolrJvmGcThrashing, SolrLowDiskSpace
+    - matchers:
+        - severity = "critical"
+      receiver: "critical-receiver"
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Warning alerts — notify the team but do not page.
+    # Solr warning alerts: SolrHighSearchLatency, SolrHighErrorRate,
+    #                      SolrOverseerQueueBuildup, SolrHighMmapRatio
+    - matchers:
+        - severity = "warning"
+      receiver: "warning-receiver"
+      repeat_interval: 6h
+
+receivers:
+  # Default catch-all receiver (no-op stub).
+  - name: "default"
+
+  # Critical receiver — replace with PagerDuty, OpsGenie, VictorOps, or similar.
+  # PagerDuty example:
+  #   - name: "critical-receiver"
+  #     pagerduty_configs:
+  #       - service_key: YOUR_PAGERDUTY_INTEGRATION_KEY
+  - name: "critical-receiver"
+
+  # Warning receiver — replace with Slack, email, or similar.
+  # Slack example:
+  #   - name: "warning-receiver"
+  #     slack_configs:
+  #       - api_url: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+  #         channel: '#solr-alerts'
+  #         title: '{{ .GroupLabels.alertname }}'
+  #         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+  # Email example:
+  #   - name: "warning-receiver"
+  #     email_configs:
+  #       - to: 'solr-team@example.com'
+  #         from: 'alertmanager@example.com'
+  #         smarthost: 'smtp.example.com:587'
+  - name: "warning-receiver"
+
+inhibit_rules:
+  # Suppress warning alerts on an instance when a critical alert is already firing for it.
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ["instance"]
