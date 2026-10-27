@@ -31,10 +31,12 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
+import org.apache.solr.client.api.model.CommitsResponse;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
@@ -53,6 +55,22 @@ public interface ReplicationApis {
           @QueryParam("follower")
           @DefaultValue("true")
           Boolean follower);
+
+  @GET
+  @CoreApiParameters
+  @Path("/restore/status")
+  @Operation(
+      summary = "Return the status of the most recent restore operation.",
+      tags = {"replication"})
+  RestoreStatusResponse fetchRestoreStatus();
+
+  @GET
+  @CoreApiParameters
+  @Path("/commits")
+  @Operation(
+      summary = "Return the index commit points retained by the specified core.",
+      tags = {"replication"})
+  CommitsResponse fetchCommits();
 
   @GET
   @CoreApiParameters
