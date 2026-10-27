@@ -91,7 +91,8 @@ public class AdminUiCoreOverviewReplicationErrorsTest extends AdminUiStandaloneT
     // replicationMessage is explicitly set (to the string, or to null for the auth-failure
     // branch) as soon as the request settles, so polling for it being defined is a reliable
     // "request has completed" signal distinct from "hasn't started yet".
-    waitUntil("the replication-details request should have completed", this::replicationRequestSettled);
+    waitUntil(
+        "the replication-details request should have completed", this::replicationRequestSettled);
     assertTrue(
         driver.findElements(By.cssSelector("#replication .message-container")).stream()
             .noneMatch(e -> e.getText().contains("not configured")));
