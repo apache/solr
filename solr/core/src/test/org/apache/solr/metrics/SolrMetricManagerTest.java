@@ -26,6 +26,7 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
@@ -34,6 +35,7 @@ import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
+import org.apache.solr.util.stats.MetricUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -291,6 +294,38 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
                           .anyMatch(p -> p.getValue() == 8L))
               .orElse(false);
         });
+  }
+
+  /**
+   * SOLR-18595: with an exporter registered, each registry gets its own PeriodicMetricReader, and
+   * every reader reports the SDK's self-telemetry under the same component id. Merging the
+   * registries the way the metrics endpoint does then saw duplicate label sets and threw.
+   */
+  @Test
+  public void testExporterSelfTelemetryDoesNotBreakMergedSnapshots() {
+    // Distinct names per registry: two registries reporting the same name with the same labels
+    // would be a duplicate in their own right, which is not what this is about.
+    for (String registry : List.of("registry_one", "registry_two", "registry_three")) {
+      metricManager.longCounter(registry, registry + "_counter", "desc", null).add(1);
+      // A collect + export cycle is what records the self-telemetry, so provoke one per registry
+      ((SdkMeterProvider) metricManager.meterProvider(registry))
+          .forceFlush()
+          .join(10, TimeUnit.SECONDS);
+    }
+
+    MetricSnapshots merged =
+        MetricUtils.mergeSnapshots(
+            metricManager.getPrometheusMetricReaders().values().stream()
+                .flatMap(r -> r.collect().stream())
+                .toList());
+
+    assertTrue(
+        "Expected the merged snapshots to carry every registry's counter",
+        List.of("registry_one_counter", "registry_two_counter", "registry_three_counter").stream()
+            .allMatch(
+                name ->
+                    merged.stream()
+                        .anyMatch(s -> name.equals(s.getMetadata().getPrometheusName()))));
   }
 
   @Test

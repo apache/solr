@@ -46,6 +46,7 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.ExemplarFilter;
 import io.opentelemetry.sdk.metrics.InstrumentSelector;
@@ -473,6 +474,11 @@ public class SolrMetricManager {
                 builder.registerMetricReader(
                     PeriodicMetricReader.builder(metricExporter)
                         .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                        // Readers all identify themselves with the same static ComponentId, so one
+                        // per registry means several identical self-telemetry series, which the
+                        // Prometheus endpoint rejects and OTLP backends drop. Solr exports none of
+                        // the SDK's own telemetry, so switch it off rather than deduplicate later.
+                        .setInternalTelemetryVersion(InternalTelemetryVersion.LEGACY)
                         .build());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
