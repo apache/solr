@@ -109,6 +109,38 @@ public class NodeTargetProxyFilterTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testHeaderPreservedWhenTargetNameIsQueryValue() throws Exception {
+    var req = systemInfoRequest(SolrRequest.METHOD.GET, params().set("foo", TARGET_NODE_HEADER));
+    req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());
+    assertEquals(targetNode.getNodeName(), respondingNode(receivingNode, req));
+  }
+
+  @Test
+  public void testHeaderPreservedWhenTargetNameIsPartOfQueryParamName() throws Exception {
+    var req =
+        systemInfoRequest(
+            SolrRequest.METHOD.GET, params().set(TARGET_NODE_HEADER + "Suffix", "value"));
+    req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());
+    assertEquals(targetNode.getNodeName(), respondingNode(receivingNode, req));
+  }
+
+  @Test
+  public void testUnrelatedQueryValueWithoutHeaderIsHandledLocally() throws Exception {
+    var req = systemInfoRequest(SolrRequest.METHOD.GET, params().set("foo", TARGET_NODE_HEADER));
+    assertEquals(receivingNode.getNodeName(), respondingNode(receivingNode, req));
+  }
+
+  @Test
+  public void testHeaderAndQueryParamAreRejected() {
+    var req =
+        systemInfoRequest(
+            SolrRequest.METHOD.GET, params().set(TARGET_NODE_HEADER, targetNode.getNodeName()));
+    req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());
+    var e = expectThrows(SolrException.class, () -> receivingNode.getSolrClient().request(req));
+    assertEquals(400, e.code());
+  }
+
+  @Test
   public void testHeaderProxiesV2() throws Exception {
     var req = new V2Request.Builder("/node/system").GET().build();
     req.addHeader(TARGET_NODE_HEADER, targetNode.getNodeName());

@@ -60,7 +60,7 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
    * shorthand forms are also accepted, both resolved relative to the current node: a value of all
    * digits replaces the trailing {@code -<digits>} ordinal in the current node's hostname (e.g.
    * {@code 8} turns {@code myhost-3.mydomain.com:3000} into {@code myhost-8.mydomain.com:3000});
-   * otherwise, a value with no '.' is treated as a bare peer hostname, with the current node's
+   * otherwise, a value with no '.' or ':' is treated as a bare peer hostname, with the current node's
    * domain suffix and port appended.
    */
   public static final String TARGET_NODE_HEADER = "X-Solr-targetNode";
@@ -78,12 +78,13 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
         && queryString != null
         && queryString.contains(TARGET_NODE_HEADER)) { // cheap; avoid double-parse
       SolrParams params = SolrRequestParsers.parseQueryString(queryString);
-      if (targetNode != null && params.get(TARGET_NODE_HEADER) != null) {
-        res.sendError(400, TARGET_NODE_HEADER + " must EITHER be a header or url param");
-        return;
-      }
-      targetNode = params.get(TARGET_NODE_HEADER);
-      if (targetNode != null) {
+      String paramTargetNode = params.get(TARGET_NODE_HEADER);
+      if (paramTargetNode != null) {
+        if (targetNode != null) {
+          res.sendError(400, TARGET_NODE_HEADER + " must EITHER be a header or url param");
+          return;
+        }
+        targetNode = paramTargetNode;
         queryString = filterQueryString(params);
       }
     }

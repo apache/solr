@@ -305,8 +305,8 @@ The node that receives the request proxies it to the named node, which processes
 This is useful when Solr is reached through a load balancer, where you can't otherwise choose which node handles a request.
 
 The value is a node name as it appears in `live_nodes` (for example, `solr2.example.com:8983_solr`).
-A value without a `.` is treated as a hostname in the same domain and on the same port as the receiving node; for example, `solr2` sent to `solr1.example.com:8983_solr` targets `solr2.example.com:8983_solr`.
-If the named node isn't live, the request fails with a 404 error.
+A value without a `.` or `:` is treated as a hostname in the same domain and on the same port as the receiving node; for example, `solr2` sent to `solr1.example.com:8983_solr` targets `solr2.example.com:8983_solr`.
+If the named node isn't live, the request fails with a 400 error.
 If it names the receiving node, the request is processed there without proxying.
 
 [source,bash]
