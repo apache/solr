@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
@@ -42,6 +43,10 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected static final int DEFAULT_TOP_K = 10;
   protected static final String SEED_QUERY = "seedQuery";
   protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
+
+  // multiplier applied to topK to decide how many candidates to collect before re-ranking them
+  // down to topK results
+  protected static final String RERANK_OVERSAMPLE = "rerankOversample";
 
   // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
   // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
@@ -102,6 +107,10 @@ public class KnnQParser extends AbstractVectorQParserBase {
     return new EarlyTerminationParams(enabled, saturationThreshold, patience);
   }
 
+  public Integer getRerankOversample() {
+    return localParams.getInt(RERANK_OVERSAMPLE);
+  }
+
   protected Query getSeedQuery() throws SolrException, SyntaxError {
     String seed = localParams.get(SEED_QUERY);
     if (seed == null) return null;
@@ -124,6 +133,16 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+    final int rerankOversample = denseVectorType.resolveRerankOversample(getRerankOversample());
+
+    final int candidateTopK;
+    try {
+      candidateTopK = Math.multiplyExact(topK, rerankOversample);
+    } catch (ArithmeticException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "topK (" + topK + ") * rerankOversample (" + rerankOversample + ") overflows an integer");
+    }
 
     final double efSearchScaleFactor = localParams.getDouble("efSearchScaleFactor", 1.0);
     if (Double.isNaN(efSearchScaleFactor) || efSearchScaleFactor < 1.0) {
@@ -131,7 +150,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
           SolrException.ErrorCode.BAD_REQUEST,
           "efSearchScaleFactor (" + efSearchScaleFactor + ") must be >= 1.0");
     }
-    final int efSearch = (int) Math.round(efSearchScaleFactor * topK);
+    final int efSearch = (int) Math.round(efSearchScaleFactor * candidateTopK);
 
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
@@ -160,12 +179,23 @@ public class KnnQParser extends AbstractVectorQParserBase {
           getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
       switch (vectorEncoding) {
         case FLOAT32:
-          return new DiversifyingChildrenFloatKnnVectorQuery(
-              vectorField,
-              vectorBuilder.getFloatVector(),
-              acceptedChildren,
-              topK,
-              allParentsBitSet);
+          // The diversifying query returns the best matching child per parent, so collecting
+          // candidateTopK of them and re-ranking down to topK only ever narrows an already
+          // diversified set: at most one child per parent is preserved. Note that which child
+          // represents a parent is still picked using the (possibly quantized) approximate score,
+          // re-ranking only reorders the representatives that were chosen.
+          final float[] target = vectorBuilder.getFloatVector();
+          final Query diversified =
+              new DiversifyingChildrenFloatKnnVectorQuery(
+                  vectorField, target, acceptedChildren, candidateTopK, allParentsBitSet);
+          if (rerankOversample <= 1) {
+            return diversified;
+          }
+          return new SolrRescoreTopNQuery(
+              diversified,
+              new FullPrecisionFloatVectorSimilarityValuesSource(
+                  target, vectorField, denseVectorType.getSimilarityFunction()),
+              topK);
         case BYTE:
           return new DiversifyingChildrenByteKnnVectorQuery(
               vectorField, vectorBuilder.getByteVector(), acceptedChildren, topK, allParentsBitSet);
@@ -184,7 +214,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
         getFilterQuery(),
         getSeedQuery(),
         getEarlyTerminationParams(),
-        filteredSearchThreshold);
+        filteredSearchThreshold,
+        rerankOversample);
   }
 
   private BooleanQuery getParentsFilter(String[] parentsFilterQueries) throws SyntaxError {

@@ -36,6 +36,11 @@ public class BinaryQuantizedDenseVectorField extends DenseVectorField {
   }
 
   @Override
+  public boolean isQuantized() {
+    return true;
+  }
+
+  @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
     return new Lucene104HnswScalarQuantizedVectorsFormat(
         ScalarEncoding.SINGLE_BIT_QUERY_NIBBLE, getHnswM(), getHnswEfConstruction());

@@ -26,8 +26,10 @@ import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FullPrecisionFloatVectorSimilarityValuesSource;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SeededKnnVectorQuery;
@@ -43,6 +45,8 @@ import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.vector.KnnQParser;
+import org.apache.solr.search.vector.SolrKnnFloatVectorQuery;
+import org.apache.solr.search.vector.SolrRescoreTopNQuery;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -1311,5 +1315,101 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     } finally {
       deleteCore();
     }
+  }
+
+  @Test
+  public void rerankOversampleOne_shouldNotWrapInRescoreQuery() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      DenseVectorField type = getVectorFieldType("vector");
+
+      Query query =
+          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 3, null, null, null, null, 1);
+
+      assertTrue(query instanceof SolrKnnFloatVectorQuery);
+      // no oversampling, so the knn search collects exactly topK candidates
+      assertEquals(3, ((SolrKnnFloatVectorQuery) query).getK());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void rerankOversampleNotSpecified_shouldBehaveAsOversampleOne() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      DenseVectorField type = getVectorFieldType("vector");
+
+      Query withoutOversample =
+          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 3, null, null, null, null);
+      Query withOversampleOne =
+          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 3, null, null, null, null, 1);
+
+      assertEquals(withOversampleOne, withoutOversample);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void rerankOversampleGreaterThanOne_shouldWrapInFullPrecisionRescoreQuery()
+      throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      DenseVectorField type = getVectorFieldType("vector");
+
+      Query query =
+          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 6, null, null, null, null, 2);
+
+      // the knn search collects topK * rerankOversample candidates, which are then re-ranked
+      // against the raw full precision vectors and trimmed back down to topK
+      float[] target = new float[] {2, 1, 3, 4};
+      Query expected =
+          new SolrRescoreTopNQuery(
+              new SolrKnnFloatVectorQuery("vector", target, 6, 6, null),
+              new FullPrecisionFloatVectorSimilarityValuesSource(
+                  target, "vector", VectorSimilarityFunction.COSINE),
+              3);
+
+      assertTrue(query instanceof SolrRescoreTopNQuery);
+      assertEquals(expected, query);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void rerankOversampleGreaterThanOne_withSeedQuery_shouldRescoreOutermost()
+      throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      DenseVectorField type = getVectorFieldType("vector");
+      Query seedQuery = new MatchAllDocsQuery();
+
+      Query query =
+          type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, 6, null, seedQuery, null, null, 2);
+
+      // the re-ranking wraps the seeded query, so that it re-ranks whatever the knn phase returned
+      float[] target = new float[] {2, 1, 3, 4};
+      Query expected =
+          new SolrRescoreTopNQuery(
+              SeededKnnVectorQuery.fromFloatQuery(
+                  new SolrKnnFloatVectorQuery("vector", target, 6, 6, null), seedQuery),
+              new FullPrecisionFloatVectorSimilarityValuesSource(
+                  target, "vector", VectorSimilarityFunction.COSINE),
+              3);
+
+      assertTrue(query instanceof SolrRescoreTopNQuery);
+      assertEquals(expected, query);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  private DenseVectorField getVectorFieldType(String fieldName) {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    SchemaField schemaField = schema.getField(fieldName);
+    assertNotNull(schemaField);
+    return (DenseVectorField) schemaField.getType();
   }
 }
