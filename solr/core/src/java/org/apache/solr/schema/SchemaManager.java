@@ -228,8 +228,9 @@ public class SchemaManager {
     for (SchemaChange op : operations) {
       OpType opType = OpType.get(op.operationType);
       if (opType == OpType.UPSERT_FIELD) {
+        // note: explicit includes dynamic fields
         opType =
-            schema.getFields().containsKey(((UpsertFieldOperation) op).name)
+            schema.hasExplicitField(((UpsertFieldOperation) op).name)
                 ? OpType.REPLACE_FIELD
                 : OpType.ADD_FIELD;
       }
