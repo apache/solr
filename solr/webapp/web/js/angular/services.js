@@ -233,6 +233,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.NodeApi();
     })
+.factory('ReplicationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicationApi();
+    })
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {

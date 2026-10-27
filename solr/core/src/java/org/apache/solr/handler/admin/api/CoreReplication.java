@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 import jakarta.inject.Inject;
@@ -26,7 +27,9 @@ import org.apache.solr.client.api.model.CommitsResponse;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -93,5 +96,11 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
     }
     return doFetchFile(
         filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
+  }
+
+  @Override
+  @PermissionName(CORE_EDIT_PERM)
+  public SolrJerseyResponse setReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
+    return doSetReplicationEnabled(requestBody);
   }
 }
