@@ -128,6 +128,10 @@
   <string name="label_route_field">Route field</string>
   <string name="option_router_composite_id">Composite ID</string>
   <string name="option_router_implicit">Implicit</string>
+  <string name="label_async_request_id">Async request ID</string>
+  <string name="label_collection_properties">Collection properties</string>
+  <string name="helper_collection_properties">key=value pairs, separated by commas</string>
+  <string name="label_configset">Configset</string>
   <string name="cd_decrease_shards">Decrease shards</string>
   <string name="cd_increase_shards">Increase shards</string>
 </resources>

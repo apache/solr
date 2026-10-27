@@ -136,6 +136,8 @@ class CreateCollectionFormTest {
                     pullReplicas = 1,
                     router = "compositeId",
                     routeField = null,
+                    async = null,
+                    properties = emptyMap(),
                 )
             ),
             created,
@@ -169,6 +171,8 @@ class CreateCollectionFormTest {
         onNodeWithText("Composite ID").performClick()
         onNodeWithText("Implicit").performClick()
         onNodeWithTag("create_collection_route_field").performTextInput("id")
+        onNodeWithTag("create_collection_async_field").performTextInput("req-1")
+        onNodeWithTag("create_collection_properties_field").performTextInput("maxShardsPerNode=2, autoAddReplicas=false")
         onNodeWithTag("create_collection_button").performScrollTo().performClick()
 
         assertEquals(
@@ -182,6 +186,8 @@ class CreateCollectionFormTest {
                     pullReplicas = 0,
                     router = "implicit",
                     routeField = "id",
+                    async = "req-1",
+                    properties = mapOf("maxShardsPerNode" to "2", "autoAddReplicas" to "false"),
                 )
             ),
             created,
@@ -208,6 +214,9 @@ class CreateCollectionFormTest {
         onNodeWithTag("create_collection_button").assertIsNotEnabled()
         onNodeWithTag("create_collection_name_field").performTextClearance()
         onNodeWithTag("create_collection_name_field").performTextInput("films.v2")
+        onNodeWithTag("create_collection_button").assertIsNotEnabled()
+        onNodeWithTag("create_collection_name_field").performTextClearance()
+        onNodeWithTag("create_collection_name_field").performTextInput("films_v2")
         onNodeWithTag("create_collection_button").assertIsEnabled()
     }
 
@@ -230,5 +239,24 @@ class CreateCollectionFormTest {
         onNodeWithTag("create_collection_tlog_field").performTextClearance()
         onNodeWithTag("create_collection_tlog_field").performTextInput("0")
         onNodeWithTag("create_collection_button").assertIsNotEnabled()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testRejectsMalformedProperties() = runComposeUiTest {
+        setContent {
+            CreateCollectionForm(
+                configsets = configsets,
+                nameError = null,
+                generalError = null,
+                onCreate = {},
+                onCancel = {},
+            )
+        }
+
+        onNodeWithTag("create_collection_name_field").performTextInput("films2")
+        onNodeWithTag("create_collection_advanced_toggle").performClick()
+        onNodeWithTag("create_collection_properties_field").performTextInput("maxShardsPerNode")
+        onNodeWithTag("create_collection_button").performScrollTo().assertIsNotEnabled()
     }
 }

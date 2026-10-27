@@ -51,7 +51,11 @@ import org.apache.solr.ui.shared.generated.resources.action_create_collection
 import org.apache.solr.ui.shared.generated.resources.cd_decrease_shards
 import org.apache.solr.ui.shared.generated.resources.cd_increase_shards
 import org.apache.solr.ui.shared.generated.resources.helper_collection_name
+import org.apache.solr.ui.shared.generated.resources.helper_collection_properties
 import org.apache.solr.ui.shared.generated.resources.label_advanced_options
+import org.apache.solr.ui.shared.generated.resources.label_async_request_id
+import org.apache.solr.ui.shared.generated.resources.label_collection_properties
+import org.apache.solr.ui.shared.generated.resources.label_configset
 import org.apache.solr.ui.shared.generated.resources.label_copies_of_each_shard
 import org.apache.solr.ui.shared.generated.resources.label_name
 import org.apache.solr.ui.shared.generated.resources.label_nrt_replicas
@@ -82,12 +86,25 @@ data class CreateCollectionInput(
     val pullReplicas: Int,
     val router: String,
     val routeField: String?,
+    val async: String?,
+    val properties: Map<String, String>,
 )
 
 private const val ROUTER_COMPOSITE_ID = "compositeId"
 private const val ROUTER_IMPLICIT = "implicit"
 
-private val collectionNamePattern = Regex("^(?!-)[._A-Za-z0-9-]+$")
+private val collectionNamePattern = Regex("^(?!-)[A-Za-z0-9_-]+$")
+
+private fun parseProperties(text: String): Map<String, String>? {
+    if (text.isBlank()) return emptyMap()
+    val result = mutableMapOf<String, String>()
+    for (pair in text.split(",")) {
+        val parts = pair.split("=", limit = 2)
+        if (parts.size != 2 || parts[0].isBlank()) return null
+        result[parts[0].trim()] = parts[1].trim()
+    }
+    return result
+}
 
 private fun String.countAtLeast(min: Int): Int? = toIntOrNull()?.takeIf { it >= min }
 
@@ -120,6 +137,8 @@ fun CreateCollectionForm(
     var advancedOpen by remember { mutableStateOf(false) }
     var router by remember { mutableStateOf(ROUTER_COMPOSITE_ID) }
     var routeField by remember { mutableStateOf("") }
+    var asyncId by remember { mutableStateOf("") }
+    var properties by remember { mutableStateOf("") }
 
     val nameValid = collectionNamePattern.matches(name)
     val shardCount = shards.countAtLeast(1)
@@ -127,6 +146,7 @@ fun CreateCollectionForm(
     val tlogCount = tlog.countAtLeast(0)
     val pullCount = pull.countAtLeast(0)
     val selected = configset
+    val propertyMap = parseProperties(properties)
     val decreaseShards = stringResource(Res.string.cd_decrease_shards)
     val increaseShards = stringResource(Res.string.cd_increase_shards)
     val input =
@@ -137,7 +157,8 @@ fun CreateCollectionForm(
                 nrtCount != null &&
                 tlogCount != null &&
                 pullCount != null &&
-                nrtCount + tlogCount >= 1
+                nrtCount + tlogCount >= 1 &&
+                propertyMap != null
         ) {
             CreateCollectionInput(
                 name = name,
@@ -148,6 +169,8 @@ fun CreateCollectionForm(
                 pullReplicas = pullCount,
                 router = router,
                 routeField = routeField.ifBlank { null },
+                async = asyncId.ifBlank { null },
+                properties = propertyMap,
             )
         } else {
             null
@@ -178,6 +201,7 @@ fun CreateCollectionForm(
             selectedConfigset = selected,
             configsets = configsets,
             selectConfigset = { configset = it },
+            label = stringResource(Res.string.label_configset),
         )
 
         Text(
@@ -280,6 +304,22 @@ fun CreateCollectionForm(
                     onValueChange = { routeField = it },
                     label = { Text(stringResource(Res.string.label_route_field)) },
                     singleLine = true,
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth().testTag("create_collection_async_field"),
+                    value = asyncId,
+                    onValueChange = { asyncId = it },
+                    label = { Text(stringResource(Res.string.label_async_request_id)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth().testTag("create_collection_properties_field"),
+                    value = properties,
+                    onValueChange = { properties = it },
+                    label = { Text(stringResource(Res.string.label_collection_properties)) },
+                    singleLine = true,
+                    isError = propertyMap == null,
+                    supportingText = { Text(stringResource(Res.string.helper_collection_properties)) },
                 )
             }
         }

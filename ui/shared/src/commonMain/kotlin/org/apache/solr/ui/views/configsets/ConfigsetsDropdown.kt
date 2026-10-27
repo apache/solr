@@ -69,6 +69,7 @@ fun ConfigsetsDropdown(
     selectConfigset: (String) -> Unit,
     modifier: Modifier = Modifier,
     enableReset: Boolean = false,
+    label: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val enabled = configsets.isNotEmpty()
@@ -84,7 +85,7 @@ fun ConfigsetsDropdown(
             readOnly = true,
             enabled = enabled,
             singleLine = true,
-            label = { Text(stringResource(Res.string.nav_configsets)) },
+            label = { Text(label ?: stringResource(Res.string.nav_configsets)) },
             placeholder = {
                 if (configsets.isEmpty()) {
                     Text(
