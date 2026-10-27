@@ -1,9 +1,12 @@
 title:
-  Migrate GET paramsets v2 API to JAX-RS. v2 GET /config/params is now GET /config/paramsets.
+  Migrate GET paramsets v2 API to JAX-RS. v2 GET /config/params is now GET /config/paramsets. The
+  Admin UI's paramsets and query screens now read paramsets through the generated v2 client too.
 type: changed
 authors:
   - name: Jalaz Kumar
     nick: jaykay12
+  - name: Eric Pugh
+    nick: epugh
 links:
   - name: SOLR-16396
     url: https://issues.apache.org/jira/browse/SOLR-16396
