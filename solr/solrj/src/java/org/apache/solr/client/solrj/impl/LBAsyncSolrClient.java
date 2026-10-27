@@ -57,9 +57,9 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
    * this method does not actually Load Balance. It is up to the caller to shuffle the List of
    * Endpoints if Load Balancing is desired.
    *
-   * <p>The attempt limit in {@link Req#getNumServersToTry()} includes the initial attempt and
-   * zombie fallback. Exhaustion completes the future exceptionally with {@link
-   * AttemptLimitExceededException}, retaining the last failure as its cause.
+   * <p>The attempt limit in {@link LBSolrClient.Req#getNumServersToTry()} includes the initial
+   * attempt and zombie fallback. Exhaustion completes the future exceptionally with {@link
+   * LBSolrClient.AttemptLimitExceededException}, retaining the last failure as its cause.
    *
    * @param req the wrapped request to perform
    * @return a {@link CompletableFuture} that tracks the progress of the async request.
