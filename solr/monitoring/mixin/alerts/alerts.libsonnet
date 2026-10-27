@@ -148,7 +148,7 @@ local alertsFor(cfg) = {
             lookback: cfg.nodeReportingLookback,
             window: cfg.nodeReportingWindow,
           },
-          'for': '2m',
+          'for': cfg.nodeDownFor,
           labels: { severity: 'warning' },
           annotations: {
             summary: 'Solr node {{ $labels.instance }} is down or has stopped reporting',

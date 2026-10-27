@@ -77,7 +77,7 @@ The rules live in the group `SolrAlerts`. Every expression carries `solrSelector
 | `SolrHighHeapUsage` | critical | `jvm_memory_used_bytes` / `jvm_memory_committed_bytes` (heap, summed over pools) above 90% for 2m | `heapUsageThreshold` |
 | `SolrJvmGcThrashing` | critical | `rate(jvm_gc_duration_seconds_sum)` over 10 s/min for 3m | `gcSecondsPerMinuteThreshold` |
 | `SolrLowDiskSpace` | critical | `solr_disk_space_megabytes` usable/total under 15% for 5m | `diskFreeThreshold` |
-| `SolrNodeDown` | warning | Scrape failing, or no metrics for 5m, for 2m | `nodeReportingWindow`, `nodeReportingLookback` |
+| `SolrNodeDown` | warning | Scrape failing, or no metrics for 5m, for 5m | `nodeDownFor`, `nodeReportingWindow`, `nodeReportingLookback` |
 | `SolrHighSearchLatency` | warning | p99 of `solr_core_requests_times_milliseconds` for `/select*`, `internal="false"`, above 1000 ms for 5m | `searchLatencyThresholdMs` |
 | `SolrHighErrorRate` | warning | `solr_core_requests_errors_total` / `solr_core_requests_total` over 1% for 5m | `errorRateThreshold` |
 | `SolrOverseerQueueBuildup` | warning | `solr_overseer_collection_work_queue_size` over 50 for 5m (SolrCloud only) | `overseerQueueThreshold` |

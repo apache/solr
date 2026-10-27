@@ -103,7 +103,7 @@ Each rule alerts per node and carries a `severity` label for routing in Alertman
 | `SolrHighHeapUsage` | critical | Heap use above 90% for 2 minutes | `heapUsageThreshold`
 | `SolrJvmGcThrashing` | critical | Over 10 seconds of GC per minute for 3 minutes | `gcSecondsPerMinuteThreshold`
 | `SolrLowDiskSpace` | critical | Under 15% free on the Solr home partition for 5 minutes | `diskFreeThreshold`
-| `SolrNodeDown` | warning | Scrapes failing, or no metrics received for 5 minutes, for 2 minutes | `nodeReportingWindow`, `nodeReportingLookback`
+| `SolrNodeDown` | warning | Scrapes failing, or no metrics received for 5 minutes, for 5 minutes | `nodeDownFor`, `nodeReportingWindow`, `nodeReportingLookback`
 | `SolrHighSearchLatency` | warning | `/select` p99 above 1000 ms for 5 minutes | `searchLatencyThresholdMs`
 | `SolrHighErrorRate` | warning | Over 1% of requests failing for 5 minutes | `errorRateThreshold`
 | `SolrOverseerQueueBuildup` | warning | Over 50 queued collection operations for 5 minutes (SolrCloud only) | `overseerQueueThreshold`

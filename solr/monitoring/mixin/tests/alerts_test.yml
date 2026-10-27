@@ -129,11 +129,15 @@ tests:
     name: unreachable node
     input_series:
       - series: 'up{job="solr",instance="solr1:8983"}'
-        values: '1 1 0 0 0 0'
+        values: '1 1 0+0x12'
       - series: 'solr_cores_loaded{job="solr",instance="solr1:8983",category="CONTAINER",type="permanent"}'
-        values: '2 2 2 2 2 2'
+        values: '2+0x14'
     alert_rule_test:
-      - eval_time: 5m
+      # Scrapes started failing at 2m, so the 5m 'for' is satisfied at 7m.
+      - eval_time: 6m
+        alertname: SolrNodeDown
+        exp_alerts: []
+      - eval_time: 8m
         alertname: SolrNodeDown
         exp_alerts:
           - exp_labels:
@@ -159,14 +163,18 @@ tests:
       - series: 'up{job="solr",instance="otel-collector:9464"}'
         values: '1+0x20'
       - series: 'solr_cores_loaded{job="solr",instance="solr1:8983",category="CONTAINER",type="permanent"}'
-        values: '2 2 2 2 2 _ _ _ _ _ _ _ _ _ _ _'
+        values: '2 2 2 2 2 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _'
     alert_rule_test:
       # Nothing yet: the node has been quiet for less than the 5m window.
       - eval_time: 7m
         alertname: SolrNodeDown
         exp_alerts: []
-      # Quiet for over 5m, and firing for longer than the 2m 'for'.
-      - eval_time: 13m
+      # Detected at 10m, one window after the last sample, but still pending.
+      - eval_time: 12m
+        alertname: SolrNodeDown
+        exp_alerts: []
+      # Detected at 10m and held for the 5m 'for'.
+      - eval_time: 16m
         alertname: SolrNodeDown
         exp_alerts:
           - exp_labels:
@@ -191,6 +199,6 @@ tests:
       - series: 'solr_cores_loaded{job="solr",instance="solr1:8983",category="CONTAINER",type="permanent"}'
         values: '2+0x20'
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 18m
         alertname: SolrNodeDown
         exp_alerts: []

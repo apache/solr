@@ -69,5 +69,9 @@
     // so for how long it keeps firing for a node that never comes back. A node
     // absent for longer than this is taken to be decommissioned.
     nodeReportingLookback: '1h',
+
+    // How long SolrNodeDown must hold before it fires, on top of the detection
+    // above. Lower it to be told sooner, raise it to ride out longer restarts.
+    nodeDownFor: '5m',
   },
 }

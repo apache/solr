@@ -93,7 +93,7 @@ groups:
           max_over_time(solr_cores_loaded{job="solr"}[5m])
         )
       )
-    for: 2m
+    for: 5m
     labels:
       severity: warning
   - alert: SolrHighSearchLatency
