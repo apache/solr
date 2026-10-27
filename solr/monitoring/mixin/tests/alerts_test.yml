@@ -1,0 +1,145 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Unit tests for the generated alert rules: promtool test rules tests/*.yml
+# (make test). Each case pins a property of the metrics the rules read, so
+# that a rewritten expression cannot quietly lose it.
+
+rule_files:
+  - ../../prometheus-solr-alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # Generational ZGC reports the whole -Xmx as the limit of both its young and
+  # old pool. Summing those limits doubles the denominator and caps the ratio at
+  # 50%, so a heap at 95% must still alert with both limit series present.
+  - interval: 1m
+    name: heap usage under generational ZGC
+    input_series:
+      - series: 'jvm_memory_used_bytes{job="solr",instance="zgc:8983",jvm_memory_type="heap",jvm_memory_pool_name="ZGC Young Generation"}'
+        values: '500000000+0x10'
+      - series: 'jvm_memory_used_bytes{job="solr",instance="zgc:8983",jvm_memory_type="heap",jvm_memory_pool_name="ZGC Old Generation"}'
+        values: '10000000+0x10'
+      - series: 'jvm_memory_committed_bytes{job="solr",instance="zgc:8983",jvm_memory_type="heap",jvm_memory_pool_name="ZGC Young Generation"}'
+        values: '536870912+0x10'
+      - series: 'jvm_memory_committed_bytes{job="solr",instance="zgc:8983",jvm_memory_type="heap",jvm_memory_pool_name="ZGC Old Generation"}'
+        values: '0+0x10'
+      - series: 'jvm_memory_limit_bytes{job="solr",instance="zgc:8983",jvm_memory_type="heap",jvm_memory_pool_name="ZGC Young Generation"}'
+        values: '536870912+0x10'
+      - series: 'jvm_memory_limit_bytes{job="solr",instance="zgc:8983",jvm_memory_type="heap",jvm_memory_pool_name="ZGC Old Generation"}'
+        values: '536870912+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SolrHighHeapUsage
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: zgc:8983
+            exp_annotations:
+              summary: 'Solr node zgc:8983 has high JVM heap usage'
+              description: |
+                Node zgc:8983 is using 94.99% of its JVM
+                heap (threshold: 90%). Raise -Xmx, or reduce cache sizes.
+
+  # ParallelGC partitions the heap across three pools, each reporting its own
+  # share as both limit and committed. Taking the largest pool as the whole heap
+  # would read this 69% heap as 98% and alert.
+  - interval: 1m
+    name: heap usage under ParallelGC
+    input_series:
+      - series: 'jvm_memory_used_bytes{job="solr",instance="parallel:8983",jvm_memory_type="heap",jvm_memory_pool_name="PS Eden Space"}'
+        values: '100000000+0x10'
+      - series: 'jvm_memory_used_bytes{job="solr",instance="parallel:8983",jvm_memory_type="heap",jvm_memory_pool_name="PS Survivor Space"}'
+        values: '0+0x10'
+      - series: 'jvm_memory_used_bytes{job="solr",instance="parallel:8983",jvm_memory_type="heap",jvm_memory_pool_name="PS Old Gen"}'
+        values: '250000000+0x10'
+      - series: 'jvm_memory_committed_bytes{job="solr",instance="parallel:8983",jvm_memory_type="heap",jvm_memory_pool_name="PS Eden Space"}'
+        values: '134742016+0x10'
+      - series: 'jvm_memory_committed_bytes{job="solr",instance="parallel:8983",jvm_memory_type="heap",jvm_memory_pool_name="PS Survivor Space"}'
+        values: '15728640+0x10'
+      - series: 'jvm_memory_committed_bytes{job="solr",instance="parallel:8983",jvm_memory_type="heap",jvm_memory_pool_name="PS Old Gen"}'
+        values: '358088704+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SolrHighHeapUsage
+        exp_alerts: []
+
+  # A handler with aggregateNodeLevelMetricsEnabled emits a node rollup under the
+  # same metric name, without the core attribute. Counting it would read this
+  # node's 0.8% error rate as 1.14% and alert.
+  - interval: 1m
+    name: error rate ignores node rollups
+    input_series:
+      - series: 'solr_core_requests_total{job="solr",instance="solr1:8983",category="QUERY",collection="c",shard="shard1",core="c_shard1_replica_n1",handler="/select",internal="false"}'
+        values: '0+40x20'
+      - series: 'solr_core_requests_total{job="solr",instance="solr1:8983",category="UPDATE",collection="c",shard="shard1",core="c_shard1_replica_n1",handler="/update"}'
+        values: '0+60x20'
+      - series: 'solr_core_requests_errors_total{job="solr",instance="solr1:8983",category="QUERY",collection="c",shard="shard1",core="c_shard1_replica_n1",handler="/select",internal="false",source="client"}'
+        values: '0+0.8x20'
+      - series: 'solr_core_requests_total{job="solr",instance="solr1:8983",category="QUERY",handler="/select",internal="false"}'
+        values: '0+40x20'
+      - series: 'solr_core_requests_errors_total{job="solr",instance="solr1:8983",category="QUERY",handler="/select",internal="false",source="client"}'
+        values: '0+0.8x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: SolrHighErrorRate
+        exp_alerts: []
+
+  # The index-size gauge is in MiB (MetricUtils.bytesToMegabytes divides by
+  # 1024^2), so physical memory has to be converted the same way. Dividing by
+  # 1e6 inflates this 9.9% fit to 10.4% and the alert is missed.
+  - interval: 1m
+    name: mmap ratio converts bytes to MiB
+    input_series:
+      - series: 'jvm_system_memory_bytes{job="solr",instance="solr1:8983",state="total"}'
+        values: '18970836992+0x10'
+      - series: 'jvm_memory_committed_bytes{job="solr",instance="solr1:8983",jvm_memory_type="heap",jvm_memory_pool_name="G1 Old Gen"}'
+        values: '8589934592+0x10'
+      - series: 'solr_core_index_size_megabytes{job="solr",instance="solr1:8983",collection="c",shard="shard1",core="c_shard1_replica_n1"}'
+        values: '100000+0x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: SolrHighMmapRatio
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: solr1:8983
+            exp_annotations:
+              summary: 'Little of the Solr index fits in memory on solr1:8983'
+              description: |
+                Only 9.9% of the index on solr1:8983 fits in the
+                memory left outside the JVM heap (threshold: 10%). The rest is read from
+                disk on every search that touches it.
+
+  # A node that stops answering scrapes.
+  - interval: 1m
+    name: unreachable node
+    input_series:
+      - series: 'up{job="solr",instance="solr1:8983"}'
+        values: '1 1 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SolrNodeDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: solr1:8983
+              job: solr
+            exp_annotations:
+              summary: 'Solr node solr1:8983 is not responding to scrapes'
+              description: |
+                Prometheus has failed to scrape solr1:8983 for 2 minutes.
+                Either the node is down or its metrics endpoint is unreachable.

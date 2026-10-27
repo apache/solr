@@ -149,7 +149,7 @@ Install the required tools once:
 | `jsonnet` (go-jsonnet) | Evaluate jsonnet source | `brew install go-jsonnet` or `go install github.com/google/go-jsonnet/cmd/jsonnet@latest` |
 | `jb` (jsonnet-bundler) | Manage dependencies | `brew install jsonnet-bundler` or `go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest` |
 | `gojsontoyaml` | Convert JSON→YAML for alert rules | `go install github.com/brancz/gojsontoyaml@latest` |
-| `promtool` *(optional)* | Validate alert rules | `brew install prometheus` |
+| `promtool` *(optional)* | Validate and unit-test alert rules | `brew install prometheus` |
 
 Then build:
 
@@ -172,7 +172,8 @@ Both `./make.sh <target>` and `make <target>` accept the same targets:
 | `dashboards` | Regenerate `grafana-solr-dashboard.json` |
 | `alerts` | Regenerate `prometheus-solr-alerts.yml` |
 | `all` | Regenerate both outputs |
-| `check` | Run `promtool check rules` on alert rules |
+| `test` | Run the alert rule unit tests in `mixin/tests/` with `promtool test rules` |
+| `check` | Run `promtool check rules` on alert rules, then the unit tests |
 | `fmt` | Auto-format all `.libsonnet` source files |
 
 `vendor/` is not checked in; `jsonnetfile.lock.json` pins the exact grafonnet revision, so
@@ -180,6 +181,11 @@ Both `./make.sh <target>` and `make <target>` accept the same targets:
 
 **Commit the regenerated artifacts together with the jsonnet change that produced them** —
 nothing in the Gradle build regenerates or verifies them.
+
+`mixin/tests/` holds `promtool test rules` cases that feed synthetic series to the generated rules.
+They pin the metric properties the expressions depend on — a ZGC heap reporting `-Xmx` as the limit
+of two pools, a ParallelGC heap partitioned across three, a node rollup sharing a core metric name,
+and the MiB units of the index-size gauge — so run `make test` after editing `alerts/`.
 
 ---
 
