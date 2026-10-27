@@ -198,11 +198,24 @@ public class SolrConfigHandler extends RequestHandlerBase
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
           NamedList<Object> paramSets = new SimpleOrderedMap<>();
-          V2ApiUtils.squashIntoNamedListWithoutHeader(
-              paramSets,
-              parts.size() == 3
-                  ? new GetParamSets(req).getParamSet(parts.get(2))
-                  : new GetParamSets(req).listParamSets());
+          if (parts.size() == 3) {
+            try {
+              V2ApiUtils.squashIntoNamedListWithoutHeader(
+                  paramSets, new GetParamSets(req).getParamSet(parts.get(2)));
+            } catch (SolrException e) {
+              if (e.code() != SolrException.ErrorCode.NOT_FOUND.code) {
+                throw e;
+              }
+              // v1 has always returned 200 here with no "params" entry for an unknown paramset
+              // name, rather than an error - preserve that for existing v1 callers. v2's
+              // GetParamSets keeps its own (more correct) 404 for its own callers.
+              paramSets.add(
+                  ZNODEVER, req.getCore().getSolrConfig().getRequestParams().getZnodeVersion());
+            }
+          } else {
+            V2ApiUtils.squashIntoNamedListWithoutHeader(
+                paramSets, new GetParamSets(req).listParamSets());
+          }
           resp.add(SolrQueryResponse.NAME, paramSets);
         } else {
           if (ZNODEVER.equals(parts.get(1))) {

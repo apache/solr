@@ -674,8 +674,15 @@ public class TestSolrConfigHandler extends RestTestBase {
     TestSolrConfigHandler.testForResponseElement(
         harness, "/config/" + paramSetsKey, paramSetsPath(harness, "x", "b"), "B val", TIMEOUT_S);
 
+    // v2 404s for an unknown paramset name; v1's long-standing behavior (a 200 with no matching
+    // entry) is preserved for existing v1 callers.
     String missing = harness.query("/config/" + paramSetsKey + "/nonExistentParamSet");
-    assertTrue(missing, missing.contains("No paramset found with the name: nonExistentParamSet"));
+    if (harness.getBaseURL().contains("/____v2/")) {
+      assertTrue(missing, missing.contains("No paramset found with the name: nonExistentParamSet"));
+    } else {
+      assertFalse(missing, missing.contains("nonExistentParamSet"));
+      assertTrue(missing, missing.contains("znodeVersion"));
+    }
 
     payload =
         "{\n"
