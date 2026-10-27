@@ -136,4 +136,23 @@ class IndexQueryHeaderTest {
         onNodeWithTag("index_query_handler_dropdown_item_/select").performClick()
         assertEquals(listOf("/select"), selected)
     }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testSelectedHandlerShowsItsClassInTheClosedField() = runComposeUiTest {
+        setContent {
+            IndexQueryHeader(
+                collections = listOf("films"),
+                collectionsLoading = false,
+                selectedCollection = "films",
+                onSelectCollection = {},
+                handlers = handlers,
+                handlersLoading = false,
+                selectedHandler = "/select",
+                onSelectHandler = {},
+            )
+        }
+
+        onNodeWithText("solr.SearchHandler").assertExists()
+    }
 }

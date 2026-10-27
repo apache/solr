@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -34,8 +36,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.domain.RequestHandlerOption
@@ -91,7 +95,7 @@ fun IndexQueryHeader(
                 entries = collections.map { DropdownEntry(key = it, title = it) },
                 onSelect = onSelectCollection,
                 testTag = "index_query_collection_dropdown",
-                modifier = Modifier,
+                modifier = Modifier.width(256.dp),
             )
             HeaderDropdown(
                 label = stringResource(Res.string.label_request_handler),
@@ -101,9 +105,10 @@ fun IndexQueryHeader(
                 entries = handlers.map {
                     DropdownEntry(key = it.name, title = it.name, subtitle = it.className)
                 },
+                supporting = handlers.firstOrNull { it.name == selectedHandler }?.className,
                 onSelect = onSelectHandler,
                 testTag = "index_query_handler_dropdown",
-                modifier = Modifier,
+                modifier = Modifier.width(384.dp),
             )
         }
         if (!collectionsLoading && collections.isEmpty()) {
@@ -139,6 +144,7 @@ private fun HeaderDropdown(
     placeholder: String,
     enabled: Boolean,
     entries: List<DropdownEntry>,
+    supporting: String? = null,
     onSelect: (String) -> Unit,
     testTag: String,
     modifier: Modifier,
@@ -161,7 +167,21 @@ private fun HeaderDropdown(
             } else {
                 null
             },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            trailingIcon = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    supporting?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 160.dp),
+                        )
+                    }
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                }
+            },
             modifier = Modifier
                 .menuAnchor(
                     type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
