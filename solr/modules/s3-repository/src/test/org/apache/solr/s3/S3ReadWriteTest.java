@@ -90,6 +90,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   @Test
   public void testDirectoryLength() throws Exception {
     client.createDirectory("/directory");
+    pushContent("/directory/file", "child");
 
     S3Exception exception =
         assertThrows(

@@ -24,8 +24,10 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -45,6 +47,7 @@ import org.apache.solr.cloud.ZkDistributedConfigSetLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -73,7 +76,8 @@ public class DistributedCollectionConfigSetCommandRunner {
   private static final String ZK_DISTRIBUTED_API_ROOT = "/distributedapi";
 
   /** Zookeeper node below which the locking hierarchy is anchored */
-  private static final String ZK_COLLECTION_LOCKS = ZK_DISTRIBUTED_API_ROOT + "/collectionlocks";
+  @VisibleForTesting
+  static final String ZK_COLLECTION_LOCKS = ZK_DISTRIBUTED_API_ROOT + "/collectionlocks";
 
   private static final String ZK_CONFIG_SET_LOCKS = ZK_DISTRIBUTED_API_ROOT + "/configsetlocks";
 
@@ -150,6 +154,12 @@ public class DistributedCollectionConfigSetCommandRunner {
   /** See {@link DistributedApiAsyncTracker#deleteSingleAsyncId(String)} */
   public boolean deleteSingleAsyncId(String asyncId) throws Exception {
     return asyncTaskTracker.deleteSingleAsyncId(asyncId);
+  }
+
+  /** See {@link DistributedApiAsyncTracker#getTrackedAsyncIds()} */
+  @VisibleForTesting
+  public Collection<String> getTrackedAsyncIds() throws Exception {
+    return asyncTaskTracker.getTrackedAsyncIds();
   }
 
   /** See {@link DistributedApiAsyncTracker#deleteAllAsyncIds()} */
@@ -392,10 +402,11 @@ public class DistributedCollectionConfigSetCommandRunner {
         // creations is low, and these classes do not hold state but only serve as an interface to
         // Zookeeper. Note that after this call, we MUST execute the lock.release(); in the finally
         // below
+        ZkDistributedCollectionLockFactory lockFactory =
+            new ZkDistributedCollectionLockFactory(
+                ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS);
         DistributedMultiLock lock =
-            new CollectionApiLockFactory(
-                    new ZkDistributedCollectionLockFactory(
-                        ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS))
+            new CollectionApiLockFactory(lockFactory)
                 .createCollectionApiLock(adminCmdContext, collName, shardId, replicaName);
 
         try {
@@ -440,10 +451,6 @@ public class DistributedCollectionConfigSetCommandRunner {
           }
         } finally {
           try {
-            // TODO If the Collection API command failed because the collection does not exist,
-            // we've just created some lock directory structure for a non existent collection...
-            // Maybe try to remove it here? No big deal for now as leftover nodes in the lock
-            // hierarchy do no harm, and there shouldn't be too many of those.
             lock.release();
           } catch (SolrException se) {
             if (log.isErrorEnabled()) {
@@ -452,6 +459,9 @@ public class DistributedCollectionConfigSetCommandRunner {
                   adminCmdContext.getAction(),
                   se);
             }
+          }
+          if (adminCmdContext.getAction() == CollectionAction.DELETE) {
+            deleteEmptyLockDirs(lockFactory, collName);
           }
         }
       } catch (Exception e) {
@@ -466,6 +476,18 @@ public class DistributedCollectionConfigSetCommandRunner {
       // Following call marks success or failure depending on the contents of res
       asyncTaskTracker.setTaskCompleted(adminCmdContext.getAsyncId(), res);
       return res;
+    }
+  }
+
+  private static void deleteEmptyLockDirs(
+      ZkDistributedCollectionLockFactory lockFactory, String collName) {
+    try {
+      lockFactory.deleteEmptyLockDirs(collName);
+    } catch (Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      log.warn("Could not delete lock dirs of deleted collection {}", collName, e);
     }
   }
 
