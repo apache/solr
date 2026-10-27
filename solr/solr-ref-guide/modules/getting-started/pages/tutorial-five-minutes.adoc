@@ -37,7 +37,7 @@ Like a database system holds data in tables, Solr holds data in collections. A c
 [,bash]
 ----
 curl --request POST \
---url http://localhost:8983/api/collections \
+--url 'http://localhost:8983/api/collections' \
 --header 'Content-Type: application/json' \
 --data '{
   "name": "techproducts",
@@ -53,7 +53,7 @@ Let us define some of the fields that our documents will contain.
 [,bash]
 ----
 curl --request POST \
-  --url http://localhost:8983/api/collections/techproducts/schema \
+  --url 'http://localhost:8983/api/collections/techproducts/schema' \
   --header 'Content-Type: application/json' \
   --data '{
   "add-field": [

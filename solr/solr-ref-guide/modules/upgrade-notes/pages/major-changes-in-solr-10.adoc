@@ -240,6 +240,8 @@ All nodes in the cluster must always have a consistent understanding of the over
 If using the cluster property toggle, use the xref:deployment-guide:zookeeper-utilities.adoc#set-a-cluster-property[bin/solr cluster] CLI utility to set it while the cluster is offline.
 If using the env var; ensure each Solr node is configured to start with the setting set consistently.
 
+NOTE: Without the Overseer, Solr keeps its Collection and ConfigSet API locks in ZooKeeper container znodes, so an external ZooKeeper ensemble must be version 3.5.1 or higher.
+
 When the Overseer is disabled, it is nonetheless still elected, which can be influenced by node roles.
 If you are using any xref:configuration-guide:cluster-singleton-plugins.adoc[cluster singleton plugins], they execute on the node elected to be the Overseer.
 

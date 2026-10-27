@@ -99,7 +99,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2
+curl 'http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2'
 ----
 ====
 

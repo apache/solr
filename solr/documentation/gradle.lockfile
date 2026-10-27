@@ -9,4 +9,4 @@ org.apache.lucene:lucene-expressions:10.4.0=javadocs
 org.apache.lucene:lucene-queries:10.4.0=javadocs
 org.apache.lucene:lucene-queryparser:10.4.0=javadocs
 org.apache.lucene:lucene-spatial-extras:10.4.0=javadocs
-empty=changesHtml,jarValidation,minimalSite,site
+empty=jarValidation,minimalSite,site

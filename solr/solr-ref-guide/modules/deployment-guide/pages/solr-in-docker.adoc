@@ -178,7 +178,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '{"name": "gettingstarted4", "numShards": 1, "config": "_default"}'
+curl 'http://localhost:8983/api/collections' -H 'Content-Type: application/json' -d '{"name": "gettingstarted4", "numShards": 1, "config": "_default"}'
 ----
 ====
 ======

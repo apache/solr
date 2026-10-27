@@ -1348,6 +1348,27 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertEquals(3, docs.size());
     assertEquals(Map.of("id", "1", "x", 10, "v", "a,b"), docs.get(0));
 
+    // a pseudo-field named like a non-exportable field doesn't fetch that field
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export", "q", "*:*", "fl", "id,str_s_stored:[value v=a]", "sort", "id asc"));
+    assertEquals(3, docs.size());
+    assertEquals(Map.of("id", "1", "str_s_stored", "a"), docs.get(0));
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export",
+                    "q",
+                    "*:*",
+                    "fl",
+                    "id,*_stored,str_s_stored:[value v=a]",
+                    "sort",
+                    "id asc"));
+    assertEquals(Map.of("id", "1", "str_s_stored", "a"), docs.get(0));
+
     // transformed fields are visible to streaming expressions
     docs =
         (List<Map<String, Object>>)
@@ -1586,6 +1607,12 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "Expected error message to contain hint about includeStoredFields",
         resp.contains("includeStoredFields=true"));
     assertTrue("Expected error message to mention the field", resp.contains("str_s_stored"));
+
+    // ... even alongside a glob
+    resp =
+        h.query(
+            reqWithPath("/export", "q", "*:*", "fl", "id,int*,str_s_stored", "sort", "intdv asc"));
+    assertTrue(resp, resp.contains("includeStoredFields=true"));
   }
 
   @Test
