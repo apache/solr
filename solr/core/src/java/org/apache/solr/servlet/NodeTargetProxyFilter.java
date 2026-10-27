@@ -60,8 +60,8 @@ public class NodeTargetProxyFilter extends CoreContainerAwareHttpFilter {
    * shorthand forms are also accepted, both resolved relative to the current node: a value of all
    * digits replaces the trailing {@code -<digits>} ordinal in the current node's hostname (e.g.
    * {@code 8} turns {@code myhost-3.mydomain.com:3000} into {@code myhost-8.mydomain.com:3000});
-   * otherwise, a value with no '.' or ':' is treated as a bare peer hostname, with the current node's
-   * domain suffix and port appended.
+   * otherwise, a value with no '.' or ':' is treated as a bare peer hostname, with the current
+   * node's domain suffix and port appended.
    */
   public static final String TARGET_NODE_HEADER = "X-Solr-targetNode";
 
