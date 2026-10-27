@@ -73,7 +73,8 @@ public class ExecutorUtilTest extends SolrTestCase {
       assertTrue(
           timeout.getMessage(),
           timeout.getMessage().startsWith("Timeout waiting for pool to shutdown. "));
-      assertTrue(timeout.getMessage(), timeout.getMessage().contains("[poolName=" + poolName + "]"));
+      assertTrue(
+          timeout.getMessage(), timeout.getMessage().contains("[poolName=" + poolName + "]"));
 
       assertFalse("Worker should not finish due to shutdown or awaitTermination", f.isDone());
       assertTrue("test sanity check: WTF? how did we get here?", w.getNumberOfInterupts() > 0);
