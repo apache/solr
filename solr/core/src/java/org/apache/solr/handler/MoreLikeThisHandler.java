@@ -107,7 +107,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       ReturnFields returnFields = new SolrReturnFields(req);
       rsp.setReturnFields(returnFields);
       int flags = 0;
-      if (returnFields.wantsScore()) {
+      if (returnFields.returnsScore()) {
         flags |= SolrIndexSearcher.GET_SCORES;
       }
 
