@@ -113,5 +113,5 @@ teardown() {
   run -1 solr stream --execution local --header --verbose ${solr_stream_file}
 
   assert_output --partial 'ERROR'
-  assert_output --regexp '(HTTP (code=)?401|Error 401|\(401\)|Unauthorized)'
+  assert_output --regexp '(HTTP (code=)?401|Error 401|\(401\)|Unauthorized|non ok status:[[:space:]]*401)'
 }

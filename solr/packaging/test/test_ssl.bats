@@ -349,8 +349,20 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE=
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
+      server_log="${SOLR_LOGS_DIR}/solr.log"
+      server_log_offset=$(wc -c < "$server_log")
       run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
-      assert_tls_failure '(bad_certificate|certificate_required|Empty client certificate chain)'
+      # Jetty closes the HTTP/2 channel before SolrJ reports the TLS alert. Require the fresh
+      # producer-side rejection for this operation; a bare ClosedChannelException is not proof.
+      assert_tls_failure 'java\.nio\.channels\.ClosedChannelException'
+      fresh_mtls_rejection_logged() {
+        tail -c "+$((server_log_offset + 1))" "$server_log" |
+          grep -Fq 'javax.net.ssl.SSLHandshakeException: (certificate_required) Empty client certificate chain'
+      }
+      if ! wait_for 10 1 fresh_mtls_rejection_logged; then
+        echo "No fresh server-side certificate_required diagnostic found after byte ${server_log_offset}" >&2
+        return 1
+      fi
     )
   )
 

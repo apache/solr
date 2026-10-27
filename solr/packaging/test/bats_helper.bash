@@ -102,8 +102,12 @@ assert_zk_child_absent() {
   local parent=$1
   local child=$2
   local entry
-  run -0 solr zk ls "$parent" -z localhost:${ZK_PORT} || return 1
-  for entry in $output; do
+  local listing
+  if ! listing=$(solr zk ls "$parent" -z localhost:${ZK_PORT}); then
+    [[ -z "$listing" ]] || printf '%s\n' "$listing" >&2
+    return 1
+  fi
+  for entry in $listing; do
     refute test "$entry" = "$child" || return 1
   done
 }
