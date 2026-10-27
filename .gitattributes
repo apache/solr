@@ -8,4 +8,5 @@ versions.lock text eol=lf
 # Exclude from source release tarball (git archive).  Avoids ASF license header requirements.
 /.*               export-ignore
 /dev-docs         export-ignore
+/dev-tools        export-ignore
 AGENTS.md         export-ignore
