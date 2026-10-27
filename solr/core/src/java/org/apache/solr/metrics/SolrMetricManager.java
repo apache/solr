@@ -67,6 +67,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
@@ -457,6 +458,7 @@ public class SolrMetricManager {
               var reader = new FilterablePrometheusMetricReader(true, null);
               var builder =
                   SdkMeterProvider.builder()
+                      .setResource(OpenTelemetryConfigurator.getTelemetryResource())
                       .registerMetricReader(reader)
                       .setExemplarFilter(ExemplarFilter.traceBased())
                       .registerView(
