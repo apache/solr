@@ -62,6 +62,15 @@ solrAdminApp.controller('ReplicationController',
             Replication.command({core:$routeParams.core, command:command}, function(data){$scope.refresh()});
         }
 
+        $scope.setReplicationEnabled = function(enabled) {
+            ReplicationV2.setReplicationEnabled($routeParams.core, {enabled: enabled}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) { ApiErrorHandler.handle(response); return; }
+                    $scope.refresh();
+                });
+            });
+        }
+
         $scope.showIterations = function() { $scope.iterationCount = 100000}; // limitTo should accept undefined, but doesn't work.
         $scope.hideIterations = function() { $scope.iterationCount = 1};
 

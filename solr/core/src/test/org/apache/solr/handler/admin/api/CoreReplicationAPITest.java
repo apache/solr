@@ -37,6 +37,7 @@ import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
@@ -101,6 +102,31 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     ReplicationDetailsResponse withFollowerFalse =
         coreReplicationAPI.fetchReplicationDetails(false);
     assertSame(expectedResponse, withFollowerFalse);
+  }
+
+  @Test
+  public void testSetReplicationEnabled() {
+    for (boolean enabled : new boolean[] {true, false}) {
+      final var body = new ReplicationEnabledRequestBody();
+      body.enabled = enabled;
+      assertNotNull(coreReplicationAPI.setReplicationEnabled(body));
+    }
+  }
+
+  @Test
+  public void testSetReplicationEnabledRejectsNullBody() {
+    SolrException ex =
+        expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(null));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
+
+  @Test
+  public void testSetReplicationEnabledRejectsBadBody() {
+    final var emptyBody = new ReplicationEnabledRequestBody();
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(emptyBody));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
   }
 
   @Test
