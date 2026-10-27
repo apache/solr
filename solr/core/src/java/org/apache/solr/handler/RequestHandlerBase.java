@@ -67,6 +67,7 @@ public abstract class RequestHandlerBase
         PermissionNameProvider {
 
   public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
+  private static final String DISPATCHED_HANDLER = "dispatchedHandler";
   public static final AttributeKey<String> SOURCE_ATTR = AttributeKey.stringKey("source");
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
@@ -231,6 +232,7 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    req.getContext().putIfAbsent(DISPATCHED_HANDLER, this);
     assert metrics != null
         : "initializeMetrics() must be called before handling requests on " + getClass().getName();
     if (publishCpuTime) {
@@ -403,6 +405,15 @@ public abstract class RequestHandlerBase
       }
     }
     return handler;
+  }
+
+  /**
+   * Whether the request was dispatched to this handler, as opposed to another handler delegating to
+   * it with the same request. A delegating handler is only recorded if it runs this class's {@link
+   * #handleRequest}.
+   */
+  protected boolean isDispatchedHandler(SolrQueryRequest req) {
+    return req.getContext().get(DISPATCHED_HANDLER) == this;
   }
 
   public void setPluginInfo(PluginInfo pluginInfo) {

@@ -160,7 +160,7 @@ public class SearchHandler extends RequestHandlerBase
       return;
     }
     String path = (String) req.getContext().get(PATH);
-    if (path == null || req.getCore().getRequestHandler(path) != this) {
+    if (path == null || !isDispatchedHandler(req)) {
       return;
     }
     SearchRequestInfo info = SearchRequestInfo.from(req, rsp);

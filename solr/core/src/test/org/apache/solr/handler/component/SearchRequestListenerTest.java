@@ -38,7 +38,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
@@ -55,6 +54,7 @@ import org.junit.Test;
 
 public class SearchRequestListenerTest extends SolrCloudTestCase {
   private static final String COLLECTION = "listener";
+  private static final String DISPATCH_COLLECTION = "listener_dispatch";
   private static final int NUM_SHARDS = 2;
   private static final Queue<Event> events = new ConcurrentLinkedQueue<>();
 
@@ -64,8 +64,12 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("dispatch", configset("search-request-listener"))
+        .configure();
     createCollection(COLLECTION);
+    createCollection(DISPATCH_COLLECTION, "dispatch");
   }
 
   @Before
@@ -83,7 +87,11 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   }
 
   private static void createCollection(String name) throws Exception {
-    CollectionAdminRequest.createCollection(name, "conf", NUM_SHARDS, 1)
+    createCollection(name, "conf");
+  }
+
+  private static void createCollection(String name, String config) throws Exception {
+    CollectionAdminRequest.createCollection(name, config, NUM_SHARDS, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection(name, NUM_SHARDS, NUM_SHARDS);
     new UpdateRequest()
@@ -154,15 +162,8 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Test
   public void testTopLevelEmbeddedSearchReported() throws Exception {
-    JettySolrRunner jetty = cluster.getJettySolrRunner(0);
-    String coreName =
-        getCollectionState(COLLECTION)
-            .replicaStream()
-            .filter(replica -> replica.getNodeName().equals(jetty.getNodeName()))
-            .map(Replica::getCoreName)
-            .findFirst()
-            .orElseThrow();
-    try (SolrClient client = new EmbeddedSolrServer(jetty.getCoreContainer(), coreName)) {
+    try (SolrCore core = jettyCore(COLLECTION);
+        SolrClient client = new EmbeddedSolrServer(core)) {
       new QueryRequest(new SolrQuery("*:*").setParam("distrib", false)).process(client);
       assertEquals(1, events.size());
     }
@@ -220,8 +221,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Test
   public void testInternalSearchNotReported() throws Exception {
-    CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
-    try (SolrCore core = cc.getCore(cc.getAllCoreNames().getFirst());
+    try (SolrCore core = jettyCore(COLLECTION);
         SolrQueryRequest req =
             new SolrQueryRequestBase(
                 core, new ModifiableSolrParams().set("q", "*:*").set("distrib", false)) {}) {
@@ -275,6 +275,30 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testV2OnlyHandlerReported() throws Exception {
+    new V2Request.Builder("/collections/" + DISPATCH_COLLECTION + "/v2-search")
+        .withMethod(SolrRequest.METHOD.GET)
+        .withParams(new ModifiableSolrParams().set("q", "*:*").set("distrib", false))
+        .build()
+        .process(nodeClient());
+    assertEquals(1, events.size());
+    assertEquals("/v2-search", events.peek().info().handlerPath());
+    assertNull(events.peek().info().failure());
+  }
+
+  @Test
+  public void testEmbeddedQtFallbackReported() throws Exception {
+    try (SolrCore core = jettyCore(DISPATCH_COLLECTION);
+        SolrClient client = new EmbeddedSolrServer(core)) {
+      new QueryRequest(new SolrQuery("*:*").setParam("distrib", false).setParam("qt", "standard"))
+          .process(client);
+    }
+    assertEquals(1, events.size());
+    assertEquals("/select", events.peek().info().handlerPath());
+    assertNull(events.peek().info().failure());
+  }
+
+  @Test
   public void testCpuTime() throws Exception {
     assumeTrue("thread CPU time unsupported", ThreadCpuTimer.isSupported());
     query(COLLECTION, "*:*");
@@ -296,7 +320,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Test
   public void testCpuTimeFromLog() throws Exception {
-    try (SolrCore core = jettyCore();
+    try (SolrCore core = jettyCore(COLLECTION);
         SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams()) {}) {
       SolrQueryResponse failed = new SolrQueryResponse();
       failed.addResponseHeader(new SimpleOrderedMap<>());
@@ -319,7 +343,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Test
   public void testResponseBuilderOfOtherRequestIgnored() throws Exception {
-    try (SolrCore core = jettyCore();
+    try (SolrCore core = jettyCore(COLLECTION);
         SolrQueryRequest outer = new SolrQueryRequestBase(core, new ModifiableSolrParams()) {};
         SolrQueryRequest inner = new SolrQueryRequestBase(core, new ModifiableSolrParams()) {}) {
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -339,9 +363,16 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     assertEquals(0, events.size());
   }
 
-  private static SolrCore jettyCore() {
-    CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
-    return cc.getCore(cc.getAllCoreNames().getFirst());
+  private static SolrCore jettyCore(String collection) {
+    JettySolrRunner jetty = cluster.getJettySolrRunner(0);
+    String coreName =
+        getCollectionState(collection)
+            .replicaStream()
+            .filter(replica -> replica.getNodeName().equals(jetty.getNodeName()))
+            .map(Replica::getCoreName)
+            .findFirst()
+            .orElseThrow();
+    return jetty.getCoreContainer().getCore(coreName);
   }
 
   private static ResponseBuilder distributedBuilder(SolrQueryRequest req, SolrQueryResponse rsp) {
