@@ -41,7 +41,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @see PointField
  * @see DoublePoint
  */
-public class DoublePointField extends PointField implements DoubleValueFieldType {
+public class DoublePointField extends PointField
+    implements DoubleValueFieldType, FieldType.ExternalizeStoredValuesAsObjects {
 
   public DoublePointField() {
     type = NumberType.DOUBLE;
