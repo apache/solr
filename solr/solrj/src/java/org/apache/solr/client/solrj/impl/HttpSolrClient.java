@@ -53,7 +53,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,20 +161,6 @@ public abstract class HttpSolrClient extends SolrClient {
     // set() removes the param when the writer type is null, which is how a parser asks for no wt.
     params.set(CommonParams.WT, parserToUse.getWriterType());
     return params;
-  }
-
-  /**
-   * @deprecated ContentStream is deprecated; see {@link #isMultipart(RequestWriter.ContentWriter)}.
-   */
-  @Deprecated(since = "10.1")
-  protected boolean isMultipart(Collection<ContentStream> streams) {
-    boolean isMultipart = false;
-    if (streams != null) {
-      boolean hasNullStreamName = false;
-      hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
-      isMultipart = !hasNullStreamName && streams.size() > 1;
-    }
-    return isMultipart;
   }
 
   protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {
