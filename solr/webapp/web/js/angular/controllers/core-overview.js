@@ -15,8 +15,16 @@
  limitations under the License.
 */
 
+// The v2 replication-details response uses real JSON booleans, but follower.leaderDetails is
+// populated from an internal NamedList round-trip to the leader's own v1 endpoint, so its nested
+// booleans are always the legacy stringified "true"/"false" regardless of which API version served
+// the outer response. Accept either form rather than tracking which fields come from which source.
+var isTruthy = function(value) {
+    return value === true || value === 'true';
+};
+
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Ping, Constants) {
+function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, ReplicationV2, Ping, Constants) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
@@ -31,15 +39,17 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
   };
 
   $scope.refreshReplication = function() {
-    Replication.details({core: $routeParams.core},
-      function(data) {
-        $scope.isFollower = data.details.isFollower == "true";
-        $scope.isLeader = data.details.isLeader == "true";
+    ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
+      $timeout(function() {
+        if (error) {
+          $scope.replicationMessage = "Replication is not configured";
+          return;
+        }
+        $scope.isFollower = isTruthy(data.details.isFollower);
+        $scope.isLeader = isTruthy(data.details.isLeader);
         $scope.replication = data.details;
-      },
-      function(error) {
-        $scope.replicationMessage = "Replication is not configured";
       });
+    });
   };
 
   $scope.refreshInfo = function() {

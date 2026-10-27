@@ -229,6 +229,17 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.NodeApi();
     })
+.factory('ReplicationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      // The generated client defaults to caching GET responses (no cache-busting query param),
+      // unlike the v1 $resource below which always appends '_':Date.now(). The replication screen
+      // re-fetches this same URL after every action (disable polling, replicate now, etc.), so a
+      // cached response would show stale status instead of the just-changed state.
+      solrApi.ApiClient.instance.cache = false;
+      return new solrApi.ReplicationApi();
+    })
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {

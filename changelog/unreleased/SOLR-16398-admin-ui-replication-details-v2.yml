@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title:
+  Admin UI's Replication screen and core overview page now fetch replication status via the v2
+  GET /api/cores/{coreName}/replication API instead of the v1 replication handler.
+type: changed
+authors:
+  - name: Eric Pugh
+    nick: epugh
+links:
+  - name: SOLR-16398
+    url: https://issues.apache.org/jira/browse/SOLR-16398
