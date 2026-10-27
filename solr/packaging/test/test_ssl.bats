@@ -367,15 +367,29 @@ teardown() {
   )
 
   # Turn on client hostname verification, and start a new Solr node since the property is a server setting.
-  # Test that it fails because the client cert does not use "localhost"
+  # The JDK/Jetty server logs its unsupported server-side endpoint-identification
+  # path for this probe. The fresh producer diagnostic is asserted below; this
+  # does not prove the intended client-hostname policy works.
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
   solr start -z localhost:${ZK_PORT} -p ${SOLR3_PORT}
 
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
 
-  run ! solr api --verbose --solr-url "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
-  assert_tls_failure '(certificate_unknown|No subject alternative|No name matching)'
+  (
+    hostname_server_log="${SOLR_LOGS_DIR}/solr.log"
+    hostname_log_offset=$(wc -c < "$hostname_server_log")
+    run ! solr api --verbose --solr-url "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
+    assert_tls_failure 'java\.nio\.channels\.ClosedChannelException'
+    fresh_hostname_diagnostic_logged() {
+      tail -c "+$((hostname_log_offset + 1))" "$hostname_server_log" |
+        grep -Fq 'javax.net.ssl.SSLHandshakeException: (certificate_unknown) Endpoint Identification Algorithm HTTPS is not supported on the server side'
+    }
+    if ! wait_for 10 1 fresh_hostname_diagnostic_logged; then
+      echo "No fresh server-side hostname diagnostic found after byte ${hostname_log_offset}" >&2
+      return 1
+    fi
+  )
 }
 
 @test "start solr with mTLS wanted" {
