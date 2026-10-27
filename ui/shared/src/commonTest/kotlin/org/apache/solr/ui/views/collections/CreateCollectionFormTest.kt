@@ -22,6 +22,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
@@ -168,7 +169,7 @@ class CreateCollectionFormTest {
         onNodeWithText("Composite ID").performClick()
         onNodeWithText("Implicit").performClick()
         onNodeWithTag("create_collection_route_field").performTextInput("id")
-        onNodeWithTag("create_collection_button").performClick()
+        onNodeWithTag("create_collection_button").performScrollTo().performClick()
 
         assertEquals(
             listOf(
