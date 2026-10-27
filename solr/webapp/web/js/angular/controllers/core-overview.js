@@ -24,7 +24,7 @@ var isTruthy = function(value) {
 };
 
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, ReplicationV2, Ping, Constants) {
+function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, ReplicationV2, Ping, Constants, ApiErrorHandler) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
@@ -42,7 +42,16 @@ function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, Rep
     ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
       $timeout(function() {
         if (error) {
-          $scope.replicationMessage = "Replication is not configured";
+          // Most cores simply don't have a /replication handler configured, which is the
+          // everyday case here - keep the friendly inline message for that. Auth failures are
+          // the exception: they need the shared login-redirect/permission-banner handling, not
+          // a message implying replication itself is the problem.
+          if (response && (response.status === 401 || response.status === 403)) {
+            $scope.replicationMessage = null;
+            ApiErrorHandler.handle(response);
+          } else {
+            $scope.replicationMessage = "Replication is not configured";
+          }
           return;
         }
         $scope.isFollower = isTruthy(data.details.isFollower);
