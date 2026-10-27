@@ -26,15 +26,34 @@ plugins {
   alias(libs.plugins.compose.compiler)
 }
 
-val linuxX64RuntimeClasspath by configurations.creating {
-  isCanBeConsumed = false
-  isCanBeResolved = true
-  extendsFrom(configurations.runtimeClasspath.get())
-  for (os in listOf("linux-arm64", "macos-x64", "macos-arm64", "windows-x64")) {
-    exclude(group = "org.jetbrains.compose.desktop", module = "desktop-jvm-$os")
-    exclude(group = "org.jetbrains.skiko", module = "skiko-awt-runtime-$os")
+val desktopRuntimePlatforms =
+  listOf("linux-arm64", "linux-x64", "macos-x64", "macos-arm64", "windows-x64")
+
+fun createDesktopRuntimeClasspath(name: String, platform: String) =
+  configurations.create("${name}RuntimeClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    extendsFrom(configurations.runtimeClasspath.get())
+    for (os in desktopRuntimePlatforms.filter { it != platform }) {
+      exclude(group = "org.jetbrains.compose.desktop", module = "desktop-jvm-$os")
+      exclude(group = "org.jetbrains.skiko", module = "skiko-awt-runtime-$os")
+    }
   }
-}
+
+val linuxArm64RuntimeClasspath = createDesktopRuntimeClasspath("linuxArm64", "linux-arm64")
+val linuxX64RuntimeClasspath = createDesktopRuntimeClasspath("linuxX64", "linux-x64")
+val macosX64RuntimeClasspath = createDesktopRuntimeClasspath("macosX64", "macos-x64")
+val macosArm64RuntimeClasspath = createDesktopRuntimeClasspath("macosArm64", "macos-arm64")
+val windowsX64RuntimeClasspath = createDesktopRuntimeClasspath("windowsX64", "windows-x64")
+
+val desktopRuntimeClasspaths =
+  listOf(
+    linuxArm64RuntimeClasspath,
+    linuxX64RuntimeClasspath,
+    macosX64RuntimeClasspath,
+    macosArm64RuntimeClasspath,
+    windowsX64RuntimeClasspath,
+  )
 
 dependencies {
   implementation(projects.shared)
@@ -45,7 +64,11 @@ dependencies {
 
   implementation(libs.compose.uiToolingPreview)
 
-  linuxX64RuntimeClasspath(compose.desktop.linux_x64)
+  add(linuxArm64RuntimeClasspath.name, compose.desktop.linux_arm64)
+  add(linuxX64RuntimeClasspath.name, compose.desktop.linux_x64)
+  add(macosX64RuntimeClasspath.name, compose.desktop.macos_x64)
+  add(macosArm64RuntimeClasspath.name, compose.desktop.macos_arm64)
+  add(windowsX64RuntimeClasspath.name, compose.desktop.windows_x64)
 }
 
 val licensesDir = rootProject.file("licenses")
@@ -54,7 +77,10 @@ fun sha1Hex(file: File): String =
   MessageDigest.getInstance("SHA-1").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
 
 fun externalJars(): List<ResolvedArtifactResult> =
-  linuxX64RuntimeClasspath.incoming.artifacts.artifacts.filter { it.id.componentIdentifier is ModuleComponentIdentifier }
+  desktopRuntimeClasspaths
+    .flatMap { it.incoming.artifacts.artifacts }
+    .filter { it.id.componentIdentifier is ModuleComponentIdentifier }
+    .distinctBy(::checksumFileName)
 
 fun checksumFileName(artifact: ResolvedArtifactResult): String {
   val id = artifact.id.componentIdentifier as ModuleComponentIdentifier
@@ -63,8 +89,8 @@ fun checksumFileName(artifact: ResolvedArtifactResult): String {
 
 val updateLicenses by tasks.registering {
   group = "Dependency validation"
-  description = "Writes SHA-1 checksum files for the linux_x64 desktop runtime jars."
-  inputs.files(linuxX64RuntimeClasspath)
+  description = "Writes SHA-1 checksum files for supported desktop runtime jars."
+  inputs.files(desktopRuntimeClasspaths)
   doLast {
     licensesDir.mkdirs()
     externalJars().forEach { artifact ->
@@ -75,8 +101,8 @@ val updateLicenses by tasks.registering {
 
 val validateLicenses by tasks.registering {
   group = "Dependency validation"
-  description = "Checks the linux_x64 desktop runtime jars against their SHA-1 checksum files."
-  inputs.files(linuxX64RuntimeClasspath)
+  description = "Checks supported desktop runtime jars against their SHA-1 checksum files."
+  inputs.files(desktopRuntimeClasspaths)
   inputs.files(project.fileTree(licensesDir))
   doLast {
     val errors = mutableListOf<String>()
