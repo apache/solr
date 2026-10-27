@@ -17,6 +17,13 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
+// The generated v2 client defaults to caching GET responses (no cache-busting query param),
+// unlike the v1 $resource factories below which always append '_':Date.now(). Set this once, up
+// front, rather than inside any one *V2 factory below - solrApi.ApiClient.instance is a shared
+// singleton, so setting it from a single factory would make every other v2 call's caching
+// depend on which factory happened to be instantiated first.
+solrApi.ApiClient.instance.cache = false;
+
 solrAdminServices.factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
@@ -233,11 +240,6 @@ solrAdminServices.factory('Metrics',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
-      // The generated client defaults to caching GET responses (no cache-busting query param),
-      // unlike the v1 $resource below which always appends '_':Date.now(). The replication screen
-      // re-fetches this same URL after every action (disable polling, replicate now, etc.), so a
-      // cached response would show stale status instead of the just-changed state.
-      solrApi.ApiClient.instance.cache = false;
       return new solrApi.ReplicationApi();
     })
 .factory('Replication',
