@@ -21,6 +21,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -44,7 +45,7 @@ public class HLLAgg extends StrAggValueSource {
    * at most 6KB; above that the count is an estimate with a standard error of about 1.15%. The
    * system properties {@value #LOG2M_PROPERTY} and {@value #EXPTHRESH_PROPERTY} trade bigger shard
    * responses for a more exact count. All nodes of a cluster need the same log2m: sketches of
-   * different sizes do not merge correctly.
+   * different sizes are rejected when merged.
    */
   // TODO: make stats component HllOptions inherit from this?
   public static class HLLFactory {
@@ -115,7 +116,18 @@ public class HLLAgg extends StrAggValueSource {
       if (aggregate == null) {
         aggregate = subHLL;
       } else {
-        aggregate.union(subHLL);
+        try {
+          aggregate.union(subHLL);
+        } catch (IllegalArgumentException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Cannot merge JSON facet HLL sketches with incompatible precision. All shards must use"
+                  + " the same "
+                  + HLLFactory.LOG2M_PROPERTY
+                  + ". "
+                  + e.getMessage(),
+              e);
+        }
       }
     }
 

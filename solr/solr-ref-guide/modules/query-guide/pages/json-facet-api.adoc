@@ -590,6 +590,10 @@ Two system properties raise the precision, at the cost of bigger responses from 
 * `solr.facet.hll.log2m` (default `13`): the number of registers as a power of 2. Each step up divides the error by √2 and doubles the sketch (6KB at `13`, 48KB at `16`). All nodes of a cluster must use the same value.
 * `solr.facet.hll.expthresh` (default `-1`): up to 2^(expthresh - 1) values are counted exactly, at 8 bytes per value per shard. The maximum, `18`, counts up to 131,072 values exactly. `-1` counts exactly while that takes less room than the registers.
 
+Change `solr.facet.hll.log2m` with a full cluster restart, rather than a rolling restart.
+Distributed facet requests spanning shards with different register counts fail with an error instead of returning an invalid count.
+Changing only `solr.facet.hll.expthresh` does not require identical thresholds across shards.
+
 Numeric aggregation functions such as `avg` can be on any numeric field, or on a xref:function-queries.adoc[nested function] of multiple numeric fields such as `avg(div(popularity,price))`.
 
 The most common way of requesting an aggregation function is as a simple String containing the expression you wish to compute:
