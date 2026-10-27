@@ -44,10 +44,11 @@ function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, Rep
     ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
       $timeout(function() {
         if (error) {
-          // Most cores simply don't have a /replication handler configured, which is the
-          // everyday case here - keep the friendly inline message for that. Auth failures are
-          // the exception: they need the shared login-redirect/permission-banner handling, not
-          // a message implying replication itself is the problem.
+          // /replication is an implicit handler present on every core by default, so most cores
+          // actually succeed here - this branch is the less common "something genuinely went
+          // wrong" case. Auth failures are the exception within it: they need the shared
+          // login-redirect/permission-banner handling, not a message implying replication itself
+          // is unconfigured.
           if (response && (response.status === 401 || response.status === 403)) {
             $scope.replicationMessage = null;
             ApiErrorHandler.handle(response);
