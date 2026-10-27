@@ -1,0 +1,10 @@
+title: >
+  Add an example OpenTelemetry Collector configuration that re-exposes Solr's OTLP metric push in
+  Prometheus format, under the same metric names as `/solr/admin/metrics`.
+type: added
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18536
+    url: https://issues.apache.org/jira/browse/SOLR-18536

@@ -23,16 +23,17 @@ Dashboards and alert rules written against the old exporter therefore do not wor
 Solr's own dashboard and alert rules are consequently being built from scratch, panel by panel and rule by rule.
 
 What is in `solr/monitoring/` right now is a two-panel dashboard and a single alert, present to prove the generation pipeline works — not a monitoring setup to deploy.
-The dashboard worth deploying arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534], the alert rules in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535], and the OTLP Collector guidance in https://issues.apache.org/jira/browse/SOLR-18536[SOLR-18536].
+The dashboard worth deploying arrives in https://issues.apache.org/jira/browse/SOLR-18534[SOLR-18534] and the alert rules in https://issues.apache.org/jira/browse/SOLR-18535[SOLR-18535].
 Expect both files, and this page, to change substantially before they are useful.
 ====
 
-Solr ships two monitoring artifacts in `solr/monitoring/`:
+Solr ships three monitoring artifacts in `solr/monitoring/`:
 
 * `grafana-solr-dashboard.json` — a Grafana dashboard
 * `prometheus-solr-alerts.yml` — a set of Prometheus alert rules
+* `otel-collector-config.yaml` — an example OpenTelemetry Collector configuration, for the <<otlp-push,OTLP push>> option
 
-Import these into your own Prometheus + Grafana installation.
+Import the first two into your own Prometheus + Grafana installation.
 Solr exposes all metrics natively, so no exporter process is required.
 For the full list of available metrics see xref:metrics-reporting.adoc[].
 
@@ -79,9 +80,31 @@ If metrics collection is switched off for a node, both endpoints answer `HTTP 51
 [[otlp-push]]
 === Option 2: OTLP Push via OpenTelemetry Collector
 
-When Solr's xref:opentelemetry.adoc[OpenTelemetry module] is enabled, Solr can push metrics (and traces) via OTLP to an https://opentelemetry.io/docs/collector/[OpenTelemetry Collector], which can forward them to Prometheus or to any other OTLP-compatible backend.
+With the xref:opentelemetry.adoc[`opentelemetry` module] enabled and `solr.metrics.otlpExporterEnabled=true` on every node (see xref:metrics-reporting.adoc#otlp[OTLP]), each node pushes its metrics to an https://opentelemetry.io/docs/collector/[OpenTelemetry Collector], and Prometheus scrapes the Collector instead of the nodes.
+The Collector can forward the same stream to any other OTLP-compatible backend as well.
 
-NOTE: An example Collector configuration, and the labelling needed to make both paths produce identical series, will be documented here as part of https://issues.apache.org/jira/browse/SOLR-18536[SOLR-18536].
+Start from the example `solr/monitoring/otel-collector-config.yaml` (it needs the `otel/opentelemetry-collector-contrib` distribution, and is a starting point to adapt rather than a production configuration).
+It receives OTLP on `:4317` (gRPC) and `:4318` (HTTP), serves the result in Prometheus format on `:9464`, and forwards the raw stream to an https://aspire.dev/dashboard/[Aspire Dashboard], which you can remove.
+Its `transform` processor is what makes the names identical to Option 1: the Collector would otherwise append `_ratio` to dimensionless metrics such as `jvm_cpu_recent_utilization`, which Solr's own endpoint does not, and it supplies `service.name=solr` for Solr versions that send the SDK default, so the `job` label stays `solr`.
+
+Then scrape the Collector:
+
+[source,yaml]
+----
+scrape_configs:
+  - job_name: solr
+    honor_labels: true                      # <1>
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['otel-collector:9464']
+----
+<1> Keep the `job` and `instance` labels the Collector derives from Solr's `service.name` and `service.instance.id` resource attributes, rather than Prometheus overwriting them with the Collector's own address.
+
+The series Prometheus stores then carry the same metric names, types and label keys as a direct scrape.
+Two differences remain until https://issues.apache.org/jira/browse/SOLR-18594[SOLR-18594] makes Solr send `service.instance.id`: the `instance` label is the Collector's address rather than the node's, so per-node panels show one merged series, and no `target_info` series is produced.
+
+Alternatively the Collector can push into Prometheus instead of being scraped — with its `prometheusremotewrite` exporter against Prometheus started with `--web.enable-remote-write-receiver`, or its `otlphttp` exporter against `--web.enable-otlp-receiver`.
+The shipped configuration and the name parity above are only verified for the scrape setup; Prometheus's OTLP receiver applies its own name translation.
 
 [[alert-rules]]
 == Alert Rules
@@ -163,6 +186,8 @@ cd solr/monitoring/dev
 
 Grafana is then on `http://localhost:3000`, opening directly on the provisioned dashboard, with Prometheus on `:9090` and Alertmanager on `:9093`.
 `./stack.sh --local-solr` skips the bundled Solr nodes and scrapes a Solr you are already running.
+`./stack.sh --metrics-scrape=otel` makes Prometheus scrape the stack's OpenTelemetry Collector, which the Solr nodes push to, instead of the nodes — the two options above side by side.
+The Collector also forwards what the nodes push, metrics and traces, to an Aspire Dashboard on `:18888`, a convenient raw view of the OTLP data.
 
 [[distributed-tracing]]
 == Metrics and Tracing Together
