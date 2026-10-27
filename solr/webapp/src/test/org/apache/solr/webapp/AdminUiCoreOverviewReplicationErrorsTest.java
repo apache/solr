@@ -35,11 +35,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 
 /**
- * Covers the core overview page's two replication-fetch-failure paths in CoreOverviewController
- * ({@code core-overview.js}): a generic fetch failure keeps the friendly inline "not configured"
- * message (the pre-existing v1 behavior, preserved as-is), while a 401/403 instead routes through
- * the shared {@code ApiErrorHandler}, since that failure isn't actually about replication being
- * unconfigured.
+ * Covers {@code core-overview.js}'s two replication-fetch-failure paths: a generic failure shows
+ * the inline "not configured" message, while a 401/403 routes through {@code ApiErrorHandler}
+ * instead.
  */
 public class AdminUiCoreOverviewReplicationErrorsTest extends AdminUiStandaloneTestBase {
 
@@ -78,19 +76,15 @@ public class AdminUiCoreOverviewReplicationErrorsTest extends AdminUiStandaloneT
 
   @Test
   public void testReplicationForbiddenDoesNotShowConfigurationMessage() throws Exception {
-    // Asserting the global permission banner (#authz-failures) actually appears isn't reliable
-    // here: app.js's httpInterceptor unconditionally clears $rootScope.showAuthzFailures on every
-    // *successful* v1 $http call (see its `ended()` handler), and core-overview fires several of
-    // those (Luke, CoreInfo, Ping) concurrently with this replication call - whichever lands last
-    // wins, regardless of this 403. That race is pre-existing and out of scope here; what this
-    // test guards is that the misleading "Replication is not configured" message, which previously
-    // showed for every failure including this one, no longer does for an auth failure.
+    // Not asserting #authz-failures itself: app.js's httpInterceptor clears
+    // $rootScope.showAuthzFailures on every successful v1 call, and core-overview fires several
+    // of those (Luke, CoreInfo, Ping) alongside this one, so the banner isn't reliably still up
+    // by the time we'd check it. This test only guards the message text below.
     forcedReplicationStatus = HttpServletResponse.SC_FORBIDDEN;
     openPage(CORE + "/core-overview", By.id("dashboard"));
 
-    // replicationMessage is explicitly set (to the string, or to null for the auth-failure
-    // branch) as soon as the request settles, so polling for it being defined is a reliable
-    // "request has completed" signal distinct from "hasn't started yet".
+    // replicationMessage is always set once the request settles (to the message, or to null
+    // for an auth failure), so waiting for it to be defined signals the request is done.
     waitUntil(
         "the replication-details request should have completed", this::replicationRequestSettled);
     assertTrue(

@@ -17,11 +17,8 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
-// The generated v2 client defaults to caching GET responses (no cache-busting query param),
-// unlike the v1 $resource factories below which always append '_':Date.now(). Set this once, up
-// front, rather than inside any one *V2 factory below - solrApi.ApiClient.instance is a shared
-// singleton, so setting it from a single factory would make every other v2 call's caching
-// depend on which factory happened to be instantiated first.
+// The generated v2 client caches GET responses by default. Set this here, once, since
+// ApiClient.instance is shared across every *V2 factory below.
 solrApi.ApiClient.instance.cache = false;
 
 solrAdminServices.factory('Metrics',

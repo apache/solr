@@ -15,12 +15,9 @@
  limitations under the License.
 */
 
-// The v2 replication-details response uses real JSON booleans, but follower.leaderDetails is
-// populated from an internal NamedList round-trip to the leader's own v1 endpoint, so its nested
-// booleans are always the legacy stringified "true"/"false" regardless of which API version served
-// the outer response. Accept either form rather than tracking which fields come from which source.
-// TODO: once that internal leader fetch also goes through a typed v2 path (no more stringified
-// booleans anywhere in this response), drop this and compare against `true` directly.
+// follower.leaderDetails comes from an internal v1 call to the leader, so its booleans are
+// always the stringified "true"/"false" form, even though the rest of this response is v2.
+// TODO: drop this once that internal leader fetch is v2-native too.
 var isTruthy = function(value) {
     return value === true || value === 'true';
 };
@@ -44,11 +41,8 @@ function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, Rep
     ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
       $timeout(function() {
         if (error) {
-          // /replication is an implicit handler present on every core by default, so most cores
-          // actually succeed here - this branch is the less common "something genuinely went
-          // wrong" case. Auth failures are the exception within it: they need the shared
-          // login-redirect/permission-banner handling, not a message implying replication itself
-          // is unconfigured.
+          // An auth failure isn't about replication being unconfigured, so route it through the
+          // shared login-redirect/permission-banner handling instead of this message.
           if (response && (response.status === 401 || response.status === 403)) {
             $scope.replicationMessage = null;
             ApiErrorHandler.handle(response);
