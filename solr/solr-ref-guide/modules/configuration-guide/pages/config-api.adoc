@@ -74,7 +74,9 @@ V2 API::
 http://localhost:8983/api/collections/techproducts/config
 ----
 
-The response is the same merged configuration as the V1 API, with one difference: a plugin's unnamed child elements are grouped under a self-describing `children` key instead of an empty string, since Solr's V2 JSON serialization library does not allow empty-string keys:
+The response is the same merged configuration as the V1 API, with three differences.
+
+First, a plugin's unnamed child elements are grouped under a self-describing `children` key instead of an empty string, since Solr's V2 JSON serialization library does not allow empty-string keys:
 
 [source,json]
 ----
@@ -87,6 +89,10 @@ The response is the same merged configuration as the V1 API, with one difference
     ]
 }]
 ----
+
+Second, the `searchComponent` and `queryResponseWriter` sections are renamed to their pluralized forms, `searchComponents` and `queryResponseWriters`, as described below.
+
+Third, the `requestHandler` section is similarly renamed to `requestHandlers`, matching the dedicated `/config/requestHandlers` endpoint described below.
 ====
 ======
 
@@ -109,7 +115,7 @@ V2 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/api/collections/techproducts/config/requestHandler
+http://localhost:8983/api/collections/techproducts/config/requestHandlers
 ----
 ====
 ======
@@ -118,8 +124,12 @@ The output will be details of each request handler defined in `solrconfig.xml`, 
 To see the configuration for implicit request handlers, add `expandParams=true` to the request.
 See the documentation for implicit request handlers linked above for examples using this command.
 
-The available top-level sections that can be added as path parameters are: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
-In the V2 API, `searchComponent` and `queryResponseWriter` are exposed under the pluralized names `searchComponents` and `queryResponseWriters` instead.
+The available top-level sections that can be added as path parameters include: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
+(Other `solrconfig.xml` sections emitted by Solr may also be fetched the same way)
+
+In the V2 API, several multi-valued sections use pluralized path names (and the same plural as the response JSON key).
+
+V1 paths keep the singular / internal names unchanged.
 
 To further restrict the request to a single component within a top-level section, use the `componentName` request parameter.
 
@@ -140,12 +150,12 @@ V2 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/api/collections/techproducts/config/requestHandler?componentName=/select
+http://localhost:8983/api/collections/techproducts/config/requestHandlers?componentName=/select
 ----
 ====
 ======
 
-The output of this command will look similar to:
+The output of this command will look similar to(V1 nests under `requestHandler`; V2 under `requestHandlers`):
 
 [source,json]
 ----
@@ -160,9 +170,10 @@ The output of this command will look similar to:
 }
 ----
 
-The ability to restrict to objects within a top-level section is limited to request handlers (`requestHandler`), search components (`searchComponent`), and response writers (`queryResponseWriter`).
+By-name lookup applies to sections that are maps of named plugins, such as request handlers, search components, response writers etc.
+List-shaped sections like initParams, listeners, updateRequestProcessorChain etc cannot be filtered by name.
 
-For search components and response writers, the V2 API uses a path segment instead of the `componentName` request parameter, under the pluralized section names.
+For those name-keyed sections other than the request handler, the V2 API uses a path segment instead of the `componentName` request parameter, under the pluralized section names.
 For example, to return configuration for the `elevator` search component:
 
 [tabs#getnamedcomponent]
@@ -185,7 +196,7 @@ http://localhost:8983/api/collections/techproducts/config/searchComponents/eleva
 ====
 ======
 
-The same applies to response writers.
+The same pattern applies to other named-key sections.
 For example, to return configuration for the `xslt` response writer:
 
 [tabs#getnamedwriter]
@@ -196,6 +207,7 @@ V1 API::
 [source,bash]
 ----
 http://localhost:8983/solr/techproducts/config/queryResponseWriter?componentName=xslt
+http://localhost:8983/solr/techproducts/config/updateProcessor?componentName=uuid
 ----
 ====
 V2 API::
@@ -204,11 +216,12 @@ V2 API::
 [source,bash]
 ----
 http://localhost:8983/api/collections/techproducts/config/queryResponseWriters/xslt
+http://localhost:8983/api/collections/techproducts/config/updateProcessors/uuid
 ----
 ====
 ======
 
-Request handlers are unaffected and continue to use `componentName` in both APIs, as shown above.
+Request handlers are a special case and continue to use `componentName` in both APIs, as shown above.
 
 == Commands to Modify the Config
 
@@ -337,7 +350,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 
@@ -346,7 +359,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 ======
@@ -503,7 +516,7 @@ Make a call to the new request handler to check if it is registered:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/mypath?omitHeader=true'
 ----
 
 And you should see the following as output:
@@ -673,7 +686,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 
@@ -682,7 +695,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 ======

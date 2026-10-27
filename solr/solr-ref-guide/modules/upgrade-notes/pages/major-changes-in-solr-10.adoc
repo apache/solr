@@ -92,6 +92,18 @@ Streaming expressions and the cross-collection join query parser now restrict wh
 
 If you use these features to query another cluster, add its connection details to the corresponding setting before upgrading.
 
+[#cuvs-gpu-acceleration-broken]
+=== GPU Acceleration (cuVS) Does Not Work in Solr 10.1
+
+[WARNING]
+====
+Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (refer SOLR-18556 for updates).
+Solr 10.1 upgrades to Lucene 10.4, and a cuVS-lucene (library which powers the GPU accelertion) library version compatible with Lucene 10.4 is not available as of Solr 10.1 release.
+
+If you use GPU acceleration for vector indexing, skip Solr 10.1 and stay on Solr 10.0.x.
+This is expected to be fixed in a subsequent Solr 10.x release.
+====
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
@@ -224,6 +236,8 @@ Upgrades: This choice cannot be changed with a rolling upgrade; doing so is high
 All nodes in the cluster must always have a consistent understanding of the overseer's enablement.
 If using the cluster property toggle, use the xref:deployment-guide:zookeeper-utilities.adoc#set-a-cluster-property[bin/solr cluster] CLI utility to set it while the cluster is offline.
 If using the env var; ensure each Solr node is configured to start with the setting set consistently.
+
+NOTE: Without the Overseer, Solr keeps its Collection and ConfigSet API locks in ZooKeeper container znodes, so an external ZooKeeper ensemble must be version 3.5.1 or higher.
 
 When the Overseer is disabled, it is nonetheless still elected, which can be influenced by node roles.
 If you are using any xref:configuration-guide:cluster-singleton-plugins.adoc[cluster singleton plugins], they execute on the node elected to be the Overseer.
