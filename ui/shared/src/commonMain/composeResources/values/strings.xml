@@ -113,5 +113,21 @@
   <string name="state_disabled">Disabled</string>
   <string name="title_create_collection">Create Collection</string>
   <string name="label_shards">Shards</string>
-  <string name="action_create_collection">Create</string>
+  <string name="action_create_collection">Create Collection</string>
+  <string name="label_name">Name</string>
+  <string name="helper_collection_name">Letters, digits, _ and -</string>
+  <string name="label_size_and_redundancy">Size and Redundancy</string>
+  <string name="label_copies_of_each_shard">Copies of each shard</string>
+  <string name="label_nrt_replicas">NRT</string>
+  <string name="label_tlog_replicas">TLOG</string>
+  <string name="label_pull_replicas">PULL</string>
+  <string name="label_placement">Placement</string>
+  <string name="label_put_replicas_on">Put replicas on</string>
+  <string name="option_placement_any_node_spread_zones">Any node, spread across zones (recommended)</string>
+  <string name="label_advanced_options">Advanced: router, route field, properties, async</string>
+  <string name="label_route_field">Route field</string>
+  <string name="option_router_composite_id">Composite ID</string>
+  <string name="option_router_implicit">Implicit</string>
+  <string name="cd_decrease_shards">Decrease shards</string>
+  <string name="cd_increase_shards">Increase shards</string>
 </resources>

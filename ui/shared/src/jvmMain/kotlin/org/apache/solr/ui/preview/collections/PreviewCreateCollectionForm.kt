@@ -29,7 +29,7 @@ fun PreviewCreateCollectionForm() = PreviewContainer {
         configsets = listOf(Configset("techproducts"), Configset("films")),
         nameError = null,
         generalError = null,
-        onCreate = { _, _, _, _ -> },
+        onCreate = {},
         onCancel = {},
     )
 }

@@ -17,6 +17,7 @@
 package org.apache.solr.ui.views.collections
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -40,16 +41,37 @@ class CreateCollectionFormTest {
                 configsets = configsets,
                 nameError = null,
                 generalError = null,
-                onCreate = { _, _, _, _ -> },
+                onCreate = {},
                 onCancel = {},
             )
         }
 
         onNodeWithTag("create_collection_name_field").assertExists()
         onNodeWithTag("create_collection_shards_field").assertExists()
-        onNodeWithTag("create_collection_replicas_field").assertExists()
+        onNodeWithTag("create_collection_nrt_field").assertExists()
+        onNodeWithTag("create_collection_tlog_field").assertExists()
+        onNodeWithTag("create_collection_pull_field").assertExists()
+        onNodeWithTag("create_collection_placement_field").assertExists()
         onNodeWithTag("create_collection_button").assertExists()
         onNodeWithText("Cancel").assertExists()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testAdvancedOptionsAreHiddenUntilOpened() = runComposeUiTest {
+        setContent {
+            CreateCollectionForm(
+                configsets = configsets,
+                nameError = null,
+                generalError = null,
+                onCreate = {},
+                onCancel = {},
+            )
+        }
+
+        onNodeWithTag("create_collection_route_field").assertDoesNotExist()
+        onNodeWithTag("create_collection_advanced_toggle").performClick()
+        onNodeWithTag("create_collection_route_field").assertExists()
     }
 
     @OptIn(ExperimentalTestApi::class)
@@ -60,7 +82,7 @@ class CreateCollectionFormTest {
                 configsets = configsets,
                 nameError = "A collection with this name already exists",
                 generalError = null,
-                onCreate = { _, _, _, _ -> },
+                onCreate = {},
                 onCancel = {},
             )
         }
@@ -76,7 +98,7 @@ class CreateCollectionFormTest {
                 configsets = configsets,
                 nameError = null,
                 generalError = null,
-                onCreate = { _, _, _, _ -> },
+                onCreate = {},
                 onCancel = {},
             )
         }
@@ -86,16 +108,49 @@ class CreateCollectionFormTest {
 
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun testCreatePassesTheTypedValues() = runComposeUiTest {
-        val created = mutableListOf<List<Any>>()
+    fun testDefaultsAndShardStepperFeedCreate() = runComposeUiTest {
+        val created = mutableListOf<CreateCollectionInput>()
         setContent {
             CreateCollectionForm(
                 configsets = configsets,
                 nameError = null,
                 generalError = null,
-                onCreate = { name, configset, shards, replicas ->
-                    created.add(listOf(name, configset, shards, replicas))
-                },
+                onCreate = { created.add(it) },
+                onCancel = {},
+            )
+        }
+
+        onNodeWithTag("create_collection_name_field").performTextInput("films2")
+        onNodeWithTag("create_collection_shards_increase").performClick()
+        onNodeWithTag("create_collection_button").performClick()
+
+        assertEquals(
+            listOf(
+                CreateCollectionInput(
+                    name = "films2",
+                    configset = "techproducts",
+                    shards = 3,
+                    nrtReplicas = 2,
+                    tlogReplicas = 0,
+                    pullReplicas = 1,
+                    router = "compositeId",
+                    routeField = null,
+                )
+            ),
+            created,
+        )
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testCreatePassesTheTypedValuesAndAdvancedRouter() = runComposeUiTest {
+        val created = mutableListOf<CreateCollectionInput>()
+        setContent {
+            CreateCollectionForm(
+                configsets = configsets,
+                nameError = null,
+                generalError = null,
+                onCreate = { created.add(it) },
                 onCancel = {},
             )
         }
@@ -103,10 +158,76 @@ class CreateCollectionFormTest {
         onNodeWithTag("create_collection_name_field").performTextInput("films2")
         onNodeWithTag("create_collection_shards_field").performTextClearance()
         onNodeWithTag("create_collection_shards_field").performTextInput("2")
-        onNodeWithTag("create_collection_replicas_field").performTextClearance()
-        onNodeWithTag("create_collection_replicas_field").performTextInput("3")
+        onNodeWithTag("create_collection_nrt_field").performTextClearance()
+        onNodeWithTag("create_collection_nrt_field").performTextInput("3")
+        onNodeWithTag("create_collection_tlog_field").performTextClearance()
+        onNodeWithTag("create_collection_tlog_field").performTextInput("1")
+        onNodeWithTag("create_collection_pull_field").performTextClearance()
+        onNodeWithTag("create_collection_pull_field").performTextInput("0")
+        onNodeWithTag("create_collection_advanced_toggle").performClick()
+        onNodeWithText("Composite ID").performClick()
+        onNodeWithText("Implicit").performClick()
+        onNodeWithTag("create_collection_route_field").performTextInput("id")
         onNodeWithTag("create_collection_button").performClick()
 
-        assertEquals(listOf(listOf<Any>("films2", "techproducts", 2, 3)), created)
+        assertEquals(
+            listOf(
+                CreateCollectionInput(
+                    name = "films2",
+                    configset = "techproducts",
+                    shards = 2,
+                    nrtReplicas = 3,
+                    tlogReplicas = 1,
+                    pullReplicas = 0,
+                    router = "implicit",
+                    routeField = "id",
+                )
+            ),
+            created,
+        )
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testRejectsNamesTheServerRejects() = runComposeUiTest {
+        setContent {
+            CreateCollectionForm(
+                configsets = configsets,
+                nameError = null,
+                generalError = null,
+                onCreate = {},
+                onCancel = {},
+            )
+        }
+
+        onNodeWithTag("create_collection_name_field").performTextInput("bad name")
+        onNodeWithTag("create_collection_button").assertIsNotEnabled()
+        onNodeWithTag("create_collection_name_field").performTextClearance()
+        onNodeWithTag("create_collection_name_field").performTextInput("-films")
+        onNodeWithTag("create_collection_button").assertIsNotEnabled()
+        onNodeWithTag("create_collection_name_field").performTextClearance()
+        onNodeWithTag("create_collection_name_field").performTextInput("films.v2")
+        onNodeWithTag("create_collection_button").assertIsEnabled()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testRejectsPullOnlyCollection() = runComposeUiTest {
+        setContent {
+            CreateCollectionForm(
+                configsets = configsets,
+                nameError = null,
+                generalError = null,
+                onCreate = {},
+                onCancel = {},
+            )
+        }
+
+        onNodeWithTag("create_collection_name_field").performTextInput("films2")
+        onNodeWithTag("create_collection_nrt_field").performTextClearance()
+        onNodeWithTag("create_collection_nrt_field").performTextInput("0")
+        onNodeWithTag("create_collection_tlog_field").performTextClearance()
+        onNodeWithTag("create_collection_tlog_field").performTextInput("0")
+        onNodeWithTag("create_collection_button").assertIsNotEnabled()
     }
 }
