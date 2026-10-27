@@ -15,7 +15,11 @@
  * limitations under the License.
  */package org.apache.solr.ui.views.files
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -86,5 +90,39 @@ class FileTreeTest {
 
         onNodeWithText("README.md").performTouchInput { doubleClick() }
         assertEquals(listOf<FileTreeNode>(readme), doubleClicked)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testSingleClickSelectsItem() = runComposeUiTest {
+        setContent { FileTree(nodes, selectedPath = null, onItemClick = {}, onItemDoubleClick = {}) }
+
+        onNodeWithTag("item_README.md").assertIsNotSelected()
+        onNodeWithText("README.md").performClick()
+        waitUntil(timeoutMillis = 2_000) {
+            onNodeWithTag("item_README.md").fetchSemanticsNode().config[SemanticsProperties.Selected]
+        }
+        onNodeWithTag("item_conf").assertIsNotSelected()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testSelectedPathSelectsItemOnFirstComposition() = runComposeUiTest {
+        setContent { FileTree(nodes, selectedPath = "conf", onItemClick = {}, onItemDoubleClick = {}) }
+
+        onNodeWithTag("item_conf").assertIsSelected()
+        onNodeWithTag("item_README.md").assertIsNotSelected()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testChangedSelectedPathReplacesSelection() = runComposeUiTest {
+        val selectedPath = mutableStateOf<String?>("README.md")
+        setContent { FileTree(nodes, selectedPath = selectedPath.value, onItemClick = {}, onItemDoubleClick = {}) }
+
+        onNodeWithTag("item_README.md").assertIsSelected()
+        runOnIdle { selectedPath.value = "conf" }
+        onNodeWithTag("item_conf").assertIsSelected()
+        onNodeWithTag("item_README.md").assertIsNotSelected()
     }
 }

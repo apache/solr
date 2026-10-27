@@ -38,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.shared.generated.resources.Res
@@ -71,6 +73,7 @@ fun FileTree(
     modifier: Modifier = Modifier,
 ) {
     var expandedPaths by remember { mutableStateOf(emptySet<String>()) }
+    var selectedItemPath by remember(selectedPath) { mutableStateOf(selectedPath) }
     val rows = visibleRows(nodes, expandedPaths)
     val toggle: (String) -> Unit = { path ->
         expandedPaths = if (path in expandedPaths) expandedPaths - path else expandedPaths + path
@@ -79,10 +82,14 @@ fun FileTree(
         items(rows, key = { it.node.path }) { row ->
             FileTreeRow(
                 row = row,
-                selected = row.node.path == selectedPath,
+                isSelected = row.node.path == selectedItemPath,
                 onToggle = { toggle(row.node.path) },
-                onClick = { onItemClick(row.node) },
+                onClick = {
+                    selectedItemPath = row.node.path
+                    onItemClick(row.node)
+                },
                 onDoubleClick = {
+                    selectedItemPath = row.node.path
                     if (row.node is FileTreeFolder) toggle(row.node.path)
                     onItemDoubleClick(row.node)
                 },
@@ -115,7 +122,7 @@ private fun visibleRows(
 @Composable
 private fun FileTreeRow(
     row: VisibleRow,
-    selected: Boolean,
+    isSelected: Boolean,
     onToggle: () -> Unit,
     onClick: () -> Unit,
     onDoubleClick: () -> Unit,
@@ -124,9 +131,10 @@ private fun FileTreeRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick)
             .padding(start = 8.dp + 16.dp * row.depth, end = 8.dp, top = 4.dp, bottom = 4.dp)
+            .semantics { selected = isSelected }
             .testTag("item_${node.path}"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
