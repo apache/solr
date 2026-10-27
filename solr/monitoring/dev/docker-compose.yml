@@ -87,6 +87,9 @@ services:
     profiles: [bundled-solr]
     environment:
       <<: *solr-otlp-env
+      # Advertise the compose service name, so the identity Solr reports matches the name
+      # Prometheus scrapes it by and both collection routes produce the same instance label.
+      SOLR_HOST_ADVERTISE: solr1
     ports:
       - "127.0.0.1:8983:8983"
       - "127.0.0.1:9983:9983"   # embedded ZooKeeper (Solr 10 default: ZK_PORT = SOLR_PORT + 1000)
@@ -105,6 +108,7 @@ services:
       - "127.0.0.1:8984:8983"
     environment:
       <<: *solr-otlp-env
+      SOLR_HOST_ADVERTISE: solr2
       ZK_HOST: "solr1:9983"
     depends_on:
       solr1:
