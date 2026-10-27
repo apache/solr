@@ -58,7 +58,12 @@ val syncJSClientSourceCode = tasks.register<Sync>("syncJSClientSourceCode") {
 val jsClientDownloadDeps = tasks.register<NpmTask>("jsClientDownloadDeps") {
   dependsOn(syncJSClientSourceCode)
 
-  args.set(listOf("install"))
+  // The 'prepare' lifecycle script (npm run build, i.e. babel) needs the devDependencies
+  // (@babel/core, presets, plugins) to run. --include=dev installs them regardless of a
+  // NODE_ENV=production in the caller's environment, which would otherwise make npm skip them
+  // and break this build - this workspace is purely a build-time code generator, not a published
+  // package, so there's no "production" artifact here to keep lean by omitting dev tooling.
+  args.set(listOf("install", "--include=dev"))
   workingDir.set(jsClientWorkspace)
 
   inputs.dir("$jsClientWorkspace/src")
