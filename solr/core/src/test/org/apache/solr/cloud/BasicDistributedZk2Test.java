@@ -167,13 +167,18 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
           .getCuratorFramework()
           .getConnectionStateListenable()
           .addListener(expiryListener);
-      chaosMonkey.expireSession(cloudJetty.jetty);
-      assertTrue("session did not expire", sessionExpired.await(30, TimeUnit.SECONDS));
-      expiredZkClient.getCuratorFramework().blockUntilConnected(30, TimeUnit.SECONDS);
-      expiredZkClient
-          .getCuratorFramework()
-          .getConnectionStateListenable()
-          .removeListener(expiryListener);
+      try {
+        chaosMonkey.expireSession(cloudJetty.jetty);
+        assertTrue("session did not expire", sessionExpired.await(30, TimeUnit.SECONDS));
+        assertTrue(
+            "client did not reconnect after session expiry",
+            expiredZkClient.getCuratorFramework().blockUntilConnected(30, TimeUnit.SECONDS));
+      } finally {
+        expiredZkClient
+            .getCuratorFramework()
+            .getConnectionStateListenable()
+            .removeListener(expiryListener);
+      }
 
       indexr("id", docId + 1, t1, "slip this doc in");
 
