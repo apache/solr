@@ -214,7 +214,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
   }
 
-  /** internal use only */
+  /**
+   * FOR INTERNAL USE: The underlying Jetty HttpClient. Warning: a request created directly from it
+   * doesn't have some settings applied that {@link #decorateRequest(Request, SolrRequest, boolean)}
+   * will do. Call {@link #applyListeners} to apply the listeners.
+   */
   public HttpClient getHttpClient() {
     return httpClient;
   }
@@ -640,6 +644,19 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
   }
 
+  /**
+   * FOR INTERNAL USE: Applies this client's request listeners (e.g. internode authentication and
+   * tracing) to a request created directly from {@link #getHttpClient()}.
+   */
+  public void applyListeners(Request req) {
+    for (HttpListenerFactory factory : listenerFactory) {
+      HttpListenerFactory.RequestResponseListener listener = factory.get();
+      listener.onQueued(req);
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
+    }
+  }
+
   protected void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
     req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
     Map<String, String> customHeaders = solrRequest.getHeaders();
@@ -662,12 +679,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
     }
 
     setBasicAuthHeader(solrRequest, req);
-    for (HttpListenerFactory factory : listenerFactory) {
-      HttpListenerFactory.RequestResponseListener listener = factory.get();
-      listener.onQueued(req);
-      req.onRequestBegin(listener);
-      req.onComplete(listener);
-    }
+    applyListeners(req);
 
     AsyncTracker asyncTracker = isAsync ? this.asyncTracker : null;
     AbortTracker abortTracker = this.abortTracker;
