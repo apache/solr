@@ -5,6 +5,8 @@ title: >
 type: fixed
 authors:
   - name: Amrit Sarkar
+  - name: Nick Shanin
+    nick: nick-boss-tech
 links:
   - name: SOLR-18579
     url: https://issues.apache.org/jira/browse/SOLR-18579
