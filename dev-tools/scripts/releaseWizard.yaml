@@ -778,7 +778,7 @@ groups:
         cmd: git diff --stat changelog CHANGELOG.md
         stdout: true
       - !Command
-        cmd: "{{ gradle_cmd }} :solr:documentation:changesToHtml"
+        cmd: python3 -u dev-tools/scripts/changes2html.py CHANGELOG.md --output-dir solr/documentation/build/site/changes
         logfile: changes-to-html.log
         tee: true
       - !Command
