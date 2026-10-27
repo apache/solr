@@ -129,20 +129,7 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
 
     final DeleteClusterCommandStatusResponse response =
         instantiateJerseyResponse(DeleteClusterCommandStatusResponse.class);
-    final ZkController zkController = coreContainer.getZkController();
-
-    if (zkController.getDistributedCommandRunner().isEmpty()) {
-      if (zkController.getOverseerCompletedMap().remove(requestId)) {
-        zkController.clearAsyncId(requestId);
-        response.status = "successfully removed stored response for [" + requestId + "]";
-      } else if (zkController.getOverseerFailureMap().remove(requestId)) {
-        zkController.clearAsyncId(requestId);
-        response.status = "successfully removed stored response for [" + requestId + "]";
-      } else {
-        // Don't call zkController.clearAsyncId for this, since it could be a running/pending task
-        response.status = "[" + requestId + "] not found in stored responses";
-      }
-    } else if (zkController.getDistributedCommandRunner().get().deleteSingleAsyncId(requestId)) {
+    if (coreContainer.getZkController().removeStoredAsyncResponse(requestId)) {
       response.status = "successfully removed stored response for [" + requestId + "]";
     } else {
       response.status = "[" + requestId + "] not found in stored responses";
@@ -268,11 +255,31 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
       return;
     }
     final Object statusVal = values.getVal(idx);
+    final String stateKey;
+    final String msgKey;
     if (statusVal instanceof CommandStatus commandStatus) {
-      final SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
-      status.add("state", commandStatus.state.getKey());
-      status.add("msg", commandStatus.msg);
-      values.setVal(idx, status);
+      stateKey = commandStatus.state == null ? null : commandStatus.state.getKey();
+      msgKey = commandStatus.msg;
+    } else if (statusVal instanceof NamedList<?> namedList) {
+      stateKey = requestStateWireKey(namedList.get("state"));
+      msgKey = namedList.get("msg") == null ? null : namedList.get("msg").toString();
+    } else {
+      return;
     }
+
+    final SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
+    status.add("state", stateKey);
+    status.add("msg", msgKey);
+    values.setVal(idx, status);
+  }
+
+  private static String requestStateWireKey(Object state) {
+    if (state == null) {
+      return null;
+    }
+    if (state instanceof CommandStatus.RequestState requestState) {
+      return requestState.getKey();
+    }
+    return CommandStatus.RequestState.fromKey(state.toString()).getKey();
   }
 }
