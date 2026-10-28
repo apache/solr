@@ -3,10 +3,12 @@ title:
   The generated JS client's build (solr/webapp/js-client) now installs with --include=dev, so it no
   longer fails when the builder's environment has NODE_ENV=production set - npm would otherwise
   skip the devDependencies (Babel and its plugins) that the build's own "prepare" script needs.
-type: fixed
+type: other
 authors:
   - name: Eric Pugh
     nick: epugh
+  - name: Nick Shanin
+    nick: nick-boss-tech
 links:
   - name: SOLR-18593
     url: https://issues.apache.org/jira/browse/SOLR-18593
