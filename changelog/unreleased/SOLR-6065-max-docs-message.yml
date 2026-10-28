@@ -1,0 +1,8 @@
+title: >
+  Adding a document to an index that has reached Lucene's maximum document count now fails with a clear message instead of being reported as a possible analysis error.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-6065
+    url: https://issues.apache.org/jira/browse/SOLR-6065
