@@ -68,9 +68,56 @@ public class TestSolrVersion extends SolrTestCase {
     assertFalse(snapshot.satisfies("<10.1"));
   }
 
+  public void testPrereleaseRangeBoundaries() {
+    SolrVersion release = SolrVersion.valueOf("10.1.0");
+    for (String versionString : new String[] {"10.1.0-SNAPSHOT", "10.1.0-rc.1+b123"}) {
+      SolrVersion version = SolrVersion.valueOf(versionString);
+      assertTrue(versionString, version.satisfies(">=10.1.0"));
+      assertTrue(versionString, version.satisfies("<=10.1.0"));
+      assertTrue(versionString, version.satisfies("10.1.0"));
+      assertFalse(versionString, version.satisfies("<10.1.0"));
+      assertFalse(versionString, version.satisfies(">10.1.0"));
+      assertTrue(versionString, version.compareTo(release) < 0);
+      assertNotEquals(release, version);
+    }
+  }
+
   public void testWithoutPrerelease() {
     SolrVersion snapshot = SolrVersion.valueOf("10.1.0-SNAPSHOT");
     assertTrue(snapshot.lessThan(SolrVersion.valueOf("10.1.0")));
     assertEquals(SolrVersion.valueOf("10.1.0"), snapshot.withoutPrerelease());
+  }
+
+  public void testWithoutPrereleasePreservesBuildMetadata() {
+    SolrVersion prerelease = SolrVersion.valueOf("10.1.0-rc.1+build.123");
+    SolrVersion normalized = prerelease.withoutPrerelease();
+    assertEquals("10.1.0+build.123", normalized.toString());
+    assertEquals("10.1.0-rc.1+build.123", prerelease.toString());
+    assertTrue(prerelease.lessThan(normalized));
+  }
+
+  public void testWithoutPrereleaseOnRelease() {
+    for (String versionString : new String[] {"10.1.2", "10.1.2+build.123"}) {
+      SolrVersion release = SolrVersion.valueOf(versionString);
+      SolrVersion normalized = release.withoutPrerelease();
+      assertEquals(versionString, normalized.toString());
+      assertEquals(versionString, normalized.withoutPrerelease().toString());
+    }
+  }
+
+  public void testWithoutPrereleaseOrdering() {
+    SolrVersion normalized = SolrVersion.valueOf("10.1.0-SNAPSHOT").withoutPrerelease();
+    for (String versionString :
+        new String[] {"10.1.0", "10.1.0-alpha.1", "10.1.0-rc.1+b123"}) {
+      SolrVersion sameRelease = SolrVersion.valueOf(versionString).withoutPrerelease();
+      assertFalse(versionString, normalized.lessThan(sameRelease));
+      assertFalse(versionString, sameRelease.lessThan(normalized));
+    }
+    for (String versionString :
+        new String[] {"10.1.1-SNAPSHOT", "10.2.0-SNAPSHOT", "11.0.0-SNAPSHOT"}) {
+      SolrVersion higherRelease = SolrVersion.valueOf(versionString).withoutPrerelease();
+      assertTrue(versionString, normalized.lessThan(higherRelease));
+      assertFalse(versionString, higherRelease.lessThan(normalized));
+    }
   }
 }
