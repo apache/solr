@@ -1,0 +1,85 @@
+= Wasm Browser Tests and Screenshots
+
+The wasm browser tests run Compose UI in headless Chrome through Karma. They behave differently
+from the JVM tests in one important way, so read this before writing a test that checks rendered
+text or icons, or before capturing screenshots for a pull request.
+
+== Resources Load Asynchronously
+
+On wasm, Compose string and drawable resources are fetched over HTTP from `composeResources/`
+after the page starts. The test clock does not wait for those requests. A composable that reads
+`stringResource` or `painterResource` first renders an empty string or an empty painter, and then
+recomposes once the resource arrives. The JVM tests read resources synchronously, so this only
+shows up in browser tests.
+
+=== What the Repository Does
+
+`ui/shared/karma.config.d/compose-resources.js` makes Karma serve the main resource output under
+`/composeResources/`. Without it, resource requests fail and tests cannot find any text from the
+resource files. Do not remove it. It was added in https://github.com/apache/solr/pull/5258[PR 5258].
+
+=== What Tests Should Do
+
+* Before `setContent`, load each string the test asserts on with `getString(Res.string.<key>)`,
+  so the resource file is in memory before the first composition.
+* Call `awaitIdle()` after `setContent` and after any click that changes the UI.
+* Assert on test tags where the text or icon is not the point of the test.
+
+Preloading drawables with `getDrawableResourceBytes` did not make icons render in our captures on
+its own. Waiting about one second of real time before capturing did. There is no reliable wait for
+resources yet, so do not assume that an icon image is present in a test without checking it.
+
+=== Timeouts
+
+Each Karma test runs under a 2000 ms Mocha timeout. The first test in a run is the slowest, because
+the Skiko runtime and the resources start cold. Keep test bodies short. A test that waits for real
+time can exceed the limit on its own.
+
+== Running
+
+[source,bash]
+----
+./gradlew -p ui :shared:wasmJsBrowserTest --tests "org.apache.solr.ui.views.collections.CreateCollectionFormTest"
+----
+
+Chrome is found through `CHROME_BIN`. Hosts with a software GL stack may also need
+`LD_LIBRARY_PATH` to point at it. The browser tests are not part of the default pipeline (see
+xref:testing-and-deployment.adoc[]), so run them locally when a change touches the UI.
+
+== Known Intermittent Failure
+
+Occasionally a run fails before any test body starts, with
+`org_jetbrains_skia_Surface__1nMakeRasterN32Premul is not a function`. This is the Skiko wasm
+runtime not being ready. It has been seen in several runs, usually the first run after a compile,
+and an immediate rerun with the same code passed. Rerun once. If it persists, treat it as a real
+failure.
+
+== Screenshots for Pull Requests
+
+Screenshots are captured with a temporary test that renders the production composable and then
+captures the root of the test surface. The temporary test is not committed. When you capture
+screenshots this way:
+
+* Use headless Chrome, and state the browser version in the pull request.
+* Use a fixed surface size, and state it in the pull request.
+* Force the light theme with `SolrTheme(useDarkTheme = false)`, so the result does not depend on
+  the headless system setting.
+* Draw the composable on an opaque background. The capture reads pixels without alpha, so
+  transparent areas come out black.
+* Wait for resources as described above.
+* Expect test output to be cut off at about 1 MB per test. A full-size frame does not fit as raw
+  base64. Encode it compactly, and keep one frame per test.
+
+== Pull Request Notes
+
+Add a `Test notes` section to a pull request body only when the tests or screenshots depend on a
+workaround that a reviewer would find surprising. Use this template:
+
+----
+## Test notes
+
+- What: the workaround, for example preloading strings before `setContent`.
+- Why: Compose wasm resources load asynchronously. See `dev-docs/ui/wasm-browser-tests.adoc`.
+- Where: the files that contain it.
+- Screenshots: headless Chrome <version>, <width>x<height>, light theme. The capture test is not committed.
+----

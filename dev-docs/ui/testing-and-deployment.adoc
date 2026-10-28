@@ -49,7 +49,8 @@ Build times may be a bit longer than with the standalone JVM build.
 
 The integration tests of the module focus on testing the implementation found in
 `org.apache.solr.ui.views`. That includes all UI elements / composables. Integration tests
-may test entire flows as well, but require a suitable testing environment.
+may test entire flows as well, but require a suitable testing environment. Browser tests on wasm
+have extra requirements for resources and screenshots, see xref:wasm-browser-tests.adoc[].
 
 Since UI tests require a more complex and platform-specific testing environment, they are disabled
 by default in the automation pipelines, and only unit tests are executed. Once we have meaningful
