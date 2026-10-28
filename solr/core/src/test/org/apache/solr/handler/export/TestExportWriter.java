@@ -1308,6 +1308,96 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         jq.contains("\"sortabledv\""));
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testDocTransformers() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(adoc("id", "1", "intdv", "10", "intdv_m", "1", "intdv_m", "2"));
+    assertU(adoc("id", "2", "intdv", "20"));
+    assertU(commit());
+    assertU(adoc("id", "3", "intdv", "30"));
+    assertU(commit());
+
+    Map<String, Object> selectDocIds = new HashMap<>();
+    String selectRsp = h.query(req("q", "*:*", "fl", "id,[docid]", "wt", "json"));
+    for (Map<String, Object> doc :
+        (List<Map<String, Object>>)
+            Utils.getObjectByPath(
+                mapper.readValue(selectRsp, Map.class), false, "/response/docs")) {
+      selectDocIds.put((String) doc.get("id"), doc.get("[docid]"));
+    }
+    assertEquals(3, selectDocIds.size());
+
+    // [docid] matches /select's, and fields are materialized (incl. multiValued)
+    List<Map<String, Object>> docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath("/export", "q", "*:*", "fl", "id,intdv_m,[docid]", "sort", "id asc"));
+    assertEquals(3, docs.size());
+    for (Map<String, Object> doc : docs) {
+      assertEquals(doc.toString(), selectDocIds.get(doc.get("id")), doc.get("[docid]"));
+    }
+    assertEquals(List.of(1, 2), docs.get(0).get("intdv_m"));
+
+    // alias renames; transformer local params may contain commas
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export", "q", "*:*", "fl", "id,x:intdv,v:[value v='a,b']", "sort", "id asc"));
+    assertEquals(3, docs.size());
+    assertEquals(Map.of("id", "1", "x", 10, "v", "a,b"), docs.get(0));
+
+    // a pseudo-field named like a non-exportable field doesn't fetch that field
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export", "q", "*:*", "fl", "id,str_s_stored:[value v=a]", "sort", "id asc"));
+    assertEquals(3, docs.size());
+    assertEquals(Map.of("id", "1", "str_s_stored", "a"), docs.get(0));
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export",
+                    "q",
+                    "*:*",
+                    "fl",
+                    "id,*_stored,str_s_stored:[value v=a]",
+                    "sort",
+                    "id asc"));
+    assertEquals(Map.of("id", "1", "str_s_stored", "a"), docs.get(0));
+
+    // transformed fields are visible to streaming expressions
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath(
+                    "/export",
+                    "q",
+                    "*:*",
+                    "fl",
+                    "id,[docid]",
+                    "sort",
+                    "id asc",
+                    "expr",
+                    "top(n=2,input(),sort=\"id desc\")"));
+    assertEquals(2, docs.size());
+    assertEquals("3", docs.get(0).get("id"));
+    assertEquals(selectDocIds.get("3"), docs.get(0).get("[docid]"));
+
+    // score is still rejected
+    docs =
+        (List<Map<String, Object>>)
+            queryJsonReturnDocs(
+                reqWithPath("/export", "q", "*:*", "fl", "id,score", "sort", "id asc"));
+    assertEquals(1, docs.size());
+    assertTrue(
+        docs.get(0).toString(),
+        docs.get(0).get(StreamParams.EXCEPTION).toString().contains("Scoring"));
+  }
+
   @SuppressWarnings("rawtypes")
   private void validateSort(int numDocs) throws Exception {
     // 10 fields
@@ -1517,6 +1607,12 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         "Expected error message to contain hint about includeStoredFields",
         resp.contains("includeStoredFields=true"));
     assertTrue("Expected error message to mention the field", resp.contains("str_s_stored"));
+
+    // ... even alongside a glob
+    resp =
+        h.query(
+            reqWithPath("/export", "q", "*:*", "fl", "id,int*,str_s_stored", "sort", "intdv asc"));
+    assertTrue(resp, resp.contains("includeStoredFields=true"));
   }
 
   @Test
@@ -1753,5 +1849,48 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertTrue(
         "Error message should mention DocValues requirement",
         ex.getMessage().contains("DocValues"));
+  }
+
+  /**
+   * SOLR-13217: collapse only replays group heads, so trailing leaves with no heads leave a null
+   * export bitset. {@code /export} must skip those leaves instead of NPEing in {@code
+   * BitSetIterator}.
+   */
+  @Test
+  public void testCollapseWithTrailingEmptyLeaf() throws Exception {
+    assertU(adoc("id", "1", "group_s_dv", "A", "intdv", "10"));
+    assertU(commit());
+    assertU(adoc("id", "2", "group_s_dv", "A", "intdv", "1"));
+    assertU(commit());
+
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "fq",
+            "{!collapse field=group_s_dv sort='intdv desc'}",
+            "fl",
+            "id",
+            "sort",
+            "id asc"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='1'");
+
+    String resp =
+        h.query(
+            req(
+                "q",
+                "*:*",
+                "qt",
+                "/export",
+                "fq",
+                "{!collapse field=group_s_dv sort='intdv desc'}",
+                "fl",
+                "id,group_s_dv,intdv",
+                "sort",
+                "id asc"));
+    assertJsonEquals(
+        resp,
+        "{\"responseHeader\":{\"status\":0},\"response\":{\"numFound\":1,\"docs\":[{\"id\":\"1\",\"group_s_dv\":\"A\",\"intdv\":10}]}}");
   }
 }

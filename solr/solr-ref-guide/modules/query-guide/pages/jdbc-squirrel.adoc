@@ -43,7 +43,7 @@ image::jdbc-squirrel/squirrelsql_solrjdbc_2.png[image,width=892,height=400]
 
 === Name the Driver
 
-Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`.
+Provide a name for the driver, and provide the URL format: `jdbc:solr://\{zkConnectionString}/?collection=\{collectionName}`.
 Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be defined later when the connection to Solr is configured.
 
 image::jdbc-squirrel/squirrelsql_solrjdbc_3.png[image,width=467,height=400]

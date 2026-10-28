@@ -31,8 +31,22 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  *
  * <p>Used to send an arbitrary HTTP request to a Solr API endpoint.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "api",
+    description = "Used to send an arbitrary HTTP GET request to a Solr API endpoint.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Send a GET request to a Solr API endpoint",
+      "  bin/solr api -s http://localhost:8983/api/collections"
+    })
 public class ApiTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SOLR_URL_OPTION =
       Option.builder("s")
           .longOpt("solr-url")
@@ -44,6 +58,22 @@ public class ApiTool extends ToolBase {
 
   /** Parameters for the api command, independent of the command line parser. */
   record ApiParams(String getUrl, String credentials) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = {"-s", "--solr-url"},
+      required = true,
+      paramLabel = "URL",
+      description =
+          "Full URL of the Solr API endpoint to GET, e.g. http://localhost:8983/api/collections")
+  private String solrUrlOpt;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  public ApiTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ApiTool(ToolRuntime runtime) {
     super(runtime);
@@ -120,5 +150,12 @@ public class ApiTool extends ToolBase {
       paramsMap.add(paramSplit[0], paramSplit[1]);
     }
     return paramsMap;
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    ApiParams params = new ApiParams(solrUrlOpt, credentialsOptions.credentials);
+    callApi(params);
+    return 0;
   }
 }

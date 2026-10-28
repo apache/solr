@@ -53,7 +53,7 @@ It is designed to be cheap enough to poll frequently from a load balancer or an 
 ====
 None of these checks touch the index.
 A node with a collection that has zero documents, or a collection whose query results are wrong, will still report a healthy `200 OK` here.
-If you need to confirm a collection actually has data, see <<Collection Data Healthcheck>> below.
+If you need to confirm a collection actually has data, see <<Collection Healthcheck>> below.
 ====
 
 What the endpoint checks -- and how it fails -- depends on whether the node is running in SolrCloud mode or user-managed (leader-follower) mode.
@@ -68,7 +68,7 @@ In SolrCloud mode, the endpoint returns HTTP `200 OK` only if all of the followi
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health"
+curl 'http://localhost:8983/api/node/health'
 ----
 
 Healthy node:
@@ -99,7 +99,7 @@ This is useful as a readiness probe during a rolling restart, so an orchestrator
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health?requireHealthyCores=true"
+curl 'http://localhost:8983/api/node/health?requireHealthyCores=true'
 ----
 
 === User-Managed (Leader-Follower) Mode
@@ -109,7 +109,7 @@ Set `maxGenerationLag=<n>` to fail the healthcheck once a follower falls more th
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health?maxGenerationLag=100"
+curl 'http://localhost:8983/api/node/health?maxGenerationLag=100'
 ----
 
 Healthy node (all followers within the allowed lag):

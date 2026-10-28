@@ -48,7 +48,7 @@ Retrieve core information from a node in cloud mode.
 
 [source.bash]
 ----
-curl http://localhost:8983/solr/techproducts/admin/info
+curl 'http://localhost:8983/solr/techproducts/admin/info'
 ----
 
 [source.json]
@@ -77,7 +77,7 @@ Retrieve system information from a core, without cloud mode.
 
 [source.bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/admin/system
+curl 'http://localhost:8983/solr/gettingstarted/admin/system'
 ----
 
 [source.json]

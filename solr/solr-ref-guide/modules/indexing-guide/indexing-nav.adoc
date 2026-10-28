@@ -53,7 +53,7 @@
 ** xref:indexing-with-cbor.adoc[]
 ** xref:indexing-with-tika.adoc[]
 ** xref:indexing-nested-documents.adoc[]
-** xref:post-tool.adoc[]
+** xref:post-command.adoc[]
 ** xref:documents-screen.adoc[]
 ** xref:partial-document-updates.adoc[]
 ** xref:reindexing.adoc[]

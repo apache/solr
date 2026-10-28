@@ -209,7 +209,7 @@ For example, in order to choose the "dedupe" chain described in a previous secti
 .Using update.chain
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update/json?update.chain=dedupe&commit=true" -H 'Content-type: application/json' -d '
+curl 'http://localhost:8983/solr/gettingstarted/update/json?update.chain=dedupe&commit=true' -H 'Content-type: application/json' -d '
 [
   {
     "name" : "The Lightning Thief",
@@ -237,7 +237,7 @@ For example:
 [source,bash]
 ----
 
-curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks,signature&commit=true" -H 'Content-type: application/json' -d '
+curl 'http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks,signature&commit=true' -H 'Content-type: application/json' -d '
 [
   {
     "name" : "The Lightning Thief",
@@ -256,7 +256,7 @@ curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_bla
 .Executing processors configured in solrconfig.xml as pre- and post-processors
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks&post-processor=signature&commit=true" -H 'Content-type: application/json' -d '
+curl 'http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks&post-processor=signature&commit=true' -H 'Content-type: application/json' -d '
 [
   {
     "name" : "The Lightning Thief",
