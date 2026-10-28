@@ -324,6 +324,29 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testRequestDropBufferedUpdatesUnexpectedFailuresResultIn500Exception() {
+    final Throwable cause = new NullPointerException();
+    whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
+
+    Exception ex =
+        expectThrows(
+            Exception.class,
+            () -> CoreAdminOperation.REQUESTDROPBUFFEREDUPDATES_OP.execute(callInfo));
+    assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
+  }
+
+  @Test
+  public void testRequestDropBufferedUpdatesMissingCoreParamResultsIn400SolrException() {
+    whenCoreAdminOpHasParams(new HashMap<>());
+
+    Exception ex =
+        expectThrows(
+            Exception.class,
+            () -> CoreAdminOperation.REQUESTDROPBUFFEREDUPDATES_OP.execute(callInfo));
+    assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
+  }
+
+  @Test
   public void testOverseerOpUnexpectedFailuresResultIn500Exception() {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);

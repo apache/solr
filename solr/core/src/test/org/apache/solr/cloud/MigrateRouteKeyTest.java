@@ -27,12 +27,15 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -147,6 +150,79 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
         sourceCollection,
         c -> {
           if (c == null) return false;
+          Map<String, RoutingRule> routingRules = c.getSlice("shard1").getRoutingRules();
+          return routingRules == null || !routingRules.containsKey("a!");
+        });
+  }
+
+  @Test
+  public void testRetryAfterFailedMigrate() throws Exception {
+    String sourceCollection = "failedMigrate-source";
+    CollectionAdminRequest.createCollection(sourceCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    String targetCollection = "failedMigrate-target";
+    CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    cluster.getSolrClient().add(sourceCollection, new SolrInputDocument("id", "a!1"));
+    cluster.getSolrClient().add(sourceCollection, new SolrInputDocument("id", "a!2"));
+    cluster.getSolrClient().add(sourceCollection, new SolrInputDocument("id", "b!3"));
+    cluster.getSolrClient().commit(sourceCollection);
+
+    // MIGRATE deletes a leftover temporary collection before it starts, but can't delete one that
+    // an alias refers to. Creating the temporary collection then fails, after the target leader
+    // has started buffering updates.
+    String tempCollection = "split_shard1_temp_shard1";
+    CollectionAdminRequest.createCollection(tempCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias("failedMigrate-blocker", tempCollection)
+        .process(cluster.getSolrClient());
+    RemoteSolrException e =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "a!")
+                    .setForwardTimeout(45)
+                    .process(cluster.getSolrClient()));
+    assertTrue(e.getMessage(), e.getMessage().contains("collection already exists"));
+    assertFailedMigrateUndone(sourceCollection, targetCollection);
+
+    assertEquals(
+        RequestStatusState.FAILED,
+        CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "a!")
+            .setForwardTimeout(45)
+            .processAndWait(cluster.getSolrClient(), 60));
+    assertFailedMigrateUndone(sourceCollection, targetCollection);
+
+    CollectionAdminRequest.deleteAlias("failedMigrate-blocker").process(cluster.getSolrClient());
+    CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "a!")
+        .setForwardTimeout(45)
+        .process(cluster.getSolrClient());
+    cluster.getSolrClient().commit(targetCollection);
+    assertEquals(
+        2,
+        cluster
+            .getSolrClient()
+            .query(targetCollection, new SolrQuery("*:*"))
+            .getResults()
+            .getNumFound());
+  }
+
+  /** Checks that the target leader isn't buffering updates and the routing rule is gone. */
+  private void assertFailedMigrateUndone(String sourceCollection, String targetCollection)
+      throws Exception {
+    Replica targetLeader = getCollectionState(targetCollection).getLeader("shard1");
+    try (SolrCore core =
+        cluster
+            .getReplicaJetty(targetLeader)
+            .getCoreContainer()
+            .getCore(targetLeader.getCoreName())) {
+      assertEquals(UpdateLog.State.ACTIVE, core.getUpdateHandler().getUpdateLog().getState());
+    }
+    waitForState(
+        "Expected the routing rule of the failed MIGRATE to be removed",
+        sourceCollection,
+        c -> {
           Map<String, RoutingRule> routingRules = c.getSlice("shard1").getRoutingRules();
           return routingRules == null || !routingRules.containsKey("a!");
         });
