@@ -1,0 +1,8 @@
+title: >
+  Requests cut short by a query limit no longer add a second, empty debug section to the response when a component already added one.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-8020
+    url: https://issues.apache.org/jira/browse/SOLR-8020
