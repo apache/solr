@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Response for the package listing API. */
-public class PackagesResponse extends SolrJerseyResponse {
+public class ListPackagesResponse extends SolrJerseyResponse {
 
   @JsonProperty("result")
   @Schema(description = "The package data including znode version and package definitions.")

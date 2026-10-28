@@ -27,12 +27,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.PackageApis;
 import org.apache.solr.client.api.model.AddPackageVersionRequestBody;
-import org.apache.solr.client.api.model.PackagesResponse;
+import org.apache.solr.client.api.model.GetPackageResponse;
+import org.apache.solr.client.api.model.ListPackagesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.common.SolrException;
@@ -64,34 +67,38 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
 
   @Override
   @PermissionName(PACKAGE_READ_PERM)
-  public PackagesResponse listPackages(Integer expectedVersion) {
+  public ListPackagesResponse listPackages(Integer expectedVersion) {
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
     if (expectedVersion != null) {
       syncToVersion(packageStore, expectedVersion);
     }
 
-    final var response = new PackagesResponse();
+    final var response = new ListPackagesResponse();
     response.result = toPackageData(packageStore.pkgs);
     return response;
   }
 
   @Override
   @PermissionName(PACKAGE_READ_PERM)
-  public PackagesResponse getPackage(String packageName, Integer expectedVersion) {
+  public GetPackageResponse getPackage(String packageName, Integer expectedVersion) {
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
     if (expectedVersion != null) {
       syncToVersion(packageStore, expectedVersion);
     }
 
-    final var response = new PackagesResponse();
-    response.result = toPackageData(packageStore.pkgs);
-    // Filter to only the requested package; if absent, return an empty packages map.
-    if (response.result != null && response.result.packages != null) {
-      final var pkgVersions = response.result.packages.get(packageName);
-      response.result.packages = pkgVersions == null ? Map.of() : Map.of(packageName, pkgVersions);
+    final List<PackageStore.PkgVersion> pkgVersions = packageStore.pkgs.packages.get(packageName);
+    if (pkgVersions == null || pkgVersions.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
     }
+
+    final var response = new GetPackageResponse();
+    response.result = new GetPackageResponse.PackageInfo();
+    response.result.znodeVersion = packageStore.pkgs.znodeVersion;
+    response.result.name = packageName;
+    response.result.versions =
+        pkgVersions.stream().map(ClusterPackage::toPkgVersionResponse).collect(Collectors.toList());
     return response;
   }
 
@@ -235,20 +242,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
 
     final var request = new PackageApi.RefreshPackage(packageName);
     request.setLocalOnly(true);
-
-    for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
-      final var baseUrl =
-          coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
-      try {
-        var solrClient = coreContainer.getDefaultHttpSolrClient();
-        request.processWithBaseUrl(solrClient, baseUrl, null);
-      } catch (SolrServerException | IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to refresh package on node: " + liveNode,
-            e);
-      }
-    }
+    broadcastToLiveNodes(request, liveNode -> "Failed to refresh package on node: " + liveNode);
 
     return response;
   }
@@ -295,29 +289,35 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
 
   private void notifyAllNodesToSync(int expectedVersion) {
     final var request = new PackageApi.SyncPackages(expectedVersion);
+    broadcastToLiveNodes(
+        request,
+        liveNode ->
+            "Failed to notify node: "
+                + liveNode
+                + " to sync expected package version: "
+                + expectedVersion);
+  }
 
+  private void broadcastToLiveNodes(
+      SolrRequest<? extends SolrJerseyResponse> request, Function<String, String> errorMessage) {
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
-      var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
+      final var baseUrl =
+          coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
         request.processWithBaseUrl(solrClient, baseUrl, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to notify node: "
-                + liveNode
-                + " to sync expected package version: "
-                + expectedVersion,
-            e);
+            SolrException.ErrorCode.SERVER_ERROR, errorMessage.apply(liveNode), e);
       }
     }
   }
 
-  private static PackagesResponse.PackageData toPackageData(PackageStore.Packages packages) {
+  private static ListPackagesResponse.PackageData toPackageData(PackageStore.Packages packages) {
     if (packages == null) {
       return null;
     }
-    final var data = new PackagesResponse.PackageData();
+    final var data = new ListPackagesResponse.PackageData();
     data.znodeVersion = packages.znodeVersion;
     data.packages =
         packages.packages.entrySet().stream()
@@ -331,9 +331,9 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     return data;
   }
 
-  private static PackagesResponse.PackageVersion toPkgVersionResponse(
+  private static ListPackagesResponse.PackageVersion toPkgVersionResponse(
       PackageStore.PkgVersion pkgVersion) {
-    final var v = new PackagesResponse.PackageVersion();
+    final var v = new ListPackagesResponse.PackageVersion();
     v.pkg = pkgVersion.pkg;
     v.version = pkgVersion.version;
     v.files = pkgVersion.files;

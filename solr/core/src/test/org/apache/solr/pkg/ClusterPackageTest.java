@@ -19,7 +19,8 @@ package org.apache.solr.pkg;
 import static org.apache.solr.filestore.TestDistribFileStore.uploadKey;
 
 import java.util.List;
-import org.apache.solr.client.api.model.PackagesResponse;
+import org.apache.solr.client.api.model.GetPackageResponse;
+import org.apache.solr.client.api.model.ListPackagesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -52,7 +53,7 @@ public class ClusterPackageTest extends SolrCloudTestCase {
     try (HttpJettySolrClient client =
         new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
-      PackagesResponse response = new PackageApi.ListPackages().process(client);
+      ListPackagesResponse response = new PackageApi.ListPackages().process(client);
       assertNotNull("Expected non-null response from GET /cluster/packages", response);
       assertNotNull("Expected 'result' field in GET /cluster/packages response", response.result);
     }
@@ -81,7 +82,7 @@ public class ClusterPackageTest extends SolrCloudTestCase {
       addRequest.process(client);
 
       // Verify the package was added via GET /cluster/packages
-      PackagesResponse listResponse = new PackageApi.ListPackages().process(client);
+      ListPackagesResponse listResponse = new PackageApi.ListPackages().process(client);
       assertNotNull("Expected non-null list response", listResponse);
       assertNotNull("Expected non-null result", listResponse.result);
       assertNotNull(
@@ -91,19 +92,20 @@ public class ClusterPackageTest extends SolrCloudTestCase {
           listResponse.result.packages.get("pkgapitestpkg").isEmpty());
 
       // Verify GET /cluster/packages/{name} returns only this package
-      PackagesResponse getByNameResponse =
+      GetPackageResponse getByNameResponse =
           new PackageApi.GetPackage("pkgapitestpkg").process(client);
       assertNotNull("Expected non-null get-by-name response", getByNameResponse);
       assertNotNull("Expected non-null result from get-by-name", getByNameResponse.result);
-      assertNotNull(
-          "Expected pkgapitestpkg in get-by-name response",
-          getByNameResponse.result.packages.get("pkgapitestpkg"));
+      assertEquals("pkgapitestpkg", getByNameResponse.result.name);
+      assertFalse(
+          "Expected at least one version in get-by-name response",
+          getByNameResponse.result.versions.isEmpty());
 
       // Delete the package version via DELETE /cluster/packages/{name}/versions/{version}
       new PackageApi.DeletePackageVersion("pkgapitestpkg", "1.0").process(client);
 
       // Verify it's deleted
-      PackagesResponse listAfterDelete = new PackageApi.ListPackages().process(client);
+      ListPackagesResponse listAfterDelete = new PackageApi.ListPackages().process(client);
       assertNotNull("Expected non-null list response after delete", listAfterDelete);
       assertNotNull("Expected non-null result after delete", listAfterDelete.result);
       // After deleting the only version, the package entry should be empty or absent
@@ -149,6 +151,22 @@ public class ClusterPackageTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testGetNonExistentPackage() {
+    try (HttpJettySolrClient client =
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
+      RemoteSolrException ex =
+          expectThrows(
+              RemoteSolrException.class,
+              () -> new PackageApi.GetPackage("nonexistentpkg_get").process(client));
+      assertEquals("Expected 404 for non-existent package", 404, ex.code());
+      assertTrue(
+          "Expected error message to mention the package: " + ex.getMessage(),
+          ex.getMessage().contains("No such package"));
+    }
+  }
+
+  @Test
   public void testRefreshPackageLocalOnlyAcceptsUnknownPackage() throws Exception {
     try (HttpJettySolrClient client =
         new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
@@ -182,15 +200,16 @@ public class ClusterPackageTest extends SolrCloudTestCase {
       // expectedVersion at-or-below current is a no-op in syncToVersion and must return promptly.
       PackageApi.ListPackages listReq = new PackageApi.ListPackages();
       listReq.setExpectedVersion(0);
-      PackagesResponse listResponse = listReq.process(client);
+      ListPackagesResponse listResponse = listReq.process(client);
       assertNotNull(listResponse);
       assertNotNull(listResponse.result);
 
-      PackageApi.GetPackage getReq = new PackageApi.GetPackage("anything");
+      // expectedVersion is honored even on the path that ends in a 404 for an unknown package.
+      PackageApi.GetPackage getReq = new PackageApi.GetPackage("nonexistent_expected_version_pkg");
       getReq.setExpectedVersion(0);
-      PackagesResponse getResponse = getReq.process(client);
-      assertNotNull(getResponse);
-      assertNotNull(getResponse.result);
+      RemoteSolrException ex =
+          expectThrows(RemoteSolrException.class, () -> getReq.process(client));
+      assertEquals("Expected 404 for non-existent package", 404, ex.code());
     }
   }
 }

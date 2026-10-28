@@ -26,7 +26,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.AddPackageVersionRequestBody;
-import org.apache.solr.client.api.model.PackagesResponse;
+import org.apache.solr.client.api.model.GetPackageResponse;
+import org.apache.solr.client.api.model.ListPackagesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /** V2 API definitions for managing Solr packages. */
@@ -37,7 +38,7 @@ public interface PackageApis {
   @Operation(
       summary = "List all packages registered in this Solr cluster.",
       tags = {"package"})
-  PackagesResponse listPackages(
+  ListPackagesResponse listPackages(
       @Parameter(
               description =
                   "If provided, the node waits until its package data matches this ZooKeeper version.")
@@ -49,7 +50,7 @@ public interface PackageApis {
   @Operation(
       summary = "Get information about a specific package in this Solr cluster.",
       tags = {"package"})
-  PackagesResponse getPackage(
+  GetPackageResponse getPackage(
       @Parameter(description = "The name of the package.", required = true)
           @PathParam("packageName")
           String packageName,
