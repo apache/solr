@@ -85,6 +85,9 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
   }
 
   private boolean writeOpenMetricsFormat(SolrQueryRequest request) {
+    if (request == null) {
+      return false;
+    }
     String wt = request.getParams().get(CommonParams.WT);
     if (MetricUtils.OPEN_METRICS_WT.equals(wt)) {
       return true;

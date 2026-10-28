@@ -101,7 +101,6 @@ public class StreamHandler extends RequestHandlerBase
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
-    this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
     String cacheKey = this.getClass().getName() + "_" + coreName + "_";
     this.objectCache =
@@ -110,6 +109,7 @@ public class StreamHandler extends RequestHandlerBase
             .computeIfAbsent(
                 cacheKey + "objectCache", ConcurrentHashMap.class, k -> new ConcurrentHashMap<>());
     if (coreContainer.isZooKeeperAware()) {
+      this.solrClientCache = coreContainer.getZkController().getSolrClientCache();
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);

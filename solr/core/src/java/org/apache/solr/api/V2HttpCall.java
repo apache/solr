@@ -129,7 +129,9 @@ public class V2HttpCall extends HttpSolrCall {
         assert core == null;
       }
 
-      if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
+      if (pathSegments.size() > 1
+          && ("c".equals(prefix) || "collections".equals(prefix))
+          && cores.isZooKeeperAware()) {
         origCorename = pathSegments.get(1);
 
         String collectionStr = queryParams.get(COLLECTION_PROP, origCorename);
@@ -175,6 +177,9 @@ public class V2HttpCall extends HttpSolrCall {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }
+      // If not ZooKeeper-aware, a "c"/"collections"-prefixed request skips both branches above:
+      // there is no collection/alias state to resolve, so `core` stays null and the request falls
+      // through to be dispatched as an admin/Jersey API, same as when no local core matches.
 
       // We didn't find a core, so we're either an error or a Jersey 'ADMIN' api
       if (core == null) {
@@ -331,7 +336,8 @@ public class V2HttpCall extends HttpSolrCall {
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
     containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
     containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
-    containerRequest.setProperty(RequestContextKeys.COLLECTION_LIST, collectionsList);
+    containerRequest.setProperty(
+        RequestContextKeys.COLLECTION_LIST, getAuthorizationCollectionsList());
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_RSP, response);
     if (core != null) {
       containerRequest.setProperty(RequestContextKeys.SOLR_CORE, core);

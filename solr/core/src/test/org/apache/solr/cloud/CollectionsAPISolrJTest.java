@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -296,17 +297,16 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
-    String nodeName = response._getStr("success[0]/key");
-    String corename = response._getStr(asList("success", nodeName, "core"), null);
+    String successKey = response._getStr("success[0]/key"); // "nodeName/coreNodeName"
+    String corename = response._getStr(asList("success", successKey, "core"), null);
+    String nodeName = successKey.substring(0, successKey.indexOf('/'));
 
-    try (SolrClient coreClient =
-        getHttpSolrClient(cluster.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
-      assertEquals(
-          collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
-      assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
-      assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
-    }
+    SolrClient coreClient = cluster.getJetty(nodeName).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
+    assertEquals(
+        collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
+    assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
+    assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
   }
 
   @Test
@@ -876,6 +876,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         });
     // Ensure field, etc. data not provided
     assertNull(segmentData.segments.get("_0").fields);
+  }
+
+  @Test
+  public void testV2CollectionStatusForNonExistentCollectionReturns404() {
+    var req = new CollectionsApi.GetCollectionStatus("doesNotExist");
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> req.process(cluster.getSolrClient()));
+    assertEquals(404, ex.code());
   }
 
   private static final int NUM_DOCS = 10;

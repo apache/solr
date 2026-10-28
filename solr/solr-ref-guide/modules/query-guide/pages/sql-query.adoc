@@ -424,7 +424,7 @@ Below is a sample curl command performing a SQL aggregate query in facet mode:
 
 [source,bash]
 ----
-curl --data-urlencode 'stmt=SELECT to, count(*) FROM collection4 GROUP BY to ORDER BY count(*) desc LIMIT 10' http://localhost:8983/solr/collection4/sql?aggregationMode=facet
+curl --data-urlencode 'stmt=SELECT to, count(*) FROM collection4 GROUP BY to ORDER BY count(*) desc LIMIT 10' 'http://localhost:8983/solr/collection4/sql?aggregationMode=facet'
 ----
 
 Below is sample result set:

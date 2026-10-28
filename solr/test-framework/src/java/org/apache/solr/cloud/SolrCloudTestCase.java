@@ -318,18 +318,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   public static CollectionStatePredicate activeClusterShape(
       int expectedShards, int expectedReplicas) {
-    return (liveNodes, collectionState) -> {
-      if (collectionState == null) return false;
-      if (log.isInfoEnabled()) {
-        log.info(
-            "active slice count: {} expected: {}",
-            collectionState.getActiveSlices().size(),
-            expectedShards);
-      }
-      if (collectionState.getActiveSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(
-          expectedReplicas, liveNodes, collectionState.getActiveSlices());
-    };
+    return MiniSolrCloudCluster.expectedShardsAndActiveReplicas(expectedShards, expectedReplicas);
   }
 
   public static LiveNodesPredicate containsLiveNode(String node) {

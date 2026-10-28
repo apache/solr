@@ -19,6 +19,7 @@ package org.apache.solr.highlight;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
+import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
@@ -134,6 +136,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
   protected static final String SNIPPET_SEPARATOR = "\u0000";
 
+  /** Default for {@link HighlightParams#SNIPPETS}. */
+  public static final int DEFAULT_SNIPPETS = 1;
+
   @Override
   public void init(PluginInfo info) {}
 
@@ -155,7 +160,8 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     int maxPassages[] = new int[fieldNames.length];
     for (int i = 0; i < fieldNames.length; i++) {
-      maxPassages[i] = params.getFieldInt(fieldNames[i], HighlightParams.SNIPPETS, 1);
+      maxPassages[i] =
+          params.getFieldInt(fieldNames[i], HighlightParams.SNIPPETS, DEFAULT_SNIPPETS);
     }
 
     UnifiedHighlighter highlighter = getHighlighter(req);
@@ -192,13 +198,21 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         if (snippet == null) {
           // TODO reuse logic of DefaultSolrHighlighter.alternateField
         } else {
-          // we used a special snippet separator char and we can now split on it.
-          summary.add(field, snippet.split(SNIPPET_SEPARATOR));
+          summary.add(field, splitSnippets(snippet));
         }
       }
       list.add(keys[i], summary);
     }
     return list;
+  }
+
+  /**
+   * Splits a highlighted value formatted by {@link SolrExtendedUnifiedHighlighter} into its
+   * snippets.
+   */
+  public static String[] splitSnippets(String highlighted) {
+    // a special snippet separator char is used unless hl.tag.ellipsis is specified
+    return highlighted.split(SNIPPET_SEPARATOR);
   }
 
   /** Converts solr's DocList to the int[] docIDs */
@@ -236,8 +250,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
   }
 
-  /** From {@link #getHighlighter(org.apache.solr.request.SolrQueryRequest)}. */
-  protected static class SolrExtendedUnifiedHighlighter extends UnifiedHighlighter {
+  /**
+   * A {@link UnifiedHighlighter} configured by Solr's highlighting params.
+   *
+   * @lucene.experimental
+   */
+  public static class SolrExtendedUnifiedHighlighter extends UnifiedHighlighter {
     protected static final Predicate<String> NOT_REQUIRED_FIELD_MATCH_PREDICATE = s -> true;
     private final SolrIndexSearcher solrIndexSearcher;
     protected final SolrParams params;
@@ -246,19 +264,24 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     protected final RTimerTree loadFieldValuesTimer;
 
     public SolrExtendedUnifiedHighlighter(SolrQueryRequest req) {
-      super(req.getSearcher(), req.getSchema().getIndexAnalyzer());
-      this.solrIndexSearcher = req.getSearcher();
-      this.params = req.getParams();
-      this.schema = req.getSchema();
+      this(req.getSearcher(), req.getSchema(), req.getParams(), req.getRequestTimer());
+    }
+
+    /**
+     * @param timerTree request timer to record field-loading time in; may be null
+     */
+    public SolrExtendedUnifiedHighlighter(
+        SolrIndexSearcher searcher, IndexSchema schema, SolrParams params, RTimerTree timerTree) {
+      super(searcher, schema.getIndexAnalyzer());
+      this.solrIndexSearcher = searcher;
+      this.params = params;
+      this.schema = schema;
       this.setMaxLength(params.getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
       this.setCacheFieldValCharsThreshold(
           params.getInt(
               HighlightParams.CACHE_FIELD_VAL_CHARS_THRESHOLD, DEFAULT_CACHE_CHARS_THRESHOLD));
 
-      final RTimerTree timerTree;
-      if (req.getRequestTimer() != null) { // It may be null if not used in a search context.
-        timerTree = req.getRequestTimer();
-      } else {
+      if (timerTree == null) { // It may be null if not used in a search context.
         timerTree = new RTimerTree(); // since null checks are annoying
       }
       loadFieldValuesTimer =
@@ -311,6 +334,26 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
           params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, SNIPPET_SEPARATOR);
       String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
       return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
+    }
+
+    @Override
+    protected Comparator<Passage> getPassageSortComparator(String fieldName) {
+      String passageSort = params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT);
+      if (passageSort == null) {
+        return super.getPassageSortComparator(fieldName);
+      }
+      switch (passageSort) {
+        case "startOffset":
+          return Comparator.comparingInt(Passage::getStartOffset);
+        case "endOffset":
+          return Comparator.comparingInt(Passage::getEndOffset);
+        case "score":
+          return Comparator.comparingDouble(Passage::getScore).reversed();
+        default:
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid " + HighlightParams.PASSAGE_SORT + " value: '" + passageSort + "'");
+      }
     }
 
     @Override

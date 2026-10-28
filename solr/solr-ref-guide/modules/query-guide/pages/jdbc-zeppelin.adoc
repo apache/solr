@@ -64,7 +64,7 @@ To facilitate easy copying the parameters mentioned in the screenshots, here is 
 ----
 Name : Solr
 Interpreter : jdbc
-default.url : jdbc:solr://SOLR_ZK_CONNECTION_STRING?collection=<collection_name>
+default.url : jdbc:solr://SOLR_ZK_CONNECTION_STRING?collection=\{collectionName}
 default.driver : org.apache.solr.client.solrj.io.sql.DriverImpl
 default.user : solr
 dependency : org.apache.solr:solr-solrj:{solr-full-version}

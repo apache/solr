@@ -17,9 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.solrj.impl.ZkDistribStateManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -27,20 +25,19 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Responsible for prioritization of Overseer nodes, for example with the ADDROLE collection
- * command.
+ * Responsible for prioritization of Overseer nodes: a node declared as {@code overseer:preferred}
+ * through node roles ({@code -Dsolr.node.roles}) is moved to the front of the Overseer election
+ * queue.
  */
 public class OverseerNodePrioritizer {
 
@@ -66,30 +63,11 @@ public class OverseerNodePrioritizer {
 
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
-    List<String> overseerDesignates = new ArrayList<>();
-    if (zk.exists(ZkStateReader.ROLES)) {
-      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat()));
-      @SuppressWarnings("unchecked")
-      List<String> l = (List<String>) m.get("overseer");
-      if (l != null) {
-        overseerDesignates.addAll(l);
-      }
-    }
-
-    List<String> preferredOverseers =
+    List<String> overseerDesignates =
         ClusterAPI.getNodesByRole(
             NodeRoles.Role.OVERSEER,
             NodeRoles.MODE_PREFERRED,
             new ZkDistribStateManager(zkStateReader.getZkClient()));
-    for (String preferred : preferredOverseers) {
-      if (overseerDesignates.contains(preferred)) {
-        log.warn(
-            "Node {} has been configured to be a preferred overseer using both ADDROLE API command "
-                + "as well as using Node Roles (i.e. -Dsolr.node.roles start up property). Only the latter is recommended.",
-            preferred);
-      }
-    }
-    overseerDesignates.addAll(preferredOverseers);
     if (overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
     if (overseerDesignates.contains(ldr)) return;

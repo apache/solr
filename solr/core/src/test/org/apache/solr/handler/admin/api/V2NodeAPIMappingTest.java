@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,10 +33,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.InfoHandler;
-import org.apache.solr.handler.admin.LoggingHandler;
-import org.apache.solr.handler.admin.PropertiesRequestHandler;
-import org.apache.solr.handler.admin.ThreadDumpHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
@@ -51,10 +46,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private CoreAdminHandler mockCoresHandler;
-  private InfoHandler infoHandler;
-  private LoggingHandler mockLoggingHandler;
-  private PropertiesRequestHandler mockPropertiesHandler;
-  private ThreadDumpHandler mockThreadDumpHandler;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -64,18 +55,10 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   @Before
   public void setupApiBag() {
     mockCoresHandler = mock(CoreAdminHandler.class);
-    infoHandler = mock(InfoHandler.class);
-    mockLoggingHandler = mock(LoggingHandler.class);
-    mockPropertiesHandler = mock(PropertiesRequestHandler.class);
-    mockThreadDumpHandler = mock(ThreadDumpHandler.class);
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
 
-    when(infoHandler.getLoggingHandler()).thenReturn(mockLoggingHandler);
-    when(infoHandler.getPropertiesHandler()).thenReturn(mockPropertiesHandler);
-    when(infoHandler.getThreadDumpHandler()).thenReturn(mockThreadDumpHandler);
-
     apiBag = new ApiBag(false);
-    registerAllNodeApis(apiBag, mockCoresHandler, infoHandler);
+    registerAllNodeApis(apiBag, mockCoresHandler);
   }
 
   @Test
@@ -116,41 +99,10 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("true", v1Params.get("rejoinAtHead"));
   }
 
-  @Test
-  public void testSystemPropsApiAllProperties() throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add("name", "specificPropertyName");
-    final SolrParams v1Params =
-        captureConvertedPropertiesV1Params("/node/properties", "GET", solrParams);
-
-    assertEquals("specificPropertyName", v1Params.get("name"));
-  }
-
-  @Test
-  public void testThreadDumpApiAllProperties() throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add("anyParamName", "anyParamValue");
-    final SolrParams v1Params =
-        captureConvertedThreadDumpV1Params("/node/threads", "GET", solrParams);
-
-    // All parameters are passed through to v1 API as-is
-    assertEquals("anyParamValue", v1Params.get("anyParamName"));
-  }
-
   private SolrParams captureConvertedCoreV1Params(String path, String method, String v2RequestBody)
       throws Exception {
     return doCaptureParams(
         path, method, new ModifiableSolrParams(), v2RequestBody, mockCoresHandler);
-  }
-
-  private SolrParams captureConvertedPropertiesV1Params(
-      String path, String method, SolrParams inputParams) throws Exception {
-    return doCaptureParams(path, method, inputParams, null, mockPropertiesHandler);
-  }
-
-  private SolrParams captureConvertedThreadDumpV1Params(
-      String path, String method, SolrParams inputParams) throws Exception {
-    return doCaptureParams(path, method, inputParams, null, mockThreadDumpHandler);
   }
 
   private SolrParams doCaptureParams(
@@ -184,11 +136,8 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     return queryRequestCaptor.getValue().getParams();
   }
 
-  private static void registerAllNodeApis(
-      ApiBag apiBag, CoreAdminHandler coreHandler, InfoHandler infoHandler) {
+  private static void registerAllNodeApis(ApiBag apiBag, CoreAdminHandler coreHandler) {
     apiBag.registerObject(new OverseerOperationAPI(coreHandler));
     apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
-    apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
-    apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
   }
 }

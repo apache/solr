@@ -22,7 +22,7 @@
 The `search` function searches a SolrCloud collection and emits a stream of tuples that match the query.
 This is very similar to a standard Solr query, and uses many of the same parameters.
 
-This expression allows you to specify a request handler using the `qt` parameter.
+This expression allows you to specify a request handler using the `path` parameter (the previously preferred `qt` is also still accepted).
 By default, the `/select` handler is used.
 The `/select` handler can be used for simple rapid prototyping of expressions.
 For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets.
@@ -39,9 +39,10 @@ To read more about the `/export` handler requirements review the section xref:ex
 When using a zookeeper connection string, zookeeper credentials and ACLs will only be included if the same zookeeper host is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `zkHost`: (Deprecated, use `solrConnection`) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
-* `qt`: Specifies the query type, or request handler, to use.
+* `path`: Specifies the request handler to use.
 Set this to `/export` to work with large result sets.
 The default is `/select`.
+(The formerly preferred name of this parameter, `qt`, is also still accepted.)
 * `rows`: (Mandatory with the `/select` handler) The rows parameter specifies how many rows to return.
 This parameter is only needed with the `/select` handler (which is the default) since the `/export` handler always returns all rows.
 * `partitionKeys`: Comma delimited list of keys to partition the search results by.
@@ -54,7 +55,7 @@ See the xref:stream-decorator-reference.adoc#parallel[parallel] function for det
 ----
 expr=search(collection1,
        solrConnection="localhost:9983",
-       qt="/export",
+       path="/export",
        q="*:*",
        fl="id,a_s,a_i,a_f",
        sort="a_f asc, a_i asc")

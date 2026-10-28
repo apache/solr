@@ -80,7 +80,7 @@ public class SolrPackageLoader implements Closeable {
     return Map.of();
   }
 
-  public void refreshPackageConf() {
+  public synchronized void refreshPackageConf() {
     log.debug(
         "{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.pkgs.znodeVersion);
 
@@ -139,7 +139,7 @@ public class SolrPackageLoader implements Closeable {
     return changed;
   }
 
-  public void notifyListeners(String pkg) {
+  public synchronized void notifyListeners(String pkg) {
     SolrPackage p = packageClassLoaders.get(pkg);
     if (p != null) {
       List<SolrPackage> l = List.of(p);

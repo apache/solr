@@ -167,6 +167,8 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // fast-path identity check before the equals() fallback right after it
   public Collection<LoggerInfo> getAllLoggers() {
     Logger root = LogManager.getRootLogger();
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);

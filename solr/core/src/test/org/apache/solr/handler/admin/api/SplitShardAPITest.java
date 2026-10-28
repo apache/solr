@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ShardsApi;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
@@ -45,22 +45,27 @@ public class SplitShardAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSplitShardOnNonexistentCollectionReturnsError() throws Exception {
+  public void testSplitShardOnNonexistentCollectionReturnsError() {
     var request = new ShardsApi.SplitShard("nonexistent_collection");
     request.setShard("shard1");
 
-    SolrJerseyResponse response = request.process(solrTestRule.getSolrClient());
-    assertNotNull("Expected error in response", response.error);
-    assertNotNull("Expected error code in response", response.error.code);
+    RemoteSolrException ex =
+        expectThrows(
+            RemoteSolrException.class, () -> request.process(solrTestRule.getSolrClient()));
+    assertEquals("Expected 400 for a request against a non-SolrCloud instance", 400, ex.code());
   }
 
   @Test
-  public void testSplitShardNotInCloudModeReturnsError() throws Exception {
+  public void testSplitShardNotInCloudModeReturnsError() {
     var request = new ShardsApi.SplitShard(DEFAULT_TEST_CORENAME);
     request.setShard("shard1");
 
-    SolrJerseyResponse response = request.process(solrTestRule.getSolrClient());
-    assertNotNull("Expected error in response when not in SolrCloud mode", response.error);
-    assertNotNull("Expected error code in response", response.error.code);
+    RemoteSolrException ex =
+        expectThrows(
+            RemoteSolrException.class, () -> request.process(solrTestRule.getSolrClient()));
+    assertEquals("Expected 400 when not in SolrCloud mode", 400, ex.code());
+    assertTrue(
+        "Expected error message to mention SolrCloud mode: " + ex.getMessage(),
+        ex.getMessage().contains("not running in SolrCloud mode"));
   }
 }

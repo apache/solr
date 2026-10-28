@@ -26,8 +26,11 @@ import org.apache.solr.common.util.NamedList;
  * org.apache.solr.client.solrj.SolrClient}. To use this class, the solrconfig.xml for the relevant
  * core must include the request handler for <code>/admin/ping</code>.
  *
+ * @deprecated <code>PingRequestHandler</code> (the <code>/admin/ping</code> endpoint) is deprecated
+ *     and will be removed in a future release. Use {@link HealthCheckRequest} instead.
  * @since solr 1.3
  */
+@Deprecated(since = "10.1")
 public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
 
   /** serialVersionUID. */

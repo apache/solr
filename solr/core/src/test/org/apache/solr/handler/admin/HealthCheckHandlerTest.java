@@ -74,14 +74,13 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
         genericHealthcheck.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
 
     // positive check that our exiting "healthy" node works with direct http client
-    try (SolrClient solrClient =
-        getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
-      assertEquals(CommonParams.OK, runHealthcheckWithClient(solrClient).getNodeStatus());
-    }
+    assertEquals(
+        CommonParams.OK,
+        runHealthcheckWithClient(cluster.getJettySolrRunner(0).getSolrClient()).getNodeStatus());
 
     // successfully create a dummy collection
-    try (SolrClient solrClient =
-        getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
+    try {
+      SolrClient solrClient = cluster.getJettySolrRunner(0).getSolrClient();
       CollectionAdminResponse collectionAdminResponse =
           CollectionAdminRequest.createCollection("test", "_default", 1, 1)
               .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
@@ -95,7 +94,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // add a new node for the purpose of negative testing
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try {
+      SolrClient solrClient = newJetty.getSolrClient();
 
       // positive check that our (new) "healthy" node works with direct http client
       final var response = runHealthcheckWithClient(solrClient);
@@ -115,22 +115,17 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
     // (redundant) positive check that our (previously) exiting "healthy" node (still) works
     // after getting negative results from our broken node and failed core container
-    try (SolrClient solrClient =
-        getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
-
-      assertEquals(CommonParams.OK, runHealthcheckWithClient(solrClient).getNodeStatus());
-    }
+    assertEquals(
+        CommonParams.OK,
+        runHealthcheckWithClient(cluster.getJettySolrRunner(0).getSolrClient()).getNodeStatus());
   }
 
   @Test
   public void testHealthCheckHandlerSolrJ() throws IOException, SolrServerException {
     // positive check of a HealthCheckRequest using http client
     HealthCheckRequest req = new HealthCheckRequest();
-    try (SolrClient solrClient =
-        getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
-      HealthCheckResponse rsp = req.process(solrClient);
-      assertEquals(CommonParams.OK, rsp.getNodeStatus());
-    }
+    HealthCheckResponse rsp = req.process(cluster.getJettySolrRunner(0).getSolrClient());
+    assertEquals(CommonParams.OK, rsp.getNodeStatus());
   }
 
   /**
@@ -148,9 +143,10 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   @Test
   public void testV1FailureResponseIncludesStatusField() throws Exception {
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+    try {
       // Sanity check: the new node is initially healthy.
-      assertEquals(CommonParams.OK, runHealthcheckWithClient(solrClient).getNodeStatus());
+      assertEquals(
+          CommonParams.OK, runHealthcheckWithClient(newJetty.getSolrClient()).getNodeStatus());
 
       String nodeName = newJetty.getCoreContainer().getZkController().getNodeName();
 

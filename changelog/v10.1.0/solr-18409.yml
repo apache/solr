@@ -1,0 +1,8 @@
+title: SOLR-18409 CrossDC Producer shouldMirror not whitelisted for distrib update requests
+  
+type: fixed
+authors:
+  - name: Andrzej Bialecki
+links:
+  - name: SOLR-18409
+    url: https://issues.apache.org/jira/browse/SOLR-18409

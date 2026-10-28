@@ -53,8 +53,12 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     super.after(); // closes the backend (JettySolrRunner)
   }
 
-  /** Resets the state. DEPRECATED; please don't call! */
-  @Deprecated
+  /**
+   * Resets the state.
+   *
+   * @deprecated Please don't call! There is no replacement API.
+   */
+  @Deprecated(since = "10.0")
   public void reset() {
     after();
   }

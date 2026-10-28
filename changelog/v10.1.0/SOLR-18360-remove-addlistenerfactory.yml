@@ -1,0 +1,11 @@
+title: >
+  Removed the deprecated HttpJettySolrClient.addListenerFactory(HttpListenerFactory). The
+  @lucene.experimental HttpClientBuilderPlugin.setup() now takes a MutableListenerFactory -- a
+  repointable HttpListenerFactory wrapper -- instead of the client itself.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+  - name: David Smiley
+links:
+  - name: SOLR-18360
+    url: https://issues.apache.org/jira/browse/SOLR-18360

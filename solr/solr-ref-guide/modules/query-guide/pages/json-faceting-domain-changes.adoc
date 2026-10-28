@@ -43,7 +43,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -84,7 +84,7 @@ Here is the example of referencing DSL queries:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "queries": {
@@ -133,7 +133,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "cat:electronics",
   "filter": "{!tag=MANU}manu_id_s:apple",
@@ -181,7 +181,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "apple",
   "facet": {

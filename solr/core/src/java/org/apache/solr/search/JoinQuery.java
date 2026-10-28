@@ -105,6 +105,7 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
     ResponseBuilder rb;
     ScoreMode scoreMode;
 
+    @SuppressWarnings("ReferenceEquality") // SolrCore identity, not equality, is what matters here
     public JoinQueryWeight(SolrIndexSearcher searcher, ScoreMode scoreMode, float boost) {
       super(JoinQuery.this, boost);
       this.scoreMode = scoreMode;
@@ -248,6 +249,8 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
       return result;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // SolrIndexSearcher identity, not equality, is what matters here
     public DocSet getDocSetEnumerate() throws IOException {
       FixedBitSet resultBits = null;
 

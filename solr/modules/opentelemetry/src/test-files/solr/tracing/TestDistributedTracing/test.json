@@ -84,7 +84,8 @@
               "db.type":"solr",
               "http.request.method":"POST",
               "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/collection1_shard1_replica_nN/select"},
+              "http.url":"http://NORMALIZED/solr/collection1_shard1_replica_nN/select",
+              "http.params":"distrib=false&isShard=true&shards.purpose=16388"},
             {
               "name":"post:/{core}/select",
               "kind":"SERVER",
@@ -92,7 +93,8 @@
               "db.type":"solr",
               "http.request.method":"POST",
               "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/collection1_shard1_replica_nN/select"},
+              "http.url":"http://NORMALIZED/solr/collection1_shard1_replica_nN/select",
+              "http.params":"distrib=false&isShard=true&shards.purpose=64"},
             {
               "name":"post:/{core}/select",
               "kind":"SERVER",
@@ -100,7 +102,8 @@
               "db.type":"solr",
               "http.request.method":"POST",
               "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/collection1_shard2_replica_nN/select"},
+              "http.url":"http://NORMALIZED/solr/collection1_shard2_replica_nN/select",
+              "http.params":"distrib=false&isShard=true&shards.purpose=16388"},
             {
               "name":"post:/{core}/select",
               "kind":"SERVER",
@@ -108,4 +111,5 @@
               "db.type":"solr",
               "http.request.method":"POST",
               "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/collection1_shard2_replica_nN/select"}]}]}]}
+              "http.url":"http://NORMALIZED/solr/collection1_shard2_replica_nN/select",
+              "http.params":"distrib=false&isShard=true&shards.purpose=64"}]}]}]}
