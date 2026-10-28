@@ -1,0 +1,7 @@
+title: Add query.enableDocValuesIteratorCache so wide DocValues fl globs can avoid the iterator reuse cache.
+type: added
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-17539
+    url: https://issues.apache.org/jira/browse/SOLR-17539

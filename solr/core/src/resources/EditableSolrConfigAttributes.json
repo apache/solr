@@ -53,6 +53,7 @@
     "queryResultWindowSize":1,
     "queryResultMaxDocsCached":1,
     "enableLazyFieldLoading":1,
+    "enableDocValuesIteratorCache":11,
     "boolTofilterOptimizer":1,
     "maxBooleanClauses":1},
   "requestDispatcher":{
