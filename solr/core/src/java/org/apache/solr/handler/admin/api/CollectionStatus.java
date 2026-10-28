@@ -22,6 +22,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.CollectionStatusApi;
 import org.apache.solr.client.api.model.CollectionStatusResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -73,13 +74,21 @@ public class CollectionStatus extends AdminAPIBase implements CollectionStatusAp
     final var nlResponse = new NamedList<>();
     populateColStatusData(coreContainer, new ZkNodeProps(params), nlResponse);
 
+    final Object rawStatus = nlResponse.get(collectionName);
+    if (rawStatus == null) {
+      // ColStatus.getColStatus() silently skips any requested collection absent from cluster
+      // state, since v1's multi-collection listing just omits it. v2 is scoped to exactly one
+      // collection, so that omission means "not found" here.
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND, "Collection '" + collectionName + "' not found");
+    }
+
     // v2 API does not support requesting the status of multiple collections simultaneously as its
     // counterpart does, and its response looks slightly different as a result.  Primarily, the
     // v2 response eschews a level of nesting that necessitated by the multi-collection nature of
     // v1.  These tweaks are made below before returning.
     final var colStatusResponse =
-        SolrJacksonMapper.getObjectMapper()
-            .convertValue(nlResponse.get(collectionName), CollectionStatusResponse.class);
+        SolrJacksonMapper.getObjectMapper().convertValue(rawStatus, CollectionStatusResponse.class);
     colStatusResponse.name = collectionName;
     return colStatusResponse;
   }

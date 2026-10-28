@@ -1,0 +1,14 @@
+title:
+  Migration of Get Config V2 API to JAX-RS construct. Note one response-shape difference from V1 -
+  a plugin's unnamed child elements (e.g. anonymous `processor` entries under an
+  `updateRequestProcessorChain`) are now grouped under a `children` key in the V2 JSON response,
+  instead of V1's legacy empty-string (`""`) key.
+type: changed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+  - name: Eric Pugh
+    nick: epugh
+links:
+  - name: SOLR-16396
+    url: https://issues.apache.org/jira/browse/SOLR-16396

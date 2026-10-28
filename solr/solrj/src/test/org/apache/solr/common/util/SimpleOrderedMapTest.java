@@ -16,10 +16,16 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -37,6 +43,36 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertEquals(1, map.nvPairs.get(1));
     assertEquals("two", map.nvPairs.get(2));
     assertEquals(2, map.nvPairs.get(3));
+  }
+
+  @Test
+  @SuppressForbidden(
+      reason = "testing a same-version Java serialization round-trip on locally generated data")
+  public void testJavaSerializationRoundTrip() throws Exception {
+    SimpleOrderedMap<Object> original = new SimpleOrderedMap<>();
+    original.put("one", 1);
+    original.put("two", "two");
+    original.put("aNull", null);
+    original.put(null, 4);
+    SimpleOrderedMap<Object> nested = new SimpleOrderedMap<>();
+    nested.put("match", true);
+    nested.put("value", 1.4886642f);
+    original.put("nested", nested);
+    original.put("categories", List.of("electronics", "memory"));
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
+      out.writeObject(original);
+    }
+
+    SimpleOrderedMap<?> deserialized;
+    try (ObjectInputStream in =
+        new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+      deserialized = (SimpleOrderedMap<?>) in.readObject();
+    }
+
+    // One structural comparison covers size, order, keys, values and nesting.
+    assertEquals(original, deserialized);
   }
 
   @Test

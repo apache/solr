@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: /replication?command=details now reports backup details while the backup is
+  still running, including file counts, instead of the previous backup's status
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Idan Tepper
+    nick: idantepper
+links:
+  - name: SOLR-18344
+    url: https://issues.apache.org/jira/browse/SOLR-18344

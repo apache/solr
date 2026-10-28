@@ -111,7 +111,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.createDirectory(nonEmptyDirUri);
       addFile(repo, nestedFileUri);
 
-      assertTrue(repo.exists(emptyDirUri));
+      assertEquals(repo.supportsEmptyDirectories(), repo.exists(emptyDirUri));
       assertTrue(repo.exists(nonEmptyDirUri));
       assertTrue(repo.exists(nestedFileUri));
       final URI nonexistedDirUri = repo.resolve(getBaseUri(), "nonexistentDir/");
@@ -129,7 +129,9 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.createDirectory(nonEmptyDirUri);
       addFile(repo, nestedFileUri);
 
-      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(emptyDirUri));
+      if (repo.supportsEmptyDirectories()) {
+        assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(emptyDirUri));
+      }
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(nonEmptyDirUri));
       assertEquals(BackupRepository.PathType.FILE, repo.getPathType(nestedFileUri));
     }
@@ -186,6 +188,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.createDirectory(level2DeeplyNestedUri);
       repo.createDirectory(level3DeeplyNestedUri);
       repo.createDirectory(level4DeeplyNestedUri);
+      // Keep nest2 (and therefore nest1) non-empty once nest3 is deleted
+      keepNonEmptyIfNeeded(repo, level2DeeplyNestedUri, level4DeeplyNestedUri);
       repo.deleteDirectory(level3DeeplyNestedUri);
       assertTrue(repo.exists(level1DeeplyNestedUri));
       assertTrue(repo.exists(level2DeeplyNestedUri));
@@ -241,6 +245,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       repo.createDirectory(otherDir1Uri);
       repo.createDirectory(otherDir2Uri);
       repo.createDirectory(otherDir3Uri);
+      // Without empty directories, otherDir1 and otherDir2 only show up once they hold a file
+      keepNonEmptyIfNeeded(repo, otherDir1Uri, otherDir2Uri);
       addFile(repo, file1Uri);
       addFile(repo, file2Uri);
 
@@ -251,7 +257,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       assertTrue(rootChildren.contains("otherDir3"));
 
       final String[] otherDir2Children = repo.listAll(otherDir2Uri);
-      assertEquals(0, otherDir2Children.length);
+      assertEquals(repo.supportsEmptyDirectories() ? 0 : 1, otherDir2Children.length);
 
       final List<String> otherDir3Children = List.of(repo.listAll(otherDir3Uri));
       assertEquals(2, otherDir3Children.size());
@@ -388,6 +394,20 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       os.write(100);
       os.write(101);
       os.write(102);
+    }
+  }
+
+  /**
+   * On a repository that can't hold empty directories, seeds a file under each given directory so
+   * it (and, transitively, its ancestors) stays non-empty for the rest of the test. No-op when the
+   * repository supports real empty directories.
+   */
+  private void keepNonEmptyIfNeeded(BackupRepository repo, URI... dirs) throws IOException {
+    if (repo.supportsEmptyDirectories()) {
+      return;
+    }
+    for (URI dir : dirs) {
+      addFile(repo, repo.resolve(dir, "file.txt"));
     }
   }
 

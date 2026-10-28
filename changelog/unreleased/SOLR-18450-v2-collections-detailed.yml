@@ -1,0 +1,14 @@
+title:
+  V2 GET /api/collections gains a `detailed=true` param returning the collections, shards, and
+  replicas tree (in `collectionsDetail`), without live nodes, aliases, or cluster properties. This
+  tree previously lived at GET /api/cluster in an earlier draft of this change; it was relocated to
+  /api/collections since it's collection data, not cluster-wide data -- `/api/cluster/nodes`,
+  `/api/aliases`, and `/api/cluster/properties` already cover the cluster-wide pieces.
+type: changed
+authors:
+  - name: Prithvi S
+    nick: iprithv
+  - name: Eric Pugh
+links:
+  - name: SOLR-18450
+    url: https://issues.apache.org/jira/browse/SOLR-18450

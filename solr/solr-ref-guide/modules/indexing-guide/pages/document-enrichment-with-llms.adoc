@@ -144,7 +144,7 @@ These parameters can be defined in one of the following ways:
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: \{string_field}</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
@@ -371,20 +371,20 @@ To upload the model in a `/path/myModel.json` file, please run:
 
 [source,bash]
 ----
-curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+curl -XPUT 'http://localhost:8983/solr/{collectionName}/schema/large-language-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
 ----
 
 To delete the `currentModel` model:
 
 [source,bash]
 ----
-curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store/currentModel'
+curl -XDELETE 'http://localhost:8983/solr/{collectionName}/schema/large-language-model-store/currentModel'
 ----
 
 To view all models:
 
 [source,text]
-http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store
+http://localhost:8983/solr/{collectionName}/schema/large-language-model-store
 
 
 .Example: /path/myOpenAIModel.json
@@ -441,7 +441,7 @@ excluding the `DocumentEnrichmentUpdateProcessor` (let's call it 'no-enrichment'
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: \{string_field}</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
@@ -485,7 +485,7 @@ You still define two chains, but this time the 'enrichment' one only includes th
   <processor class="solr.languagemodels.update.processor.factory.DocumentEnrichmentUpdateProcessorFactory">
    <str name="inputField">string_field</str>
    <str name="outputField">summary</str>
-   <str name="prompt">Summarize this content: \{string_field}</str>
+   <str name="prompt">Summarize this content: {string_field}</str>
    <str name="model">model-name</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>

@@ -1,0 +1,209 @@
+name: Changelog Comment Commands
+
+# Lets a PR author or a committer toggle the 'no-changelog' label by commenting:
+#
+#   /no-changelog     - mark the PR as not needing a changelog entry
+#   /needs-changelog  - undo that
+#
+# The label change is followed by an explicit re-run of "Validate Changelog": a
+# label set with the GITHUB_TOKEN triggers no workflow of its own.
+#
+# This workflow never checks out or executes PR code, and the comment body
+# reaches the shell only through 'env'.
+on:
+  issue_comment:
+    types:
+      - created
+
+concurrency:
+  group: changelog-comment-command-${{ github.event.issue.number }}
+
+permissions: {}
+
+jobs:
+  handle-command:
+    # Pull request comments from a human; the exact match happens in the parse step.
+    if: |
+      github.event.issue.pull_request &&
+      github.event.comment.user.type != 'Bot' &&
+      (contains(github.event.comment.body, '/no-changelog') ||
+       contains(github.event.comment.body, '/needs-changelog'))
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write        # add/remove labels, add a reaction, post a reply
+      pull-requests: write
+
+    outputs:
+      rerun: ${{ steps.apply.outputs.rerun }}
+
+    steps:
+      - name: Parse command
+        id: parse
+        env:
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # A command must stand alone on its line, so quoted text or prose does not trigger it.
+          command=none
+          if printf '%s\n' "$BODY" | grep -iE '^[[:space:]]*/no-changelog[[:space:]]*\r?$' > /dev/null; then
+            command=add
+          fi
+          if printf '%s\n' "$BODY" | grep -iE '^[[:space:]]*/needs-changelog[[:space:]]*\r?$' > /dev/null; then
+            if [ "$command" = "add" ]; then
+              command=conflict
+            else
+              command=remove
+            fi
+          fi
+          echo "command=${command}" >> "$GITHUB_OUTPUT"
+          echo "Parsed command: ${command}"
+
+      - name: Check who is asking
+        id: authz
+        if: steps.parse.outputs.command != 'none'
+        env:
+          COMMENTER: ${{ github.event.comment.user.login }}
+          PR_AUTHOR: ${{ github.event.issue.user.login }}
+          ASSOCIATION: ${{ github.event.comment.author_association }}
+        run: |
+          set -euo pipefail
+          # The PR author may always toggle it; anyone else needs write access.
+          if [ "$COMMENTER" = "$PR_AUTHOR" ]; then
+            allowed=true
+          else
+            case "$ASSOCIATION" in
+              OWNER|MEMBER|COLLABORATOR) allowed=true ;;
+              *) allowed=false ;;
+            esac
+          fi
+          echo "allowed=${allowed}" >> "$GITHUB_OUTPUT"
+          echo "Commenter '${COMMENTER}' (${ASSOCIATION}) allowed: ${allowed}"
+
+      - name: Apply label change
+        id: apply
+        if: steps.authz.outputs.allowed == 'true' && (steps.parse.outputs.command == 'add' || steps.parse.outputs.command == 'remove')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMAND: ${{ steps.parse.outputs.command }}
+        run: |
+          set -euo pipefail
+          LABEL=no-changelog
+
+          has_label=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" \
+            --jq "[.[].name] | index(\"${LABEL}\") != null")
+
+          if [ "$COMMAND" = "remove" ]; then
+            if [ "$has_label" = "true" ]; then
+              gh api -X DELETE "repos/${REPO}/issues/${PR_NUMBER}/labels/${LABEL}" --silent
+              echo "rerun=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::Removed '${LABEL}' from PR#${PR_NUMBER}"
+            else
+              echo "::notice::PR#${PR_NUMBER} does not have '${LABEL}'; nothing to do"
+            fi
+            exit 0
+          fi
+
+          # Re-run even if the label is already set; the check can still be red.
+          if [ "$has_label" = "true" ]; then
+            echo "::notice::PR#${PR_NUMBER} already has '${LABEL}'"
+          else
+            gh api -X POST "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${LABEL}" --silent
+            echo "::notice::Added '${LABEL}' to PR#${PR_NUMBER}"
+          fi
+          echo "rerun=true" >> "$GITHUB_OUTPUT"
+
+      - name: Acknowledge with a reaction
+        if: steps.authz.outputs.allowed == 'true' && (steps.parse.outputs.command == 'add' || steps.parse.outputs.command == 'remove')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh api -X POST "repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content='+1' --silent
+
+      - name: Explain why the command was not applied
+        if: |
+          steps.parse.outputs.command != 'none' &&
+          (steps.authz.outputs.allowed != 'true' || steps.parse.outputs.command == 'conflict')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          ALLOWED: ${{ steps.authz.outputs.allowed }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          if [ "$ALLOWED" != "true" ]; then
+            printf '%s\n' \
+              "Sorry @${COMMENTER}, only the author of this pull request or a Solr committer" \
+              "can toggle the \`no-changelog\` label. Please ask a committer to do it for you." \
+              > reply.md
+          else
+            printf '%s\n' \
+              "That comment contains both changelog commands, so nothing was changed." \
+              "Please comment just one of them, alone on its own line." \
+              > reply.md
+          fi
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file reply.md
+
+  # Separate job, so the one handling the comment body never holds 'actions: write'.
+  rerun-check:
+    name: Re-run the changelog check
+    needs: handle-command
+    if: needs.handle-command.outputs.rerun == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    permissions:
+      actions: write       # re-run the Validate Changelog workflow
+      pull-requests: read  # read the PR's head SHA
+
+    steps:
+      - name: Re-run the latest Validate Changelog run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          WORKFLOW=validate-changelog.yml
+
+          head_sha=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq .headRefOid)
+
+          # An in-flight run may have read the labels before the change, and only a
+          # completed run can be re-run, so wait it out.
+          deadline=$(( $(date +%s) + 600 ))
+          while true; do
+            run=$(gh api "repos/${REPO}/actions/workflows/${WORKFLOW}/runs?head_sha=${head_sha}&per_page=1" \
+              --jq '.workflow_runs[0] // empty | "\(.id) \(.status) \(.conclusion)"')
+
+            if [ -z "$run" ]; then
+              echo "::notice::No ${WORKFLOW} run found for ${head_sha}; nothing to re-run"
+              exit 0
+            fi
+            read -r run_id run_status run_conclusion <<< "$run"
+            echo "Latest ${WORKFLOW} run for ${head_sha}: ${run_id} (${run_status}/${run_conclusion})"
+
+            # Approval starts a fresh run, which reads the label as it is now.
+            if [ "$run_conclusion" = "action_required" ]; then
+              echo "::notice::Run ${run_id} awaits workflow approval; the label applies once approved"
+              exit 0
+            fi
+            if [ "$run_status" = "completed" ]; then
+              break
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::notice::Run ${run_id} is still ${run_status} after waiting; leaving it alone"
+              exit 0
+            fi
+            echo "Run ${run_id} is ${run_status}; waiting for it to finish"
+            sleep 15
+          done
+
+          gh api -X POST "repos/${REPO}/actions/runs/${run_id}/rerun" --silent
+          echo "::notice::Re-ran ${WORKFLOW} run ${run_id} for PR#${PR_NUMBER}"

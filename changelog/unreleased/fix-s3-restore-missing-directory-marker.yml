@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: The S3 backup repository no longer writes or depends on zero-byte directory marker objects, so S3 backups that were copied with tools that drop those markers (such as `aws s3 sync`) can be restored again. A backup can also be written to an S3 location that does not exist yet.
+type: fixed
+authors:
+  - name: Samuel Verstraete
+    nick: elangelo
+links:
+  - name: PR#5128
+    url: https://github.com/apache/solr/pull/5128

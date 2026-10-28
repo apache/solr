@@ -18,6 +18,9 @@ package org.apache.solr.cli;
 
 import java.net.SocketException;
 import java.net.URISyntaxException;
+import java.util.List;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -140,5 +143,32 @@ public class CLIUtilsTest extends SolrCloudTestCase {
     // Note that a bunch of invalid URIs like "http::example.com", "http:/example.com" and
     // "//example.com" are not throwing URISyntaxException. This however is an issue of
     // java.lang.URI, which is very lenient.
+  }
+
+  private static Options connectionOptions() {
+    return new Options()
+        .addOption(CommonCLIOptions.SOLR_CONNECTION_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION);
+  }
+
+  @Test
+  public void testSolrConnectionFromSystemProperty() throws Exception {
+    var cli = new DefaultParser().parse(connectionOptions(), new String[0]);
+    System.setProperty("solr.connection", "zk1:2181,zk2:2181/solr");
+    var connection = CLIUtils.getSolrConnection(cli);
+    assertNotNull("SOLR_CONNECTION / solr.connection should be picked up", connection);
+    assertTrue(connection.isZookeeper());
+    assertEquals(List.of("zk1:2181", "zk2:2181"), connection.quorumItems());
+    assertEquals("/solr", connection.zkChroot());
+  }
+
+  @Test
+  public void testZkHostFromSystemProperty() throws Exception {
+    var cli = new DefaultParser().parse(connectionOptions(), new String[0]);
+    System.setProperty("zkHost", "zk1:2181/solr");
+    var connection = CLIUtils.getSolrConnection(cli);
+    assertNotNull(connection);
+    assertTrue(connection.isZookeeper());
   }
 }

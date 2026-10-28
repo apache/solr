@@ -442,6 +442,19 @@ public class TestGlobalOrdinalsJoinQParser extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("which"));
 
+    // Missing from query (no query body and no 'v' local param)
+    ex =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(
+                  req(
+                      "q",
+                      "{!globalOrdinalsJoin joinField=join_s_dv which=\\\"type_s:parent\\\"}"));
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("from query is required"));
+
     // Invalid score mode
     ex =
         expectThrows(

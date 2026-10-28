@@ -77,7 +77,7 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
         fields.addAll(explicitReqFields);
       }
 
-      if (returnFields.wantsScore()) {
+      if (returnFields.returnsScore()) {
         fields.add("score");
       } else {
         fields.remove("score");

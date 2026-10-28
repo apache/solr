@@ -618,7 +618,7 @@ def is_in_list(in_folder, files, indent=4):
       raise RuntimeError('file "%s" is missing' % file_name)
 
 
-def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
+def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs, tmpDir):
   # The source release is everything in source control minus excluded paths, so we don't
   # check that it has specific things — the build will fail if something critical is missing.
   # Also the binary release checks for presence of things that come from source control, so we're
@@ -653,6 +653,13 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
 
   print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
   java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
+  # Some integration tests need the Docker image of the binary release, and skip without it
+  if subprocess.call('docker info', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+    print("    build docker image from solr-%s.tgz" % version)
+    run('docker build -f solr-%s/docker/Dockerfile -t apache/solr:%s - < %s/solr-%s.tgz' % (version, version, tmpDir, version),
+        '%s/docker.log' % logDir)
+  else:
+    print("    WARNING: Docker is not available; Docker-based integration tests will be skipped")
   print("    run integration tests w/ Java %s" % java.version)
   java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
   print("    build binary release w/ Java %s" % java.version)
@@ -1168,7 +1175,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     artifact = 'solr-%s-slim.tgz' % version
     verifyBinaryUnpacked(java, artifact, unpack(tmpDir, artifact), version, gitRevision)
     artifact = 'solr-%s-src.tgz' % version
-    verifySrcUnpacked(java, artifact, unpack(tmpDir, artifact), version, testArgs)
+    verifySrcUnpacked(java, artifact, unpack(tmpDir, artifact), version, testArgs, tmpDir)
     print()
     print('Test Maven artifacts...')
     checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
