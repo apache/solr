@@ -31,6 +31,7 @@ import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
@@ -70,7 +71,22 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
         throw new IllegalStateException("All fields must be set");
       }
 
+      checkGroupable(field);
       return new SearchGroupsFieldCommand(field, groupSort, topNGroups, includeGroupCount);
+    }
+  }
+
+  /**
+   * Term based grouping reads single valued docValues; a multiValued field fails deep inside Lucene
+   * ("unexpected docvalues type SORTED_SET"), so reject it with a clear message instead.
+   */
+  static void checkGroupable(SchemaField field) {
+    if (field.getType().getNumberType() == null && field.multiValued()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Distributed grouping requires a single valued field, but '"
+              + field.getName()
+              + "' is multiValued; group on a single valued (e.g. copyField) field instead");
     }
   }
 
