@@ -119,7 +119,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
   public void testPayload() {
-    String json = "{package:pkg1, version: '0.1', files  :[a.jar, b.jar]}";
+    String json = "{name:item1, version: '0.1', files  :[a.jar, b.jar]}";
     Utils.fromJSONString(json);
 
     ApiBag apiBag = new ApiBag(false);
@@ -129,25 +129,25 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     assertEquals("POST", spec._getStr("/methods[0]"));
     assertEquals("POST", spec._getStr("/methods[0]"));
-    assertEquals("/cluster/package", spec._getStr("/url/paths[0]"));
-    assertEquals("string", spec._getStr("/commands/add/properties/package/type"));
+    assertEquals("/foos", spec._getStr("/url/paths[0]"));
+    assertEquals("string", spec._getStr("/commands/add/properties/name/type"));
     assertEquals("array", spec._getStr("/commands/add/properties/files/type"));
     assertEquals("string", spec._getStr("/commands/add/properties/files/items/type"));
     assertEquals("string", spec._getStr("/commands/delete/items/type"));
     SolrQueryResponse rsp =
         v2ApiInvoke(
             apiBag,
-            "/cluster/package",
+            "/foos",
             "POST",
             new ModifiableSolrParams(),
             new ByteArrayInputStream(
-                "{add:{package:mypkg, version: '1.0', files : [a.jar, b.jar]}}".getBytes(UTF_8)));
+                "{add:{name:myfoo, version: '1.0', files : [a.jar, b.jar]}}".getBytes(UTF_8)));
 
-    AddVersion addversion = (AddVersion) rsp.getValues().get("add");
-    assertEquals("mypkg", addversion.pkg);
-    assertEquals("1.0", addversion.version);
-    assertEquals("a.jar", addversion.files.get(0));
-    assertEquals("b.jar", addversion.files.get(1));
+    FooVersion fooVersion = (FooVersion) rsp.getValues().get("add");
+    assertEquals("myfoo", fooVersion.name);
+    assertEquals("1.0", fooVersion.version);
+    assertEquals("a.jar", fooVersion.files.get(0));
+    assertEquals("b.jar", fooVersion.files.get(1));
 
     apiBag.registerObject(new C());
     rsp =
@@ -157,24 +157,24 @@ public class TestApiFramework extends SolrTestCaseJ4 {
             "POST",
             new ModifiableSolrParams(),
             new ByteArrayInputStream(
-                "{\"package\":\"mypkg\", \"version\": \"1.0\", \"files\" : [\"a.jar\", \"b.jar\"]}"
+                "{\"name\":\"myfoo\", \"version\": \"1.0\", \"files\" : [\"a.jar\", \"b.jar\"]}"
                     .getBytes(UTF_8)));
-    assertEquals("mypkg", rsp.getValues()._getStr("payload/package"));
+    assertEquals("myfoo", rsp.getValues()._getStr("payload/name"));
     assertEquals("1.0", rsp.getValues()._getStr("payload/version"));
   }
 
   public static class C {
     @EndPoint(path = "/path1", method = POST, permission = PermissionNameProvider.Name.ALL)
-    public void m1(PayloadObj<AddVersion> add) {
+    public void m1(PayloadObj<FooVersion> add) {
       add.getResponse().add("payload", add.get());
     }
   }
 
-  @EndPoint(method = POST, path = "/cluster/package", permission = PermissionNameProvider.Name.ALL)
+  @EndPoint(method = POST, path = "/foos", permission = PermissionNameProvider.Name.ALL)
   public static class ApiTest {
     @Command(name = "add")
-    public void add(SolrQueryRequest req, SolrQueryResponse rsp, AddVersion addVersion) {
-      rsp.add("add", addVersion);
+    public void add(SolrQueryRequest req, SolrQueryResponse rsp, FooVersion fooVersion) {
+      rsp.add("add", fooVersion);
     }
 
     @Command(name = "delete")
@@ -183,9 +183,9 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     }
   }
 
-  public static class AddVersion implements ReflectMapWriter {
-    @JsonProperty(value = "package", required = true)
-    public String pkg;
+  public static class FooVersion implements ReflectMapWriter {
+    @JsonProperty(value = "name", required = true)
+    public String name;
 
     @JsonProperty(value = "version", required = true)
     public String version;
