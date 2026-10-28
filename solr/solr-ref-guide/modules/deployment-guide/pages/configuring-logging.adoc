@@ -116,15 +116,6 @@ curl -X PUT "http://localhost:8983/api/node/logging/levels?nodes=all" -H 'Conten
 '
 ----
 
-[source,bash]
-----
-curl -X PUT "http://localhost:8983/api/node/logging/levels?nodes=all" -H 'Content-Type: application/json' -d '
-  [
-    {"logger": "root", "level": "WARN"}
-  ]
-'
-----
-
 The `nodes` parameter works the same way on the V2 log level listing, `GET /api/node/logging/levels`.
 The response then carries each node's listing under its node name instead of a single top-level listing, and names any requested nodes that did not respond under `failedNodes`.
 
