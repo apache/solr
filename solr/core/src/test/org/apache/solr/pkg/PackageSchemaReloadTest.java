@@ -63,6 +63,7 @@ public class PackageSchemaReloadTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("ReferenceEquality") // Identity, not equality, of the schema instance matters
   public void testSchemaReloadOnPackageVersionBump() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
