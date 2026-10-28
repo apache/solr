@@ -28,6 +28,11 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.domain.CreateCollectionInput
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.action_cancel
+import org.apache.solr.ui.shared.generated.resources.option_router_composite_id
+import org.apache.solr.ui.shared.generated.resources.option_router_implicit
+import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -38,6 +43,7 @@ class CreateCollectionFormTest {
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testShowsFieldsAndButtons() = runComposeUiTest {
+        getString(Res.string.action_cancel)
         setContent {
             CreateCollectionForm(
                 configsets = configsets,
@@ -47,6 +53,7 @@ class CreateCollectionFormTest {
                 onCancel = {},
             )
         }
+        awaitIdle()
 
         onNodeWithTag("create_collection_name_field").assertExists()
         onNodeWithTag("create_collection_shards_field").assertExists()
@@ -148,6 +155,8 @@ class CreateCollectionFormTest {
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testCreatePassesTheTypedValuesAndAdvancedRouter() = runComposeUiTest {
+        getString(Res.string.option_router_composite_id)
+        getString(Res.string.option_router_implicit)
         val created = mutableListOf<CreateCollectionInput>()
         setContent {
             CreateCollectionForm(
@@ -158,6 +167,7 @@ class CreateCollectionFormTest {
                 onCancel = {},
             )
         }
+        awaitIdle()
 
         onNodeWithTag("create_collection_name_field").performTextInput("films2")
         onNodeWithTag("create_collection_shards_field").performTextClearance()
@@ -169,7 +179,7 @@ class CreateCollectionFormTest {
         onNodeWithTag("create_collection_pull_field").performTextClearance()
         onNodeWithTag("create_collection_pull_field").performTextInput("0")
         onNodeWithTag("create_collection_advanced_toggle").performClick()
-        onNodeWithText("Composite ID").performClick()
+        onNodeWithText("Composite ID").performScrollTo().performClick()
         onNodeWithText("Implicit").performClick()
         onNodeWithTag("create_collection_route_field").performTextInput("id")
         onNodeWithTag("create_collection_async_field").performTextInput("req-1")
