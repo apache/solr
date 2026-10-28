@@ -447,11 +447,8 @@ public class PackageManager implements Closeable {
       // If updating, refresh the package version for this to take effect
       if (isUpdate || pegToLatest) {
         try {
-          SolrCLI.postJsonToSolr(
-              solrClient,
-              PackageUtils.PACKAGE_PATH,
-              "{\"refresh\": \"" + packageInstance.name + "\"}");
-        } catch (Exception ex) {
+          new PackageApi.RefreshPackage(packageInstance.name).process(solrClient);
+        } catch (SolrServerException | IOException ex) {
           throw new SolrException(ErrorCode.SERVER_ERROR, ex);
         }
       }
@@ -1065,8 +1062,7 @@ public class PackageManager implements Closeable {
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
             "{set: {PKG_VERSIONS: {" + packageName + ": null}}}");
-        SolrCLI.postJsonToSolr(
-            solrClient, PackageUtils.PACKAGE_PATH, "{\"refresh\": \"" + packageName + "\"}");
+        new PackageApi.RefreshPackage(packageName).process(solrClient);
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
