@@ -1336,7 +1336,9 @@ public class IndexFetcher {
    */
   private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
+      // We don't care about the length, just the existence check that will occur implicitly when
+      // checking length.
+      dir.fileLength(fileName);
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;
