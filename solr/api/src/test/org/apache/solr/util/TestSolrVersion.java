@@ -59,4 +59,18 @@ public class TestSolrVersion extends SolrTestCase {
     assertFalse(SOLR_9_0_1.satisfies("8.x"));
     assertTrue(SOLR_9_0_1.satisfies("8 - 9"));
   }
+
+  public void testPrereleaseIgnoredBySatisfies() {
+    SolrVersion snapshot = SolrVersion.valueOf("10.1.0-SNAPSHOT");
+    assertTrue(snapshot.satisfies(">=9.0.0"));
+    assertTrue(snapshot.satisfies("10.x"));
+    assertTrue(snapshot.satisfies("~10.1"));
+    assertFalse(snapshot.satisfies("<10.1"));
+  }
+
+  public void testWithoutPrerelease() {
+    SolrVersion snapshot = SolrVersion.valueOf("10.1.0-SNAPSHOT");
+    assertTrue(snapshot.lessThan(SolrVersion.valueOf("10.1.0")));
+    assertEquals(SolrVersion.valueOf("10.1.0"), snapshot.withoutPrerelease());
+  }
 }

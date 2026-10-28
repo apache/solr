@@ -642,7 +642,7 @@ public class ZkController implements Closeable {
       SolrVersion ourVersion = SolrVersion.LATEST;
       SolrVersion clusterVersion = lowestVersion.get();
 
-      if (ourVersion.lessThan(clusterVersion)) {
+      if (ourVersion.withoutPrerelease().lessThan(clusterVersion.withoutPrerelease())) {
         log.warn(
             "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
 
