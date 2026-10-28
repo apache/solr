@@ -400,6 +400,8 @@ When using any of these factories, please consult the {solr-javadocs}/core/org/a
 
 {solr-javadocs}/core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]::: Attempts to mutate selected fields that have only CharSequence-typed values into Long values.
 
+For these four numeric processors, non-numeric values, including empty strings, are left unmodified.
+
 {solr-javadocs}/core/org/apache/solr/update/processor/RegexReplaceProcessorFactory.html[RegexReplaceProcessorFactory]:: An updated processor that applies a configured regex to any CharSequence values found in the selected fields, and replaces any matches with the configured replacement string.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0 (i.e., empty strings).

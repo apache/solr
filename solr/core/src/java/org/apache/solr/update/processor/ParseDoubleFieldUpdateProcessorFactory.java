@@ -104,7 +104,7 @@ public class ParseDoubleFieldUpdateProcessorFactory
       String stringVal = srcVal.toString();
       ParsePosition pos = new ParsePosition(0);
       Number number = numberFormat.parse(stringVal, pos);
-      if (pos.getIndex() != stringVal.length()) {
+      if (number == null || pos.getIndex() != stringVal.length()) {
         if (log.isDebugEnabled()) {
           log.debug(
               "value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
