@@ -18,13 +18,17 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -96,20 +100,31 @@ public class CreateToolTest extends SolrCloudTestCase {
     Path hiddenDir = Files.createDirectory(confDir.resolve(".hiddenDir"));
     Files.writeString(hiddenDir.resolve("nope.txt"), "should not be zipped either");
 
-    byte[] zipBytes = CreateTool.zipConfigSet(confDir);
+    byte[] zipBytes = Utils.zipDirectory(confDir);
+    Map<String, String> entries = readZipEntries(zipBytes);
 
-    Set<String> entryNames = new HashSet<>();
+    assertTrue(entries.containsKey("solrconfig.xml"));
+    assertTrue(entries.containsKey("lang/"));
+    assertTrue(entries.containsKey("lang/stopwords.txt"));
+    assertFalse(entries.containsKey(".hidden-file"));
+    assertTrue(entries.keySet().stream().noneMatch(name -> name.startsWith(".hiddenDir")));
+
+    // Equivalent, not necessarily byte-identical: ZipEntry defaults to the current time
+    // when unset, so two back-to-back calls can differ at the byte level.
+    ByteArrayOutputStream streamed = new ByteArrayOutputStream();
+    Utils.zipDirectory(confDir, streamed);
+    assertEquals(entries, readZipEntries(streamed.toByteArray()));
+  }
+
+  /** Maps each zip entry name to its contents (directory entries map to the empty string). */
+  private static Map<String, String> readZipEntries(byte[] zipBytes) throws IOException {
+    Map<String, String> entries = new HashMap<>();
     try (ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
       ZipEntry entry;
       while ((entry = zipIn.getNextEntry()) != null) {
-        entryNames.add(entry.getName());
+        entries.put(entry.getName(), new String(zipIn.readAllBytes(), StandardCharsets.UTF_8));
       }
     }
-
-    assertTrue(entryNames.contains("solrconfig.xml"));
-    assertTrue(entryNames.contains("lang/"));
-    assertTrue(entryNames.contains("lang/stopwords.txt"));
-    assertFalse(entryNames.contains(".hidden-file"));
-    assertTrue(entryNames.stream().noneMatch(name -> name.startsWith(".hiddenDir")));
+    return entries;
   }
 }
