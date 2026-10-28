@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -67,7 +68,9 @@ public class RemoteSolrBackend implements SolrBackend {
   public void uploadConfigSet(Path configDir, String name) throws SolrServerException, IOException {
     Path tempZip = Files.createTempFile("configset-", ".zip");
     try {
-      Files.write(tempZip, Utils.zipDirectory(configDir));
+      try (OutputStream out = Files.newOutputStream(tempZip)) {
+        Utils.zipDirectory(configDir, out);
+      }
       new ConfigSetAdminRequest.Upload()
           .setConfigSetName(name)
           .setUploadFile(tempZip, "application/zip")
