@@ -44,8 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.domain.RequestHandlerOption
 import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.label_collection_core
 import org.apache.solr.ui.shared.generated.resources.label_request_handler
-import org.apache.solr.ui.shared.generated.resources.nav_collections
 import org.apache.solr.ui.shared.generated.resources.no_collections_available
 import org.apache.solr.ui.shared.generated.resources.no_request_handlers
 import org.apache.solr.ui.shared.generated.resources.placeholder_select_request_handler
@@ -88,7 +88,7 @@ fun IndexQueryHeader(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             HeaderDropdown(
-                label = stringResource(Res.string.nav_collections),
+                label = stringResource(Res.string.label_collection_core),
                 value = selectedCollection,
                 placeholder = "",
                 enabled = collectionsEnabled,
@@ -183,6 +183,7 @@ private fun HeaderDropdown(
                 }
             },
             modifier = Modifier
+                .fillMaxWidth()
                 .menuAnchor(
                     type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
                     enabled = enabled,

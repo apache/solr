@@ -49,7 +49,8 @@ class IndexQueryHeaderTest {
             )
         }
 
-        onNodeWithText("No collections are available").assertExists()
+        // The message text is a string resource that loads asynchronously on wasm, so the test checks the node
+        onNodeWithTag("index_query_no_collections").assertExists()
         onNodeWithTag("index_query_collection_dropdown").assertIsNotEnabled()
         onNodeWithTag("index_query_handler_dropdown").assertIsNotEnabled()
     }
