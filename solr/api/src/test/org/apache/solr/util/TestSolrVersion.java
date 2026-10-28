@@ -107,8 +107,7 @@ public class TestSolrVersion extends SolrTestCase {
 
   public void testWithoutPrereleaseOrdering() {
     SolrVersion normalized = SolrVersion.valueOf("10.1.0-SNAPSHOT").withoutPrerelease();
-    for (String versionString :
-        new String[] {"10.1.0", "10.1.0-alpha.1", "10.1.0-rc.1+b123"}) {
+    for (String versionString : new String[] {"10.1.0", "10.1.0-alpha.1", "10.1.0-rc.1+b123"}) {
       SolrVersion sameRelease = SolrVersion.valueOf(versionString).withoutPrerelease();
       assertFalse(versionString, normalized.lessThan(sameRelease));
       assertFalse(versionString, sameRelease.lessThan(normalized));
