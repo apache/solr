@@ -214,6 +214,7 @@
   </requestDispatcher>
 
   <queryParser name="count" class="org.apache.solr.search.AnalyticsTestQParserPlugin"/>
+  <queryParser name="releaseoncomplete" class="org.apache.solr.search.ReleaseOnCompleteQParserPlugin"/>
 
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
