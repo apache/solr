@@ -170,7 +170,7 @@ public class QueryComponent extends SearchComponent {
     ReturnFields returnFields = new SolrReturnFields(req);
     rsp.setReturnFields(returnFields);
     int flags = 0;
-    if (returnFields.wantsScore()) {
+    if (returnFields.returnsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
     }
     rb.setFieldFlags(flags);
@@ -857,7 +857,7 @@ public class QueryComponent extends SearchComponent {
       if (fls != null && fls.length > 0 && (fls.length != 1 || !fls[0].isEmpty())) {
         // If the outer request contains actual FL's use them...
         sreq.params.set(CommonParams.FL, fls);
-        if (!fields.wantsField(keyFieldName)) {
+        if (!fields.returnsField(keyFieldName)) {
           additionalAdded = addFL(additionalFL, keyFieldName, additionalAdded);
         }
       } else {
@@ -1435,7 +1435,7 @@ public class QueryComponent extends SearchComponent {
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
-      if (!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
+      if (!rb.rsp.getReturnFields().returnsField(uniqueField.getName())) {
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }
 
@@ -1459,7 +1459,7 @@ public class QueryComponent extends SearchComponent {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
       String keyFieldName = uniqueKey;
-      boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      boolean removeKeyField = !rb.rsp.getReturnFields().returnsField(keyFieldName);
       boolean returnRawScore =
           rb.rsp.getReturnFields().getExplicitlyRequestedFieldNames() != null
               && rb.rsp

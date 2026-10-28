@@ -1,0 +1,7 @@
+title:  Dropdowns for collection/core, for fields on the schema-page and for field-types on the analyze page are now using a contains-filtering
+type: changed
+authors:
+  - name: Renato Haeberli
+links:
+- name: GITHUB#4121
+  url: https://github.com/apache/solr/pull/4121

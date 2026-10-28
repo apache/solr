@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CombinerParams.RECIPROCAL_RANK_FUSIO
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.search.Explanation;
@@ -168,10 +169,19 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
         SolrException.class, () -> reciprocalRankFusion.combine(twoListDocMap(), solrParams));
   }
 
-  /** The explain string carries the weight and labels each rank with the correct query name. */
+  /**
+   * The explain string carries the weight and labels each rank with the correct query name, even
+   * when the doc-map iteration order is the reverse of {@code combiner.query} order.
+   */
   @Test
   public void testExplainWithWeights() {
-    Map<String, List<ShardDoc>> queriesDocMap = twoListDocMap();
+    // vector is inserted first, so map order is the reverse of the request order below.
+    // A HashMap can iterate in request order by chance and hide a rank/label mismatch.
+    Map<String, List<ShardDoc>> source = twoListDocMap();
+    Map<String, List<ShardDoc>> queriesDocMap = new LinkedHashMap<>();
+    queriesDocMap.put("vector", source.get("vector"));
+    queriesDocMap.put("lexical", source.get("lexical"));
+    assertEquals(List.of("vector", "lexical"), List.copyOf(queriesDocMap.keySet()));
     SolrParams solrParams =
         params(
             CombinerParams.COMBINER_RRF_WEIGHT + ".lexical", "2",

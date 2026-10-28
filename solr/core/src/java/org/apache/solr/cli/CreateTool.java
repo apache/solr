@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,12 +35,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.ConfigsetsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 
 /** Supports create command in the bin/solr script. */
@@ -317,24 +319,22 @@ public class CreateTool extends ToolBase {
     int replicationFactor = params.replicationFactor;
     String confName = params.confName;
 
-    boolean configExistsInZk =
+    boolean configExists =
         confName != null
             && !confName.trim().isEmpty()
-            && ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confName);
+            && new ConfigsetsApi.ListConfigSet()
+                .process(cloudSolrClient)
+                .configSets
+                .contains(confName);
 
-    if (configExistsInZk) {
+    if (configExists) {
       echo("Re-using existing configuration directory " + confName);
-    } else { // if (confdir != null && !confdir.trim().isEmpty()) {
+    } else {
       if (confName == null || confName.trim().isEmpty()) {
         confName = params.name;
       }
 
-      // TODO: This should be done using the configSet API.  This would let us remove
-      // the direct dependency on ZooKeeper APIs.  Unlike the bin/solr zk comamnds that
-      // work directly with ZooKeeper.
       final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
-      ConfigSetService configSetService =
-          new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath =
           ConfigSetService.getConfigsetPath(params.confDir, configsetsDirPath.toString());
 
@@ -343,10 +343,11 @@ public class CreateTool extends ToolBase {
               + confPath.toAbsolutePath()
               + " for config "
               + confName
-              + " to ZooKeeper at "
-              + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
-      // We will trust the config since we have the Zookeeper Address
-      configSetService.uploadConfig(confName, confPath);
+              + " using the Configsets V2 API");
+      var uploadReq =
+          new ConfigsetsApi.UploadConfigSet(
+              confName, new ByteArrayInputStream(zipConfigSet(confPath)));
+      uploadReq.process(cloudSolrClient);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
@@ -385,6 +386,11 @@ public class CreateTool extends ToolBase {
     }
 
     echo(endMessage);
+  }
+
+  /** Zips the contents of a configset directory for upload. */
+  static byte[] zipConfigSet(Path confPath) throws IOException {
+    return Utils.zipDirectory(confPath);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
