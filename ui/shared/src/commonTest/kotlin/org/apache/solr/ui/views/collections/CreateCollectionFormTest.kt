@@ -27,6 +27,7 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import org.apache.solr.ui.domain.Configset
+import org.apache.solr.ui.domain.CreateCollectionInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

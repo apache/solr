@@ -132,6 +132,8 @@
   <string name="label_collection_properties">Collection properties</string>
   <string name="helper_collection_properties">key=value pairs, separated by commas</string>
   <string name="label_configset">Configset</string>
+  <string name="error_collection_name_exists">A collection with this name already exists</string>
+  <string name="error_create_collection_general">Could not create the collection.</string>
   <string name="cd_decrease_shards">Decrease shards</string>
   <string name="cd_increase_shards">Increase shards</string>
 </resources>

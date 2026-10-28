@@ -45,6 +45,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.domain.Configset
+import org.apache.solr.ui.domain.CreateCollectionInput
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.action_cancel
 import org.apache.solr.ui.shared.generated.resources.action_create_collection
@@ -76,19 +77,6 @@ import org.apache.solr.ui.views.components.SolrCard
 import org.apache.solr.ui.views.components.SolrTextButton
 import org.apache.solr.ui.views.configsets.ConfigsetsDropdown
 import org.jetbrains.compose.resources.stringResource
-
-data class CreateCollectionInput(
-    val name: String,
-    val configset: String,
-    val shards: Int,
-    val nrtReplicas: Int,
-    val tlogReplicas: Int,
-    val pullReplicas: Int,
-    val router: String,
-    val routeField: String?,
-    val async: String?,
-    val properties: Map<String, String>,
-)
 
 private const val ROUTER_COMPOSITE_ID = "compositeId"
 private const val ROUTER_IMPLICIT = "implicit"
