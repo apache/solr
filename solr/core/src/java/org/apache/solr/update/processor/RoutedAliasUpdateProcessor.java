@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.COMMIT_END_POINT;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
@@ -88,6 +89,11 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private final SolrParams outParamsToLeader;
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
+    if ("true".equals(req.getParams().get(COMMIT_END_POINT))) {
+      // A commit marked as an end point, such as an auto commit, applies to the core it was
+      // issued on only; it must not be routed to the leaders of the aliased collections.
+      return next;
+    }
     String aliasName = null;
     // Demeter please don't arrest us... hide your eyes :(
     // todo: a core should have a more direct way of finding a collection name, and the collection
