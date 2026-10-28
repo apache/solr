@@ -1,9 +1,10 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
-title: Distributed JSON facet HLL precision is configurable, with mismatched shard precision rejected
+title: The precision of distributed hll() and numBuckets can be set with the system properties solr.facet.hll.log2m and solr.facet.hll.expthresh; shards with a different log2m now fail the request instead of returning a wrong count
 type: added
 authors:
   - name: Samuel Verstraete
+    nick: elangelo
   - name: Nick Shanin
 links:
   - name: SOLR-18598
