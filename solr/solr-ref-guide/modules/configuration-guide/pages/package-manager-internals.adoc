@@ -100,7 +100,7 @@ Use the following steps to upload a jar signed with your public key:
 +
 [source, bash,subs="attributes"]
 ----
-curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
+curl -o runtimelibs.jar   -LO 'https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true'
 ----
 
 . Sign the jar with your private key:
@@ -114,14 +114,14 @@ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 
 +
 [source, bash]
 ----
-curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/filestore/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
+curl --data-binary @runtimelibs.jar -X PUT  'http://localhost:8983/api/cluster/filestore/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>'
 ----
 
 . Verify your jar upload:
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/1.0?omitHeader=true
+curl 'http://localhost:8983/api/cluster/filestore/metadata/mypkg/1.0?omitHeader=true'
 ----
 +
 [source, json]
@@ -273,7 +273,7 @@ The same result can be achieved by editing your `solrconfig.xml` as well:
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
+curl 'http://localhost:8983/solr/gettingstarted/config' -H 'Content-type:application/json' -d  '{
           "create-requesthandler": { "name": "/test",
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
@@ -282,7 +282,7 @@ curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:applicati
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true'
 ----
 +
 [source,json]
@@ -301,7 +301,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/test?omitHeader=true'
 ----
 +
 [source,json]
@@ -321,18 +321,18 @@ Get a new version of the jar, sign and upload it:
 +
 [source, bash,subs="attributes"]
 ----
-curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
+curl -o runtimelibs3.jar   -LO 'https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true'
 
 openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 
-curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/filestore/files/mypkg/2.0/myplugins.jar?sig=<signature>
+curl --data-binary @runtimelibs3.jar -X PUT  'http://localhost:8983/api/cluster/filestore/files/mypkg/2.0/myplugins.jar?sig=<signature>'
 ----
 
 . Verify it:
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=true
+curl 'http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=true'
 ----
 +
 [source, json]
@@ -358,7 +358,7 @@ curl -X POST http://localhost:8983/api/cluster/packages/mypkg/versions \
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true'
 ----
 +
 [source,json]
@@ -382,7 +382,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/test?omitHeader=true'
 ----
 +
 [source,json]
@@ -411,7 +411,7 @@ at a later point.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config/params -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/gettingstarted/config/params' -H 'Content-type:application/json'  -d '{
   "set":{
     "PKG_VERSIONS":{
       "mypkg":"2.0"
