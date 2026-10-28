@@ -1063,7 +1063,7 @@ public class PackageManager implements Closeable {
             PackageUtils.getCollectionParamsPath(collection),
             "{set: {PKG_VERSIONS: {" + packageName + ": null}}}");
         new PackageApi.RefreshPackage(packageName).process(solrClient);
-      } catch (Exception ex) {
+      } catch (Exception ex) { // postJsonToSolr above declares a plain throws Exception
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
 

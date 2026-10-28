@@ -216,8 +216,28 @@ public class PackageStore {
     return enablePackages;
   }
 
+  public void requireEnabled() {
+    if (!isEnabled()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ERR_MSG);
+    }
+  }
+
   public void handleZkErr(Exception e) {
     log.error("Error reading package config from zookeeper", SolrZkClient.checkInterrupted(e));
+  }
+
+  /**
+   * Deserializes {@code packages.json} bytes for a copy-on-write update, defaulting to a fresh
+   * instance on missing or invalid data.
+   */
+  Packages parseForUpdate(byte[] bytes) {
+    try {
+      Packages packages = bytes == null ? new Packages() : mapper.readValue(bytes, Packages.class);
+      return packages.copy();
+    } catch (IOException e) {
+      log.error("Error deserializing packages.json", e);
+      return new Packages();
+    }
   }
 
   public boolean isJarInuse(String path) {

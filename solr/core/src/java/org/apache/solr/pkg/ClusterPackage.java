@@ -109,9 +109,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
-    if (!packageStore.isEnabled()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, PackageStore.ERR_MSG);
-    }
+    packageStore.requireEnabled();
     if (requestBody == null || requestBody.files == null || requestBody.files.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No files specified");
     }
@@ -131,17 +129,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
           .atomicUpdate(
               SOLR_PKGS_PATH,
               (stat, bytes) -> {
-                PackageStore.Packages packages;
-                try {
-                  packages =
-                      bytes == null
-                          ? new PackageStore.Packages()
-                          : packageStore.mapper.readValue(bytes, PackageStore.Packages.class);
-                  packages = packages.copy();
-                } catch (IOException e) {
-                  log.error("Error deserializing packages.json", e);
-                  packages = new PackageStore.Packages();
-                }
+                PackageStore.Packages packages = packageStore.parseForUpdate(bytes);
                 List<PackageStore.PkgVersion> list =
                     packages.packages.computeIfAbsent(packageName, o -> new ArrayList<>());
                 for (PackageStore.PkgVersion pkgVersion : list) {
@@ -176,9 +164,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
-    if (!packageStore.isEnabled()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, PackageStore.ERR_MSG);
-    }
+    packageStore.requireEnabled();
 
     try {
       coreContainer
@@ -187,14 +173,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
           .atomicUpdate(
               SOLR_PKGS_PATH,
               (stat, bytes) -> {
-                PackageStore.Packages packages;
-                try {
-                  packages = packageStore.mapper.readValue(bytes, PackageStore.Packages.class);
-                  packages = packages.copy();
-                } catch (IOException e) {
-                  packages = new PackageStore.Packages();
-                }
-
+                PackageStore.Packages packages = packageStore.parseForUpdate(bytes);
                 List<PackageStore.PkgVersion> versions = packages.packages.get(packageName);
                 if (versions == null || versions.isEmpty()) {
                   throw new SolrException(
