@@ -1,0 +1,8 @@
+title: >
+  /update/json/docs now rejects field mapping parameters (f) combined with mapUniqueKeyOnly=true with a 400 error instead of silently ignoring the mappings.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-8240
+    url: https://issues.apache.org/jira/browse/SOLR-8240
