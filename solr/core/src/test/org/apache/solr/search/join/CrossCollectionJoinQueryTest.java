@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -466,6 +467,28 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
           e.getMessage().contains("mutually exclusive")
               && e.getMessage().contains("zkHost")
               && e.getMessage().contains("solrUrl"));
+    }
+  }
+
+  @Test
+  public void testMissingFromOrToAtParser() throws Exception {
+    for (String missing : List.of(CrossCollectionJoinQParser.FROM, CrossCollectionJoinQParser.TO)) {
+      ModifiableSolrParams localParams = new ModifiableSolrParams();
+      localParams.set(QueryParsing.V, "*:*");
+      localParams.set(CrossCollectionJoinQParser.FROM_INDEX, "products");
+      localParams.set(CrossCollectionJoinQParser.FROM, "product_id_s");
+      localParams.set(CrossCollectionJoinQParser.TO, "product_id_s");
+      localParams.remove(missing);
+
+      ModifiableSolrParams requestParams = new ModifiableSolrParams();
+      try (SolrQueryRequest req = new SolrQueryRequestBase(null, requestParams) {}) {
+        CrossCollectionJoinQParser parser =
+            new CrossCollectionJoinQParser(
+                null, localParams, requestParams, req, "product_id_s", null);
+        SolrException e = expectThrows(SolrException.class, parser::parse);
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue(e.getMessage(), e.getMessage().contains("'" + missing + "'"));
+      }
     }
   }
 

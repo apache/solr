@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  QueryRequest.java in SolrJ no longer sends the 'qt' parameter to the server.
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: r4mercur
+    nick: r4mercur
+links:
+  - name: SOLR-17715
+    url: https://issues.apache.org/jira/browse/SOLR-17715
+  - name: PR#4397
+    url: https://github.com/apache/solr/pull/4397

@@ -34,6 +34,22 @@ This compatibility safeguard can be disabled via the environment variable `SOLR_
 
 Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
+== Solr 10.2
+
+=== Snapshot commands are now `bin/solr snapshot` sub-commands
+
+The `snapshot-create`, `snapshot-delete`, `snapshot-describe`, `snapshot-export` and `snapshot-list` commands of the experimental picocli command line interface are replaced by the sub-commands of `bin/solr snapshot`:
+
+[source,bash]
+----
+bin/solr snapshot create -c mycollection --snapshot-name snap1
+bin/solr snapshot list -c mycollection
+----
+
+The old spellings still work and are hidden from the help and from this guide.
+They are deprecated in Solr 10.2 and are removed in Solr 11.0.
+The default command line interface is not changed.
+
 == Solr 10.1
 
 === Misc
@@ -76,12 +92,36 @@ Streaming expressions and the cross-collection join query parser now restrict wh
 
 If you use these features to query another cluster, add its connection details to the corresponding setting before upgrading.
 
+[#cuvs-gpu-acceleration-broken]
+=== GPU Acceleration (cuVS) Does Not Work in Solr 10.1
+
+[WARNING]
+====
+Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (refer SOLR-18556 for updates).
+Solr 10.1 upgrades to Lucene 10.4, and a cuVS-lucene (library which powers the GPU accelertion) library version compatible with Lucene 10.4 is not available as of Solr 10.1 release.
+
+If you use GPU acceleration for vector indexing, skip Solr 10.1 and stay on Solr 10.0.x.
+This is expected to be fixed in a subsequent Solr 10.x release.
+====
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
 Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer should take care to review any custom `RuleBasedAuthorizationPlugin` permissions and ensure that v2 API paths are adequately secured.
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
+
+=== V2 API
+
+In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
+It does not include `live_nodes`, the alias map, or cluster properties.
+Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for those.
+
+There is no `includeAll` parameter.
+A request with no other parameters returns every collection.
+`collection`, `shard`, and `_route_` narrow which part of the tree is returned.
+
+The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 
 === JWT Authentication
 
@@ -196,6 +236,8 @@ Upgrades: This choice cannot be changed with a rolling upgrade; doing so is high
 All nodes in the cluster must always have a consistent understanding of the overseer's enablement.
 If using the cluster property toggle, use the xref:deployment-guide:zookeeper-utilities.adoc#set-a-cluster-property[bin/solr cluster] CLI utility to set it while the cluster is offline.
 If using the env var; ensure each Solr node is configured to start with the setting set consistently.
+
+NOTE: Without the Overseer, Solr keeps its Collection and ConfigSet API locks in ZooKeeper container znodes, so an external ZooKeeper ensemble must be version 3.5.1 or higher.
 
 When the Overseer is disabled, it is nonetheless still elected, which can be influenced by node roles.
 If you are using any xref:configuration-guide:cluster-singleton-plugins.adoc[cluster singleton plugins], they execute on the node elected to be the Overseer.

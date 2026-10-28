@@ -1,7 +1,0 @@
-title: Update Web server stack
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#4845
-  url: https://github.com/apache/solr/pull/4845

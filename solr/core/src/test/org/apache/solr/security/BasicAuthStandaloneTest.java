@@ -23,10 +23,18 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
@@ -121,6 +129,53 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       // Test that the second doPost request to /security/authorization went through
       verifySecurityStatus(
           httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
+    }
+  }
+
+  @Test
+  public void testConcurrentEdits() throws Exception {
+    String authzPrefix = "/admin/authorization";
+    HttpClient httpClient = jetty.getSolrClient().getHttpClient();
+    String url = buildUrl(jetty.getLocalPort()) + authzPrefix;
+
+    securityConfHandler.persistConf(
+        new SecurityConfHandler.SecurityConfig()
+            .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
+    securityConfHandler.securityConfEdited();
+    verifySecurityStatus(httpClient, url, "authorization.enabled", "true", 20);
+
+    int numEdits = 20;
+    // Release all edits at once so they overlap, like the Admin UI's per-permission POSTs. The
+    // await timeout fails the test instead of hanging if the pool ever has fewer threads than
+    // numEdits.
+    CyclicBarrier barrier = new CyclicBarrier(numEdits);
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            numEdits, new SolrNamedThreadFactory("securityEdit"));
+    try {
+      List<Future<?>> futures = new ArrayList<>();
+      for (int i = 0; i < numEdits; i++) {
+        String command = "{'set-user-role': {'user" + i + "': ['dev']}}";
+        futures.add(
+            executor.submit(
+                () -> {
+                  barrier.await(30, TimeUnit.SECONDS);
+                  doHttpPost(httpClient, url, command, "solr", "SolrRocks");
+                  return null;
+                }));
+      }
+      for (Future<?> future : futures) {
+        future.get();
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+
+    Map<?, ?> authz =
+        (Map<?, ?>) securityConfHandler.getSecurityConfig(false).getData().get("authorization");
+    Map<?, ?> userRoles = (Map<?, ?>) authz.get("user-role");
+    for (int i = 0; i < numEdits; i++) {
+      assertTrue("missing user" + i + " in " + userRoles, userRoles.containsKey("user" + i));
     }
   }
 

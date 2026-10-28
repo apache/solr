@@ -23,7 +23,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Ignore
 import kotlin.test.Test
-import org.apache.solr.ui.components.auth.AuthenticationComponent.Model
+import org.apache.solr.ui.components.auth.viewmodel.AuthenticationUiState
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.error_invalid_credentials
 
@@ -35,11 +35,10 @@ class UserAuthenticationContentTest {
     fun `GIVEN error THEN error displayed`() = runComposeUiTest {
         val error = Res.string.error_invalid_credentials
         setContent {
-            UserAuthenticationContent(createComponent(model = Model(error = error)))
+            UserAuthenticationContent(uiState = AuthenticationUiState(error = error), onAbort = {})
         }
 
         onNodeWithTag("error_text").assertIsDisplayed()
     }
 
-    private fun createComponent(model: Model = Model()) = TestAuthenticationComponent(model)
 }

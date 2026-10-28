@@ -58,7 +58,7 @@ import org.apache.solr.ui.shared.generated.resources.nav_dashboard
 import org.apache.solr.ui.shared.generated.resources.nav_environment
 import org.apache.solr.ui.shared.generated.resources.nav_logging
 import org.apache.solr.ui.shared.generated.resources.nav_metrics
-import org.apache.solr.ui.shared.generated.resources.nav_queries_and_operations
+import org.apache.solr.ui.shared.generated.resources.nav_index_and_query
 import org.apache.solr.ui.shared.generated.resources.nav_security
 import org.apache.solr.ui.shared.generated.resources.nav_thread_dump
 import org.apache.solr.ui.shared.generated.resources.other_admission
@@ -177,7 +177,7 @@ private fun getMainMenuText(item: MainMenu) = when (item) {
     MainMenu.Security -> Res.string.nav_security
     MainMenu.Configsets -> Res.string.nav_configsets
     MainMenu.Collections -> Res.string.nav_collections
-    MainMenu.QueriesAndOperations -> Res.string.nav_queries_and_operations
+    MainMenu.IndexAndQuery -> Res.string.nav_index_and_query
     MainMenu.Environment -> Res.string.nav_environment
     MainMenu.Logging -> Res.string.nav_logging
     MainMenu.ThreadDump -> Res.string.nav_thread_dump
@@ -200,7 +200,7 @@ private fun getMenuIcon(
 
     MainMenu.Collections -> Res.drawable.apps
 
-    MainMenu.QueriesAndOperations ->
+    MainMenu.IndexAndQuery ->
         if (isSelected) Res.drawable.other_admission_filled else Res.drawable.other_admission
 
     MainMenu.Environment -> if (isSelected) Res.drawable.memory_filled else Res.drawable.memory

@@ -17,8 +17,11 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import java.util.Map;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AsyncJerseyResponse;
@@ -44,6 +47,10 @@ public abstract class AdminAPIBase extends JerseyResource {
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
 
+  @Inject
+  @Named(CALLING_LOCK_ID_HEADER)
+  protected String callingLockId;
+
   public AdminAPIBase(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
@@ -51,6 +58,9 @@ public abstract class AdminAPIBase extends JerseyResource {
     this.coreContainer = coreContainer;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
+    if (solrQueryRequest != null) {
+      callingLockId = (String) solrQueryRequest.getContext().get(CALLING_LOCK_ID_HEADER);
+    }
   }
 
   protected CoreContainer fetchAndValidateZooKeeperAwareCoreContainer() {
@@ -138,7 +148,7 @@ public abstract class AdminAPIBase extends JerseyResource {
       ZkNodeProps remoteMessage)
       throws Exception {
     return submitRemoteMessageAndHandleException(
-        response, new AdminCmdContext(action, null, solrQueryRequest), remoteMessage);
+        response, new AdminCmdContext(action, null, callingLockId), remoteMessage);
   }
 
   protected SolrResponse submitRemoteMessageAndHandleAsync(
@@ -149,7 +159,7 @@ public abstract class AdminAPIBase extends JerseyResource {
       throws Exception {
     var remoteResponse =
         submitRemoteMessageAndHandleException(
-            response, new AdminCmdContext(action, asyncId, solrQueryRequest), remoteMessage);
+            response, new AdminCmdContext(action, asyncId, callingLockId), remoteMessage);
 
     if (asyncId != null) {
       response.requestId = asyncId;

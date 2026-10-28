@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -53,6 +54,11 @@ import org.junit.Test;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
+
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
@@ -91,7 +97,7 @@ public class PostToolTest extends SolrCloudTestCase {
       SecurityJson.USER_PASS,
       jsonDoc.toString(),
     };
-    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
+    assertEquals(0, runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -129,7 +135,7 @@ public class PostToolTest extends SolrCloudTestCase {
     String[] args = {
       "post", "-c", collection, "--credentials", SecurityJson.USER_PASS, jsonDoc.toString(),
     };
-    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
+    assertEquals(0, runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -170,12 +176,12 @@ public class PostToolTest extends SolrCloudTestCase {
       "--credentials",
       SecurityJson.USER_PASS,
       "--params",
-      "\"separator=%09&header=false&fieldnames=id,title_s\"",
+      "separator=%09&header=false&fieldnames=id,title_s",
       "--type",
       "text/csv",
       tsvDoc.toString(),
     };
-    assertEquals(0, CLITestHelper.runTool(args, PostTool.class));
+    assertEquals(0, runTool(args, PostTool.class));
 
     int numFound = 0;
     int expectedDocCount = 1;
@@ -291,6 +297,45 @@ public class PostToolTest extends SolrCloudTestCase {
     Path dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
+  }
+
+  @Test
+  public void testFileTypesAppliedToFileArgs() throws IOException {
+    Path dir = createTempDir();
+    Path a = Files.writeString(dir.resolve("a.xml"), "<add/>");
+    Path b = Files.writeString(dir.resolve("B.XML"), "<add/>");
+    Path c = Files.writeString(dir.resolve("c.csv"), "id\n1\n");
+    Path d = Files.writeString(dir.resolve("noext"), "text");
+
+    PostTool postTool = dryRunPostTool("xml");
+    String[] files = {a.toString(), b.toString(), c.toString(), d.toString()};
+    assertEquals(2, postTool.postFiles(files, 0, null, null));
+
+    postTool.auto = false;
+    assertEquals(4, postTool.postFiles(files, 0, null, null));
+  }
+
+  @Test
+  public void testFileTypesAppliedToGlobs() throws IOException {
+    assumeFalse("'*' is not a valid path character on Windows", Constants.WINDOWS);
+    Path dir = createTempDir();
+    Files.writeString(dir.resolve("a.xml"), "<add/>");
+    Files.writeString(dir.resolve("B.XML"), "<add/>");
+    Files.writeString(dir.resolve("c.csv"), "id\n1\n");
+
+    PostTool postTool = dryRunPostTool("xml");
+    assertEquals(2, postTool.postFiles(new String[] {dir + "/*"}, 0, null, null));
+    assertEquals(0, postTool.postFiles(new String[] {dir + "/*.csv"}, 0, null, null));
+  }
+
+  private PostTool dryRunPostTool(String fileTypes) {
+    PostTool postTool = new PostTool(new CLITestHelper.TestingRuntime(false));
+    postTool.recursive = 0;
+    postTool.dryRun = true;
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
+    postTool.fileTypes = fileTypes;
+    postTool.fileFilter = postTool.getFileFilterFromFileTypes(fileTypes);
+    return postTool;
   }
 
   @Test
