@@ -8,7 +8,7 @@
 # TMP_DIR must be outside the git checkout; it is deleted first.
 
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+cd "$(git rev-parse --show-toplevel)"
 
 TMP_ROOT="${1:-${WORKSPACE:-$(pwd)}_smoke}"
 
