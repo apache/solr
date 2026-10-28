@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.request;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
@@ -30,7 +32,6 @@ import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase.FileStream;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -189,9 +190,18 @@ public abstract class ConfigSetAdminRequest<
      */
     public final Upload setUploadFile(final Path file, final String contentType)
         throws IOException {
-      final FileStream fileStream = new FileStream(file);
-      fileStream.setContentType(contentType);
-      return setUploadStream(fileStream);
+      return setUploadContent(
+          new RequestWriter.ContentWriter() {
+            @Override
+            public void write(OutputStream os) throws IOException {
+              Files.copy(file, os);
+            }
+
+            @Override
+            public String getContentType() {
+              return contentType;
+            }
+          });
     }
 
     /**
