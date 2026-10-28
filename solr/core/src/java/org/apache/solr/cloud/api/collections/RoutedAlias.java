@@ -44,6 +44,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -433,7 +434,11 @@ public abstract class RoutedAlias {
 
   private void preemptiveAsync(Runnable r, SolrCore core) {
     preemptiveCreateOnceAlready = true;
-    core.runAsync(r);
+    core.runAsync(
+        () -> {
+          TestInjection.injectPreemptiveCreateLatch();
+          r.run();
+        });
   }
 
   private SolrException unknownCreateType() {

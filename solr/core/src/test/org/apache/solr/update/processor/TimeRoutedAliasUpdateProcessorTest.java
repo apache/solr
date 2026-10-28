@@ -40,7 +40,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -63,6 +62,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -72,7 +72,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059") // TBD
 public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -343,7 +342,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         ExecutorUtil.newMDCAwareCachedThreadPool(
             "TimeRoutedAliasProcessorTestx-testPreemptiveCreation");
 
-    Exception[] threadExceptions = new Exception[2];
+    TestInjection.preemptiveCreateLatch = new CountDownLatch(2);
+    Throwable[] threadExceptions = new Throwable[2];
     boolean[] threadStarted = new boolean[2];
     boolean[] threadFinished = new boolean[2];
     try {
@@ -354,8 +354,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             try {
               starter.await();
               concurrentUpdates(params, alias);
-            } catch (Exception e) {
-              threadExceptions[0] = e;
+            } catch (Throwable t) {
+              threadExceptions[0] = t;
             }
             threadFinished[0] = true;
           });
@@ -366,21 +366,25 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             try {
               starter.await();
               concurrentUpdates(params, alias2);
-            } catch (Exception e) {
-              threadExceptions[1] = e;
+            } catch (Throwable t) {
+              threadExceptions[1] = t;
             }
             threadFinished[1] = true;
           });
       starter.countDown();
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executorService);
+      TestInjection.preemptiveCreateLatch = null;
     }
 
     // threads are known to be terminated by now, check for exceptions
-    for (Exception threadException : threadExceptions) {
+    for (Throwable threadException : threadExceptions) {
       if (threadException != null) {
         Thread.sleep(5000); // avoid spurious fails due to TRA thread not done yet
-        throw threadException;
+        if (threadException instanceof Error) {
+          throw (Error) threadException;
+        }
+        throw (Exception) threadException;
       }
     }
 
@@ -596,7 +600,16 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(8, cols.size());
+    assertTrue(
+        "preemptive creation of 2017-10-31 may or may not have finished, but nothing beyond it "
+            + "may exist yet: "
+            + cols,
+        cols.size() == 8 || cols.size() == 9);
+    assertEquals(
+        "the only collection that can follow 2017-10-30 is 2017-10-31",
+        cols.size() == 9,
+        cols.contains(alias + TRA + "2017-10-31"));
+    assertFalse(cols.contains(alias + TRA + "2017-11-01"));
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 7, alias);
@@ -664,7 +677,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertFalse(cols.contains("myalias" + TRA + "2017-11-03"));
+    assertFalse(cols.contains(alias + TRA + "2017-11-03"));
 
     assertUpdateResponse(
         add(
@@ -705,13 +718,13 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             params));
     assertUpdateResponse(solrClient.commit(alias));
 
-    List<String> colsT1;
-    colsT1 =
+    List<String> colsT1 =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertEquals(3, colsT1.size());
     assertFalse(
-        "Preemptive creation appears to not be asynchronous anymore",
-        colsT1.contains("myalias" + TRA + "2017-10-26"));
+        "preemptive creation of 2017-10-26 must still be held by the test latch" + colsT1,
+        colsT1.contains(alias + TRA + "2017-10-26"));
+    assertEquals(3, colsT1.size());
+    TestInjection.preemptiveCreateLatch.countDown();
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
@@ -740,7 +753,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertFalse(
         "Preemptive creation happened twice and created a collection "
             + "further in the future than the configured time slice!",
-        cols.contains("myalias" + TRA + "2017-10-27"));
+        cols.contains(alias + TRA + "2017-10-27"));
 
     validateCollectionCountAndAvailability(
         alias, 4, "Only 4 cols expected (preemptive create happened" + "twice among threads");
