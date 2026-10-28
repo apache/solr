@@ -624,11 +624,25 @@ public class QueryComponent extends SearchComponent {
     }
 
     if (shardRequestFactory != null) {
+      // the stored-fields stage does not score, so only the group stages need the global stats
+      boolean sendGlobalStats =
+          rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS && needsDistributedStats(rb);
       for (ShardRequest shardRequest : shardRequestFactory.constructRequest(rb)) {
+        if (sendGlobalStats) {
+          shardRequest.purpose |= ShardRequest.PURPOSE_SET_TERM_STATS;
+          rb.req.getSearcher().getStatsCache().sendGlobalStats(rb, shardRequest);
+        }
         rb.addRequest(this, shardRequest);
       }
     }
     return nextStage;
+  }
+
+  private static boolean needsDistributedStats(ResponseBuilder rb) {
+    return !rb.isDistribStatsDisabled()
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+            || rb.getSortSpec().includesScore()
+            || (rb.grouping() && rb.getGroupingSpec().getWithinGroupSortSpec().includesScore()));
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {
@@ -666,6 +680,10 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected void handleGroupedResponses(ResponseBuilder rb, ShardRequest sreq) {
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
+      updateStats(rb, sreq);
+    }
+
     ShardResponseProcessor responseProcessor = null;
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_GROUPS) != 0) {
       responseProcessor = new SearchGroupShardResponseProcessor();
@@ -771,9 +789,7 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if (!rb.isDistribStatsDisabled()
-        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-            || rb.getSortSpec().includesScore())) {
+    if (needsDistributedStats(rb)) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
         rb.addRequest(this, sreq);
