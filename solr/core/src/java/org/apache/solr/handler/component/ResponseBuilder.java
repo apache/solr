@@ -206,10 +206,14 @@ public class ResponseBuilder {
   }
 
   public Map<Object, ShardDoc> resultIds;
+
   // Maps uniqueKeyValue to ShardDoc, which may be used to
   // determine order of the doc or uniqueKey in the final
   // returned sequence.
   // Only valid after STAGE_EXECUTE_QUERY has completed.
+
+  /** The page's hits in response order, or null if a component set only {@link #resultIds}. */
+  public List<ShardDoc> pageShardDocs;
 
   public boolean onePassDistributedQuery;
 
