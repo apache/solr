@@ -69,6 +69,7 @@ Internals:
 - `dev-docs/plugins-modules-packages.adoc` — plugin/module/package concepts
 - `dev-docs/apis.adoc`, `dev-docs/apis-v2-conventions.adoc` — API design and v2 conventions
 - `dev-docs/ui/` — new Admin UI architecture, component development, testing
+- `dev-docs/ui/wasm-browser-tests.adoc`: wasm browser tests: async resource loading, Karma resource serving, screenshots for PRs
 
 Process & tooling:
 
