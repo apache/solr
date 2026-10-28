@@ -126,6 +126,8 @@ public class HttpSolrCall {
   protected SolrQueryRequest solrReq = null;
   private boolean mustClearSolrRequestInfo = false;
   protected SolrRequestHandler handler = null;
+  // Parameters parsed from the URL query string only. Unlike getQueryParams(), this never
+  // includes a POST form body; use getQueryParams() when body parameters must be seen.
   protected SolrParams queryParams;
   protected String path;
   protected Action action;
@@ -780,12 +782,21 @@ public class HttpSolrCall {
    *
    * @see #getCollectionsList()
    */
-  protected void addCollectionParamIfNeeded(List<String> collections) {
-    if (collections.isEmpty()) {
+  protected void addCollectionParamIfNeeded(List<String> requestCollections) {
+    if (requestCollections.isEmpty()) {
       return;
     }
     assert cores.isZooKeeperAware();
-    String collectionParam = queryParams.get(COLLECTION_PROP);
+    // The collections list is computed from the URL params only. A collection param in a POST form
+    // body is not part of it, so resolve the aliases in that param instead of replacing it.
+    String collectionParam = getQueryParams().get(COLLECTION_PROP);
+    List<String> collections = requestCollections;
+    if (collectionParam != null && queryParams.get(COLLECTION_PROP) == null) {
+      collections = resolveCollectionListOrAlias(collectionParam);
+      if (collections.isEmpty()) {
+        return;
+      }
+    }
     // if there is no existing collection param and the core we go to is for the expected
     // collection, then we needn't add a collection param
     if (collectionParam == null
