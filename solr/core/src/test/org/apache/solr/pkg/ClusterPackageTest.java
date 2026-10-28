@@ -20,6 +20,7 @@ import static org.apache.solr.filestore.TestDistribFileStore.uploadKey;
 
 import java.util.List;
 import org.apache.solr.client.api.model.PackagesResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.PackageApi;
@@ -148,15 +149,27 @@ public class ClusterPackageTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testListPackagesAcceptsRefreshPackageQueryParam() throws Exception {
+  public void testRefreshPackageLocalOnlyAcceptsUnknownPackage() throws Exception {
     try (HttpJettySolrClient client =
         new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
-      PackageApi.ListPackages req = new PackageApi.ListPackages();
-      req.setRefreshPackage("nonexistentpkg_refresh");
-      // The inter-node refresh signal calls notifyListeners on this node and returns OK even when
-      // the package doesn't exist; main's behavior is identical.
-      PackagesResponse response = req.process(client);
+      // localOnly=true is the internal inter-node refresh signal: it calls notifyListeners on this
+      // node only and returns OK even when the package doesn't exist.
+      PackageApi.RefreshPackage req = new PackageApi.RefreshPackage("nonexistentpkg_refresh");
+      req.setLocalOnly(true);
+      SolrJerseyResponse response = req.process(client);
+      assertNotNull(response);
+    }
+  }
+
+  @Test
+  public void testSyncPackagesCommandRequiresExpectedVersion() throws Exception {
+    try (HttpJettySolrClient client =
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
+      // expectedVersion at-or-below current is a no-op in syncToVersion and must return promptly.
+      PackageApi.SyncPackages req = new PackageApi.SyncPackages(0);
+      SolrJerseyResponse response = req.process(client);
       assertNotNull(response);
     }
   }

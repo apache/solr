@@ -64,13 +64,8 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
 
   @Override
   @PermissionName(PACKAGE_READ_PERM)
-  public PackagesResponse listPackages(String refreshPackage, Integer expectedVersion) {
+  public PackagesResponse listPackages(Integer expectedVersion) {
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
-
-    if (refreshPackage != null) {
-      packageStore.packageLoader.notifyListeners(refreshPackage);
-      return new PackagesResponse();
-    }
 
     if (expectedVersion != null) {
       syncToVersion(packageStore, expectedVersion);
@@ -222,9 +217,14 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
 
   @Override
   @PermissionName(PACKAGE_EDIT_PERM)
-  public SolrJerseyResponse refreshPackage(String packageName) {
+  public SolrJerseyResponse refreshPackage(String packageName, Boolean localOnly) {
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
+
+    if (Boolean.TRUE.equals(localOnly)) {
+      packageStore.packageLoader.notifyListeners(packageName);
+      return response;
+    }
 
     SolrPackageLoader.SolrPackage pkg = coreContainer.getPackageLoader().getPackage(packageName);
     if (pkg == null) {
@@ -233,8 +233,8 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     // first refresh on the current node
     packageStore.packageLoader.notifyListeners(packageName);
 
-    final var request = new PackageApi.ListPackages();
-    request.setRefreshPackage(packageName);
+    final var request = new PackageApi.RefreshPackage(packageName);
+    request.setLocalOnly(true);
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       final var baseUrl =
@@ -250,6 +250,18 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
       }
     }
 
+    return response;
+  }
+
+  @Override
+  @PermissionName(PACKAGE_EDIT_PERM)
+  public SolrJerseyResponse syncPackages(Integer expectedVersion) {
+    if (expectedVersion == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "expectedVersion is required");
+    }
+    final var response = new SolrJerseyResponse();
+    PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
+    syncToVersion(packageStore, expectedVersion);
     return response;
   }
 
@@ -282,8 +294,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
   }
 
   private void notifyAllNodesToSync(int expectedVersion) {
-    final var request = new PackageApi.ListPackages();
-    request.setExpectedVersion(expectedVersion);
+    final var request = new PackageApi.SyncPackages(expectedVersion);
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);

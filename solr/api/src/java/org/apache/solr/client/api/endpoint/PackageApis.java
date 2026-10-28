@@ -40,11 +40,6 @@ public interface PackageApis {
   PackagesResponse listPackages(
       @Parameter(
               description =
-                  "Name of a package to refresh on the receiving node only (reloads its listeners from ZooKeeper). Used internally for inter-node fan-out by the refresh endpoint; not normally invoked directly.")
-          @QueryParam("refreshPackage")
-          String refreshPackage,
-      @Parameter(
-              description =
                   "If provided, the node waits until its package data matches this ZooKeeper version.")
           @QueryParam("expectedVersion")
           Integer expectedVersion);
@@ -97,5 +92,24 @@ public interface PackageApis {
   SolrJerseyResponse refreshPackage(
       @Parameter(description = "The name of the package to refresh.", required = true)
           @PathParam("packageName")
-          String packageName);
+          String packageName,
+      @Parameter(
+              description =
+                  "Indicates whether the refresh should only be done on the receiving node. For internal use only.")
+          @QueryParam("localOnly")
+          Boolean localOnly);
+
+  @POST
+  @Path("/sync")
+  @Operation(
+      summary =
+          "Block until the receiving node's package data matches the given ZooKeeper version. "
+              + "Used internally for inter-node fan-out after a package change; not normally invoked directly.",
+      tags = {"package"})
+  SolrJerseyResponse syncPackages(
+      @Parameter(
+              description = "The ZooKeeper version that the receiving node should catch up to.",
+              required = true)
+          @QueryParam("expectedVersion")
+          Integer expectedVersion);
 }
