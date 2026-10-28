@@ -49,6 +49,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
@@ -108,6 +109,16 @@ public class CollectionHandlingUtils {
   // Immutable Maps are null-hostile, so build our own
   public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS =
       Collections.unmodifiableMap(makeCollectionPropsAndDefaults());
+
+  /**
+   * The collection a command locks: {@code collName}, resolved through {@code aliases} when the
+   * message sets {@code followAliases}, so the lock matches the collection the command acts on.
+   */
+  static String lockCollectionName(ZkNodeProps message, String collName, Aliases aliases) {
+    return message.getBool(CollectionAdminParams.FOLLOW_ALIASES, false)
+        ? aliases.resolveSimpleAlias(collName)
+        : collName;
+  }
 
   private static Map<String, Object> makeCollectionPropsAndDefaults() {
     Map<String, Object> propsAndDefaults =

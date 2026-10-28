@@ -198,7 +198,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return lockSession.lock(
         getCollectionAction(message.getStr(Overseer.QUEUE_OPERATION)),
         Arrays.asList(
-            getTaskKey(message),
+            CollectionHandlingUtils.lockCollectionName(
+                message, getTaskKey(message), zkStateReader.getAliases()),
             message.getStr(ZkStateReader.SHARD_ID_PROP),
             message.getStr(ZkStateReader.REPLICA_PROP)),
         callingLockId);
