@@ -19,6 +19,11 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runComposeUiTest
 import org.apache.solr.ui.domain.CollectionDetails
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.collection_details
+import org.apache.solr.ui.shared.generated.resources.label_shard_count
+import org.apache.solr.ui.shared.generated.resources.state_enabled
+import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
 
 
@@ -37,7 +42,10 @@ class CollectionDetailsCardTest {
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testShowsCollectionDetails() = runComposeUiTest {
+        getString(Res.string.collection_details)
+        getString(Res.string.label_shard_count)
         setContent { CollectionDetailsCard(details) }
+        awaitIdle()
 
         onNodeWithText("Collection Details").assertExists()
         onNodeWithText("films").assertExists()
@@ -52,7 +60,9 @@ class CollectionDetailsCardTest {
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testShowsAutoAddReplicasState() = runComposeUiTest {
+        getString(Res.string.state_enabled)
         setContent { CollectionDetailsCard(details.copy(autoAddReplicas = true)) }
+        awaitIdle()
 
         onNodeWithText("Enabled").assertExists()
     }
