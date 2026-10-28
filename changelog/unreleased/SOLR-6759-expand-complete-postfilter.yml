@@ -1,0 +1,8 @@
+title: >
+  ExpandComponent now calls complete() on the post filter collector chain it builds after the expand search, as the main search does. Post filters that finish their last group in complete(), such as block collapse, now get that call during expand.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-6759
+    url: https://issues.apache.org/jira/browse/SOLR-6759
