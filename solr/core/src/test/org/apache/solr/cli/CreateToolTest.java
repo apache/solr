@@ -109,8 +109,8 @@ public class CreateToolTest extends SolrCloudTestCase {
     assertFalse(entries.containsKey(".hidden-file"));
     assertTrue(entries.keySet().stream().noneMatch(name -> name.startsWith(".hiddenDir")));
 
-    // the OutputStream-writing overload should produce an equivalent archive (not necessarily
-    // byte-identical: ZipEntry defaults to the current time when none is set explicitly)
+    // Equivalent, not necessarily byte-identical: ZipEntry defaults to the current time
+    // when unset, so two back-to-back calls can differ at the byte level.
     ByteArrayOutputStream streamed = new ByteArrayOutputStream();
     Utils.zipDirectory(confDir, streamed);
     assertEquals(entries, readZipEntries(streamed.toByteArray()));

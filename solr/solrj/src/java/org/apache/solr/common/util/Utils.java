@@ -1111,8 +1111,8 @@ public class Utils {
             return FileVisitResult.CONTINUE;
           }
         });
-    // finish() rather than close(): writes the zip's central directory without closing the
-    // caller's stream, since this method doesn't own it.
+    // finish(), not close(): flushes the central directory without closing out, which this
+    // method doesn't own.
     zipOut.finish();
   }
 }
