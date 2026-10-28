@@ -2216,7 +2216,7 @@ public class CoreContainer {
     // If it's not yet loaded, we can check if it's had a core init failure and "do the right thing"
     CoreDescriptor desc = solrCores.getCoreDescriptor(name);
 
-    // if there was an error initializing this core, throw a 500
+    // if there was an error initializing this core, throw a 503
     // error with the details for clients attempting to access it.
     CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
     if (loadFailure != null) {
