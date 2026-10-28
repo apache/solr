@@ -305,8 +305,10 @@ public class CreateAliasAPITest extends MockV2APITest {
     validateRunCommand(
         CollectionParams.CollectionAction.CREATEALIAS,
         message -> {
-          assertEquals(10, message.size());
+          assertEquals(12, message.size());
           assertEquals("someAliasName", message.get("name"));
+          assertEquals("Dimensional[TIME,CATEGORY]", message.get("router.name"));
+          assertEquals("someField,someField", message.get("router.field"));
           assertEquals("time", message.get("router.0.name"));
           assertEquals("someField", message.get("router.0.field"));
           assertEquals("NOW/HOUR", message.get("router.0.start"));

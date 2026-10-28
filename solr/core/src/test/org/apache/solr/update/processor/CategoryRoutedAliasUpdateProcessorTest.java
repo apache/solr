@@ -50,7 +50,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     "Constructor", "Heart of Gold", "Stunt Ship", "B-ark", "Bi$tromath"
   };
 
-  private static final String categoryField = "ship_name_en";
+  private static final String categoryField = "ship_name_s";
   private static final String intField = "integer_i";
 
   private int lastDocId = 0;
