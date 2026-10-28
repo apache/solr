@@ -1682,7 +1682,7 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList<Object> {
+  public static class RouteResponse<T extends LBSolrClient.Req> extends SimpleOrderedMap<Object> {
     private NamedList<NamedList<?>> routeResponses;
     private Map<String, T> routes;
 
