@@ -300,13 +300,10 @@ public class SSLTool extends ToolBase {
       Map<Path, byte[]> previous = new LinkedHashMap<>();
       for (Path file : files.keySet()) {
         previous.put(file, Files.exists(file) ? Files.readAllBytes(file) : null);
-        if (Files.exists(file)) {
-          echo("Backup: " + IncludeFileEditor.backup(file));
-        }
       }
       try {
         for (var file : files.entrySet()) {
-          IncludeFileEditor.writePrivate(file.getKey(), file.getValue());
+          IncludeFileEditor.write(file.getKey(), file.getValue());
         }
         if (params.zkHost() != null) {
           int slash = params.zkHost().indexOf('/');
@@ -337,7 +334,7 @@ public class SSLTool extends ToolBase {
         for (var file : previous.entrySet()) {
           try {
             if (file.getValue() == null) Files.deleteIfExists(file.getKey());
-            else IncludeFileEditor.writePrivate(file.getKey(), file.getValue());
+            else IncludeFileEditor.write(file.getKey(), file.getValue());
           } catch (Exception rollback) {
             failure.addSuppressed(rollback);
           }

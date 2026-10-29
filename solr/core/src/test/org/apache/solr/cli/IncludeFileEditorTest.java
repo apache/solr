@@ -17,8 +17,10 @@
 
 package org.apache.solr.cli;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -116,22 +118,34 @@ public class IncludeFileEditorTest extends SolrTestCase {
   }
 
   @Test
-  public void testBackupsAndPermissions() throws Exception {
-    Path dir = createTempDir();
-    Path include = dir.resolve("solr.in.sh");
-    Files.writeString(include, "original");
-    Path backup = IncludeFileEditor.save(include, "updated");
-    assertEquals("original", Files.readString(backup));
-    assertEquals("updated", Files.readString(include));
-    Path secondBackup = IncludeFileEditor.save(include, "newer");
-    assertNotEquals(backup, secondBackup);
-    assertEquals("updated", Files.readString(secondBackup));
-    if (include.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+  public void testNewFilePermissions() throws Exception {
+    Path file = createTempDir().resolve("basicAuth.conf");
+    IncludeFileEditor.write(file, "credentials".getBytes(StandardCharsets.UTF_8));
+    assertEquals("credentials", Files.readString(file));
+    if (file.getFileSystem().supportedFileAttributeViews().contains("posix")) {
       assertEquals(
-          PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(include));
-      assertEquals(
-          PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(backup));
+          PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(file));
     }
+  }
+
+  @Test
+  public void testServiceIncludePermissionsArePreserved() throws Exception {
+    Path include = createTempDir().resolve("solr.in.sh");
+    assumeTrue(
+        "Requires POSIX filesystem",
+        include.getFileSystem().supportedFileAttributeViews().contains("posix"));
+    Files.writeString(include, "original");
+    Files.setPosixFilePermissions(include, PosixFilePermissions.fromString("rw-r-----"));
+    var original = Files.readAttributes(include, PosixFileAttributes.class);
+
+    IncludeFileEditor.write(include, "updated".getBytes(StandardCharsets.UTF_8));
+
+    var updated = Files.readAttributes(include, PosixFileAttributes.class);
+    assertEquals("updated", Files.readString(include));
+    assertEquals(original.owner(), updated.owner());
+    assertEquals(original.group(), updated.group());
+    assertEquals(original.permissions(), updated.permissions());
+    assertEquals(original.fileKey(), updated.fileKey());
   }
 
   @Test
@@ -146,9 +160,8 @@ public class IncludeFileEditorTest extends SolrTestCase {
     Path target = dir.resolve("actual.in.sh");
     Files.writeString(target, "original");
     Path link = Files.createSymbolicLink(dir.resolve("solr.in.sh"), target);
-    Path backup = IncludeFileEditor.save(link, "updated");
+    IncludeFileEditor.write(link, "updated".getBytes(StandardCharsets.UTF_8));
     assertTrue(Files.isSymbolicLink(link));
     assertEquals("updated", Files.readString(target));
-    assertEquals("original", Files.readString(backup));
   }
 }

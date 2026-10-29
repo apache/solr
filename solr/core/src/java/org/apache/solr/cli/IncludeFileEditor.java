@@ -18,11 +18,8 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Locale;
 import java.util.Map;
@@ -100,47 +97,16 @@ final class IncludeFileEditor {
         : "\n";
   }
 
-  static Path backup(Path path) throws IOException {
-    Path target = path.toRealPath();
-    Path backup = Files.createTempFile(target.getParent(), target.getFileName() + ".", ".bak");
-    try {
-      Files.copy(
-          target, backup, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
-      restrictPermissions(backup);
-      return backup;
-    } catch (IOException failure) {
-      Files.deleteIfExists(backup);
-      throw failure;
-    }
-  }
-
-  static Path save(Path path, String content) throws IOException {
-    Path backup = backup(path);
-    writePrivate(path, content.getBytes(StandardCharsets.UTF_8));
-    return backup;
-  }
-
-  static void writePrivate(Path path, byte[] data) throws IOException {
-    Path target = Files.exists(path) ? path.toRealPath() : path.toAbsolutePath().normalize();
-    Path staged = Files.createTempFile(target.getParent(), ".solr-config-", ".tmp");
-    try {
-      restrictPermissions(staged);
-      if (Files.exists(target)) {
-        var sourceAcl = Files.getFileAttributeView(target, AclFileAttributeView.class);
-        var destinationAcl = Files.getFileAttributeView(staged, AclFileAttributeView.class);
-        if (sourceAcl != null && destinationAcl != null) destinationAcl.setAcl(sourceAcl.getAcl());
+  static void write(Path path, byte[] data) throws IOException {
+    if (!Files.exists(path)) {
+      if (path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+        Files.createFile(
+            path,
+            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+      } else {
+        Files.createFile(path);
       }
-      Files.write(staged, data);
-      Files.move(
-          staged, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-    } finally {
-      Files.deleteIfExists(staged);
     }
-  }
-
-  private static void restrictPermissions(Path path) throws IOException {
-    if (path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
-      Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
-    }
+    Files.write(path, data);
   }
 }

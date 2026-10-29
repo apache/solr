@@ -358,10 +358,7 @@ public class AuthTool extends ToolBase {
       runtime.exit(0);
     }
 
-    if (Files.exists(basicAuthConfFile)) {
-      echo("Backup: " + IncludeFileEditor.backup(basicAuthConfFile));
-    }
-    IncludeFileEditor.writePrivate(
+    IncludeFileEditor.write(
         basicAuthConfFile,
         ("httpBasicAuthUser=" + username + "\nhttpBasicAuthPassword=" + password)
             .getBytes(StandardCharsets.UTF_8));
@@ -487,7 +484,7 @@ public class AuthTool extends ToolBase {
     String updated =
         IncludeFileEditor.update(
             Files.readString(includeFile), settings, AUTHENTICATION_VARIABLES, format);
-    echo("Backup: " + IncludeFileEditor.save(includeFile, updated));
+    IncludeFileEditor.write(includeFile, updated.getBytes(StandardCharsets.UTF_8));
     echoIfVerbose("Written out credentials file: " + basicAuthConfFile);
     echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath());
   }
@@ -498,7 +495,7 @@ public class AuthTool extends ToolBase {
     String original = Files.readString(includeFile);
     String updated = IncludeFileEditor.disable(original, AUTHENTICATION_VARIABLES, format);
     if (!original.equals(updated)) {
-      echo("Backup: " + IncludeFileEditor.save(includeFile, updated));
+      IncludeFileEditor.write(includeFile, updated.getBytes(StandardCharsets.UTF_8));
       echoIfVerbose("Commented out authentication settings in " + includeFile.toAbsolutePath());
     }
   }

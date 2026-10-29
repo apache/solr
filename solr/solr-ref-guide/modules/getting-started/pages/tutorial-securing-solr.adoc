@@ -270,7 +270,7 @@ bin/solr stop -p 8983
 bin/solr start -e secure_solr
 ----
 
-The tool installs a JKS keystore and truststore, backs up and updates `solr.in.sh`, and sets `urlScheme=https` in ZooKeeper.
+The tool installs a JKS keystore and truststore, updates `solr.in.sh`, and sets `urlScheme=https` in ZooKeeper.
 It leaves your Basic Authentication users and authorization rules in place.
 Accept the same administrator credentials when restarting the example.
 

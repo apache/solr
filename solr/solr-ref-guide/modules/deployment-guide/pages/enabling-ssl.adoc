@@ -59,9 +59,10 @@ Use `--keystore /path/to/solr-ssl.jks` to select the destination; its parent dir
 For PKCS12, supply `--store-type PKCS12`; the default destination then ends in `.p12`.
 For an encrypted PEM key, supply `--key-password-file /path/to/key-password.txt`.
 
-Existing destination files and the include file are backed up to unique `.bak` files alongside the originals.
-The tool prints the backup paths and restricts the keystore, truststore, include file, and backups to their owner's access (`0600`).
-The include file contains the keystore password, so run the tool as the Solr service user and protect the password file and backups.
+Existing files are updated in place, preserving their ownership and permissions.
+New files are restricted to their owner's access (`0600`).
+The include file contains the keystore password, so restrict access to it and the password file.
+For service installations, run the tool as the owner of the include file (usually root), select the service's include file with `--solr-include-file`, and ensure the Solr service user can read the keystore and truststore.
 A failure to update ZooKeeper restores the local files; inspect the cluster property before retrying after a connection failure.
 
 Restart Solr to use the new configuration.
