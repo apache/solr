@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -30,9 +31,49 @@ public class MockShardRequest extends ShardRequest {
     return mockShardRequest;
   }
 
+  public static NamedList<Object> header(Object... nameValues) {
+    NamedList<Object> header = new NamedList<>();
+    for (int i = 0; i < nameValues.length; i += 2) {
+      header.add((String) nameValues[i], nameValues[i + 1]);
+    }
+    return header;
+  }
+
   public MockShardRequest withShardResponse(
       NamedList<Object> responseHeader, SolrDocumentList solrDocuments) {
     ShardResponse shardResponse = buildShardResponse(responseHeader, solrDocuments);
+    responses.add(shardResponse);
+    return this;
+  }
+
+  public MockShardRequest withShardResponse(
+      String shard,
+      NamedList<Object> responseHeader,
+      SolrDocumentList combinedResponse,
+      List<SolrDocumentList> perQueryResponses,
+      NamedList<List<Object>> sortValues0) {
+    NamedList<Object> response = new NamedList<>();
+    response.add("responseHeader", responseHeader);
+    response.add("response", combinedResponse);
+    if (perQueryResponses != null) {
+      response.add("response_per_query", perQueryResponses);
+    }
+    if (sortValues0 != null) {
+      response.add("sort_values_0", sortValues0);
+    }
+    SolrResponse solrResponse = Mockito.mock(SolrResponse.class);
+    Mockito.when(solrResponse.getResponse()).thenReturn(response);
+    ShardResponse shardResponse = new ShardResponse();
+    shardResponse.setShard(shard);
+    shardResponse.setSolrResponse(solrResponse);
+    responses.add(shardResponse);
+    return this;
+  }
+
+  public MockShardRequest withErroredShard(String shard, Throwable exception) {
+    ShardResponse shardResponse = new ShardResponse();
+    shardResponse.setShard(shard);
+    shardResponse.setException(exception);
     responses.add(shardResponse);
     return this;
   }
