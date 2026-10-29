@@ -5,5 +5,5 @@ authors:
   - name: Samuel Verstraete
     nick: elangelo
 links:
-  - name: PR#5264
-    url: https://github.com/apache/solr/pull/5264
+  - name: SOLR-18610
+    url: https://issues.apache.org/jira/browse/SOLR-18610
