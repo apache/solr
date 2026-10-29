@@ -16,7 +16,7 @@
  -->
 # Solr Monitoring
 
-This directory provides two ready-to-use monitoring artifacts for Solr that you can drop into
+This directory provides three ready-to-use monitoring artifacts for Solr that you can drop into
 your existing Prometheus + Grafana installation:
 
 | File | Description |
@@ -30,7 +30,7 @@ or testing.
 
 | File / Directory | Description |
 |---|---|
-| `mixin/` | Jsonnet source (single source of truth used to regenerate the artifacts above) |
+| `mixin/` | Jsonnet source (single source of truth used to regenerate the dashboard and alert rules) |
 | `dev/` | **Developer convenience only** — docker-compose stack for testing changes to the artifacts |
 
 > **The dashboard and alert rules are placeholders right now** — a two-panel dashboard and a
@@ -198,9 +198,17 @@ Put `METRICS_SCRAPE=otel` in a `dev/.env` file (gitignored) to change the defaul
 `./check-otel-parity.sh` diffs the metric names, types and label keys of a Solr node against the
 Collector's output, which is how the shipped Collector config is validated.
 
+> Pushing and scraping at once needs the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
+> fix, so until a nightly image carrying it is published, `SOLR_IMAGE` must point at a locally built
+> image for the default `--metrics-scrape=solr` mode to show the nodes up.
+
 Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes sit behind the
 `bundled-solr` compose profile, so a plain `docker compose up` would start the monitoring services
 with no Solr to scrape.
+
+The compose project is named `solr-telemetry-dev`. If you ran this stack before that name was
+introduced, stop the old one with `docker compose -p dev down` first, or its containers will hold
+the ports this one needs.
 
 Services: Solr (`:8983`, `:8984`), Prometheus (`:9090`), Grafana (`:3000`), Alertmanager
 (`:9093`), OpenTelemetry Collector (OTLP in on `:4318`, Prometheus format out on `:9464`),

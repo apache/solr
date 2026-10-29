@@ -18,8 +18,13 @@
 # Used by: ./stack.sh --metrics-scrape=otel
 #
 # Solr pushes metrics over OTLP to the otel-collector container, which re-exposes
-# them in Prometheus format on :9464. The job is still named "solr" so the
-# dashboard and alert rules apply unchanged. Works for bundled and local Solr alike.
+# them in Prometheus format on :9464. The job is still named "solr" so the dashboard
+# and the alert rules match the same series. Works for bundled and local Solr alike.
+#
+# One rule does change meaning: SolrNodeDown is up{job="solr"} == 0, and the only
+# target here is the collector, so it tracks the collector's reachability and not any
+# node's. A node that stops pushing fires nothing. See the "Option 2: OTLP Push"
+# warning in monitoring-with-prometheus-and-grafana.adoc.
 
 global:
   scrape_interval: 15s

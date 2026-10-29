@@ -103,6 +103,14 @@ scrape_configs:
 The series Prometheus stores then carry the same metric names, types and label keys as a direct scrape.
 Two differences remain until https://issues.apache.org/jira/browse/SOLR-18594[SOLR-18594] makes Solr send `service.instance.id`: the `instance` label is the Collector's address rather than the node's, so per-node panels show one merged series, and no `target_info` series is produced.
 
+[WARNING]
+====
+Node liveness is not preserved by this route.
+Prometheus only scrapes the Collector, so `up{job="solr"}` describes the Collector, and the <<alert-rules,`SolrNodeDown`>> rule reports whether the Collector is reachable — not whether any Solr node is.
+A node that stops pushing leaves its last series behind and fires nothing; a Collector restart alerts as though every node were down.
+Keep a direct scrape of the nodes alongside the push if you rely on that alert, or alert on each node's own series once SOLR-18594 gives the nodes distinct `instance` labels.
+====
+
 Alternatively the Collector can push into Prometheus instead of being scraped — with its `prometheusremotewrite` exporter against Prometheus started with `--web.enable-remote-write-receiver`, or its `otlphttp` exporter against `--web.enable-otlp-receiver`.
 The shipped configuration and the name parity above are only verified for the scrape setup; Prometheus's OTLP receiver applies its own name translation.
 

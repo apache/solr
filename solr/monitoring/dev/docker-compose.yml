@@ -18,10 +18,11 @@
 # ============================================================================
 #
 # This docker-compose stack is provided solely to make it easy for contributors
-# to view and test changes to the two generated monitoring artifacts:
+# to view and test changes to the three monitoring artifacts:
 #
-#   ../grafana-solr-dashboard.json    — Grafana dashboard
-#   ../prometheus-solr-alerts.yml     — Prometheus alert rules
+#   ../grafana-solr-dashboard.json    — Grafana dashboard (generated)
+#   ../prometheus-solr-alerts.yml     — Prometheus alert rules (generated)
+#   ../otel-collector-config.yaml     — example OTel Collector config (hand-written)
 #
 # It is NOT intended as a reference deployment or a recommended production setup.
 # For integrating the artifacts into your own Prometheus + Grafana installation,
@@ -71,6 +72,11 @@ name: solr-telemetry-dev
 # Push metrics to the collector every 15s, matching the scrape interval. The
 # endpoint is the OTLP/HTTP default with the host swapped for the service name.
 # OTEL_SERVICE_NAME activates the module's tracer, which pushes traces the same way.
+# The push stays on in both --metrics-scrape modes, so the collector and Aspire always
+# have data. This relies on SOLR-18595: before that fix, enabling the OTLP metric
+# exporter makes /solr/admin/metrics answer HTTP 500.
+# TODO SOLR-18595: SOLR_IMAGE defaults to a nightly, so until a nightly carrying the fix
+# is published, --metrics-scrape=solr shows the nodes down; use otel, or a local image.
 x-solr-otlp-env: &solr-otlp-env
   SOLR_MODULES: opentelemetry
   SOLR_METRICS_OTLP_EXPORTER_ENABLED: "true"
@@ -87,8 +93,9 @@ services:
     profiles: [bundled-solr]
     environment:
       <<: *solr-otlp-env
-      # Advertise the compose service name, so the identity Solr reports matches the name
-      # Prometheus scrapes it by and both collection routes produce the same instance label.
+      # Advertise the compose service name instead of the container's random hostname, so the
+      # identity Solr reports matches the name Prometheus scrapes it by. The two routes only
+      # agree on the instance label once SOLR-18594 makes Solr send service.instance.id.
       SOLR_HOST_ADVERTISE: solr1
     ports:
       - "127.0.0.1:8983:8983"
