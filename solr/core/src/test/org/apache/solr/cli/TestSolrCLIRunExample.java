@@ -365,7 +365,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           new RunExampleTool(
               executor,
               "secure_solr".equals(exampleName)
-                  ? new ByteArrayInputStream("\n\n\n\n\n\n\n\n".getBytes(StandardCharsets.UTF_8))
+                  ? new ByteArrayInputStream(
+                      "\nsolr\n\n\n\nindex\n\n\n\nsearch\n\n".getBytes(StandardCharsets.UTF_8))
                   : System.in,
               runtime);
       try {
@@ -390,6 +391,18 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       }
 
       String toolOutput = runtime.getOutput();
+
+      if ("secure_solr".equals(exampleName) && pass == 1) {
+        assertEquals(
+            3,
+            toolOutput
+                .lines()
+                .filter(
+                    line ->
+                        line.contains(
+                            "Username and password must differ. Please enter a different password."))
+                .count());
+      }
 
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");

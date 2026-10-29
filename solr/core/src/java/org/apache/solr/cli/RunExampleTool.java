@@ -650,10 +650,12 @@ public class RunExampleTool extends ToolBase {
     if (usingScriptInputs) input.useDelimiter(",");
     String user = noPrompt ? "solr" : prompt(input, "Administrator username [solr]: ", "solr");
     String password =
-        noPrompt ? "SolrRocks" : promptPassword(input, "Administrator password [SolrRocks]: ");
+        noPrompt
+            ? "SolrRocks"
+            : promptPassword(input, "Administrator password [SolrRocks]: ", user);
     if (user.contains(":")) throw new IllegalArgumentException("Username must not contain ':'");
-    if (user.equals(password))
-      throw new IllegalArgumentException("Username and password must differ");
+    // TODO: Configure users and roles through the security APIs so validation
+    // happens server-side instead of constructing security.json directly.
     Map<String, Object> config;
     try (InputStream template =
         SolrCore.class.getClassLoader().getResourceAsStream("security.json")) {
@@ -675,9 +677,7 @@ public class RunExampleTool extends ToolBase {
       String name = noPrompt ? role : prompt(input, "Username [" + role + "]: ", role);
       if (name.contains(":") || credentials.containsKey(name))
         throw new IllegalArgumentException("Usernames must be unique and must not contain ':'");
-      String pass = noPrompt ? "SolrRocks" : promptPassword(input, "Password [SolrRocks]: ");
-      if (name.equals(pass))
-        throw new IllegalArgumentException("Username and password must differ");
+      String pass = noPrompt ? "SolrRocks" : promptPassword(input, "Password [SolrRocks]: ", name);
       credentials.put(name, Sha256AuthenticationProvider.getSaltedHashedValue(pass));
       userRoles.put(name, "index".equals(role) ? List.of("index", "search") : List.of("search"));
     }
@@ -701,11 +701,27 @@ public class RunExampleTool extends ToolBase {
             + ".");
   }
 
+  private String promptPassword(Scanner input, String message, String username) {
+    while (true) {
+      String password = promptPassword(input, message);
+      if (Sha256AuthenticationProvider.isPasswordAllowed(username, password)) return password;
+      echo("Username and password must differ. Please enter a different password.");
+      if ((usingScriptInputs || System.console() == null || userInput != System.in)
+          && !(usingScriptInputs ? input.hasNext() : input.hasNextLine())) {
+        throw new IllegalArgumentException("Input ended before a valid password was provided.");
+      }
+    }
+  }
+
   private String promptPassword(Scanner input, String message) {
     echo(message);
     String value;
     if (!usingScriptInputs && System.console() != null && userInput == System.in) {
-      value = new String(System.console().readPassword());
+      char[] password = System.console().readPassword();
+      if (password == null) {
+        throw new IllegalArgumentException("Input ended before a valid password was provided.");
+      }
+      value = new String(password);
     } else {
       value =
           usingScriptInputs
