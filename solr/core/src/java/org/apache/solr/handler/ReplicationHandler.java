@@ -80,7 +80,6 @@ import org.apache.solr.client.api.model.CommitsResponse.CommitDetails;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
-import org.apache.solr.client.api.model.ReplicationDetailsResponse.CommitDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
