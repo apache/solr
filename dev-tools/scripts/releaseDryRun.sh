@@ -35,5 +35,8 @@ python3 -u dev-tools/scripts/logchange.py prepare --version "$VERSION" --release
 
 python3 -u dev-tools/scripts/buildAndPushRelease.py --dev-mode --push-local "$TMP_ROOT/dist" --rc-num 1
 
+# Unit tests run in the regular CI jobs; here just check that the source release compiles.
+export SMOKETEST_SRC_TEST_TASK=testClasses
+
 python3 -u dev-tools/scripts/smokeTestRelease.py --not-signed --tmp-dir "$TMP_ROOT/smoke" \
   "file://$TMP_ROOT/dist/solr-$VERSION-RC1-rev-$(git rev-parse HEAD)"

@@ -651,8 +651,10 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
   print('    run "%s"' % validateCmd)
   java.run_java(validateCmd, '%s/documentation.log' % logDir)
 
-  print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
-  java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
+  # SMOKETEST_SRC_TEST_TASK lets CI swap the full test run for something lighter
+  testTask = os.environ.get('SMOKETEST_SRC_TEST_TASK', 'test')
+  print("    run %s w/ Java %s and testArgs='%s'..." % (testTask, java.version, testArgs))
+  java.run_java('./gradlew %s %s' % (testTask, testArgs), '%s/test.log' % logDir)
   print("    run integration tests w/ Java %s" % java.version)
   java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
   print("    build binary release w/ Java %s" % java.version)
