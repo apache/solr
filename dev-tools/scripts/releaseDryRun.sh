@@ -19,6 +19,7 @@ fi
 
 pip3 install -r dev-tools/scripts/requirements.txt
 
+[[ -e "$TMP_ROOT" ]] && chmod -R u+w "$TMP_ROOT"
 rm -rf "$TMP_ROOT"
 mkdir -p "$TMP_ROOT"
 
