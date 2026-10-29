@@ -524,8 +524,8 @@ public class ResponseBuilder {
     if (null != cursorMark) {
       assert null != result.getPreviousCursorMark() : "using cursor but no previous cursor set";
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
+      setCursorMarkResult(result.getPreviousCursorMark(), result.getNextCursorMark());
     }
-    setCursorMarkResult(result.getPreviousCursorMark(), result.getNextCursorMark());
   }
 
   public long getNumberDocumentsFound() {
