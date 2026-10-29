@@ -116,11 +116,15 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     Map<?, ?> response =
         callMigrateReplicas(
             new MigrateReplicasRequestBody(
-                Set.of(nodeToBeDecommissioned), Set.of(emptyNode), true, null));
+                Set.of(nodeToBeDecommissioned), Set.of(emptyNode), null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
         0L,
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
+    waitForState(
+        "Timed out waiting for replicas to be migrated off the decommissioned node",
+        coll,
+        (state) -> state.getReplicasOnNode(nodeToBeDecommissioned).isEmpty());
     SolrClient coreClient = cluster.getJetty(nodeToBeDecommissioned).getSolrClient();
     CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
     assertEquals(
@@ -140,11 +144,18 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     response =
         callMigrateReplicas(
             new MigrateReplicasRequestBody(
-                Set.of(emptyNode), Set.of(nodeToBeDecommissioned), true, null));
+                Set.of(emptyNode), Set.of(nodeToBeDecommissioned), null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
         0L,
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
+    waitForState(
+        "Timed out waiting for replicas to be migrated back off the empty node and become active",
+        coll,
+        (state) ->
+            state.getReplicasOnNode(emptyNode).isEmpty()
+                && state.getReplicasOnNode(nodeToBeDecommissioned).stream()
+                    .allMatch(r -> r.getState() == Replica.State.ACTIVE));
 
     SolrClient emptyNodeClient = cluster.getJetty(emptyNode).getSolrClient();
     CoreAdminResponse emptyNodeStatus = CoreAdminRequest.getStatus(null, emptyNodeClient);
@@ -244,12 +255,17 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     log.info("### Before decommission: {}", initialCollection);
     Map<?, ?> response =
         callMigrateReplicas(
-            new MigrateReplicasRequestBody(
-                new HashSet<>(nodesToBeDecommissioned), Set.of(), true, null));
+            new MigrateReplicasRequestBody(new HashSet<>(nodesToBeDecommissioned), Set.of(), null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
         0L,
         ((Map<?, ?>) response.get("responseHeader")).get("status"));
+    waitForState(
+        "Timed out waiting for replicas to be migrated off the decommissioned nodes",
+        coll,
+        (state) ->
+            nodesToBeDecommissioned.stream()
+                .allMatch(node -> state.getReplicasOnNode(node).isEmpty()));
 
     DocCollection collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     assertNotNull("Collection cannot be null: " + coll, collection);
@@ -288,7 +304,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
     String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
     Map<?, ?> response =
-        callMigrateReplicas(new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), true, null));
+        callMigrateReplicas(new MigrateReplicasRequestBody(Set.of(liveNode), Set.of(), null));
     assertNotNull(
         "No error in response, when the request should have failed", response.get("error"));
     assertEquals(
