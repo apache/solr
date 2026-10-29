@@ -1057,7 +1057,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static void assertDocsOnShardLeaders(String collection, String... ids) throws Exception {
     DocCollection col = cluster.getSolrClient().getClusterState().getCollection(collection);
     for (String id : ids) {
-      String coreUrl = col.getRouter().getTargetSlice(id, null, null, null, col).getLeader().getCoreUrl();
+      String coreUrl =
+          col.getRouter().getTargetSlice(id, null, null, null, col).getLeader().getCoreUrl();
       SolrClient solrClient =
           new CollectionScopedSolrClient(
               cluster.getJetty(URLUtil.extractBaseUrl(coreUrl)).getSolrClient(),
