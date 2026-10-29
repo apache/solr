@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -243,6 +244,13 @@ public class StatusTool extends ToolBase {
 
     // No URL or port, scan for running processes
     Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
+    if (procs.isEmpty()) {
+      // Solr started in the foreground writes no PID file, so fall back to the process list
+      procs =
+          processMgr.getAllRunning().stream()
+              .sorted(Comparator.comparingInt(SolrProcess::port))
+              .toList();
+    }
     if (!procs.isEmpty()) {
       for (SolrProcess process : procs) {
         if (shortFormat) {
