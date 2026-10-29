@@ -1,4 +1,5 @@
-= User-Managed Index Replication Index Replication
+= User-Managed Index Replication
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -366,37 +367,76 @@ You can use the HTTP commands below to control the ReplicationHandler's operatio
 `enablereplication`::
 Enable replication on the "leader" for all its followers.
 +
+[tabs#enablereplication-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{leaderHost}:{port}/solr/{coreName}/replication?command=enablereplication
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT -H 'Content-Type: application/json' -d '{"enabled": true}' \
+http://{leaderHost}:{port}/api/cores/{coreName}/replication
+----
+====
+======
 
 `disablereplication`::
 Disable replication on the leader for all its followers.
 +
+[tabs#disablereplication-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{leaderHost}:{port}/solr/{coreName}/replication?command=disablereplication
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT -H 'Content-Type: application/json' -d '{"enabled": false}' \
+http://{leaderHost}:{port}/api/cores/{coreName}/replication
+----
+====
+======
 
 `indexversion`::
 Return the version of the latest replicatable index on the specified leader or follower.
 +
+[tabs#indexversion-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{host}:{port}/solr/{coreName}/replication?command=indexversion
-
 ----
 ====
+
+V2 API::
 +
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{host}:{port}/api/cores/{coreName}/replication/indexversion
-
 ----
 ====
+======
 
 `fetchindex`::
 Force the specified follower to fetch a copy of the index from its leader.
@@ -425,35 +465,78 @@ Disable the specified follower from polling for changes on the leader.
 [source,bash]
 http://{followerHost}:{port}/solr/{coreName}/replication?command=disablepoll
 
+`commits`::
+Retrieve the index commit points currently retained by the core, with each commit's index version, generation, and the file list.
++
+[tabs#commits-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=commits
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+http://{leaderHost}:{port}/api/cores/{coreName}/replication/commits
+----
+====
+======
+
 `details`::
 Retrieve configuration details and current status.
 +
+[tabs#details-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{followerHost}:{port}/solr/{coreName}/replication?command=details
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+http://{followerHost}:{port}/api/cores/{coreName}/replication
+----
+====
+======
 
 `filelist`::
 Retrieve a list of Lucene files present in the specified host's index.
 
 +
+[tabs#filelist-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{host}:{port}/solr/{coreName}/replication?command=filelist&generation={generationNumber}
-
 ----
 ====
+
+V2 API::
 +
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{host}:{port}/api/cores/{coreName}/replication/files?generation={generationNumber}
-
 ----
 ====
+======
 +
 You can discover the generation number of the index by running the `indexversion` command.
 
@@ -461,25 +544,26 @@ You can discover the generation number of the index by running the `indexversion
 Retrieve a stream of a specific file path of a core.
 
 +
+[tabs#filecontent-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{host}:{port}/solr/{coreName}/replication?command=filecontent&{directoryType}={filePath}&wt=filestream
-
 ----
 ====
+
+V2 API::
 +
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{host}:{port}/api/cores/{coreName}/replication/files/{filePath}&dirType={directoryType}
-
 ----
 ====
+======
 +
 Directory type is required for both V1 and V2 with these supported types:
 
@@ -549,8 +633,26 @@ For file system repository, location defaults to core's dataDir (data directory)
 `restorestatus`::
 Check the status of a running restore operation.
 +
+[tabs#restorestatus-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{leaderHost}:{port}/solr/{coreName}/replication?command=restorestatus
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+http://{leaderHost}:{port}/api/cores/{coreName}/replication/restore/status
+----
+====
+======
 +
 This command is used to check the status of a restore operation.
 This command takes no parameters.
@@ -571,7 +673,7 @@ A snapshot with the name `snapshot._name_` must exist or an error will be return
 
 `repository`::: The name of the backup repository to use.
  When not specified, it defaults to local file system.
- 
+
 `location`::: The location where the snapshot is created.
 
 
@@ -594,23 +696,26 @@ Use a small positive value (for example `2`) for production monitoring unless yo
 
 Use the health endpoint as follows:
 
+[tabs#health-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://{followerHost}:{port}/solr/admin/info/health?maxGenerationLag={maxLag}
 ----
 ====
 
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://{followerHost}:{port}/api/node/health?maxGenerationLag={maxLag}
 ----
 ====
+======
 
 A healthy response looks like:
 

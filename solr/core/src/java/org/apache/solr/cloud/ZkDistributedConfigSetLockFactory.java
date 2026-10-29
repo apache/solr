@@ -23,7 +23,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 /**
  * A distributed lock implementation using Zookeeper "directory" nodes created within a collection
  * znode hierarchy, for use with the distributed Collection API implementation. The locks are
- * implemented using ephemeral nodes placed below the "directory" nodes.
+ * implemented using ephemeral nodes placed below the "directory" nodes, which are container nodes
+ * so ZooKeeper removes them once empty.
  *
  * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper
  *     lock recipe</a>
@@ -44,8 +45,8 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
   }
 
   /**
-   * Returns the Zookeeper path to the lock, creating missing nodes if needed. Note that the
-   * complete lock hierarchy (/rootPath and below) can be deleted if SolrCloud is stopped.
+   * Returns the Zookeeper path to the lock. Note that the complete lock hierarchy (/rootPath and
+   * below) can be deleted if SolrCloud is stopped.
    *
    * <p>The tree of lock directories is very flat, given there's no real structure to what's being
    * locked in a config set:
@@ -56,8 +57,6 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
    *    configSet2/ <-- EPHEMERAL config set locks go here
    *    etc...
    * }</pre>
-   *
-   * This method will create the path where the {@code EPHEMERAL} lock nodes should go.
    *
    * <p>The returned path does not contain the separator ({@code "/"}) at the end.
    */
