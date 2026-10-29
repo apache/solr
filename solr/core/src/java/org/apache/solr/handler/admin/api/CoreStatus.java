@@ -28,12 +28,14 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CoreApis;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -61,7 +63,14 @@ public class CoreStatus extends CoreAdminAPIBase implements CoreApis.GetStatus {
 
   @Override
   @PermissionName(CORE_READ_PERM)
-  public CoreStatusResponse getAllCoreStatus(Boolean indexInfo) throws IOException {
+  public CoreStatusResponse getAllCoreStatus(Boolean indexInfo, String nodes) throws IOException {
+    final CoreStatusResponse response = instantiateJerseyResponse(CoreStatusResponse.class);
+    final var req = new CoresApi.GetAllCoreStatus();
+    req.setIndexInfo(indexInfo);
+    req.setNodes(nodes);
+    if (V2SolrRequestBasedProxy.proxyToNodes(coreContainer, req, response)) {
+      return response;
+    }
     final var indexInfoNeeded = indexInfo == null ? INDEX_INFO_DEFAULT_VALUE : indexInfo;
     return fetchStatusInfo(coreContainer, null, indexInfoNeeded);
   }

@@ -17,8 +17,10 @@
 package org.apache.solr.handler.admin.proxy;
 
 import java.util.Collection;
+import org.apache.solr.client.api.model.NodeProxyingJerseyResponse;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.WrappedSolrRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -78,4 +80,32 @@ public abstract class V2SolrRequestBasedProxy<T> extends RemoteRequestProxy {
   }
 
   protected abstract void processTypedProxiedResponse(String nodeName, T proxiedResponse);
+
+  /**
+   * Proxies {@code req} (with its {@code nodes} param already set) to the other live nodes it
+   * names, merging each one's response into {@code response.remoteNodeData}.
+   *
+   * @return true if {@code req} named nodes to proxy to (the caller should return {@code response}
+   *     as-is); false if {@code coreContainer} is null or {@code req} has no {@code nodes} param
+   *     set, meaning the caller should handle the request locally instead
+   */
+  public static <T> boolean proxyToNodes(
+      CoreContainer coreContainer, SolrRequest<T> req, NodeProxyingJerseyResponse response) {
+    if (coreContainer == null) {
+      return false;
+    }
+    try {
+      final var reqProxy =
+          new V2SolrRequestBasedProxy<T>(coreContainer, req) {
+            @Override
+            public void processTypedProxiedResponse(String nodeName, T proxiedResponse) {
+              response.remoteNodeData.put(nodeName, proxiedResponse);
+            }
+          };
+      return reqProxy.proxyRequest();
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+  }
 }

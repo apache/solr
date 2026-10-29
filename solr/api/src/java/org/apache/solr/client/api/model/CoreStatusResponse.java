@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.Map;
 
-public class CoreStatusResponse extends SolrJerseyResponse {
+public class CoreStatusResponse extends NodeProxyingJerseyResponse {
 
   // Map values are often exceptions on the server side, but often serialized as strings.
   @JsonProperty public Map<String, Object> initFailures;

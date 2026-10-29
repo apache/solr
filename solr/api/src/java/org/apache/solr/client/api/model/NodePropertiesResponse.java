@@ -24,7 +24,7 @@ import java.util.Map;
  * Response body for {@code GET /api/node/properties} and {@code GET
  * /api/node/properties/{propertyName}}.
  */
-public class NodePropertiesResponse extends SolrJerseyResponse {
+public class NodePropertiesResponse extends NodeProxyingJerseyResponse {
 
   public static final String SYSTEM_PROPERTIES = "system.properties";
 
