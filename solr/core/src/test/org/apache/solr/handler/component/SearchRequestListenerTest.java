@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
@@ -66,10 +67,21 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
-        .addConfig("dispatch", configset("search-request-listener"))
+        .addConfig("dispatch", configset("cloud-minimal"))
         .configure();
     createCollection(COLLECTION);
     createCollection(DISPATCH_COLLECTION, "dispatch");
+    // With /select registered for v2 only, EmbeddedSolrServer falls back to the default handler
+    cluster
+        .getSolrClient()
+        .request(
+            new ConfigRequest(
+                "{'update-requesthandler':"
+                    + " {'name': '/select', 'class': 'solr.SearchHandler', 'registerPath': '/v2'},"
+                    + " 'add-requesthandler': ["
+                    + "{'name': '/v2-search', 'class': 'solr.SearchHandler', 'registerPath': '/v2'},"
+                    + "{'name': 'standard', 'class': 'solr.SearchHandler'}]}"),
+            DISPATCH_COLLECTION);
   }
 
   @Before
@@ -125,7 +137,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   }
 
   private static QueryResponse query(String collection, String q) throws Exception {
-    return new QueryRequest(new SolrQuery(q)).process(nodeClient(), collection);
+    return nodeClient().query(collection, new SolrQuery(q));
   }
 
   @Test
@@ -287,11 +299,10 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testEmbeddedQtFallbackReported() throws Exception {
+  public void testEmbeddedDefaultHandlerReported() throws Exception {
     try (SolrCore core = jettyCore(DISPATCH_COLLECTION);
         SolrClient client = new EmbeddedSolrServer(core)) {
-      new QueryRequest(new SolrQuery("*:*").setParam("distrib", false).setParam("qt", "standard"))
-          .process(client);
+      new QueryRequest(new SolrQuery("*:*").setParam("distrib", false)).process(client);
     }
     assertEquals(1, events.size());
     assertEquals("/select", events.peek().info().handlerPath());
