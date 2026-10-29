@@ -3,7 +3,7 @@
 This directory includes information for Solr developers.   There are some other
 sources of information for learning about developing on Solr:
 
-1. The help .txt files for the Gradle commands in the `help/` directory.
+1. The help .txt files for the Gradle commands in the `gradle-help/` subdirectory.
 
 2. Information on how to handle adding dependencies and related licensing
 details, see the information in `/solr/licenses/README.committers.txt`.

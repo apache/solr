@@ -21,8 +21,8 @@ There are about a zillion "how to use Git" links out there, here are a few links
 
 * https://git-wip-us.apache.org/[Git at Apache] General Apache guidelines.
 * https://github.com/dweiss/lucene-git-guides[Dawid's guide] From our very own Dawid Weiss.
-* http://git.or.cz/course/svn.html[Git for SVN crash course] For people who know SVN but not Git.
-* http://lmgtfy.com/?q=Git+beginners+guide[Let Me Google That For You] I've wanted to paste a link to LMGTFY for a long time...
+* https://git-scm.com/book/en/v2/Git-and-Other-Systems-Git-as-a-Client[Git as a Client (Pro Git)] For people who know SVN but not Git.
+* https://git-scm.com/docs/gittutorial[Git Tutorial] For absolute beginners.
 
 
 The goal here is to provide a super-simple guide without getting off into the all the possibilities, and it will certainly seem "too simple" to sophisticated users. We all have to start somewhere.
