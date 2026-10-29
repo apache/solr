@@ -76,12 +76,20 @@ public final class SolrVersion implements Comparable<SolrVersion> {
 
   /**
    * Returns true if this version satisfies the provided <a href="https://devhints.io/semver">SemVer
-   * Expression</a>
+   * Expression</a>. Any prerelease qualifier (e.g. "-SNAPSHOT") is ignored, unlike plain SemVer
+   * range semantics where a prerelease satisfies no range that doesn't name one.
    *
    * @param semVerExpression the expression to test
    */
   public boolean satisfies(String semVerExpression) {
-    return version.satisfies(semVerExpression);
+    return version.withClearedPreRelease().satisfies(semVerExpression);
+  }
+
+  /**
+   * Returns this version with any prerelease qualifier removed, e.g. "10.1.0-SNAPSHOT" to "10.1.0"
+   */
+  public SolrVersion withoutPrerelease() {
+    return new SolrVersion(version.withClearedPreRelease());
   }
 
   public int getMajorVersion() {
