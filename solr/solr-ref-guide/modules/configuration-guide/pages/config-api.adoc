@@ -351,7 +351,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 
@@ -360,7 +360,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 ======
@@ -517,7 +517,7 @@ Make a call to the new request handler to check if it is registered:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/mypath?omitHeader=true'
 ----
 
 And you should see the following as output:
@@ -687,7 +687,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 
@@ -696,7 +696,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 ======
