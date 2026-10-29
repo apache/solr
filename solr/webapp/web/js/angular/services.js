@@ -17,6 +17,10 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
+// The generated v2 client caches GET responses by default. Set this here, once, since
+// ApiClient.instance is shared across every *V2 factory below.
+solrApi.ApiClient.instance.cache = false;
+
 solrAdminServices.factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
@@ -228,6 +232,12 @@ solrAdminServices.factory('Metrics',
       solrApi.ApiClient.instance.basePath = '/api';
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.NodeApi();
+    })
+.factory('ReplicationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicationApi();
     })
 .factory('Replication',
   ['$resource', function($resource) {

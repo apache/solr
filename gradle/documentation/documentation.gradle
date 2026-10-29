@@ -67,8 +67,7 @@ configure(project(':solr:documentation')) {
     dependsOn project.parent.subprojects.collect {prj ->
       prj.tasks.matching {it.name == 'renderSiteJavadoc'}
     }
-    dependsOn 'changesToHtml', 'copyDocumentationAssets',
-        'markdownToHtml', 'createDocumentationIndex'
+    dependsOn 'copyDocumentationAssets', 'markdownToHtml', 'createDocumentationIndex'
   }
 
   // Javadoc references are validated at compile time by DocLint
