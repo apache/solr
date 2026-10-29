@@ -40,10 +40,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Supports zk upconfig command in the bin/solr script.
  *
- * <p>Unlike {@link CreateTool}, this uploads directly to ZooKeeper rather than going through the
- * Configsets V2 API. That's intentional: this command is meant to work against a bare ZooKeeper
- * ensemble with no Solr node running yet (e.g. provisioning configs before the cluster starts), and
- * the V2 API requires an HTTP endpoint on an already-running node to PUT the zip to.
+ * <p>Unlike {@link org.apache.solr.cli.tools.CreateTool}, this uploads directly to ZooKeeper rather
+ * than going through the Configsets V2 API. That's intentional: this command is meant to work
+ * against a bare ZooKeeper ensemble with no Solr node running yet (e.g. provisioning configs before
+ * the cluster starts), and the V2 API requires an HTTP endpoint on an already-running node to PUT
+ * the zip to.
  */
 @SuppressWarnings("UnnecessarilyFullyQualified")
 @picocli.CommandLine.Command(

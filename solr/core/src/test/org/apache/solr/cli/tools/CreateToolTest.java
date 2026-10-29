@@ -17,8 +17,6 @@
 
 package org.apache.solr.cli.tools;
 
-import org.apache.solr.cli.CLITestHelper;
-import org.apache.solr.cli.ToolBase;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import org.apache.solr.cli.CLITestHelper;
+import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SecurityJson;
