@@ -90,7 +90,8 @@ public class MediaTypeOverridingFilterTest extends SolrTestCase {
   public void testWtFromQueryParamsWithoutSolrQueryRequest() throws Exception {
     requestHeaders.putSingle(ACCEPT, "text/plain");
     final Map<String, String> formats =
-        Map.of("json", APPLICATION_JSON, "xml", APPLICATION_XML, "javabin", JAVABIN_CONTENT_TYPE_V2);
+        Map.of(
+            "json", APPLICATION_JSON, "xml", APPLICATION_XML, "javabin", JAVABIN_CONTENT_TYPE_V2);
     for (var format : formats.entrySet()) {
       responseHeaders.putSingle(CONTENT_TYPE, "text/plain");
       when(request.getProperty(SOLR_PARAMS)).thenReturn(params(WT, format.getKey()));
