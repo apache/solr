@@ -13,7 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package org.apache.solr.ui.views.indexquery
+ */
+
+package org.apache.solr.ui.views.indexquery
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsEnabled
@@ -23,6 +25,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import org.apache.solr.ui.domain.RequestHandlerOption
+import org.apache.solr.ui.views.components.HeaderDropdownOption
+import org.apache.solr.ui.views.components.HeaderDropdownState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -38,14 +42,8 @@ class IndexQueryHeaderTest {
     fun testNoCollectionsDisablesBothDropdownsAndShowsMessage() = runComposeUiTest {
         setContent {
             IndexQueryHeader(
-                collections = emptyList(),
-                collectionsLoading = false,
-                selectedCollection = null,
-                onSelectCollection = {},
-                handlers = emptyList(),
-                handlersLoading = false,
-                selectedHandler = null,
-                onSelectHandler = {},
+                collectionDropdown = collectionDropdown(options = emptyList(), selectedKey = null),
+                requestHandlers = requestHandlersDropdown(options = emptyList()),
             )
         }
 
@@ -60,14 +58,8 @@ class IndexQueryHeaderTest {
     fun testCollectionsLoadingDisablesBothDropdowns() = runComposeUiTest {
         setContent {
             IndexQueryHeader(
-                collections = listOf("films"),
-                collectionsLoading = true,
-                selectedCollection = null,
-                onSelectCollection = {},
-                handlers = emptyList(),
-                handlersLoading = false,
-                selectedHandler = null,
-                onSelectHandler = {},
+                collectionDropdown = collectionDropdown(isLoading = true),
+                requestHandlers = requestHandlersDropdown(selectedKey = "/select"),
             )
         }
 
@@ -80,14 +72,8 @@ class IndexQueryHeaderTest {
     fun testHandlerDropdownStaysDisabledUntilCollectionIsSelected() = runComposeUiTest {
         setContent {
             IndexQueryHeader(
-                collections = listOf("films"),
-                collectionsLoading = false,
-                selectedCollection = null,
-                onSelectCollection = {},
-                handlers = emptyList(),
-                handlersLoading = false,
-                selectedHandler = null,
-                onSelectHandler = {},
+                collectionDropdown = collectionDropdown(selectedKey = null),
+                requestHandlers = requestHandlersDropdown(options = handlers),
             )
         }
 
@@ -100,14 +86,8 @@ class IndexQueryHeaderTest {
     fun testHandlersLoadingDisablesOnlyHandlerDropdown() = runComposeUiTest {
         setContent {
             IndexQueryHeader(
-                collections = listOf("films"),
-                collectionsLoading = false,
-                selectedCollection = "films",
-                onSelectCollection = {},
-                handlers = emptyList(),
-                handlersLoading = true,
-                selectedHandler = null,
-                onSelectHandler = {},
+                collectionDropdown = collectionDropdown(),
+                requestHandlers = requestHandlersDropdown(options = emptyList(), isLoading = true),
             )
         }
 
@@ -121,14 +101,11 @@ class IndexQueryHeaderTest {
         val selected = mutableListOf<String>()
         setContent {
             IndexQueryHeader(
-                collections = listOf("films"),
-                collectionsLoading = false,
-                selectedCollection = "films",
-                onSelectCollection = {},
-                handlers = handlers,
-                handlersLoading = false,
-                selectedHandler = null,
-                onSelectHandler = { selected += it },
+                collectionDropdown = collectionDropdown(),
+                requestHandlers = requestHandlersDropdown(
+                    options = handlers,
+                    onSelect = { selected += it },
+                ),
             )
         }
 
@@ -143,17 +120,37 @@ class IndexQueryHeaderTest {
     fun testSelectedHandlerShowsItsClassInTheClosedField() = runComposeUiTest {
         setContent {
             IndexQueryHeader(
-                collections = listOf("films"),
-                collectionsLoading = false,
-                selectedCollection = "films",
-                onSelectCollection = {},
-                handlers = handlers,
-                handlersLoading = false,
-                selectedHandler = "/select",
-                onSelectHandler = {},
+                collectionDropdown = collectionDropdown(),
+                requestHandlers = requestHandlersDropdown(selectedKey = "/select"),
             )
         }
 
         onNodeWithText("solr.SearchHandler").assertExists()
     }
+
+    private fun collectionDropdown(
+        options: List<String> = listOf("films"),
+        isLoading: Boolean = false,
+        selectedKey: String? = "films",
+        onSelect: (String) -> Unit = {},
+    ) = HeaderDropdownState(
+        options = options.map { HeaderDropdownOption(key = it, label = it) },
+        isLoading = isLoading,
+        selectedKey = selectedKey,
+        onSelect = onSelect,
+    )
+
+    private fun requestHandlersDropdown(
+        options: List<RequestHandlerOption> = handlers,
+        isLoading: Boolean = false,
+        selectedKey: String? = null,
+        onSelect: (String) -> Unit = {},
+    ) = HeaderDropdownState(
+        options = options.map {
+            HeaderDropdownOption(key = it.name, label = it.name, subtitle = it.className)
+        },
+        isLoading = isLoading,
+        selectedKey = selectedKey,
+        onSelect = onSelect,
+    )
 }

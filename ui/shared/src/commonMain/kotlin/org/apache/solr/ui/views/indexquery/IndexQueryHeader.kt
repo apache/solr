@@ -22,33 +22,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.domain.RequestHandlerOption
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.label_collection_core
 import org.apache.solr.ui.shared.generated.resources.label_request_handler
 import org.apache.solr.ui.shared.generated.resources.no_collections_available
 import org.apache.solr.ui.shared.generated.resources.no_request_handlers
 import org.apache.solr.ui.shared.generated.resources.placeholder_select_request_handler
+import org.apache.solr.ui.views.components.HeaderDropdown
+import org.apache.solr.ui.views.components.HeaderDropdownState
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -56,62 +43,39 @@ import org.jetbrains.compose.resources.stringResource
  *
  * The header only renders what it is given. Loading and selection happen in the caller.
  *
- * @param collections The available collection names.
- * @param collectionsLoading Whether the collections are being loaded. Disables both dropdowns.
- * @param selectedCollection The selected collection, or null.
- * @param onSelectCollection Called with the collection the user picked.
- * @param handlers The request handlers of the selected collection.
- * @param handlersLoading Whether the handlers are being loaded. Disables the handler dropdown.
- * @param selectedHandler The name of the selected request handler, or null.
- * @param onSelectHandler Called with the name of the request handler the user picked.
+ * @param collectionDropdown Dropdown state for the available collections.
+ * @param requestHandlers Dropdown state for the selected collection's request handlers.
  * @param modifier Modifier to apply to the root column.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IndexQueryHeader(
-    collections: List<String>,
-    collectionsLoading: Boolean,
-    selectedCollection: String?,
-    onSelectCollection: (String) -> Unit,
-    handlers: List<RequestHandlerOption>,
-    handlersLoading: Boolean,
-    selectedHandler: String?,
-    onSelectHandler: (String) -> Unit,
+    collectionDropdown: HeaderDropdownState,
+    requestHandlers: HeaderDropdownState,
     modifier: Modifier = Modifier,
 ) {
-    val collectionsEnabled = !collectionsLoading && collections.isNotEmpty()
-    val handlersEnabled = !collectionsLoading &&
-        selectedCollection != null &&
-        !handlersLoading &&
-        handlers.isNotEmpty()
+    val requestHandlersDropdown = requestHandlers.copy(
+        isEnabled = requestHandlers.isEnabled &&
+            !collectionDropdown.isLoading &&
+            collectionDropdown.selectedKey != null,
+    )
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             HeaderDropdown(
                 label = stringResource(Res.string.label_collection_core),
-                value = selectedCollection,
-                placeholder = "",
-                enabled = collectionsEnabled,
-                entries = collections.map { DropdownEntry(key = it, title = it) },
-                onSelect = onSelectCollection,
+                state = collectionDropdown,
                 testTag = "index_query_collection_dropdown",
                 modifier = Modifier.width(256.dp),
             )
             HeaderDropdown(
                 label = stringResource(Res.string.label_request_handler),
-                value = selectedHandler,
-                placeholder = stringResource(Res.string.placeholder_select_request_handler),
-                enabled = handlersEnabled,
-                entries = handlers.map {
-                    DropdownEntry(key = it.name, title = it.name, subtitle = it.className)
-                },
-                supporting = handlers.firstOrNull { it.name == selectedHandler }?.className,
-                onSelect = onSelectHandler,
+                state = requestHandlersDropdown,
                 testTag = "index_query_handler_dropdown",
                 modifier = Modifier.width(384.dp),
+                placeholder = stringResource(Res.string.placeholder_select_request_handler),
             )
         }
-        if (!collectionsLoading && collections.isEmpty()) {
+        if (!collectionDropdown.isLoading && collectionDropdown.options.isEmpty()) {
             Text(
                 text = stringResource(Res.string.no_collections_available),
                 style = MaterialTheme.typography.bodyMedium,
@@ -119,104 +83,17 @@ fun IndexQueryHeader(
                 modifier = Modifier.testTag("index_query_no_collections"),
             )
         }
-        if (selectedCollection != null && !handlersLoading && handlers.isEmpty()) {
+        if (
+            collectionDropdown.selectedKey != null &&
+            !requestHandlers.isLoading &&
+            requestHandlers.options.isEmpty()
+        ) {
             Text(
                 text = stringResource(Res.string.no_request_handlers),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.testTag("index_query_no_handlers"),
             )
-        }
-    }
-}
-
-private data class DropdownEntry(
-    val key: String,
-    val title: String,
-    val subtitle: String? = null,
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HeaderDropdown(
-    label: String,
-    value: String?,
-    placeholder: String,
-    enabled: Boolean,
-    entries: List<DropdownEntry>,
-    supporting: String? = null,
-    onSelect: (String) -> Unit,
-    testTag: String,
-    modifier: Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = modifier,
-    ) {
-        OutlinedTextField(
-            value = value.orEmpty(),
-            onValueChange = {},
-            readOnly = true,
-            enabled = enabled,
-            singleLine = true,
-            label = { Text(label) },
-            placeholder = if (value.isNullOrEmpty() && placeholder.isNotEmpty()) {
-                { Text(placeholder) }
-            } else {
-                null
-            },
-            trailingIcon = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    supporting?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 160.dp),
-                        )
-                    }
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(
-                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                    enabled = enabled,
-                )
-                .testTag(testTag),
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            entries.forEach { entry ->
-                DropdownMenuItem(
-                    modifier = Modifier.testTag("${testTag}_item_${entry.key}"),
-                    text = {
-                        Column {
-                            Text(text = entry.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            entry.subtitle?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                    },
-                    onClick = {
-                        onSelect(entry.key)
-                        expanded = false
-                    },
-                )
-            }
         }
     }
 }
