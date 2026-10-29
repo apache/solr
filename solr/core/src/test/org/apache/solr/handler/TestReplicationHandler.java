@@ -255,19 +255,42 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void testUrlAllowList() throws Exception {
-    // Run another test with URL allow-list enabled and allow-list is empty.
-    // Expect an exception because the leader URL is not allowed.
+    // Allow-list denial during doTestDetails() is not reliably a SolrException (SOLR-18280).
     System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "true");
-    SolrException e = expectThrows(SolrException.class, this::doTestDetails);
-    assertTrue(
-        e.getMessage()
-            .contains("nor in the configured '" + AllowListUrlChecker.URL_ALLOW_LIST + "'"));
+    leaderJetty.stop();
+    leaderJetty = createAndStartJetty(leader);
+    leaderClient.close();
+    leaderClient =
+        ReplicationTestHelper.createNewSolrClient(
+            buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
-    // Set the allow-list to allow the leader URL.
-    // Expect the same test to pass now.
-    System.setProperty(
-        TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
-    doTestDetails();
+    AllowListUrlChecker checker = leaderJetty.getCoreContainer().getAllowListUrlChecker();
+    assertTrue(checker.isEnabled());
+    SolrException denied =
+        expectThrows(
+            SolrException.class,
+            () -> checker.checkAllowList(List.of("http://127.0.0.1:7574/solr/collection1")));
+    assertThat(denied.getMessage(), containsString(AllowListUrlChecker.URL_ALLOW_LIST));
+
+    System.setProperty(TEST_URL_ALLOW_LIST, buildUrl(leaderJetty.getLocalPort()));
+    follower.setTestPort(leaderJetty.getLocalPort());
+    follower.copyConfigFile(CONF_DIR + "solrconfig-follower.xml", "solrconfig.xml");
+    followerJetty.stop();
+    followerJetty = createAndStartJetty(follower);
+    followerClient.close();
+    followerClient =
+        ReplicationTestHelper.createNewSolrClient(
+            buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+
+    followerJetty
+        .getCoreContainer()
+        .getAllowListUrlChecker()
+        .checkAllowList(List.of(buildUrl(leaderJetty.getLocalPort())));
+
+    index(leaderClient, "id", "allow-list-1", "name", "allowed");
+    leaderClient.commit();
+    pullFromTo(leaderJetty, followerJetty);
+    rQuery(1, "id:allow-list-1", followerClient);
   }
 
   @Test
