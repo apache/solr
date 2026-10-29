@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -643,13 +644,14 @@ public class HttpSolrCall {
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
     String queryStr = updatedQueryParams.toQueryString();
 
-    String coreUrlAndPath = coreUrl + path;
-    log.info("Proxying request to: {}", coreUrlAndPath);
+    log.info("Proxying request to: {}{}", coreUrl, path);
     try {
+      // path is decoded, so encode it
+      URI uri = URI.create(coreUrl + new URI(null, null, path, null).getRawPath() + queryStr);
       response.reset(); // clear all headers and status
       HttpClient httpClient =
           ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
-      HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrlAndPath + queryStr);
+      HttpSolrProxy.doHttpProxy(httpClient, req, response, uri);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
       sendError(
