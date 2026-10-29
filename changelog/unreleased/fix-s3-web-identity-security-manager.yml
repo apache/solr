@@ -1,0 +1,6 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: The S3 backup repository uses web identity credentials (such as EKS IAM Roles for Service Accounts) again when the Security Manager is enabled, instead of falling back to the next credentials provider, such as the EC2 instance profile.
+type: fixed
+authors:
+  - name: Samuel Verstraete
+    nick: elangelo
