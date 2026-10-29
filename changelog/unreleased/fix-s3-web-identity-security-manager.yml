@@ -4,3 +4,6 @@ type: fixed
 authors:
   - name: Samuel Verstraete
     nick: elangelo
+links:
+  - name: PR#5264
+    url: https://github.com/apache/solr/pull/5264
