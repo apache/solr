@@ -1,9 +1,10 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  NamedList is now a sealed class permitting only SimpleOrderedMap, which is non-sealed. Third-party
-  code can no longer extend NamedList directly; extend SimpleOrderedMap instead.
-  CloudSolrClient.RouteResponse now extends SimpleOrderedMap.
+  NamedList is now a sealed class whose only subclass is SimpleOrderedMap, which is final. Third-party
+  code can no longer extend either. CloudSolrClient.RouteResponse is removed: a routed update now
+  returns a plain SimpleOrderedMap whose responseHeader carries each route's achieved replication
+  factor under "rfByRoute", which getShardReplicationFactor() reads.
 type: changed
 authors:
   - name: Ivan Šarić

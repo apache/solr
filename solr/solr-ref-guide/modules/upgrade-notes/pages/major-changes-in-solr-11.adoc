@@ -46,6 +46,9 @@ Note that node roles are fixed for the lifetime of a node: unlike `ADDROLE`, the
 
 === NamedList is a sealed class
 
-`NamedList` is now a sealed class whose only permitted direct subclass is `SimpleOrderedMap`.
-Plugins or client code that extended `NamedList` directly will no longer compile; extend `SimpleOrderedMap` instead, or hold a `NamedList` rather than being one.
-`CloudSolrClient.RouteResponse` now extends `SimpleOrderedMap`; existing casts from `NamedList` keep working.
+`NamedList` is now a sealed class whose only permitted subclass is `SimpleOrderedMap`, which is `final`.
+Plugins or client code that extended either class will no longer compile; hold a `NamedList` rather than being one.
+
+`CloudSolrClient.RouteResponse` has been removed.
+A routed update request now returns a plain `SimpleOrderedMap`, whose `responseHeader` carries the achieved replication factor of each route under `rfByRoute` (`CloudSolrClient.REPFACT_BY_ROUTE`), keyed by route URL.
+`CloudSolrClient.getShardReplicationFactor()` reads that entry, so its signature and behavior are unchanged; `condenseResponse()` now returns a `SimpleOrderedMap`.

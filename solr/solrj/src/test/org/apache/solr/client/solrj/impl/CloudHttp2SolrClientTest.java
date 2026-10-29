@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
-import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -378,29 +377,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(response);
     }
-    RouteResponse<?> rr = (RouteResponse<?>) response;
-    Map<String, ? extends LBSolrClient.Req> routes = rr.getRoutes();
-    Iterator<? extends Map.Entry<String, ? extends LBSolrClient.Req>> it =
-        routes.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, ? extends LBSolrClient.Req> entry = it.next();
-      String coreUrl = entry.getKey();
-      final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
-      final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
-      UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
-      SolrInputDocument doc = updateRequest.getDocuments().get(0);
-      String id = doc.getField("id").getValue().toString();
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.add("q", "id:" + id);
-      params.add("distrib", "false");
-      QueryRequest queryRequest = new QueryRequest(params);
-
-      SolrClient solrClient =
-          new CollectionScopedSolrClient(cluster.getJetty(baseUrl).getSolrClient(), coreName);
-      QueryResponse queryResponse = queryRequest.process(solrClient);
-      SolrDocumentList docList = queryResponse.getResults();
-      assertEquals(1, docList.getNumFound());
-    }
+    assertDocsOnShardLeaders("routing_collection", "0", "2");
 
     // Test the deleteById routing for UpdateRequest
 
@@ -429,27 +406,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
         checkSingleServer(response);
       }
-      rr = (RouteResponse) response;
-      routes = rr.getRoutes();
-      it = routes.entrySet().iterator();
-      while (it.hasNext()) {
-        Map.Entry<String, ? extends LBSolrClient.Req> entry = it.next();
-        String coreUrl = entry.getKey();
-        final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
-        final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
-        UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
-        SolrInputDocument doc = updateRequest.getDocuments().get(0);
-        String id = doc.getField("id").getValue().toString();
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.add("q", "id:" + id);
-        params.add("distrib", "false");
-        QueryRequest queryRequest = new QueryRequest(params);
-        SolrClient solrClient =
-            new CollectionScopedSolrClient(cluster.getJetty(baseUrl).getSolrClient(), coreName);
-        QueryResponse queryResponse = queryRequest.process(solrClient);
-        SolrDocumentList docList = queryResponse.getResults();
-        assertEquals(1, docList.getNumFound());
-      }
+      assertDocsOnShardLeaders("routing_collection", "0", "2");
     }
 
     // Test that queries with _route_ params are routed by the client
@@ -1096,17 +1053,34 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
   }
 
+  /** Asserts that each doc is on the leader of the shard it routes to, querying that core alone. */
+  private static void assertDocsOnShardLeaders(String collection, String... ids) throws Exception {
+    DocCollection col = cluster.getSolrClient().getClusterState().getCollection(collection);
+    for (String id : ids) {
+      String coreUrl = col.getRouter().getTargetSlice(id, null, null, null, col).getLeader().getCoreUrl();
+      SolrClient solrClient =
+          new CollectionScopedSolrClient(
+              cluster.getJetty(URLUtil.extractBaseUrl(coreUrl)).getSolrClient(),
+              URLUtil.extractCoreFromCoreUrl(coreUrl));
+      QueryResponse queryResponse =
+          new QueryRequest(params("q", "id:" + id, "distrib", "false")).process(solrClient);
+      assertEquals(1, queryResponse.getResults().getNumFound());
+    }
+  }
+
+  /** Asserts that a routed update was sent to shard leaders only, via the per-route rf header. */
   private static void checkSingleServer(NamedList<Object> response) {
-    final RouteResponse<?> rr = (RouteResponse<?>) response;
-    final Map<String, ? extends LBSolrClient.Req> routes = rr.getRoutes();
-    final Iterator<? extends Map.Entry<String, ? extends LBSolrClient.Req>> it =
-        routes.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, ? extends LBSolrClient.Req> entry = it.next();
-      assertEquals(
-          "wrong number of servers: " + entry.getValue().getEndpoints(),
-          1,
-          entry.getValue().getEndpoints().size());
+    NamedList<?> header = (NamedList<?>) response.get("responseHeader");
+    NamedList<?> rfByRoute = (NamedList<?>) header.get(CloudSolrClient.REPFACT_BY_ROUTE);
+    assertNotNull("no per-route rf in " + header, rfByRoute);
+    DocCollection col =
+        cluster.getSolrClient().getClusterState().getCollection("routing_collection");
+    Set<String> leaderUrls = new HashSet<>();
+    for (Slice slice : col.getSlices()) {
+      leaderUrls.add(slice.getLeader().getCoreUrl());
+    }
+    for (Map.Entry<String, ?> route : rfByRoute) {
+      assertTrue("not a leader: " + route.getKey(), leaderUrls.contains(route.getKey()));
     }
   }
 

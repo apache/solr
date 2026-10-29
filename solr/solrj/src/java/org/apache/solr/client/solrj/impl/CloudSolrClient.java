@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -414,13 +412,8 @@ public abstract class CloudSolrClient extends SolrClient {
 
     long end = System.nanoTime();
 
-    @SuppressWarnings({"rawtypes"})
-    RouteResponse rr =
-        condenseResponse(
-            shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
-    rr.setRouteResponses(shardResponses);
-    rr.setRoutes(routes);
-    return rr;
+    return condenseResponse(
+        shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
   }
 
   protected RouteException getRouteException(
@@ -487,11 +480,22 @@ public abstract class CloudSolrClient extends SolrClient {
     return urlMap;
   }
 
-  protected <T extends RouteResponse<?>> T condenseResponse(
-      NamedList<?> response, int timeMillis, Supplier<T> supplier) {
-    T condensed = supplier.get();
+  /**
+   * Key in the merged {@code responseHeader} of a routed update request: the achieved replication
+   * factor of each route, keyed by route URL.
+   */
+  public static final String REPFACT_BY_ROUTE = "rfByRoute";
+
+  /**
+   * Merges the per-route responses of a routed update request into a single response. The merged
+   * {@code responseHeader} carries the lowest achieved replication factor as {@link
+   * UpdateRequest#REPFACT} and each route's own value under {@link #REPFACT_BY_ROUTE}.
+   */
+  public SimpleOrderedMap<Object> condenseResponse(NamedList<?> response, int timeMillis) {
+    SimpleOrderedMap<Object> condensed = new SimpleOrderedMap<>();
     int status = 0;
     Integer rf = null;
+    SimpleOrderedMap<Integer> rfByRoute = null;
 
     // TolerantUpdateProcessor
     List<SimpleOrderedMap<String>> toleratedErrors = null;
@@ -511,6 +515,8 @@ public abstract class CloudSolrClient extends SolrClient {
       Object rfObj = header.get(UpdateRequest.REPFACT);
       if (rfObj != null && rfObj instanceof Integer routeRf) {
         if (rf == null || routeRf < rf) rf = routeRf;
+        if (rfByRoute == null) rfByRoute = new SimpleOrderedMap<>();
+        rfByRoute.put(response.getName(i), routeRf);
       }
 
       @SuppressWarnings("unchecked")
@@ -549,6 +555,7 @@ public abstract class CloudSolrClient extends SolrClient {
     cheader.add("status", status);
     cheader.add("QTime", timeMillis);
     if (rf != null) cheader.add(UpdateRequest.REPFACT, rf);
+    if (rfByRoute != null) cheader.add(REPFACT_BY_ROUTE, rfByRoute);
     if (null != toleratedErrors) {
       cheader.add("maxErrors", ToleratedUpdateError.getUserFriendlyMaxErrors(maxToleratedErrors));
       cheader.add("errors", toleratedErrors);
@@ -582,11 +589,6 @@ public abstract class CloudSolrClient extends SolrClient {
     }
     condensed.add("responseHeader", cheader);
     return condensed;
-  }
-
-  @SuppressWarnings({"rawtypes"})
-  public RouteResponse condenseResponse(NamedList<?> response, int timeMillis) {
-    return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 
   @Override
@@ -1241,14 +1243,15 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   /**
-   * Walks the NamedList response after performing an update request looking for the replication
-   * factor that was achieved in each shard involved in the request. For single doc updates, there
+   * Reads the replication factor that was achieved in each shard involved in a routed update
+   * request, from {@link #REPFACT_BY_ROUTE} in the response header. For single doc updates, there
    * will be only one shard in the return value.
    */
   public Map<String, Integer> getShardReplicationFactor(String collection, NamedList<?> resp) {
     Map<String, Integer> results = new HashMap<>();
-    if (resp instanceof RouteResponse) {
-      NamedList<NamedList<?>> routes = ((RouteResponse<?>) resp).getRouteResponses();
+    NamedList<?> header = (NamedList<?>) resp.get("responseHeader");
+    Object rfByRoute = header == null ? null : header.get(REPFACT_BY_ROUTE);
+    if (rfByRoute instanceof NamedList<?> routes) {
       DocCollection coll = getDocCollection(collection, null);
       Map<String, String> leaders = new HashMap<>();
       for (Slice slice : coll.getActiveSlices()) {
@@ -1261,13 +1264,9 @@ public abstract class CloudSolrClient extends SolrClient {
         }
       }
 
-      Iterator<Map.Entry<String, NamedList<?>>> routeIter = routes.iterator();
-      while (routeIter.hasNext()) {
-        Map.Entry<String, NamedList<?>> next = routeIter.next();
+      for (Map.Entry<String, ?> next : routes) {
         String host = next.getKey();
-        NamedList<?> hostResp = next.getValue();
-        Integer rf =
-            (Integer) ((NamedList<?>) hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
+        Integer rf = (Integer) next.getValue();
         if (rf != null) {
           String shard = leaders.get(host);
           if (shard == null) {
@@ -1678,28 +1677,6 @@ public abstract class CloudSolrClient extends SolrClient {
       } finally {
         evictLock.unlock();
       }
-    }
-  }
-
-  @SuppressWarnings({"rawtypes"})
-  public static class RouteResponse<T extends LBSolrClient.Req> extends SimpleOrderedMap<Object> {
-    private NamedList<NamedList<?>> routeResponses;
-    private Map<String, T> routes;
-
-    public void setRouteResponses(NamedList<NamedList<?>> routeResponses) {
-      this.routeResponses = routeResponses;
-    }
-
-    public NamedList<NamedList<?>> getRouteResponses() {
-      return routeResponses;
-    }
-
-    public void setRoutes(Map<String, T> routes) {
-      this.routes = routes;
-    }
-
-    public Map<String, T> getRoutes() {
-      return routes;
     }
   }
 
