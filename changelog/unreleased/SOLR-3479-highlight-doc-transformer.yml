@@ -1,0 +1,7 @@
+title: "New [hl] document transformer: highlight a field inline in each document, e.g. fl=id,body:[hl]"
+type: added
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-3479
+    url: https://issues.apache.org/jira/browse/SOLR-3479

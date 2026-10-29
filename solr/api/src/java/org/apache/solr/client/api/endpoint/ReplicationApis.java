@@ -22,19 +22,55 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
+import org.apache.solr.client.api.model.CommitsResponse;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.RestoreStatusResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
 @Path("/cores/{coreName}/replication")
 public interface ReplicationApis {
+
+  @GET
+  @CoreApiParameters
+  @Operation(
+      summary = "Return replication configuration and current status.",
+      tags = {"replication"})
+  ReplicationDetailsResponse fetchReplicationDetails(
+      @Parameter(
+              description = "When true on a follower, include nested details fetched from leader",
+              required = false)
+          @QueryParam("follower")
+          @DefaultValue("true")
+          Boolean follower);
+
+  @GET
+  @CoreApiParameters
+  @Path("/restore/status")
+  @Operation(
+      summary = "Return the status of the most recent restore operation.",
+      tags = {"replication"})
+  RestoreStatusResponse fetchRestoreStatus();
+
+  @GET
+  @CoreApiParameters
+  @Path("/commits")
+  @Operation(
+      summary = "Return the index commit points retained by the specified core.",
+      tags = {"replication"})
+  CommitsResponse fetchCommits();
 
   @GET
   @CoreApiParameters
@@ -92,4 +128,12 @@ public interface ReplicationApis {
       @Parameter(description = "The generation number of the index", required = false)
           @QueryParam("generation")
           Long gen);
+
+  @PUT
+  @CoreApiParameters
+  @Operation(
+      summary = "Enable or disable replication.",
+      tags = {"replication"})
+  SolrJerseyResponse setReplicationEnabled(
+      @RequestBody(required = true) ReplicationEnabledRequestBody requestBody);
 }

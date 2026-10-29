@@ -23,8 +23,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ConfigInfoResponse;
+import org.apache.solr.client.api.model.ConfigOverlayResponse;
+import org.apache.solr.client.api.model.ConfigZnodeVersionResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /** V2 API for reading and modifying a core/collection's config */
@@ -42,5 +45,85 @@ public interface ConfigApi {
             @DefaultValue("false")
             @Parameter(description = "Expand request handler useParams and effective parameters")
             boolean expandParams);
+
+    @GET
+    @Path("/overlay")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch the config overlay of the specified core or collection",
+        tags = {"config"})
+    ConfigOverlayResponse getOverlay();
+
+    @GET
+    @Path("/znodeVersion")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch znode versions for config overlay and request params",
+        tags = {"config"})
+    ConfigZnodeVersionResponse getZnodeVersion(
+        @QueryParam("overlay")
+            @DefaultValue("-1")
+            @Parameter(description = "Expected overlay znode version")
+            int expectedOverlayVersion,
+        @QueryParam("params")
+            @DefaultValue("-1")
+            @Parameter(description = "Expected request-params znode version")
+            int expectedParamsVersion);
+
+    // TODO: RH names contain '/' (e.g. /select, /update/json), so they cannot be a @PathParam in
+    // the current design; Keeping filtering via @QueryParam for now.
+    @GET
+    @Path("/requestHandlers")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch request handlers (including implicit handler)",
+        tags = {"config"})
+    ConfigInfoResponse getRequestHandler(
+        @QueryParam("componentName")
+            @Parameter(description = "Name of the specific request handler")
+            String component,
+        @QueryParam("expandParams")
+            @DefaultValue("false")
+            @Parameter(description = "Expand request handler useParams and effective parameters")
+            boolean expandParams,
+        @QueryParam("meta")
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
+
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
+    @GET
+    @Path(
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|caches|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory|indexConfigdeletionPolicy|updateHandlerupdateLog}")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a config section",
+        tags = {"config"})
+    ConfigInfoResponse getConfigComponent(
+        @PathParam("component") @Parameter(description = "Name of the config component")
+            String component);
+
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS. Sections without
+    // REQUIRE_NAME in SolrConfig's plugin registration (initParams, listeners,
+    // updateRequestProcessorChain, circuitBreaker) are deliberately excluded here: they're
+    // serialized as a List rather than a name-keyed Map, so by-name lookup isn't meaningful for
+    // them (see GetConfig.filterByComponentName).
+    // Scalars / non-plugin sections (luceneMatchVersion, jmx etc) are also omitted.
+    @GET
+    @Path(
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|queryParsers|valueSourceParsers|transformers|updateProcessors|queryConverters|caches|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch a single named entry within a config section",
+        tags = {"config"})
+    ConfigInfoResponse getConfigComponentByName(
+        @PathParam("component") @Parameter(description = "Name of the config component")
+            String component,
+        @PathParam("componentName") @Parameter(description = "Name of the entry within the section")
+            String componentName,
+        @QueryParam("meta")
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
   }
 }

@@ -30,9 +30,10 @@ This feature is currently unsupported for grouping and Cursors.
 This feature works in both Standalone and SolrCloud modes and always performs distributed search execution.
 In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed using the *allowUrls* parameter, otherwise Solr returns HTTP 403. For example:
 
-```
+[source,bash]
+----
 "-Dsolr.security.allow.urls=http://localhost:8983/solr/"
-```
+----
 
 ====
 
@@ -40,18 +41,21 @@ In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed us
 
 Combined Query Feature has a separate handler with class `solr.CombinedQuerySearchHandler` which can be configured as below:
 
-```
+[source,xml]
+----
 <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
 .....
 </requestHandler>
-```
+----
 
 In addition, the `QueryComponent` has been extended to create a new `CombinedQueryComponent`, which must be declared as a search component:
-```
+
+[source,xml]
+----
 <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
     <int name="maxCombinerQueries">2</int>
 </searchComponent>
-```
+----
 
 
 The Search Component also accepts parameters as below:
@@ -79,6 +83,9 @@ The query structure is similar to JSON Query DSL except for how multiple queries
 [NOTE]
 ====
 Consider setting `shards.rows` to at least your deepest expected `start + rows` to enlarge the per-shard candidate pool used for fusion, giving more consistent ordering across pages.
+
+`numFound` in the response is the number of distinct documents in the fused result when `numFoundExact` is true.
+Otherwise it is a lower bound — at least the largest sub-query's match count — because a sub-query matched more documents than were retained for fusion (`shards.rows` or `start + rows`).
 ====
 
 === Example
@@ -92,7 +99,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
     "queries": {
         "lexical1": {
@@ -150,7 +157,9 @@ The class to implement the custom logic has to extend `org.apache.solr.handler.c
 The Combined Query Component definition takes the `combiners` parameter, where the custom class can be declared by specifying a name and the custom parameters required by the custom algorithm.
 
 Example of the Search Component as below:
-```
+
+[source,xml]
+----
 <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
     <int name="maxCombinerQueries">2</int>
         <lst name="combiners">
@@ -161,11 +170,12 @@ Example of the Search Component as below:
             </lst>
         </lst>
 </searchComponent>
-```
+----
 
 Then, when executing the combined query, the only thing that changes in the JSON query payload is the value specified in the `combiner.algorithm` parameter:
 
-```
+[source,json]
+----
     ...
     "params": {
         "combiner": true,
@@ -173,7 +183,7 @@ Then, when executing the combined query, the only thing that changes in the JSON
         "combiner.algorithm": "customAlgorithm"
     }
 ...
-```
+----
 
 In this case, `customAlgorithm` is specified which is the name defined in the configuration; the RRF-specific parameters do not need to be provided.
 

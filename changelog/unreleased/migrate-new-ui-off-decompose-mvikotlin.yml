@@ -1,0 +1,8 @@
+title: Migrate the new UI off Decompose, MVIKotlin and Essenty to AndroidX ViewModel and Navigation 3
+type: other
+authors:
+  - name: Christos Malliaridis
+    nick: malliaridis
+links:
+  - name: GITHUB#4929
+    url: https://github.com/apache/solr/pull/4929
