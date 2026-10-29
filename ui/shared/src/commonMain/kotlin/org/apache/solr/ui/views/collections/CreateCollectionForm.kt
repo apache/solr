@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -118,6 +119,9 @@ fun CreateCollectionForm(
 ) {
     var name by remember { mutableStateOf("") }
     var configset by remember { mutableStateOf(configsets.firstOrNull()?.name) }
+    LaunchedEffect(configsets) {
+        if (configset == null) configset = configsets.firstOrNull()?.name
+    }
     var shards by remember { mutableStateOf("2") }
     var nrt by remember { mutableStateOf("2") }
     var tlog by remember { mutableStateOf("0") }

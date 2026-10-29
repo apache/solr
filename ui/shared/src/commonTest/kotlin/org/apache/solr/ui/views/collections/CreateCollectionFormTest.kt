@@ -26,6 +26,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
+import androidx.compose.runtime.mutableStateOf
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.domain.CreateCollectionInput
 import org.apache.solr.ui.shared.generated.resources.Res
@@ -113,6 +114,31 @@ class CreateCollectionFormTest {
         }
 
         onNodeWithTag("create_collection_button").assertIsNotEnabled()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testSelectsConfigsetWhenInitiallyEmptyListIsLoaded() = runComposeUiTest {
+        val configsets = mutableStateOf(emptyList<Configset>())
+        val created = mutableListOf<CreateCollectionInput>()
+        setContent {
+            CreateCollectionForm(
+                configsets = configsets.value,
+                nameError = null,
+                generalError = null,
+                onCreate = { created.add(it) },
+                onCancel = {},
+            )
+        }
+
+        onNodeWithTag("create_collection_name_field").performTextInput("films2")
+        onNodeWithTag("create_collection_button").assertIsNotEnabled()
+
+        configsets.value = listOf(Configset("techproducts"))
+        awaitIdle()
+
+        onNodeWithTag("create_collection_button").assertIsEnabled().performClick()
+        assertEquals("techproducts", created.single().configset)
     }
 
     @OptIn(ExperimentalTestApi::class)
