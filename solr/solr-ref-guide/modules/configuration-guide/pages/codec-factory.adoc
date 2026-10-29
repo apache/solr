@@ -62,7 +62,7 @@ Example:
 === org.apache.solr.cuvs.CuVSCodecFactory
 
 `CuVSCodecFactory`, provided by the `cuvs` module, uses an NVIDIA GPU to build the HNSW graph of `DenseVectorField` fields configured with `knnAlgorithm="cagra_hnsw"`.
-All other fields are handled as by `solr.SchemaCodecFactory`, and accepts the same options.
+The factory accepts the same options as `solr.SchemaCodecFactory`.
 
 See xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] for requirements, installation and the `cuvs*` field type parameters.
 
