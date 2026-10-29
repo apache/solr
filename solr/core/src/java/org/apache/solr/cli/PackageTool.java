@@ -140,8 +140,7 @@ public class PackageTool extends ToolBase {
       String collection,
       boolean noPrompt) {}
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
@@ -238,17 +237,20 @@ public class PackageTool extends ToolBase {
       reason =
           "Package tool prints stack traces and turns off logging; this is same as executePackage.")
   void runWithManagers(
-      ConnectionOptions opts, String credentials, PackageSubCommand.PackageAction action)
+      ConnectionOptions connectionOptions,
+      String credentials,
+      PackageSubCommand.PackageAction action)
       throws Exception {
     // Need a logging free, clean output going through to the user.
     Level oldLevel = LoggerContext.getContext(false).getRootLogger().getLevel();
     Configurator.setRootLevel(Level.OFF);
 
     try {
-      String solrUrl = ConnectionOptions.resolveSolrUrl(opts, credentials);
-      String zkHost = ConnectionOptions.resolveZkHost(opts, solrUrl, credentials);
-
-      if (zkHost == null) {
+      String solrUrl = connectionOptions.resolveSolrUrl(credentials);
+      String zkHost;
+      try {
+        zkHost = connectionOptions.resolveZkHost(credentials);
+      } catch (IllegalStateException e) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");
       }
 

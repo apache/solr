@@ -46,7 +46,7 @@ public class SnapshotExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -64,7 +64,7 @@ public class SnapshotExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -77,7 +77,7 @@ public class SnapshotExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option DEST_DIR_OPTION =
       Option.builder()
           .longOpt("dest-dir")
@@ -91,7 +91,7 @@ public class SnapshotExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option BACKUP_REPO_NAME_OPTION =
       Option.builder()
           .longOpt("backup-repo-name")
@@ -105,7 +105,7 @@ public class SnapshotExportTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option ASYNC_ID_OPTION =
       Option.builder()
           .longOpt("async-id")
@@ -126,8 +126,7 @@ public class SnapshotExportTool extends ToolBase {
 
   // --- picocli fields ---
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  private ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
 
   @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
@@ -262,7 +261,7 @@ public class SnapshotExportTool extends ToolBase {
     }
     SnapshotExportParams params =
         new SnapshotExportParams(
-            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            connectionOptions.resolveSolrUrl(credentialsOptions.credentials),
             credentialsOptions.credentials,
             collection.name,
             destDirOpt,

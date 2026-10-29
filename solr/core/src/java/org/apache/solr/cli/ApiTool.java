@@ -46,7 +46,7 @@ public class ApiTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SOLR_URL_OPTION =
       Option.builder("s")
           .longOpt("solr-url")

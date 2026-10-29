@@ -70,7 +70,7 @@ Updates or enables/disables authentication. Must be run on the Solr server itsel
   *(required)* The Solr include file which contains overridable environment variables for configuring Solr configurations. Defaults to solr.in.sh or solr.in.cmd.
 
 *--solr-url*=_<solrUrl>_::
-  Base Solr URL, which can be used to determine the zk-host if --zk-host is not known
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
 
 *--type*=_TYPE_::
   The authentication mechanism to enable (currently only basicAuth). Defaults to 'basicAuth'.
