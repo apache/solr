@@ -148,7 +148,8 @@ public class SSLToolTest extends SolrTestCase {
     assertEquals(ssl.keystore() + ".truststore", EnvUtils.getProperty("javax.net.ssl.trustStore"));
     assertEquals("Test'$(false)Password", EnvUtils.getProperty("javax.net.ssl.trustStorePassword"));
     ssl.printVerificationInstructions("https://localhost:8983/solr");
-    assertTrue(runtime.getOutput().contains("https://localhost:8983/solr/admin/info/system"));
+    assertTrue(runtime.getOutput().contains("https://localhost:8983/api/node/system"));
+    assertTrue(ssl.isSelfSigned());
     assertEquals(
         "# Keep this comment\nSOLR_HEAP=512m\nexport SOLR_SSL_ENABLED=false\nSOLR_SSL_KEY_STORE=old\n",
         Files.readString(dir.resolve("solr.in.sh")));

@@ -33,7 +33,9 @@ teardown() {
   assert_success
   assert_output --partial 'Verify HTTPS in another terminal:'
   assert_output --partial 'curl --cacert'
+  assert_output --partial '/api/node/system'
   assert_output --partial 'Secure Solr example running at https://'
+  assert_output --partial 'Sign in as solr. You will need to accept the self-signed certificate in the browser.'
   refute_output --partial 'Press Enter after curl'
 
   run cat "$SOLR_INCLUDE"
@@ -41,6 +43,11 @@ teardown() {
 
   run cat "$SOLR_HOME/tls/solr.in.sh"
   assert_output --partial "SOLR_HOST_ADVERTISE='localhost'"
+
+  run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user solr:SolrRocks "https://localhost:${SOLR_PORT}/api/node/system"
+  assert_success
+  assert_output --partial '"mode":"solrcloud"'
 
   run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
     --user search:SolrRocks "https://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"

@@ -738,7 +738,10 @@ public class RunExampleTool extends ToolBase {
             + port
             + "/solr/. Sign in as "
             + user
-            + ".");
+            + "."
+            + (secureSSL != null && secureSSL.isSelfSigned()
+                ? " You will need to accept the self-signed certificate in the browser."
+                : ""));
     if (secureSSL != null) {
       echo("Use SOLR_INCLUDE=" + secureSSL.includeFile() + " for other bin/solr commands.");
     }

@@ -73,7 +73,7 @@ The wizard prints a command like this and pauses:
 [source,bash]
 ----
 curl --cacert example/secure_solr/tls/cert.pem \
-  'https://localhost:8983/solr/admin/info/system'
+  'https://localhost:8983/api/node/system'
 ----
 
 Run the command in another terminal.
@@ -152,6 +152,7 @@ Editing a local `security.json` file in the Solr home does not change the cluste
 == Sign In to the Admin UI
 
 Open https://localhost:8983/solr/[the Solr Admin UI] in your browser.
+Accept the browser warning for the self-signed certificate generated for this local example.
 Sign in with username `solr` and password `SolrRocks`, unless you chose different administrator credentials.
 
 The Security screen lets the administrator inspect and manage users, roles, and permissions.

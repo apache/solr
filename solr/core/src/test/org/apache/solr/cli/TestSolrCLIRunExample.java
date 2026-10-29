@@ -419,6 +419,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       String toolOutput = runtime.getOutput();
 
+      if ("secure_solr".equals(exampleName)) {
+        assertTrue(toolOutput.contains("/api/node/system"));
+        assertTrue(
+            toolOutput.contains(
+                "/solr/. Sign in as solr. You will need to accept the self-signed certificate in the browser."));
+      }
+
       if ("secure_solr".equals(exampleName) && pass == 0) {
         assertTrue(toolOutput.contains("curl --cacert"));
         assertTrue(toolOutput.contains("Password for index [SolrRocks]:"));

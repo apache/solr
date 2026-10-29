@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -125,12 +128,26 @@ final class SecureExampleSSL {
   }
 
   void printVerificationInstructions(String solrUrl) {
-    String url = CLIUtils.normalizeSolrUrl(solrUrl, false) + "/solr/admin/info/system";
+    String url = CLIUtils.normalizeSolrUrl(solrUrl, false) + "/api/node/system";
     runtime.println("Verify HTTPS in another terminal:");
     runtime.println("curl --cacert " + quote(certificate().toString()) + " " + quote(url));
     runtime.println("You should see Solr system information without a certificate error.");
     runtime.println(
         "If authentication is already enabled, an HTTP 401 response also confirms HTTPS.");
+  }
+
+  boolean isSelfSigned() throws IOException, GeneralSecurityException {
+    try (var input = Files.newInputStream(certificate())) {
+      var cert =
+          (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(input);
+      if (!cert.getSubjectX500Principal().equals(cert.getIssuerX500Principal())) return false;
+      try {
+        cert.verify(cert.getPublicKey());
+        return true;
+      } catch (GeneralSecurityException e) {
+        return false;
+      }
+    }
   }
 
   private static String quote(String value) {
