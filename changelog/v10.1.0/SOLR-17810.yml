@@ -1,0 +1,9 @@
+title: >
+  HttpJdkSolrClient & HttpJettySolrClient now send headers that enable Solr's rate limiting to work.
+type: changed
+authors:
+  - name: David Smiley
+  - name: Gaurav Tuli
+links:
+  - name: SOLR-17810
+    url: https://issues.apache.org/jira/browse/SOLR-17810

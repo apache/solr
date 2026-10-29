@@ -1,0 +1,10 @@
+title: >
+  Combined queries: skipped or failed shard responses no longer add to numFound or
+  approximateTotalHits and mark numFoundExact false; approximateTotalHits no longer
+  double-counts across shards.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18541
+    url: https://issues.apache.org/jira/browse/SOLR-18541
