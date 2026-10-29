@@ -1,0 +1,7 @@
+title: Update Solr support and contributor links
+type: other
+authors:
+  - name: Nick Shanin
+links:
+  - name: PR#5212
+    url: https://github.com/apache/solr/pull/5212
