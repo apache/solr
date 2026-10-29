@@ -33,7 +33,7 @@ public interface ParamSetsApi {
     @GET
     @StoreApiParameters
     @Operation(
-        summary = "Fetch all request param sets",
+        summary = "Fetch all request paramsets",
         tags = {"param-sets"})
     ParamSetsResponse listParamSets();
 
@@ -41,10 +41,10 @@ public interface ParamSetsApi {
     @Path("/{paramSetName}")
     @StoreApiParameters
     @Operation(
-        summary = "Fetch a single request param set",
+        summary = "Fetch a single request paramset",
         tags = {"param-sets"})
     ParamSetsResponse getParamSet(
-        @PathParam("paramSetName") @Parameter(description = "Name of the param set")
+        @PathParam("paramSetName") @Parameter(description = "Name of the paramset")
             String paramSetName);
   }
 }
