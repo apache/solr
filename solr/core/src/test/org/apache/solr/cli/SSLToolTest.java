@@ -94,7 +94,7 @@ public class SSLToolTest extends SolrTestCase {
   }
 
   @Test
-  public void testBothParsersAndFormats() throws Exception {
+  public void testBothFormats() throws Exception {
     for (String type : new String[] {"JKS", "PKCS12"}) {
       Path dir = prepare();
       var runtime = new CLITestHelper.TestingRuntime(true);
@@ -113,11 +113,7 @@ public class SSLToolTest extends SolrTestCase {
         type
       };
       SSLTool tool = new SSLTool(runtime);
-      if (type.equals("JKS")) {
-        assertEquals(0, tool.runTool(SolrCLI.processCommandLineArgs(tool, args)));
-      } else {
-        assertEquals(0, new picocli.CommandLine(tool).execute(args));
-      }
+      assertEquals(0, new picocli.CommandLine(tool).execute(args));
       char[] password = "Test'$(false)Password".toCharArray();
       KeyStore store = KeyStore.getInstance(type);
       try (var input = Files.newInputStream(dir.resolve("store"))) {

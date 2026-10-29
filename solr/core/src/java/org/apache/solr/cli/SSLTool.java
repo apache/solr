@@ -28,16 +28,13 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
+import picocli.CommandLine;
 
 /** Installs PEM certificates and configures HTTPS for a Solr node. */
-@SuppressWarnings("UnnecessarilyFullyQualified")
-@picocli.CommandLine.Command(
+@CommandLine.Command(
     name = "ssl",
     description = "Convert PEM files to a Java keystore and configure HTTPS in solr.in.sh.",
     footerHeading = "%nExamples:%n",
@@ -46,52 +43,61 @@ import org.apache.solr.common.util.EnvUtils;
       "  bin/solr ssl --cert fullchain.pem --key privkey.pem --password-file password.txt --zk-host localhost:9983"
     })
 public class SSLTool extends ToolBase {
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--cert",
+      paramLabel = "FILE",
       required = true,
       description = "PEM certificate chain, with the server certificate first.")
   private Path certificate;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--key",
+      paramLabel = "FILE",
       required = true,
       description = "PEM private key. Requires OpenSSL on PATH.")
   private Path privateKey;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--password-file",
+      paramLabel = "FILE",
       required = true,
       description = "File containing the keystore password on one line.")
   private Path passwordFile;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--key-password-file",
+      paramLabel = "FILE",
       description = "Password file for an encrypted PEM private key.")
   private Path keyPasswordFile;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--keystore",
+      paramLabel = "FILE",
       description = "Destination keystore. Default directory: server/etc in the Solr installation.")
   private Path keystore;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--store-type",
+      paramLabel = "TYPE",
       defaultValue = "JKS",
       description = "Keystore format: JKS or PKCS12. Default: JKS.")
   private String storeType = "JKS";
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--solr-include-file",
+      paramLabel = "FILE",
       description =
           "Existing solr.in.sh to update. Defaults to bin/solr.in.sh in the Solr installation.")
   private Path includeFile;
 
-  @picocli.CommandLine.Option(
+  @CommandLine.Option(
       names = "--zk-host",
+      paramLabel = "HOST",
       description =
           "ZooKeeper connection string. If supplied, set urlScheme=https for the entire cluster.")
   private String zkHost;
 
+  /** Parameters for the SSL command, independent of the command line parser. */
   record SSLParams(
       Path certificate,
       Path privateKey,
@@ -113,44 +119,6 @@ public class SSLTool extends ToolBase {
   @Override
   public String getName() {
     return "ssl";
-  }
-
-  @Override
-  public Options getOptions() {
-    Options options = super.getOptions();
-    for (var field : SSLTool.class.getDeclaredFields()) {
-      var option = field.getAnnotation(picocli.CommandLine.Option.class);
-      if (option != null) {
-        options.addOption(
-            Option.builder()
-                .longOpt(option.names()[0].substring(2))
-                .hasArg()
-                .required(option.required())
-                .desc(String.join(" ", option.description()))
-                .get());
-      }
-    }
-    return options;
-  }
-
-  private static Path path(CommandLine cli, Option option) {
-    String value = cli.getOptionValue(option);
-    return value == null ? null : Path.of(value);
-  }
-
-  @Override
-  public void runImpl(CommandLine cli) throws Exception {
-    Options options = getOptions();
-    configure(
-        new SSLParams(
-            path(cli, options.getOption("cert")),
-            path(cli, options.getOption("key")),
-            path(cli, options.getOption("password-file")),
-            path(cli, options.getOption("key-password-file")),
-            path(cli, options.getOption("keystore")),
-            cli.getOptionValue(options.getOption("store-type"), "JKS"),
-            path(cli, options.getOption("solr-include-file")),
-            cli.getOptionValue(options.getOption("zk-host"))));
   }
 
   @Override

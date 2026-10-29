@@ -140,13 +140,19 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    if (EnvUtils.getPropertyAsBool("solr.picocli", false)) {
+    exit(execute(args));
+  }
+
+  @VisibleForTesting
+  static int execute(String[] args) throws Exception {
+    if (EnvUtils.getPropertyAsBool("solr.picocli", false)
+        || (args.length > 0 && "ssl".equals(args[0]))) {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
-      exit(commandLine.execute(stripEmptyLeadingArg(args)));
+      return commandLine.execute(stripEmptyLeadingArg(args));
     } else {
-      exit(parseWithCommonsCli(args));
+      return parseWithCommonsCli(args);
     }
   }
 
@@ -372,7 +378,6 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
     else if ("mkroot".equals(toolType)) return new ZkMkrootTool(runtime);
     else if ("assert".equals(toolType)) return new AssertTool(runtime);
     else if ("auth".equals(toolType)) return new AuthTool(runtime);
-    else if ("ssl".equals(toolType)) return new SSLTool(runtime);
     else if ("export".equals(toolType)) return new ExportTool(runtime);
     else if ("package".equals(toolType)) return new PackageTool(runtime);
     else if ("post".equals(toolType)) return new PostTool(runtime);

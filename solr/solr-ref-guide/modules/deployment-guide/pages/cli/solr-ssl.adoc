@@ -22,21 +22,13 @@
 = bin/solr ssl
 :page-toclevels: 2
 
-[WARNING]
-====
-This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
-For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
-See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
-====
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
 ....
-bin/solr ssl [-hv] --cert=<certificate> --key=<privateKey>
-             [--key-password-file=<keyPasswordFile>] [--keystore=<keystore>]
-             --password-file=<passwordFile> [--solr-include-file=<includeFile>]
-             [--store-type=<storeType>] [--zk-host=<zkHost>]
+bin/solr ssl [-hv] --cert=FILE --key=FILE [--key-password-file=FILE]
+             [--keystore=FILE] --password-file=FILE [--solr-include-file=FILE]
+             [--store-type=TYPE] [--zk-host=HOST]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -51,34 +43,34 @@ Convert PEM files to a Java keystore and configure HTTPS in solr.in.sh.
 // tag::picocli-generated-man-section-options[]
 == Options
 
-*--cert*=_<certificate>_::
+*--cert*=_FILE_::
   *(required)* PEM certificate chain, with the server certificate first.
 
 *-h*, *--help*::
   Print this help message and exit.
 
-*--key*=_<privateKey>_::
+*--key*=_FILE_::
   *(required)* PEM private key. Requires OpenSSL on PATH.
 
-*--key-password-file*=_<keyPasswordFile>_::
+*--key-password-file*=_FILE_::
   Password file for an encrypted PEM private key.
 
-*--keystore*=_<keystore>_::
+*--keystore*=_FILE_::
   Destination keystore. Default directory: server/etc in the Solr installation.
 
-*--password-file*=_<passwordFile>_::
+*--password-file*=_FILE_::
   *(required)* File containing the keystore password on one line.
 
-*--solr-include-file*=_<includeFile>_::
+*--solr-include-file*=_FILE_::
   Existing solr.in.sh to update. Defaults to bin/solr.in.sh in the Solr installation.
 
-*--store-type*=_<storeType>_::
+*--store-type*=_TYPE_::
   Keystore format: JKS or PKCS12. Default: JKS.
 
 *-v*, *--verbose*::
   Enable verbose mode.
 
-*--zk-host*=_<zkHost>_::
+*--zk-host*=_HOST_::
   ZooKeeper connection string. If supplied, set urlScheme=https for the entire cluster.
 
 // end::picocli-generated-man-section-options[]

@@ -23,6 +23,12 @@ import picocli.CommandLine;
 public class SolrCLITest extends SolrTestCase {
 
   @Test
+  public void testSslHelpWithoutPicocliFlag() throws Exception {
+    System.setProperty("solr.picocli", "false");
+    assertEquals(0, SolrCLI.execute(new String[] {"ssl", "--help"}));
+  }
+
+  @Test
   public void testUptime() {
     assertEquals("?", SolrCLI.uptime(0));
     assertEquals("0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(1));

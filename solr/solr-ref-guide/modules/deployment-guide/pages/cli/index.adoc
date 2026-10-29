@@ -33,6 +33,8 @@ Do not depend on it in scripts or automation yet.
 
 == Enabling It
 
+The `bin/solr ssl` command always uses picocli and does not require this setting.
+
 Set `SOLR_PICOCLI` in your `solr.in.sh` (or `solr.in.cmd` on Windows):
 
 [source,bash]
