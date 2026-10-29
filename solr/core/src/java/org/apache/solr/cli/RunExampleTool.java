@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -793,7 +794,7 @@ public class RunExampleTool extends ToolBase {
       String password = promptPassword(input, message);
       if (Sha256AuthenticationProvider.isPasswordAllowed(username, password)) return password;
       echo("Username and password must differ. Please enter a different password.");
-      if ((usingScriptInputs || System.console() == null || userInput != System.in)
+      if ((usingScriptInputs || System.console() == null || !Objects.equals(userInput, System.in))
           && !(usingScriptInputs ? input.hasNext() : input.hasNextLine())) {
         throw new IllegalArgumentException("Input ended before a valid password was provided.");
       }
@@ -803,7 +804,7 @@ public class RunExampleTool extends ToolBase {
   private String promptPassword(Scanner input, String message) {
     echo(message);
     String value;
-    if (!usingScriptInputs && System.console() != null && userInput == System.in) {
+    if (!usingScriptInputs && System.console() != null && Objects.equals(userInput, System.in)) {
       char[] password = System.console().readPassword();
       if (password == null) {
         throw new IllegalArgumentException("Input ended before a valid password was provided.");
