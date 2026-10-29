@@ -42,15 +42,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.cd_collapse_folder
+import org.apache.solr.ui.shared.generated.resources.cd_expand_folder
 import org.apache.solr.ui.shared.generated.resources.chevron_right
 import org.apache.solr.ui.shared.generated.resources.expand_more
 import org.apache.solr.ui.shared.generated.resources.folder_data
+import org.apache.solr.ui.shared.generated.resources.state_collapsed
+import org.apache.solr.ui.shared.generated.resources.state_expanded
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 sealed interface FileTreeNode {
     val name: String
@@ -143,12 +151,23 @@ private fun FileTreeRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (node is FileTreeFolder) {
+            val chevronContentDescription = stringResource(
+                if (row.expanded) Res.string.cd_collapse_folder else Res.string.cd_expand_folder,
+                node.name,
+            )
+            val chevronStateDescription = stringResource(
+                if (row.expanded) Res.string.state_expanded else Res.string.state_collapsed,
+            )
             Icon(
                 painter = painterResource(if (row.expanded) Res.drawable.expand_more else Res.drawable.chevron_right),
-                contentDescription = null,
+                contentDescription = chevronContentDescription,
                 modifier = Modifier
                     .size(16.dp)
                     .clickable(onClick = onToggle)
+                    .semantics {
+                        stateDescription = chevronStateDescription
+                        role = Role.Button
+                    }
                     .testTag("chevron_${node.path}"),
             )
             Spacer(Modifier.width(4.dp))

@@ -18,6 +18,7 @@
 package org.apache.solr.ui.views.files
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotSelected
@@ -58,6 +59,25 @@ class FileTreeTest {
 
         onNodeWithTag("chevron_conf").performClick()
         onNodeWithText("solrconfig.xml").assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testChevronExposesAccessibleFolderState() = runComposeUiTest {
+        setContent { FileTree(nodes, selectedPath = null, onItemClick = {}, onItemDoubleClick = {}) }
+
+        val chevron = onNodeWithTag("chevron_conf")
+        var semantics = chevron.fetchSemanticsNode().config
+        assertEquals(listOf("Expand folder conf"), semantics[SemanticsProperties.ContentDescription])
+        assertEquals("Collapsed", semantics[SemanticsProperties.StateDescription])
+        assertEquals(Role.Button, semantics[SemanticsProperties.Role])
+
+        chevron.performClick()
+
+        semantics = chevron.fetchSemanticsNode().config
+        assertEquals(listOf("Collapse folder conf"), semantics[SemanticsProperties.ContentDescription])
+        assertEquals("Expanded", semantics[SemanticsProperties.StateDescription])
+        assertEquals(Role.Button, semantics[SemanticsProperties.Role])
     }
 
     @OptIn(ExperimentalTestApi::class)
