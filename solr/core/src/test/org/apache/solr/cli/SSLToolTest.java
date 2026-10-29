@@ -135,6 +135,26 @@ public class SSLToolTest extends SolrTestCase {
   }
 
   @Test
+  public void testSecureExampleImportsCertificate() throws Exception {
+    Path dir = prepare();
+    var runtime = new CLITestHelper.TestingRuntime(true);
+    SecureExampleSSL ssl = new SecureExampleSSL(dir.resolve("example"), runtime);
+    assertFalse(ssl.isConfigured());
+    ssl.install(dir.resolve("cert.pem"), dir.resolve("key.pem"), dir.resolve("password.txt"), null);
+    assertTrue(ssl.isConfigured());
+    assertArrayEquals(
+        Files.readAllBytes(dir.resolve("cert.pem")), Files.readAllBytes(ssl.certificate()));
+    ssl.configureClientTrust();
+    assertEquals(ssl.keystore() + ".truststore", EnvUtils.getProperty("javax.net.ssl.trustStore"));
+    assertEquals("Test'$(false)Password", EnvUtils.getProperty("javax.net.ssl.trustStorePassword"));
+    ssl.printVerificationInstructions("https://localhost:8983/solr");
+    assertTrue(runtime.getOutput().contains("https://localhost:8983/solr/admin/info/system"));
+    assertEquals(
+        "# Keep this comment\nSOLR_HEAP=512m\nexport SOLR_SSL_ENABLED=false\nSOLR_SSL_KEY_STORE=old\n",
+        Files.readString(dir.resolve("solr.in.sh")));
+  }
+
+  @Test
   public void testInvalidKeyLeavesConfigurationUntouched() throws Exception {
     Path dir = prepare();
     String original = Files.readString(dir.resolve("solr.in.sh"));

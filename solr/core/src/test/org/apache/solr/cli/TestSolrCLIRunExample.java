@@ -41,10 +41,12 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
@@ -84,6 +86,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     private final List<CommandLine> commandsExecuted = new ArrayList<>();
     private MiniSolrCloudCluster solrCloudCluster;
     private JettySolrRunner standaloneSolr;
+    private SSLConfig sslConfig;
 
     /**
      * Override the call to execute a command asynchronously to occur synchronously during a unit
@@ -95,6 +98,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       int code = execute(cmd);
       if (code != 0)
         throw new RuntimeException("Failed to execute cmd: " + joinArgs(cmd.getArguments()));
+    }
+
+    @Override
+    public int execute(CommandLine cmd, Map<String, String> env) throws IOException {
+      if (env != null && env.containsKey("SOLR_INCLUDE")) {
+        Path tls = Path.of(env.get("SOLR_INCLUDE")).getParent();
+        Path store = tls.resolve("solr-ssl.keystore.jks");
+        String password = Files.readString(tls.resolve("keystore-password.txt")).stripTrailing();
+        sslConfig = new SSLConfig(true, false, store.toString(), password, null, null);
+      }
+      return execute(cmd);
     }
 
     @Override
@@ -120,7 +134,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         }
         String solrxml = Files.readString(solrXmlPath, Charset.defaultCharset());
 
-        JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
+        JettyConfig jettyConfig =
+            JettyConfig.builder().setPort(port).withSSLConfig(sslConfig).build();
         try {
           if (solrCloudCluster == null) {
             Path logDir = createTempDir("solr_logs");
@@ -307,6 +322,18 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   @Test
   public void testSecureSolrExample() throws Exception {
+    assumeTrue(
+        "External programs require -Ptests.useSecurityManager=false",
+        EnvUtils.getProperty("java.security.manager") == null);
+    assumeFalse("The HTTPS wizard requires Unix or macOS", CLIUtils.isWindows());
+    try {
+      Process openssl = new ProcessBuilder("openssl", "version").start();
+      assertTrue(openssl.waitFor(10, TimeUnit.SECONDS));
+      assertEquals(0, openssl.exitValue());
+    } catch (IOException missingOpenSSL) {
+      assumeNoException("OpenSSL must be installed", missingOpenSSL);
+    }
+    HttpJettySolrClient.resetSslContextFactory();
     testExample("secure_solr");
   }
 
@@ -351,7 +378,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             testSolrHomeDir.toString(),
             "-p",
             String.valueOf(bindPort),
-            "secure_solr".equals(exampleName) && pass == 1 ? "" : "--no-prompt",
+            "secure_solr".equals(exampleName) && pass == 0 ? "" : "--no-prompt",
             testStandaloneMode
           };
 
@@ -366,7 +393,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
               executor,
               "secure_solr".equals(exampleName)
                   ? new ByteArrayInputStream(
-                      "\nsolr\n\n\n\nindex\n\n\n\nsearch\n\n".getBytes(StandardCharsets.UTF_8))
+                      "\n\n\n\nsolr\n\nindex\n\nsearch\n\n".getBytes(StandardCharsets.UTF_8))
                   : System.in,
               runtime);
       try {
@@ -392,7 +419,16 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       String toolOutput = runtime.getOutput();
 
-      if ("secure_solr".equals(exampleName) && pass == 1) {
+      if ("secure_solr".equals(exampleName) && pass == 0) {
+        assertTrue(toolOutput.contains("curl --cacert"));
+        assertTrue(toolOutput.contains("Password for index [SolrRocks]:"));
+        assertTrue(toolOutput.contains("Password for search [SolrRocks]:"));
+        assertFalse(toolOutput.contains("Create a index user?"));
+        assertFalse(toolOutput.contains("Username [index]:"));
+        assertFalse(toolOutput.contains("Username [search]:"));
+        assertTrue(
+            toolOutput.indexOf("Press Enter after curl")
+                < toolOutput.indexOf("Administrator username"));
         assertEquals(
             3,
             toolOutput
@@ -409,10 +445,14 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("techproducts".equals(exampleName) || "secure_solr".equals(exampleName)) {
         try (SolrClient solrClient =
-            new HttpJettySolrClient.Builder("http://localhost:" + bindPort + "/solr")
+            new HttpJettySolrClient.Builder(
+                    ("secure_solr".equals(exampleName) ? "https" : "http")
+                        + "://localhost:"
+                        + bindPort
+                        + "/solr")
                 .withDefaultCollection("techproducts")
                 .withOptionalBasicAuthCredentials(
-                    "secure_solr".equals(exampleName) ? "solr:SolrRocks" : null)
+                    "secure_solr".equals(exampleName) ? "search:SolrRocks" : null)
                 .build()) {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
@@ -437,9 +477,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       }
 
       if ("secure_solr".equals(exampleName)) {
-        String url = "http://localhost:" + bindPort + "/solr";
+        String url = "https://localhost:" + bindPort + "/solr";
         try (SolrClient anonymous = CLIUtils.getSolrClient(url, null);
-            SolrClient search = CLIUtils.getSolrClient(url, "search:SolrRocks")) {
+            SolrClient search = CLIUtils.getSolrClient(url, "search:SolrRocks");
+            SolrClient admin = CLIUtils.getSolrClient(url, "solr:SolrRocks")) {
           assertEquals(
               401,
               expectThrows(
@@ -448,6 +489,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                   .code());
           assertEquals(
               31, search.query("techproducts", new SolrQuery("*:*")).getResults().getNumFound());
+          assertEquals(
+              403,
+              expectThrows(
+                      RemoteSolrException.class,
+                      () -> admin.query("techproducts", new SolrQuery("*:*")))
+                  .code());
+          assertEquals(
+              403,
+              expectThrows(
+                      RemoteSolrException.class, () -> admin.deleteByQuery("techproducts", "*:*"))
+                  .code());
           assertEquals(
               403,
               expectThrows(

@@ -17,7 +17,7 @@
 // under the License.
 
 This tutorial introduces authentication and authorization using a single-node SolrCloud example.
-You will start Solr with Basic Authentication and Rule-Based Authorization, sign in to the Admin UI, try requests with different permissions, and enable HTTPS with `bin/solr ssl`.
+You will configure HTTPS, verify the certificate with curl, create users with Basic Authentication and Rule-Based Authorization, and try requests with different permissions.
 The example loads the same techproducts data used in xref:tutorial-techproducts.adoc[].
 
 Authentication identifies the user making a request.
@@ -33,7 +33,7 @@ The examples use `curl` and OpenSSL from a Unix or macOS terminal.
 [WARNING]
 ====
 This is a local learning environment with demonstration passwords.
-It starts with HTTP and adds HTTPS later in the exercise.
+The wizard configures HTTPS before asking for users and passwords.
 Basic Authentication does not encrypt credentials; use TLS for connections outside this local example.
 A production deployment also needs network restrictions and a secured ZooKeeper ensemble.
 See xref:deployment-guide:securing-solr.adoc[] for deployment guidance.
@@ -49,41 +49,75 @@ bin/solr start -e secure_solr
 The example starts one SolrCloud node on port 8983 with embedded ZooKeeper.
 It creates a `techproducts` collection with one shard and one replica, using `sample_techproducts_configs`, and indexes 31 sample documents.
 
+=== Configure and Verify HTTPS
+
+On Unix and macOS, the wizard first offers to generate a self-signed localhost certificate or use existing PEM files:
+
+[source,text]
+----
+Generate a localhost certificate or use existing PEM files? [G/p]:
+Keystore password [SolrRocks]:
+----
+
+Press Enter to generate a certificate covering `localhost` and `127.0.0.1`, valid for 30 days.
+The keystore password must contain at least six characters.
+Choose `P` instead to supply your PEM certificate chain, private key, keystore password file, and optionally a password file for an encrypted private key.
+Existing certificates must cover the hostname used by clients and other Solr nodes.
+
+The example uses `bin/solr ssl`'s conversion logic and stores its certificate, keystore, truststore, and include file under `example/secure_solr/tls`.
+It does not edit the installation-wide `solr.in.sh`.
+On a fresh example, Solr starts with HTTPS before user setup.
+
+The wizard prints a command like this and pauses:
+
+[source,bash]
+----
+curl --cacert example/secure_solr/tls/cert.pem \
+  'https://localhost:8983/solr/admin/info/system'
+----
+
+Run the command in another terminal.
+You should receive system information without a certificate error.
+Return to the wizard and press Enter to continue with user setup.
+The wizard does not run curl itself.
+If you are restarting an example with authentication enabled, an HTTP 401 response also confirms that HTTPS is working; administrator credentials are requested before starting that existing example.
+
+On Windows, the wizard configures users only; configure HTTPS manually as described in xref:deployment-guide:enabling-ssl.adoc[].
+The remaining commands in this tutorial assume the Unix or macOS HTTPS setup.
+
 === Choose Users and Passwords
 
-The interactive session asks for an administrator, then offers an indexing user and a search-only user:
+The interactive session asks for an administrator, then passwords for the fixed `index` and `search` accounts:
 
 [source,text]
 ----
 Administrator username [solr]:
 Administrator password [SolrRocks]:
-Create a index user? [Y]:
-Username [index]:
-Password [SolrRocks]:
-Create a search user? [Y]:
-Username [search]:
-Password [SolrRocks]:
+Password for index [SolrRocks]:
+Password for search [SolrRocks]:
 ----
 
 Press Enter at each prompt to accept the defaults used throughout this tutorial.
-You can enter your own usernames and passwords instead; substitute those credentials in later commands.
+You can choose a different administrator username and set your own passwords; substitute those credentials in later commands.
+The usernames `index` and `search` are reserved for the data-access accounts.
 Passwords typed at an interactive terminal are hidden.
-Enter `N` at either optional-user prompt to skip that account.
 
 [%autowidth,options="header"]
 |===
 |Username |Default password |Access
-|`solr` |`SolrRocks` |Security, collection, and configuration administration, indexing, and searching
+|`solr` |`SolrRocks` |Security, collection, and configuration administration; no document indexing or searching
 |`index` |`SolrRocks` |Indexing and searching
 |`search` |`SolrRocks` |Searching
 |===
 
-For a non-interactive start with all three default users:
+For a non-interactive start with a generated certificate and all three default users:
 
 [source,bash]
 ----
 bin/solr start -e secure_solr --no-prompt
 ----
+
+`--no-prompt` prints the curl verification command but does not pause for you to run it.
 
 === Where Security Is Stored
 
@@ -107,20 +141,23 @@ The configuration uses these plugins:
 
 This excerpt only shows the plugin settings.
 The complete configuration also contains salted password hashes, user-to-role mappings, and permission rules.
-The administrator has the `superadmin`, `admin`, `index`, and `search` roles.
+The administrator has only the `superadmin` and `admin` roles.
+Collection metadata remains available to the administrator, but document reads and updates require the data-access roles.
 The indexing user has `index` and `search`; the search-only user has `search`.
+The wizard loads the sample documents over HTTPS using the `index` account.
 
 In SolrCloud, security settings are shared through ZooKeeper.
 Editing a local `security.json` file in the Solr home does not change the cluster configuration.
 
 == Sign In to the Admin UI
 
-Open http://localhost:8983/solr/[the Solr Admin UI] in your browser.
+Open https://localhost:8983/solr/[the Solr Admin UI] in your browser.
 Sign in with username `solr` and password `SolrRocks`, unless you chose different administrator credentials.
 
-Select the `techproducts` collection and open its Query screen.
-Run the default `\*:*` query to see the sample documents.
 The Security screen lets the administrator inspect and manage users, roles, and permissions.
+To query documents in the Admin UI, sign in as `search` or `index`, select the `techproducts` collection, and open its Query screen.
+Run the default `\*:*` query to see the sample documents.
+An administrator query or document update receives HTTP 403 because those data-access roles are not assigned to the administrator.
 
 == Try Authentication and Authorization
 
@@ -128,7 +165,7 @@ The Security screen lets the administrator inspect and manage users, roles, and 
 
 [source,bash]
 ----
-curl -i 'http://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
+curl --cacert example/secure_solr/tls/cert.pem -i 'https://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
 ----
 
 The request returns HTTP `401 Unauthorized` because it has no credentials.
@@ -139,7 +176,7 @@ An incorrect password also produces a 401 response.
 
 [source,bash]
 ----
-curl --user search:SolrRocks 'http://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
+curl --cacert example/secure_solr/tls/cert.pem --user search:SolrRocks 'https://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
 ----
 
 This request succeeds.
@@ -150,10 +187,10 @@ The search user's role grants the `read` permission.
 
 [source,bash]
 ----
-curl -i --user search:SolrRocks \
+curl --cacert example/secure_solr/tls/cert.pem -i --user search:SolrRocks \
   -H 'Content-Type: application/json' \
   --data-binary '[{"id":"secure-example-product","name":"Secure example product"}]' \
-  'http://localhost:8983/solr/techproducts/update?commit=true'
+  'https://localhost:8983/solr/techproducts/update?commit=true'
 ----
 
 This request returns HTTP `403 Forbidden`.
@@ -166,10 +203,10 @@ Send the same update using the indexing account:
 
 [source,bash]
 ----
-curl --user index:SolrRocks \
+curl --cacert example/secure_solr/tls/cert.pem --user index:SolrRocks \
   -H 'Content-Type: application/json' \
   --data-binary '[{"id":"secure-example-product","name":"Secure example product"}]' \
-  'http://localhost:8983/solr/techproducts/update?commit=true'
+  'https://localhost:8983/solr/techproducts/update?commit=true'
 ----
 
 This request succeeds because the indexing user's `index` role grants `update`.
@@ -177,8 +214,8 @@ Query the new document with the search account:
 
 [source,bash]
 ----
-curl --user search:SolrRocks \
-  'http://localhost:8983/solr/techproducts/select?q=id:secure-example-product'
+curl --cacert example/secure_solr/tls/cert.pem --user search:SolrRocks \
+  'https://localhost:8983/solr/techproducts/select?q=id:secure-example-product'
 ----
 
 == Create Another Search User
@@ -188,20 +225,20 @@ As the administrator, create a user named `reader`:
 
 [source,bash]
 ----
-curl --user solr:SolrRocks \
+curl --cacert example/secure_solr/tls/cert.pem --user solr:SolrRocks \
   -H 'Content-Type: application/json' \
   --data-binary '{"set-user":{"reader":"ReaderRocks"}}' \
-  'http://localhost:8983/solr/admin/authentication'
+  'https://localhost:8983/solr/admin/authentication'
 ----
 
 Assign the existing `search` role to that user:
 
 [source,bash]
 ----
-curl --user solr:SolrRocks \
+curl --cacert example/secure_solr/tls/cert.pem --user solr:SolrRocks \
   -H 'Content-Type: application/json' \
   --data-binary '{"set-user-role":{"reader":["search"]}}' \
-  'http://localhost:8983/solr/admin/authorization'
+  'https://localhost:8983/solr/admin/authorization'
 ----
 
 The node reloads security changes asynchronously.
@@ -209,7 +246,7 @@ Once the new configuration has loaded, query with the new credentials:
 
 [source,bash]
 ----
-curl --user reader:ReaderRocks 'http://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
+curl --cacert example/secure_solr/tls/cert.pem --user reader:ReaderRocks 'https://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
 ----
 
 For details on changing passwords and permission rules, see xref:deployment-guide:basic-authentication-plugin.adoc[] and xref:deployment-guide:rule-based-authorization-plugin.adoc[].
@@ -226,75 +263,22 @@ Existing security settings are preserved, and an existing collection is not rein
 Enter the credentials of an existing administrator; the prompts do not reset passwords or replace the saved configuration.
 If you changed the administrator password, `--no-prompt` will still try the original demonstration credentials and will not authenticate.
 
-== Enable HTTPS with bin/solr ssl
+== Reusing and Updating HTTPS
 
-Keep the example running for this step so its embedded ZooKeeper is available on port 9983.
-We will create a self-signed certificate for `localhost` and install it with `bin/solr ssl`.
+Subsequent runs reuse the certificate and HTTPS settings under `example/secure_solr/tls`.
+The generated self-signed certificate is intended only for this local exercise.
+Your browser will warn about it; a certificate from a publicly trusted CA avoids that warning.
 
-=== Create a Local Certificate
-
-[source,bash]
-----
-mkdir -p example/secure_solr/tls
-openssl req -x509 -newkey rsa:2048 -nodes \
-  -keyout example/secure_solr/tls/key.pem \
-  -out example/secure_solr/tls/cert.pem \
-  -days 30 -subj '/CN=localhost' \
-  -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
-chmod 600 example/secure_solr/tls/key.pem
-----
-
-This certificate is for the local exercise.
-For a certificate issued by your CA or Let's Encrypt, use its certificate chain and private key instead.
-The certificate must cover the hostname used by the Admin UI, CLI, and other clients.
-
-Save a password to protect the keystore:
+Other `bin/solr` commands can use the example's HTTPS settings by selecting its include file:
 
 [source,bash]
 ----
-(umask 077; printf '%s\n' 'SolrRocks' > example/secure_solr/tls/keystore-password.txt)
+SOLR_INCLUDE=example/secure_solr/tls/solr.in.sh bin/solr status --credentials solr:SolrRocks
 ----
 
-This is a keystore password, separate from the passwords of Solr users.
-Use a different password outside this local exercise.
-
-=== Install the Certificate and Restart
-
-[source,bash]
-----
-bin/solr ssl --cert example/secure_solr/tls/cert.pem \
-  --key example/secure_solr/tls/key.pem \
-  --password-file example/secure_solr/tls/keystore-password.txt \
-  --zk-host localhost:9983
-bin/solr stop -p 8983
-bin/solr start -e secure_solr
-----
-
-The tool installs a JKS keystore and truststore, updates `solr.in.sh`, and sets `urlScheme=https` in ZooKeeper.
-It leaves your Basic Authentication users and authorization rules in place.
-Accept the same administrator credentials when restarting the example.
-
-=== Verify HTTPS
-
-[source,bash]
-----
-curl --cacert example/secure_solr/tls/cert.pem --user search:SolrRocks \
-  'https://localhost:8983/solr/techproducts/select?q=*:*&rows=0'
-----
-
-The request succeeds with certificate verification enabled.
-The `--cacert` option tells curl to trust the self-signed certificate.
-Repeat the earlier requests using `https://` and this option to verify that authentication and authorization still apply.
-
-Open https://localhost:8983/solr/[the HTTPS Admin UI].
-Your browser will warn about the self-signed certificate; it is not trusted automatically.
-A certificate from a publicly trusted CA avoids this warning when you use the hostname in that certificate.
-
-HTTPS settings apply to subsequent Solr starts that use this include file.
-To return the local example to HTTP, keep embedded ZooKeeper running and first set `urlScheme=http` using `bin/solr cluster --property urlScheme --value http --zk-host localhost:9983`.
-Stop Solr while the HTTPS settings are still active, then restore the original include-file backup printed by `bin/solr ssl` before starting Solr again.
-
-See xref:deployment-guide:enabling-ssl.adoc#install-an-existing-pem-certificate[Install an Existing PEM Certificate] for service installations, certificate renewal, and other keystore formats.
+To replace or renew the certificate, use `bin/solr ssl` with `--solr-include-file example/secure_solr/tls/solr.in.sh` and `--keystore example/secure_solr/tls/solr-ssl.keystore.jks`.
+Also update `example/secure_solr/tls/cert.pem` and `example/secure_solr/tls/keystore-password.txt` to match the new certificate and keystore password before restarting the example.
+See xref:deployment-guide:enabling-ssl.adoc#install-an-existing-pem-certificate[Install an Existing PEM Certificate] for details.
 
 == Next Steps
 

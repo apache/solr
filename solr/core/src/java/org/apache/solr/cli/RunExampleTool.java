@@ -283,6 +283,10 @@ public class RunExampleTool extends ToolBase {
   protected Path solrHomeDir;
   protected String urlScheme;
   private boolean usingScriptInputs = false;
+  private SecureExampleSSL secureSSL;
+  private boolean secureHttpsVerificationShown;
+  private Scanner secureExampleInput;
+  private boolean secureExampleNoPrompt;
 
   /**
    * Parameters consumed when starting a single Solr node via the bin/solr script, common to all
@@ -648,12 +652,36 @@ public class RunExampleTool extends ToolBase {
                 : userInput,
             StandardCharsets.UTF_8);
     if (usingScriptInputs) input.useDelimiter(",");
+    secureExampleInput = input;
+    secureExampleNoPrompt = noPrompt;
+    secureHttpsVerificationShown = false;
+    Map<String, Object> httpsNodeStatus = null;
+    if (!CLIUtils.isWindows()) {
+      secureSSL = new SecureExampleSSL(solrHomeDir, runtime);
+      boolean existingHttps = secureSSL.isConfigured();
+      if (!existingHttps) configureSecureExampleSSL(input, start, noPrompt);
+      else echo("Reusing the example's HTTPS configuration.");
+      secureSSL.configureClientTrust();
+      urlScheme = "https";
+      if (!existingHttps
+          && !Files.isDirectory(solrHomeDir.resolve("zoo_data"))
+          && isPortAvailable(port)) {
+        httpsNodeStatus = startSolr(solrHomeDir, true, start, port, null, 30);
+        confirmSecureHttps((String) httpsNodeStatus.get("baseUrl"));
+      }
+    } else {
+      echo("Configure HTTPS manually on Windows; the HTTPS wizard requires Unix or macOS.");
+    }
     String user = noPrompt ? "solr" : prompt(input, "Administrator username [solr]: ", "solr");
+    while (user.contains(":") || Set.of("index", "search").contains(user)) {
+      echo(
+          "The administrator username must differ from index and search and must not contain ':'.");
+      user = prompt(input, "Administrator username [solr]: ", "solr");
+    }
     String password =
         noPrompt
             ? "SolrRocks"
             : promptPassword(input, "Administrator password [SolrRocks]: ", user);
-    if (user.contains(":")) throw new IllegalArgumentException("Username must not contain ':'");
     // TODO: Configure users and roles through the security APIs so validation
     // happens server-side instead of constructing security.json directly.
     Map<String, Object> config;
@@ -668,18 +696,23 @@ public class RunExampleTool extends ToolBase {
     authentication.put("credentials", credentials);
     Map<String, Object> authorization = (Map<String, Object>) config.get("authorization");
     Map<String, Object> userRoles = new HashMap<>();
-    userRoles.put(user, List.of("superadmin", "admin", "index", "search"));
+    userRoles.put(user, List.of("superadmin", "admin"));
     authorization.put("user-role", userRoles);
+    for (Map<String, Object> permission :
+        (List<Map<String, Object>>) authorization.get("permissions")) {
+      if ("collection-admin-read".equals(permission.get("name"))) {
+        permission.put("role", List.of("admin", "search"));
+      }
+    }
+    String indexingCredentials = null;
     for (String role : List.of("index", "search")) {
-      if (!noPrompt
-          && !"y".equalsIgnoreCase(prompt(input, "Create a " + role + " user? [Y]: ", "Y")))
-        continue;
-      String name = noPrompt ? role : prompt(input, "Username [" + role + "]: ", role);
-      if (name.contains(":") || credentials.containsKey(name))
-        throw new IllegalArgumentException("Usernames must be unique and must not contain ':'");
-      String pass = noPrompt ? "SolrRocks" : promptPassword(input, "Password [SolrRocks]: ", name);
-      credentials.put(name, Sha256AuthenticationProvider.getSaltedHashedValue(pass));
-      userRoles.put(name, "index".equals(role) ? List.of("index", "search") : List.of("search"));
+      String pass =
+          noPrompt
+              ? "SolrRocks"
+              : promptPassword(input, "Password for " + role + " [SolrRocks]: ", role);
+      credentials.put(role, Sha256AuthenticationProvider.getSaltedHashedValue(pass));
+      userRoles.put(role, "index".equals(role) ? List.of("index", "search") : List.of("search"));
+      if ("index".equals(role)) indexingCredentials = role + ":" + pass;
     }
     StartSolrParams secured =
         new StartSolrParams(
@@ -690,15 +723,69 @@ public class RunExampleTool extends ToolBase {
             start.force(),
             user + ":" + password,
             start.extraArgs());
-    runExample(new RunExampleParams(true, null, port, secured), config);
+    runExample(
+        new RunExampleParams(true, null, port, secured),
+        config,
+        httpsNodeStatus,
+        indexingCredentials);
     echo(
         "Secure Solr example running at "
             + urlScheme
-            + "://localhost:"
+            + "://"
+            + (start.host() == null ? "localhost" : start.host())
+            + ":"
             + port
             + "/solr/. Sign in as "
             + user
             + ".");
+    if (secureSSL != null) {
+      echo("Use SOLR_INCLUDE=" + secureSSL.includeFile() + " for other bin/solr commands.");
+    }
+  }
+
+  private void confirmSecureHttps(String solrUrl) {
+    secureSSL.printVerificationInstructions(solrUrl);
+    if (!secureExampleNoPrompt) {
+      prompt(secureExampleInput, "Press Enter after curl verifies HTTPS to continue: ", "");
+    }
+    secureHttpsVerificationShown = true;
+  }
+
+  private void configureSecureExampleSSL(Scanner input, StartSolrParams start, boolean noPrompt)
+      throws Exception {
+    echo("First, configure HTTPS. OpenSSL must be available on PATH.");
+    String mode =
+        noPrompt
+            ? "G"
+            : prompt(
+                input, "Generate a localhost certificate or use existing PEM files? [G/p]: ", "G");
+    while (!mode.equalsIgnoreCase("g") && !mode.equalsIgnoreCase("p")) {
+      echo("Enter G to generate a certificate or P to use existing PEM files.");
+      mode = prompt(input, "Certificate choice [G/p]: ", "G");
+    }
+    if (mode.equalsIgnoreCase("g")) {
+      if (start.host() != null && !Set.of("localhost", "127.0.0.1").contains(start.host())) {
+        throw new IllegalArgumentException(
+            "Generated certificates cover localhost and 127.0.0.1. Use existing PEM files for --host "
+                + start.host());
+      }
+      echo("The generated self-signed certificate is valid for 30 days and is for local use.");
+      String password =
+          noPrompt ? "SolrRocks" : promptPassword(input, "Keystore password [SolrRocks]: ");
+      while (password.length() < 6) {
+        echo("The keystore password must contain at least six characters.");
+        password = promptPassword(input, "Keystore password [SolrRocks]: ");
+      }
+      secureSSL.generate(password);
+    } else {
+      Path cert = Path.of(prompt(input, "PEM certificate chain: "));
+      Path key = Path.of(prompt(input, "PEM private key: "));
+      Path password = Path.of(prompt(input, "Keystore password file: "));
+      String keyPassword =
+          prompt(input, "PEM key password file (Enter for an unencrypted key): ", null);
+      secureSSL.install(cert, key, password, keyPassword == null ? null : Path.of(keyPassword));
+    }
+    secureSSL.setAdvertisedHost(start.host() == null ? "localhost" : start.host());
   }
 
   private String promptPassword(Scanner input, String message, String username) {
@@ -757,6 +844,15 @@ public class RunExampleTool extends ToolBase {
 
   private void runExample(RunExampleParams params, Map<String, Object> securityConfig)
       throws Exception {
+    runExample(params, securityConfig, null, params.start().credentials());
+  }
+
+  private void runExample(
+      RunExampleParams params,
+      Map<String, Object> securityConfig,
+      Map<String, Object> startedNode,
+      String indexingCredentials)
+      throws Exception {
     String exampleName = params.start().example();
     boolean techproducts = "techproducts".equals(exampleName) || "secure_solr".equals(exampleName);
     String collectionName =
@@ -768,9 +864,15 @@ public class RunExampleTool extends ToolBase {
     String zkHost = params.zkHost();
     int port = params.port();
     Map<String, Object> nodeStatus =
-        startSolr(solrHomeDir, params.isCloudMode(), params.start(), port, zkHost, 30);
+        startedNode != null
+            ? startedNode
+            : startSolr(solrHomeDir, params.isCloudMode(), params.start(), port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
+
+    if (secureSSL != null && !secureHttpsVerificationShown) {
+      confirmSecureHttps(solrUrl);
+    }
 
     if (securityConfig != null) {
       String embeddedZk = (String) ((Map<?, ?>) nodeStatus.get("cloud")).get("ZooKeeper");
@@ -861,8 +963,10 @@ public class RunExampleTool extends ToolBase {
             };
         PostTool postTool = new PostTool(runtime);
         CommandLine postToolCli =
-            SolrCLI.parseCmdLine(postTool, withCredentials(args, params.start().credentials()));
-        postTool.runTool(postToolCli);
+            SolrCLI.parseCmdLine(postTool, withCredentials(args, indexingCredentials));
+        if (postTool.runTool(postToolCli) != 0) {
+          throw new IllegalStateException("Failed to index the techproducts sample documents.");
+        }
 
       } else {
         echo(
@@ -1282,7 +1386,14 @@ public class RunExampleTool extends ToolBase {
       // concatenate to form the complete command
       startCmdStr += jvmOptsArg;
       try {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdStr));
+        var command = org.apache.commons.exec.CommandLine.parse(startCmdStr);
+        if (secureSSL == null) {
+          code = executor.execute(command);
+        } else {
+          Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
+          environment.put("SOLR_INCLUDE", secureSSL.includeFile().toString());
+          code = executor.execute(command, environment);
+        }
       } catch (ExecuteException e) {
         throw new Exception(
             "Failed to start Solr using command: " + startCmdStr + " Exception : " + e);
