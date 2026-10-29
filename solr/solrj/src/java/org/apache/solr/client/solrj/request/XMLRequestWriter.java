@@ -61,6 +61,7 @@ public class XMLRequestWriter extends RequestWriter {
   }
 
   @Override
+  @Deprecated(since = "7.6")
   public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
     if (req instanceof UpdateRequest) {
       return null;

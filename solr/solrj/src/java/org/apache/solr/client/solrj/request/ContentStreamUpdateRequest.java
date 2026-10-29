@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +31,10 @@ import org.apache.solr.common.util.ContentStreamBase;
  * <p>See https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-tika.html<br>
  * See https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-update-handlers.html
  */
+/**
+ * @deprecated Use {@link ContentWriterUpdateRequest}.
+ */
+@Deprecated(since = "10.1")
 public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   List<ContentStream> contentStreams;
 
@@ -46,26 +49,6 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
     return contentStreams;
-  }
-
-  @Override
-  public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-    if (contentStreams == null || contentStreams.isEmpty() || contentStreams.size() > 1)
-      return null;
-    ContentStream stream = contentStreams.get(0);
-    return new RequestWriter.ContentWriter() {
-      @Override
-      public void write(OutputStream os) throws IOException {
-        try (var inStream = stream.getStream()) {
-          inStream.transferTo(os);
-        }
-      }
-
-      @Override
-      public String getContentType() {
-        return stream.getContentType();
-      }
-    };
   }
 
   /**

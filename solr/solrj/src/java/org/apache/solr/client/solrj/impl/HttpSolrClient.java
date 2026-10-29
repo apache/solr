@@ -53,7 +53,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,14 +163,8 @@ public abstract class HttpSolrClient extends SolrClient {
     return params;
   }
 
-  protected boolean isMultipart(Collection<ContentStream> streams) {
-    boolean isMultipart = false;
-    if (streams != null) {
-      boolean hasNullStreamName = false;
-      hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
-      isMultipart = !hasNullStreamName && streams.size() > 1;
-    }
-    return isMultipart;
+  protected boolean isMultipart(RequestWriter.ContentWriter contentWriter) {
+    return contentWriter instanceof RequestWriter.MultipartContentWriter;
   }
 
   protected ModifiableSolrParams calculateQueryParams(
@@ -192,10 +185,9 @@ public abstract class HttpSolrClient extends SolrClient {
   }
 
   protected void validateGetRequest(SolrRequest<?> solrRequest) throws IOException {
-    RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-    Collection<ContentStream> streams =
-        contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-    if (contentWriter != null || streams != null) {
+    RequestWriter.ContentWriter contentWriter =
+        requestWriter.getContentWriterOrStreams(solrRequest);
+    if (contentWriter != null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
     }
   }

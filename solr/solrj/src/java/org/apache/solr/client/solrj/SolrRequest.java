@@ -273,20 +273,20 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
-   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
-   */
-  @Deprecated(since = "7.2")
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
-  }
-
-  /**
    * If a request object wants to do a push write, implement this method.
    *
    * @param expectedType This is the type that the RequestWriter would like to get. But, it is OK to
    *     send any format
    */
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+    return null;
+  }
+
+  /**
+   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
+   */
+  @Deprecated(since = "7.2")
+  public Collection<ContentStream> getContentStreams() throws IOException {
     return null;
   }
 

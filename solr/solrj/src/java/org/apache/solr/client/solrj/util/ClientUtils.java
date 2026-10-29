@@ -47,7 +47,13 @@ public class ClientUtils {
 
   public static final String DEFAULT_PATH = "/select";
 
-  /** Take a string and make it an iterable ContentStream */
+  /**
+   * Take a string and make it an iterable ContentStream
+   *
+   * @deprecated ContentStream is deprecated; use a {@link
+   *     org.apache.solr.client.solrj.request.RequestWriter.ContentWriter}.
+   */
+  @Deprecated(since = "10.1")
   public static Collection<ContentStream> toContentStreams(
       final String str, final String contentType) {
     if (str == null) return null;

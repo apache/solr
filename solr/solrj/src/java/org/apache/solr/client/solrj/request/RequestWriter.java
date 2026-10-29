@@ -43,20 +43,91 @@ public abstract class RequestWriter {
   }
 
   /**
-   * To be implemented by subclasses to serialize update requests into the appropriate format.
-   *
-   * <p>If this method returns null, {@link
-   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is then
-   * invoked to get content.
+   * A {@code multipart/form-data} body made of several named parts; build it from {@link
+   * #getParts}.
    */
+  public interface MultipartContentWriter extends ContentWriter {
+
+    List<NamedPart> getParts();
+
+    @Override
+    default void write(OutputStream os) throws IOException {
+      throw new UnsupportedOperationException(
+          "Multipart content is written per-part via getParts(), not write(OutputStream)");
+    }
+
+    @Override
+    default String getContentType() {
+      return "multipart/form-data";
+    }
+  }
+
+  /** One named part of a {@link MultipartContentWriter}'s body. */
+  public static final class NamedPart {
+    public final String name;
+    public final ContentWriter writer;
+
+    public NamedPart(String name, ContentWriter writer) {
+      this.name = name;
+      this.writer = writer;
+    }
+  }
+
+  /** To be implemented by subclasses to serialize update requests into the appropriate format. */
   public abstract ContentWriter getContentWriter(SolrRequest<?> req);
 
   /**
-   * @deprecated Use {@link #getContentWriter(SolrRequest)}.
+   * @deprecated Use {@link #getContentWriter(SolrRequest)}; this is consulted only when that
+   *     returns null.
    */
   @Deprecated(since = "7.6")
-  public abstract Collection<ContentStream> getContentStreams(SolrRequest<?> req)
-      throws IOException;
+  public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
+    return null;
+  }
+
+  /**
+   * The content to send for a request: {@link #getContentWriter(SolrRequest)}, else any content
+   * from the deprecated {@link #getContentStreams(SolrRequest)}, else null.
+   */
+  @SuppressWarnings("deprecation")
+  public final ContentWriter getContentWriterOrStreams(SolrRequest<?> req) throws IOException {
+    ContentWriter writer = getContentWriter(req);
+    return writer != null ? writer : contentWriterOf(getContentStreams(req));
+  }
+
+  /**
+   * Adapts streams to a writer: multipart when there are several, all named; else the first.
+   *
+   * @return null if there are none
+   */
+  @Deprecated(since = "10.1")
+  public static ContentWriter contentWriterOf(Collection<ContentStream> streams) {
+    if (streams == null || streams.isEmpty()) {
+      return null;
+    }
+    if (streams.size() > 1 && streams.stream().noneMatch(cs -> cs.getName() == null)) {
+      List<NamedPart> parts =
+          streams.stream().map(cs -> new NamedPart(cs.getName(), contentWriterOf(cs))).toList();
+      return (MultipartContentWriter) () -> parts;
+    }
+    return contentWriterOf(streams.iterator().next());
+  }
+
+  private static ContentWriter contentWriterOf(ContentStream stream) {
+    return new ContentWriter() {
+      @Override
+      public void write(OutputStream os) throws IOException {
+        try (var in = stream.getStream()) {
+          in.transferTo(os);
+        }
+      }
+
+      @Override
+      public String getContentType() {
+        return stream.getContentType();
+      }
+    };
+  }
 
   protected boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments())

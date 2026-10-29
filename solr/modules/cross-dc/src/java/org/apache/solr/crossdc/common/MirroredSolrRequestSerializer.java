@@ -225,9 +225,9 @@ public class MirroredSolrRequestSerializer
         }
       } else if (solrRequest instanceof MirroredSolrRequest.MirroredConfigSetRequest config) {
         map.put("method", config.getMethod().toString());
-        if (config.getContentStreams() != null) {
+        if (config.getRawContentStreams() != null) {
           List<Map<String, Object>> streamsList = new ArrayList<>();
-          for (ContentStream cs : config.getContentStreams()) {
+          for (ContentStream cs : config.getRawContentStreams()) {
             Map<String, Object> streamMap = new HashMap<>();
             streamMap.put("name", cs.getName());
             streamMap.put("contentType", cs.getContentType());

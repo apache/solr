@@ -53,13 +53,13 @@ public class JavaBinRequestWriter extends RequestWriter {
   }
 
   @Override
+  @Deprecated(since = "7.6")
   public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
     if (req instanceof UpdateRequest updateRequest) {
       if (isEmpty(updateRequest)) return null;
       throw new RuntimeException("This Should not happen");
-    } else {
-      return req.getContentStreams();
     }
+    return req.getContentStreams();
   }
 
   @Override
