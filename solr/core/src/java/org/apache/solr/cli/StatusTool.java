@@ -242,15 +242,15 @@ public class StatusTool extends ToolBase {
       }
     }
 
-    // No URL or port, scan for running processes
-    Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
-    if (procs.isEmpty()) {
-      // Solr started in the foreground writes no PID file, so fall back to the process list
-      procs =
-          processMgr.getAllRunning().stream()
-              .sorted(Comparator.comparingInt(SolrProcess::port))
-              .toList();
-    }
+    // No URL or port. Scanning the PID files first prunes stale ones, then the live process list
+    // is authoritative, as it already is for "status -p <port>". Reporting only PID files here
+    // would both miss nodes started in the foreground, which write none, and be non-monotonic:
+    // stopping the last background node would make the listing grow.
+    processMgr.scanSolrPidFiles();
+    Collection<SolrProcess> procs =
+        processMgr.getAllRunning().stream()
+            .sorted(Comparator.comparingInt(SolrProcess::port))
+            .toList();
     if (!procs.isEmpty()) {
       for (SolrProcess process : procs) {
         if (shortFormat) {

@@ -1,8 +1,8 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  `solr stop -p <port>` and `solr status` again find nodes started in the foreground, which write
-  no PID file, and `solr stop --all` now reports when it found nothing to stop.
+  `solr stop -p <port>` again finds nodes started in the foreground, which write no PID file.
+  `solr status` now lists every running node, and `solr stop --all` reports when it stopped nothing.
 type: fixed
 authors:
   - name: Jan Høydahl
