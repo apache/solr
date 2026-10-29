@@ -85,7 +85,7 @@ The dimension of the dense vector to pass in.
 +
 Accepted values:
 Any positive integer.
-Values above 1024 log a warning and require the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]; `LuceneDefaultCodecFactory` and `SimpleTextCodecFactory` reject them when documents are indexed.
+Values above 1024 log a warning; `LuceneDefaultCodecFactory` and `SimpleTextCodecFactory` (see xref:configuration-guide:codec-factory.adoc[Codec Factory]) reject them when documents are indexed.
 
 [[similarityFunction-caveats]]`similarityFunction`::
 +
@@ -315,7 +315,7 @@ As a specific type of DenseVectorField, this field type supports `knnAlgorithm` 
 
 NOTE: Scalar quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized, and with `knnAlgorithm="flat"` they do not support the KNN query parsers. Use `vectorSimilarity()` function queries instead.
 
-NOTE: Quantization requires the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]. With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory`, this field type is accepted but its vectors are stored unquantized, without any warning.
+NOTE: With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory` (see xref:configuration-guide:codec-factory.adoc[Codec Factory]), this field type is accepted but its vectors are stored unquantized, without any warning.
 
 Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
 
@@ -370,7 +370,7 @@ NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorFiel
 
 NOTE: Binary quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized.
 
-NOTE: Quantization requires the default xref:configuration-guide:codec-factory.adoc#solr-schemacodecfactory-default[`SchemaCodecFactory`]. With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory`, this field type is accepted but its vectors are stored unquantized, without any warning.
+NOTE: With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory` (see xref:configuration-guide:codec-factory.adoc[Codec Factory]), this field type is accepted but its vectors are stored unquantized, without any warning.
 
 [[query-hnsw-fields]]
 == Querying Vectors in Navigable Small-world Graphs
