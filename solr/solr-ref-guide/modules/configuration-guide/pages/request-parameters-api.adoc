@@ -190,7 +190,7 @@ Creating, updating and deleting paramsets still uses `POST api/collections/techp
 
 ====
 
-Both APIs returns a `404` if the named paramset does not exists.
+Both APIs return a `404` if the named paramset does not exist.
 
 ======
 

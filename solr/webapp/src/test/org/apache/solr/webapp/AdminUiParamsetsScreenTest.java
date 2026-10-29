@@ -62,9 +62,11 @@ public class AdminUiParamsetsScreenTest extends AdminUiTestBase {
   /** Returns the rows param of the paramset, or empty string when absent. */
   private String paramsetRows(String name) {
     try {
+      // adminApi() is a v1 request; v1's /config/params path and response shape are unchanged
+      // by the GET /config/paramsets v2 migration.
       Object rows =
-          adminApi("/" + COLLECTION + "/config/paramsets/" + name, params())
-              ._get(List.of("params", name, "rows"), "");
+          adminApi("/" + COLLECTION + "/config/params/" + name, params())
+              ._get(List.of("response", "params", name, "rows"), "");
       return rows == null ? "" : rows.toString();
     } catch (Exception e) {
       throw new RuntimeException(e);
