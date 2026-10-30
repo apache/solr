@@ -405,23 +405,33 @@ public class TimeRoutedAlias extends RoutedAlias {
       startTime = DateMathParser.parseMath(new Date(), start).toInstant();
       SolrCore core = cmd.getReq().getCore();
       ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
+      final String dateMathStart = start;
       start = DateTimeFormatter.ISO_INSTANT.format(startTime);
       final String fixedStart = start;
 
-      // This could race, but it only occurs when the alias is first used and the values produced
-      // should all be identical and who wins won't matter (baring cases of Date Math involving
-      // seconds, which is pretty far fetched). Putting this in a separate thread to ensure that any
-      // failed races don't cause documents to get rejected. The modification must be applied to the
-      // aliases it is given, which are current, so that it doesn't undo other changes to aliases.
-      // If the alias has been deleted meanwhile, there is nothing to update.
+      // Putting this in a separate thread to ensure that any failed races don't cause documents to
+      // get rejected. Nodes whose cached aliases are stale may get a document after the start was
+      // fixed, so only fix it if the aliases still have the date math this document was routed
+      // with. Building on the aliases passed in, which are refreshed on a version conflict, keeps
+      // other changes to aliases.
       core.runAsync(
           () ->
               zkStateReader.aliasesManager.applyModificationAndExportToZk(
-                  (a) ->
-                      a.hasAlias(aliasName)
-                          ? a.cloneWithCollectionAliasProperties(
-                              aliasName, ROUTER_START, fixedStart)
-                          : a));
+                  (a) -> {
+                    String currentStart =
+                        a.getCollectionAliasProperties(aliasName).get(ROUTER_START);
+                    if (!dateMathStart.equals(currentStart)) {
+                      if (currentStart == null) {
+                        log.warn(
+                            "Not fixing {} of alias [{}] because it has none",
+                            ROUTER_START,
+                            aliasName);
+                      }
+                      return a;
+                    }
+                    return a.cloneWithCollectionAliasProperties(
+                        aliasName, ROUTER_START, fixedStart);
+                  }));
     }
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(
