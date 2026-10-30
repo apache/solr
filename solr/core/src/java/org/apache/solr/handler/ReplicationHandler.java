@@ -331,9 +331,17 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       fetchIndex(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      disablePoll(rsp);
+      if (setPollingEnabled(false)) {
+        rsp.add(STATUS, OK_STATUS);
+      } else {
+        reportErrorOnResponse(rsp, "No follower configured", null);
+      }
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      enablePoll(rsp);
+      if (setPollingEnabled(true)) {
+        rsp.add(STATUS, OK_STATUS);
+      } else {
+        reportErrorOnResponse(rsp, "No follower configured", null);
+      }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
       if (abortFetch()) {
         rsp.add(STATUS, OK_STATUS);
@@ -852,24 +860,11 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
-  private void disablePoll(SolrQueryResponse rsp) {
-    if (pollingIndexFetcher != null) {
-      pollDisabled.set(true);
-      log.info("inside disable poll, value of pollDisabled = {}", pollDisabled);
-      rsp.add(STATUS, OK_STATUS);
-    } else {
-      reportErrorOnResponse(rsp, "No follower configured", null);
-    }
-  }
-
-  private void enablePoll(SolrQueryResponse rsp) {
-    if (pollingIndexFetcher != null) {
-      pollDisabled.set(false);
-      log.info("inside enable poll, value of pollDisabled = {}", pollDisabled);
-      rsp.add(STATUS, OK_STATUS);
-    } else {
-      reportErrorOnResponse(rsp, "No follower configured", null);
-    }
+  public boolean setPollingEnabled(boolean enabled) {
+    if (pollingIndexFetcher == null) return false;
+    pollDisabled.set(!enabled);
+    log.info("polling enabled = {}", enabled);
+    return true;
   }
 
   boolean isPollingDisabled() {
