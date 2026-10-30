@@ -1,0 +1,10 @@
+title: >
+  Metrics now carry OpenTelemetry resource attributes, configured with `OTEL_SERVICE_NAME` and
+  `OTEL_RESOURCE_ATTRIBUTES` like traces, so pushed metrics identify the node they came from.
+type: added
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18594
+    url: https://issues.apache.org/jira/browse/SOLR-18594

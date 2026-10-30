@@ -378,6 +378,29 @@ Endpoint to send OTLP metrics to using the gRPC protocol.
 +
 Endpoint to send OTLP metrics to using the HTTP protocol.
 
+=== Standard OpenTelemetry properties
+
+Every setting above also accepts its standard OpenTelemetry equivalent, so one set of `OTEL_*` variables can configure metrics and xref:distributed-tracing.adoc[traces] together.
+The Solr-specific property takes precedence where both are set.
+
+[cols="2,3",options="header"]
+|===
+| Solr property | Standard equivalent
+
+| `solr.metrics.otlpExporterEnabled`
+| `OTEL_METRICS_EXPORTER`, when it includes `otlp`
+
+| `solr.metrics.otlpExporterProtocol`
+| `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL`, then `OTEL_EXPORTER_OTLP_PROTOCOL`
+
+| `solr.metrics.otlpExporterInterval`
+| `OTEL_METRIC_EXPORT_INTERVAL`
+
+| `solr.metrics.otlpHttpExporterEndpoint`, `solr.metrics.otlpGrpcExporterEndpoint`
+| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, then `OTEL_EXPORTER_OTLP_ENDPOINT`
+|===
+
+The attributes describing which node the metrics came from are configured the same way; see xref:opentelemetry.adoc#resource-attributes[Resource Attributes].
 
 === OpenTelemetry Collector setup
 
