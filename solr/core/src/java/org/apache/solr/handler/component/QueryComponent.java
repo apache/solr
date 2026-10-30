@@ -767,6 +767,10 @@ public class QueryComponent extends SearchComponent {
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
     }
+    if (null != rb.getPreviousCursorMark()) {
+      rb.rsp.add(
+          CursorMarkParams.CURSOR_MARK_PREVIOUS, rb.getPreviousCursorMark().getSerializedTotem());
+    }
   }
 
   protected void createDistributedStats(ResponseBuilder rb) {
@@ -1288,6 +1292,11 @@ public class QueryComponent extends SearchComponent {
       boolean hitCountIsExact,
       int offset) {
     final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(offset);
+    if (rb.getCursorMark() != null && rb.getCursorMark().isReverse()) {
+      for (ShardDoc doc : resultIds.values()) {
+        doc.positionInResponse = resultIds.size() - 1 - doc.positionInResponse;
+      }
+    }
 
     final SolrDocumentList responseDocs = new SolrDocumentList();
     if (maxScore != null) responseDocs.setMaxScore(maxScore);
@@ -1306,7 +1315,7 @@ public class QueryComponent extends SearchComponent {
 
   /**
    * Inspects the state of the {@link ResponseBuilder} and populates the next {@link
-   * ResponseBuilder#setNextCursorMark} as appropriate based on the merged sort values from
+   * ResponseBuilder#setCursorMarkResult} as appropriate based on the merged sort values from
    * individual shards
    *
    * @param rb A <code>ResponseBuilder</code> that already contains merged <code>ShardDocs</code> in
@@ -1314,9 +1323,8 @@ public class QueryComponent extends SearchComponent {
    *     if not needed)
    */
   protected void populateNextCursorMarkFromMergedShards(ResponseBuilder rb) {
-
-    final CursorMark lastCursorMark = rb.getCursorMark();
-    if (null == lastCursorMark) {
+    final CursorMark cursorMark = rb.getCursorMark();
+    if (null == cursorMark) {
       // Not a cursor based request
       return; // NOOP
     }
@@ -1325,34 +1333,42 @@ public class QueryComponent extends SearchComponent {
 
     Collection<ShardDoc> docsOnThisPage = rb.resultIds.values();
 
-    if (0 == docsOnThisPage.size()) {
+    if (docsOnThisPage.isEmpty()) {
       // nothing more matching query, re-use existing totem so user can "resume"
       // search later if it makes sense for this sort.
-      rb.setNextCursorMark(lastCursorMark);
+      // no docs on this page, re-use existing cursor mark
+      rb.setCursorMarkNoResults(cursorMark, rb.getSortSpec().getCount());
       return;
     }
 
     ShardDoc lastDoc = null;
+    ShardDoc firstDoc = null;
     // ShardDoc and rb.resultIds are weird structures to work with...
     for (ShardDoc eachDoc : docsOnThisPage) {
+      if (null == firstDoc || firstDoc.positionInResponse > eachDoc.positionInResponse) {
+        firstDoc = eachDoc;
+      }
       if (null == lastDoc || lastDoc.positionInResponse < eachDoc.positionInResponse) {
         lastDoc = eachDoc;
       }
     }
-    SortField[] sortFields = lastCursorMark.getSortSpec().getSort().getSort();
-    List<Object> nextCursorMarkValues = new ArrayList<>(sortFields.length);
+    SortField[] sortFields = cursorMark.getSortSpec().getSort().getSort();
+    List<Object> firstDocValues = new ArrayList<>(sortFields.length);
+    List<Object> lastDocValues = new ArrayList<>(sortFields.length);
     for (SortField sf : sortFields) {
       if (sf.getType().equals(SortField.Type.SCORE)) {
-        nextCursorMarkValues.add(lastDoc.score);
+        firstDocValues.add(firstDoc.score);
+        lastDocValues.add(lastDoc.score);
       } else {
         assert null != sf.getField() : "SortField has null field";
-        List<Object> fieldVals = lastDoc.sortFieldValues.get(sf.getField());
-        nextCursorMarkValues.add(fieldVals.get(lastDoc.orderInShard));
+        List<Object> firstDocFieldVals = firstDoc.sortFieldValues.get(sf.getField());
+        firstDocValues.add(firstDocFieldVals.get(firstDoc.orderInShard));
+        List<Object> lastDocFieldVals = lastDoc.sortFieldValues.get(sf.getField());
+        lastDocValues.add(lastDocFieldVals.get(lastDoc.orderInShard));
       }
     }
-    CursorMark nextCursorMark = lastCursorMark.createNext(nextCursorMarkValues);
-    assert null != nextCursorMark : "null nextCursorMark";
-    rb.setNextCursorMark(nextCursorMark);
+    rb.setCursorMarkResult(
+        cursorMark.createPrevious(firstDocValues), cursorMark.createNext(lastDocValues));
   }
 
   protected NamedList<List<Object>> unmarshalSortValues(
@@ -1858,6 +1874,24 @@ public class QueryComponent extends SearchComponent {
     } catch (FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+    if (rb.getCursorMark() != null
+        && rb.getCursorMark().isReverse()
+        && result.getDocListAndSet() != null
+        && result.getDocListAndSet().docList != null
+        && !req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      // Shards keep collector order for merging. Only the final page is presented in normal order.
+      DocList docs = result.getDocListAndSet().docList;
+      int[] ids = new int[docs.size()];
+      float[] scores = docs.hasScores() ? new float[docs.size()] : null;
+      DocIterator iterator = docs.iterator();
+      for (int i = ids.length - 1; i >= 0; i--) {
+        ids[i] = iterator.nextDoc();
+        if (scores != null) scores[i] = iterator.score();
+      }
+      result.getDocListAndSet().docList =
+          new DocSlice(
+              0, ids.length, ids, scores, docs.matches(), docs.maxScore(), docs.hitCountRelation());
+    }
     rb.setResult(result);
 
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
@@ -1877,6 +1911,10 @@ public class QueryComponent extends SearchComponent {
     if (!rb.req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       if (null != rb.getNextCursorMark()) {
         rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
+      }
+      if (null != rb.getPreviousCursorMark()) {
+        rb.rsp.add(
+            CursorMarkParams.CURSOR_MARK_PREVIOUS, rb.getPreviousCursorMark().getSerializedTotem());
       }
     }
 

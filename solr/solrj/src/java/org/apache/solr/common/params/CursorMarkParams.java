@@ -23,9 +23,10 @@ package org.apache.solr.common.params;
 public interface CursorMarkParams {
 
   /**
-   * Param clients should specify indicating that they want a cursor based search. The value
-   * specified must either be {@link #CURSOR_MARK_START} indicating the first page of results, or a
-   * value returned by a previous search via the {@link #CURSOR_MARK_NEXT} key.
+   * Param clients should specify indicating that they want a cursor based search. The value must be
+   * {@link #CURSOR_MARK_START} for the beginning, {@link #CURSOR_MARK_END} for the end, or a cursor
+   * returned through {@link #CURSOR_MARK_NEXT} or {@link #CURSOR_MARK_PREVIOUS} by an earlier
+   * search.
    */
   String CURSOR_MARK_PARAM = "cursorMark";
 
@@ -36,9 +37,22 @@ public interface CursorMarkParams {
   String CURSOR_MARK_NEXT = "nextCursorMark";
 
   /**
+   * Key used in Solr response to inform the client what the "previous" {@link #CURSOR_MARK_PARAM}
+   * value should be to go back in pagination
+   */
+  String CURSOR_MARK_PREVIOUS = "previousCursorMark";
+
+  /**
    * Special value for {@link #CURSOR_MARK_PARAM} indicating that cursor functionality should be
    * used, and a new cursor value should be computed after the last result, but that currently the
    * "first page" of results is being requested
    */
   String CURSOR_MARK_START = "*";
+
+  /**
+   * Special value for {@link #CURSOR_MARK_PARAM} indicating that cursor functionality should be
+   * used, and a new cursor value should be computed before the first result, but that currently the
+   * "last page" of results is being requested
+   */
+  String CURSOR_MARK_END = "<";
 }

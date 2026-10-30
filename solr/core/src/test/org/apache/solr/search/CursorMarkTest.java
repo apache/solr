@@ -16,15 +16,19 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_END;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import static org.hamcrest.core.StringContains.containsString;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,6 +39,7 @@ import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -86,6 +91,74 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
             });
     assertEquals(500, e.code());
     assertThat(e.getMessage(), containsString("sort values != sort length"));
+  }
+
+  public void testDirectionAndForwardEncoding() throws Exception {
+    try (SolrQueryRequest request = req()) {
+      SortSpec sort = SortSpecParsing.parseSortSpec("id asc", request);
+      CursorMark initial = new CursorMark(request.getSchema(), sort);
+      Object id = request.getSchema().getUniqueKeyField().getType().unmarshalSortValue("boundary");
+      CursorMark forward = initial.createNext(List.of(id));
+      try (JavaBinCodec codec = new JavaBinCodec()) {
+        assertTrue(
+            codec.unmarshal(Base64.getDecoder().decode(forward.getSerializedTotem()))
+                instanceof List);
+      }
+      CursorMark reverse = initial.createPrevious(List.of(id));
+      CursorMark parsed = new CursorMark(request.getSchema(), sort);
+      parsed.parseSerializedTotem(reverse.getSerializedTotem());
+      assertTrue(parsed.isReverse());
+      assertEquals(reverse.getSortValues(), parsed.getSortValues());
+      parsed.parseSerializedTotem(forward.getSerializedTotem());
+      assertFalse(parsed.isReverse());
+      assertEquals(forward.getSortValues(), parsed.getSortValues());
+      parsed.parseSerializedTotem(CURSOR_MARK_END);
+      assertTrue(parsed.isReverse());
+      assertNull(parsed.getSortValues());
+      assertEquals(CURSOR_MARK_END, parsed.getSerializedTotem());
+
+      for (Map<String, Object> invalid :
+          List.<Map<String, Object>>of(
+              Map.of("isReverse", true),
+              Map.of("isReverse", "true", "values", List.of("boundary")),
+              Map.of("isReverse", true, "values", "boundary"))) {
+        try (JavaBinCodec codec = new JavaBinCodec();
+            ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+          codec.marshal(invalid, output);
+          String token = Base64.getEncoder().encodeToString(output.toByteArray());
+          assertEquals(
+              400,
+              expectThrows(SolrException.class, () -> parsed.parseSerializedTotem(token)).code());
+        }
+      }
+    }
+  }
+
+  public void testZeroRowCursorMarks() throws Exception {
+    try (SolrQueryRequest request = req()) {
+      CursorMark initial =
+          new CursorMark(request.getSchema(), SortSpecParsing.parseSortSpec("id asc", request));
+      Object id = request.getSchema().getUniqueKeyField().getType().unmarshalSortValue("boundary");
+      for (CursorMark input :
+          List.of(
+              initial,
+              initial.initial(true),
+              initial.createNext(List.of(id)),
+              initial.createPrevious(List.of(id)))) {
+        QueryResult result = new QueryResult();
+        result.setCursorMarkNoResults(input, 0);
+        assertNotNull(result.getPreviousCursorMark());
+        assertNotNull(result.getNextCursorMark());
+        assertTrue(result.getPreviousCursorMark().isReverse());
+        assertFalse(result.getNextCursorMark().isReverse());
+        assertEquals(input.getSortValues(), result.getPreviousCursorMark().getSortValues());
+        assertEquals(input.getSortValues(), result.getNextCursorMark().getSortValues());
+        assertEquals(
+            input.getSerializedTotem(),
+            (input.isReverse() ? result.getPreviousCursorMark() : result.getNextCursorMark())
+                .getSerializedTotem());
+      }
+    }
   }
 
   public void testInvalidUsage() {

@@ -460,6 +460,9 @@ public class SearchHandler extends RequestHandlerBase
       final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
       cursorMark.parseSerializedTotem(cursorStr);
       rb.setCursorMark(cursorMark);
+      if (cursorMark.isReverse()) {
+        rb.setSortSpec(spec.reverse());
+      }
     }
   }
 
