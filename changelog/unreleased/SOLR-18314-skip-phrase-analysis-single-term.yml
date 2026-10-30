@@ -1,0 +1,13 @@
+title: The DisMax parser no longer applies the phrase field (pf) boost to single-term queries, matching
+  the eDisMax parser. A query is single-term when it is one whitespace-free term that analyzes to a
+  single token in every pf field. A term whose analysis yields multiple tokens (e.g. via CJK, ngram,
+  WordDelimiterGraph, or multi-word synonyms) keeps its phrase boost, as does a multi-word query on
+  a keyword or string pf field. This may change relevancy scores for single-term DisMax queries,
+  including those whose pf fields are not also in qf.
+type: changed
+authors:
+  - name: Ian Springer
+    nick: ianspringer
+links:
+  - name: SOLR-18314
+    url: https://issues.apache.org/jira/browse/SOLR-18314

@@ -625,8 +625,11 @@ public class ExtendedDismaxQParser extends QParser {
       final int slop)
       throws SyntaxError {
 
-    if (null == fields || fields.isEmpty() || null == clauses || clauses.size() < shingleSize)
-      return;
+    if (null == fields
+        || fields.isEmpty()
+        || null == clauses
+        || clauses.isEmpty()
+        || clauses.size() < shingleSize) return;
 
     if (0 == shingleSize) shingleSize = clauses.size();
 
@@ -676,7 +679,10 @@ public class ExtendedDismaxQParser extends QParser {
     // TODO: perhaps we shouldn't use synonyms either...
 
     Query phrase = pp.parse(userPhraseQuery.toString());
-    if (phrase != null) {
+    // When minClauseSize discards every phrase (e.g. single-term queries or q=*:*), parse returns
+    // an empty BooleanQuery rather than null; adding it as a SHOULD clause would defeat the
+    // single-clause MatchAllDocsQuery optimization applied to the main query.
+    if (!isEmpty(phrase)) {
       mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
     }
   }
