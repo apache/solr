@@ -331,9 +331,9 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       fetchIndex(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      setPollingEnabled(false, rsp);
+      respondWithPollingEnabled(false, rsp);
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      setPollingEnabled(true, rsp);
+      respondWithPollingEnabled(true, rsp);
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
       if (abortFetch()) {
         rsp.add(STATUS, OK_STATUS);
@@ -864,7 +864,7 @@ public class ReplicationHandler extends RequestHandlerBase
     return true;
   }
 
-  private void setPollingEnabled(boolean enabled, SolrQueryResponse rsp) {
+  private void respondWithPollingEnabled(boolean enabled, SolrQueryResponse rsp) {
     if (setPollingEnabled(enabled)) {
       rsp.add(STATUS, OK_STATUS);
     } else {
