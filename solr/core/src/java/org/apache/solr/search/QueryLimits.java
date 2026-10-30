@@ -53,6 +53,7 @@ public final class QueryLimits implements QueryTimeout {
 
   // short-circuit the checks if any limit has been tripped
   private volatile boolean limitsTripped = false;
+  private final ThreadLocal<Boolean> fetchingPartialResults = new ThreadLocal<>();
 
   private QueryLimits() {
     this(null, null);
@@ -88,7 +89,7 @@ public final class QueryLimits implements QueryTimeout {
   @Override
   public boolean shouldExit() {
     if (limitsTripped) {
-      return true;
+      return !Boolean.TRUE.equals(fetchingPartialResults.get());
     }
     for (QueryTimeout limit : limits) {
       if (limit.shouldExit()) {
@@ -97,6 +98,28 @@ public final class QueryLimits implements QueryTimeout {
       }
     }
     return limitsTripped;
+  }
+
+  /**
+   * Run the fetch for one document already selected for a partial response. If a limit has already
+   * been tripped, finishing this fetch is necessary to return the preserved document; the limit
+   * remains latched and checks resume as soon as the fetch returns.
+   */
+  public <T> T withPartialResultsFetch(Supplier<T> fetch) {
+    if (!allowPartialResults || !limitsTripped) {
+      return fetch.get();
+    }
+    boolean wasFetchingPartialResults = Boolean.TRUE.equals(fetchingPartialResults.get());
+    fetchingPartialResults.set(true);
+    try {
+      return fetch.get();
+    } finally {
+      if (wasFetchingPartialResults) {
+        fetchingPartialResults.set(true);
+      } else {
+        fetchingPartialResults.remove();
+      }
+    }
   }
 
   /**

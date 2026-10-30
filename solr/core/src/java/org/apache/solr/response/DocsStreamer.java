@@ -55,6 +55,7 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -121,7 +122,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   public SolrDocument next() {
     int id = docIterator.nextDoc();
     idx++;
-    SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);
+    SolrDocument sdoc =
+        QueryLimits.getCurrentLimits()
+            .withPartialResultsFetch(() -> docFetcher.solrDoc(id, solrReturnFields));
 
     if (transformer != null) {
       try {
