@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
@@ -33,6 +34,9 @@ abstract class UniqueSlotAcc extends SlotAcc {
   FixedBitSet[] arr;
   int[] counts; // populated with the cardinality once
   int nTerms;
+
+  /** If set, the shard HLL only includes the values starting with this prefix. */
+  BytesRef valuePrefix;
 
   public UniqueSlotAcc(
       FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
@@ -83,6 +87,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
       ord = ords.nextSetBit(ord);
       if (ord == DocIdSetIterator.NO_MORE_DOCS) break;
       BytesRef val = lookupOrd(ord);
+      if (valuePrefix != null && !StringHelper.startsWith(val, valuePrefix)) continue;
       // way to avoid recomputing hash across slots?  Prob not worth space
       Hash.murmurhash3_x64_128(val.bytes, val.offset, val.length, 0, hashResult);
       // idea: if the set is small enough, just send the hashes?  We can add at the top
