@@ -253,9 +253,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         aliasesBeforeOtherAlias,
         reader.getAliases());
 
-    SolrInputDocument doc =
-        new SolrInputDocument(
-            "id", "1", "evt_dt", Instant.now().plus(1, ChronoUnit.MINUTES).toString());
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "evt_dt", Instant.now().toString());
     assertEquals(0, jetty.getSolrClient().add(collectionName, doc).getStatus());
 
     // router.start is fixed asynchronously

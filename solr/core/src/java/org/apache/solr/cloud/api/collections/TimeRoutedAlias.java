@@ -372,10 +372,10 @@ public class TimeRoutedAlias extends RoutedAlias {
   }
 
   /**
-   * Sets the router.start of an alias to a fixed start, but only if it is still the date math the
-   * fixed start was computed from: nodes whose cached aliases are stale may compute it again after
-   * it was fixed. Builds on the given aliases, which are refreshed on a version conflict, so that
-   * other changes to aliases are kept.
+   * Returns aliases with the router.start of an alias set to a fixed start, but only if it is still
+   * the date math the fixed start was computed from: nodes whose cached aliases are stale may
+   * compute it again after it was fixed. Builds on the given aliases, which are refreshed on a
+   * version conflict, so that other changes to aliases are kept.
    *
    * @return the aliases with the fixed start, or the given aliases if there is nothing to change
    */
