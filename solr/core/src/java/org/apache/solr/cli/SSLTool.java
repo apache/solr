@@ -133,6 +133,11 @@ public class SSLTool extends ToolBase {
             storeType,
             includeFile,
             zkHost));
+    echo("Restart Solr to enable HTTPS.");
+    if (zkHost == null) {
+      echo(
+          "No cluster property changed. For SolrCloud, set urlScheme=https with bin/solr cluster before restarting nodes.");
+    }
     return 0;
   }
 
@@ -310,11 +315,7 @@ public class SSLTool extends ToolBase {
         throw failure;
       }
       echo("Installed " + type + " keystore: " + target);
-      echo("Updated " + include + ". Restart Solr to enable HTTPS.");
-      if (params.zkHost() == null) {
-        echo(
-            "No cluster property changed. For SolrCloud, set urlScheme=https with bin/solr cluster before restarting nodes.");
-      }
+      echo("Updated " + include + ".");
     } finally {
       Arrays.fill(secret, '\0');
       try (var files = Files.list(temporary)) {

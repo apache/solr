@@ -93,7 +93,7 @@ public class StartCommand implements Callable<Integer> {
 
   @CommandLine.Option(
       names = {"-e", "--example"},
-      description = "Run an example: cloud, techproducts, secure_solr, schemaless, films")
+      description = "Run an example: cloud, techproducts, secure-setup, schemaless, films")
   String example;
 
   @CommandLine.Option(

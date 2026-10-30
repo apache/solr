@@ -131,7 +131,7 @@ public class RunExampleTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc(
-              "Name of the example to launch, one of: cloud, techproducts, secure_solr, schemaless, films.")
+              "Name of the example to launch, one of: cloud, techproducts, secure-setup, schemaless, films.")
           .get();
 
   /**
@@ -346,7 +346,7 @@ public class RunExampleTool extends ToolBase {
       required = true,
       paramLabel = "NAME",
       description =
-          "Name of the example to launch, one of: cloud, techproducts, secure_solr, schemaless, films.")
+          "Name of the example to launch, one of: cloud, techproducts, secure-setup, schemaless, films.")
   private String exampleOpt;
 
   @picocli.CommandLine.Option(
@@ -514,13 +514,13 @@ public class RunExampleTool extends ToolBase {
 
     if (!"cloud".equals(exampleType)
         && !"techproducts".equals(exampleType)
-        && !"secure_solr".equals(exampleType)
+        && !"secure-setup".equals(exampleType)
         && !"schemaless".equals(exampleType)
         && !"films".equals(exampleType)) {
       throw new IllegalArgumentException(
           "Unsupported example "
               + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, secure_solr, or films");
+              + "! Please choose one of: cloud, schemaless, techproducts, secure-setup, or films");
     }
 
     StartSolrParams startParams =
@@ -547,10 +547,10 @@ public class RunExampleTool extends ToolBase {
               zkHost,
               port,
               startParams));
-    } else if ("secure_solr".equals(exampleType)) {
+    } else if ("secure-setup".equals(exampleType)) {
       if (cli.hasOption(USER_MANAGED_OPTION) || zkHost != null) {
         throw new IllegalArgumentException(
-            "secure_solr requires embedded ZooKeeper in SolrCloud mode");
+            "secure-setup requires embedded ZooKeeper in SolrCloud mode");
       }
       runSecureExample(
           startParams,
@@ -613,7 +613,7 @@ public class RunExampleTool extends ToolBase {
       String solrHomeProp = EnvUtils.getProperty("solr.home");
       if (solrHomeProp != null && !solrHomeProp.isEmpty()) {
         solrHomeDir = Path.of(solrHomeProp);
-      } else if ("cloud".equals(exampleType) || "secure_solr".equals(exampleType)) {
+      } else if ("cloud".equals(exampleType) || "secure-setup".equals(exampleType)) {
         solrHomeDir = exampleDir.resolve(exampleType);
         if (!Files.isDirectory(solrHomeDir)) Files.createDirectory(solrHomeDir);
       } else {
@@ -662,6 +662,22 @@ public class RunExampleTool extends ToolBase {
       boolean existingHttps = secureSSL.isConfigured();
       if (!existingHttps) configureSecureExampleSSL(input, start, noPrompt);
       else echo("Reusing the example's HTTPS configuration.");
+      SecureExampleZk secureZk = new SecureExampleZk(solrHomeDir);
+      if (secureZk.isConfigured()) {
+        echo("Reusing the example's ZooKeeper credentials and ACL configuration.");
+      } else {
+        echo("Protecting ZooKeeper with separate digest accounts and ACLs.");
+        String zkAdminPassword =
+            noPrompt
+                ? "SolrRocks"
+                : promptPassword(input, "Password for zk-admin [SolrRocks]: ", "zk-admin");
+        String zkReadonlyPassword =
+            noPrompt
+                ? "SolrRocks"
+                : promptPassword(input, "Password for zk-readonly [SolrRocks]: ", "zk-readonly");
+        secureZk.create(zkAdminPassword, zkReadonlyPassword);
+      }
+      secureZk.configure(secureSSL.includeFile(), port);
       secureSSL.configureClientTrust();
       urlScheme = "https";
       if (!existingHttps
@@ -671,7 +687,8 @@ public class RunExampleTool extends ToolBase {
         confirmSecureHttps((String) httpsNodeStatus.get("baseUrl"));
       }
     } else {
-      echo("Configure HTTPS manually on Windows; the HTTPS wizard requires Unix or macOS.");
+      echo(
+          "Configure HTTPS and ZooKeeper access control manually on Windows; the setup wizard requires Unix or macOS.");
     }
     String user = noPrompt ? "solr" : prompt(input, "Administrator username [solr]: ", "solr");
     while (user.contains(":") || Set.of("index", "search").contains(user)) {
@@ -858,7 +875,7 @@ public class RunExampleTool extends ToolBase {
       String indexingCredentials)
       throws Exception {
     String exampleName = params.start().example();
-    boolean techproducts = "techproducts".equals(exampleName) || "secure_solr".equals(exampleName);
+    boolean techproducts = "techproducts".equals(exampleName) || "secure-setup".equals(exampleName);
     String collectionName =
         techproducts
             ? "techproducts"
@@ -1302,10 +1319,13 @@ public class RunExampleTool extends ToolBase {
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
-    final var syspropArg =
-        ("techproducts".equals(params.example()) || "secure_solr".equals(params.example()))
+    String syspropArg =
+        ("techproducts".equals(params.example()) || "secure-setup".equals(params.example()))
             ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting,sql -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
+    if ("secure-setup".equals(params.example())) {
+      syspropArg += " -Dsolr.environment=prod,label=Secure+Solr+Setup";
+    }
 
     String startCmdStr =
         String.format(
@@ -1686,13 +1706,13 @@ public class RunExampleTool extends ToolBase {
 
     if (!"cloud".equals(exampleType)
         && !"techproducts".equals(exampleType)
-        && !"secure_solr".equals(exampleType)
+        && !"secure-setup".equals(exampleType)
         && !"schemaless".equals(exampleType)
         && !"films".equals(exampleType)) {
       throw new IllegalArgumentException(
           "Unsupported example "
               + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, secure_solr, or films");
+              + "! Please choose one of: cloud, schemaless, techproducts, secure-setup, or films");
     }
 
     StartSolrParams startParams =
@@ -1702,10 +1722,10 @@ public class RunExampleTool extends ToolBase {
     if ("cloud".equals(exampleType)) {
       runCloudExample(
           new CloudExampleParams(noPromptOpt, scriptInputsOpt, zkHost, port, startParams));
-    } else if ("secure_solr".equals(exampleType)) {
+    } else if ("secure-setup".equals(exampleType)) {
       if (userManagedOpt || zkHost != null) {
         throw new IllegalArgumentException(
-            "secure_solr requires embedded ZooKeeper in SolrCloud mode");
+            "secure-setup requires embedded ZooKeeper in SolrCloud mode");
       }
       runSecureExample(startParams, port, noPromptOpt, scriptInputsOpt);
     } else {

@@ -29,14 +29,17 @@ teardown() {
 }
 
 @test "secure example configures HTTPS before users and reuses it on restart" {
-  run solr start -e secure_solr --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
+  run solr start -e secure-setup --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
   assert_success
   assert_output --partial 'Verify HTTPS in another terminal:'
   assert_output --partial 'curl --cacert'
   assert_output --partial '/api/node/system'
+  assert_output --partial '-Dsolr.environment=prod,label=Secure+Solr+Setup'
   assert_output --partial 'Secure Solr example running at https://'
   assert_output --partial 'Sign in as solr. You will need to accept the self-signed certificate in the browser.'
   refute_output --partial 'Press Enter after curl'
+  refute_output --partial 'Restart Solr to enable HTTPS.'
+  refute_output --partial 'No cluster property changed.'
 
   run cat "$SOLR_INCLUDE"
   assert_output ''
@@ -48,6 +51,8 @@ teardown() {
     --user solr:SolrRocks "https://localhost:${SOLR_PORT}/api/node/system"
   assert_success
   assert_output --partial '"mode":"solrcloud"'
+  assert_output --partial '"environment":"prod"'
+  assert_output --partial '"environment_label":"Secure Solr Setup"'
 
   run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
     --user search:SolrRocks "https://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
@@ -59,15 +64,71 @@ teardown() {
   assert_failure
   assert_output --partial '403'
 
-  run solr stop -p "$SOLR_PORT"
-  assert_output --partial 'Sending stop command'
-  run solr start -e secure_solr --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
-  assert_success
-  assert_output --partial "Reusing the example's HTTPS configuration."
-  assert_output --partial 'Using the existing security configuration.'
+  run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user search:SolrRocks -H 'Content-Type: application/json' \
+    --data-binary '[{"id":"secure-example-product","name":"Secure example product"}]' \
+    "https://localhost:${SOLR_PORT}/solr/techproducts/update?commit=true"
+  assert_failure
+  assert_output --partial '403'
 
   run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user search:SolrRocks "https://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
+    --user index:SolrRocks -H 'Content-Type: application/json' \
+    --data-binary '[{"id":"secure-example-product","name":"Secure example product"}]' \
+    "https://localhost:${SOLR_PORT}/solr/techproducts/update?commit=true"
   assert_success
-  assert_output --partial '"numFound":31'
+
+  run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user search:SolrRocks "https://localhost:${SOLR_PORT}/solr/techproducts/select?q=id:secure-example-product"
+  assert_success
+  assert_output --partial '"numFound":1'
+
+  run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user solr:SolrRocks -H 'Content-Type: application/json' \
+    --data-binary '{"set-user":{"reader":"ReaderRocks"}}' \
+    "https://localhost:${SOLR_PORT}/solr/admin/authentication"
+  assert_success
+
+  run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user solr:SolrRocks -H 'Content-Type: application/json' \
+    --data-binary '{"set-user-role":{"reader":["search"]}}' \
+    "https://localhost:${SOLR_PORT}/solr/admin/authorization"
+  assert_success
+
+  for attempt in {1..10}; do
+    run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+      --user reader:ReaderRocks "https://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
+    if [ "$status" -eq 0 ]; then
+      break
+    fi
+    sleep 1
+  done
+  assert_success
+  assert_output --partial '"numFound":32'
+
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:${ZK_PORT}/solr"
+  assert_success
+  assert_output --partial 'security.json'
+
+  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:${ZK_PORT}/solr"
+  assert_failure
+  assert_output --partial 'NoAuth'
+
+  run solr stop -p "$SOLR_PORT"
+  assert_output --partial 'Sending stop command'
+  run solr start -e secure-setup --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
+  assert_success
+  assert_output --partial "Reusing the example's HTTPS configuration."
+  assert_output --partial "Reusing the example's ZooKeeper credentials and ACL configuration."
+  assert_output --partial 'Using the existing security configuration.'
+
+  for attempt in {1..10}; do
+    run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+      --user search:SolrRocks "https://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
+    if [ "$status" -eq 0 ]; then
+      break
+    fi
+    sleep 1
+  done
+  assert_success
+  assert_output --partial '"numFound":32'
 }

@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.junit.Test;
+import picocli.CommandLine;
 
 /** Tests certificate conversion and local HTTPS configuration. */
 public class SSLToolTest extends SolrTestCase {
@@ -113,7 +114,9 @@ public class SSLToolTest extends SolrTestCase {
         type
       };
       SSLTool tool = new SSLTool(runtime);
-      assertEquals(0, new picocli.CommandLine(tool).execute(args));
+      assertEquals(0, new CommandLine(tool).execute(args));
+      assertTrue(runtime.getOutput().contains("Restart Solr to enable HTTPS."));
+      assertTrue(runtime.getOutput().contains("No cluster property changed."));
       char[] password = "Test'$(false)Password".toCharArray();
       KeyStore store = KeyStore.getInstance(type);
       try (var input = Files.newInputStream(dir.resolve("store"))) {
@@ -142,6 +145,12 @@ public class SSLToolTest extends SolrTestCase {
     assertFalse(ssl.isConfigured());
     ssl.install(dir.resolve("cert.pem"), dir.resolve("key.pem"), dir.resolve("password.txt"), null);
     assertTrue(ssl.isConfigured());
+    assertFalse(runtime.getOutput().contains("Restart Solr to enable HTTPS."));
+    assertFalse(runtime.getOutput().contains("No cluster property changed."));
+    assertTrue(
+        runtime
+            .getOutput()
+            .contains("Embedded ZooKeeper will configure urlScheme=https when Solr starts."));
     assertArrayEquals(
         Files.readAllBytes(dir.resolve("cert.pem")), Files.readAllBytes(ssl.certificate()));
     ssl.configureClientTrust();

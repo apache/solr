@@ -265,7 +265,7 @@ The available options are:
 
 * `cloud`: SolrCloud example
 * `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
-* `secure_solr`: Single-node SolrCloud with Basic Authentication, Rule-Based Authorization, and techproducts data
+* `secure-setup`: Single-node SolrCloud with Basic Authentication, Rule-Based Authorization, and techproducts data
 * `schemaless`: Schema-less example (schema is inferred from data during indexing)
 * `films`: Example of starting with _default configset and adding explicit fields dynamically
 +
@@ -377,6 +377,10 @@ The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_tech
 +
 The data used can be found in `$SOLR_HOME/example/exampledocs/`.
 
+* *secure-setup*: This example starts a single-node SolrCloud cluster with Basic Authentication, Rule-Based Authorization, and techproducts data.
+On Unix and macOS, it also configures HTTPS and ZooKeeper digest authentication and ACLs.
+The default Solr home is `example/secure-setup`.
+
 * *schemaless*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
 Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
@@ -394,38 +398,6 @@ The film data used can be found in `$SOLR_HOME/example/films/films.json`.
 ====
 The run in-foreground option (`-f`) is not compatible with the `-e` option since the script needs to perform additional tasks after starting the Solr server.
 ====
-
-===== Secure Solr Example
-
-[source,bash]
-----
-bin/solr start -e secure_solr
-----
-
-This example starts one SolrCloud node on port 8983 with embedded ZooKeeper.
-It uses Basic Authentication and Rule-Based Authorization, creates a `techproducts` collection with one shard and one replica, and loads the sample data using `sample_techproducts_configs`.
-The Solr home is `example/secure_solr` unless overridden.
-
-On Unix and macOS, HTTPS setup comes first: generate a localhost certificate (valid for 30 days) or supply existing PEM files.
-The wizard starts a fresh example with HTTPS, prints a curl command, and pauses so you can verify it in another terminal before creating users.
-HTTPS files and an example-specific include file are stored in `example/secure_solr/tls`; installation-wide HTTPS settings are not changed.
-On Windows, configure HTTPS manually.
-
-The wizard asks for an administrator username and password, then only the passwords for the fixed `index` and `search` users.
-Press Enter to use administrator `solr` and password `SolrRocks` for all three accounts.
-The administrator has only `superadmin` and `admin` roles; it can manage security and collections but cannot query or update documents.
-Passwords typed at an interactive terminal are hidden.
-Use `--no-prompt` to generate a certificate and accept all defaults, printing the curl command without pausing.
-These are demonstration credentials; change them before using the example outside your local environment.
-
-Security is installed in ZooKeeper after startup and before collection creation or indexing.
-Existing security settings are preserved on subsequent starts; enter credentials for an existing administrator.
-Open `https://localhost:8983/solr/` and sign in as the administrator.
-Subsequent starts reuse the saved HTTPS files.
-For other CLI commands, select `SOLR_INCLUDE=example/secure_solr/tls/solr.in.sh`.
-The indexing user can search and update documents; the search-only user can search but cannot update documents.
-The wizard posts the sample documents over HTTPS as `index`.
-
 
 === Stop
 
