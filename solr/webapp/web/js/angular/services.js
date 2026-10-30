@@ -260,20 +260,23 @@ solrAdminServices.factory('Metrics',
       "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
     });
   }])
+.factory('ParamSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ParamSetsApi();
+    })
 .factory('ParamSet',
   ['$resource', function($resource) {
-    // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
-    // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
-    // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
-    // predates the OpenAPI-based v2 framework), so this stays a plain $resource.
+    // Creating, updating and deleting paramsets is still on ModifyParamSetAPI (/config/params) --
+    // reading them goes through ParamSetsV2 instead (see paramsets.js, query.js).
     // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
     // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
     // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
     // and there's no such thing as a "collection" there anyway. Callers must pass "indexType" as
     // "collections" or "cores" (see paramsets.js, driven by $scope.isCloudEnabled).
-    return $resource('/api/:indexType/:core/config/params/:name', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
-      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
-      "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
+    return $resource('/api/:indexType/:core/config/params', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
+      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"}
     });
   }])
 .service('FileUpload', function ($http) {
