@@ -502,6 +502,7 @@ http://{followerHost}:{port}/api/cores/{coreName}/replication/polling
 ----
 ====
 ======
+
 `commits`::
 Retrieve the index commit points currently retained by the core, with each commit's index version, generation, and the file list.
 +
