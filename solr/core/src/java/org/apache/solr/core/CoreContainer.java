@@ -216,7 +216,11 @@ public class CoreContainer {
 
   final SearchRequestDispatcher searchRequestDispatcher = new SearchRequestDispatcher();
 
-  /** Register to be notified after each search a client sends to this node. */
+  /**
+   * Register to be notified after each search a client sends to this node.
+   *
+   * @throws IllegalStateException if this container is shut down
+   */
   public void addSearchRequestListener(SearchRequestListener listener) {
     searchRequestDispatcher.add(listener);
   }

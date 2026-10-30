@@ -33,9 +33,9 @@ import org.apache.solr.util.ThreadCpuTimer;
  * @param user the authenticated user, or null
  * @param traceId the trace id, or null
  * @param startTimeMs when the request started, in epoch milliseconds
- * @param qTimeMs the QTime in the response header
+ * @param qTimeMs equal to the QTime in the response header
  * @param cpuTimeMs null unless {@code solr.log.cputime=true}; includes the CPU shards reported when
- *     distributed
+ *     distributed, which can undercount shard work still finishing when the response is built
  * @param hits null if not available
  * @param shardCount number of shards targeted; 0 for a non-distributed request
  * @param failureType the class name of the exception set on the response, or null

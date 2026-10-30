@@ -83,9 +83,7 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
   }
 
   private void offer(Object captured, SearchRequestListener... listeners) {
-    dispatcher.offer(
-        INFO,
-        Arrays.stream(listeners).map(l -> new Delivery(l, captured)).toList());
+    dispatcher.offer(INFO, Arrays.stream(listeners).map(l -> new Delivery(l, captured)).toList());
   }
 
   private void blockWorker() throws InterruptedException {

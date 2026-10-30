@@ -1,4 +1,4 @@
-title: Add a SearchRequestListener hook so modules can observe each completed search a client sends, on the node that coordinated it.
+title: Add a SearchRequestListener hook so modules can observe each completed search a client sends, on the node that coordinated it. Listeners run off the request thread through a bounded queue and get the response QTime.
 type: added
 authors:
   - name: Amrit Sarkar

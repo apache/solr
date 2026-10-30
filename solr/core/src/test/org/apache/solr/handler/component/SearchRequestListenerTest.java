@@ -499,8 +499,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
     String cpuCollection = "listener_cpu";
     createCollection(cpuCollection);
-    resetListeners(
-        null, (info, req, rsp, rb) -> rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME));
+    resetListeners(null, (info, req, rsp, rb) -> rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME));
     QueryResponse rsp = query(cpuCollection, "*:*");
     Delivery delivery = delivery();
     long shardCpuTime = (Long) rsp.getResponseHeader().get(ThreadCpuTimer.CPU_TIME);
