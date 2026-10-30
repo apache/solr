@@ -18,15 +18,13 @@
 package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
-import com.github.dockerjava.api.command.PullImageResultCallback;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.util.concurrent.TimeUnit;
+import org.apache.solr.util.TestcontainersUtil;
 import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -48,9 +46,6 @@ public class S3MockContainerRule extends ExternalResource {
 
   public static final String S3MOCK_DOCKER_IMAGE = "adobe/s3mock:5.1.0";
 
-  private static final String S390X = "s390x";
-  private static final long S390X_PULL_TIMEOUT_MINUTES = 5;
-
   private final String bucketName;
 
   private S3MockContainer s3MockContainer;
@@ -61,35 +56,11 @@ public class S3MockContainerRule extends ExternalResource {
 
   @Override
   protected void before() {
-    Assume.assumeTrue(
-        "Docker/Testcontainers not available; skipping test",
-        DockerClientFactory.instance().isDockerAvailable());
-    if (S390X.equalsIgnoreCase(System.getProperty("os.arch"))) {
-      Assume.assumeTrue(
-          S3MOCK_DOCKER_IMAGE + " has no s390x variant; skipping test", hasS390xVariant());
-    }
+    TestcontainersUtil.assumeContainerAvailable(S3MOCK_DOCKER_IMAGE);
     s3MockContainer =
         new S3MockContainer(DockerImageName.parse(S3MOCK_DOCKER_IMAGE))
             .withInitialBuckets(bucketName);
     s3MockContainer.start();
-  }
-
-  /** Whether the image can be pulled for s390x, i.e. its registry manifest lists that platform. */
-  private static boolean hasS390xVariant() {
-    try {
-      return DockerClientFactory.instance()
-          .client()
-          .pullImageCmd(S3MOCK_DOCKER_IMAGE)
-          .withPlatform("linux/" + S390X)
-          .exec(new PullImageResultCallback())
-          .awaitCompletion(S390X_PULL_TIMEOUT_MINUTES, TimeUnit.MINUTES);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return false;
-    } catch (RuntimeException e) {
-      log.info("Could not pull {} for {}: {}", S3MOCK_DOCKER_IMAGE, S390X, e.toString());
-      return false;
-    }
   }
 
   @Override
