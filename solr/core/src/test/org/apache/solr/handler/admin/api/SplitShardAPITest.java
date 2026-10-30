@@ -49,8 +49,7 @@ public class SplitShardAPITest extends SolrCloudTestCase {
     assertNotNull(response.timing);
     assertTrue(response.timing.get("time") instanceof Number);
     assertTrue(response.timing.get("splitParentCore") instanceof Map<?, ?>);
-    assertTrue(
-        ((Map<?, ?>) response.timing.get("splitParentCore")).get("time") instanceof Number);
+    assertTrue(((Map<?, ?>) response.timing.get("splitParentCore")).get("time") instanceof Number);
 
     waitForState(
         "Expected sub-shards shard1_0 and shard1_1 to be active",
@@ -119,7 +118,9 @@ public class SplitShardAPITest extends SolrCloudTestCase {
             RemoteSolrException.class, () -> splitRequest.process(cluster.getSolrClient()));
     assertEquals(400, exception.code());
     assertTrue(
-        exception.getMessage().contains("numSubShards can not be specified with split.key or ranges"));
+        exception
+            .getMessage()
+            .contains("numSubShards can not be specified with split.key or ranges"));
   }
 
   @Test

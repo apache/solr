@@ -177,7 +177,10 @@ public abstract class AdminAPIBase extends JerseyResource {
       throws Exception {
     var remoteResponse =
         submitRemoteMessageAndHandleException(
-            response, new AdminCmdContext(action, asyncId, callingLockId), remoteMessage, timeoutMs);
+            response,
+            new AdminCmdContext(action, asyncId, callingLockId),
+            remoteMessage,
+            timeoutMs);
 
     if (asyncId != null) {
       response.requestId = asyncId;

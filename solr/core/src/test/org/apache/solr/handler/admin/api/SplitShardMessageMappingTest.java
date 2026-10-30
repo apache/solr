@@ -149,8 +149,7 @@ public class SplitShardMessageMappingTest extends MockV2APITest {
         new ZkNodeProps(Map.of(COLLECTION_PROP, "collName", SHARD_ID_PROP, "shard2")),
         null);
 
-    verify(mockCommandRunner)
-        .runCollectionCommand(any(), any(), eq(DEFAULT_COLLECTION_OP_TIMEOUT));
+    verify(mockCommandRunner).runCollectionCommand(any(), any(), eq(DEFAULT_COLLECTION_OP_TIMEOUT));
   }
 
   @Test
@@ -237,8 +236,7 @@ public class SplitShardMessageMappingTest extends MockV2APITest {
 
   private void assertRejectedSplit(SplitShardRequestBody requestBody, String expectedMessage) {
     final SolrException exception =
-        expectThrows(
-            SolrException.class, () -> api.splitShard("collName", "shard1", requestBody));
+        expectThrows(SolrException.class, () -> api.splitShard("collName", "shard1", requestBody));
 
     assertEquals(400, exception.code());
     assertEquals(expectedMessage, exception.getMessage());
