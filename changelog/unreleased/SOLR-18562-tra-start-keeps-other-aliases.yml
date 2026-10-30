@@ -1,8 +1,8 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  Fixing a time routed alias's date math router.start on its first document no longer removes
-  aliases created after the receiving node last read aliases.json
+  Fixing a time routed alias's date math router.start on its first document no longer undoes
+  changes to aliases the receiving node hadn't seen yet, and no longer moves an already fixed start
 type: fixed
 authors:
   - name: Boyi Dai

@@ -371,6 +371,30 @@ public class TimeRoutedAlias extends RoutedAlias {
     return nextCollTimestamp;
   }
 
+  /**
+   * Sets the router.start of an alias to a fixed start, but only if it is still the date math the
+   * fixed start was computed from: nodes whose cached aliases are stale may compute it again after
+   * it was fixed. Builds on the given aliases, which are refreshed on a version conflict, so that
+   * other changes to aliases are kept.
+   *
+   * @return the aliases with the fixed start, or the given aliases if there is nothing to change
+   */
+  static Aliases fixStart(
+      Aliases aliases, String aliasName, String dateMathStart, String fixedStart) {
+    String currentStart = aliases.getCollectionAliasProperties(aliasName).get(ROUTER_START);
+    if (!dateMathStart.equals(currentStart)) {
+      if (currentStart == null) {
+        log.warn(
+            "Not fixing {} of alias [{}]: the alias no longer exists or has no {}",
+            ROUTER_START,
+            aliasName,
+            ROUTER_START);
+      }
+      return aliases;
+    }
+    return aliases.cloneWithCollectionAliasProperties(aliasName, ROUTER_START, fixedStart);
+  }
+
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
 
@@ -410,28 +434,14 @@ public class TimeRoutedAlias extends RoutedAlias {
       final String fixedStart = start;
 
       // Putting this in a separate thread to ensure that any failed races don't cause documents to
-      // get rejected. Nodes whose cached aliases are stale may get a document after the start was
-      // fixed, so only fix it if the aliases still have the date math this document was routed
-      // with. Building on the aliases passed in, which are refreshed on a version conflict, keeps
-      // other changes to aliases.
-      core.runAsync(
-          () ->
-              zkStateReader.aliasesManager.applyModificationAndExportToZk(
-                  (a) -> {
-                    String currentStart =
-                        a.getCollectionAliasProperties(aliasName).get(ROUTER_START);
-                    if (!dateMathStart.equals(currentStart)) {
-                      if (currentStart == null) {
-                        log.warn(
-                            "Not fixing {} of alias [{}] because it has none",
-                            ROUTER_START,
-                            aliasName);
-                      }
-                      return a;
-                    }
-                    return a.cloneWithCollectionAliasProperties(
-                        aliasName, ROUTER_START, fixedStart);
-                  }));
+      // get rejected. A time dimension of a dimensional routed alias has no alias name of its own
+      // (see DimensionalRoutedAlias), so its start can't be fixed here.
+      if (!aliasName.isEmpty()) {
+        core.runAsync(
+            () ->
+                zkStateReader.aliasesManager.applyModificationAndExportToZk(
+                    a -> fixStart(a, aliasName, dateMathStart, fixedStart)));
+      }
     }
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(
