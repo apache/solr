@@ -10117,9 +10117,3 @@ sample syntax.)
 - Added new numeric build property "specversion" to allow clean MANIFEST.MF files (hossman)
 - Added Solr/Lucene versions to "Info" page (hossman)
 - Explicitly set mime-type of .xsl files in web.xml to application/xslt+xml (hossman)
-
-
-
-
-
-
