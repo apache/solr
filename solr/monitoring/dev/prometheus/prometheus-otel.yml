@@ -1,0 +1,50 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# prometheus-otel.yml — scrape config for the OTLP route.
+#
+# Used by: ./stack.sh --metrics-scrape=otel
+#
+# Solr pushes metrics over OTLP to the otel-collector container, which re-exposes
+# them in Prometheus format on :9464. The job is still named "solr" so the dashboard
+# and the alert rules match the same series. Works for bundled and local Solr alike.
+#
+# One rule does change meaning: SolrNodeDown is up{job="solr"} == 0, and the only
+# target here is the collector, so it tracks the collector's reachability and not any
+# node's. A node that stops pushing fires nothing. See the "Option 2: OTLP Push"
+# warning in monitoring-with-prometheus-and-grafana.adoc.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/solr-alerts.yml
+
+# Hand firing alerts to the Alertmanager container in this stack; without this
+# the rules evaluate but nothing is ever delivered.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: solr
+    # Keep job/instance labels the collector sets from Solr's resource attributes
+    # instead of overwriting them with the collector's own address.
+    honor_labels: true
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['otel-collector:9464']

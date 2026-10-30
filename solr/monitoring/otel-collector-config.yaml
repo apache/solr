@@ -1,0 +1,78 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# otel-collector-config.yaml — example OpenTelemetry Collector configuration for
+# Solr. A starting point to copy and adapt, not a production setup.
+#
+# What it does:
+#   * receives Solr's OTLP push (metrics, and traces if enabled) on 4317/4318
+#   * re-exposes the metrics in Prometheus format on :9464, with the same metric
+#     names Solr's own /solr/admin/metrics endpoint produces, so scraping the
+#     collector works with the dashboard and alert rules in this directory
+#   * forwards the raw metrics and traces to an Aspire Dashboard for inspection
+#     (used by the dev stack; drop the otlp/aspire parts if you have no Aspire)
+#
+# Requires the collector "contrib" distribution (otel/opentelemetry-collector-contrib).
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  transform:
+    metric_statements:
+      # Solr versions without SOLR-18594 send the SDK default service.name, which
+      # would become job="unknown_service:java" in Prometheus. Replace only that.
+      - context: resource
+        statements:
+          - set(attributes["service.name"], "solr") where attributes["service.name"] == "unknown_service:java"
+      # Solr's own Prometheus endpoint adds no suffix for the dimensionless unit "1",
+      # whereas the collector would append "_ratio". Clear the unit so names match.
+      - context: metric
+        statements:
+          - set(unit, "") where unit == "1"
+  batch: {}
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:9464
+    send_timestamps: true
+    enable_open_metrics: true
+  # Aspire Dashboard (https://aspire.dev/dashboard/) shows the pushed data as-is,
+  # which is handy for seeing what Solr actually sends. Plain OTLP/gRPC forward.
+  otlp/aspire:
+    endpoint: aspire-dashboard:18889
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [transform, batch]
+      exporters: [prometheus]
+    # Untransformed copies for Aspire; remove both pipelines if not using it.
+    metrics/aspire:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire]
