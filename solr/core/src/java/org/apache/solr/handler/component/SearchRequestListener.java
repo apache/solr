@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+
 /**
  * Notified once per search a client sends to a search handler, on the node that coordinated it.
  * Shard sub-requests, real-time get, export and searches Solr runs internally (ping, warming,
@@ -31,5 +34,10 @@ public interface SearchRequestListener {
    * and before the response is written. An {@link Exception} is logged and the next listener still
    * runs; an {@link Error} propagates, failing the request and skipping later listeners.
    */
-  void onRequestEnd(SearchRequestInfo info);
+  default Object capture(
+      SearchRequestInfo info, SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
+    return info;
+  }
+
+  void onRequestEnd(SearchRequestInfo info, Object captured);
 }

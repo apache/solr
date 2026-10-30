@@ -66,8 +66,18 @@ public class SearchRequestDispatcher {
     }
     SearchRequestInfo info = SearchRequestInfo.from(req, rsp, marker.rb(), qTimeMs);
     for (SearchRequestListener listener : listeners) {
+      Object captured;
       try {
-        listener.onRequestEnd(info);
+        captured = listener.capture(info, req, rsp, marker.rb());
+      } catch (Exception e) {
+        log.warn("SearchRequestListener {} capture failed", listener.getClass().getName(), e);
+        continue;
+      }
+      if (captured == null) {
+        continue;
+      }
+      try {
+        listener.onRequestEnd(info, captured);
       } catch (Exception e) {
         log.warn("SearchRequestListener {} failed", listener.getClass().getName(), e);
       }

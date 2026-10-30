@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -68,19 +69,36 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   private final List<RecordingListener> recorders = new ArrayList<>();
 
+  private interface Capture {
+    Object apply(
+        SearchRequestInfo info, SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb);
+  }
+
+  private static final Capture INFO = (info, req, rsp, rb) -> info;
+
+  private record Delivery(SearchRequestInfo info, Object captured) {}
+
   private static class RecordingListener implements SearchRequestListener {
     final String node;
+    final Capture capture;
     final AtomicInteger captures = new AtomicInteger();
-    final BlockingQueue<SearchRequestInfo> delivered = new LinkedBlockingQueue<>();
+    final BlockingQueue<Delivery> delivered = new LinkedBlockingQueue<>();
 
-    RecordingListener(String node) {
+    RecordingListener(String node, Capture capture) {
       this.node = node;
+      this.capture = capture;
     }
 
     @Override
-    public void onRequestEnd(SearchRequestInfo info) {
+    public Object capture(
+        SearchRequestInfo info, SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
       captures.incrementAndGet();
-      delivered.add(info);
+      return capture.apply(info, req, rsp, rb);
+    }
+
+    @Override
+    public void onRequestEnd(SearchRequestInfo info, Object captured) {
+      delivered.add(new Delivery(info, captured));
     }
   }
 
@@ -107,7 +125,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Before
   public void registerListeners() {
-    addListeners(false);
+    resetListeners(null, INFO);
   }
 
   @After
@@ -132,27 +150,19 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), name);
   }
 
-  private void addListeners(boolean withThrowingListener) {
-    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      String node = jetty.getNodeName();
-      if (withThrowingListener) {
-        addListener(
-            jetty,
-            info -> {
-              throw new RuntimeException("listener failure");
-            });
-      }
-      RecordingListener recorder = new RecordingListener(node);
-      recorders.add(recorder);
-      addListener(jetty, recorder);
-    }
-  }
-
-  private void resetListeners(boolean withThrowingListener) {
+  /** Registers {@code first}, if not null, then a recorder using {@code capture} on each node. */
+  private void resetListeners(SearchRequestListener first, Capture capture) {
     removeListeners();
     listeners.clear();
     recorders.clear();
-    addListeners(withThrowingListener);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (first != null) {
+        addListener(jetty, first);
+      }
+      RecordingListener recorder = new RecordingListener(jetty.getNodeName(), capture);
+      recorders.add(recorder);
+      addListener(jetty, recorder);
+    }
   }
 
   private void addListener(JettySolrRunner jetty, SearchRequestListener listener) {
@@ -177,10 +187,14 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     return recorders.stream().filter(r -> r.captures.get() == 1).findFirst().orElseThrow();
   }
 
+  private Delivery delivery() throws InterruptedException {
+    Delivery delivery = captured().delivered.poll(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    assertNotNull("no event delivered", delivery);
+    return delivery;
+  }
+
   private SearchRequestInfo delivered() throws InterruptedException {
-    SearchRequestInfo info = captured().delivered.poll(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    assertNotNull("no event delivered", info);
-    return info;
+    return delivery().info();
   }
 
   @Test
@@ -229,31 +243,91 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     assertEquals(NUM_SHARDS, info.shardCount());
     assertEquals(Long.valueOf(rsp.getResults().getNumFound()), info.hits());
     assertEquals("/select", info.handlerPath());
-    assertNotNull(info.rb());
-    assertNull(info.failure());
+    assertEquals(COLLECTION, info.collection());
+    assertTrue(info.core(), info.core().startsWith(COLLECTION + "_shard"));
+    assertNull(info.user());
+    assertTrue(info.startTimeMs() > 0);
+    assertEquals(rsp.getQTime(), info.qTimeMs());
+    assertNull(info.failureType());
+    assertNull(info.failureMessage());
     assertFalse(info.partialResults());
-    assertTrue(info.elapsedMs() >= 0);
-    assertTrue(info.elapsedMs() <= rsp.getQTime());
   }
 
   @Test
   public void testFailedSearch() throws Exception {
     SolrException e = expectThrows(SolrException.class, () -> query(COLLECTION, "id:("));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertEquals(
-        SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) delivered().failure()).code());
+    assertEquals(SolrException.class.getName(), delivered().failureType());
+  }
+
+  @Test
+  public void testFailureFields() throws Exception {
+    SolrException e =
+        expectThrows(SolrException.class, () -> query(COLLECTION, "id:(" + "x".repeat(300)));
+    assertTrue(e.getMessage().length() > SearchRequestInfo.MAX_FAILURE_MESSAGE_CHARS);
+    SearchRequestInfo info = delivered();
+    assertEquals(SolrException.class.getName(), info.failureType());
+    assertEquals(SearchRequestInfo.MAX_FAILURE_MESSAGE_CHARS, info.failureMessage().length());
+  }
+
+  @Test
+  public void testInfoHasNoLiveRequest() {
+    List<Class<?>> live =
+        List.of(
+            SolrQueryRequest.class,
+            SolrQueryResponse.class,
+            ResponseBuilder.class,
+            Throwable.class);
+    for (RecordComponent component : SearchRequestInfo.class.getRecordComponents()) {
+      for (Class<?> type : live) {
+        assertFalse(component.getName(), type.isAssignableFrom(component.getType()));
+      }
+    }
+  }
+
+  @Test
+  public void testCapturedValueDelivered() throws Exception {
+    resetListeners(null, (info, req, rsp, rb) -> rb.getQueryString());
+    query(COLLECTION, "id:1");
+    assertEquals("id:1", delivery().captured());
+  }
+
+  @Test
+  public void testNullCaptureSkipsDelivery() throws Exception {
+    RecordingListener skipping = new RecordingListener(null, (info, req, rsp, rb) -> null);
+    resetListeners(skipping, INFO);
+    query(COLLECTION, "*:*");
+    delivered();
+    assertEquals(1, skipping.captures.get());
+    assertTrue(skipping.delivered.isEmpty());
+  }
+
+  @Test
+  public void testThrowingCaptureDoesNotFailSearch() throws Exception {
+    RecordingListener throwing =
+        new RecordingListener(
+            null,
+            (info, req, rsp, rb) -> {
+              throw new RuntimeException("capture failure");
+            });
+    resetListeners(throwing, INFO);
+    QueryResponse rsp = query(COLLECTION, "*:*");
+    assertEquals(0, rsp.getStatus());
+    assertEquals(3, rsp.getResults().getNumFound());
+    assertEquals(1, throwing.captures.get());
+    delivered();
   }
 
   @Test
   public void testQTimeMatchesHeader() throws Exception {
     CountDownLatch neverReleased = new CountDownLatch(1);
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      addListener(jetty, info -> awaitQuietly(neverReleased, SLOW_LISTENER_MS));
+      addListener(jetty, (info, captured) -> awaitQuietly(neverReleased, SLOW_LISTENER_MS));
     }
     assertQTimeMatchesHeader(query(COLLECTION, "*:*"));
-    resetListeners(false);
+    resetListeners(null, INFO);
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      addListener(jetty, info -> awaitQuietly(neverReleased, SLOW_LISTENER_MS));
+      addListener(jetty, (info, captured) -> awaitQuietly(neverReleased, SLOW_LISTENER_MS));
     }
     assertQTimeMatchesHeader(
         new V2Request.Builder("/collections/" + DISPATCH_COLLECTION + "/v2-search")
@@ -287,7 +361,11 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Test
   public void testThrowingListenerDoesNotChangeResponse() throws Exception {
-    resetListeners(true);
+    resetListeners(
+        (info, captured) -> {
+          throw new RuntimeException("listener failure");
+        },
+        INFO);
     QueryResponse rsp = query(COLLECTION, "*:*");
     assertEquals(0, rsp.getStatus());
     assertEquals(3, rsp.getResults().getNumFound());
@@ -349,7 +427,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     }
     SearchRequestInfo info = delivered();
     assertTrue(info.partialResults());
-    assertNull(info.failure());
+    assertNull(info.failureType());
   }
 
   @Test
@@ -373,7 +451,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
         .process(nodeClient());
     SearchRequestInfo info = delivered();
     assertEquals("/v2-search", info.handlerPath());
-    assertNull(info.failure());
+    assertNull(info.failureType());
   }
 
   @Test
@@ -384,7 +462,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     }
     SearchRequestInfo info = delivered();
     assertEquals("/select", info.handlerPath());
-    assertNull(info.failure());
+    assertNull(info.failureType());
   }
 
   @Test
@@ -396,12 +474,13 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
     String cpuCollection = "listener_cpu";
     createCollection(cpuCollection);
-    resetListeners(false);
+    resetListeners(
+        null, (info, req, rsp, rb) -> rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME));
     QueryResponse rsp = query(cpuCollection, "*:*");
-    SearchRequestInfo info = delivered();
+    Delivery delivery = delivery();
     long shardCpuTime = (Long) rsp.getResponseHeader().get(ThreadCpuTimer.CPU_TIME);
-    long localCpuTime = (Long) info.rsp().getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME);
-    assertEquals(Long.valueOf(shardCpuTime + localCpuTime), info.cpuTimeMs());
+    long localCpuTime = (Long) delivery.captured();
+    assertEquals(Long.valueOf(shardCpuTime + localCpuTime), delivery.info().cpuTimeMs());
     CollectionAdminRequest.deleteCollection(cpuCollection).process(cluster.getSolrClient());
   }
 
