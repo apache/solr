@@ -106,4 +106,5 @@
   <string name="placeholder_select_request_handler">Select a request handler</string>
   <string name="no_collections_available">No collections are available</string>
   <string name="no_request_handlers">This collection has no request handlers</string>
+  <string name="index_query_error">The request could not be completed</string>
 </resources>
