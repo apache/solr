@@ -253,9 +253,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   /** A node whose cached aliases are stale must still accept updates for an existing alias. */
   @Test
-  @SuppressForbidden(
-      reason =
-          "Reflection needed to make a node's cached aliases stale; removing the ZK watch re-registers it")
+  @SuppressForbidden(reason = "Reflection needed to make a node's cached aliases stale")
   public void testUpdateOnNodeWithStaleAliases() throws Exception {
     final String aliasName = getSaferTestName();
     CollectionAdminRequest.createTimeRoutedAlias(
@@ -294,6 +292,10 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     Field aliasesField = ZkStateReader.AliasesManager.class.getDeclaredField("aliases");
     aliasesField.setAccessible(true);
     aliasesField.set(reader.aliasesManager, Aliases.EMPTY);
+    assertSame(
+        "the node's cached aliases were refreshed before the document was sent",
+        Aliases.EMPTY,
+        reader.getAliases());
 
     SolrInputDocument doc = new SolrInputDocument("id", "1", "evt_dt", "2017-10-23T00:00:00Z");
     assertEquals(0, jetty.getSolrClient().add(collectionName, doc).getStatus());

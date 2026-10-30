@@ -137,7 +137,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     Map<String, String> aliasProperties =
         zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     if (aliasProperties.isEmpty()) {
-      // our cached aliases may be stale (e.g. a watch was missed), so check ZK before failing.
+      // our cached aliases may be behind ZooKeeper, so check ZK before failing.
       // Like HttpSolrCall, a failed refresh isn't propagated: we then fail as if the alias is gone.
       try {
         zkStateReader.aliasesManager.update();
