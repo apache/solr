@@ -160,17 +160,12 @@ public class SearchHandler extends RequestHandlerBase
       return;
     }
     String path = (String) req.getContext().get(PATH);
-    if (path == null || !isDispatchedHandler(req)) {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    ResponseBuilder rb = requestInfo == null ? null : requestInfo.getResponseBuilder();
+    if (path == null || !isDispatchedHandler(req) || rb == null || rb.req != req) {
       return;
     }
-    SearchRequestInfo info = SearchRequestInfo.from(req, rsp);
-    for (SearchRequestListener listener : listeners) {
-      try {
-        listener.onRequestEnd(info);
-      } catch (Exception e) {
-        log.warn("SearchRequestListener {} failed", listener.getClass().getName(), e);
-      }
-    }
+    SearchRequestDispatcher.mark(req, rb);
   }
 
   /** Whether requests to this handler are reported to {@link SearchRequestListener}s. */

@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.util.List;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.ThreadCpuTimer;
 
@@ -28,9 +27,10 @@ import org.apache.solr.util.ThreadCpuTimer;
  *
  * @param req the request
  * @param rsp the response
- * @param rb null if the handler failed before creating it or it belongs to another request
+ * @param rb the response builder of this request
  * @param handlerPath the path the request log uses
  * @param elapsedMs time since the request started
+ * @param qTimeMs the QTime in the response header
  * @param cpuTimeMs null unless {@code solr.log.cputime=true}; includes the CPU shards reported when
  *     distributed
  * @param hits null if not available
@@ -46,25 +46,23 @@ public record SearchRequestInfo(
     ResponseBuilder rb,
     String handlerPath,
     long elapsedMs,
+    long qTimeMs,
     Long cpuTimeMs,
     Long hits,
     int shardCount,
     Throwable failure,
     boolean partialResults) {
 
-  static SearchRequestInfo from(SolrQueryRequest req, SolrQueryResponse rsp) {
-    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    ResponseBuilder rb = requestInfo == null ? null : requestInfo.getResponseBuilder();
-    if (rb != null && rb.req != req) {
-      rb = null;
-    }
-    boolean distributed = rb != null && rb.isDistributed() && rb.shards != null;
+  static SearchRequestInfo from(
+      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb, long qTimeMs) {
+    boolean distributed = rb.isDistributed() && rb.shards != null;
     return new SearchRequestInfo(
         req,
         rsp,
         rb,
         rsp.getToLog().get("path") instanceof String path ? path : null,
         (long) req.getRequestTimer().getTime(),
+        qTimeMs,
         cpuTimeMs(rsp),
         rsp.getToLog().get("hits") instanceof Number hits ? hits.longValue() : null,
         distributed ? rb.shards.length : 0,

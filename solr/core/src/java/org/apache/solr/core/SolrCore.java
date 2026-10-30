@@ -110,6 +110,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.component.SearchRequestDispatcher;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -2963,7 +2964,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
-    if (responseHeader == null) return;
+    if (responseHeader == null) {
+      SearchRequestDispatcher.unmark(req);
+      return;
+    }
     final int qtime = (int) (req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();
@@ -3006,6 +3010,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
       } else if (echoParams == EchoParamStyle.ALL) {
         responseHeader.add("params", new SimpleOrderedMap<>(req.getParams()));
       }
+    }
+    CoreContainer cc = req.getCoreContainer();
+    if (cc != null) {
+      cc.searchRequestDispatcher.afterResponse(req, rsp, qtime);
     }
   }
 
