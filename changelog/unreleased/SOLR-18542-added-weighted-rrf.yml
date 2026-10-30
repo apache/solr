@@ -1,0 +1,8 @@
+title: Support weighted Reciprocal Rank Fusion in Combined Query via combiner.rrf.weight.<queryName>.
+type: added
+authors:
+  - name: Puneet Ahuja
+    nick: punAhuja
+links:
+  - name: SOLR-18542
+    url: https://issues.apache.org/jira/browse/SOLR-18542
