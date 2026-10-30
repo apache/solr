@@ -331,17 +331,9 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       fetchIndex(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      if (setPollingEnabled(false)) {
-        rsp.add(STATUS, OK_STATUS);
-      } else {
-        reportErrorOnResponse(rsp, "No follower configured", null);
-      }
+      setPollingEnabled(false, rsp);
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      if (setPollingEnabled(true)) {
-        rsp.add(STATUS, OK_STATUS);
-      } else {
-        reportErrorOnResponse(rsp, "No follower configured", null);
-      }
+      setPollingEnabled(true, rsp);
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
       if (abortFetch()) {
         rsp.add(STATUS, OK_STATUS);
@@ -861,7 +853,7 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   /**
-   * Enables or disables polling of the leader
+   * Enables or disables polling of the leader.
    *
    * @return false if this core is not configured as a follower
    */
@@ -870,6 +862,14 @@ public class ReplicationHandler extends RequestHandlerBase
     pollDisabled.set(!enabled);
     log.info("polling enabled = {}", enabled);
     return true;
+  }
+
+  private void setPollingEnabled(boolean enabled, SolrQueryResponse rsp) {
+    if (setPollingEnabled(enabled)) {
+      rsp.add(STATUS, OK_STATUS);
+    } else {
+      reportErrorOnResponse(rsp, "No follower configured", null);
+    }
   }
 
   boolean isPollingDisabled() {
