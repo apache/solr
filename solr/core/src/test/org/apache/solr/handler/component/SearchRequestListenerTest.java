@@ -24,6 +24,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -341,12 +342,36 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     assertEquals(rsp.getQTime(), delivered().qTimeMs());
   }
 
-  private static void awaitQuietly(CountDownLatch latch, long timeoutMs) {
+  private static boolean awaitQuietly(CountDownLatch latch, long timeoutMs) {
     try {
-      latch.await(timeoutMs, TimeUnit.MILLISECONDS);
+      return latch.await(timeoutMs, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      return false;
     }
+  }
+
+  @Test
+  public void testSlowListenerDoesNotDelaySearch() throws Exception {
+    CountDownLatch latch = new CountDownLatch(1);
+    CountDownLatch done = new CountDownLatch(1);
+    AtomicBoolean released = new AtomicBoolean();
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      addListener(
+          jetty,
+          (info, captured) -> {
+            released.set(awaitQuietly(latch, DELIVERY_TIMEOUT_MS));
+            done.countDown();
+          });
+    }
+    try {
+      query(COLLECTION, "*:*");
+      latch.countDown();
+    } finally {
+      latch.countDown();
+    }
+    assertTrue(done.await(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    assertTrue("the search waited for the listener", released.get());
   }
 
   @Test

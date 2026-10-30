@@ -779,6 +779,10 @@ public class CoreContainer {
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+    solrMetricsContext.observableLongCounter(
+        "solr.search.listener.lost",
+        "Searches not delivered to search request listeners",
+        measurement -> measurement.record(searchRequestDispatcher.lost()));
 
     initGpuMetricsService(); // Initialize GPU metrics service
 
@@ -1246,6 +1250,7 @@ public class CoreContainer {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
     }
 
+    searchRequestDispatcher.close();
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
     ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);
