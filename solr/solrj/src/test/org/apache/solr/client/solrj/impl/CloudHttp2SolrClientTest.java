@@ -1059,12 +1059,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     for (String id : ids) {
       String coreUrl =
           col.getRouter().getTargetSlice(id, null, null, null, col).getLeader().getCoreUrl();
-      SolrClient solrClient =
-          new CollectionScopedSolrClient(
-              cluster.getJetty(URLUtil.extractBaseUrl(coreUrl)).getSolrClient(),
-              URLUtil.extractCoreFromCoreUrl(coreUrl));
       QueryResponse queryResponse =
-          new QueryRequest(params("q", "id:" + id, "distrib", "false")).process(solrClient);
+          new QueryRequest(params("q", "id:" + id, "distrib", "false"))
+              .process(
+                  cluster.getJetty(URLUtil.extractBaseUrl(coreUrl)).getSolrClient(),
+                  URLUtil.extractCoreFromCoreUrl(coreUrl));
       assertEquals(1, queryResponse.getResults().getNumFound());
     }
   }

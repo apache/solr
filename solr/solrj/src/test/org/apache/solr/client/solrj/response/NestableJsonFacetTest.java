@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
 public class NestableJsonFacetTest extends SolrTestCaseJ4 {
@@ -33,10 +34,10 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
     buckets.add("val", "Nike");
     NamedList<Object> vals = new NamedList<>();
     vals.add("numBuckets", 10);
-    vals.add("allBuckets", countList(12));
-    vals.add("before", countList(1));
-    vals.add("after", countList(2));
-    vals.add("between", countList(9));
+    vals.add("allBuckets", SimpleOrderedMap.of("count",12));
+    vals.add("before", SimpleOrderedMap.of("count",1));
+    vals.add("after", SimpleOrderedMap.of("count",2));
+    vals.add("between", SimpleOrderedMap.of("count",9));
     vals.add("buckets", List.of(buckets));
     list.add("test", vals);
     NestableJsonFacet facet = new NestableJsonFacet(list);
@@ -50,20 +51,14 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
     buckets.add("val", "Nike");
     vals = new NamedList<>();
     vals.add("numBuckets", 10L);
-    vals.add("allBuckets", countList(12L));
-    vals.add("before", countList(1L));
-    vals.add("after", countList(2L));
-    vals.add("between", countList(9L));
+    vals.add("allBuckets", SimpleOrderedMap.of("count",12L));
+    vals.add("before", SimpleOrderedMap.of("count",1L));
+    vals.add("after", SimpleOrderedMap.of("count",2L));
+    vals.add("between", SimpleOrderedMap.of("count",9L));
     vals.add("buckets", List.of(buckets));
     list.add("test", vals);
     facet = new NestableJsonFacet(list);
     assertEquals(12L, facet.getCount());
     assertEquals(2L, facet.getBucketBasedFacets("test").getAfter());
-  }
-
-  private static NamedList<Object> countList(Object count) {
-    NamedList<Object> list = new NamedList<>();
-    list.add("count", count);
-    return list;
   }
 }
