@@ -106,6 +106,7 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   }
 
   @Override
+  @PermissionName(CORE_EDIT_PERM)
   public SolrJerseyResponse setReplicationPolling(ReplicationPollingRequestBody requestBody) {
     return doSetReplicationPolling(requestBody);
   }

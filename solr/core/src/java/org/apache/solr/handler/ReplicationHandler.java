@@ -860,6 +860,11 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
+  /**
+   * Enables or disables polling of the leader
+   *
+   * @return false if this core is not configured as a follower
+   */
   public boolean setPollingEnabled(boolean enabled) {
     if (pollingIndexFetcher == null) return false;
     pollDisabled.set(!enabled);

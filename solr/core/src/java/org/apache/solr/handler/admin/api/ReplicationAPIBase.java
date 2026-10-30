@@ -119,8 +119,9 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     ensureRequiredParameterProvided("enabled", requestBody.enabled);
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
-    if (!replicationHandler.setPollingEnabled(requestBody.enabled))
+    if (!replicationHandler.setPollingEnabled(requestBody.enabled)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No follower configured");
+    }
     return instantiateJerseyResponse(SolrJerseyResponse.class);
   }
 
