@@ -45,6 +45,9 @@ public class SearchRequestDispatcher implements Closeable {
 
   static final long CLOSE_TIMEOUT_MS = 5000;
 
+  // Waking the worker per search costs more than a cheap search; a short pause batches the wakeups.
+  static final long BATCH_PAUSE_MS = 1;
+
   static final long LOST_WARN_INTERVAL_MS = 60_000;
 
   private record Marker(ResponseBuilder rb) {}
@@ -164,29 +167,38 @@ public class SearchRequestDispatcher implements Closeable {
   }
 
   private void deliver() {
+    List<Event> batch = new ArrayList<>();
     while (!closed) {
-      Event event;
       try {
-        event = queue.take();
+        batch.add(queue.take());
+        queue.drainTo(batch);
+        for (Event event : batch) {
+          deliver(event);
+        }
+        batch.clear();
+        Thread.sleep(BATCH_PAUSE_MS);
       } catch (InterruptedException e) {
         continue;
       }
-      for (Delivery delivery : event.deliveries()) {
-        if (closed) {
-          lost.increment();
-          return;
-        }
-        SearchRequestListener listener = delivery.listener();
-        if (!listeners.contains(listener)) {
-          continue;
-        }
-        try {
-          listener.onRequestEnd(event.info(), delivery.captured());
-        } catch (VirtualMachineError e) {
-          throw e;
-        } catch (Throwable t) {
-          log.warn("SearchRequestListener {} failed", listener.getClass().getName(), t);
-        }
+    }
+  }
+
+  private void deliver(Event event) {
+    for (Delivery delivery : event.deliveries()) {
+      if (closed) {
+        lost.increment();
+        return;
+      }
+      SearchRequestListener listener = delivery.listener();
+      if (!listeners.contains(listener)) {
+        continue;
+      }
+      try {
+        listener.onRequestEnd(event.info(), delivery.captured());
+      } catch (VirtualMachineError e) {
+        throw e;
+      } catch (Throwable t) {
+        log.warn("SearchRequestListener {} failed", listener.getClass().getName(), t);
       }
     }
   }
