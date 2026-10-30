@@ -21,17 +21,22 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
+import static org.apache.solr.common.params.CommonParams.TIMING;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.SplitShardApi;
 import org.apache.solr.client.api.model.SplitShardRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.api.model.SplitShardResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -55,9 +60,9 @@ public class SplitShard extends AdminAPIBase implements SplitShardApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse splitShard(
+  public SplitShardResponse splitShard(
       String collectionName, String shardName, SplitShardRequestBody requestBody) throws Exception {
-    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(SplitShardResponse.class);
     fetchAndValidateZooKeeperAwareCoreContainer();
     ensureRequiredParameterProvided(COLLECTION_PROP, collectionName);
     ensureRequiredParameterProvided(SHARD_ID_PROP, shardName);
@@ -65,6 +70,7 @@ public class SplitShard extends AdminAPIBase implements SplitShardApi {
     if (requestBody == null) {
       requestBody = new SplitShardRequestBody();
     }
+    validateSplitOptions(requestBody);
 
     final Map<String, Object> messageProps = new HashMap<>();
     messageProps.put(COLLECTION_PROP, collectionName);
@@ -82,11 +88,38 @@ public class SplitShard extends AdminAPIBase implements SplitShardApi {
       flattenMapWithPrefix(requestBody.coreProperties, messageProps, PROPERTY_PREFIX);
     }
 
-    submitRemoteMessageAndHandleResponse(
-        response,
-        CollectionParams.CollectionAction.SPLITSHARD,
-        new ZkNodeProps(messageProps),
-        requestBody.async);
+    final var remoteResponse =
+        submitRemoteMessageAndHandleResponse(
+            response,
+            CollectionParams.CollectionAction.SPLITSHARD,
+            new ZkNodeProps(messageProps),
+            requestBody.async,
+            DEFAULT_COLLECTION_OP_TIMEOUT * 5);
+    final var timing = (NamedList<?>) remoteResponse.getResponse().get(TIMING);
+    if (timing != null) {
+      response.timing = new LinkedHashMap<>();
+      timing.forEach(response.timing::put);
+    }
     return response;
+  }
+
+  private static void validateSplitOptions(SplitShardRequestBody requestBody) {
+    if (requestBody.splitKey != null && requestBody.ranges != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Only one of 'ranges' or 'split.key' should be specified");
+    }
+    if (requestBody.numSubShards != null
+        && (requestBody.splitKey != null || requestBody.ranges != null)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "numSubShards can not be specified with split.key or ranges parameters");
+    }
+    if (requestBody.splitFuzz != null
+        && (requestBody.splitKey != null || requestBody.ranges != null)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "fuzz can not be specified with split.key or ranges parameters");
+    }
   }
 }

@@ -22,7 +22,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.SplitShardRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.api.model.SplitShardResponse;
 
 @Path("/collections/{collectionName}/shards/{shardName}/split")
 public interface SplitShardApi {
@@ -30,7 +30,7 @@ public interface SplitShardApi {
   @Operation(
       summary = "Split an existing shard into two or more new shards.",
       tags = {"shards"})
-  SubResponseAccumulatingJerseyResponse splitShard(
+  SplitShardResponse splitShard(
       @PathParam("collectionName") String collectionName,
       @PathParam("shardName") String shardName,
       @RequestBody(description = "Contains user provided parameters")

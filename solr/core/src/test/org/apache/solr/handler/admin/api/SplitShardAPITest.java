@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
+import java.util.Map;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ShardsApi;
@@ -42,7 +43,14 @@ public class SplitShardAPITest extends SolrCloudTestCase {
 
     final ShardsApi.SplitShard splitRequest = new ShardsApi.SplitShard(collection, "shard1");
     splitRequest.setNumSubShards(2);
-    assertEquals(0, splitRequest.process(cluster.getSolrClient()).responseHeader.status);
+    splitRequest.setTiming(true);
+    final var response = splitRequest.process(cluster.getSolrClient());
+    assertEquals(0, response.responseHeader.status);
+    assertNotNull(response.timing);
+    assertTrue(response.timing.get("time") instanceof Number);
+    assertTrue(response.timing.get("splitParentCore") instanceof Map<?, ?>);
+    assertTrue(
+        ((Map<?, ?>) response.timing.get("splitParentCore")).get("time") instanceof Number);
 
     waitForState(
         "Expected sub-shards shard1_0 and shard1_1 to be active",
@@ -93,6 +101,25 @@ public class SplitShardAPITest extends SolrCloudTestCase {
         "Expected sub-shards shard1_0 and shard1_1 to be active",
         collection,
         c -> c != null && isActive(c.getSlice("shard1_0")) && isActive(c.getSlice("shard1_1")));
+  }
+
+  @Test
+  public void testRejectsConflictingSplitOptions() throws Exception {
+    final String collection = "splitShardConflictingOptionsTestColl";
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 1, 1);
+
+    final ShardsApi.SplitShard splitRequest = new ShardsApi.SplitShard(collection, "shard1");
+    splitRequest.setRanges("80000000-bfffffff,c0000000-7fffffff");
+    splitRequest.setNumSubShards(3);
+
+    final RemoteSolrException exception =
+        expectThrows(
+            RemoteSolrException.class, () -> splitRequest.process(cluster.getSolrClient()));
+    assertEquals(400, exception.code());
+    assertTrue(
+        exception.getMessage().contains("numSubShards can not be specified with split.key or ranges"));
   }
 
   @Test
