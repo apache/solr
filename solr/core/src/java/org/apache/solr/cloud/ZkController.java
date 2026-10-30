@@ -642,7 +642,7 @@ public class ZkController implements Closeable {
       SolrVersion ourVersion = SolrVersion.LATEST;
       SolrVersion clusterVersion = lowestVersion.get();
 
-      if (ourVersion.lessThan(clusterVersion)) {
+      if (ourVersion.withoutPrerelease().lessThan(clusterVersion.withoutPrerelease())) {
         log.warn(
             "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
 
@@ -1171,39 +1171,69 @@ public class ZkController implements Closeable {
     }
   }
 
-  private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
+  /**
+   * Waits for any ephemeral znodes left by a previous process with this node name to disappear.
+   *
+   * <p>Covers both the {@code /live_nodes} entry and this node's entries under any {@code
+   * /node_roles/<role>/<mode>}. Throws if any are still present after twice the ZK session timeout.
+   *
+   * @throws SolrException if ephemeral nodes were not all removed by the end of the waiting period
+   */
+  // package-private for testing
+  void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
     String nodeName = getNodeName();
-    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
 
-    if (!zkClient.exists(nodePath)) {
+    List<String> candidatePaths = new ArrayList<>();
+    candidatePaths.add(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
+    for (NodeRoles.Role role : NodeRoles.Role.values()) {
+      for (String mode : role.supportedModes()) {
+        candidatePaths.add(NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName);
+      }
+    }
+
+    // Set a deletion watch on each znode that exists; the latch counts down as each is deleted
+    final List<String> watchedPaths = new ArrayList<>();
+    final List<CountDownLatch> latches = new ArrayList<>();
+    for (String path : candidatePaths) {
+      if (!zkClient.exists(path)) {
+        continue;
+      }
+      final CountDownLatch deletedLatch = new CountDownLatch(1);
+      Stat stat =
+          zkClient.exists(
+              path,
+              event -> {
+                if (Watcher.Event.EventType.None.equals(event.getType())) {
+                  return;
+                }
+                if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
+                  deletedLatch.countDown();
+                }
+              });
+      if (stat == null) {
+        // znode suddenly disappeared but that's okay
+        continue;
+      }
+      watchedPaths.add(path);
+      latches.add(deletedLatch);
+    }
+
+    if (watchedPaths.isEmpty()) {
       return;
     }
 
-    final CountDownLatch deletedLatch = new CountDownLatch(1);
-    Stat stat =
-        zkClient.exists(
-            nodePath,
-            event -> {
-              if (Watcher.Event.EventType.None.equals(event.getType())) {
-                return;
-              }
-              if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
-                deletedLatch.countDown();
-              }
-            });
-
-    if (stat == null) {
-      // znode suddenly disappeared but that's okay
-      return;
-    }
-
-    boolean deleted =
-        deletedLatch.await(zkClient.getZkSessionTimeout() * 2L, TimeUnit.MILLISECONDS);
-    if (!deleted) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "A previous ephemeral live node still exists. "
-              + "Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
+    // A single overall deadline, shared by all of the znodes
+    final long deadlineNanos =
+        System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(zkClient.getZkSessionTimeout() * 2L);
+    for (int i = 0; i < latches.size(); i++) {
+      long remainingNanos = deadlineNanos - System.nanoTime();
+      if (!latches.get(i).await(Math.max(remainingNanos, 0), TimeUnit.NANOSECONDS)) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "An ephemeral node from a previous process representing this Solr instance still exists: "
+                + watchedPaths.get(i)
+                + ". Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
+      }
     }
   }
 

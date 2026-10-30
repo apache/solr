@@ -230,8 +230,8 @@ limitations under the License.
     </div>
 
     <div class="leaderOnly" ng-show="!isFollower">
-      <button class="optional disable-replication warn" ng-click="execute('disablereplication')" ng-show="leader.replicationEnabled"><span>Disable Replication</span></button>
-      <button class="optional enable-replication warn" ng-click="execute('enablereplication')" ng-show="!leader.replicationEnabled"><span>Enable Replication</span></button>
+      <button class="optional disable-replication warn" ng-click="setReplicationEnabled(false)" ng-show="leader.replicationEnabled"><span>Disable Replication</span></button>
+      <button class="optional enable-replication warn" ng-click="setReplicationEnabled(true)" ng-show="!leader.replicationEnabled"><span>Enable Replication</span></button>
     </div>
     
   </div>

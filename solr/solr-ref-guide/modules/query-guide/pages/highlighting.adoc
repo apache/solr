@@ -17,9 +17,19 @@
 // under the License.
 
 Highlighting in Solr allows fragments of documents that match the user's query to be included with the query response.
-
-The fragments are included in a special section of the query response (the `highlighting` section), and the client uses the formatting clues also included to determine how to present the snippets to users.
 Fragments are a portion of a document field that contains matches from the query and are sometimes also referred to as "snippets" or "passages".
+The client uses the formatting clues also included to determine how to present the snippets to users.
+
+There are two ways to request highlighting:
+
+* The highlight component, enabled with `hl=true`, includes the fragments in a special section of the query response (the `highlighting` section), separate from the documents.
+This is what most of this page describes.
+* The xref:document-transformers.adoc#hl-highlightaugmenterfactory[`[hl\]` document transformer], requested in `fl`, includes the fragments in each document, e.g., `fl=id,body:[hl]`.
+It always uses the <<Unified Highlighter>>, configured with the same parameters.
+
+Choosing between them is mostly a matter of preference, though there are implications at scale.
+The transformer is preferred when highlighting hundreds of documents or more, since each document is highlighted as the results are streamed.
+On the other hand, the transformer has more overhead per field, which could be a concern when highlighting many fields.
 
 Highlighting is extremely configurable, perhaps more than any other part of Solr.
 There are many parameters each for fragment sizing, formatting, ordering, backup/alternate behavior, and more options that are hard to categorize.

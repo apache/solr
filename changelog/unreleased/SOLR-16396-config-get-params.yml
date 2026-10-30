@@ -1,0 +1,14 @@
+title:
+  Migrate GET paramsets v2 API to JAX-RS. v2 GET /config/params is now GET /config/paramsets, and
+  returns a 404 for an unknown paramset name; v1's GET /config/params keeps its existing 200
+  response shape. The Admin UI's paramsets and query screens now read paramsets through the
+  generated v2 client too.
+type: changed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+  - name: Eric Pugh
+    nick: epugh
+links:
+  - name: SOLR-16396
+    url: https://issues.apache.org/jira/browse/SOLR-16396
