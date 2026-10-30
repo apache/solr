@@ -287,8 +287,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             "node did not catch up with aliases.json",
             () -> reader.getAliases().getZNodeVersion() == zkVersion);
 
-    // simulate a node that missed the aliases.json watch event: nothing changes in ZK, so no
-    // later watch event will repair its cached aliases
+    // simulate a node whose cached aliases don't include the alias yet: nothing changes in ZK, so
+    // no later watch event will repair its cached aliases
     Field aliasesField = ZkStateReader.AliasesManager.class.getDeclaredField("aliases");
     aliasesField.setAccessible(true);
     aliasesField.set(reader.aliasesManager, Aliases.EMPTY);

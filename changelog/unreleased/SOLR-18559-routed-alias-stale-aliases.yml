@@ -1,8 +1,8 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  Updates to a routed alias no longer fail on a node whose cached aliases are stale; the node now
-  refreshes its aliases from ZooKeeper before rejecting the update
+  Updates to a routed alias no longer fail on a node whose cached aliases don't include the alias
+  yet; the node now refreshes its aliases from ZooKeeper before rejecting the update
 type: fixed
 authors:
   - name: Boyi Dai
