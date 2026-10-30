@@ -101,16 +101,7 @@
   <string name="label_username">Username</string>
 
   <!-- Uncategorized -->
-  <string name="collection_details">Collection Details</string>
-  <string name="label_collection_name">Collection Name</string>
-  <string name="label_config_name">Config Set</string>
-  <string name="label_shard_count">Shards</string>
-  <string name="label_replication_factor">Replication Factor</string>
   <string name="label_router">Router</string>
-  <string name="label_max_shards_per_node">Max Shards per Node</string>
-  <string name="label_auto_add_replicas">Auto Add Replicas</string>
-  <string name="state_enabled">Enabled</string>
-  <string name="state_disabled">Disabled</string>
   <string name="title_create_collection">Create Collection</string>
   <string name="label_shards">Shards</string>
   <string name="action_create_collection">Create Collection</string>
