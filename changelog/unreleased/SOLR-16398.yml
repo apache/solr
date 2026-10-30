@@ -1,4 +1,4 @@
-title: Migrate the v2 split-shard, move-replica, rebalance-leaders, and migrate-docs APIs to JAX-RS
+title: Migrate the v2 split-shard API to JAX-RS
 type: added
 authors:
   - name: Nick Shanin
