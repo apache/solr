@@ -145,6 +145,36 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
   }
 
   @Test
+  public void testInterruptFromListenerKeepsWorker() throws Exception {
+    dispatcher = new SearchRequestDispatcher(10);
+    SearchRequestListener interrupting = (info, captured) -> Thread.currentThread().interrupt();
+    Recorder recorder = new Recorder();
+    dispatcher.add(interrupting);
+    dispatcher.add(recorder);
+    offer("event1", interrupting, recorder);
+    assertEquals("event1", recorder.next());
+    offer("event2", interrupting, recorder);
+    assertEquals("event2", recorder.next());
+  }
+
+  @Test
+  public void testCloseDuringEventCountsIt() throws Exception {
+    dispatcher = new SearchRequestDispatcher(10);
+    Recorder recorder = new Recorder();
+    dispatcher.add(blocker);
+    dispatcher.add(recorder);
+    offer("event1", blocker, recorder);
+    assertTrue(started.await(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    Thread worker = dispatcher.worker();
+    dispatcher.close();
+    release.countDown();
+    worker.join(DELIVERY_TIMEOUT_MS);
+    assertFalse(worker.isAlive());
+    assertTrue(recorder.delivered.isEmpty());
+    assertEquals(1, dispatcher.lost());
+  }
+
+  @Test
   public void testRemovedListenerNotCalledForQueuedEvent() throws Exception {
     dispatcher = new SearchRequestDispatcher(10);
     Recorder kept = new Recorder();

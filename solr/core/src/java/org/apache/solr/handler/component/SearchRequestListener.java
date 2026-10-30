@@ -46,7 +46,8 @@ public interface SearchRequestListener {
    *
    * <p>Must be cheap and must not block, since it adds to the request's latency. Must not return or
    * hold on to {@code req}, {@code rsp}, {@code rb}, the searcher or a {@code DocList}: copy the
-   * values instead. An {@link Exception} is logged and skips this listener for this search.
+   * values instead. An {@link Exception} is logged and skips this listener for this search; an
+   * {@link Error} fails the request.
    *
    * @return {@code info} by default
    */

@@ -169,14 +169,11 @@ public class SearchRequestDispatcher implements Closeable {
       try {
         event = queue.take();
       } catch (InterruptedException e) {
-        return;
-      }
-      if (closed) {
-        lost.increment();
-        return;
+        continue;
       }
       for (Delivery delivery : event.deliveries()) {
         if (closed) {
+          lost.increment();
           return;
         }
         SearchRequestListener listener = delivery.listener();
