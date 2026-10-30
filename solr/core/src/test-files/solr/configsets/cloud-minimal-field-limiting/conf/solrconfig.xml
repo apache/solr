@@ -34,8 +34,8 @@
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
     <updateLog class="${solr.ulog:solr.UpdateLog}"></updateLog>
-  </updateHandler>
-
+  </updateHandler>  
+  
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -58,4 +58,3 @@
     <mergeScheduler class="${solr.mscheduler:org.apache.lucene.index.ConcurrentMergeScheduler}"/>
   </indexConfig>
 </config>
-
