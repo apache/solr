@@ -51,6 +51,51 @@ public class SplitShardAPITest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testSplitShardWithRanges() throws Exception {
+    final String collection = "splitShardRangesTestColl";
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 1, 1);
+
+    // An uneven split of the parent range, so the sub-shard ranges can only match if the
+    // 'ranges' value reached the split command unchanged.
+    final ShardsApi.SplitShard splitRequest = new ShardsApi.SplitShard(collection, "shard1");
+    splitRequest.setRanges("80000000-bfffffff,c0000000-7fffffff");
+    assertEquals(0, splitRequest.process(cluster.getSolrClient()).responseHeader.status);
+
+    waitForState(
+        "Expected sub-shards shard1_0 and shard1_1 to be active",
+        collection,
+        c -> c != null && isActive(c.getSlice("shard1_0")) && isActive(c.getSlice("shard1_1")));
+
+    final var docCollection = getCollectionState(collection);
+    assertEquals(0x80000000, docCollection.getSlice("shard1_0").getRange().min);
+    assertEquals(0xbfffffff, docCollection.getSlice("shard1_0").getRange().max);
+    assertEquals(0xc0000000, docCollection.getSlice("shard1_1").getRange().min);
+    assertEquals(0x7fffffff, docCollection.getSlice("shard1_1").getRange().max);
+  }
+
+  @Test
+  public void testSplitShardAsync() throws Exception {
+    final String collection = "splitShardAsyncTestColl";
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 1, 1);
+
+    final ShardsApi.SplitShard splitRequest = new ShardsApi.SplitShard(collection, "shard1");
+    splitRequest.setNumSubShards(2);
+    splitRequest.setAsync("splitShardAsyncTestId");
+    final var response = splitRequest.process(cluster.getSolrClient());
+    assertEquals(0, response.responseHeader.status);
+    assertEquals("splitShardAsyncTestId", response.requestId);
+
+    waitForState(
+        "Expected sub-shards shard1_0 and shard1_1 to be active",
+        collection,
+        c -> c != null && isActive(c.getSlice("shard1_0")) && isActive(c.getSlice("shard1_1")));
+  }
+
+  @Test
   public void testSplitMissingCollectionThrows() {
     final ShardsApi.SplitShard splitRequest =
         new ShardsApi.SplitShard("missingCollection", "shard1");
