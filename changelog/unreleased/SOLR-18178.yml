@@ -1,0 +1,7 @@
+title: Normalize legacy Windows configset paths on upload and in filesystem listings, and reject unsafe upload paths.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18178
+    url: https://issues.apache.org/jira/browse/SOLR-18178

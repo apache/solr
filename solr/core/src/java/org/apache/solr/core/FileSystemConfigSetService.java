@@ -309,7 +309,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
             if (!relativePath.isEmpty()) {
               // We always want to have a trailing forward slash on a directory to
               // match the normalization to forward slashes everywhere.
-              filePaths.add(relativePath + '/');
+              filePaths.add(normalizePathToForwardSlash(relativePath) + '/');
             }
             return FileVisitResult.CONTINUE;
           }
