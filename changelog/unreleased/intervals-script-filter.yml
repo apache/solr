@@ -5,6 +5,8 @@ type: added
 authors:
   - name: Mikhail Khludnev
     nick: mkhl
+  - name: Nick
+    nick: nick-boss-tech
 links:
   - name: SOLR-18585
     url: https://issues.apache.org/jira/browse/SOLR-18585
