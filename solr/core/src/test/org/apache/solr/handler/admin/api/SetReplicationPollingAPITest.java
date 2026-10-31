@@ -32,6 +32,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+/**
+ * HTTP tests for {@code PUT /api/cores/coreName/replication/polling} via the generated SolrJ
+ * request.
+ */
 public class SetReplicationPollingAPITest extends SolrTestCase {
 
   private static final String CORE_NAME = "setReplicationPollingApiTestCore";
