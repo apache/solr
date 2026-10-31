@@ -861,6 +861,8 @@ public class ReplicationHandler extends RequestHandlerBase
   public boolean setPollingEnabled(boolean enabled) {
     if (pollingIndexFetcher == null) return false;
     pollDisabled.set(!enabled);
+    log.info(
+        "polling {}, value of pollDisabled = {}", enabled ? "enabled" : "disabled", pollDisabled);
     return true;
   }
 
