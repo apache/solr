@@ -3007,6 +3007,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
         responseHeader.add("params", new SimpleOrderedMap<>(req.getParams()));
       }
     }
+    CoreContainer cc = req.getCoreContainer();
+    if (cc != null) {
+      cc.searchRequestDispatcher.afterResponse(req, rsp, qtime);
+    }
   }
 
   public PluginBag<QueryResponseWriter> getResponseWriters() {

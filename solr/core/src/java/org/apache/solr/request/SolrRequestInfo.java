@@ -66,6 +66,11 @@ public class SolrRequestInfo {
     return stack.peek();
   }
 
+  /** Whether the current request is nested inside another request on this thread. */
+  public static boolean isNestedRequest() {
+    return threadLocal.get().size() > 1;
+  }
+
   public static Optional<SolrRequestInfo> getReqInfo() {
     return Optional.ofNullable(getRequestInfo());
   }
