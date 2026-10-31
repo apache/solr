@@ -361,6 +361,54 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testShardReplicationFactors() throws Exception {
+    final String collection = "replication_factor_collection";
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(client);
+    cluster.waitForActiveCollection(collection, 2, 2);
+
+    DocCollection col = client.getClusterState().getCollection(collection);
+    String shard1Url = col.getSlice("shard1").getLeader().getCoreUrl();
+    String shard2Url = col.getSlice("shard2").getLeader().getCoreUrl();
+    NamedList<NamedList<?>> routeResponses = new NamedList<>();
+    routeResponses.add(
+        shard1Url,
+        new NamedList<>(
+            Map.of(
+                "responseHeader", new NamedList<>(Map.of("status", 0, UpdateRequest.REPFACT, 2)))));
+    routeResponses.add(
+        shard2Url,
+        new NamedList<>(
+            Map.of(
+                "responseHeader", new NamedList<>(Map.of("status", 0, UpdateRequest.REPFACT, 3)))));
+
+    NamedList<Object> response = client.condenseResponse(routeResponses, 7);
+    NamedList<?> header = (NamedList<?>) response.get("responseHeader");
+    assertEquals(Map.of(shard1Url, 2, shard2Url, 3), header.get(CloudSolrClient.REPFACT_BY_ROUTE));
+    assertEquals(
+        Map.of("shard1", 2, "shard2", 3), client.getShardReplicationFactor(collection, response));
+    assertEquals(2, client.getMinAchievedReplicationFactor(collection, response));
+  }
+
+  @Test
+  public void testShardReplicationFactorsWithoutRouteFactors() {
+    CloudSolrClient client = cluster.getSolrClient();
+    NamedList<NamedList<?>> routeResponses = new NamedList<>();
+    routeResponses.add(
+        "http://unused/solr/core",
+        new NamedList<>(Map.of("responseHeader", new NamedList<>(Map.of("status", 0)))));
+
+    NamedList<Object> response = client.condenseResponse(routeResponses, 7);
+    NamedList<?> header = (NamedList<?>) response.get("responseHeader");
+    assertNull(header.get(CloudSolrClient.REPFACT_BY_ROUTE));
+    assertNull(header.get(UpdateRequest.REPFACT));
+    assertEquals(Map.of(), client.getShardReplicationFactor("missing_collection", response));
+    assertEquals(-1, client.getMinAchievedReplicationFactor("missing_collection", response));
+    assertEquals(
+        Map.of(), client.getShardReplicationFactor("missing_collection", new NamedList<>()));
+  }
+
+  @Test
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
         .process(cluster.getSolrClient());
@@ -1079,9 +1127,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     for (Slice slice : col.getSlices()) {
       leaderUrls.add(slice.getLeader().getCoreUrl());
     }
+    assertEquals("missing routes in " + rfByRoute, leaderUrls.size(), rfByRoute.size());
     for (Map.Entry<String, ?> route : rfByRoute) {
       assertTrue("not a leader: " + route.getKey(), leaderUrls.contains(route.getKey()));
+      assertEquals(Integer.valueOf(1), route.getValue());
     }
+    assertEquals(
+        Map.of("shard1", 1, "shard2", 1),
+        cluster.getSolrClient().getShardReplicationFactor("routing_collection", response));
   }
 
   /**
