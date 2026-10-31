@@ -952,10 +952,13 @@ public class RunExampleTool extends ToolBase {
       Path secondXml = secondHome.resolve("solr.xml");
       if (!Files.exists(secondXml)) Files.copy(solrHomeDir.resolve("solr.xml"), secondXml);
       echo("Second node Solr home: " + secondHome.toAbsolutePath());
-      Path secondCredentials = secondHome.resolve("zk-credentials.properties");
-      IncludeFileEditor.write(
-          secondCredentials, Files.readAllBytes(new SecureExampleZk(firstHome).credentialsFile()));
-      echo("Second node ZooKeeper credentials: " + secondCredentials);
+      if (!CLIUtils.isWindows()) {
+        Path secondCredentials = secondHome.resolve("zk-credentials.properties");
+        IncludeFileEditor.write(
+            secondCredentials,
+            Files.readAllBytes(new SecureExampleZk(firstHome).credentialsFile()));
+        echo("Second node ZooKeeper credentials: " + secondCredentials);
+      }
       String sharedZk = (String) ((Map<?, ?>) nodeStatus.get("cloud")).get("ZooKeeper");
       Map<String, Object> secondNode =
           startSolr(secondHome, true, params.start(), port + 1, sharedZk, 30);
@@ -1391,7 +1394,7 @@ public class RunExampleTool extends ToolBase {
             : "";
     if ("secure-setup".equals(params.example())) {
       syspropArg += " -Dsolr.environment=prod,label=Secure+Solr+Setup";
-      if (zkHost != null) {
+      if (!isWindows && zkHost != null) {
         syspropArg +=
             " -DzkDigestCredentialsFile=\""
                 + solrHomeDir.toAbsolutePath().resolve("zk-credentials.properties")
