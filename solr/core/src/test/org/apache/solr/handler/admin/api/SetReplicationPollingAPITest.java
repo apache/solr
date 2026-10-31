@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -61,6 +62,11 @@ public class SetReplicationPollingAPITest extends SolrTestCase {
     solrTestRule.newCollection(FOLLOWER_CORE_NAME).withConfigSet(followerConfigSet).create();
   }
 
+  @Before
+  public void beforeEach() throws Exception {
+    setPolling(true);
+  }
+
   @Test
   public void testDisableThenEnablePolling() throws Exception {
     assertEquals(Boolean.FALSE, fetchPollingDisabled());
@@ -84,21 +90,6 @@ public class SetReplicationPollingAPITest extends SolrTestCase {
     assertEquals(Boolean.FALSE, fetchPollingDisabled());
   }
 
-  private static void setPolling(boolean enabled) throws Exception {
-    var request = new ReplicationApi.SetReplicationPolling(FOLLOWER_CORE_NAME);
-    request.setEnabled(enabled);
-    var response = request.process(solrTestRule.getSolrClient(FOLLOWER_CORE_NAME));
-    assertNull(response.error);
-  }
-
-  private static Boolean fetchPollingDisabled() throws Exception {
-    var request = new ReplicationApi.FetchReplicationDetails(FOLLOWER_CORE_NAME);
-    return request.process(solrTestRule.getSolrClient(FOLLOWER_CORE_NAME))
-        .details
-        .follower
-        .isPollingDisabled;
-  }
-
   @Test
   public void testNoFollowerIsRejected() {
     var request = new ReplicationApi.SetReplicationPolling(CORE_NAME);
@@ -119,5 +110,20 @@ public class SetReplicationPollingAPITest extends SolrTestCase {
             RemoteSolrException.class,
             () -> request.process(solrTestRule.getSolrClient(FOLLOWER_CORE_NAME)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
+
+  private static void setPolling(boolean enabled) throws Exception {
+    var request = new ReplicationApi.SetReplicationPolling(FOLLOWER_CORE_NAME);
+    request.setEnabled(enabled);
+    var response = request.process(solrTestRule.getSolrClient(FOLLOWER_CORE_NAME));
+    assertNull(response.error);
+  }
+
+  private static Boolean fetchPollingDisabled() throws Exception {
+    var request = new ReplicationApi.FetchReplicationDetails(FOLLOWER_CORE_NAME);
+    return request.process(solrTestRule.getSolrClient(FOLLOWER_CORE_NAME))
+        .details
+        .follower
+        .isPollingDisabled;
   }
 }
