@@ -732,7 +732,7 @@ public class RunExampleTool extends ToolBase {
       config = (Map<String, Object>) Utils.fromJSON(template.readAllBytes());
     }
     Map<String, Object> authentication = (Map<String, Object>) config.get("authentication");
-    authentication.put("blockUnknown", true);
+    authentication.put("blockUnknown", false);
     Map<String, Object> credentials = new HashMap<>();
     credentials.put(user, Sha256AuthenticationProvider.getSaltedHashedValue(password));
     authentication.put("credentials", credentials);
@@ -746,6 +746,15 @@ public class RunExampleTool extends ToolBase {
         permission.put("role", List.of("admin", "search"));
       }
     }
+    Map<String, Object> publicMonitoring = new HashMap<>();
+    publicMonitoring.put("name", "public-monitoring");
+    publicMonitoring.put("collection", null);
+    publicMonitoring.put("path", List.of("/____v2/node/health", "/____v2/metrics"));
+    publicMonitoring.put("method", "GET");
+    publicMonitoring.put("role", null);
+    List<Map<String, Object>> permissions =
+        (List<Map<String, Object>>) authorization.get("permissions");
+    permissions.add(permissions.size() - 1, publicMonitoring);
     String indexingCredentials = null;
     for (String role : List.of("index", "search")) {
       String pass = accounts.password(role);
@@ -781,8 +790,22 @@ public class RunExampleTool extends ToolBase {
             + (secureSSL != null && secureSSL.isSelfSigned()
                 ? " You will need to accept the self-signed certificate in the browser."
                 : ""));
+    echo(
+        "Second node running at "
+            + urlScheme
+            + "://"
+            + (start.host() == null ? "localhost" : start.host())
+            + ":"
+            + (port + 1)
+            + "/solr/. Sign in as "
+            + user
+            + ".");
+    echo("HTTP account credentials are saved in " + accounts.file() + ".");
     if (secureSSL != null) {
-      echo("Use SOLR_INCLUDE=" + secureSSL.includeFile() + " for other bin/solr commands.");
+      echo(
+          "ZooKeeper account credentials are saved in "
+              + new SecureExampleZk(solrHomeDir).credentialsFile()
+              + ".");
       var zkCredentials =
           VMParamsZkCredentialsInjector.readCredentialsFile(
               new SecureExampleZk(solrHomeDir).credentialsFile().toString());
@@ -891,6 +914,7 @@ public class RunExampleTool extends ToolBase {
       String indexingCredentials)
       throws Exception {
     String exampleName = params.start().example();
+    boolean secure = "secure-setup".equals(exampleName);
     boolean techproducts = "techproducts".equals(exampleName) || "secure-setup".equals(exampleName);
     String collectionName =
         techproducts
@@ -922,6 +946,29 @@ public class RunExampleTool extends ToolBase {
         }
       }
       waitForSecurity(solrUrl, params.start().credentials());
+      Path firstHome = solrHomeDir.toAbsolutePath().normalize();
+      Path secondHome = firstHome.resolveSibling(firstHome.getFileName() + "-node2");
+      Files.createDirectories(secondHome);
+      Path secondXml = secondHome.resolve("solr.xml");
+      if (!Files.exists(secondXml)) Files.copy(solrHomeDir.resolve("solr.xml"), secondXml);
+      echo("Second node Solr home: " + secondHome.toAbsolutePath());
+      Path secondCredentials = secondHome.resolve("zk-credentials.properties");
+      IncludeFileEditor.write(
+          secondCredentials, Files.readAllBytes(new SecureExampleZk(firstHome).credentialsFile()));
+      echo("Second node ZooKeeper credentials: " + secondCredentials);
+      String sharedZk = (String) ((Map<?, ?>) nodeStatus.get("cloud")).get("ZooKeeper");
+      Map<String, Object> secondNode =
+          startSolr(secondHome, true, params.start(), port + 1, sharedZk, 30);
+      waitForSecurity((String) secondNode.get("baseUrl"), params.start().credentials());
+      try (SolrZkClient zk = new SolrZkClient.Builder().withUrl(sharedZk).build()) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (zk.getChildren("/live_nodes", null).size() < 2) {
+          if (System.nanoTime() >= deadline)
+            throw new IllegalStateException(
+                "Timed out waiting for both secure example nodes to join ZooKeeper.");
+          TimeUnit.MILLISECONDS.sleep(100);
+        }
+      }
     }
 
     // If the example already exists then let the user know they should delete it, or
@@ -949,6 +996,9 @@ public class RunExampleTool extends ToolBase {
     }
 
     if (alreadyExists) {
+      if (secure)
+        echo(
+            "The existing collection layout is preserved. Use a fresh --solr-home to create the two-shard secure example.");
       echo(
           "You may want to run 'bin/solr delete -c "
               + collectionName
@@ -960,7 +1010,7 @@ public class RunExampleTool extends ToolBase {
       String[] createArgs =
           new String[] {
             "--name", collectionName,
-            "--shards", "1",
+            "--shards", secure ? "2" : "1",
             "--replication-factor", "1",
             "--conf-name", collectionName,
             "--conf-dir", configSet,
@@ -1341,6 +1391,12 @@ public class RunExampleTool extends ToolBase {
             : "";
     if ("secure-setup".equals(params.example())) {
       syspropArg += " -Dsolr.environment=prod,label=Secure+Solr+Setup";
+      if (zkHost != null) {
+        syspropArg +=
+            " -DzkDigestCredentialsFile=\""
+                + solrHomeDir.toAbsolutePath().resolve("zk-credentials.properties")
+                + "\"";
+      }
     }
 
     String startCmdStr =
@@ -1432,6 +1488,8 @@ public class RunExampleTool extends ToolBase {
         } else {
           Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
           environment.put("SOLR_INCLUDE", secureSSL.includeFile().toString());
+          environment.put("SOLR_EXAMPLE_EMBEDDED_ZK", Boolean.toString(zkHost == null));
+          environment.put("SOLR_LOGS_DIR", solrHomeDir.toAbsolutePath().resolve("logs").toString());
           code = executor.execute(command, environment);
         }
       } catch (ExecuteException e) {

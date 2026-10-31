@@ -158,7 +158,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         }
         String solrxml = Files.readString(solrXmlPath, Charset.defaultCharset());
         // MiniSolrCloudCluster supplies its own ZooKeeper address instead of starting embedded ZK.
-        solrxml = solrxml.replace("<str name=\"zkHost\">${solr.example.zk.host:}</str>", "");
+        solrxml =
+            solrxml
+                .replace("<str name=\"zkHost\">${solr.example.zk.host:}</str>", "")
+                .replace("${solr.port.advertise:0}", "${hostPort:0}");
 
         JettyConfig jettyConfig =
             JettyConfig.builder().setPort(port).withSSLConfig(sslConfig).build();
@@ -170,10 +173,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             System.setProperty("solr.port.listen", String.valueOf(port));
             solrCloudCluster = new MiniSolrCloudCluster(1, createTempDir(), solrxml, jettyConfig);
           } else {
-            // another member of this cluster -- not supported yet, due to how
-            // MiniSolrCloudCluster works
-            throw new IllegalArgumentException(
-                "Only launching one SolrCloud node is supported by this test!");
+            if (sslConfig == null) {
+              throw new IllegalArgumentException(
+                  "Only the secure example starts a second test node.");
+            }
+            solrCloudCluster.startJettySolrRunner("node2", jettyConfig, solrxml);
           }
         } catch (Exception e) {
           if (e instanceof RuntimeException) {
@@ -383,6 +387,14 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     testExample("films");
   }
 
+  private boolean portAvailable(int port) {
+    try (ServerSocket socket = new ServerSocket(port)) {
+      return socket.isBound();
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   protected void testExample(String exampleName) throws Exception {
     testExample(exampleName, false);
   }
@@ -411,6 +423,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         bindPort = socket.getLocalPort();
       }
 
+      if ("secure-setup".equals(exampleName)) {
+        // Keep adjacent Solr ports outside the ephemeral range used by the test ZooKeeper server.
+        do {
+          bindPort = random().nextInt(20000, 30000);
+        } while (!portAvailable(bindPort) || !portAvailable(bindPort + 1));
+      }
       log.info("Selected port {} to start {} example Solr instance on ...", bindPort, exampleName);
 
       String[] toolArgs =
@@ -483,7 +501,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         assertEquals(customPasswords, toolOutput.contains("Password for zk-admin [SolrRocks]:"));
         assertTrue(
             toolOutput.contains(
-                "HTTP credentials: " + testSolrHomeDir.resolve("http-credentials.properties")));
+                "HTTP account credentials are saved in "
+                    + testSolrHomeDir.resolve("http-credentials.properties")));
+        assertFalse(toolOutput.contains("Use SOLR_INCLUDE="));
         assertTrue(toolOutput.contains("Private key: " + testSolrHomeDir.resolve("tls/key.pem")));
         assertTrue(
             toolOutput.contains(
@@ -529,6 +549,28 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       if ("secure-setup".equals(exampleName)) {
         if (pass > 0)
           assertTrue(toolOutput.contains("Reusing the example's ZooKeeper credentials"));
+        assertEquals(2, executor.solrCloudCluster.getJettySolrRunners().size());
+        long localDocuments = 0;
+        for (int nodePort : new int[] {bindPort, bindPort + 1}) {
+          try (SolrClient client =
+              CLIUtils.getSolrClient(
+                  "https://localhost:" + nodePort + "/solr", "search:" + searchPassword)) {
+            assertEquals(
+                31,
+                client
+                    .query("techproducts", new SolrQuery("*:*").setRows(0))
+                    .getResults()
+                    .getNumFound());
+            long local =
+                client
+                    .query("techproducts", new SolrQuery("*:*").setRows(0).set("distrib", "false"))
+                    .getResults()
+                    .getNumFound();
+            assertTrue(local > 0 && local < 31);
+            localDocuments += local;
+          }
+        }
+        assertEquals(31, localDocuments);
         String zkAddress = executor.solrCloudCluster.getZkServer().getZkAddress();
         try (SolrZkClient anonymousZk =
             new SolrZkClient.Builder()

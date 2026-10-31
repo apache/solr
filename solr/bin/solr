@@ -419,7 +419,7 @@ function print_usage() {
     echo ""
     echo "  -e/--example <name>   Name of the example to run; available examples:"
     echo "      cloud:              SolrCloud example"
-    echo "      secure-setup:       Single-node SolrCloud with Basic Authentication and techproducts data"
+    echo "      secure-setup:       Two-node SolrCloud with Basic Authentication and techproducts data"
     echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
     echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
     echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
@@ -1064,13 +1064,13 @@ fi
 
 # This is quite hacky, but examples rely on a different log4j2.xml
 # so that we can write logs for examples to $SOLR_HOME/../logs
-: "${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}"
 EXAMPLE_DIR="$SOLR_TIP/example"
 # if SOLR_HOME is inside of EXAMPLE_DIR
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   LOG4J_PROPS="$DEFAULT_SERVER_DIR/resources/log4j2.xml"
-  SOLR_LOGS_DIR="$SOLR_HOME/../logs"
+  : "${SOLR_LOGS_DIR:="$SOLR_HOME/../logs"}"
 fi
+: "${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}"
 
 LOG4J_CONFIG=()
 if [ -n "${LOG4J_PROPS:-}" ]; then

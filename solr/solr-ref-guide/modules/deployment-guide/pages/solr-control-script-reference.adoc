@@ -265,7 +265,7 @@ The available options are:
 
 * `cloud`: SolrCloud example
 * `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
-* `secure-setup`: Single-node SolrCloud with Basic Authentication, Rule-Based Authorization, and techproducts data
+* `secure-setup`: Two-node SolrCloud with Basic Authentication, Rule-Based Authorization, and techproducts data
 * `schemaless`: Schema-less example (schema is inferred from data during indexing)
 * `films`: Example of starting with _default configset and adding explicit fields dynamically
 +
@@ -377,7 +377,7 @@ The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_tech
 +
 The data used can be found in `$SOLR_HOME/example/exampledocs/`.
 
-* *secure-setup*: This example starts a single-node SolrCloud cluster with Basic Authentication, Rule-Based Authorization, and techproducts data.
+* *secure-setup*: This example starts a two-node SolrCloud cluster with Basic Authentication, Rule-Based Authorization, and techproducts data.
 On Unix and macOS, it also configures HTTPS and ZooKeeper digest authentication and ACLs.
 The default Solr home is `example/secure-setup`.
 

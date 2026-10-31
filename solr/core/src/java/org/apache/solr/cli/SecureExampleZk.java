@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 /** Manages the digest credentials and ACL configuration for the secure example's ZooKeeper. */
 final class SecureExampleZk {
   private static final String SERVER_OPTIONS =
-      "SOLR_OPTS=\"${SOLR_OPTS:-} $SOLR_ZK_CREDS_AND_ACLS -Dsolr.zookeeper.server.enabled=true -Dsolr.example.zk.host=$SOLR_EXAMPLE_ZK_HOST\"";
+      "SOLR_OPTS=\"${SOLR_OPTS:-} $SOLR_ZK_CREDS_AND_ACLS -Dsolr.zookeeper.server.enabled=${SOLR_EXAMPLE_EMBEDDED_ZK:-true} -Dsolr.example.zk.host=$SOLR_EXAMPLE_ZK_HOST\"";
   private final Path home;
 
   SecureExampleZk(Path home) {
