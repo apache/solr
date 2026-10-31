@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,9 +33,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
@@ -295,22 +293,9 @@ public abstract class ContentStreamBase implements ContentStream {
     return size;
   }
 
-  public void setSize(Long size) {
-    this.size = size;
-  }
-
   @Override
   public String getSourceInfo() {
     return sourceInfo;
-  }
-
-  public static ContentStream create(
-      RequestWriter requestWriter, @SuppressWarnings({"rawtypes"}) SolrRequest req)
-      throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(req);
-    contentWriter.write(baos);
-    return new ByteArrayStream(baos.toByteArray(), null, contentWriter.getContentType());
   }
 
   /** Construct a <code>ContentStream</code> from a <code>File</code> */

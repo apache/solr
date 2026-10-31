@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +28,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrResourceLoader;
 
 /** Tests {@link ContentStream}. */

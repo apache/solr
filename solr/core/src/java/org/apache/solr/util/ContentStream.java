@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.util;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 
 /**
+ * The server-side pull contract for reading request content. SolrJ writes content with {@code
+ * RequestWriter.ContentWriter} (push) instead.
+ *
  * @since solr 1.2
- * @deprecated Use {@link ContentWriter} instead.
  */
-@Deprecated(since = "10.0")
 public interface ContentStream {
   String getName();
 
