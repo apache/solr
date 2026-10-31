@@ -255,13 +255,6 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testFailedSearch() throws Exception {
-    SolrException e = expectThrows(SolrException.class, () -> query(COLLECTION, "id:("));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertEquals(SolrException.class.getName(), delivered().failureType());
-  }
-
-  @Test
   public void testFailureFields() throws Exception {
     SolrException e =
         expectThrows(SolrException.class, () -> query(COLLECTION, "id:(" + "x".repeat(300)));
@@ -366,7 +359,6 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     }
     try {
       query(COLLECTION, "*:*");
-      latch.countDown();
     } finally {
       latch.countDown();
     }

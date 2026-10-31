@@ -107,11 +107,6 @@ public class SearchRequestDispatcher implements Closeable {
     req.getContext().put(MARKER, new Marker(rb));
   }
 
-  /** Drops the report a {@link SearchHandler} requested for {@code req}, if any. */
-  public static void unmark(SolrQueryRequest req) {
-    req.getContext().remove(MARKER);
-  }
-
   /**
    * Reports {@code req} to the listeners if a {@link SearchHandler} marked it. Called once the
    * response header has its status and QTime.

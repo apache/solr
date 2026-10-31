@@ -112,7 +112,6 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.SearchRequestDispatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -2964,10 +2963,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
-    if (responseHeader == null) {
-      SearchRequestDispatcher.unmark(req);
-      return;
-    }
+    if (responseHeader == null) return;
     final int qtime = (int) (req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();
