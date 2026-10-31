@@ -65,6 +65,17 @@ public final class CommonCLIOptions {
   public static final Option RECURSIVE_OPTION =
       Option.builder("r").longOpt("recursive").desc("Apply the command recursively.").get();
 
+  // It would be interesting if we could just remove the zk option from standard bin/solr commands,
+  // and then for bin/solr zk we could just use --credentials in order to not have this seperate
+  // property name.
+  public static final Option ZK_CREDENTIALS_OPTION =
+      Option.builder()
+          .longOpt("zk-credentials")
+          .hasArg()
+          .argName("username:password")
+          .desc("ZooKeeper digest credentials, separate from HTTP --credentials.")
+          .build();
+
   public static final Option CREDENTIALS_OPTION =
       Option.builder("u")
           .longOpt("credentials")

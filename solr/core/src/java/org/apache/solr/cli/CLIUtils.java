@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.exec.OS;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -43,6 +46,7 @@ import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.URLUtil;
@@ -399,10 +403,36 @@ public final class CLIUtils {
               + cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION)
               + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
     }
-    return new SolrZkClient.Builder()
-        .withUrl(zkHost)
-        .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+    return zkClientBuilder(zkHost, cli.getOptionValue(CommonCLIOptions.ZK_CREDENTIALS_OPTION))
         .build();
+  }
+
+  static void ensureZkChroot(String zkHost, String credentials) throws Exception {
+    int slash = zkHost.indexOf('/');
+    if (slash > 0 && slash < zkHost.length() - 1) {
+      try (var root = zkClientBuilder(zkHost.substring(0, slash), credentials).build()) {
+        String chroot = zkHost.substring(slash);
+        if (!root.exists(chroot)) root.makePath(chroot, false);
+      }
+    }
+  }
+
+  static SolrZkClient.Builder zkClientBuilder(String zkHost, String credentials) {
+    var builder =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS);
+    if (credentials != null) {
+      int colon = credentials.indexOf(':');
+      if (colon <= 0 || colon == credentials.length() - 1) {
+        throw new IllegalArgumentException(
+            "--zk-credentials must have the form username:password.");
+      }
+      builder.withZkCredentialsProvider(
+          new DefaultZkCredentialsProvider(
+              List.of(new AuthInfo("digest", credentials.getBytes(StandardCharsets.UTF_8)))));
+    }
+    return builder;
   }
 
   public static CloudSolrClient getCloudSolrClient(

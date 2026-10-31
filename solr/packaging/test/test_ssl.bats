@@ -30,29 +30,42 @@ teardown() {
 }
 
 
-@test "start solr with ssl" {
-  # Create a keystore
+configure_ssl() {
+  run solr assert --started "http://localhost:${SOLR_PORT}" --timeout 30000
+  assert_success
+  run solr zk ls / --zk-host "localhost:${ZK_PORT}"
+  assert_output --partial 'live_nodes'
   export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
   mkdir -p "$ssl_dir"
-  (
-    cd "$ssl_dir"
-    rm -f solr-ssl.keystore.p12 solr-ssl.pem
-    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
-    openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
-  )
+  printf '%s\n' '[req]' 'distinguished_name=dn' '[dn]' '[v3]' \
+    'subjectAltName=DNS:localhost,IP:127.0.0.1' > "$ssl_dir/openssl.cnf"
+  run openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout "$ssl_dir/key.pem" -out "$ssl_dir/cert.pem" \
+    -days 2 -subj '/CN=localhost' -config "$ssl_dir/openssl.cnf" -extensions v3
+  refute_output --partial 'Error'
+  assert_success
+  printf '%s\n' secret > "$ssl_dir/password.txt"
+  chmod 600 "$ssl_dir/password.txt"
 
-  # Set ENV_VARs so that Solr uses this keystore
-  export SOLR_SSL_ENABLED=true
-  export SOLR_SSL_KEY_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_KEY_STORE_PASSWORD=secret
-  export SOLR_SSL_TRUST_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
-  export SOLR_SSL_NEED_CLIENT_AUTH=false
-  export SOLR_SSL_WANT_CLIENT_AUTH=false
+  run solr ssl --cert "$ssl_dir/cert.pem" --key "$ssl_dir/key.pem" \
+    --password-file "$ssl_dir/password.txt" --keystore "$ssl_dir/solr.jks" \
+    --zk-host "localhost:${ZK_PORT}"
+  assert_output --partial 'Installed JKS keystore'
+  assert_output --partial 'Set cluster property urlScheme=https'
+  assert_success
+}
+
+@test "start solr with ssl" {
+  export SOLR_INCLUDE="${BATS_TEST_TMPDIR}/solr.in.sh"
+  touch "$SOLR_INCLUDE"
   export SOLR_HOST_ADVERTISE=localhost
-
-  solr start
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
+  run solr start
+  assert_output --partial 'Started Solr server'
+  configure_ssl
+  run solr stop --all
+  assert_output --partial 'Sending stop command'
+  run solr start
+  assert_output --partial 'Started Solr server'
 
   run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
@@ -60,10 +73,11 @@ teardown() {
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
-  run curl --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run curl --cacert "$ssl_dir/cert.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
-  run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! curl --silent --show-error --fail "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --regexp 'SSL certificate problem|certificate verify failed|self-signed certificate'
 }
 
 @test "use different hostname when not checking peer-name" {
@@ -130,40 +144,27 @@ teardown() {
 }
 
 @test "start solr with ssl and auth" {
-  # Create a keystore
-  export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
-  mkdir -p "$ssl_dir"
-  (
-    cd "$ssl_dir"
-    rm -f solr-ssl.keystore.p12 solr-ssl.pem
-    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
-    openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
-  )
-
-  # Set ENV_VARs so that Solr uses this keystore
-  export SOLR_SSL_ENABLED=true
-  export SOLR_SSL_KEY_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_KEY_STORE_PASSWORD=secret
-  export SOLR_SSL_TRUST_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
-  export SOLR_SSL_NEED_CLIENT_AUTH=false
-  export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_SSL_CHECK_PEER_NAME=true
+  export SOLR_INCLUDE="${BATS_TEST_TMPDIR}/solr.in.sh"
+  touch "$SOLR_INCLUDE"
   export SOLR_HOST_ADVERTISE=localhost
+  run solr start
+  assert_output --partial 'Started Solr server'
+  run solr auth enable --type basicAuth --credentials name:password
+  assert_output --partial 'Successfully enabled basic auth'
+  configure_ssl
+  run solr stop --all
+  assert_output --partial 'Sending stop command'
+  run solr start
+  assert_output --partial 'Started Solr server'
 
-  solr start
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
-  solr auth enable --type basicAuth --credentials name:password
-
-  run curl -u name:password --basic --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
+  run curl -u name:password --basic --cacert "$ssl_dir/cert.pem" "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
   assert_output --partial '"status":0'
 
-  run curl -u name:password --basic --http2 --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run curl -u name:password --basic --http2 --cacert "$ssl_dir/cert.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
-  # When the Jenkins box "curl" supports --fail-with-body, add "--fail-with-body" and change "run" to "run !", to expect a failure
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
-  assert_output --partial 'Error 401 Authentication'
+  run ! curl --silent --show-error --fail --cacert "$ssl_dir/cert.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '401'
 }
 
 @test "start solr with client truststore and security manager" {

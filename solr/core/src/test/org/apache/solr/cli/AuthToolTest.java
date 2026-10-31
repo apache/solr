@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.junit.After;
@@ -67,6 +68,8 @@ public class AuthToolTest extends SolrCloudTestCase {
   @Test
   public void testEnableAuth() throws Exception {
     Path solrIncludeFile = Files.createFile(dir.resolve("solrIncludeFile.txt"));
+    String sslSetting = Constants.WINDOWS ? "set SOLR_SSL_ENABLED=true" : "SOLR_SSL_ENABLED=true";
+    Files.writeString(solrIncludeFile, sslSetting + "\n");
     String[] args = {
       "auth",
       "enable",
@@ -82,6 +85,35 @@ public class AuthToolTest extends SolrCloudTestCase {
       "true"
     };
     assertEquals(0, runTool(args, AuthTool.class));
+    String enabled = Files.readString(solrIncludeFile);
+    assertTrue(enabled.contains(sslSetting));
+    assertTrue(
+        enabled.contains(
+            Constants.WINDOWS ? "set SOLR_AUTH_TYPE=basic" : "SOLR_AUTH_TYPE='basic'"));
+    assertTrue(enabled.contains("-Dsolr.httpclient.config=" + dir.resolve("basicAuth.conf")));
+    assertEquals(
+        "httpBasicAuthUser=solr\nhttpBasicAuthPassword=solrRocks",
+        Files.readString(dir.resolve("basicAuth.conf")));
+    String[] disable = {
+      "auth",
+      "disable",
+      "-z",
+      cluster.getZkClient().getZkServerAddress(),
+      "--auth-conf-dir",
+      dir.toString(),
+      "--solr-include-file",
+      solrIncludeFile.toString()
+    };
+    assertEquals(0, runTool(disable, AuthTool.class));
+    String disabled = Files.readString(solrIncludeFile);
+    assertTrue(disabled.contains(sslSetting));
+    assertTrue(
+        disabled.contains(
+            Constants.WINDOWS ? "REM set SOLR_AUTH_TYPE=basic" : "# SOLR_AUTH_TYPE='basic'"));
+    assertEquals(
+        "{}",
+        new String(
+            cluster.getZkClient().getData("/security.json", null, null), StandardCharsets.UTF_8));
   }
 
   @Test

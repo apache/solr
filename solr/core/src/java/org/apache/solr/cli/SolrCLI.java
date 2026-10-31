@@ -79,6 +79,7 @@ import org.slf4j.LoggerFactory;
       VersionTool.class,
       ZkTool.class,
       AuthTool.class,
+      SSLTool.class,
       CreateTool.class,
       DeleteTool.class,
       AssertTool.class,
@@ -139,13 +140,19 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    if (EnvUtils.getPropertyAsBool("solr.picocli", false)) {
+    exit(execute(args));
+  }
+
+  @VisibleForTesting
+  static int execute(String[] args) throws Exception {
+    if (EnvUtils.getPropertyAsBool("solr.picocli", false)
+        || (args.length > 0 && "ssl".equals(args[0]))) {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
-      exit(commandLine.execute(stripEmptyLeadingArg(args)));
+      return commandLine.execute(stripEmptyLeadingArg(args));
     } else {
-      exit(parseWithCommonsCli(args));
+      return parseWithCommonsCli(args);
     }
   }
 
