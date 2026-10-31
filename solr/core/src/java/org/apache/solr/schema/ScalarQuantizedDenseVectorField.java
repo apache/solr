@@ -38,8 +38,8 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   static final int DEFAULT_BITS = 7; // use signed byte as default when unspecified
 
   /**
-   * Number of bits to use for storage Must be 4 (half-byte) or 7 (signed-byte) per Lucene codec
-   * spec
+   * Number of bits to use for storage. Must match a Lucene {@code ScalarEncoding}: 1, 2, 4, 7
+   * (signed-byte) or 8 (unsigned-byte)
    */
   private int bits;
 
@@ -118,22 +118,6 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     } else {
       return new Lucene104HnswScalarQuantizedVectorsFormat(
           encoding, getHnswM(), getHnswEfConstruction());
-    }
-  }
-
-  @Override
-  public void checkSchemaField(final SchemaField field) throws SolrException {
-    super.checkSchemaField(field);
-
-    try {
-      // format does not expose any validation, however by constructing
-      // we will run lucene level argument validation
-      buildKnnVectorsFormat();
-    } catch (IllegalArgumentException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          getClass().getSimpleName() + " " + e.getMessage() + ": " + field.getName(),
-          e);
     }
   }
 
