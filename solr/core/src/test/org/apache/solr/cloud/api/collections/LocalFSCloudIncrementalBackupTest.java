@@ -17,17 +17,23 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -155,6 +161,79 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
               .query(restoreCollectionName, new SolrQuery("*:*"))
               .getResults()
               .getNumFound());
+    }
+  }
+
+  /**
+   * A restore to a new collection that fails while restoring the shard data, synchronously or
+   * asynchronously, must not leave the collection behind, so that retrying the restore works.
+   */
+  @Test
+  public void testRetryAfterFailedRestoreToNewCollection() throws Exception {
+    setTestSuffix("testRetryAfterFailedRestore");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    try (BackupRepository repository =
+        cluster
+            .getJettySolrRunner(0)
+            .getCoreContainer()
+            .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+          .processAndWait(solrClient, 100);
+
+      // copying the backed up index fails on every node, so restoring the shard data fails
+      ErrorThrowingTrackingBackupRepository.portsToFailOn =
+          cluster.getJettySolrRunners().stream()
+              .map(JettySolrRunner::getLocalPort)
+              .collect(Collectors.toSet());
+      try {
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () ->
+                    CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+                        .setLocation(backupLocation)
+                        .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+                        .process(solrClient));
+        assertTrue(e.getMessage(), e.getMessage().contains("Could not restore shard"));
+        assertFalse(
+            CollectionAdminRequest.listCollections(solrClient).contains(restoreCollectionName));
+
+        assertEquals(
+            RequestStatusState.FAILED,
+            CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+                .setLocation(backupLocation)
+                .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+                .processAndWait(solrClient, 100));
+        assertFalse(
+            CollectionAdminRequest.listCollections(solrClient).contains(restoreCollectionName));
+      } finally {
+        ErrorThrowingTrackingBackupRepository.portsToFailOn = new HashSet<>();
+      }
+
+      assertEquals(
+          RequestStatusState.COMPLETED,
+          CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+              .setLocation(backupLocation)
+              .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+              .processAndWait(solrClient, 100));
+      waitForState(
+          "Restored collection should have all its shards active",
+          restoreCollectionName,
+          30,
+          TimeUnit.SECONDS,
+          activeClusterShape(NUM_SHARDS, NUM_SHARDS));
+      assertEquals(numDocs, getNumDocsInCollection(restoreCollectionName));
     }
   }
 }
