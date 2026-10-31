@@ -456,14 +456,52 @@ http://{followerHost}:{port}/solr/{coreName}/replication?command=abortfetch
 `enablepoll`::
 Enable the specified follower to poll for changes on the leader.
 +
+[tabs#enablepoll-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{followerHost}:{port}/solr/{coreName}/replication?command=enablepoll
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT -H 'Content-Type: application/json' -d '{"enabled": true}' \
+http://{followerHost}:{port}/api/cores/{coreName}/replication/polling
+----
+====
+======
 
 `disablepoll`::
 Disable the specified follower from polling for changes on the leader.
 +
+[tabs#disablepoll-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{followerHost}:{port}/solr/{coreName}/replication?command=disablepoll
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT -H 'Content-Type: application/json' -d '{"enabled": false}' \
+http://{followerHost}:{port}/api/cores/{coreName}/replication/polling
+----
+====
+======
 
 `commits`::
 Retrieve the index commit points currently retained by the core, with each commit's index version, generation, and the file list.
