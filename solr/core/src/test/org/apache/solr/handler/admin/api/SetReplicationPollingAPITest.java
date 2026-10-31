@@ -20,8 +20,7 @@ public class SetReplicationPollingAPITest extends SolrTestCase {
   private static final String CORE_NAME = "setReplicationPollingApiTestCore";
   private static final String FOLLOWER_CORE_NAME = "setReplicationPollingApiTestFollowerCore";
 
-  @ClassRule
-  public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolr() throws Exception {
@@ -105,5 +104,4 @@ public class SetReplicationPollingAPITest extends SolrTestCase {
             () -> request.process(solrTestRule.getSolrClient(FOLLOWER_CORE_NAME)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
   }
-
 }
