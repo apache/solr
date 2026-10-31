@@ -32,6 +32,8 @@ import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DefaultZkACLProvider;
+import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -118,6 +120,63 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       String[] args, CLITestHelper.TestingRuntime runtime, Class<? extends ToolBase> clazz)
       throws Exception {
     return CLITestHelper.runTool(args, runtime, clazz);
+  }
+
+  @Test
+  public void testExplicitDigestCredentials() throws Exception {
+    System.setProperty("zkCredentialsInjector", VMParamsZkCredentialsInjector.class.getName());
+    System.setProperty("zkACLProvider", DigestZkACLProvider.class.getName());
+    System.setProperty("zkDigestUsername", "admin");
+    System.setProperty("zkDigestPassword", "secret:password");
+    System.setProperty("zkDigestReadonlyUsername", "reader");
+    System.setProperty("zkDigestReadonlyPassword", "read-secret");
+    var acl = new DigestZkACLProvider(new VMParamsZkCredentialsInjector());
+    zkClient.makePath("/protected", false);
+    zkClient
+        .getCuratorFramework()
+        .setACL()
+        .withACL(acl.getACLsToAdd("/protected"))
+        .forPath("/protected");
+    var output = new CLITestHelper.TestingRuntime(true);
+    String host = zkServer.getZkAddress();
+    assertEquals(
+        0,
+        runTool(
+            new String[] {"ls", "/protected", "-z", host, "--zk-credentials", "reader:read-secret"},
+            output,
+            ZkLsTool.class));
+    assertNotEquals(
+        0,
+        runTool(
+            new String[] {"ls", "/protected", "-z", host, "--zk-credentials", "reader:wrong"},
+            output,
+            ZkLsTool.class));
+    assertEquals(
+        0,
+        runTool(
+            new String[] {
+              "mkroot", "/protected/child", "-z", host, "--zk-credentials", "admin:secret:password"
+            },
+            output,
+            ZkMkrootTool.class));
+    // Configured ACLs must still be applied when connection credentials are explicitly supplied.
+    try (var reader = CLIUtils.zkClientBuilder(host, "reader:read-secret").build()) {
+      assertNull(reader.getData("/protected/child", null, null));
+      expectThrows(
+          KeeperException.NoAuthException.class,
+          () -> reader.setData("/protected/child", new byte[0]));
+    }
+    expectThrows(
+        IllegalArgumentException.class, () -> CLIUtils.zkClientBuilder(host, "missing-colon"));
+    System.setProperty("zkDigestCredentialsFile", "/missing-credentials-file");
+    try (var explicit =
+        new SolrZkClient.Builder()
+            .withUrl(host)
+            .withZkCredentialsProvider(new DefaultZkCredentialsProvider())
+            .withAclProvider(new DefaultZkACLProvider())
+            .build()) {
+      assertTrue(explicit.exists("/"));
+    }
   }
 
   @Test

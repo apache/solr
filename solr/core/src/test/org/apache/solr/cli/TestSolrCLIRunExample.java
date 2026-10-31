@@ -26,12 +26,18 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
@@ -111,6 +117,20 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         Path store = tls.resolve("solr-ssl.keystore.jks");
         String password = Files.readString(tls.resolve("keystore-password.txt")).stripTrailing();
         sslConfig = new SSLConfig(true, false, store.toString(), password, null, null);
+        try {
+          KeyStore trust = KeyStore.getInstance("JKS");
+          try (var input = Files.newInputStream(Path.of(store + ".truststore"))) {
+            trust.load(input, password.toCharArray());
+          }
+          TrustManagerFactory managers =
+              TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+          managers.init(trust);
+          SSLContext context = SSLContext.getInstance("TLS");
+          context.init(null, managers.getTrustManagers(), null);
+          HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+        } catch (GeneralSecurityException e) {
+          throw new IOException(e);
+        }
       }
       return execute(cmd);
     }
@@ -328,6 +348,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   @Test
   public void testSecureSetupExample() throws Exception {
+    assumeSecureSetupSupported();
+    testExample("secure-setup");
+  }
+
+  @Test
+  public void testSecureSetupCustomPasswords() throws Exception {
+    assumeSecureSetupSupported();
+    testExample("secure-setup", true);
+  }
+
+  private void assumeSecureSetupSupported() throws Exception {
     assumeTrue(
         "External programs require -Ptests.useSecurityManager=false",
         EnvUtils.getProperty("java.security.manager") == null);
@@ -340,7 +371,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       assumeNoException("OpenSSL must be installed", missingOpenSSL);
     }
     HttpJettySolrClient.resetSslContextFactory();
-    testExample("secure-setup");
   }
 
   @Test
@@ -354,6 +384,15 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   protected void testExample(String exampleName) throws Exception {
+    testExample(exampleName, false);
+  }
+
+  private void testExample(String exampleName, boolean customPasswords) throws Exception {
+    SSLSocketFactory originalSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
+    closeables.add(() -> HttpsURLConnection.setDefaultSSLSocketFactory(originalSocketFactory));
+    String adminPassword = customPasswords ? "AdminRocks" : "SolrRocks";
+    String searchPassword = customPasswords ? "SearchRocks" : "SolrRocks";
+    String zkReadonlyPassword = customPasswords ? "ZkReadRocks" : "SolrRocks";
     // Occasionally we want to test in User Managed mode, not the default SolrCloud mode.
     String testStandaloneMode =
         !"secure-setup".equals(exampleName) && LuceneTestCase.rarely() ? "--user-managed" : "";
@@ -399,7 +438,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
               executor,
               "secure-setup".equals(exampleName)
                   ? new ByteArrayInputStream(
-                      "\n\n\n\n\n\nsolr\n\nindex\n\nsearch\n\n".getBytes(StandardCharsets.UTF_8))
+                      (customPasswords
+                              ? "\ny\nsolr\nAdminRocks\nindex\nIndexRocks\nsearch\nSearchRocks\nZkAdminRocks\nZkReadRocks\n\n"
+                              : "\n\n\n")
+                          .getBytes(StandardCharsets.UTF_8))
                   : System.in,
               runtime);
       try {
@@ -435,23 +477,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("secure-setup".equals(exampleName) && pass == 0) {
         assertTrue(toolOutput.contains("curl --cacert"));
-        assertTrue(toolOutput.contains("Password for index [SolrRocks]:"));
-        assertTrue(toolOutput.contains("Password for search [SolrRocks]:"));
-        assertFalse(toolOutput.contains("Create a index user?"));
-        assertFalse(toolOutput.contains("Username [index]:"));
-        assertFalse(toolOutput.contains("Username [search]:"));
+        assertTrue(toolOutput.contains("Change account passwords? [y/N]:"));
+        assertFalse(toolOutput.contains("Administrator username"));
+        assertEquals(customPasswords, toolOutput.contains("Password for index [SolrRocks]:"));
+        assertEquals(customPasswords, toolOutput.contains("Password for zk-admin [SolrRocks]:"));
         assertTrue(
-            toolOutput.indexOf("Press Enter after curl")
-                < toolOutput.indexOf("Administrator username"));
-        assertEquals(
-            3,
-            toolOutput
-                .lines()
-                .filter(
-                    line ->
-                        line.contains(
-                            "Username and password must differ. Please enter a different password."))
-                .count());
+            toolOutput.contains(
+                "HTTP credentials: " + testSolrHomeDir.resolve("http-credentials.properties")));
+        assertTrue(toolOutput.contains("Private key: " + testSolrHomeDir.resolve("tls/key.pem")));
+        assertTrue(
+            toolOutput.contains(
+                "Keystore password file: " + testSolrHomeDir.resolve("tls/keystore-password.txt")));
       }
 
       // dump all the output written by the SolrCLI commands to stdout
@@ -466,7 +502,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                         + "/solr")
                 .withDefaultCollection("techproducts")
                 .withOptionalBasicAuthCredentials(
-                    "secure-setup".equals(exampleName) ? "search:SolrRocks" : null)
+                    "secure-setup".equals(exampleName) ? "search:" + searchPassword : null)
                 .build()) {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
@@ -510,7 +546,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
               .getCuratorFramework()
               .getZookeeperClient()
               .getZooKeeper()
-              .addAuthInfo("digest", "zk-readonly:SolrRocks".getBytes(StandardCharsets.UTF_8));
+              .addAuthInfo(
+                  "digest", ("zk-readonly:" + zkReadonlyPassword).getBytes(StandardCharsets.UTF_8));
           assertTrue(anonymousZk.getChildren("/collections", null).contains("techproducts"));
           expectThrows(
               KeeperException.NoAuthException.class,
@@ -524,8 +561,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             executor.solrCloudCluster.getZkClient().getData("/security.json", null, null));
         String url = "https://localhost:" + bindPort + "/solr";
         try (SolrClient anonymous = CLIUtils.getSolrClient(url, null);
-            SolrClient search = CLIUtils.getSolrClient(url, "search:SolrRocks");
-            SolrClient admin = CLIUtils.getSolrClient(url, "solr:SolrRocks")) {
+            SolrClient search = CLIUtils.getSolrClient(url, "search:" + searchPassword);
+            SolrClient admin = CLIUtils.getSolrClient(url, "solr:" + adminPassword)) {
           assertEquals(
               401,
               expectThrows(

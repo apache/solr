@@ -1241,6 +1241,13 @@ Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
 Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
 
+=== ZooKeeper Authentication
+
+`--zk-credentials <username:password>` supplies ZooKeeper digest credentials for `zk ls`, `cp`, `mv`, `rm`, `mkroot`, `upconfig`, `downconfig`, and `updateacls`.
+It overrides the configured ZooKeeper connection credentials and is independent of HTTP `--credentials`, which authenticates requests to Solr when discovering the ZooKeeper address.
+If omitted, the configured ZooKeeper credentials provider is used.
+This option does not configure ACLs; the configured `zkACLProvider` still determines permissions on newly created znodes and when running `updateacls`.
+
 === ZooKeeper Connection String
 
 All `bin/solr zk` sub-commands require a ZooKeeper connection string to function. You can provide this in three ways, in order of precedence:

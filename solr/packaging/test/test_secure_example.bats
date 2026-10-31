@@ -40,6 +40,13 @@ teardown() {
   refute_output --partial 'Press Enter after curl'
   refute_output --partial 'Restart Solr to enable HTTPS.'
   refute_output --partial 'No cluster property changed.'
+  refute_output --partial 'Password for index'
+  refute_output --partial 'Administrator username'
+  assert_output --partial "HTTP credentials: $SOLR_HOME/http-credentials.properties"
+  assert_output --partial "Private key: $SOLR_HOME/tls/key.pem"
+  assert_output --partial "Keystore password file: $SOLR_HOME/tls/keystore-password.txt"
+  assert_output --partial "--zk-credentials 'zk-admin:SolrRocks'"
+
 
   run cat "$SOLR_INCLUDE"
   assert_output ''
@@ -105,9 +112,24 @@ teardown() {
   assert_success
   assert_output --partial '"numFound":32'
 
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:${ZK_PORT}/solr"
+  run solr zk ls / --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
   assert_success
   assert_output --partial 'security.json'
+
+  run env SOLR_PICOCLI=true solr zk ls / --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
+  assert_success
+  assert_output --partial 'security.json'
+
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" \
+    --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
+  assert_failure
+  assert_output --partial 'NoAuth'
+
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls /collections --solr-url "https://localhost:${SOLR_PORT}" \
+    --credentials solr:SolrRocks --zk-credentials zk-readonly:SolrRocks
+  assert_success
+  assert_output --partial 'techproducts'
+
 
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:${ZK_PORT}/solr"
   assert_failure

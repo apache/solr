@@ -19,14 +19,13 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine.Mixin;
 
 /** Supports zk mkroot command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -54,6 +53,8 @@ public class ZkMkrootTool extends ToolBase {
           .get();
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @Mixin private ZkCredentialsOptions zkAuth;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -91,6 +92,7 @@ public class ZkMkrootTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
         .addOption(FAIL_ON_EXISTS_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
@@ -141,11 +143,7 @@ public class ZkMkrootTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
       doMkroot(zkClient, zkHost, path, failOnExists());
       return 0;
     } catch (Exception e) {

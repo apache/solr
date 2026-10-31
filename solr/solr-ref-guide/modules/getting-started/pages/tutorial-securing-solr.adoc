@@ -33,7 +33,7 @@ The examples use `curl` and OpenSSL from a Unix or macOS terminal.
 [WARNING]
 ====
 This is a local learning environment with demonstration passwords.
-The wizard configures HTTPS before asking for users and passwords.
+The wizard generates HTTPS files before configuring the demonstration accounts.
 Basic Authentication does not encrypt credentials; use TLS for connections outside this local example.
 A production deployment also needs network restrictions and a secured ZooKeeper ensemble.
 See xref:deployment-guide:securing-solr.adoc[] for deployment guidance.
@@ -57,38 +57,43 @@ See xref:deployment-guide:solr-control-script-reference.adoc#start-and-restart[S
 
 === Configure HTTPS
 
-On Unix and macOS, the wizard first offers to generate a self-signed localhost certificate or use existing PEM files:
+On Unix and macOS, the wizard generates sample PEM certificate and private-key files covering `localhost` and `127.0.0.1`, valid for 30 days.
+It asks for the password protecting the keystore:
 
 [source,text]
 ----
-Generate a localhost certificate or use existing PEM files? [G/p]:
 Keystore password [SolrRocks]:
 ----
 
-Press Enter to generate a certificate covering `localhost` and `127.0.0.1`, valid for 30 days.
-The keystore password must contain at least six characters.
-Choose `P` instead to supply your PEM certificate chain, private key, keystore password file, and optionally a password file for an encrypted private key.
-Existing certificates must cover the hostname used by clients and other Solr nodes.
-
-The example uses `bin/solr ssl`'s conversion logic and stores its certificate, keystore, truststore, and include file under `example/secure-setup/tls`.
+Press Enter to use `SolrRocks`, or enter a password of at least six characters.
+This password protects the TLS keystore and is independent of the HTTP and ZooKeeper account passwords.
+The wizard prints the paths to the generated certificate, private key, keystore, truststore, keystore-password file, and example-specific include file under `example/secure-setup/tls`.
 It does not edit the installation-wide `solr.in.sh`.
-On a fresh example, Solr starts with HTTPS before user setup.
 
-=== Configure ZooKeeper Access Control
+=== Create the Demonstration Accounts
 
-Before starting Solr, the wizard also asks for passwords for separate ZooKeeper digest accounts:
+The wizard automatically creates HTTP accounts `solr`, `index`, and `search`, and ZooKeeper digest accounts `zk-admin` and `zk-readonly`, using `SolrRocks` as their default password.
+It offers one opportunity to customize the new account passwords:
 
 [source,text]
 ----
-Password for zk-admin [SolrRocks]:
-Password for zk-readonly [SolrRocks]:
+Change account passwords? [y/N]:
 ----
+
+Press Enter to accept the defaults used throughout this tutorial.
+Choose `y` to enter passwords for the fixed accounts; passwords typed at an interactive terminal are hidden.
+A password equal to its username is rejected by default, and the wizard asks for another password.
+If you customize passwords, substitute them in the commands below.
+
+The wizard prints the paths where credentials are saved, with owner-only permissions on POSIX filesystems:
+
+* `example/secure-setup/http-credentials.properties`: HTTP account passwords.
+* `example/secure-setup/zk-credentials.properties`: ZooKeeper digest account passwords.
 
 `zk-admin` has full access to the example's ZooKeeper data.
 `zk-readonly` can read ordinary metadata but cannot modify it or read `/security.json` and `/security/*`.
-These accounts are independent of the HTTP users configured below.
-Credentials are saved in `example/secure-setup/zk-credentials.properties`, with owner-only permissions on POSIX filesystems.
-The example-specific include file configures digest authentication and ACLs for both Solr and CLI commands, using the `/solr` ZooKeeper chroot.
+These accounts are independent of the HTTP users.
+The example-specific include file configures digest authentication and ACLs for Solr and CLI commands, using the `/solr` ZooKeeper chroot.
 
 === Verify HTTPS
 
@@ -102,30 +107,14 @@ curl --cacert example/secure-setup/tls/cert.pem \
 
 Run the command in another terminal.
 You should receive system information without a certificate error.
-Return to the wizard and press Enter to continue with user setup.
+Return to the wizard and press Enter to install the HTTP security configuration and load the sample documents.
 The wizard does not run curl itself.
-If you are restarting an example with authentication enabled, an HTTP 401 response also confirms that HTTPS is working; administrator credentials are requested before starting that existing example.
+If you are restarting an example with authentication enabled, an HTTP 401 response also confirms that HTTPS is working; the saved credentials are reused when restarting the example.
 
-On Windows, the wizard configures HTTP users only; configure them manually as described in xref:deployment-guide:zookeeper-access-control.adoc[] and xref:deployment-guide:enabling-ssl.adoc[].
+On Windows, the wizard creates the HTTP accounts; configure HTTPS and ZooKeeper access control manually as described in xref:deployment-guide:zookeeper-access-control.adoc[] and xref:deployment-guide:enabling-ssl.adoc[].
 The remaining commands in this tutorial assume the Unix or macOS HTTPS setup.
 
-=== Choose Users and Passwords
-
-The interactive session asks for an administrator, then passwords for the fixed `index` and `search` accounts:
-
-[source,text]
-----
-Administrator username [solr]:
-Administrator password [SolrRocks]:
-Password for index [SolrRocks]:
-Password for search [SolrRocks]:
-----
-
-Press Enter at each prompt to accept the defaults used throughout this tutorial.
-You can choose a different administrator username and set your own passwords; substitute those credentials in later commands.
-The usernames `index` and `search` are reserved for the data-access accounts, and the administrator username cannot contain a colon.
-A password equal to its username is rejected by default; the wizard asks for another password.
-Passwords typed at an interactive terminal are hidden.
+=== HTTP Account Permissions
 
 [%autowidth,options="header"]
 |===
@@ -290,9 +279,16 @@ bin/solr stop -p 8983
 
 Run `bin/solr start -e secure-setup` again to restart the example.
 Existing security settings are preserved, and an existing collection is not reindexed.
-Enter the credentials of an existing administrator; the prompts do not reset passwords or replace the saved configuration.
-The `index` and `search` password prompts also leave their existing passwords unchanged.
-If you changed the administrator password, `--no-prompt` will still try the original demonstration credentials and will not authenticate.
+Saved HTTP and ZooKeeper passwords are reused without prompting.
+If you changed the administrator password through an API, supply the new credentials when restarting:
+
+[source,bash]
+----
+bin/solr start -e secure-setup --credentials solr:NewPassword
+----
+
+The example saves those administrator credentials for subsequent starts.
+Changing a password in the saved HTTP credentials file updates what the wizard uses; it does not change the server's password.
 
 == Use the CLI with the Secured Example
 
@@ -310,15 +306,17 @@ For example, check the node's status with the HTTP administrator credentials:
 SOLR_INCLUDE=example/secure-setup/tls/solr.in.sh bin/solr status --credentials solr:SolrRocks
 ----
 
-To inspect ZooKeeper metadata with the configured `zk-admin` credentials, select the same include file and specify the ZooKeeper connection string:
+The wizard ends by printing a ZooKeeper listing command. With the default credentials, run:
 
 [source,bash]
 ----
-SOLR_INCLUDE=example/secure-setup/tls/solr.in.sh bin/solr zk ls / --zk-host localhost:9983/solr
+bin/solr zk ls / --zk-host localhost:9983/solr --zk-credentials zk-admin:SolrRocks
 ----
 
+This authenticates directly to ZooKeeper without the example's include file or HTTPS settings.
 The output lists the example's znodes, including `collections`, `configs`, and `security.json`.
-The HTTP `--credentials` option does not authenticate ZooKeeper requests; the include file selects the saved ZooKeeper credentials.
+The HTTP `--credentials` option authenticates Solr discovery requests; `--zk-credentials` supplies ZooKeeper digest credentials.
+For a customized ZooKeeper password, replace `SolrRocks` with the value saved in `zk-credentials.properties`.
 
 Compare this with a request that does not load the example's credentials:
 

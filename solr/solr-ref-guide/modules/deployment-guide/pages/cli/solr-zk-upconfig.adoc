@@ -35,6 +35,7 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 ....
 bin/solr zk upconfig [-hv] -d=DIR -n=<confName> [-s=<solrConnection>]
                      [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
+                     [--zk-credentials=username:password]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -104,6 +105,9 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 
 *-z*, *--zk-host*=_<zkHost>_::
   Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--zk-credentials*=_username:password_::
+  ZooKeeper digest credentials, separate from HTTP --credentials.
 
 // end::picocli-generated-man-section-options[]
 

@@ -127,6 +127,16 @@ final class SecureExampleSSL {
             .getBytes(StandardCharsets.UTF_8));
   }
 
+  void printFiles() {
+    runtime.println("Certificate: " + certificate());
+    Path key = directory.resolve("key.pem");
+    if (Files.isRegularFile(key)) runtime.println("Private key: " + key);
+    runtime.println("Keystore: " + keystore());
+    runtime.println("Truststore: " + keystore() + ".truststore");
+    runtime.println("Keystore password file: " + passwordFile());
+    runtime.println("Solr include file: " + includeFile());
+  }
+
   void printVerificationInstructions(String solrUrl) {
     String url = CLIUtils.normalizeSolrUrl(solrUrl, false) + "/api/node/system";
     runtime.println("Verify HTTPS in another terminal:");

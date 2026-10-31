@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
@@ -657,27 +658,53 @@ public class RunExampleTool extends ToolBase {
     secureExampleNoPrompt = noPrompt;
     secureHttpsVerificationShown = false;
     Map<String, Object> httpsNodeStatus = null;
+    SecureExampleCredentials accounts = new SecureExampleCredentials(solrHomeDir);
+    boolean existingAccounts = accounts.exists();
+    if (start.credentials() != null) accounts.setAdministrator(start.credentials());
     if (!CLIUtils.isWindows()) {
       secureSSL = new SecureExampleSSL(solrHomeDir, runtime);
       boolean existingHttps = secureSSL.isConfigured();
       if (!existingHttps) configureSecureExampleSSL(input, start, noPrompt);
       else echo("Reusing the example's HTTPS configuration.");
       SecureExampleZk secureZk = new SecureExampleZk(solrHomeDir);
+      boolean changePasswords = false;
+      if (!existingAccounts || !secureZk.isConfigured()) {
+        echo(
+            "The solr, index, search, zk-admin, and zk-readonly accounts use SolrRocks by default.");
+        String choice = noPrompt ? "n" : prompt(input, "Change account passwords? [y/N]: ", "n");
+        while (!Set.of("y", "n").contains(choice.toLowerCase(Locale.ROOT))) {
+          choice =
+              prompt(input, "Enter y to change passwords or n to use the defaults [y/N]: ", "n");
+        }
+        changePasswords = choice.equalsIgnoreCase("y");
+      }
+      if (!existingAccounts && changePasswords) {
+        for (String account : List.of("admin", "index", "search")) {
+          String username = "admin".equals(account) ? accounts.adminUsername() : account;
+          accounts.setPassword(
+              account,
+              promptPassword(input, "Password for " + username + " [SolrRocks]: ", username));
+        }
+      }
       if (secureZk.isConfigured()) {
         echo("Reusing the example's ZooKeeper credentials and ACL configuration.");
       } else {
         echo("Protecting ZooKeeper with separate digest accounts and ACLs.");
         String zkAdminPassword =
-            noPrompt
-                ? "SolrRocks"
-                : promptPassword(input, "Password for zk-admin [SolrRocks]: ", "zk-admin");
+            changePasswords
+                ? promptPassword(input, "Password for zk-admin [SolrRocks]: ", "zk-admin")
+                : "SolrRocks";
         String zkReadonlyPassword =
-            noPrompt
-                ? "SolrRocks"
-                : promptPassword(input, "Password for zk-readonly [SolrRocks]: ", "zk-readonly");
+            changePasswords
+                ? promptPassword(input, "Password for zk-readonly [SolrRocks]: ", "zk-readonly")
+                : "SolrRocks";
         secureZk.create(zkAdminPassword, zkReadonlyPassword);
       }
+      if (!existingAccounts || start.credentials() == null) accounts.save();
+      echo("HTTP credentials: " + accounts.file());
       secureZk.configure(secureSSL.includeFile(), port);
+      echo("ZooKeeper credentials: " + secureZk.credentialsFile());
+      secureSSL.printFiles();
       secureSSL.configureClientTrust();
       urlScheme = "https";
       if (!existingHttps
@@ -690,16 +717,13 @@ public class RunExampleTool extends ToolBase {
       echo(
           "Configure HTTPS and ZooKeeper access control manually on Windows; the setup wizard requires Unix or macOS.");
     }
-    String user = noPrompt ? "solr" : prompt(input, "Administrator username [solr]: ", "solr");
-    while (user.contains(":") || Set.of("index", "search").contains(user)) {
-      echo(
-          "The administrator username must differ from index and search and must not contain ':'.");
-      user = prompt(input, "Administrator username [solr]: ", "solr");
+    if (existingAccounts) echo("Reusing the example's HTTP credentials.");
+    if (CLIUtils.isWindows()) {
+      if (!existingAccounts || start.credentials() == null) accounts.save();
+      echo("HTTP credentials: " + accounts.file());
     }
-    String password =
-        noPrompt
-            ? "SolrRocks"
-            : promptPassword(input, "Administrator password [SolrRocks]: ", user);
+    String user = accounts.adminUsername();
+    String password = accounts.password("admin");
     // TODO: Configure users and roles through the security APIs so validation
     // happens server-side instead of constructing security.json directly.
     Map<String, Object> config;
@@ -724,10 +748,7 @@ public class RunExampleTool extends ToolBase {
     }
     String indexingCredentials = null;
     for (String role : List.of("index", "search")) {
-      String pass =
-          noPrompt
-              ? "SolrRocks"
-              : promptPassword(input, "Password for " + role + " [SolrRocks]: ", role);
+      String pass = accounts.password(role);
       credentials.put(role, Sha256AuthenticationProvider.getSaltedHashedValue(pass));
       userRoles.put(role, "index".equals(role) ? List.of("index", "search") : List.of("search"));
       if ("index".equals(role)) indexingCredentials = role + ":" + pass;
@@ -746,6 +767,7 @@ public class RunExampleTool extends ToolBase {
         config,
         httpsNodeStatus,
         indexingCredentials);
+    if (existingAccounts && start.credentials() != null) accounts.save();
     echo(
         "Secure Solr example running at "
             + urlScheme
@@ -761,6 +783,20 @@ public class RunExampleTool extends ToolBase {
                 : ""));
     if (secureSSL != null) {
       echo("Use SOLR_INCLUDE=" + secureSSL.includeFile() + " for other bin/solr commands.");
+      var zkCredentials =
+          VMParamsZkCredentialsInjector.readCredentialsFile(
+              new SecureExampleZk(solrHomeDir).credentialsFile().toString());
+      String zkPassword = zkCredentials.getProperty("zkDigestPassword");
+      echo("List ZooKeeper data with digest authentication:");
+      echo(
+          "bin/solr zk ls / --zk-host localhost:"
+              + (port + 1000)
+              + "/solr --zk-credentials 'zk-admin:"
+              + ("SolrRocks".equals(zkPassword) ? "SolrRocks" : "<password>")
+              + "'");
+      if (!"SolrRocks".equals(zkPassword))
+        echo(
+            "Use the zk-admin password from " + new SecureExampleZk(solrHomeDir).credentialsFile());
     }
   }
 
@@ -774,38 +810,18 @@ public class RunExampleTool extends ToolBase {
 
   private void configureSecureExampleSSL(Scanner input, StartSolrParams start, boolean noPrompt)
       throws Exception {
-    echo("First, configure HTTPS. OpenSSL must be available on PATH.");
-    String mode =
-        noPrompt
-            ? "G"
-            : prompt(
-                input, "Generate a localhost certificate or use existing PEM files? [G/p]: ", "G");
-    while (!mode.equalsIgnoreCase("g") && !mode.equalsIgnoreCase("p")) {
-      echo("Enter G to generate a certificate or P to use existing PEM files.");
-      mode = prompt(input, "Certificate choice [G/p]: ", "G");
+    echo("Generating sample PEM certificate and key files. OpenSSL must be available on PATH.");
+    echo("The generated self-signed certificate is valid for 30 days and is for local use.");
+    if (start.host() != null && !Set.of("localhost", "127.0.0.1").contains(start.host())) {
+      throw new IllegalArgumentException("Generated certificates cover localhost and 127.0.0.1.");
     }
-    if (mode.equalsIgnoreCase("g")) {
-      if (start.host() != null && !Set.of("localhost", "127.0.0.1").contains(start.host())) {
-        throw new IllegalArgumentException(
-            "Generated certificates cover localhost and 127.0.0.1. Use existing PEM files for --host "
-                + start.host());
-      }
-      echo("The generated self-signed certificate is valid for 30 days and is for local use.");
-      String password =
-          noPrompt ? "SolrRocks" : promptPassword(input, "Keystore password [SolrRocks]: ");
-      while (password.length() < 6) {
-        echo("The keystore password must contain at least six characters.");
-        password = promptPassword(input, "Keystore password [SolrRocks]: ");
-      }
-      secureSSL.generate(password);
-    } else {
-      Path cert = Path.of(prompt(input, "PEM certificate chain: "));
-      Path key = Path.of(prompt(input, "PEM private key: "));
-      Path password = Path.of(prompt(input, "Keystore password file: "));
-      String keyPassword =
-          prompt(input, "PEM key password file (Enter for an unencrypted key): ", null);
-      secureSSL.install(cert, key, password, keyPassword == null ? null : Path.of(keyPassword));
+    String password =
+        noPrompt ? "SolrRocks" : promptPassword(input, "Keystore password [SolrRocks]: ");
+    while (password.length() < 6) {
+      echo("The keystore password must contain at least six characters.");
+      password = promptPassword(input, "Keystore password [SolrRocks]: ");
     }
+    secureSSL.generate(password);
     secureSSL.setAdvertisedHost(start.host() == null ? "localhost" : start.host());
   }
 

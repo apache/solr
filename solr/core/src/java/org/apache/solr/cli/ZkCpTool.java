@@ -23,11 +23,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Compressor;
@@ -38,6 +36,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine.Mixin;
 
 /** Supports zk cp command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -76,6 +75,8 @@ public class ZkCpTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
+  @Mixin private ZkCredentialsOptions zkAuth;
+
   @picocli.CommandLine.Parameters(
       index = "0",
       arity = "1",
@@ -107,6 +108,7 @@ public class ZkCpTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
         .addOption(SOLR_HOME_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
@@ -173,10 +175,22 @@ public class ZkCpTool extends ToolBase {
     String dst = cli.getArgs()[1];
     boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
     String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
-    doCp(zkHost, src, dst, recursive, solrHome);
+    doCp(
+        zkHost,
+        src,
+        dst,
+        recursive,
+        solrHome,
+        cli.getOptionValue(CommonCLIOptions.ZK_CREDENTIALS_OPTION));
   }
 
-  private void doCp(String zkHost, String src, String dst, boolean recursive, String solrHome)
+  private void doCp(
+      String zkHost,
+      String src,
+      String dst,
+      boolean recursive,
+      String solrHome,
+      String zkCredentials)
       throws Exception {
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
@@ -221,7 +235,7 @@ public class ZkCpTool extends ToolBase {
           Path solrHomePath = Path.of(solrHome);
           Properties props = new Properties();
           props.put(SolrXmlConfig.ZK_HOST, zkHost);
-          NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
+          NodeConfig nodeConfig = SolrXmlConfig.fromSolrHome(solrHomePath, props);
           minStateByteLenForCompression =
               nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
           String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
@@ -248,9 +262,7 @@ public class ZkCpTool extends ToolBase {
       echoIfVerbose("Compression of state.json has been enabled");
     }
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+        CLIUtils.zkClientBuilder(zkHost, zkCredentials)
             .withStateFileCompression(minStateByteLenForCompression, compressor)
             .build()) {
 
@@ -264,7 +276,7 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    doCp(zkOpts.resolveZkHost(), src, dst, recursiveOpt.recursive, solrHome);
+    doCp(zkOpts.resolveZkHost(), src, dst, recursiveOpt.recursive, solrHome, zkAuth.credentials);
     return 0;
   }
 }
