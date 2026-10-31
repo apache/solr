@@ -1,5 +1,4 @@
-title:
-  Added V2 APIs to enable and disable polling of a leader from its follower
+title: Added V2 APIs to enable and disable polling of a leader from its follower
 type: added
 authors:
   - name: Jalaz Kumar
