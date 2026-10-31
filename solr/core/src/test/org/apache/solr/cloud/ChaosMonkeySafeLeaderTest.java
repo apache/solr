@@ -54,6 +54,13 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     clearErrorHook();
   }
 
+  // The monkey spares leaders only, so an update sent to any replica can hit a stopped node.
+  @Override
+  protected CloudSolrClient createCloudClient(String defaultCollection) {
+    return createNewCloudSolrClient(
+        zkServer.getZkAddress(), defaultCollection, true, 30000, 120000);
+  }
+
   protected static final String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
 
