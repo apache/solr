@@ -63,46 +63,61 @@ public class ExitableDirectoryReaderSearch {
 
     Docs queryFields;
 
-    int NUM_DOCS = 500_000;
-    int WORDS = NUM_DOCS / 100;
+    @Param({"500000"})
+    int numDocs;
+
+    @Param({"0"})
+    int searchThreads;
+
+    @Param({"false"})
+    boolean multiThreaded;
+
+    @Param({"1000"})
+    int timeAllowed;
+
+    int words;
+    long tasksBeforeIteration;
 
     @Setup(Level.Trial)
     public void setupTrial(SolrBenchState solrBenchState) throws Exception {
+      if (numDocs < 1) {
+        throw new IllegalArgumentException("numDocs must be positive");
+      }
+      words = Math.max(1, numDocs / 100);
       solrBenchState.setUseHttp1(true);
       System.setProperty("documentCache.enabled", "false");
       System.setProperty("queryResultCache.enabled", "false");
       System.setProperty("filterCache.enabled", "false");
-      System.setProperty("miniClusterBaseDir", "build/work/mini-cluster");
       // create a lot of small segments
       System.setProperty("segmentsPerTier", "200");
       System.setProperty("maxBufferedDocs", "100");
 
-      solrBenchState.startSolr(1);
+      solrBenchState.startSolr(1, searchThreads);
       log("######### Creating index ...");
       solrBenchState.createCollection(COLLECTION, 1, 1);
       // create a lot of large-ish fields to scan positions
       Docs docs =
           Docs.docs(1234567890L)
               .field("id", integers().incrementing())
-              .field("f1_ts", strings().alpha().maxCardinality(WORDS).ofLengthBetween(3, 10))
+              .field("f1_ts", strings().alpha().maxCardinality(words).ofLengthBetween(3, 10))
               .field(
-                  "f2_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f2_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
-                  "f3_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f3_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
-                  "f4_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f4_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
-                  "f5_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f5_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
-                  "f6_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f6_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
-                  "f7_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f7_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
-                  "f8_ts", strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10))
+                  "f8_ts", strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10))
               .field(
                   "f9_ts",
-                  strings().alpha().maxCardinality(WORDS).multi(50).ofLengthBetween(3, 10));
-      solrBenchState.index(COLLECTION, docs, NUM_DOCS, true);
+                  strings().alpha().maxCardinality(words).multi(50).ofLengthBetween(3, 10));
+      solrBenchState.index(COLLECTION, docs, numDocs, false);
       solrBenchState.forceMerge(COLLECTION, 200);
       solrBenchState.dumpCoreInfo();
     }
@@ -123,16 +138,21 @@ public class ExitableDirectoryReaderSearch {
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
       solrBenchState.client.request(reload);
 
+      tasksBeforeIteration = solrBenchState.completedSearchTasks();
+
       queryFields =
           Docs.docs(1234567890L)
               .field("id", integers().incrementing())
-              .field("f1_ts", strings().alpha().maxCardinality(WORDS).ofLengthBetween(3, 10))
+              .field("f1_ts", strings().alpha().maxCardinality(words).ofLengthBetween(3, 10))
               .field(
-                  "f2_ts", strings().alpha().maxCardinality(WORDS).multi(5).ofLengthBetween(3, 10));
+                  "f2_ts", strings().alpha().maxCardinality(words).multi(5).ofLengthBetween(3, 10));
     }
 
     @TearDown(Level.Iteration)
-    public void tearDownTrial() throws Exception {
+    public void tearDownTrial(SolrBenchState solrBenchState) throws Exception {
+      log(
+          "Completed search-pool tasks in iteration: "
+              + (solrBenchState.completedSearchTasks() - tasksBeforeIteration));
       if (verifyEDRInUse) {
         CallerSpecificQueryLimit queryLimit = (CallerSpecificQueryLimit) TestInjection.queryTimeout;
         if (queryLimit == null) {
@@ -151,9 +171,12 @@ public class ExitableDirectoryReaderSearch {
     }
   }
 
-  private static ModifiableSolrParams createInitialParams() {
-    ModifiableSolrParams params =
-        SolrBenchState.params("rows", "100", "timeAllowed", "1000", "fl", "*");
+  private static ModifiableSolrParams createInitialParams(BenchState state) {
+    ModifiableSolrParams params = SolrBenchState.params("rows", "100", "fl", "*");
+    params.set("multiThreaded", state.multiThreaded);
+    if (state.timeAllowed > 0) {
+      params.set("timeAllowed", state.timeAllowed);
+    }
     return params;
   }
 
@@ -161,7 +184,7 @@ public class ExitableDirectoryReaderSearch {
   public void testShortQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
-    ModifiableSolrParams params = createInitialParams();
+    ModifiableSolrParams params = createInitialParams(state);
     params.set("q", "f1_ts:" + queryDoc.getFieldValue("f1_ts").toString());
     QueryRequest queryRequest = new QueryRequest(params);
     QueryResponse rsp = queryRequest.process(solrBenchState.client, COLLECTION);
@@ -172,7 +195,7 @@ public class ExitableDirectoryReaderSearch {
   public void testLongQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
-    ModifiableSolrParams params = createInitialParams();
+    ModifiableSolrParams params = createInitialParams(state);
     StringBuilder query = new StringBuilder();
     for (int i = 2; i < 10; i++) {
       if (query.length() > 0) {

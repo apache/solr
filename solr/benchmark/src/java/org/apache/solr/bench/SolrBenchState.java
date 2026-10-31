@@ -32,9 +32,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SplittableRandom;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -259,6 +261,14 @@ public class SolrBenchState {
    * @param nodeCount the node count
    */
   public void startSolr(int nodeCount) {
+    startSolr(nodeCount, 0);
+  }
+
+  /** Starts the benchmark nodes with an explicit search worker count. */
+  public void startSolr(int nodeCount, int searchThreads) {
+    if (searchThreads < 0) {
+      throw new IllegalArgumentException("searchThreads must be non-negative");
+    }
     log("starting mini cluster at base directory: " + miniClusterBaseDir.toAbsolutePath());
 
     if (!allowClusterReuse && Files.exists(miniClusterBaseDir)) {
@@ -277,6 +287,12 @@ public class SolrBenchState {
     try {
       cluster =
           new MiniSolrCloudCluster.Builder(nodeCount, miniClusterBaseDir)
+              .withSolrXml(
+                  MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
+                      "<solr>",
+                      "<solr><int name=\"indexSearcherExecutorThreads\">"
+                          + searchThreads
+                          + "</int>"))
               .formatZkServer(false)
               .addConfig("conf", getFile("src/resources/configs/cloud-minimal/conf"))
               .configure();
@@ -339,6 +355,21 @@ public class SolrBenchState {
         throw e;
       }
     }
+  }
+
+  /** Returns completed search-pool tasks; direct execution without a pool contributes zero. */
+  public long completedSearchTasks() {
+    long completed = 0;
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      Executor executor = jetty.getCoreContainer().getIndexSearcherExecutor();
+      if (executor != null) {
+        if (!(executor instanceof ThreadPoolExecutor pool)) {
+          throw new IllegalStateException("Unsupported search executor: " + executor.getClass());
+        }
+        completed += pool.getCompletedTaskCount();
+      }
+    }
+    return completed;
   }
 
   /** Setting useHttp1 to true will make the {@link #client} use http1 */
