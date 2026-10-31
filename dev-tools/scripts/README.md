@@ -38,6 +38,14 @@ the full tests.
     python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
 
 
+### releaseDryRun.sh
+
+Dry run of the release process for the version in `build.gradle`, without signing or
+publishing anything: prepares the changelog on a local branch, builds an RC with
+`buildAndPushRelease.py`, and smoke tests it. Used by the `Solr-Smoketest-*` Jenkins jobs.
+
+    Usage: dev-tools/scripts/releaseDryRun.sh [TMP_DIR]
+
 ### releaseWizard.py
 
 The Release Wizard guides the Release Manager through the release process step
