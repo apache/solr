@@ -30,6 +30,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RELO
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RENAME;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTBUFFERUPDATES;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTDROPBUFFEREDUPDATES;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTRECOVERY;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSTATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSYNCSHARD;
@@ -195,6 +196,31 @@ public enum CoreAdminOperation implements CoreAdminOp {
         }
       }),
   REQUESTAPPLYUPDATES_OP(REQUESTAPPLYUPDATES, new RequestApplyUpdatesOp()),
+
+  REQUESTDROPBUFFEREDUPDATES_OP(
+      REQUESTDROPBUFFEREDUPDATES,
+      it -> {
+        SolrParams params = it.req.getParams();
+        String cname = params.required().get(CoreAdminParams.NAME);
+        log().info("Dropping buffered updates on core: {}", cname);
+
+        try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
+          if (core == null)
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Core [" + cname + "] does not exist");
+          if (!core.getUpdateHandler().getUpdateLog().dropBufferedUpdates()) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR, "Core " + cname + " not in buffering state");
+          }
+          it.rsp.add("core", cname);
+          it.rsp.add("status", "BUFFER_DROPPED");
+        } catch (Exception e) {
+          if (e instanceof SolrException) throw (SolrException) e;
+          else
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Could not drop buffered updates", e);
+        } finally {
+          if (it.req != null) it.req.close();
+        }
+      }),
 
   REQUESTSTATUS_OP(
       REQUESTSTATUS,
