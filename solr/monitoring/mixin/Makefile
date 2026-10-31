@@ -42,7 +42,7 @@ require_vendor = @test -d vendor || { \
 	  echo "ERROR: vendor/ is missing — run 'make install' (or ./make.sh install) first." >&2; \
 	  exit 1; }
 
-.PHONY: all dashboards alerts install check fmt clean
+.PHONY: all dashboards alerts install check test fmt clean
 
 all: dashboards alerts
 
@@ -71,10 +71,15 @@ alerts:
 	mv $(ALERTS_OUT).tmp $(ALERTS_OUT)
 	@echo "→ Generated $(ALERTS_OUT)"
 
-check:
+check: test
 	$(call require_tool,$(PROMTOOL))
 	$(PROMTOOL) check rules $(ALERTS_OUT)
 	@echo "→ Alert rules validated OK"
+
+test:
+	$(call require_tool,$(PROMTOOL))
+	$(PROMTOOL) test rules tests/*.yml
+	@echo "→ Alert rule unit tests passed"
 
 fmt:
 	$(call require_tool,$(JSONNETFMT))
