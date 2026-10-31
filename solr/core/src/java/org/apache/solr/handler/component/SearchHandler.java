@@ -149,6 +149,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // rb must belong to this exact request
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     super.handleRequest(req, rsp);
     CoreContainer cc = req.getCoreContainer();

@@ -412,6 +412,7 @@ public abstract class RequestHandlerBase
    * it with the same request. A delegating handler is only recorded if it runs this class's {@link
    * #handleRequest}.
    */
+  @SuppressWarnings("ReferenceEquality") // the same handler instance, not an equal one
   protected boolean isDispatchedHandler(SolrQueryRequest req) {
     return req.getContext().get(DISPATCHED_HANDLER) == this;
   }
