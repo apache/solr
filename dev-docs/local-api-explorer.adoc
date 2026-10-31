@@ -1,0 +1,26 @@
+= Browsing the V2 API with the API Explorer
+
+Solr's v2 (JAX-RS) API is described by an OpenAPI spec generated at build time
+from the annotated interfaces in `solr/api/src/java/.../client/api/endpoint`.
+The API Explorer is bundled in the webapp and renders the generated spec using Scalar.
+
+== Usage
+
+Build and start a local Solr with `./gradlew dev` and `bin/solr start -c`.
+Open the *API Explorer* link in the Admin UI footer to browse endpoints and send requests.
+The explorer opens in a new tab at `\http://localhost:8983/solr/libs/scalar/index.html` with the default port.
+
+Rebuild the webapp after changing API annotations to refresh the explorer's spec.
+The page and its assets are served locally; API requests go directly to the same Solr origin.
+Executing a request can change the running instance, just as calling its API directly can.
+
+== Maintaining Scalar
+
+The vendored `solr/webapp/web/libs/scalar/standalone.js` is the unmodified
+`dist/browser/standalone.js` from the `@scalar/api-reference` npm package.
+Its version is recorded as `scalar-api-reference` in `gradle/libs.versions.toml`.
+When upgrading, replace the bundle from that exact package version and review its
+license and bundled dependencies. Keep the MIT license in `solr/licenses/scalar-LICENSE-MIT.txt`
+and maintain the corresponding entry in the root `NOTICE.txt`.
+The initializer is a separate script so it also works with a policy that disallows inline scripts.
+Default CDN fonts, the request proxy, AI chat, hosted-client links, developer tools, and telemetry are disabled.
