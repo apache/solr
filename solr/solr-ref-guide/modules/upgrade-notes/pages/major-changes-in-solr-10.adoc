@@ -36,19 +36,22 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.2
 
-=== Snapshot commands are now `bin/solr snapshot` sub-commands
+[#solr-cli-now-uses-picocli]
+=== Solr CLI now uses PicoCLI
 
-The `snapshot-create`, `snapshot-delete`, `snapshot-describe`, `snapshot-export` and `snapshot-list` commands of the experimental picocli command line interface are replaced by the sub-commands of `bin/solr snapshot`:
+Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to https://picocli.info/[picocli].
 
-[source,bash]
-----
-bin/solr snapshot create -c mycollection --snapshot-name snap1
-bin/solr snapshot list -c mycollection
-----
+picocli is now the default. Set `SOLR_PICOCLI=false` to fall back to Commons CLI.
 
-The old spellings still work and are hidden from the help and from this guide.
-They are deprecated in Solr 10.2 and are removed in Solr 11.0.
-The default command line interface is not changed.
+* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
+* `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
+Before 10.2, `-v` was the short form of `--value`.
+* `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
+This matches the Commons CLI, but means `--fail-on-exists false` does not disable the check.
+* Error messages for invalid or mutually exclusive options are worded differently.
+* Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
+* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the Commons CLI prints.
+That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
 == Solr 10.1
 

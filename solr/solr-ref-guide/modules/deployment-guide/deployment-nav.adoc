@@ -18,7 +18,7 @@
 .Deployment Guide
 
 * xref:solr-control-script-reference.adoc[]
-** xref:cli/index.adoc[Experimental picocli CLI]
+** xref:cli/index.adoc[CLI command reference]
 // CLI-DOCS-START
 *** xref:cli/solr-api.adoc[api]
 *** xref:cli/solr-assert.adoc[assert]
@@ -62,6 +62,7 @@
 **** xref:cli/solr-zk-upconfig.adoc[upconfig]
 **** xref:cli/solr-zk-updateacls.adoc[updateacls]
 // CLI-DOCS-END
+** xref:cli/commons-cli-reference.adoc[Apache Commons CLI reference]
 
 * Installation & Deployment
 ** xref:system-requirements.adoc[]

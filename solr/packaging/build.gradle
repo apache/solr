@@ -338,26 +338,38 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   task.environment TEST_OUTPUT_DIR: integrationTestOutput
   task.environment TEST_FAILURE_DIR: solrTestFailuresDir
   task.environment BATS_LIB_PREFIX: batsLibsDir
-  if (usePicocli) {
-    task.environment SOLR_PICOCLI: 'true'
+  if (!usePicocli) {
+    task.environment SOLR_PICOCLI: 'false'
   }
 }
 
+// TODO: Remove this when cleaning up commons-cli
 task integrationTests(type: BatsTask) {
+  description = 'Runs the BATS suites for the CLI powered by commons-cli.'
   configureBatsTask(it, 'test-output', false)
 }
 
-// The same suites run against the experimental picocli CLI. Deliberately a curated list rather
-// than the whole suite, so the run stays short. A change that ports another tool to picocli
-// should add that tool's .bats file here.
+// The same suites run against the picocli CLI.
 task integrationTestsPicocli(type: BatsTask) {
-  description = 'Runs the BATS suites for the migrated commands against the experimental picocli CLI.'
+  description = 'Runs the BATS suites for the CLI powered by PicoCLI.'
   configureBatsTask(it, 'test-output-picocli', true)
-  // A suite belongs here only when every command it invokes has been migrated, not merely the
-  // command under test. test_auth.bats, for example, uses `solr assert` to wait for startup, so
-  // it cannot join until the assert command is migrated. test_help.bats asserts the exact wording
-  // of the commons-cli help output, which the picocli implementation words differently.
+  // TODO: Remove these explicit files entry from here after fixing 4 remaining bats file
   testFiles = [
+      'test/test_adminconsole_urls.bats',
+      'test/test_assert.bats',
+      'test/test_bats.bats',
+      'test/test_compression.bats',
+      'test/test_config.bats',
+      'test/test_create_collection.bats',
+      'test/test_example.bats',
+      'test/test_export.bats',
+      'test/test_opennlp.bats',
+      'test/test_placement_plugin.bats',
+      'test/test_rolling_upgrade.bats',
+      'test/test_snapshots.bats',
+      'test/test_ssl.bats',
+      'test/test_start_solr.bats',
+      'test/test_zz_cleanup.bats',
       'test/test_version.bats',
       'test/test_status.bats',
       'test/test_create.bats',
