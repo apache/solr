@@ -31,6 +31,8 @@ teardown() {
 
 
 configure_ssl() {
+  run solr assert --started "http://localhost:${SOLR_PORT}" --timeout 30000
+  assert_success
   run solr zk ls / --zk-host "localhost:${ZK_PORT}"
   assert_output --partial 'live_nodes'
   export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
