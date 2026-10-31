@@ -351,6 +351,19 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testSecureSetupRejectsWindowsBeforeInitializingDirectories() {
+    assumeTrue("Requires Windows", CLIUtils.isWindows());
+    RunExampleTool tool = new RunExampleTool();
+    IllegalArgumentException error =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.initDirs(null, null, null, null, "secure-setup"));
+    assertEquals(
+        "The secure-setup example requires Unix or macOS; Windows is not supported.",
+        error.getMessage());
+  }
+
+  @Test
   public void testSecureSetupExample() throws Exception {
     assumeSecureSetupSupported();
     testExample("secure-setup");

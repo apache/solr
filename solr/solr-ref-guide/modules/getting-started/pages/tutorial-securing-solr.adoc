@@ -28,7 +28,8 @@ A correct password does not grant access to every API: the user's roles must als
 
 Run the commands from your Solr installation directory.
 This tutorial assumes you are familiar with the basics in xref:solr-tutorial.adoc[].
-The examples use `curl` and OpenSSL from a Unix or macOS terminal.
+The `secure-setup` example requires Unix or macOS, with `curl` and OpenSSL available on your path.
+Windows is not supported; the example exits before creating files or starting nodes.
 
 [WARNING]
 ====
@@ -61,7 +62,7 @@ See xref:deployment-guide:solr-control-script-reference.adoc#start-and-restart[S
 
 === Configure HTTPS
 
-On Unix and macOS, the wizard generates sample PEM certificate and private-key files covering `localhost` and `127.0.0.1`, valid for 30 days.
+The wizard generates sample PEM certificate and private-key files covering `localhost` and `127.0.0.1`, valid for 30 days.
 It asks for the password protecting the keystore:
 
 [source,text]
@@ -115,8 +116,7 @@ Return to the wizard and press Enter to install the HTTP security configuration 
 The wizard does not run curl itself.
 If you are restarting an example with authentication enabled, an HTTP 401 response also confirms that HTTPS is working; the saved credentials are reused when restarting the example.
 
-On Windows, the wizard creates the HTTP accounts; configure HTTPS and ZooKeeper access control manually as described in xref:deployment-guide:zookeeper-access-control.adoc[] and xref:deployment-guide:enabling-ssl.adoc[].
-The remaining commands in this tutorial assume the Unix or macOS HTTPS setup.
+To configure security manually on Windows, see xref:deployment-guide:enabling-ssl.adoc[], xref:deployment-guide:basic-authentication-plugin.adoc[], and xref:deployment-guide:zookeeper-access-control.adoc[].
 
 === HTTP Account Permissions
 

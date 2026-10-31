@@ -575,6 +575,10 @@ public class RunExampleTool extends ToolBase {
       String solrHomeArg,
       String exampleType)
       throws Exception {
+    if ("secure-setup".equals(exampleType) && CLIUtils.isWindows()) {
+      throw new IllegalArgumentException(
+          "The secure-setup example requires Unix or macOS; Windows is not supported.");
+    }
     serverDir = Path.of(serverDirArg);
     if (!Files.isDirectory(serverDir))
       throw new IllegalArgumentException(
@@ -661,67 +665,56 @@ public class RunExampleTool extends ToolBase {
     SecureExampleCredentials accounts = new SecureExampleCredentials(solrHomeDir);
     boolean existingAccounts = accounts.exists();
     if (start.credentials() != null) accounts.setAdministrator(start.credentials());
-    if (!CLIUtils.isWindows()) {
-      secureSSL = new SecureExampleSSL(solrHomeDir, runtime);
-      boolean existingHttps = secureSSL.isConfigured();
-      if (!existingHttps) configureSecureExampleSSL(input, start, noPrompt);
-      else echo("Reusing the example's HTTPS configuration.");
-      SecureExampleZk secureZk = new SecureExampleZk(solrHomeDir);
-      boolean changePasswords = false;
-      if (!existingAccounts || !secureZk.isConfigured()) {
-        echo(
-            "The solr, index, search, zk-admin, and zk-readonly accounts use SolrRocks by default.");
-        String choice = noPrompt ? "n" : prompt(input, "Change account passwords? [y/N]: ", "n");
-        while (!Set.of("y", "n").contains(choice.toLowerCase(Locale.ROOT))) {
-          choice =
-              prompt(input, "Enter y to change passwords or n to use the defaults [y/N]: ", "n");
-        }
-        changePasswords = choice.equalsIgnoreCase("y");
+    secureSSL = new SecureExampleSSL(solrHomeDir, runtime);
+    boolean existingHttps = secureSSL.isConfigured();
+    if (!existingHttps) configureSecureExampleSSL(input, start, noPrompt);
+    else echo("Reusing the example's HTTPS configuration.");
+    SecureExampleZk secureZk = new SecureExampleZk(solrHomeDir);
+    boolean changePasswords = false;
+    if (!existingAccounts || !secureZk.isConfigured()) {
+      echo("The solr, index, search, zk-admin, and zk-readonly accounts use SolrRocks by default.");
+      String choice = noPrompt ? "n" : prompt(input, "Change account passwords? [y/N]: ", "n");
+      while (!Set.of("y", "n").contains(choice.toLowerCase(Locale.ROOT))) {
+        choice = prompt(input, "Enter y to change passwords or n to use the defaults [y/N]: ", "n");
       }
-      if (!existingAccounts && changePasswords) {
-        for (String account : List.of("admin", "index", "search")) {
-          String username = "admin".equals(account) ? accounts.adminUsername() : account;
-          accounts.setPassword(
-              account,
-              promptPassword(input, "Password for " + username + " [SolrRocks]: ", username));
-        }
+      changePasswords = choice.equalsIgnoreCase("y");
+    }
+    if (!existingAccounts && changePasswords) {
+      for (String account : List.of("admin", "index", "search")) {
+        String username = "admin".equals(account) ? accounts.adminUsername() : account;
+        accounts.setPassword(
+            account,
+            promptPassword(input, "Password for " + username + " [SolrRocks]: ", username));
       }
-      if (secureZk.isConfigured()) {
-        echo("Reusing the example's ZooKeeper credentials and ACL configuration.");
-      } else {
-        echo("Protecting ZooKeeper with separate digest accounts and ACLs.");
-        String zkAdminPassword =
-            changePasswords
-                ? promptPassword(input, "Password for zk-admin [SolrRocks]: ", "zk-admin")
-                : "SolrRocks";
-        String zkReadonlyPassword =
-            changePasswords
-                ? promptPassword(input, "Password for zk-readonly [SolrRocks]: ", "zk-readonly")
-                : "SolrRocks";
-        secureZk.create(zkAdminPassword, zkReadonlyPassword);
-      }
-      if (!existingAccounts || start.credentials() == null) accounts.save();
-      echo("HTTP credentials: " + accounts.file());
-      secureZk.configure(secureSSL.includeFile(), port);
-      echo("ZooKeeper credentials: " + secureZk.credentialsFile());
-      secureSSL.printFiles();
-      secureSSL.configureClientTrust();
-      urlScheme = "https";
-      if (!existingHttps
-          && !Files.isDirectory(solrHomeDir.resolve("zoo_data"))
-          && isPortAvailable(port)) {
-        httpsNodeStatus = startSolr(solrHomeDir, true, start, port, null, 30);
-        confirmSecureHttps((String) httpsNodeStatus.get("baseUrl"));
-      }
+    }
+    if (secureZk.isConfigured()) {
+      echo("Reusing the example's ZooKeeper credentials and ACL configuration.");
     } else {
-      echo(
-          "Configure HTTPS and ZooKeeper access control manually on Windows; the setup wizard requires Unix or macOS.");
+      echo("Protecting ZooKeeper with separate digest accounts and ACLs.");
+      String zkAdminPassword =
+          changePasswords
+              ? promptPassword(input, "Password for zk-admin [SolrRocks]: ", "zk-admin")
+              : "SolrRocks";
+      String zkReadonlyPassword =
+          changePasswords
+              ? promptPassword(input, "Password for zk-readonly [SolrRocks]: ", "zk-readonly")
+              : "SolrRocks";
+      secureZk.create(zkAdminPassword, zkReadonlyPassword);
+    }
+    if (!existingAccounts || start.credentials() == null) accounts.save();
+    echo("HTTP credentials: " + accounts.file());
+    secureZk.configure(secureSSL.includeFile(), port);
+    echo("ZooKeeper credentials: " + secureZk.credentialsFile());
+    secureSSL.printFiles();
+    secureSSL.configureClientTrust();
+    urlScheme = "https";
+    if (!existingHttps
+        && !Files.isDirectory(solrHomeDir.resolve("zoo_data"))
+        && isPortAvailable(port)) {
+      httpsNodeStatus = startSolr(solrHomeDir, true, start, port, null, 30);
+      confirmSecureHttps((String) httpsNodeStatus.get("baseUrl"));
     }
     if (existingAccounts) echo("Reusing the example's HTTP credentials.");
-    if (CLIUtils.isWindows()) {
-      if (!existingAccounts || start.credentials() == null) accounts.save();
-      echo("HTTP credentials: " + accounts.file());
-    }
     String user = accounts.adminUsername();
     String password = accounts.password("admin");
     // TODO: Configure users and roles through the security APIs so validation
@@ -1394,7 +1387,7 @@ public class RunExampleTool extends ToolBase {
             : "";
     if ("secure-setup".equals(params.example())) {
       syspropArg += " -Dsolr.environment=prod,label=Secure+Solr+Setup";
-      if (!isWindows && zkHost != null) {
+      if (zkHost != null) {
         syspropArg +=
             " -DzkDigestCredentialsFile=\""
                 + solrHomeDir.toAbsolutePath().resolve("zk-credentials.properties")
