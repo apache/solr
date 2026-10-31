@@ -342,8 +342,8 @@ public class ReplicationHandler extends RequestHandlerBase
         reportErrorOnResponse(rsp, "No follower configured", null);
       }
     } else if (command.equals(CMD_SHOW_COMMITS)) {
-      final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, coreReplicationAPI.fetchCommits());
+      rsp.add(CMD_SHOW_COMMITS, getCommits());
+      rsp.add(STATUS, OK_STATUS);
     } else if (command.equals(CMD_DETAILS)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
       // stringifyBooleans=true: V1's command=details has always rendered isLeader/isFollower/etc.
@@ -353,6 +353,10 @@ public class ReplicationHandler extends RequestHandlerBase
           coreReplicationAPI.fetchReplicationDetails(solrParams.getBool("follower", true)),
           true,
           true);
+      // V1 has rendered commits as NamedList (flatmap), not a map
+      @SuppressWarnings("unchecked")
+      final var details = (NamedList<Object>) rsp.getValues().get(CMD_DETAILS);
+      details.setVal(details.indexOf(CMD_SHOW_COMMITS, 0), getCommits());
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       setReplicationEnabled(true);
       rsp.add(STATUS, OK_STATUS);
