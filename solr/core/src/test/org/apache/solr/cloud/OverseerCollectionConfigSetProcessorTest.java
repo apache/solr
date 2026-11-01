@@ -62,6 +62,7 @@ import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -1538,5 +1539,80 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       processorThread.interrupt();
       processorThread.join(MAX_WAIT_MS);
     }
+  }
+
+  @Test
+  public void testLockTaskResolvesFollowedAlias() throws Exception {
+    commonMocks(2, false);
+    when(zkStateReaderMock.getAliases())
+        .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("aliasA", "collA"));
+
+    try (OverseerCollectionMessageHandler collHandler =
+        new OverseerCollectionMessageHandler(
+            zkStateReaderMock,
+            "1234",
+            shardHandlerFactoryMock,
+            ADMIN_PATH,
+            new Stats(),
+            overseerMock,
+            new OverseerNodePrioritizer(
+                zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock))) {
+      OverseerMessageHandler.Lock collALock =
+          collHandler.lockTask(
+              new ZkNodeProps(
+                  Overseer.QUEUE_OPERATION,
+                  CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+                  "name",
+                  "collA"),
+              1,
+              null);
+      assertNotNull(collALock);
+
+      OverseerMessageHandler.Lock aliasLock =
+          collHandler.lockTask(
+              new ZkNodeProps(
+                  Overseer.QUEUE_OPERATION,
+                  CollectionParams.CollectionAction.MOCK_SHARD_TASK.toLower(),
+                  ZkStateReader.COLLECTION_PROP,
+                  "aliasA",
+                  ZkStateReader.SHARD_ID_PROP,
+                  "shard1",
+                  CollectionAdminParams.FOLLOW_ALIASES,
+                  "true"),
+              1,
+              null);
+      assertNull("aliasA resolves to collA, which is locked", aliasLock);
+      collALock.unlock();
+    }
+  }
+
+  @Test
+  public void testLockTaskMultiCollectionAliasReturnsBadRequest() throws Exception {
+    commonMocks(2, false);
+    when(zkStateReaderMock.getAliases())
+        .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("aliasAB", "collA,collB"));
+    createAndStartProcessor(null);
+
+    ZkNodeProps props =
+        new ZkNodeProps(
+            Overseer.QUEUE_OPERATION,
+            CollectionParams.CollectionAction.MOCK_SHARD_TASK.toLower(),
+            ZkStateReader.COLLECTION_PROP,
+            "aliasAB",
+            ZkStateReader.SHARD_ID_PROP,
+            "shard1",
+            CollectionAdminParams.FOLLOW_ALIASES,
+            "true");
+    queue.add(
+        new QueueEvent("multiAliasTask", Utils.toJSON(props), null) {
+          @Override
+          public void setBytes(byte[] bytes) {
+            lastProcessMessageResult = OverseerSolrResponseSerializer.deserialize(bytes);
+          }
+        });
+    waitForEmptyQueue();
+
+    SolrException e = (SolrException) lastProcessMessageResult.getException();
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 }
