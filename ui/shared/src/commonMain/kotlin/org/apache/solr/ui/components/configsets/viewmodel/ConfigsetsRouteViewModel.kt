@@ -37,17 +37,7 @@ class ConfigsetsRouteViewModel(
         ?.let { ConfigsetsTab.valueOf(it) }
         ?: ConfigsetsTab.Overview
 
-    val backStack: SnapshotStateList<ConfigsetsScene> = mutableStateListOf(
-        when (initialTab) {
-            ConfigsetsTab.Overview -> ConfigsetsScene.Overview
-            ConfigsetsTab.Files -> ConfigsetsScene.Files
-            ConfigsetsTab.Schema -> ConfigsetsScene.Schema
-            ConfigsetsTab.UpdateConfig -> ConfigsetsScene.UpdateConfig
-            ConfigsetsTab.IndexQuery -> ConfigsetsScene.IndexQuery
-            ConfigsetsTab.Handlers -> ConfigsetsScene.Handlers
-            ConfigsetsTab.SearchComponents -> ConfigsetsScene.SearchComponents
-        },
-    )
+    val backStack: SnapshotStateList<ConfigsetsScene> = mutableStateListOf(initialTab.toScene())
 
     /**
      * The dialog that is currently open, if any.
@@ -60,7 +50,21 @@ class ConfigsetsRouteViewModel(
      *
      * @param tab The tab to select.
      */
-    fun selectTab(tab: ConfigsetsTab) = uiState.update { it.copy(selectedTab = tab) }
+    fun selectTab(tab: ConfigsetsTab) {
+        uiState.update { it.copy(selectedTab = tab) }
+        backStack.clear()
+        backStack.add(tab.toScene())
+    }
+
+    private fun ConfigsetsTab.toScene(): ConfigsetsScene = when (this) {
+        ConfigsetsTab.Overview -> ConfigsetsScene.Overview
+        ConfigsetsTab.Files -> ConfigsetsScene.Files
+        ConfigsetsTab.Schema -> ConfigsetsScene.Schema
+        ConfigsetsTab.UpdateConfig -> ConfigsetsScene.UpdateConfig
+        ConfigsetsTab.IndexQuery -> ConfigsetsScene.IndexQuery
+        ConfigsetsTab.Handlers -> ConfigsetsScene.Handlers
+        ConfigsetsTab.SearchComponents -> ConfigsetsScene.SearchComponents
+    }
 }
 
 data class ConfigsetsSceneUiState(
