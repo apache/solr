@@ -160,8 +160,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       SolrClient solrClient_local = jettySolrRunner.getSolrClient();
 
       SolrQuery query = new SolrQuery("cat:football");
-      query.setFields("*,score").add("collection", "collection1,collection2");
-      QueryResponse queryResponse = solrClient.query("collection1", query);
+      query.setFields("*,score");
+      QueryResponse queryResponse = solrClient.query("collection1,collection2", query);
       assertEquals(2, queryResponse.getResults().getNumFound());
       float score1 = (float) queryResponse.getResults().get(0).get("score");
       float score2 = (float) queryResponse.getResults().get(1).get("score");
@@ -169,8 +169,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           "Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
 
       query = new SolrQuery("cat:football");
-      query.setFields("*,score").add("collection", "collection1_local,collection2_local");
-      queryResponse = solrClient_local.query("collection1_local", query);
+      query.setFields("*,score");
+      queryResponse = solrClient_local.query("collection1_local,collection2_local", query);
       assertEquals(2, queryResponse.getResults().getNumFound());
       assertEquals("2", queryResponse.getResults().get(0).get("id"));
       assertEquals("1", queryResponse.getResults().get(1).get("id"));

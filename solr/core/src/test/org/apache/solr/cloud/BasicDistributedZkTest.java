@@ -1538,16 +1538,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             .getNumFound();
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set("collection", "collection2,collection3");
-    long found = clients.get(0).query(query).getResults().getNumFound();
+    long found = clients.get(0).query("collection2,collection3", query).getResults().getNumFound();
     assertEquals(collection2Docs + collection3Docs, found);
 
     query = new SolrQuery("*:*");
-    query.set("collection", "collection1,collection2,collection3");
-    found = clients.get(0).query(query).getResults().getNumFound();
+    found =
+        clients
+            .get(0)
+            .query("collection1,collection2,collection3", query)
+            .getResults()
+            .getNumFound();
     assertEquals(collection1Docs + collection2Docs + collection3Docs, found);
 
     // try to search multiple with cloud client
+    query.set("collection", "collection1,collection2,collection3");
     found = getCommonCloudSolrClient().query(query).getResults().getNumFound();
     assertEquals(collection1Docs + collection2Docs + collection3Docs, found);
 

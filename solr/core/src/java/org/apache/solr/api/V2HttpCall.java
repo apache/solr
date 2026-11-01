@@ -130,11 +130,10 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
-        origCorename = pathSegments.get(1);
+        coreOrCollection = pathSegments.get(1);
 
-        String collectionStr = queryParams.get(COLLECTION_PROP, origCorename);
-        collectionsList =
-            resolveCollectionListOrAlias(collectionStr); // &collection= takes precedence
+        String collectionStr = coreOrCollection;
+        collectionsList = resolveCollectionListOrAlias(collectionStr);
         if (collectionsList.isEmpty()) {
           if (!path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(
@@ -172,8 +171,8 @@ public class V2HttpCall extends HttpSolrCall {
           }
         }
       } else if ("cores".equals(prefix) && pathSegments.size() > 1) {
-        origCorename = pathSegments.get(1);
-        core = cores.getCore(origCorename);
+        coreOrCollection = pathSegments.get(1);
+        core = cores.getCore(coreOrCollection);
       }
 
       // We didn't find a core, so we're either an error or a Jersey 'ADMIN' api
@@ -187,7 +186,7 @@ public class V2HttpCall extends HttpSolrCall {
       normalizeAndSetPath(path.substring(prefix.length() + pathSegments.get(1).length() + 2));
       path = this.path;
       // Core-level API, so populate "collection" template val
-      parts.put(COLLECTION_PROP, origCorename);
+      parts.put(COLLECTION_PROP, coreOrCollection);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (isCompositeApi && apiInfo instanceof CompositeApi) {
         ((CompositeApi) this.api).add(apiInfo);
@@ -464,7 +463,7 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void populateTracingSpan(Span span) {
     // Set db.instance
-    String coreOrColName = this.origCorename;
+    String coreOrColName = this.coreOrCollection;
     if (coreOrColName == null) {
       Map<String, String> pathTemplateValues = getUrlParts(); // == solrReq.getPathTemplateValues()
       coreOrColName = pathTemplateValues.get("collection");

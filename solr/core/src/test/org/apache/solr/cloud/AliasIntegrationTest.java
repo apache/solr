@@ -953,9 +953,14 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
 
-    // note: collectionList could be null when we randomly recurse and put the actual collection
-    // list into the "collection" param and some bugs value into collectionList (including null).
-    // Only CloudSolrClient supports null.
+    if (solrQuery.get("collection") != null) {
+      // CloudSolrClient with the collection carried only by the parameter: the client
+      // moves it into the URL path, so routing still follows the path.
+      try (CloudSolrClient solrClient = new RandomizingCloudSolrClientBuilder(cluster).build()) {
+        responseConsumer.accept(solrClient.query(null, solrQuery));
+      }
+    }
+
     if (collectionList != null) {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
@@ -973,9 +978,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         // put in "collection" param
         ModifiableSolrParams newParams = new ModifiableSolrParams(solrQuery);
         newParams.set("collection", collectionList);
-        String maskedColl =
-            new String[] {null, "bogus", "collection2", "collection1"}[random().nextInt(4)];
-        searchSeveralWays(maskedColl, newParams, responseConsumer);
+        searchSeveralWays(collectionList, newParams, responseConsumer);
       }
     }
   }
