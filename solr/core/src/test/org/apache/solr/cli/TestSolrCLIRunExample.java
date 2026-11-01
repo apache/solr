@@ -570,7 +570,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     try {
-      runTool(tool, toolArgs);
+      int status = runTool(tool, toolArgs);
+      assertEquals("tool output: " + runtime.getOutput(), 0, status);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -633,6 +634,32 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // stop the test instance
     executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
+  }
+
+  /** A scripted port that is already in use fails fast instead of consuming later answers. */
+  @Test
+  public void testScriptInputsPortInUse() throws Exception {
+    Path solrHomeDir = ExternalPaths.SERVER_HOME;
+    if (!Files.isDirectory(solrHomeDir))
+      fail(solrHomeDir + " not found and is required to run this test!");
+
+    try (ServerSocket busy = new ServerSocket(0)) {
+      String[] toolArgs =
+          new String[] {
+            "--example",
+            "cloud",
+            "--server-dir",
+            solrHomeDir.getParent().toString(),
+            "--example-dir",
+            createTempDir().toString(),
+            "--script-inputs",
+            "1," + busy.getLocalPort() + ",\"coll\",2,2,_default"
+          };
+      RunExampleTool tool =
+          new RunExampleTool(
+              new RunExampleExecutor(), System.in, new CLITestHelper.TestingRuntime(true));
+      assertEquals(1, runTool(tool, toolArgs));
+    }
   }
 
   @Test
