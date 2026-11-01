@@ -112,6 +112,9 @@ public class SolrProcessManager {
    * @return a list of SolrProcesses for each running Solr instance
    */
   public Collection<SolrProcess> scanSolrPidFiles() throws IOException {
+    if (!Files.isDirectory(pidDir)) {
+      return List.of();
+    }
     List<SolrProcess> processes = new ArrayList<>();
     try (Stream<Path> pidFiles =
         Files.list(pidDir)
