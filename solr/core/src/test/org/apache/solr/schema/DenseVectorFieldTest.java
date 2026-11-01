@@ -94,6 +94,23 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
+  public void fieldTypeDefinition_hnswMOutOfRange_shouldThrowException() throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-hnsw-m.xml",
+        "DenseVectorField hnswM must be positive and less than or equal to 512; hnswM=513: vector");
+  }
+
+  @Test
+  public void fieldTypeDefinition_hnswEfConstructionOutOfRange_shouldThrowException()
+      throws Exception {
+    assertConfigs(
+        "solrconfig-basic.xml",
+        "bad-schema-densevector-hnsw-ef-construction.xml",
+        "DenseVectorField hnswEfConstruction must be positive and less than or equal to 3200; hnswEfConstruction=3201: vector");
+  }
+
+  @Test
   public void fieldTypeDefinition_nullSimilarityDistance_shouldUseDefaultSimilarityEuclidean()
       throws Exception {
     try {

@@ -20,6 +20,7 @@ import static org.hamcrest.core.Is.is;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
@@ -37,39 +38,30 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void fieldDefinition_default_shouldLoadSchemaField() throws Exception {
+  public void fieldDefinition_supportedBitSizes_shouldLoadSchemaField() throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
 
       IndexSchema schema = h.getCore().getLatestSchema();
 
-      SchemaField defaultVectorField = schema.getField("v_scalar_default");
-      assertNotNull(defaultVectorField);
+      Map<String, Integer> expectedBits =
+          Map.of(
+              "v_scalar_default", ScalarQuantizedDenseVectorField.DEFAULT_BITS,
+              "v_scalar_one_bit", 1,
+              "v_scalar_two_bits", 2,
+              "v_scalar_half_byte", 4,
+              "v_scalar_unsigned_byte", 8);
+      for (Map.Entry<String, Integer> expected : expectedBits.entrySet()) {
+        SchemaField vectorField = schema.getField(expected.getKey());
+        assertNotNull(vectorField);
 
-      ScalarQuantizedDenseVectorField defaultVectorType =
-          (ScalarQuantizedDenseVectorField) defaultVectorField.getType();
-      assertThat(defaultVectorType.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
-      assertThat(defaultVectorType.getDimension(), is(4));
-      assertThat(defaultVectorType.getKnnAlgorithm(), is("hnsw"));
-      assertThat(defaultVectorType.getBits(), is(ScalarQuantizedDenseVectorField.DEFAULT_BITS));
-    } finally {
-      deleteCore();
-    }
-  }
-
-  @Test
-  public void fieldDefinition_halfByteSize_shouldLoadSchemaField() throws Exception {
-    try {
-      initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
-
-      IndexSchema schema = h.getCore().getLatestSchema();
-
-      SchemaField vectorField = schema.getField("v_scalar_half_byte");
-      assertNotNull(vectorField);
-
-      ScalarQuantizedDenseVectorField vectorType =
-          (ScalarQuantizedDenseVectorField) vectorField.getType();
-      assertThat(vectorType.getBits(), is(4));
+        ScalarQuantizedDenseVectorField vectorType =
+            (ScalarQuantizedDenseVectorField) vectorField.getType();
+        assertThat(vectorType.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+        assertThat(vectorType.getDimension(), is(4));
+        assertThat(vectorType.getKnnAlgorithm(), is("hnsw"));
+        assertThat(vectorType.getBits(), is(expected.getValue()));
+      }
     } finally {
       deleteCore();
     }

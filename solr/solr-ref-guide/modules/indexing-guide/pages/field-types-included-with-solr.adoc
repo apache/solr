@@ -29,6 +29,8 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |BinaryField |Binary data.
 
+|BinaryQuantizedDenseVectorField |A `DenseVectorField` that stores a binary-quantized copy of each vector. See the section xref:query-guide:dense-vector-search.adoc#binaryquantizeddensevectorfield[BinaryQuantizedDenseVectorField] for more information.
+
 |BoolField |Contains either true or false. Values of `1`, `t`, or `T` in the first character are interpreted as `true`. Any other values in the first character are interpreted as `false`.
 
 |CollationField |Supports Unicode collation for sorting and range queries. The ICUCollationField is a better choice if you can use ICU4J. See the section xref:language-analysis.adoc#unicode-collation[Unicode Collation] for more information.
@@ -37,7 +39,7 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section xref:date-formatting-math.adoc[] for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
 
-|DenseVectorField |Supports indexing dense vectors of float values. See the section xref:query-guide:dense-vector-search.adoc[] for more information.
+|DenseVectorField |Supports indexing dense vectors of float or byte values. See the section xref:query-guide:dense-vector-search.adoc[] for more information.
 
 |DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section xref:date-formatting-math.adoc[] for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
 
@@ -72,6 +74,8 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 |RankField |Can be used to store scoring factors to improve document ranking. To be used in combination with xref:query-guide:other-parsers.adoc#ranking-query-parser[RankQParserPlugin].
 
 |RptWithGeometrySpatialField |A derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry. See xref:query-guide:spatial-search.adoc[] for more information and usage with geospatial results transformer.
+
+|ScalarQuantizedDenseVectorField |A `DenseVectorField` that stores a scalar-quantized copy of each vector. See the section xref:query-guide:dense-vector-search.adoc#scalarquantizeddensevectorfield[ScalarQuantizedDenseVectorField] for more information.
 
 |SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute. See xref:query-guide:common-query-parameters.adoc#sort-parameter[sort parameter discussion] for details.
 
