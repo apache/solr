@@ -40,8 +40,12 @@ public interface CoreApis {
   interface GetStatus {
 
     @GET
-    @Operation(summary = "Fetch status info for all cores hosted on this node.", tags = "cores")
-    CoreStatusResponse getAllCoreStatus(@QueryParam("indexInfo") Boolean indexInfo)
+    @Operation(
+        summary =
+            "Fetch status info for all cores hosted on this node, or on other live nodes when 'nodes' is set.",
+        tags = "cores")
+    CoreStatusResponse getAllCoreStatus(
+        @QueryParam("indexInfo") Boolean indexInfo, @QueryParam("nodes") String nodes)
         throws Exception;
 
     @GET

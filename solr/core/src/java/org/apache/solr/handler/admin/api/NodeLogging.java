@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
  * changes across nodes.
  *
  * <p>These APIs ('/api/node/logging' and descendants) are analogous to the v1 /admin/info/logging.
+ * GET endpoints accept an optional {@code nodes} parameter to proxy to other live nodes via {@link
+ * V2SolrRequestBasedProxy}.
  */
 public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
@@ -68,9 +70,15 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public ListLevelsResponse listAllLoggersAndLevels() {
+  public ListLevelsResponse listAllLoggersAndLevels(String nodes) {
+    final ListLevelsResponse response = instantiateJerseyResponse(ListLevelsResponse.class);
+    final var req = new LoggingApi.ListAllLoggersAndLevels();
+    req.setNodes(nodes);
+    if (V2SolrRequestBasedProxy.proxyToNodes(coreContainer, req, response)) {
+      return response;
+    }
     ensureLogWatcherEnabled();
-    final ListLevelsResponse response = instantiateLoggingResponse(ListLevelsResponse.class);
+    response.watcherName = watcher.getName();
 
     response.levels = watcher.getAllLevels();
 
@@ -146,9 +154,16 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public LogMessagesResponse fetchLocalLogMessages(Long boundingTimeMillis) {
+  public LogMessagesResponse fetchLocalLogMessages(Long boundingTimeMillis, String nodes) {
+    final LogMessagesResponse response = instantiateJerseyResponse(LogMessagesResponse.class);
+    final var req = new LoggingApi.FetchLocalLogMessages();
+    req.setSince(boundingTimeMillis);
+    req.setNodes(nodes);
+    if (V2SolrRequestBasedProxy.proxyToNodes(coreContainer, req, response)) {
+      return response;
+    }
     ensureLogWatcherEnabled();
-    final LogMessagesResponse response = instantiateLoggingResponse(LogMessagesResponse.class);
+    response.watcherName = watcher.getName();
     if (boundingTimeMillis == null) {
       throw new SolrException(BAD_REQUEST, "Missing required parameter, 'since'.");
     }

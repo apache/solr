@@ -87,7 +87,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testV2ResponseStructure() throws Exception {
-    final var response = new NodeThreadsAPI().getThreadDump();
+    final var response = new NodeThreadsAPI().getThreadDump(null);
     assertTrue(response.system.threadCount.current > 0);
     assertTrue(response.system.threadDump.size() > 1);
     final var currentThread =

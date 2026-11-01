@@ -58,6 +58,9 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
     // cloud-only menu entries are absent in standalone mode
     assertTrue(driver.findElements(By.cssSelector("#menu .cloud")).isEmpty());
     assertTrue(driver.findElements(By.cssSelector("#menu .collections")).isEmpty());
+    assertTrue(
+        "node picker is SolrCloud-only",
+        driver.findElements(By.id("node-selector-item")).isEmpty());
     // the per-core menu (shown when a core page is open) offers the core-level
     // screens directly - query and replication are standalone-only entries
     openPage("swapa/core-overview", By.id("dashboard"));

@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 /** Response body for the {@code /api/node/threads} endpoint. */
-public class NodeThreadsResponse extends SolrJerseyResponse {
+public class NodeThreadsResponse extends NodeProxyingJerseyResponse {
 
   @Schema(description = "Thread information for the receiving JVM.")
   @JsonProperty("system")

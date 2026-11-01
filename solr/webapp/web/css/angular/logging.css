@@ -36,6 +36,14 @@ limitations under the License.
   margin-left: 10px;
 }
 
+#content #logging .block h2 .cluster-level-note
+{
+  color: #c47a00;
+  font-size: 12px;
+  font-weight: normal;
+  margin-left: 10px;
+}
+
 #content #logging #viewer
 {
   position: relative;
