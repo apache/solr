@@ -65,6 +65,7 @@ import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.QueryLimits;
@@ -145,6 +146,32 @@ public class SearchHandler extends RequestHandlerBase
   @Override
   public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
+  }
+
+  @Override
+  @SuppressWarnings("ReferenceEquality") // rb must belong to this exact request
+  public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    super.handleRequest(req, rsp);
+    CoreContainer cc = req.getCoreContainer();
+    List<SearchRequestListener> listeners = cc == null ? List.of() : cc.getSearchRequestListeners();
+    if (listeners.isEmpty()
+        || !notifiesSearchRequestListeners()
+        || SolrRequestInfo.isNestedRequest()
+        || req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      return;
+    }
+    String path = (String) req.getContext().get(PATH);
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    ResponseBuilder rb = requestInfo == null ? null : requestInfo.getResponseBuilder();
+    if (path == null || !isDispatchedHandler(req) || rb == null || rb.req != req) {
+      return;
+    }
+    SearchRequestDispatcher.mark(req, rb);
+  }
+
+  /** Whether requests to this handler are reported to {@link SearchRequestListener}s. */
+  protected boolean notifiesSearchRequestListeners() {
+    return true;
   }
 
   @Override

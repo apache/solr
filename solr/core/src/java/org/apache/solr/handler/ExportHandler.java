@@ -56,6 +56,11 @@ public class ExportHandler extends SearchHandler {
   private StreamContext initialStreamContext;
   private String writerMetricsPath;
 
+  @Override
+  protected boolean notifiesSearchRequestListeners() {
+    return false;
+  }
+
   public static class ExportHandlerStreamFactory extends SolrDefaultStreamFactory {
     static final String[] forbiddenStreams =
         new String[] {

@@ -121,6 +121,8 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
+import org.apache.solr.handler.component.SearchRequestDispatcher;
+import org.apache.solr.handler.component.SearchRequestListener;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesigner;
 import org.apache.solr.jersey.InjectionFactories;
@@ -210,6 +212,27 @@ public class CoreContainer {
 
   public JerseyAppHandlerCache getJerseyAppHandlerCache() {
     return appHandlersByConfigSetId;
+  }
+
+  final SearchRequestDispatcher searchRequestDispatcher = new SearchRequestDispatcher();
+
+  /**
+   * Register to be notified after each search a client sends to this node.
+   *
+   * @throws IllegalStateException if this container is shut down
+   */
+  public void addSearchRequestListener(SearchRequestListener listener) {
+    searchRequestDispatcher.add(listener);
+  }
+
+  /** Remove a listener added with {@link #addSearchRequestListener}. */
+  public boolean removeSearchRequestListener(SearchRequestListener listener) {
+    return searchRequestDispatcher.remove(listener);
+  }
+
+  /** The registered listeners. Empty unless a module adds one. */
+  public List<SearchRequestListener> getSearchRequestListeners() {
+    return searchRequestDispatcher.listeners();
   }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
@@ -760,6 +783,10 @@ public class CoreContainer {
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+    solrMetricsContext.observableLongCounter(
+        "solr.search.listener.lost",
+        "Searches not delivered to search request listeners",
+        measurement -> measurement.record(searchRequestDispatcher.lost()));
 
     initGpuMetricsService(); // Initialize GPU metrics service
 
@@ -1227,6 +1254,7 @@ public class CoreContainer {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
     }
 
+    searchRequestDispatcher.close();
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
     ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);
