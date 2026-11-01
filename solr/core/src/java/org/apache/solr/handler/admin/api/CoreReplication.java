@@ -28,6 +28,7 @@ import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.ReplicationPollingRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
@@ -102,5 +103,11 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   @PermissionName(CORE_EDIT_PERM)
   public SolrJerseyResponse setReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
     return doSetReplicationEnabled(requestBody);
+  }
+
+  @Override
+  @PermissionName(CORE_EDIT_PERM)
+  public SolrJerseyResponse setReplicationPolling(ReplicationPollingRequestBody requestBody) {
+    return doSetReplicationPolling(requestBody);
   }
 }
