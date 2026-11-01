@@ -19,7 +19,7 @@
 # Usage:
 #   ./make.sh              # equivalent to: make all
 #   ./make.sh install all  # equivalent to: make install all
-#   ./make.sh check        # equivalent to: make check
+#   ./make.sh check        # equivalent to: make check (validates and unit-tests rules)
 #   ./make.sh --rebuild    # force-rebuild the Docker image, then make all
 #
 # The Docker image (solr-mixin-make:latest) is built automatically on first
