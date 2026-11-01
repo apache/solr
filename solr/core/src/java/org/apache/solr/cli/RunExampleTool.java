@@ -872,6 +872,11 @@ public class RunExampleTool extends ToolBase {
                 Locale.ROOT, "Please enter the port for node%d [%d]: ", (n + 1), cloudPorts[n]);
         int port = promptForPort(readInput, n + 1, promptMsg, cloudPorts[n]);
         while (!isPortAvailable(port)) {
+          if (usingScriptInputs) {
+            // a retry would consume the next scripted answer as the port
+            throw new IllegalStateException(
+                "Port " + port + " from --script-inputs is already being used by another process.");
+          }
           port =
               promptForPort(
                   readInput,
