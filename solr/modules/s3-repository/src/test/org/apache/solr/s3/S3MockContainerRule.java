@@ -20,11 +20,11 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import org.apache.solr.util.TestcontainersUtil;
 import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -56,9 +56,7 @@ public class S3MockContainerRule extends ExternalResource {
 
   @Override
   protected void before() {
-    Assume.assumeTrue(
-        "Docker/Testcontainers not available; skipping test",
-        DockerClientFactory.instance().isDockerAvailable());
+    TestcontainersUtil.assumeContainerAvailable(S3MOCK_DOCKER_IMAGE);
     s3MockContainer =
         new S3MockContainer(DockerImageName.parse(S3MOCK_DOCKER_IMAGE))
             .withInitialBuckets(bucketName);
