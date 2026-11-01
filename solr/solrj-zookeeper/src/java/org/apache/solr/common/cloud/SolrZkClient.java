@@ -151,11 +151,13 @@ public class SolrZkClient implements Closeable {
 
     this.higherLevelIsClosed = higherLevelIsClosed;
     this.solrClassLoader = solrClassLoader;
-    if (zkCredentialsProvider == null) {
+    if (zkCredentialsProvider == null || aclProvider == null) {
       zkCredentialsInjector =
           useDefaultCredsAndACLs
               ? createZkCredentialsInjector()
               : new DefaultZkCredentialsInjector();
+    }
+    if (zkCredentialsProvider == null) {
       zkCredentialsProvider =
           useDefaultCredsAndACLs
               ? createZkCredentialsToAddAutomatically()

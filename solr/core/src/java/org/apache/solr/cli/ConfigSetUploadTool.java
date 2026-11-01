@@ -18,11 +18,9 @@ package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.EnvUtils;
@@ -30,6 +28,7 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine.Mixin;
 
 /**
  * Supports zk upconfig command in the bin/solr script.
@@ -74,6 +73,8 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
+  @Mixin private ZkCredentialsOptions zkAuth;
+
   @picocli.CommandLine.Mixin ConfigSetOptions configSetOpts;
 
   @picocli.CommandLine.Option(
@@ -104,6 +105,7 @@ public class ConfigSetUploadTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
         .addOption(CONF_NAME_OPTION)
         .addOption(CONF_DIR_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
@@ -162,11 +164,7 @@ public class ConfigSetUploadTool extends ToolBase {
     String zkHost = zkOpts.resolveZkHost();
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
       doUpconfig(zkClient, zkHost, configSetOpts.confName, confDir);
       return 0;
     } catch (Exception e) {

@@ -419,6 +419,7 @@ function print_usage() {
     echo ""
     echo "  -e/--example <name>   Name of the example to run; available examples:"
     echo "      cloud:              SolrCloud example"
+    echo "      secure-setup:       Two-node SolrCloud with Basic Authentication and techproducts data"
     echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
     echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
     echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
@@ -596,6 +597,17 @@ else
   # no args - just show usage and exit
   run_tool "$@"
   exit
+fi
+
+if [[ "$SCRIPT_CMD" == "ssl" ]]; then
+  SSL_INCLUDE_ARGS=(--solr-include-file "${SOLR_INCLUDE:-$SOLR_TIP/bin/solr.in.sh}")
+  for arg in "$@"; do
+    case "$arg" in
+      --solr-include-file|--solr-include-file=*) SSL_INCLUDE_ARGS=(); break ;;
+    esac
+  done
+  run_tool ssl "${SSL_INCLUDE_ARGS[@]}" "$@"
+  exit $?
 fi
 
 # configure authentication
@@ -1052,13 +1064,13 @@ fi
 
 # This is quite hacky, but examples rely on a different log4j2.xml
 # so that we can write logs for examples to $SOLR_HOME/../logs
-: "${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}"
 EXAMPLE_DIR="$SOLR_TIP/example"
 # if SOLR_HOME is inside of EXAMPLE_DIR
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   LOG4J_PROPS="$DEFAULT_SERVER_DIR/resources/log4j2.xml"
-  SOLR_LOGS_DIR="$SOLR_HOME/../logs"
+  : "${SOLR_LOGS_DIR:="$SOLR_HOME/../logs"}"
 fi
+: "${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}"
 
 LOG4J_CONFIG=()
 if [ -n "${LOG4J_PROPS:-}" ]; then

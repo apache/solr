@@ -337,6 +337,7 @@ goto err
 @echo.
 @echo   -e/--example name Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
+@echo       secure-setup:   Two-node SolrCloud with Basic Authentication and techproducts data
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
 @echo       schemaless:     Schema-less example (schema is inferred from data during indexing)
 @echo       films:          Example of starting with _default configset and defining explicit fields dynamically

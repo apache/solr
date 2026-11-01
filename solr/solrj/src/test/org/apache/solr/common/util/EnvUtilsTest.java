@@ -119,6 +119,23 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
+  public void testSaslSuperuserDeprecatedAliases() {
+    for (String legacyKey : List.of("solr.auth.superuser", "solr.authorization.superuser")) {
+      Properties sysprops = new Properties();
+      sysprops.setProperty(legacyKey, "user-for-" + legacyKey);
+      EnvUtils.init(false, Map.of(), sysprops);
+      assertEquals(
+          "user-for-" + legacyKey, EnvUtils.getProperty("solr.zookeeper.acl.sasl.superuser"));
+    }
+  }
+
+  @Test
+  public void testSaslSuperuserEnvironmentVariable() {
+    EnvUtils.init(true, Map.of("SOLR_ZOOKEEPER_ACL_SASL_SUPERUSER", "zk-admin"), new Properties());
+    assertEquals("zk-admin", EnvUtils.getProperty("solr.zookeeper.acl.sasl.superuser"));
+  }
+
+  @Test
   public void deprecatedCamelCaseSystemPropertyIsMigratedToCurrentName() {
     Properties sysprops = new Properties();
     sysprops.setProperty("solr.auth.jwt.allowOutboundHttp", "true");
@@ -209,7 +226,11 @@ public class EnvUtilsTest extends SolrTestCase {
     Properties deprecatedMappings = loadProperties("DeprecatedSystemPropertyMappings.properties");
     Map<String, String> reverseDeprecatedMappings =
         deprecatedMappings.entrySet().stream()
-            .collect(Collectors.toMap(e -> (String) e.getValue(), e -> (String) e.getKey()));
+            .flatMap(
+                e ->
+                    List.of(((String) e.getValue()).split(",")).stream()
+                        .map(legacyKey -> Map.entry(legacyKey.trim(), (String) e.getKey())))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     for (String envVar : envMappings.stringPropertyNames()) {
       String sysProp = envMappings.getProperty(envVar);

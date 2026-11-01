@@ -18,14 +18,13 @@ package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine.Mixin;
 
 /** Supports zk rm command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -44,6 +43,8 @@ public class ZkRmTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+
+  @Mixin private ZkCredentialsOptions zkAuth;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -64,6 +65,7 @@ public class ZkRmTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
@@ -132,11 +134,7 @@ public class ZkRmTool extends ToolBase {
     String zkHost = zkOpts.resolveZkHost();
     String znode = resolveZnode(path);
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
       doRm(zkClient, zkHost, znode, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {

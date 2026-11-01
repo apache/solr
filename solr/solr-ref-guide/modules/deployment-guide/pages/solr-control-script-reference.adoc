@@ -265,6 +265,7 @@ The available options are:
 
 * `cloud`: SolrCloud example
 * `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
+* `secure-setup`: Two-node SolrCloud with Basic Authentication, Rule-Based Authorization, and techproducts data (Unix/macOS only)
 * `schemaless`: Schema-less example (schema is inferred from data during indexing)
 * `films`: Example of starting with _default configset and adding explicit fields dynamically
 +
@@ -375,6 +376,11 @@ When using this example, you can choose from any of the available configsets fou
 The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_techproducts_configs`.
 +
 The data used can be found in `$SOLR_HOME/example/exampledocs/`.
+
+* *secure-setup*: This example starts a two-node SolrCloud cluster with Basic Authentication, Rule-Based Authorization, and techproducts data.
+Requires Unix or macOS; Windows is not supported.
+On Unix and macOS, it also configures HTTPS and ZooKeeper digest authentication and ACLs.
+The default Solr home is `example/secure-setup`.
 
 * *schemaless*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
 Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
@@ -1075,6 +1081,11 @@ Defines the location of `solr.solr.home`, which by default is `server/solr`.
 If you have multiple instances of Solr on the same host, or if you have customized the `$SOLR_HOME` directory path, you likely need to define this.
 This is where any credentials or authentication configuration files (e.g. basicAuth.conf) would be placed.
 
+The `auth` and `ssl` commands update the include file; `auth` also writes `basicAuth.conf`, while `ssl` installs a keystore and truststore.
+On Unix and macOS, new files are restricted to owner access (`0600`).
+Existing files are updated in place, preserving their ownership and permissions.
+Run these commands as the owner of the include file and ensure the Solr service user can read the generated files.
+
 === Disabling Basic Authentication
 
 You can disable Basic Authentication with `bin/solr auth disable`.
@@ -1230,6 +1241,13 @@ Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s 
 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
 Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
+
+=== ZooKeeper Authentication
+
+`--zk-credentials <username:password>` supplies ZooKeeper digest credentials for `zk ls`, `cp`, `mv`, `rm`, `mkroot`, `upconfig`, `downconfig`, and `updateacls`.
+It overrides the configured ZooKeeper connection credentials and is independent of HTTP `--credentials`, which authenticates requests to Solr when discovering the ZooKeeper address.
+If omitted, the configured ZooKeeper credentials provider is used.
+This option does not configure ACLs; the configured `zkACLProvider` still determines permissions on newly created znodes and when running `updateacls`.
 
 === ZooKeeper Connection String
 

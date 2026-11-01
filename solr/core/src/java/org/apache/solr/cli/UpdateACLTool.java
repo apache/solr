@@ -17,12 +17,10 @@
 
 package org.apache.solr.cli;
 
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
+import picocli.CommandLine.Mixin;
 
 /**
  * Supports updating ACL for a path in ZK
@@ -50,6 +48,8 @@ public class UpdateACLTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
+  @Mixin private ZkCredentialsOptions zkAuth;
+
   @picocli.CommandLine.Parameters(
       index = "0",
       arity = "1",
@@ -76,7 +76,9 @@ public class UpdateACLTool extends ToolBase {
 
   @Override
   public Options getOptions() {
-    return super.getOptions().addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override
@@ -84,15 +86,10 @@ public class UpdateACLTool extends ToolBase {
     String zkHost = CLIUtils.getZkHost(cli);
     String path = cli.getArgs()[0];
 
-    if (!ZkController.checkChrootPath(zkHost, true)) {
-      throw new IllegalStateException(
-          "A chroot was specified in zkHost but the znode doesn't exist.");
-    }
+    CLIUtils.ensureZkChroot(zkHost, cli.getOptionValue(CommonCLIOptions.ZK_CREDENTIALS_OPTION));
 
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+        CLIUtils.zkClientBuilder(zkHost, cli.getOptionValue(CommonCLIOptions.ZK_CREDENTIALS_OPTION))
             .build()) {
       doUpdateAcls(zkClient, path);
     }
@@ -106,16 +103,9 @@ public class UpdateACLTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
 
-    if (!ZkController.checkChrootPath(zkHost, true)) {
-      throw new IllegalStateException(
-          "A chroot was specified in zkHost but the znode doesn't exist.");
-    }
+    CLIUtils.ensureZkChroot(zkHost, zkAuth.credentials);
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
       doUpdateAcls(zkClient, path);
       return 0;
     }
