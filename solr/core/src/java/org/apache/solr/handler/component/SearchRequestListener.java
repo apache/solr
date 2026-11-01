@@ -59,8 +59,8 @@ public interface SearchRequestListener {
   /**
    * Called on the delivery thread with what {@link #capture} returned. Not called if the search was
    * dropped, or if this listener was removed while the search was queued; a listener removed and
-   * added again still gets searches captured before it was re-added. Any {@link Throwable} other
-   * than a {@link VirtualMachineError} is logged.
+   * added again still gets searches captured before it was re-added. Any {@link Throwable} is
+   * logged.
    */
   void onRequestEnd(SearchRequestInfo info, Object captured);
 }

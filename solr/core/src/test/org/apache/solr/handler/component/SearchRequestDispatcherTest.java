@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -142,6 +143,31 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
     Thread first = recorder.threads.take();
     assertSame(first, recorder.threads.take());
     assertNotSame(Thread.currentThread(), first);
+  }
+
+  @Test
+  public void testStackOverflowInListenerKeepsWorker() throws Exception {
+    dispatcher = new SearchRequestDispatcher(10);
+    SearchRequestListener failing =
+        (info, captured) -> {
+          throw new StackOverflowError("listener error");
+        };
+    Recorder recorder = new Recorder();
+    dispatcher.add(failing);
+    dispatcher.add(recorder);
+    offer("event1", failing, recorder);
+    offer("event2", failing, recorder);
+    assertEquals("event1", recorder.next());
+    assertEquals("event2", recorder.next());
+  }
+
+  @Test
+  public void testDuplicateAddDeliversOnce() throws Exception {
+    dispatcher = new SearchRequestDispatcher(10);
+    Recorder recorder = new Recorder();
+    dispatcher.add(recorder);
+    dispatcher.add(recorder);
+    assertEquals(List.of(recorder), dispatcher.listeners());
   }
 
   @Test

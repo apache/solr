@@ -56,7 +56,8 @@ public class SearchRequestDispatcher implements Closeable {
 
   private record Event(SearchRequestInfo info, List<Delivery> deliveries) {}
 
-  private final List<SearchRequestListener> listeners = new CopyOnWriteArrayList<>();
+  private final CopyOnWriteArrayList<SearchRequestListener> listeners =
+      new CopyOnWriteArrayList<>();
 
   private final BlockingQueue<Event> queue;
 
@@ -87,7 +88,7 @@ public class SearchRequestDispatcher implements Closeable {
     if (closed) {
       throw new IllegalStateException("SearchRequestDispatcher is closed");
     }
-    listeners.add(listener);
+    listeners.addIfAbsent(listener);
     if (worker == null) {
       worker = new Thread(this::deliver, "searchRequestListener");
       worker.setDaemon(true);
@@ -185,13 +186,10 @@ public class SearchRequestDispatcher implements Closeable {
         return;
       }
       SearchRequestListener listener = delivery.listener();
-      if (!listeners.contains(listener)) {
-        continue;
-      }
       try {
-        listener.onRequestEnd(event.info(), delivery.captured());
-      } catch (VirtualMachineError e) {
-        throw e;
+        if (listeners.contains(listener)) {
+          listener.onRequestEnd(event.info(), delivery.captured());
+        }
       } catch (Throwable t) {
         log.warn("SearchRequestListener {} failed", listener.getClass().getName(), t);
       }
