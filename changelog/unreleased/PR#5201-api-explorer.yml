@@ -1,0 +1,7 @@
+title: Add an API Explorer to the Solr Admin UI
+type: added
+authors:
+  - name: Eric Pugh
+links:
+  - name: PR#5201
+    url: https://github.com/apache/solr/pull/5201

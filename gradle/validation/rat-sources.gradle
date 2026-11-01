@@ -226,6 +226,11 @@ allprojects {
           exclude "modules"
           break
 
+        case ":solr:webapp":
+          // Vendored Scalar bundle; license is retained in solr/licenses/scalar-LICENSE-MIT.txt.
+          exclude "web/libs/scalar/standalone.js"
+          break
+
         case ":solr:solr-ref-guide":
           exclude "ui-src/**"
           break
