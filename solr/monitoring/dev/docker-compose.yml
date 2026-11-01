@@ -18,10 +18,11 @@
 # ============================================================================
 #
 # This docker-compose stack is provided solely to make it easy for contributors
-# to view and test changes to the two generated monitoring artifacts:
+# to view and test changes to the three monitoring artifacts:
 #
-#   ../grafana-solr-dashboard.json    — Grafana dashboard
-#   ../prometheus-solr-alerts.yml     — Prometheus alert rules
+#   ../grafana-solr-dashboard.json    — Grafana dashboard (generated)
+#   ../prometheus-solr-alerts.yml     — Prometheus alert rules (generated)
+#   ../otel-collector-config.yaml     — example OTel Collector config (hand-written)
 #
 # It is NOT intended as a reference deployment or a recommended production setup.
 # For integrating the artifacts into your own Prometheus + Grafana installation,
@@ -42,24 +43,60 @@
 #   Prometheus   http://localhost:9090
 #   Grafana      http://localhost:3000  (admin / admin)
 #   Alertmanager http://localhost:9093
+#   otel-collector  OTLP in on http://localhost:4318, Prometheus-format out on http://localhost:9464
+#   Aspire       http://localhost:18888  (raw view of the metrics and traces Solr pushed)
 #   trafficgen   (no port — continuously indexes/searches the 'test' collection)
+#
+# The bundled Solr nodes always push metrics and traces over OTLP to otel-collector,
+# which forwards both to the Aspire Dashboard. Prometheus scrapes either the nodes
+# directly or the collector, depending on ./stack.sh --metrics-scrape=solr|otel.
+# See ../otel-collector-config.yaml.
 #
 # Environment variables (set by stack.sh, or override manually):
 #   PROMETHEUS_CONFIG   Path to the prometheus config to mount (default: ./prometheus/prometheus.yml)
+#   METRICS_SCRAPE      solr (default) or otel — read by stack.sh, also from a ./.env file
 #   SOLR_URL            Solr base URL for trafficgen (default: http://solr1:8983/solr)
-#   SOLR_IMAGE          Solr image for the bundled nodes (default: solr:10)
+#   SOLR_IMAGE          Solr image for the bundled nodes (default: apache/solr-nightly:10.2.0-SNAPSHOT, tracks branch_10x)
 #   PROMETHEUS_IMAGE    Prometheus image (default: pinned, see below)
 #   GRAFANA_IMAGE       Grafana image (default: pinned, see below)
 #   ALERTMANAGER_IMAGE  Alertmanager image (default: pinned, see below)
+#   OTEL_COLLECTOR_IMAGE  OpenTelemetry Collector image (default: pinned, see below; must be a contrib build)
+#   ASPIRE_IMAGE        Aspire Dashboard image (default: pinned, see below)
 #
 # The monitoring images are pinned so a stack that worked yesterday still works
 # today; override any of them to test against a newer release.
 # ============================================================================
 
+name: solr-telemetry-dev
+
+# Push metrics to the collector every 15s, matching the scrape interval. The
+# endpoint is the OTLP/HTTP default with the host swapped for the service name.
+# OTEL_SERVICE_NAME activates the module's tracer, which pushes traces the same way.
+# The push stays on in both --metrics-scrape modes, so the collector and Aspire always
+# have data. This relies on SOLR-18595: before that fix, enabling the OTLP metric
+# exporter makes /solr/admin/metrics answer HTTP 500.
+# TODO SOLR-18595: SOLR_IMAGE defaults to a nightly, so until a nightly carrying the fix
+# is published, --metrics-scrape=solr shows the nodes down; use otel, or a local image.
+x-solr-otlp-env: &solr-otlp-env
+  SOLR_MODULES: opentelemetry
+  SOLR_METRICS_OTLP_EXPORTER_ENABLED: "true"
+  SOLR_METRICS_OTLP_EXPORTER_PROTOCOL: http   # explicit: Solr 10.0 defaults to grpc
+  SOLR_METRICS_OTLP_EXPORTER_INTERVAL: "15000"
+  SOLR_METRICS_OTLP_HTTP_EXPORTER_ENDPOINT: http://otel-collector:4318/v1/metrics
+  OTEL_SERVICE_NAME: solr
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
 services:
   solr1:
-    image: ${SOLR_IMAGE:-solr:10}
+    image: ${SOLR_IMAGE:-apache/solr-nightly:10.2.0-SNAPSHOT}
     profiles: [bundled-solr]
+    environment:
+      <<: *solr-otlp-env
+      # Advertise the compose service name instead of the container's random hostname, so the
+      # identity Solr reports matches the name Prometheus scrapes it by. The two routes only
+      # agree on the instance label once SOLR-18594 makes Solr send service.instance.id.
+      SOLR_HOST_ADVERTISE: solr1
     ports:
       - "127.0.0.1:8983:8983"
       - "127.0.0.1:9983:9983"   # embedded ZooKeeper (Solr 10 default: ZK_PORT = SOLR_PORT + 1000)
@@ -72,11 +109,13 @@ services:
       start_period: 40s
 
   solr2:
-    image: ${SOLR_IMAGE:-solr:10}
+    image: ${SOLR_IMAGE:-apache/solr-nightly:10.2.0-SNAPSHOT}
     profiles: [bundled-solr]
     ports:
       - "127.0.0.1:8984:8983"
     environment:
+      <<: *solr-otlp-env
+      SOLR_HOST_ADVERTISE: solr2
       ZK_HOST: "solr1:9983"
     depends_on:
       solr1:
@@ -137,6 +176,26 @@ services:
       - "127.0.0.1:9093:9093"
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+
+  otel-collector:
+    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.164.0}
+    ports:
+      - "127.0.0.1:4318:4318"   # OTLP/HTTP in — a Solr on the host pushes here with its defaults
+      - "127.0.0.1:9464:9464"   # Prometheus-format out
+    volumes:
+      - ../otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      - aspire-dashboard
+    restart: unless-stopped
+
+  aspire-dashboard:
+    image: ${ASPIRE_IMAGE:-mcr.microsoft.com/aspire/dashboard:13.6.2}
+    ports:
+      - "127.0.0.1:18888:18888"
+    environment:
+      # Local throwaway stack: no login. Data is in-memory and gone on restart.
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
     restart: unless-stopped
 
   trafficgen:
