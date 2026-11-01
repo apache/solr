@@ -28,7 +28,8 @@ import org.apache.solr.util.ThreadCpuTimer;
  * copied from the request, so it can be kept and read on any thread.
  *
  * @param handlerPath the path the request log uses
- * @param collection null in standalone mode
+ * @param collection the collection of {@code core}, even when an alias or several collections were
+ *     searched; null in standalone mode
  * @param core the name of the core that coordinated the search
  * @param user the authenticated user, or null
  * @param traceId the trace id, or null
@@ -36,7 +37,8 @@ import org.apache.solr.util.ThreadCpuTimer;
  * @param qTimeMs equal to the QTime in the response header
  * @param cpuTimeMs null unless {@code solr.log.cputime=true}; includes the CPU shards reported when
  *     distributed, which can undercount shard work still finishing when the response is built
- * @param hits null if not available
+ * @param hits as in the request log; null when it has none, such as for distributed grouping or a
+ *     search stopped by a query limit
  * @param shardCount number of shards targeted; 0 for a non-distributed request
  * @param failureType the class name of the exception set on the response, or null
  * @param failureMessage its message, cut to {@link #MAX_FAILURE_MESSAGE_CHARS}, or null

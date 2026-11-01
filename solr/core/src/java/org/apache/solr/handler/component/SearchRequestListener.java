@@ -21,10 +21,11 @@ import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Notified once per search a client sends to a search handler, on the node that coordinated it.
- * Shard sub-requests, real-time get, export and searches Solr runs internally (ping, warming,
- * {@code [subquery]}) are not reported. A search a streaming expression sends to a replica is
- * reported on that node. Searches through a container-level handler in {@code EmbeddedSolrServer}
- * and requests that fail the {@code echoParams} check are not reported either.
+ * Shard sub-requests (any request with {@code isShard=true}), real-time get, export and searches
+ * Solr runs internally (ping, warming, {@code [subquery]}) are not reported. A search a streaming
+ * expression sends to a replica is reported on that node. Searches through a container-level
+ * handler in {@code EmbeddedSolrServer} and requests that fail the {@code echoParams} check are not
+ * reported either.
  *
  * <p>{@link #capture} runs on the request thread; {@link #onRequestEnd} runs later on a single
  * delivery thread per {@link org.apache.solr.core.CoreContainer}, shared by all listeners through
