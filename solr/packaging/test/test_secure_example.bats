@@ -135,13 +135,13 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
     --user solr:SolrRocks -H 'Content-Type: application/json' \
     --data-binary '{"set-user":{"reader":"ReaderRocks"}}' \
-    "https://localhost:${SOLR_PORT}/solr/admin/authentication"
+    "https://localhost:${SOLR_PORT}/api/cluster/security/authentication"
   assert_success
 
   run curl --noproxy localhost,127.0.0.1 --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
     --user solr:SolrRocks -H 'Content-Type: application/json' \
     --data-binary '{"set-user-role":{"reader":["search"]}}' \
-    "https://localhost:${SOLR_PORT}/solr/admin/authorization"
+    "https://localhost:${SOLR_PORT}/api/cluster/security/authorization"
   assert_success
 
   for attempt in {1..10}; do
@@ -162,6 +162,14 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   run env SOLR_PICOCLI=true solr zk ls / --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
   assert_success
   assert_output --partial 'security.json'
+
+  run solr zk ls /collections --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
+  assert_success
+  assert_output --partial 'techproducts'
+
+  run solr zk ls /security.json --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
+  assert_failure
+  assert_output --partial 'NoAuth'
 
   run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" \
     --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks

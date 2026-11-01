@@ -30,65 +30,87 @@ Run the commands from your Solr installation directory.
 This tutorial assumes you are familiar with the basics in xref:solr-tutorial.adoc[].
 The `secure-setup` example requires Unix or macOS, with `curl` and OpenSSL available on your path.
 Windows is not supported; the example exits before creating files or starting nodes.
+To configure security manually on Windows, see xref:deployment-guide:enabling-ssl.adoc[], xref:deployment-guide:basic-authentication-plugin.adoc[], and xref:deployment-guide:zookeeper-access-control.adoc[].
+The default ports `8983`, `8984`, and `9983` must be available.
 
 [WARNING]
 ====
 This is a local learning environment with demonstration passwords.
 The wizard generates HTTPS files before configuring the demonstration accounts.
-Basic Authentication does not encrypt credentials; use TLS for connections outside this local example.
+Basic Authentication does not encrypt credentials; this example uses HTTPS to protect HTTP connections.
 A production deployment also needs network restrictions and a secured ZooKeeper ensemble.
 See xref:deployment-guide:securing-solr.adoc[] for deployment guidance.
 ====
 
-== Start the Secure Example
+== Secure SolrCloud Example
+
+=== Interactive Startup
+
+The `bin/solr` script walks you through setting up HTTPS, choosing account passwords, and starting a secured SolrCloud cluster on your workstation.
+To get started, run:
 
 [source,bash]
 ----
 bin/solr start -e secure-setup
 ----
 
-The example starts two SolrCloud nodes on ports 8983 and 8984.
-The first node hosts embedded ZooKeeper on port 9983; the second connects to that same ZooKeeper.
-The startup command sets `-Dsolr.environment=prod,label=Secure+Solr+Setup` to label the Admin UI as "Secure Solr Setup".
-It creates a `techproducts` collection with two shards and one replica per shard, using `sample_techproducts_configs`, and indexes 31 sample documents.
+This starts an interactive session with a greeting like this:
 
-The first node's default Solr home is `example/secure-setup`; the second uses `example/secure-setup-node2`.
-Both nodes use the same HTTP and ZooKeeper identities and share the first home's TLS files.
-The wizard places a private copy of `zk-credentials.properties` in the second node's home so it can read its credentials with the Java security manager enabled.
-Each node writes its own logs to the `logs` directory in its Solr home.
-Use `--solr-home` to choose a different, existing directory or `-p` to choose a different Solr port (at most 64535); substitute your directory and port in the commands below.
-The second node uses the selected Solr port plus one, and embedded ZooKeeper uses the selected Solr port plus 1000.
-See xref:deployment-guide:solr-control-script-reference.adoc#start-and-restart[Start and Restart] for the available startup options.
+[source,text]
+----
+Welcome to the secure SolrCloud example!
+This example uses demonstration credentials. Change them before using it outside your local environment.
+----
 
-=== Configure HTTPS
+We'll use the default passwords throughout this exercise.
+The script starts two Solr nodes on the same machine, using different ports to represent separate servers.
+The first node also runs embedded ZooKeeper.
 
-The wizard generates sample PEM certificate and private-key files covering `localhost` and `127.0.0.1`, valid for 30 days.
-It asks for the password protecting the keystore:
+=== Choose a Keystore Password
+
+First, the script asks for a password to protect the HTTPS keystore:
+
+[source,text]
+----
+Generating sample PEM certificate and key files. OpenSSL must be available on PATH.
+The generated self-signed certificate is valid for 30 days and is for local use.
+----
+
+You'll see this prompt:
 
 [source,text]
 ----
 Keystore password [SolrRocks]:
 ----
 
-Press Enter to use `SolrRocks`, or enter a password of at least six characters.
-This password protects the TLS keystore and is independent of the HTTP and ZooKeeper account passwords.
+Press Enter to accept `SolrRocks` for this exercise.
+You can choose a different password of at least six characters if you prefer.
+This password protects the TLS keystore; you'll choose the account passwords next.
+
+The script uses OpenSSL to generate a self-signed certificate and private key covering `localhost` and `127.0.0.1`, then creates the Java keystore and truststore.
 The wizard prints the paths to the generated certificate, private key, keystore, truststore, keystore-password file, and example-specific include file under `example/secure-setup/tls`.
 It does not edit the installation-wide `solr.in.sh`.
 
-=== Create the Demonstration Accounts
+=== Choose Account Passwords
 
-The wizard automatically creates HTTP accounts `solr`, `index`, and `search`, and ZooKeeper digest accounts `zk-admin` and `zk-readonly`, using `SolrRocks` as their default password.
-It offers one opportunity to customize the new account passwords:
+Next, the script asks whether you want to change the demonstration account passwords:
+
+[source,text]
+----
+The solr, index, search, zk-admin, and zk-readonly accounts use SolrRocks by default.
+----
+
+At the following prompt, press Enter to keep the defaults:
 
 [source,text]
 ----
 Change account passwords? [y/N]:
 ----
 
-Press Enter to accept the defaults used throughout this tutorial.
-Choose `y` to enter passwords for the fixed accounts; passwords typed at an interactive terminal are hidden.
+If you choose `y`, the script asks for a password for each account; passwords typed at an interactive terminal are hidden.
 A password equal to its username is rejected by default, and the wizard asks for another password.
 If you customize passwords, substitute them in the commands below.
+The HTTP accounts become active after you verify HTTPS in the next step.
 
 The wizard prints the paths where credentials are saved, with owner-only permissions on POSIX filesystems:
 
@@ -99,10 +121,12 @@ The wizard prints the paths where credentials are saved, with owner-only permiss
 `zk-readonly` can read ordinary metadata but cannot modify it or read `/security.json` and `/security/*`.
 These accounts are independent of the HTTP users.
 The example-specific include file configures digest authentication and ACLs for Solr and CLI commands, using the `/solr` ZooKeeper chroot.
+The example does not enable TLS for ZooKeeper connections.
 
 === Verify HTTPS
 
-The wizard starts Solr, prints a command like this, and pauses:
+The script now starts the first node with HTTPS enabled.
+Before it enables HTTP authentication, it asks you to check the connection from another terminal:
 
 [source,bash]
 ----
@@ -112,11 +136,45 @@ curl --cacert example/secure-setup/tls/cert.pem \
 
 Run the command in another terminal.
 You should receive system information without a certificate error.
-Return to the wizard and press Enter to install the HTTP security configuration and load the sample documents.
+Return to the wizard at this prompt:
+
+[source,text]
+----
+Press Enter after curl verifies HTTPS to continue:
+----
+
+Press Enter.
+The script enables HTTP authentication, starts the second node, creates the `techproducts` collection, and loads 31 sample documents using the `index` account.
 The wizard does not run curl itself.
 If you are restarting an example with authentication enabled, an HTTP 401 response also confirms that HTTPS is working; the saved credentials are reused when restarting the example.
 
-To configure security manually on Windows, see xref:deployment-guide:enabling-ssl.adoc[], xref:deployment-guide:basic-authentication-plugin.adoc[], and xref:deployment-guide:zookeeper-access-control.adoc[].
+=== Check Your Cluster
+
+When startup finishes, you should see messages like these:
+
+[source,text]
+----
+Secure Solr example running at https://localhost:8983/solr/. Sign in as solr. You will need to accept the self-signed certificate in the browser.
+Second node running at https://localhost:8984/solr/. Sign in as solr.
+----
+
+You now have the following local cluster:
+
+[%autowidth,options="header"]
+|===
+|Process |Port |Solr home
+|First Solr node |`8983` |`example/secure-setup`
+|Second Solr node |`8984` |`example/secure-setup-node2`
+|Embedded ZooKeeper |`9983` |Hosted by the first node
+|===
+
+The `techproducts` collection has two shards, with one replica per shard and one shard on each node.
+It uses `sample_techproducts_configs`, just like the techproducts example.
+Both nodes share the first home's TLS files and use the same HTTP and ZooKeeper accounts.
+The script prints the paths to `http-credentials.properties` and `zk-credentials.properties` when it finishes.
+A private copy of the ZooKeeper credentials is also saved in the second node's home.
+
+If startup fails, check `example/secure-setup/logs/solr.log` and `example/secure-setup-node2/logs/solr.log`.
 
 === HTTP Account Permissions
 
@@ -128,88 +186,38 @@ To configure security manually on Windows, see xref:deployment-guide:enabling-ss
 |`search` |`SolrRocks` |Searching
 |===
 
-For a non-interactive start with a generated certificate and the default HTTP and ZooKeeper accounts (all passwords `SolrRocks`):
+=== Starting with --no-prompt
+
+You can also start a fresh example with all the defaults instead of answering the interactive prompts:
 
 [source,bash]
 ----
 bin/solr start -e secure-setup --no-prompt
 ----
 
+All account passwords and the keystore password default to `SolrRocks`.
 `--no-prompt` prints the curl verification command but does not pause for you to run it.
+When restarting an existing example, it reuses saved passwords and configuration rather than resetting them to the defaults.
 
 Saved ZooKeeper credentials are reused on subsequent starts.
 An existing example with unsecured ZooKeeper data requires a fresh Solr home or an offline ACL migration; the wizard does not rewrite existing ACLs while Solr is running.
 See xref:deployment-guide:zookeeper-access-control.adoc[] for migration instructions and production considerations, including ZooKeeper transport security.
 
-=== Where Security Is Stored
+== Sign In to the Admin UI
 
-The example uses `example/secure-setup` as its Solr home.
-It starts the node, writes the security configuration to `/security.json` within the ZooKeeper `/solr` chroot, and waits for authentication to become active before creating the collection or indexing data.
+Open https://localhost:8983/solr/[the first node's Solr Admin UI] or https://localhost:8984/solr/[the second node's Admin UI] in your browser.
+Accept the browser warning for the self-signed certificate generated for this local example.
+Sign in with username `solr` and password `SolrRocks`, unless you chose different administrator credentials.
 
-=== Understand the Generated security.json
+The startup command labels the Admin UI "Secure Solr Setup" using `-Dsolr.environment=prod,label=Secure+Solr+Setup`.
+Open https://localhost:8983/solr/#/~cloud[Cloud → Graph] to see how the two shards are distributed across the nodes.
 
-For the default accounts, the wizard creates the following configuration.
-Password hashes are replaced with placeholders here; the stored values contain a salted hash and salt, not the passwords themselves.
+The Security screen lets the administrator inspect and manage users, roles, and permissions.
+To query documents in the Admin UI, sign in as `search` or `index`, select the `techproducts` collection, and open its Query screen.
+Run the default `\*:*` query to see the sample documents.
+An administrator query or document update receives HTTP 403 because those data-access roles are not assigned to the administrator.
 
-[source,json]
-----
-{
-  "authentication": {
-    "class": "solr.BasicAuthPlugin",
-    "blockUnknown": false,
-    "credentials": {
-      "solr": "<salted password hash>",
-      "index": "<salted password hash>",
-      "search": "<salted password hash>"
-    }
-  },
-  "authorization": {
-    "class": "solr.RuleBasedAuthorizationPlugin",
-    "permissions": [
-      {"name": "security-edit", "role": "superadmin"},
-      {"name": "security-read", "role": "admin"},
-      {"name": "config-edit", "role": "admin"},
-      {"name": "config-read", "role": "admin"},
-      {"name": "collection-admin-edit", "role": "admin"},
-      {"name": "core-admin-edit", "role": "admin"},
-      {"name": "core-admin-read", "role": "admin"},
-      {"name": "read", "role": "search"},
-      {"name": "collection-admin-read", "role": ["admin", "search"]},
-      {"name": "update", "role": "index"},
-      {"name": "health", "role": null},
-      {"name": "metrics-read", "role": null},
-      {
-        "name": "public-monitoring",
-        "collection": null,
-        "path": ["/____v2/node/health", "/____v2/metrics"],
-        "method": "GET",
-        "role": null
-      },
-      {"name": "all", "role": "admin"}
-    ],
-    "user-role": {
-      "solr": ["superadmin", "admin"],
-      "index": ["index", "search"],
-      "search": ["search"]
-    }
-  }
-}
-----
-
-`authentication` verifies supplied Basic Authentication credentials.
-`blockUnknown: false` lets requests without credentials reach authorization, where the permission rules decide whether they are allowed.
-Invalid credentials are still rejected.
-
-`authorization` maps users to roles and checks permission rules in order.
-The `health` and `metrics-read` rules have `role: null`, allowing these endpoints without credentials.
-The `public-monitoring` rule also permits anonymous GET requests to the two v2 monitoring paths during the initial routing authorization check.
-Solr internally routes `/api` requests through `/solr/____v2`, so the permission paths use the internal `/____v2` prefix.
-`collection: null` limits this rule to node-level requests.
-These rules precede the final `all` rule, which requires the `admin` role for otherwise unmatched requests.
-Document reads require `search`, and updates require `index`, even for the administrator.
-The administrator has only `superadmin` and `admin`; `superadmin` grants security configuration changes.
-The indexing user has `index` and `search`; the search-only user has `search`.
-The wizard loads the sample documents over HTTPS using the `index` account.
+== Try Authentication and Authorization
 
 === Check Health and Metrics Without Credentials
 
@@ -226,22 +234,6 @@ The metrics command suppresses curl's default `Accept: */*` header so the endpoi
 The same checks work on the second node at port `8984`.
 An existing example retains its stored security configuration on restart.
 Use a fresh Solr home to generate this configuration if your example was created with different settings.
-
-In SolrCloud, security settings are shared through ZooKeeper.
-Editing a local `security.json` file in the Solr home does not change the cluster configuration.
-
-== Sign In to the Admin UI
-
-Open https://localhost:8983/solr/[the first node's Solr Admin UI] or https://localhost:8984/solr/[the second node's Admin UI] in your browser.
-Accept the browser warning for the self-signed certificate generated for this local example.
-Sign in with username `solr` and password `SolrRocks`, unless you chose different administrator credentials.
-
-The Security screen lets the administrator inspect and manage users, roles, and permissions.
-To query documents in the Admin UI, sign in as `search` or `index`, select the `techproducts` collection, and open its Query screen.
-Run the default `\*:*` query to see the sample documents.
-An administrator query or document update receives HTTP 403 because those data-access roles are not assigned to the administrator.
-
-== Try Authentication and Authorization
 
 === Query Without Credentials
 
@@ -336,7 +328,7 @@ As the administrator, create a user named `reader`:
 curl --cacert example/secure-setup/tls/cert.pem --user solr:SolrRocks \
   -H 'Content-Type: application/json' \
   --data-binary '{"set-user":{"reader":"ReaderRocks"}}' \
-  'https://localhost:8983/solr/admin/authentication'
+  'https://localhost:8983/api/cluster/security/authentication'
 ----
 
 Assign the existing `search` role to that user:
@@ -346,7 +338,7 @@ Assign the existing `search` role to that user:
 curl --cacert example/secure-setup/tls/cert.pem --user solr:SolrRocks \
   -H 'Content-Type: application/json' \
   --data-binary '{"set-user-role":{"reader":["search"]}}' \
-  'https://localhost:8983/solr/admin/authorization'
+  'https://localhost:8983/api/cluster/security/authorization'
 ----
 
 The node reloads security changes asynchronously.
@@ -379,7 +371,7 @@ If you changed the administrator password through an API, supply the new credent
 bin/solr start -e secure-setup --credentials solr:NewPassword
 ----
 
-The example saves those administrator credentials for subsequent starts.
+After the supplied credentials successfully authenticate, the example saves them for subsequent starts.
 Changing a password in the saved HTTP credentials file updates what the wizard uses; it does not change the server's password.
 
 == Use the CLI with the Secured Example
@@ -409,6 +401,24 @@ This authenticates directly to ZooKeeper without the example's include file or H
 The output lists the example's znodes, including `collections`, `configs`, and `security.json`.
 The HTTP `--credentials` option authenticates Solr discovery requests; `--zk-credentials` supplies ZooKeeper digest credentials.
 For a customized ZooKeeper password, replace `SolrRocks` with the value saved in `zk-credentials.properties`.
+The HTTP and ZooKeeper properties files contain passwords in plain text; their owner-only file permissions protect them locally.
+HTTP passwords stored in ZooKeeper's `security.json` are salted hashes instead.
+
+The read-only account can list collection metadata:
+
+[source,bash]
+----
+bin/solr zk ls /collections --zk-host localhost:9983/solr --zk-credentials zk-readonly:SolrRocks
+----
+
+It cannot read the security configuration:
+
+[source,bash]
+----
+bin/solr zk ls /security.json --zk-host localhost:9983/solr --zk-credentials zk-readonly:SolrRocks
+----
+
+The second command fails with `NoAuth`.
 
 Compare this with a request that does not load the example's credentials:
 
@@ -419,12 +429,105 @@ SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS='' bin/solr zk ls / --zk-host loca
 
 This command fails with `NoAuth`, demonstrating that the ACLs require authentication for access to the example's data.
 
-
 === Replace or Renew the Certificate
 
-To replace or renew the certificate, use `bin/solr ssl` with `--solr-include-file example/secure-setup/tls/solr.in.sh` and `--keystore example/secure-setup/tls/solr-ssl.keystore.jks`.
-Also update `example/secure-setup/tls/cert.pem` and `example/secure-setup/tls/keystore-password.txt` to match the new certificate and keystore password before restarting the example.
+The wizard reuses its TLS files on restart; it does not automatically renew the 30-day certificate.
+Obtain a replacement certificate and private key covering `localhost` and `127.0.0.1`, then stop both nodes as shown above.
+Use `bin/solr ssl` with the replacement PEM files, `--solr-include-file example/secure-setup/tls/solr.in.sh`, and `--keystore example/secure-setup/tls/solr-ssl.keystore.jks`.
+Keep the default `JKS` store type: the wizard uses it when loading the truststore on restart.
+Also update `example/secure-setup/tls/cert.pem`, `key.pem`, and `keystore-password.txt` to match the replacement certificate, key, and keystore password.
+Restart with `bin/solr start -e secure-setup`; both nodes share the updated TLS files.
 See xref:deployment-guide:enabling-ssl.adoc#install-an-existing-pem-certificate[Install an Existing PEM Certificate] for details.
+
+== Understand the Security Configuration
+
+The first node uses `example/secure-setup` as its Solr home.
+The wizard starts that node, writes the security configuration to `/security.json` within the ZooKeeper `/solr` chroot, and waits for authentication to become active before starting the second node, creating the collection, or indexing data.
+
+=== The Generated security.json
+
+For the default accounts, the wizard creates the following configuration.
+Password hashes are replaced with placeholders here; the stored values contain a salted hash and salt, not the passwords themselves.
+
+[source,json]
+----
+{
+  "authentication": {
+    "class": "solr.BasicAuthPlugin",
+    "blockUnknown": false,
+    "credentials": {
+      "solr": "<salted password hash>",
+      "index": "<salted password hash>",
+      "search": "<salted password hash>"
+    }
+  },
+  "authorization": {
+    "class": "solr.RuleBasedAuthorizationPlugin",
+    "permissions": [
+      {"name": "security-edit", "role": "superadmin"},
+      {"name": "security-read", "role": "admin"},
+      {"name": "config-edit", "role": "admin"},
+      {"name": "config-read", "role": "admin"},
+      {"name": "collection-admin-edit", "role": "admin"},
+      {"name": "core-admin-edit", "role": "admin"},
+      {"name": "core-admin-read", "role": "admin"},
+      {"name": "read", "role": "search"},
+      {"name": "collection-admin-read", "role": ["admin", "search"]},
+      {"name": "update", "role": "index"},
+      {"name": "health", "role": null},
+      {"name": "metrics-read", "role": null},
+      {
+        "name": "public-monitoring",
+        "collection": null,
+        "path": ["/____v2/node/health", "/____v2/metrics"],
+        "method": "GET",
+        "role": null
+      },
+      {"name": "all", "role": "admin"}
+    ],
+    "user-role": {
+      "solr": ["superadmin", "admin"],
+      "index": ["index", "search"],
+      "search": ["search"]
+    }
+  }
+}
+----
+
+`authentication` verifies supplied Basic Authentication credentials.
+`blockUnknown: false` lets requests without credentials reach authorization, where the permission rules decide whether they are allowed.
+Invalid credentials are still rejected.
+
+`authorization` maps users to roles and checks permission rules in order.
+The `health` and `metrics-read` rules have `role: null`, allowing these endpoints without credentials.
+The `public-monitoring` rule also permits anonymous GET requests to the two v2 monitoring paths during the initial routing authorization check.
+Solr internally routes `/api` requests through `/solr/____v2`, so the permission paths use the internal `/____v2` prefix.
+`collection: null` limits this rule to node-level requests.
+These rules precede the final `all` rule, which requires the `admin` role for otherwise unmatched requests.
+Document reads require `search`, and updates require `index`, even for the administrator.
+The administrator has only `superadmin` and `admin`; `superadmin` grants security configuration changes.
+The indexing user has `index` and `search`; the search-only user has `search`.
+The wizard loads the sample documents over HTTPS using the `index` account.
+
+In SolrCloud, security settings are shared through ZooKeeper.
+Editing a local `security.json` file in the Solr home does not change the cluster configuration.
+
+== Choose Different Ports or Directories
+
+To use another Solr home, create an empty directory and pass it with `--solr-home`.
+Use `-p` to select the first node's port:
+
+[source,bash]
+----
+mkdir -p example/my-secure-setup
+bin/solr start -e secure-setup --solr-home example/my-secure-setup -p 9000
+----
+
+This starts Solr on ports `9000` and `9001`, with embedded ZooKeeper on `10000`.
+The second node uses the sibling home `example/my-secure-setup-node2`.
+Choose a first-node port at or below `64535`, and make sure all three ports are available.
+Substitute your paths and ports in the commands in this exercise.
+See xref:deployment-guide:solr-control-script-reference.adoc#start-and-restart[Start and Restart] for other startup options.
 
 == Next Steps
 
