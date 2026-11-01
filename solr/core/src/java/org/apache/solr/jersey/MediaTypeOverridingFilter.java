@@ -21,6 +21,7 @@ import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.apache.solr.common.params.CommonParams.WT;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -31,6 +32,7 @@ import jakarta.ws.rs.core.Context;
 import java.io.IOException;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -65,8 +67,11 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
-    // TODO Is it valid for SQRequest to be null?
-    final var params = (solrQueryRequest != null) ? solrQueryRequest.getParams() : null;
+    // Collection-scoped Jersey requests can be served without a local SolrQueryRequest.
+    final var params =
+        (solrQueryRequest != null)
+            ? solrQueryRequest.getParams()
+            : (SolrParams) requestContext.getProperty(SOLR_PARAMS);
     if (params != null && params.get(WT) != null) { // Override for 'wt'
       final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(params, null);
       if (mediaType != null) {
