@@ -19,6 +19,7 @@ package org.apache.solr.handler.loader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,9 +39,12 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Update handler which uses the JavaBin format
@@ -49,6 +53,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
  * @see org.apache.solr.common.util.JavaBinCodec
  */
 public class JavabinLoader extends ContentStreamLoader {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final ContentStreamLoader contentStreamLoader;
 
   public JavabinLoader() {
@@ -122,8 +128,12 @@ public class JavabinLoader extends ContentStreamLoader {
               processor.processAdd(addCmd);
               addCmd.clear();
             } catch (IOException e) {
+              if (log.isTraceEnabled()) {
+                log.trace("Error adding document {}", document, e);
+              }
               throw new SolrException(
-                  SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document, e);
+                  SolrException.ErrorCode.SERVER_ERROR,
+                  "ERROR adding document" + describeDocument(req, document));
             }
           }
         };
@@ -139,6 +149,15 @@ public class JavabinLoader extends ContentStreamLoader {
         delete(req, update, processor);
       }
     }
+  }
+
+  /** The document's unique key for an error message, without any other field values. */
+  private static String describeDocument(SolrQueryRequest req, SolrInputDocument document) {
+    SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
+    if (uniqueKeyField == null) {
+      return "";
+    }
+    return " [doc=" + document.getFieldValue(uniqueKeyField.getName()) + "]";
   }
 
   @SuppressWarnings(
