@@ -22,9 +22,12 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,6 +61,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.Aliases;
@@ -74,6 +78,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -1438,5 +1443,96 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     waitForEmptyQueue();
     stopProcessor();
+  }
+
+  /**
+   * Verify that when marking an async task as running in ZooKeeper fails with an unexpected
+   * KeeperException, the collection lock taken for that task is released. Otherwise no later task
+   * for the collection could acquire it.
+   */
+  @Test
+  public void testRunningMapFailureReleasesCollectionLock() throws Exception {
+    commonMocks(2, false);
+
+    String asyncId = "running-map-fail-test-async-123";
+    doThrow(new KeeperException.OperationTimeoutException())
+        .when(runningMapMock)
+        .put(eq(asyncId), any());
+
+    OverseerCollectionMessageHandler collHandler = newCollectionMessageHandler();
+
+    OverseerTaskProcessor processor = newProcessor(collHandler);
+
+    Thread processorThread = new Thread(processor);
+    processorThread.start();
+
+    ZkNodeProps collAMessage =
+        new ZkNodeProps(
+            Map.of(
+                Overseer.QUEUE_OPERATION,
+                CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+                "name",
+                "collA",
+                "async",
+                asyncId));
+    try {
+      queue.add(new QueueEvent("runningMapFailTask", Utils.toJSON(collAMessage), null));
+      verify(runningMapMock, timeout(MAX_WAIT_MS).atLeastOnce()).put(eq(asyncId), any());
+    } finally {
+      processor.close();
+      processorThread.interrupt();
+      processorThread.join(MAX_WAIT_MS);
+    }
+
+    // A fresh session ignores the processor's busy markers, so this only fails if a lock on collA
+    // is still held.
+    OverseerMessageHandler.Lock lock = collHandler.lockTask(collAMessage, Long.MAX_VALUE);
+    assertNotNull("The lock on collA was not released after the running map failure", lock);
+    lock.unlock();
+  }
+
+  /** Creates a real OverseerCollectionMessageHandler, so tests exercise the real LockTree. */
+  private OverseerCollectionMessageHandler newCollectionMessageHandler() {
+    return new OverseerCollectionMessageHandler(
+        zkStateReaderMock,
+        "1234",
+        shardHandlerFactoryMock,
+        ADMIN_PATH,
+        new Stats(),
+        overseerMock,
+        new OverseerNodePrioritizer(
+            zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock));
+  }
+
+  /** Creates a processor that always routes tasks to the given handler. */
+  private OverseerTaskProcessor newProcessor(OverseerCollectionMessageHandler collHandler) {
+    OverseerTaskProcessor.OverseerMessageHandlerSelector selector =
+        new OverseerTaskProcessor.OverseerMessageHandlerSelector() {
+          @Override
+          public void close() {
+            IOUtils.closeQuietly(collHandler);
+          }
+
+          @Override
+          public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
+            return collHandler;
+          }
+        };
+    return new OverseerTaskProcessor(
+        zkStateReaderMock,
+        "1234",
+        new Stats(),
+        selector,
+        mock(OverseerNodePrioritizer.class),
+        workQueueMock,
+        runningMapMock,
+        completedMapMock,
+        failureMapMock,
+        solrMetricsContextMock) {
+      @Override
+      protected LeaderStatus amILeader() {
+        return LeaderStatus.YES;
+      }
+    };
   }
 }
