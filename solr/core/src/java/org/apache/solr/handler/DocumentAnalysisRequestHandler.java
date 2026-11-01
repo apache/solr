@@ -214,7 +214,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         try {
           termsToMatch =
               (queryValue != null && request.isShowMatch())
-                  ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+                  ? getQueryTokenSet(queryValue, getQueryAnalyzer(fieldType))
                   : EMPTY_BYTES_SET;
         } catch (Exception e) {
           // ignore analysis exceptions since we are applying arbitrary text to all fields
@@ -224,14 +224,14 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         if (request.getQuery() != null) {
           try {
             AnalysisContext analysisContext =
-                new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_BYTES_SET);
+                new AnalysisContext(fieldType, getQueryAnalyzer(fieldType), EMPTY_BYTES_SET);
             fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
         }
 
-        Analyzer analyzer = fieldType.getIndexAnalyzer();
+        Analyzer analyzer = getIndexAnalyzer(fieldType);
         AnalysisContext analysisContext = new AnalysisContext(fieldType, analyzer, termsToMatch);
         Collection<Object> fieldValues = document.getFieldValues(name);
         NamedList<NamedList<? extends Object>> indexTokens = new SimpleOrderedMap<>();
