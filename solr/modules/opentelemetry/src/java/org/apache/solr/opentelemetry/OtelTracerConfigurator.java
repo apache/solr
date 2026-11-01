@@ -18,8 +18,8 @@ package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -40,6 +40,8 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
 
   private final Map<String, String> currentEnv;
 
+  private volatile Resource resource;
+
   public OtelTracerConfigurator() {
     this(System.getenv());
   }
@@ -57,7 +59,20 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
   public OpenTelemetry createOpenTelemetry() {
     // deliberately build() and not initialize(); the latter sets GlobalOpenTelemetry, which is
     // OpenTelemetryConfigurator's job
-    return AutoConfiguredOpenTelemetrySdk.builder().build().getOpenTelemetrySdk();
+    return AutoConfiguredOpenTelemetrySdk.builder()
+        // Hand the resolved resource back to Solr so its metrics carry the same one as these traces
+        .addResourceCustomizer(
+            (resource, config) -> {
+              this.resource = resource;
+              return resource;
+            })
+        .build()
+        .getOpenTelemetrySdk();
+  }
+
+  @Override
+  protected Resource getResource() {
+    return resource;
   }
 
   void prepareConfiguration(NamedList<?> args) {
@@ -67,20 +82,17 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    if (EnvUtils.getProperty("solr.host.advertise") != null) {
-      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("solr.host.advertise")));
-    }
 
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
 
-    // Need to disable the exporters for metrics and logs
-    String metricsExporter = getEnvOrSysprop("OTEL_METRICS_EXPORTER");
+    // The autoconfigured SDK must export neither metrics nor logs: Solr owns the meter providers,
+    // and OTEL_METRICS_EXPORTER is honoured by Solr's own OTLP metric exporter instead.
     String logsExporter = getEnvOrSysprop("OTEL_LOGS_EXPORTER");
-    if ((metricsExporter != null && !Objects.equals(metricsExporter, "none"))
-        || (logsExporter != null && !Objects.equals(logsExporter, "none"))) {
+    if (logsExporter != null && !Objects.equals(logsExporter, "none")) {
       log.warn(
-          "The opentelemetry module does not support METRICS or LOGS. Ignoring faulty environment setting");
+          "The opentelemetry module does not support LOGS. Ignoring OTEL_LOGS_EXPORTER={}",
+          logsExporter);
     }
     System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
@@ -98,27 +110,6 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
             setDefaultIfNotConfigured(asSysName, v.toString());
           }
         });
-  }
-
-  /**
-   * Add explicit tags statically to all traces, independent of request. Attributes with same name
-   * supplied in ENV or SysProp will take precedence over attributes added in code.
-   */
-  void addOtelResourceAttributes(Map<String, String> attrsToAdd) {
-    String commaSepAttrs = getEnvOrSysprop("OTEL_RESOURCE_ATTRIBUTES");
-    Map<String, String> attrs = new HashMap<>(attrsToAdd);
-    if (commaSepAttrs != null) {
-      attrs.putAll(
-          Arrays.stream(commaSepAttrs.split(","))
-              .filter(e -> e.contains("="))
-              .map(e -> e.strip().split("="))
-              .collect(Collectors.toMap(kv -> kv[0], kv -> kv[1])));
-    }
-    System.setProperty(
-        envNameToSyspropName("OTEL_RESOURCE_ATTRIBUTES"),
-        attrs.entrySet().stream()
-            .map(e -> e.getKey() + "=" + e.getValue())
-            .collect(Collectors.joining(",")));
   }
 
   /** Prepares a string with all configuration K/V pairs sorted and semicolon separated */

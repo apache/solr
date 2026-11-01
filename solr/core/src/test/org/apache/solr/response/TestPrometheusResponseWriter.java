@@ -180,6 +180,32 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     }
   }
 
+  /** The resource Solr resolves for its own telemetry reaches the endpoint as target_info. */
+  @Test
+  public void testTargetInfoCarriesSolrResource() throws Exception {
+    var req = new MetricsRequest();
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+    SolrClient adminClient = solrTestRule.getAdminClient();
+    NamedList<Object> res = adminClient.request(req);
+
+    try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
+      String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      String targetInfo =
+          output
+              .lines()
+              .filter(line -> line.startsWith("target_info{"))
+              .findFirst()
+              .orElseThrow(() -> new AssertionError("No target_info in:\n" + output));
+      assertTrue(
+          "Expected service_name=\"solr\" in " + targetInfo,
+          targetInfo.contains("service_name=\"solr\""));
+      assertTrue(
+          "Expected a service_instance_id in " + targetInfo,
+          targetInfo.contains("service_instance_id=\""));
+    }
+  }
+
   @Test
   public void testNullRequestDefaultsToPrometheusFormat() {
     PrometheusResponseWriter writer = new PrometheusResponseWriter();
