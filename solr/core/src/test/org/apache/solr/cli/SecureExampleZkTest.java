@@ -19,8 +19,11 @@ package org.apache.solr.cli;
 
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Properties;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
+import org.apache.solr.common.util.EnvUtils;
 
 /** Tests persistence and validation of the secure example's ZooKeeper credentials. */
 public class SecureExampleZkTest extends SolrTestCase {
@@ -32,6 +35,7 @@ public class SecureExampleZkTest extends SolrTestCase {
     var include = home.resolve("solr.in.sh");
     Files.writeString(include, "SOLR_OPTS='-Xmx512m'\n");
     Files.writeString(home.resolve("solr.xml"), "<solr><solrcloud></solrcloud></solr>");
+    Files.writeString(home.resolve("zoo.cfg"), "tickTime=2000\nclientPort=9983\n");
     secureZk.configure(include, 8983);
     var credentials = new VMParamsZkCredentialsInjector().getZkCredentials();
     assertEquals(password, credentials.getFirst().getPassword());
@@ -41,6 +45,18 @@ public class SecureExampleZkTest extends SolrTestCase {
           PosixFilePermissions.fromString("rw-------"),
           Files.getPosixFilePermissions(secureZk.credentialsFile()));
     }
+    var server = new SolrZkServer(true, null, home.resolve("zoo_data"), home.toString(), 8983);
+    server.parseConfig();
+    assertEquals("127.0.0.1:9983", server.getClientString());
+    assertEquals("true", EnvUtils.getProperty("zookeeper.client.secure"));
+    var serverSettings = new Properties();
+    try (var reader = Files.newBufferedReader(home.resolve("zoo.cfg"))) {
+      serverSettings.load(reader);
+    }
+    assertFalse(serverSettings.containsKey("clientPort"));
+    assertEquals("9983", serverSettings.getProperty("secureClientPort"));
+    assertEquals("none", serverSettings.getProperty("ssl.clientAuth"));
+    assertEquals("false", serverSettings.getProperty("client.portUnification"));
     String includeContents = Files.readString(include);
     secureZk.configure(include, 8983);
     assertEquals(includeContents, Files.readString(include));

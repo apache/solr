@@ -803,9 +803,11 @@ public class RunExampleTool extends ToolBase {
           VMParamsZkCredentialsInjector.readCredentialsFile(
               new SecureExampleZk(solrHomeDir).credentialsFile().toString());
       String zkPassword = zkCredentials.getProperty("zkDigestPassword");
-      echo("List ZooKeeper data with digest authentication:");
+      echo("List ZooKeeper data with TLS and digest authentication:");
       echo(
-          "bin/solr zk ls / --zk-host localhost:"
+          "bin/solr zk ls / --zk-tls-ca-file '"
+              + secureSSL.certificate().toString().replace("'", "'\"'\"'")
+              + "' --zk-host localhost:"
               + (port + 1000)
               + "/solr --zk-credentials 'zk-admin:"
               + ("SolrRocks".equals(zkPassword) ? "SolrRocks" : "<password>")

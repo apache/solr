@@ -93,6 +93,8 @@ public class ZkMkrootTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(FAIL_ON_EXISTS_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
@@ -143,7 +145,7 @@ public class ZkMkrootTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
 
-    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth).build()) {
       doMkroot(zkClient, zkHost, path, failOnExists());
       return 0;
     } catch (Exception e) {

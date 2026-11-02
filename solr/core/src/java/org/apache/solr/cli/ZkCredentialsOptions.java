@@ -16,13 +16,29 @@
  */
 package org.apache.solr.cli;
 
+import java.nio.file.Path;
 import picocli.CommandLine;
 
-/** Digest authentication option for commands that connect directly to ZooKeeper. */
+/** Authentication and TLS options for commands that connect directly to ZooKeeper. */
 public final class ZkCredentialsOptions {
   @CommandLine.Option(
       names = "--zk-credentials",
       paramLabel = "username:password",
       description = "ZooKeeper digest credentials, separate from HTTP --credentials.")
   String credentials;
+
+  @CommandLine.Option(
+      names = "--zk-tls",
+      description = "Use TLS for the ZooKeeper connection and verify the server certificate.")
+  boolean tls;
+
+  @CommandLine.Option(
+      names = "--zk-tls-ca-file",
+      paramLabel = "file",
+      description = "PEM certificates to trust for ZooKeeper; also enables TLS.")
+  Path caFile;
+
+  void configureTls() {
+    CLIUtils.configureZkTls(tls, caFile);
+  }
 }

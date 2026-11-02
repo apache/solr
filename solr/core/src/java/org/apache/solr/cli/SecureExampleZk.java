@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
@@ -63,6 +64,32 @@ final class SecureExampleZk {
     IncludeFileEditor.write(credentialsFile(), output.toString().getBytes(StandardCharsets.UTF_8));
   }
 
+  private void configureServerTls(Path tls, int solrPort) throws IOException {
+    Path config = home.resolve("zoo.cfg");
+    Properties settings = new Properties();
+    try (var reader = Files.newBufferedReader(config, StandardCharsets.UTF_8)) {
+      settings.load(reader);
+    }
+    settings.remove("clientPort");
+    settings.remove("clientPortAddress");
+    settings.setProperty("secureClientPort", Integer.toString(solrPort + 1000));
+    settings.setProperty("serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
+    settings.setProperty("ssl.keyStore.location", tls.resolve("solr-ssl.keystore.jks").toString());
+    settings.setProperty("ssl.keyStore.type", "JKS");
+    settings.setProperty(
+        "ssl.keyStore.passwordPath", tls.resolve("keystore-password.txt").toString());
+    settings.setProperty(
+        "ssl.trustStore.location", tls.resolve("solr-ssl.keystore.jks.truststore").toString());
+    settings.setProperty("ssl.trustStore.type", "JKS");
+    settings.setProperty(
+        "ssl.trustStore.passwordPath", tls.resolve("keystore-password.txt").toString());
+    settings.setProperty("ssl.clientAuth", "none");
+    settings.setProperty("client.portUnification", "false");
+    StringWriter output = new StringWriter();
+    settings.store(output, "TLS-only embedded ZooKeeper for the secure Solr example");
+    IncludeFileEditor.write(config, output.toString().getBytes(StandardCharsets.UTF_8));
+  }
+
   void configure(Path includeFile, int solrPort) throws IOException {
     if (solrPort > 64535) {
       throw new IllegalArgumentException(
@@ -81,12 +108,22 @@ final class SecureExampleZk {
         throw new IllegalStateException("Missing " + key + " in " + credentialsFile());
       }
     }
-    Map<String, String> properties =
-        Map.of(
-            "zkCredentialsInjector", VMParamsZkCredentialsInjector.class.getName(),
-            "zkCredentialsProvider", DigestZkCredentialsProvider.class.getName(),
-            "zkACLProvider", DigestZkACLProvider.class.getName(),
-            "zkDigestCredentialsFile", credentialsFile().toString());
+    Path tls = home.resolve("tls");
+    Map<String, String> properties = new HashMap<>();
+    properties.put("zkCredentialsInjector", VMParamsZkCredentialsInjector.class.getName());
+    properties.put("zkCredentialsProvider", DigestZkCredentialsProvider.class.getName());
+    properties.put("zkACLProvider", DigestZkACLProvider.class.getName());
+    properties.put("zkDigestCredentialsFile", credentialsFile().toString());
+    properties.put("zookeeper.client.secure", "true");
+    properties.put("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
+    properties.put(
+        "zookeeper.ssl.trustStore.location",
+        tls.resolve("solr-ssl.keystore.jks.truststore").toString());
+    properties.put("zookeeper.ssl.trustStore.type", "JKS");
+    properties.put(
+        "zookeeper.ssl.trustStore.passwordPath", tls.resolve("keystore-password.txt").toString());
+    properties.put("zookeeper.ssl.hostnameVerification", "true");
+    configureServerTls(tls, solrPort);
     properties.forEach(System::setProperty);
     StringBuilder options = new StringBuilder();
     properties.forEach((key, value) -> options.append(" -D").append(key).append('=').append(value));

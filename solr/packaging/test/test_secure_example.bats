@@ -51,6 +51,16 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   assert_output --partial "--zk-credentials 'zk-admin:SolrRocks'"
 
 
+  run bash -c 'printf "\n" | openssl s_client -connect "$1" -servername localhost -CAfile "$2" -verify_return_error' \
+    _ "localhost:${ZK_PORT}" "$SOLR_HOME/tls/cert.pem"
+  assert_success
+  assert_output --partial 'Verify return code: 0 (ok)'
+
+  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= \
+    solr zk ls / --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
+  assert_failure
+  refute_output --partial 'NoAuth'
+
   run test -f "$SOLR_HOME/logs/solr.log"
   assert_success
   run test -f "${SOLR_HOME}-node2/logs/solr.log"
@@ -74,7 +84,7 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   assert_output --partial '"environment_label":"Secure Solr Setup"'
 
   run solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/generated-security.json" \
-    --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
+    --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
   assert_success
   run cat "$BATS_TEST_TMPDIR/generated-security.json"
   assert_output --partial '"blockUnknown":false'
@@ -155,24 +165,24 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   assert_success
   assert_output --partial '"numFound":32'
 
-  run solr zk ls / --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
+  run solr zk ls / --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
   assert_success
   assert_output --partial 'security.json'
 
-  run env SOLR_PICOCLI=true solr zk ls / --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
+  run env SOLR_PICOCLI=true solr zk ls / --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-admin:SolrRocks
   assert_success
   assert_output --partial 'security.json'
 
-  run solr zk ls /collections --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
+  run solr zk ls /collections --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
   assert_success
   assert_output --partial 'techproducts'
 
-  run solr zk ls /security.json --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
+  run solr zk ls /security.json --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
   assert_failure
   assert_output --partial 'NoAuth'
 
   run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" \
-    --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
+    --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr" --zk-credentials zk-readonly:SolrRocks
   assert_failure
   assert_output --partial 'NoAuth'
 
@@ -182,7 +192,7 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   assert_output --partial 'techproducts'
 
 
-  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:${ZK_PORT}/solr"
+  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-tls-ca-file "$SOLR_HOME/tls/cert.pem" --zk-host "localhost:${ZK_PORT}/solr"
   assert_failure
   assert_output --partial 'NoAuth'
 

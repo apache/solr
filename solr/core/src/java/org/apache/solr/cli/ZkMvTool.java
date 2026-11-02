@@ -78,6 +78,8 @@ public class ZkMvTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
   }
@@ -146,7 +148,7 @@ public class ZkMvTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
 
-    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth).build()) {
       doMv(zkClient, zkHost, src, dst);
       return 0;
     } catch (Exception e) {

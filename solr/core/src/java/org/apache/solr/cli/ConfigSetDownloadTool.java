@@ -96,6 +96,8 @@ public class ConfigSetDownloadTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CONF_NAME_OPTION)
         .addOption(CONF_DIR_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
@@ -152,7 +154,7 @@ public class ConfigSetDownloadTool extends ToolBase {
     String zkHost = zkOpts.resolveZkHost();
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth).build()) {
       doDownconfig(zkClient, zkHost, configSetOpts.confName, confDir);
       return 0;
     } catch (Exception e) {

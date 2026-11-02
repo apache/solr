@@ -24,9 +24,31 @@ import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.junit.Test;
 
 public class CLIUtilsTest extends SolrCloudTestCase {
+
+  @Test
+  public void testZkTlsReusesClientTrustStore() {
+    System.clearProperty("zookeeper.ssl.trustStore.location");
+    System.setProperty("javax.net.ssl.trustStore", "client.jks");
+    System.setProperty("javax.net.ssl.trustStoreType", "JKS");
+    System.setProperty("javax.net.ssl.trustStorePassword", "password");
+    CLIUtils.configureZkTls(true, null);
+    assertEquals("true", EnvUtils.getProperty("zookeeper.client.secure"));
+    assertEquals("client.jks", EnvUtils.getProperty("zookeeper.ssl.trustStore.location"));
+    assertEquals("JKS", EnvUtils.getProperty("zookeeper.ssl.trustStore.type"));
+    assertEquals("password", EnvUtils.getProperty("zookeeper.ssl.trustStore.password"));
+  }
+
+  @Test
+  public void testHttpsDoesNotEnableZkTls() {
+    System.setProperty("zookeeper.client.secure", "false");
+    System.setProperty("javax.net.ssl.trustStore", "client.jks");
+    CLIUtils.configureZkTls(false, null);
+    assertEquals("false", EnvUtils.getProperty("zookeeper.client.secure"));
+  }
 
   @Test
   public void testDefaultSolrUrlWithNoProperties() {

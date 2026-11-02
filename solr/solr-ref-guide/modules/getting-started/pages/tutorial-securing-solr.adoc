@@ -121,7 +121,9 @@ The wizard prints the paths where credentials are saved, with owner-only permiss
 `zk-readonly` can read ordinary metadata but cannot modify it or read `/security.json` and `/security/*`.
 These accounts are independent of the HTTP users.
 The example-specific include file configures digest authentication and ACLs for Solr and CLI commands, using the `/solr` ZooKeeper chroot.
-The example does not enable TLS for ZooKeeper connections.
+ZooKeeper listens on a TLS-only port and uses the same certificate and truststore as HTTPS.
+TLS encrypts the connection and verifies the server certificate; the digest accounts and ACLs still control access to znodes.
+Client certificates are not required.
 
 === Verify HTTPS
 
@@ -165,7 +167,7 @@ You now have the following local cluster:
 |Process |Port |Solr home
 |First Solr node |`8983` |`example/secure-setup`
 |Second Solr node |`8984` |`example/secure-setup-node2`
-|Embedded ZooKeeper |`9983` |Hosted by the first node
+|Embedded ZooKeeper (TLS only) |`9983` |Hosted by the first node
 |===
 
 The `techproducts` collection has two shards, with one replica per shard and one shard on each node.
@@ -362,6 +364,8 @@ bin/solr stop -p 8983
 Stop the second node before the first, because the first hosts ZooKeeper.
 Run `bin/solr start -e secure-setup` again to restart both nodes.
 Existing security settings are preserved, and an existing collection is not reindexed or resharded.
+If your example was created before ZooKeeper TLS was enabled, stop both nodes before restarting with the updated wizard.
+It configures the existing ZooKeeper data to use TLS without changing its ACLs.
 For an older one-shard example, use a fresh, existing `--solr-home` directory to create the two-shard layout used in this tutorial.
 Saved HTTP and ZooKeeper passwords are reused without prompting.
 If you changed the administrator password through an API, supply the new credentials when restarting:
@@ -390,15 +394,20 @@ For example, check the node's status with the HTTP administrator credentials:
 SOLR_INCLUDE=example/secure-setup/tls/solr.in.sh bin/solr status --credentials solr:SolrRocks
 ----
 
-The wizard ends by printing a ZooKeeper listing command. With the default credentials, run:
+The wizard ends by printing a ZooKeeper listing command.
+With the default credentials, run:
 
 [source,bash]
 ----
-bin/solr zk ls / --zk-host localhost:9983/solr --zk-credentials zk-admin:SolrRocks
+bin/solr zk ls / --zk-host localhost:9983/solr \
+  --zk-tls-ca-file example/secure-setup/tls/cert.pem --zk-credentials zk-admin:SolrRocks
 ----
 
-This authenticates directly to ZooKeeper without the example's include file or HTTPS settings.
+`--zk-tls-ca-file` enables TLS and trusts the example's self-signed certificate.
+The CLI configures the ZooKeeper TLS client internally; you do not need the include file or JVM options.
 The output lists the example's znodes, including `collections`, `configs`, and `security.json`.
+For a server certificate trusted by your configured client truststore or the JDK, use `--zk-tls` without a CA file.
+The TLS connection verifies the server certificate and hostname; the digest account determines access to znodes.
 The HTTP `--credentials` option authenticates Solr discovery requests; `--zk-credentials` supplies ZooKeeper digest credentials.
 For a customized ZooKeeper password, replace `SolrRocks` with the value saved in `zk-credentials.properties`.
 The HTTP and ZooKeeper properties files contain passwords in plain text; their owner-only file permissions protect them locally.
@@ -408,14 +417,14 @@ The read-only account can list collection metadata:
 
 [source,bash]
 ----
-bin/solr zk ls /collections --zk-host localhost:9983/solr --zk-credentials zk-readonly:SolrRocks
+bin/solr zk ls /collections --zk-host localhost:9983/solr --zk-tls-ca-file example/secure-setup/tls/cert.pem --zk-credentials zk-readonly:SolrRocks
 ----
 
 It cannot read the security configuration:
 
 [source,bash]
 ----
-bin/solr zk ls /security.json --zk-host localhost:9983/solr --zk-credentials zk-readonly:SolrRocks
+bin/solr zk ls /security.json --zk-host localhost:9983/solr --zk-tls-ca-file example/secure-setup/tls/cert.pem --zk-credentials zk-readonly:SolrRocks
 ----
 
 The second command fails with `NoAuth`.
@@ -424,10 +433,21 @@ Compare this with a request that does not load the example's credentials:
 
 [source,bash]
 ----
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS='' bin/solr zk ls / --zk-host localhost:9983/solr
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS='' bin/solr zk ls / --zk-host localhost:9983/solr --zk-tls-ca-file example/secure-setup/tls/cert.pem
 ----
 
-This command fails with `NoAuth`, demonstrating that the ACLs require authentication for access to the example's data.
+This command connects over TLS but fails with `NoAuth`, demonstrating that encryption alone does not grant access to the example's data.
+
+You can also verify the ZooKeeper TLS listener directly:
+
+[source,bash]
+----
+printf '\n' | openssl s_client -connect localhost:9983 -servername localhost \
+  -CAfile example/secure-setup/tls/cert.pem -verify_return_error
+----
+
+The certificate verification should succeed.
+Plaintext ZooKeeper connections are rejected, even when they supply the correct digest credentials.
 
 === Replace or Renew the Certificate
 

@@ -1242,7 +1242,12 @@ Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
 Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
 
-=== ZooKeeper Authentication
+=== ZooKeeper Authentication and TLS
+
+`--zk-tls` enables TLS for the ZooKeeper connection, with server certificate and hostname verification.
+It uses the configured ZooKeeper truststore, otherwise the CLI's HTTPS client truststore or the JDK's default truststore.
+`--zk-tls-ca-file <file>` trusts certificates from a PEM file and also enables TLS.
+These options apply to the ZooKeeper commands listed below; HTTPS for Solr and TLS for ZooKeeper are configured independently.
 
 `--zk-credentials <username:password>` supplies ZooKeeper digest credentials for `zk ls`, `cp`, `mv`, `rm`, `mkroot`, `upconfig`, `downconfig`, and `updateacls`.
 It overrides the configured ZooKeeper connection credentials and is independent of HTTP `--credentials`, which authenticates requests to Solr when discovering the ZooKeeper address.

@@ -66,6 +66,8 @@ public class ZkRmTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
@@ -134,7 +136,7 @@ public class ZkRmTool extends ToolBase {
     String zkHost = zkOpts.resolveZkHost();
     String znode = resolveZnode(path);
 
-    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth.credentials).build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth).build()) {
       doRm(zkClient, zkHost, znode, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {

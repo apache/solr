@@ -113,6 +113,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     @Override
     public int execute(CommandLine cmd, Map<String, String> env) throws IOException {
       if (env != null && env.containsKey("SOLR_INCLUDE")) {
+        // This executor substitutes MiniSolrCloudCluster's plaintext test ZooKeeper for embedded
+        // ZK.
+        System.setProperty("zookeeper.client.secure", "false");
+        System.setProperty(
+            "zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNIO");
         Path tls = Path.of(env.get("SOLR_INCLUDE")).getParent();
         Path store = tls.resolve("solr-ssl.keystore.jks");
         String password = Files.readString(tls.resolve("keystore-password.txt")).stripTrailing();

@@ -78,6 +78,8 @@ public class UpdateACLTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
@@ -101,6 +103,7 @@ public class UpdateACLTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
+    zkAuth.configureTls();
     String zkHost = zkOpts.resolveZkHost();
 
     CLIUtils.ensureZkChroot(zkHost, zkAuth.credentials);

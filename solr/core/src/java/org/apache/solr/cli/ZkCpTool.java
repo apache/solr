@@ -109,6 +109,8 @@ public class ZkCpTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(SOLR_HOME_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
@@ -276,6 +278,7 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
+    zkAuth.configureTls();
     doCp(zkOpts.resolveZkHost(), src, dst, recursiveOpt.recursive, solrHome, zkAuth.credentials);
     return 0;
   }

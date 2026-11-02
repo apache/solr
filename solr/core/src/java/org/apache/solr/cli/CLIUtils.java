@@ -25,6 +25,7 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -355,6 +356,9 @@ public final class CLIUtils {
    * solr-url option.
    */
   public static String getZkHost(CommandLine cli) throws Exception {
+    String caFile = cli.getOptionValue(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION);
+    configureZkTls(
+        cli.hasOption(CommonCLIOptions.ZK_TLS_OPTION), caFile == null ? null : Path.of(caFile));
 
     String zkHost = getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
     if (zkHost != null && !zkHost.isBlank()) {
@@ -415,6 +419,42 @@ public final class CLIUtils {
         if (!root.exists(chroot)) root.makePath(chroot, false);
       }
     }
+  }
+
+  static void configureZkTls(boolean tls, Path caFile) {
+    if (!tls && caFile == null) return;
+    if (caFile != null && !Files.isRegularFile(caFile)) {
+      throw new IllegalArgumentException("ZooKeeper CA certificate file not found: " + caFile);
+    }
+    System.setProperty("zookeeper.client.secure", "true");
+    System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
+    System.setProperty("zookeeper.ssl.hostnameVerification", "true");
+    if (caFile != null) {
+      System.setProperty("zookeeper.ssl.trustStore.location", caFile.toAbsolutePath().toString());
+      System.setProperty("zookeeper.ssl.trustStore.type", "PEM");
+    } else if (EnvUtils.getProperty("zookeeper.ssl.trustStore.location") == null) {
+      copyTrustStoreProperty("javax.net.ssl.trustStore", "zookeeper.ssl.trustStore.location");
+      copyTrustStoreProperty("javax.net.ssl.trustStoreType", "zookeeper.ssl.trustStore.type");
+      copyTrustStoreProperty(
+          "javax.net.ssl.trustStorePassword", "zookeeper.ssl.trustStore.password");
+    }
+  }
+
+  private static void copyTrustStoreProperty(String fromProperty, String toProperty) {
+    String value = EnvUtils.getProperty(fromProperty);
+    if (value != null) {
+      System.setProperty(toProperty, value);
+    }
+  }
+
+  /**
+   * As {@link #zkClientBuilder(String, String)}, but also applies the picocli {@code --zk-tls}/
+   * {@code --zk-tls-ca-file} options, so picocli-based ZK tools don't each need a separate {@code
+   * zkAuth.configureTls()} call before building the client.
+   */
+  static SolrZkClient.Builder zkClientBuilder(String zkHost, ZkCredentialsOptions zkAuth) {
+    zkAuth.configureTls();
+    return zkClientBuilder(zkHost, zkAuth.credentials);
   }
 
   static SolrZkClient.Builder zkClientBuilder(String zkHost, String credentials) {
