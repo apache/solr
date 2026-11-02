@@ -19,6 +19,7 @@ load bats_helper
 
 setup() {
   common_clean_setup
+  command -v openssl >/dev/null 2>&1 || skip "OpenSSL is not available"
   export SOLR_INCLUDE="${BATS_TEST_TMPDIR}/global-solr.in.sh"
   touch "$SOLR_INCLUDE"
 }
