@@ -86,15 +86,9 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
                 + "'; not in combiner.query: "
                 + knownQueryKeys);
       }
-      String rawWeight = entry.getValue()[0];
-      float weight;
-      try {
-        weight = Float.parseFloat(rawWeight);
-      } catch (NumberFormatException e) {
-        throw badWeightRequest(queryKey, rawWeight);
-      }
+      float weight = getWeight(solrParams, queryKey);
       if (!(weight > 0) || !Float.isFinite(weight)) {
-        throw badWeightRequest(queryKey, rawWeight);
+        throw badWeightRequest(queryKey, entry.getValue()[0]);
       }
     }
   }
