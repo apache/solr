@@ -669,6 +669,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCollection = function(collection) {
+    if (!collection) {
+      return;
+    }
     if (collection.type === 'collection') {
       $location.url("/" + collection.name + "/collection-overview")
     } else if (collection.type === 'alias') {
