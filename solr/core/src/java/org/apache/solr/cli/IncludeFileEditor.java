@@ -69,7 +69,7 @@ final class IncludeFileEditor {
           if (format == Format.WINDOWS) {
             output.append("set ").append(key).append('=').append(value);
           } else {
-            output.append(key).append("='").append(value.replace("'", "'\"'\"'")).append("'");
+            output.append(key).append('=').append(CLIUtils.shellQuote(value));
           }
           output.append(newline);
         });

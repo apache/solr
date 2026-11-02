@@ -22,7 +22,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
 /** Supports zk ls command in the bin/solr script. */
 @CommandLine.Command(
@@ -41,7 +40,7 @@ public class ZkLsTool extends ToolBase {
 
   @CommandLine.Mixin ZkConnectionOptions zkOpts;
 
-  @Mixin private ZkCredentialsOptions zkAuth;
+  @CommandLine.Mixin private ZkCredentialsOptions zkAuth;
 
   @CommandLine.Parameters(
       index = "0",
@@ -63,7 +62,6 @@ public class ZkLsTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
         .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)

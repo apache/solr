@@ -33,7 +33,7 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 == Synopsis
 
 ....
-bin/solr zk downconfig [-hv] [--zk-tls] -d=DIR -n=<confName> [-s=<solrConnection>]
+bin/solr zk downconfig [-hv] -d=DIR -n=<confName> [-s=<solrConnection>]
                        [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
                        [--zk-credentials=username:password] [--zk-tls-ca-file=file]
 ....
@@ -108,9 +108,6 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 
 *--zk-credentials*=_username:password_::
   ZooKeeper digest credentials, separate from HTTP --credentials.
-
-*--zk-tls*::
-  Use TLS for the ZooKeeper connection and verify the server certificate.
 
 *--zk-tls-ca-file*=_file_::
   PEM certificates to trust for ZooKeeper; also enables TLS.

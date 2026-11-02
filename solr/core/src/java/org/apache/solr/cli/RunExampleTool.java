@@ -48,13 +48,11 @@ import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
@@ -120,6 +118,10 @@ public class RunExampleTool extends ToolBase {
                   + "Example: --script-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
           .build();
 
+  /** Valid values for the {@code --example} option, in the order they're listed to users. */
+  static final List<String> EXAMPLE_TYPES =
+      List.of("cloud", "techproducts", "secure-setup", "schemaless", "films");
+
   /**
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
@@ -131,8 +133,7 @@ public class RunExampleTool extends ToolBase {
           .hasArg()
           .argName("NAME")
           .required()
-          .desc(
-              "Name of the example to launch, one of: cloud, techproducts, secure-setup, schemaless, films.")
+          .desc("Name of the example to launch, one of: " + String.join(", ", EXAMPLE_TYPES) + ".")
           .get();
 
   /**
@@ -513,16 +514,7 @@ public class RunExampleTool extends ToolBase {
             + "\nscript="
             + script);
 
-    if (!"cloud".equals(exampleType)
-        && !"techproducts".equals(exampleType)
-        && !"secure-setup".equals(exampleType)
-        && !"schemaless".equals(exampleType)
-        && !"films".equals(exampleType)) {
-      throw new IllegalArgumentException(
-          "Unsupported example "
-              + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, secure-setup, or films");
-    }
+    validateExampleType(exampleType);
 
     StartSolrParams startParams =
         new StartSolrParams(
@@ -632,6 +624,16 @@ public class RunExampleTool extends ToolBase {
               + " is not a directory!");
   }
 
+  private static void validateExampleType(String exampleType) {
+    if (!EXAMPLE_TYPES.contains(exampleType)) {
+      throw new IllegalArgumentException(
+          "Unsupported example "
+              + exampleType
+              + "! Please choose one of: "
+              + String.join(", ", EXAMPLE_TYPES));
+    }
+  }
+
   private static String[] withCredentials(String[] args, String credentials) {
     if (credentials == null) return args;
     List<String> result = new ArrayList<>(Arrays.asList(args));
@@ -670,9 +672,16 @@ public class RunExampleTool extends ToolBase {
     if (!existingHttps) configureSecureExampleSSL(input, start, noPrompt);
     else echo("Reusing the example's HTTPS configuration.");
     SecureExampleZk secureZk = new SecureExampleZk(solrHomeDir);
+    List<String> newAccounts = new ArrayList<>();
+    if (!existingAccounts) {
+      newAccounts.addAll(List.of(accounts.adminUsername(), "index", "search"));
+    }
+    if (!secureZk.isConfigured()) {
+      newAccounts.addAll(List.of("zk-admin", "zk-readonly"));
+    }
     boolean changePasswords = false;
-    if (!existingAccounts || !secureZk.isConfigured()) {
-      echo("The solr, index, search, zk-admin, and zk-readonly accounts use SolrRocks by default.");
+    if (!newAccounts.isEmpty()) {
+      echo("The " + String.join(", ", newAccounts) + " accounts use SolrRocks by default.");
       String choice = noPrompt ? "n" : prompt(input, "Change account passwords? [y/N]: ", "n");
       while (!Set.of("y", "n").contains(choice.toLowerCase(Locale.ROOT))) {
         choice = prompt(input, "Enter y to change passwords or n to use the defaults [y/N]: ", "n");
@@ -805,9 +814,9 @@ public class RunExampleTool extends ToolBase {
       String zkPassword = zkCredentials.getProperty("zkDigestPassword");
       echo("List ZooKeeper data with TLS and digest authentication:");
       echo(
-          "bin/solr zk ls / --zk-tls-ca-file '"
-              + secureSSL.certificate().toString().replace("'", "'\"'\"'")
-              + "' --zk-host localhost:"
+          "bin/solr zk ls / --zk-tls-ca-file "
+              + CLIUtils.shellQuote(secureSSL.certificate().toString())
+              + " --zk-host localhost:"
               + (port + 1000)
               + "/solr --zk-credentials 'zk-admin:"
               + ("SolrRocks".equals(zkPassword) ? "SolrRocks" : "<password>")
@@ -876,19 +885,19 @@ public class RunExampleTool extends ToolBase {
   private void waitForSecurity(String solrUrl, String credentials) throws Exception {
     // ZooKeeper watchers reload security asynchronously.
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-    while (System.nanoTime() < deadline) {
-      try (SolrClient anonymous = CLIUtils.getSolrClient(solrUrl, null)) {
-        anonymous.request(
-            new GenericSolrRequest(
-                SolrRequest.METHOD.GET, "/admin/info/system", new ModifiableSolrParams()));
-      } catch (RemoteSolrException e) {
-        if (e.code() == 401) {
-          getNodeStatus(solrUrl, credentials, 30);
-          return;
+    try (SolrClient anonymous = CLIUtils.getSolrClient(solrUrl, null)) {
+      while (System.nanoTime() < deadline) {
+        try {
+          new SystemApi.GetNodeSystemInfo().process(anonymous);
+        } catch (RemoteSolrException e) {
+          if (e.code() == 401) {
+            getNodeStatus(solrUrl, credentials, 30);
+            return;
+          }
+          throw e;
         }
-        throw e;
+        TimeUnit.MILLISECONDS.sleep(100);
       }
-      TimeUnit.MILLISECONDS.sleep(100);
     }
     throw new IllegalStateException("Timed out waiting for Basic Authentication to become active");
   }
@@ -1776,16 +1785,7 @@ public class RunExampleTool extends ToolBase {
             + "\nscript="
             + script);
 
-    if (!"cloud".equals(exampleType)
-        && !"techproducts".equals(exampleType)
-        && !"secure-setup".equals(exampleType)
-        && !"schemaless".equals(exampleType)
-        && !"films".equals(exampleType)) {
-      throw new IllegalArgumentException(
-          "Unsupported example "
-              + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, secure-setup, or films");
-    }
+    validateExampleType(exampleType);
 
     StartSolrParams startParams =
         new StartSolrParams(

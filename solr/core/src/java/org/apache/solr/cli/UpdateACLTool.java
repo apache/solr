@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
-import picocli.CommandLine.Mixin;
 
 /**
  * Supports updating ACL for a path in ZK
@@ -48,7 +47,7 @@ public class UpdateACLTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
-  @Mixin private ZkCredentialsOptions zkAuth;
+  @picocli.CommandLine.Mixin private ZkCredentialsOptions zkAuth;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -78,7 +77,6 @@ public class UpdateACLTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
         .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }

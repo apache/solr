@@ -28,17 +28,12 @@ public final class ZkCredentialsOptions {
   String credentials;
 
   @CommandLine.Option(
-      names = "--zk-tls",
-      description = "Use TLS for the ZooKeeper connection and verify the server certificate.")
-  boolean tls;
-
-  @CommandLine.Option(
       names = "--zk-tls-ca-file",
       paramLabel = "file",
       description = "PEM certificates to trust for ZooKeeper; also enables TLS.")
   Path caFile;
 
   void configureTls() {
-    CLIUtils.configureZkTls(tls, caFile);
+    CLIUtils.configureZkTls(caFile);
   }
 }

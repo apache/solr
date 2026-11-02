@@ -33,10 +33,10 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 == Synopsis
 
 ....
-bin/solr zk mkroot [-hv] [--zk-tls] [--fail-on-exists[=<arg>]]
-                   [-s=<solrConnection>] [--solr-url=<solrUrl>] [-u=<credentials>]
-                   [-z=<zkHost>] [--zk-credentials=username:password]
-                   [--zk-tls-ca-file=file] <path>
+bin/solr zk mkroot [-hv] [--fail-on-exists[=<arg>]] [-s=<solrConnection>]
+                   [--solr-url=<solrUrl>] [-u=<credentials>] [-z=<zkHost>]
+                   [--zk-credentials=username:password] [--zk-tls-ca-file=file]
+                   <path>
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -74,9 +74,6 @@ Make a znode in ZooKeeper with no data. Can be used to make a path of arbitrary 
 
 *--zk-credentials*=_username:password_::
   ZooKeeper digest credentials, separate from HTTP --credentials.
-
-*--zk-tls*::
-  Use TLS for the ZooKeeper connection and verify the server certificate.
 
 *--zk-tls-ca-file*=_file_::
   PEM certificates to trust for ZooKeeper; also enables TLS.

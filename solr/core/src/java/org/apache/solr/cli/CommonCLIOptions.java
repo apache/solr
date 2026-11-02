@@ -76,12 +76,6 @@ public final class CommonCLIOptions {
           .desc("ZooKeeper digest credentials, separate from HTTP --credentials.")
           .build();
 
-  public static final Option ZK_TLS_OPTION =
-      Option.builder()
-          .longOpt("zk-tls")
-          .desc("Use TLS for the ZooKeeper connection and verify the server certificate.")
-          .get();
-
   public static final Option ZK_TLS_CA_FILE_OPTION =
       Option.builder()
           .longOpt("zk-tls-ca-file")

@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import picocli.CommandLine.Mixin;
 
 /** Supports zk mv command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -52,7 +51,7 @@ public class ZkMvTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
-  @Mixin private ZkCredentialsOptions zkAuth;
+  @picocli.CommandLine.Mixin private ZkCredentialsOptions zkAuth;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -78,7 +77,6 @@ public class ZkMvTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.ZK_TLS_OPTION)
         .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());

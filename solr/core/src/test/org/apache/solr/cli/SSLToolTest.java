@@ -82,59 +82,54 @@ public class SSLToolTest extends SolrTestCase {
     return dir;
   }
 
-  private SSLTool.SSLParams params(Path dir, String type, String zkHost) {
+  private SSLTool.SSLParams params(Path dir, String zkHost) {
     return new SSLTool.SSLParams(
         dir.resolve("cert.pem"),
         dir.resolve("key.pem"),
         dir.resolve("password.txt"),
         null,
         dir.resolve("store"),
-        type,
         dir.resolve("solr.in.sh"),
         zkHost);
   }
 
   @Test
-  public void testBothFormats() throws Exception {
-    for (String type : new String[] {"JKS", "PKCS12"}) {
-      Path dir = prepare();
-      var runtime = new CLITestHelper.TestingRuntime(true);
-      String[] args = {
-        "--cert",
-        dir.resolve("cert.pem").toString(),
-        "--key",
-        dir.resolve("key.pem").toString(),
-        "--password-file",
-        dir.resolve("password.txt").toString(),
-        "--keystore",
-        dir.resolve("store").toString(),
-        "--solr-include-file",
-        dir.resolve("solr.in.sh").toString(),
-        "--store-type",
-        type
-      };
-      SSLTool tool = new SSLTool(runtime);
-      assertEquals(0, new CommandLine(tool).execute(args));
-      assertTrue(runtime.getOutput().contains("Restart Solr to enable HTTPS."));
-      assertTrue(runtime.getOutput().contains("No cluster property changed."));
-      char[] password = "Test'$(false)Password".toCharArray();
-      KeyStore store = KeyStore.getInstance(type);
-      try (var input = Files.newInputStream(dir.resolve("store"))) {
-        store.load(input, password);
-      }
-      assertNotNull(store.getKey("solr-ssl", password));
-      assertEquals("RSA", store.getKey("solr-ssl", password).getAlgorithm());
-      KeyStore trust = KeyStore.getInstance(type);
-      try (var input = Files.newInputStream(dir.resolve("store.truststore"))) {
-        trust.load(input, password);
-      }
-      assertTrue(trust.size() > 1);
-      assertEquals(store.getCertificate("solr-ssl"), trust.getCertificate("solr-0"));
-      assertFalse(runtime.getOutput().contains(new String(password)));
-      String include = Files.readString(dir.resolve("solr.in.sh"));
-      assertTrue(include.contains("SOLR_SSL_ENABLED='true'"));
-      assertTrue(include.contains("SOLR_SSL_KEY_STORE_TYPE='" + type + "'"));
+  public void testConversion() throws Exception {
+    Path dir = prepare();
+    var runtime = new CLITestHelper.TestingRuntime(true);
+    String[] args = {
+      "--cert",
+      dir.resolve("cert.pem").toString(),
+      "--key",
+      dir.resolve("key.pem").toString(),
+      "--password-file",
+      dir.resolve("password.txt").toString(),
+      "--keystore",
+      dir.resolve("store").toString(),
+      "--solr-include-file",
+      dir.resolve("solr.in.sh").toString()
+    };
+    SSLTool tool = new SSLTool(runtime);
+    assertEquals(0, new CommandLine(tool).execute(args));
+    assertTrue(runtime.getOutput().contains("Restart Solr to enable HTTPS."));
+    assertTrue(runtime.getOutput().contains("No cluster property changed."));
+    char[] password = "Test'$(false)Password".toCharArray();
+    KeyStore store = KeyStore.getInstance("PKCS12");
+    try (var input = Files.newInputStream(dir.resolve("store"))) {
+      store.load(input, password);
     }
+    assertNotNull(store.getKey("solr-ssl", password));
+    assertEquals("RSA", store.getKey("solr-ssl", password).getAlgorithm());
+    KeyStore trust = KeyStore.getInstance("PKCS12");
+    try (var input = Files.newInputStream(dir.resolve("store.truststore"))) {
+      trust.load(input, password);
+    }
+    assertTrue(trust.size() > 1);
+    assertEquals(store.getCertificate("solr-ssl"), trust.getCertificate("solr-0"));
+    assertFalse(runtime.getOutput().contains(new String(password)));
+    String include = Files.readString(dir.resolve("solr.in.sh"));
+    assertTrue(include.contains("SOLR_SSL_ENABLED='true'"));
+    assertTrue(include.contains("SOLR_SSL_KEY_STORE_TYPE='PKCS12'"));
   }
 
   @Test
@@ -169,8 +164,7 @@ public class SSLToolTest extends SolrTestCase {
     Path dir = prepare();
     String original = Files.readString(dir.resolve("solr.in.sh"));
     Files.writeString(dir.resolve("key.pem"), "not a private key");
-    expectThrows(
-        IllegalArgumentException.class, () -> new SSLTool().configure(params(dir, "JKS", null)));
+    expectThrows(IllegalArgumentException.class, () -> new SSLTool().configure(params(dir, null)));
     assertEquals(original, Files.readString(dir.resolve("solr.in.sh")));
     assertFalse(Files.exists(dir.resolve("store")));
   }
@@ -181,7 +175,7 @@ public class SSLToolTest extends SolrTestCase {
     ZkTestServer server = new ZkTestServer(createTempDir());
     server.run();
     try {
-      new SSLTool().configure(params(dir, "JKS", server.getZkAddress()));
+      new SSLTool().configure(params(dir, server.getZkAddress()));
       try (SolrZkClient client =
           new SolrZkClient.Builder().withUrl(server.getZkAddress()).build()) {
         var properties = new ClusterProperties(client).getClusterProperties();
@@ -191,7 +185,7 @@ public class SSLToolTest extends SolrTestCase {
       String originalInclude = Files.readString(dir.resolve("solr.in.sh"));
       expectThrows(
           IllegalArgumentException.class,
-          () -> new SSLTool().configure(params(dir, "JKS", server.getZkAddress() + "/missing")));
+          () -> new SSLTool().configure(params(dir, server.getZkAddress() + "/missing")));
       assertArrayEquals(originalStore, Files.readAllBytes(dir.resolve("store")));
       assertEquals(originalInclude, Files.readString(dir.resolve("solr.in.sh")));
     } finally {

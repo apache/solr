@@ -28,7 +28,7 @@ For background on SSL certificates and keys, see http://www.tldp.org/HOWTO/SSL-C
 
 === Install an Existing PEM Certificate
 
-On Unix and macOS, `bin/solr ssl` converts a PEM certificate and private key to a Java keystore, installs it, and updates `solr.in.sh`.
+On Unix and macOS, `bin/solr ssl` converts a PEM certificate and private key to a PKCS12 keystore, installs it, and updates `solr.in.sh`.
 It requires OpenSSL on your `PATH`.
 The certificate must cover the hostnames used by clients and other Solr nodes.
 For a certificate issued by Let's Encrypt, use `fullchain.pem` and `privkey.pem` from your ACME client.
@@ -46,7 +46,7 @@ bin/solr ssl --cert /path/to/fullchain.pem \
   --zk-host localhost:9983
 ----
 
-This installs `server/etc/solr-ssl.keystore.jks` and a separate truststore, relative to the Solr installation.
+This installs `server/etc/solr-ssl.keystore.p12` and a separate truststore, relative to the Solr installation.
 The truststore contains the running JDK's trusted certificates and the supplied certificate chain.
 The tool configures HTTPS with hostname verification enabled and client certificate authentication disabled.
 It sets `urlScheme=https` in ZooKeeper when `--zk-host` is supplied.
@@ -55,8 +55,7 @@ If you omit it for SolrCloud, set the property separately with `bin/solr cluster
 
 The shell script supplies the include file selected by `SOLR_INCLUDE`.
 Use `--solr-include-file /path/to/solr.in.sh` to select another file, such as `/var/solr/solr.in.sh` for a service installation.
-Use `--keystore /path/to/solr-ssl.jks` to select the destination; its parent directory must exist and its path must not contain whitespace.
-For PKCS12, supply `--store-type PKCS12`; the default destination then ends in `.p12`.
+Use `--keystore /path/to/solr-ssl.p12` to select the destination; its parent directory must exist and its path must not contain whitespace.
 For an encrypted PEM key, supply `--key-password-file /path/to/key-password.txt`.
 
 Existing files are updated in place, preserving their ownership and permissions.

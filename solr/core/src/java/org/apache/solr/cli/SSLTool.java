@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +26,6 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -36,13 +36,15 @@ import picocli.CommandLine;
 /** Installs PEM certificates and configures HTTPS for a Solr node. */
 @CommandLine.Command(
     name = "ssl",
-    description = "Convert PEM files to a Java keystore and configure HTTPS in solr.in.sh.",
+    description = "Convert PEM files to a PKCS12 keystore and configure HTTPS in solr.in.sh.",
     footerHeading = "%nExamples:%n",
     footer = {
       "  bin/solr ssl --cert fullchain.pem --key privkey.pem --password-file password.txt",
       "  bin/solr ssl --cert fullchain.pem --key privkey.pem --password-file password.txt --zk-host localhost:9983"
     })
 public class SSLTool extends ToolBase {
+  private static final String STORE_TYPE = "PKCS12";
+
   @CommandLine.Option(
       names = "--cert",
       paramLabel = "FILE",
@@ -77,13 +79,6 @@ public class SSLTool extends ToolBase {
   private Path keystore;
 
   @CommandLine.Option(
-      names = "--store-type",
-      paramLabel = "TYPE",
-      defaultValue = "JKS",
-      description = "Keystore format: JKS or PKCS12. Default: JKS.")
-  private String storeType = "JKS";
-
-  @CommandLine.Option(
       names = "--solr-include-file",
       paramLabel = "FILE",
       description =
@@ -104,7 +99,6 @@ public class SSLTool extends ToolBase {
       Path passwordFile,
       Path keyPasswordFile,
       Path keystore,
-      String storeType,
       Path includeFile,
       String zkHost) {}
 
@@ -125,14 +119,7 @@ public class SSLTool extends ToolBase {
   public int callTool() throws Exception {
     configure(
         new SSLParams(
-            certificate,
-            privateKey,
-            passwordFile,
-            keyPasswordFile,
-            keystore,
-            storeType,
-            includeFile,
-            zkHost));
+            certificate, privateKey, passwordFile, keyPasswordFile, keystore, includeFile, zkHost));
     echo("Restart Solr to enable HTTPS.");
     if (zkHost == null) {
       echo(
@@ -146,10 +133,6 @@ public class SSLTool extends ToolBase {
       throw new UnsupportedOperationException(
           "bin/solr ssl is not supported on Windows. Configure HTTPS manually using the Enabling SSL section of the Solr Reference Guide.");
     }
-    String type = params.storeType().toUpperCase(Locale.ROOT);
-    if (!type.equals("JKS") && !type.equals("PKCS12")) {
-      throw new IllegalArgumentException("--store-type must be JKS or PKCS12.");
-    }
     Path install = Path.of(EnvUtils.getProperty("solr.install.dir", ".")).toAbsolutePath();
     Path include =
         (params.includeFile() == null ? install.resolve("bin/solr.in.sh") : params.includeFile())
@@ -160,8 +143,7 @@ public class SSLTool extends ToolBase {
     }
     Path target =
         (params.keystore() == null
-                ? install.resolve(
-                    "server/etc/solr-ssl.keystore." + (type.equals("JKS") ? "jks" : "p12"))
+                ? install.resolve("server/etc/solr-ssl.keystore.p12")
                 : params.keystore())
             .toAbsolutePath()
             .normalize();
@@ -218,11 +200,7 @@ public class SSLTool extends ToolBase {
               params.keyPasswordFile() == null ? "" : readPassword(params.keyPasswordFile()));
       builder.redirectErrorStream(true).redirectOutput(temporary.resolve("openssl.log").toFile());
       Process process = builder.start();
-      process.getOutputStream().close();
-      if (!process.waitFor(30, TimeUnit.SECONDS)) {
-        process.destroyForcibly().waitFor();
-        throw new IllegalStateException("OpenSSL conversion timed out.");
-      }
+      CLIUtils.closeStdinAndAwait(process, "OpenSSL conversion timed out.");
       if (process.exitValue() != 0) {
         throw new IllegalArgumentException(
             "OpenSSL could not convert the PEM files. Check the certificate, matching private key, and key password.");
@@ -235,10 +213,10 @@ public class SSLTool extends ToolBase {
       for (var cert : chain) {
         ((X509Certificate) cert).checkValidity();
       }
-      KeyStore store = KeyStore.getInstance(type);
+      KeyStore store = KeyStore.getInstance(STORE_TYPE);
       store.load(null, secret);
       store.setKeyEntry("solr-ssl", source.getKey("solr-ssl", secret), secret, chain);
-      KeyStore trust = KeyStore.getInstance(type);
+      KeyStore trust = KeyStore.getInstance(STORE_TYPE);
       trust.load(null, secret);
       Path defaultTrust = Path.of(EnvUtils.getProperty("java.home"), "lib/security/cacerts");
       KeyStore defaults = KeyStore.getInstance(defaultTrust.toFile(), (char[]) null);
@@ -255,10 +233,10 @@ public class SSLTool extends ToolBase {
       settings.put("SOLR_SSL_ENABLED", "true");
       settings.put("SOLR_SSL_KEY_STORE", target.toString());
       settings.put("SOLR_SSL_KEY_STORE_PASSWORD", password);
-      settings.put("SOLR_SSL_KEY_STORE_TYPE", type);
+      settings.put("SOLR_SSL_KEY_STORE_TYPE", STORE_TYPE);
       settings.put("SOLR_SSL_TRUST_STORE", trustTarget.toString());
       settings.put("SOLR_SSL_TRUST_STORE_PASSWORD", password);
-      settings.put("SOLR_SSL_TRUST_STORE_TYPE", type);
+      settings.put("SOLR_SSL_TRUST_STORE_TYPE", STORE_TYPE);
       settings.put("SOLR_SSL_NEED_CLIENT_AUTH", "false");
       settings.put("SOLR_SSL_WANT_CLIENT_AUTH", "false");
       settings.put("SOLR_SSL_CHECK_PEER_NAME", "true");
@@ -314,7 +292,7 @@ public class SSLTool extends ToolBase {
         }
         throw failure;
       }
-      echo("Installed " + type + " keystore: " + target);
+      echo("Installed " + STORE_TYPE + " keystore: " + target);
       echo("Updated " + include + ".");
     } finally {
       Arrays.fill(secret, '\0');
@@ -325,7 +303,7 @@ public class SSLTool extends ToolBase {
     }
   }
 
-  private static String readPassword(Path path) throws Exception {
+  static String readPassword(Path path) throws IOException {
     String value = Files.readString(path).replaceFirst("\\r?\\n$", "");
     if (value.length() < 6
         || value.indexOf('\n') >= 0

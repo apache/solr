@@ -48,9 +48,9 @@ configure_ssl() {
   chmod 600 "$ssl_dir/password.txt"
 
   run solr ssl --cert "$ssl_dir/cert.pem" --key "$ssl_dir/key.pem" \
-    --password-file "$ssl_dir/password.txt" --keystore "$ssl_dir/solr.jks" \
+    --password-file "$ssl_dir/password.txt" --keystore "$ssl_dir/solr.p12" \
     --zk-host "localhost:${ZK_PORT}"
-  assert_output --partial 'Installed JKS keystore'
+  assert_output --partial 'Installed PKCS12 keystore'
   assert_output --partial 'Set cluster property urlScheme=https'
   assert_success
 }

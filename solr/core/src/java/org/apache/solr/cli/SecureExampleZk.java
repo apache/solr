@@ -74,13 +74,13 @@ final class SecureExampleZk {
     settings.remove("clientPortAddress");
     settings.setProperty("secureClientPort", Integer.toString(solrPort + 1000));
     settings.setProperty("serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
-    settings.setProperty("ssl.keyStore.location", tls.resolve("solr-ssl.keystore.jks").toString());
-    settings.setProperty("ssl.keyStore.type", "JKS");
+    settings.setProperty("ssl.keyStore.location", tls.resolve("solr-ssl.keystore.p12").toString());
+    settings.setProperty("ssl.keyStore.type", "PKCS12");
     settings.setProperty(
         "ssl.keyStore.passwordPath", tls.resolve("keystore-password.txt").toString());
     settings.setProperty(
-        "ssl.trustStore.location", tls.resolve("solr-ssl.keystore.jks.truststore").toString());
-    settings.setProperty("ssl.trustStore.type", "JKS");
+        "ssl.trustStore.location", tls.resolve("solr-ssl.keystore.p12.truststore").toString());
+    settings.setProperty("ssl.trustStore.type", "PKCS12");
     settings.setProperty(
         "ssl.trustStore.passwordPath", tls.resolve("keystore-password.txt").toString());
     settings.setProperty("ssl.clientAuth", "none");
@@ -118,8 +118,8 @@ final class SecureExampleZk {
     properties.put("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
     properties.put(
         "zookeeper.ssl.trustStore.location",
-        tls.resolve("solr-ssl.keystore.jks.truststore").toString());
-    properties.put("zookeeper.ssl.trustStore.type", "JKS");
+        tls.resolve("solr-ssl.keystore.p12.truststore").toString());
+    properties.put("zookeeper.ssl.trustStore.type", "PKCS12");
     properties.put(
         "zookeeper.ssl.trustStore.passwordPath", tls.resolve("keystore-password.txt").toString());
     properties.put("zookeeper.ssl.hostnameVerification", "true");

@@ -406,7 +406,6 @@ bin/solr zk ls / --zk-host localhost:9983/solr \
 `--zk-tls-ca-file` enables TLS and trusts the example's self-signed certificate.
 The CLI configures the ZooKeeper TLS client internally; you do not need the include file or JVM options.
 The output lists the example's znodes, including `collections`, `configs`, and `security.json`.
-For a server certificate trusted by your configured client truststore or the JDK, use `--zk-tls` without a CA file.
 The TLS connection verifies the server certificate and hostname; the digest account determines access to znodes.
 The HTTP `--credentials` option authenticates Solr discovery requests; `--zk-credentials` supplies ZooKeeper digest credentials.
 For a customized ZooKeeper password, replace `SolrRocks` with the value saved in `zk-credentials.properties`.
@@ -453,8 +452,7 @@ Plaintext ZooKeeper connections are rejected, even when they supply the correct 
 
 The wizard reuses its TLS files on restart; it does not automatically renew the 30-day certificate.
 Obtain a replacement certificate and private key covering `localhost` and `127.0.0.1`, then stop both nodes as shown above.
-Use `bin/solr ssl` with the replacement PEM files, `--solr-include-file example/secure-setup/tls/solr.in.sh`, and `--keystore example/secure-setup/tls/solr-ssl.keystore.jks`.
-Keep the default `JKS` store type: the wizard uses it when loading the truststore on restart.
+Use `bin/solr ssl` with the replacement PEM files, `--solr-include-file example/secure-setup/tls/solr.in.sh`, and `--keystore example/secure-setup/tls/solr-ssl.keystore.p12`.
 Also update `example/secure-setup/tls/cert.pem`, `key.pem`, and `keystore-password.txt` to match the replacement certificate, key, and keystore password.
 Restart with `bin/solr start -e secure-setup`; both nodes share the updated TLS files.
 See xref:deployment-guide:enabling-ssl.adoc#install-an-existing-pem-certificate[Install an Existing PEM Certificate] for details.

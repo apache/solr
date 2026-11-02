@@ -28,7 +28,7 @@
 ....
 bin/solr ssl [-hv] --cert=FILE --key=FILE [--key-password-file=FILE]
              [--keystore=FILE] --password-file=FILE [--solr-include-file=FILE]
-             [--store-type=TYPE] [--zk-host=HOST]
+             [--zk-host=HOST]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -36,7 +36,7 @@ bin/solr ssl [-hv] --cert=FILE --key=FILE [--key-password-file=FILE]
 // tag::picocli-generated-man-section-description[]
 == Description
 
-Convert PEM files to a Java keystore and configure HTTPS in solr.in.sh.
+Convert PEM files to a PKCS12 keystore and configure HTTPS in solr.in.sh.
 
 // end::picocli-generated-man-section-description[]
 
@@ -63,9 +63,6 @@ Convert PEM files to a Java keystore and configure HTTPS in solr.in.sh.
 
 *--solr-include-file*=_FILE_::
   Existing solr.in.sh to update. Defaults to bin/solr.in.sh in the Solr installation.
-
-*--store-type*=_TYPE_::
-  Keystore format: JKS or PKCS12. Default: JKS.
 
 *-v*, *--verbose*::
   Enable verbose mode.

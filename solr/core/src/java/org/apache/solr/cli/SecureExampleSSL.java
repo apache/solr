@@ -27,7 +27,6 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /** Manages the HTTPS files and certificate verification for the secure Solr example. */
 final class SecureExampleSSL {
@@ -52,7 +51,7 @@ final class SecureExampleSSL {
   }
 
   Path keystore() {
-    return directory.resolve("solr-ssl.keystore.jks");
+    return directory.resolve("solr-ssl.keystore.p12");
   }
 
   boolean isConfigured() {
@@ -102,7 +101,7 @@ final class SecureExampleSSL {
     new SSLTool(runtime)
         .configure(
             new SSLTool.SSLParams(
-                cert, key, password, keyPassword, keystore(), "JKS", includeFile(), null));
+                cert, key, password, keyPassword, keystore(), includeFile(), null));
     IncludeFileEditor.write(certificate(), Files.readAllBytes(cert));
     IncludeFileEditor.write(passwordFile(), Files.readAllBytes(password));
     runtime.println("Embedded ZooKeeper will configure urlScheme=https when Solr starts.");
@@ -110,10 +109,8 @@ final class SecureExampleSSL {
 
   void configureClientTrust() throws IOException {
     System.setProperty("javax.net.ssl.trustStore", keystore() + ".truststore");
-    System.setProperty("javax.net.ssl.trustStoreType", "JKS");
-    System.setProperty(
-        "javax.net.ssl.trustStorePassword",
-        Files.readString(passwordFile()).replaceFirst("\\r?\\n$", ""));
+    System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
+    System.setProperty("javax.net.ssl.trustStorePassword", SSLTool.readPassword(passwordFile()));
   }
 
   void setAdvertisedHost(String host) throws IOException {
@@ -140,7 +137,11 @@ final class SecureExampleSSL {
   void printVerificationInstructions(String solrUrl) {
     String url = CLIUtils.normalizeSolrUrl(solrUrl, false) + "/api/node/system";
     runtime.println("Verify HTTPS in another terminal:");
-    runtime.println("curl --cacert " + quote(certificate().toString()) + " " + quote(url));
+    runtime.println(
+        "curl --cacert "
+            + CLIUtils.shellQuote(certificate().toString())
+            + " "
+            + CLIUtils.shellQuote(url));
     runtime.println("You should see Solr system information without a certificate error.");
     runtime.println(
         "If authentication is already enabled, an HTTP 401 response also confirms HTTPS.");
@@ -160,21 +161,13 @@ final class SecureExampleSSL {
     }
   }
 
-  private static String quote(String value) {
-    return "'" + value.replace("'", "'\"'\"'") + "'";
-  }
-
   private static void run(List<String> command, Path output) throws Exception {
     Process process =
         new ProcessBuilder(command)
             .redirectErrorStream(true)
             .redirectOutput(output.toFile())
             .start();
-    process.getOutputStream().close();
-    if (!process.waitFor(30, TimeUnit.SECONDS)) {
-      process.destroyForcibly().waitFor();
-      throw new IllegalStateException(command.getFirst() + " timed out.");
-    }
+    CLIUtils.closeStdinAndAwait(process, command.getFirst() + " timed out.");
     if (process.exitValue() != 0) {
       throw new IllegalStateException(
           command.getFirst() + " failed: " + Files.readString(output).trim());
