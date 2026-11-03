@@ -67,6 +67,8 @@ public class AdminUiMenuRefreshTest extends AdminUiTestBase {
             var selector = document.querySelector('#collection-selector select').cloneNode(false);
             selector.id = 'menu_refresh_selector';
             selector.removeAttribute('style');
+            // The landing-page selector is disabled before its SolrCloud data has loaded.
+            selector.removeAttribute('disabled');
             t.fixture = angular.element('<div id="menu-refresh-fixture"'
               + ' style="position:fixed;top:0;left:0;width:500px;background:white;z-index:10000"></div>');
             t.fixture.append(selector);
