@@ -533,12 +533,16 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.refresh();
+  var menuGeneration = 0;
   $scope.resetMenu = function(page, pageType) {
+    var generation = ++menuGeneration;
+    var currentCoreName = $route.current.params.core;
+    var currentCollectionName = currentCoreName;
     CoresV2.getAllCoreStatus({indexInfo: false}, function(error, data, response) {
       $timeout(function() {
+        if (generation !== menuGeneration) { return; }
         if (error) { ApiErrorHandler.handle(response); return; }
         $scope.cores = [];
-        var currentCoreName = $route.current.params.core;
         delete $scope.currentCore;
         for (var key in data.status) {
           var core = data.status[key];
@@ -557,6 +561,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
     SystemV2.getNodeSystemInfo({}, function(error, data, response) {
       $timeout(function() {
+        if (generation !== menuGeneration) { return; }
         if (error) {
           ApiErrorHandler.handle(response);
           // The mode could not be determined. Treat the node as standalone so that
@@ -576,44 +581,48 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
           permissions.UPDATE_PERM
         ]);
 
-        var currentCollectionName = $route.current.params.core;
         if ($scope.isCloudEnabled) {
           CollectionsV2.listCollections({}, function (error, cdata, response) {
             $timeout(function() {
+              if (generation !== menuGeneration) { return; }
               if (error) { ApiErrorHandler.handle(response); return; }
               AliasesV2.getAliases(function (error, adata, response) {
                 $timeout(function() {
+                  if (generation !== menuGeneration) { return; }
                   if (error) { ApiErrorHandler.handle(response); return; }
-                  delete $scope.currentCollection;
-                  $scope.aliases = [];
+                  var aliases = [];
+                  var collections = [];
+                  var currentCollection;
                   for (var key in adata.aliases) {
                     var props = {};
                     if (key in adata.properties) {
                       props = adata.properties[key];
                     }
                     var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-                    $scope.aliases.push(alias);
+                    aliases.push(alias);
                     if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
-                      $scope.currentCollection = alias;
+                      currentCollection = alias;
                     }
                   }
-                  $scope.collections = [];
                   for (var key in cdata.collections) {
                     if (cdata.collections[key].startsWith("._designer_")) {
                       continue; // ignore temp designer collections
                     }
                     var collection = {name: cdata.collections[key], type: 'collection'};
-                    $scope.collections.push(collection);
+                    collections.push(collection);
                     if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-                      $scope.currentCollection = collection;
+                      currentCollection = collection;
                     }
                   }
 
-                  $scope.aliases_and_collections = $scope.aliases;
-                  if ($scope.aliases.length > 0) {
-                    $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+                  var aliasesAndCollections = aliases;
+                  if (aliases.length > 0) {
+                    aliasesAndCollections = aliasesAndCollections.concat({name:'-----'});
                   }
-                  $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+                  $scope.aliases = aliases;
+                  $scope.collections = collections;
+                  $scope.aliases_and_collections = aliasesAndCollections.concat(collections);
+                  $scope.currentCollection = currentCollection;
                 });
               });
             });
@@ -680,6 +689,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   };
 
   $scope.$on('$routeChangeStart', function() {
+      ++menuGeneration;
       $rootScope.exceptions = {};
   });
 });

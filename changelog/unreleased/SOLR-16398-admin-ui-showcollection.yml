@@ -1,10 +1,10 @@
 title: >-
-  The legacy Admin UI no longer calls the collection selector handler with an undefined
-  collection while the navigation menu is refreshing.
+  The legacy Admin UI preserves the collection selection during menu refreshes, ignores
+  obsolete refresh responses and empty selections, and updates alias overview details
+  when the refreshed alias is available.
 type: fixed
 authors:
   - name: Nick Shanin
-    nick: nick-boss-tech
 links:
   - name: SOLR-16398
     url: https://issues.apache.org/jira/browse/SOLR-16398
