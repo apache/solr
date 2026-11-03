@@ -26,8 +26,10 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -56,6 +58,10 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, 30);
+    CollectionAdminRequest.createCollection("collection2", "config", 1, 1)
+        .process(cluster.getSolrClient());
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+        "collection2", cluster.getZkStateReader(), false, true, 30);
   }
 
   @Test
@@ -63,6 +69,47 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     assertCoreChosen(NUM_SHARD, newRequest("/collection1/update"));
     assertCoreChosen(NUM_SHARD, newRequest("/collection1/update/json"));
     assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, newRequest("/collection1/select"));
+  }
+
+  @Test
+  public void testCollectionPathGovernsRouting() throws Exception {
+    assertCollectionRoute("/collection1/select", "version=2&collection=collection2", COLLECTION);
+    assertCollectionRoute(
+        "/collection1,collection2/select", "version=2&collection=collection2", "collection2");
+  }
+
+  @Test
+  public void testV2CollectionPathGovernsRouting() throws Exception {
+    HttpSolrCall call =
+        new V2HttpCall(
+            cluster.getJettySolrRunner(0).getCoreContainer(),
+            newRequest("/____v2/c/collection1/select", "collection=collection2"),
+            newResponse(),
+            false);
+    try {
+      call.init();
+      assertEquals(List.of(COLLECTION), call.getCollectionsList());
+      assertEquals(COLLECTION, call.getCore().getCoreDescriptor().getCollectionName());
+    } finally {
+      call.destroy();
+    }
+  }
+
+  private void assertCollectionRoute(String path, String queryString, String expectedCollection)
+      throws Exception {
+    HttpSolrCall call =
+        new HttpSolrCall(
+            cluster.getJettySolrRunner(0).getCoreContainer(),
+            newRequest(path, queryString),
+            newResponse(),
+            false);
+    try {
+      call.init();
+      assertEquals(List.of(expectedCollection), call.getCollectionsList());
+      assertEquals(expectedCollection, call.getCore().getCoreDescriptor().getCollectionName());
+    } finally {
+      call.destroy();
+    }
   }
 
   // https://issues.apache.org/jira/browse/SOLR-16019
@@ -119,11 +166,15 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   }
 
   private static HttpServletRequest newRequest(String path) {
+    return newRequest(path, "version=2");
+  }
+
+  private static HttpServletRequest newRequest(String path, String queryString) {
     HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
     Mockito.when(req.getMethod()).thenReturn("GET");
     Mockito.when(req.getRequestURI()).thenReturn(path);
     Mockito.when(req.getServletPath()).thenReturn(path);
-    Mockito.when(req.getQueryString()).thenReturn("version=2");
+    Mockito.when(req.getQueryString()).thenReturn(queryString);
     Mockito.when(req.getContentType()).thenReturn("application/json");
     Mockito.when(req.getHeader("Content-Type")).thenReturn("application/json");
     try {
