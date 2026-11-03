@@ -17,7 +17,9 @@
 
 package org.apache.solr.jersey;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import org.apache.solr.common.SolrException;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 
@@ -50,6 +53,26 @@ public class MessageBodyReaders {
     public MessageBodyReader<Object> getDelegate() {
       return new JacksonJsonProvider(SolrJacksonMapper.getObjectMapper())
           .configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+    }
+
+    @Override
+    public Object readFrom(
+        Class<Object> type,
+        Type genericType,
+        Annotation[] annotations,
+        MediaType mediaType,
+        MultivaluedMap<String, String> httpHeaders,
+        InputStream entityStream)
+        throws IOException, WebApplicationException {
+      try {
+        return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
+      } catch (JsonParseException | MismatchedInputException exception) {
+        // Definition and output failures are server errors, even when Jackson reports them.
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid request body: " + exception.getOriginalMessage(),
+            exception);
+      }
     }
   }
 

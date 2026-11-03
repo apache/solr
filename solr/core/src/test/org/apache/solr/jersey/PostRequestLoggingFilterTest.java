@@ -18,11 +18,18 @@
 package org.apache.solr.jersey;
 
 import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessageBodyReader.DESERIALIZED_REQUEST_BODY_KEY;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.UriInfo;
@@ -33,7 +40,12 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.response.SolrQueryResponse;
+import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
+import org.glassfish.jersey.server.ApplicationHandler;
+import org.glassfish.jersey.spi.ExceptionMappers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -140,6 +152,96 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
     ObjectMapper mapper1 = delegate2.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
     ObjectMapper mapper2 = delegate.locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
     assertSame(mapper1, mapper2);
+  }
+
+  @Test
+  public void testJsonReaderCachesValidBody() throws Exception {
+    final var context = mock(ContainerRequestContext.class);
+    final var body =
+        (CreateCollectionRequestBody)
+            readJsonBody(CreateCollectionRequestBody.class, "{\"name\":\"test\"}", context);
+    assertEquals("test", body.name);
+    verify(context).setProperty(DESERIALIZED_REQUEST_BODY_KEY, body);
+  }
+
+  @Test
+  public void testJsonReaderRejectsMalformedSyntax() {
+    final var exception =
+        expectThrows(
+            SolrException.class,
+            () -> readJsonBody(CreateCollectionRequestBody.class, "{\"name\":", null));
+    assertEquals(400, exception.code());
+    assertTrue(exception.getCause() instanceof JsonParseException);
+    assertTrue(exception.getMessage().startsWith("Invalid request body:"));
+  }
+
+  @Test
+  public void testJsonReaderRejectsWrongFieldType() {
+    final var exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                readJsonBody(
+                    CreateCollectionRequestBody.class, "{\"replicationFactor\":\"abc\"}", null));
+    assertEquals(400, exception.code());
+    assertTrue(exception.getCause() instanceof MismatchedInputException);
+    assertTrue(exception.getMessage().contains("abc"));
+  }
+
+  @Test
+  public void testJsonReaderPreservesDefinitionFailures() {
+    // An abstract server-side entity type cannot be repaired by changing the request body.
+    expectThrows(InvalidDefinitionException.class, () -> readJsonBody(Runnable.class, "{}", null));
+  }
+
+  @Test
+  public void testServerJacksonFailuresRemainServerErrors() throws Exception {
+    final var definitionFailure =
+        expectThrows(
+            InvalidDefinitionException.class,
+            () -> readJsonBody(Runnable.class, "{}", null));
+    final var outputFailure =
+        expectThrows(
+            JsonMappingException.class,
+            () -> SolrJacksonMapper.getObjectMapper().writeValueAsString(new FailingResponse()));
+
+    final var handler = new ApplicationHandler(new JerseyApplications.CoreContainerApp());
+    try {
+      final var mappers = handler.getInjectionManager().getInstance(ExceptionMappers.class);
+      for (Exception failure : List.of(definitionFailure, outputFailure)) {
+        final var mapper = mappers.findMapping(failure);
+        assertEquals(CatchAllExceptionMapper.class, mapper.getClass());
+        final var catchAll = (CatchAllExceptionMapper) mapper;
+        final var context = mock(ContainerRequestContext.class);
+        when(context.getProperty(SOLR_QUERY_RESPONSE)).thenReturn(new SolrQueryResponse());
+        catchAll.resourceContext = mock(ResourceContext.class);
+        when(catchAll.resourceContext.getResource(ContainerRequestContext.class)).thenReturn(context);
+        assertEquals(500, catchAll.toResponse(failure).getStatus());
+      }
+    } finally {
+      handler.getInjectionManager().shutdown();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Object readJsonBody(
+      Class<?> type, String json, ContainerRequestContext context) throws Exception {
+    final var reader = new MessageBodyReaders.CachingJsonMessageBodyReader();
+    reader.serviceLocator = mock(ServiceLocator.class);
+    when(reader.serviceLocator.getService(ContainerRequestContext.class)).thenReturn(context);
+    return reader.readFrom(
+        (Class<Object>) type,
+        type,
+        new Annotation[0],
+        MediaType.APPLICATION_JSON_TYPE,
+        new MultivaluedHashMap<>(),
+        new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  public static class FailingResponse {
+    public String getValue() {
+      throw new IllegalStateException("server serialization failure");
+    }
   }
 
   @Test

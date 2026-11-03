@@ -72,7 +72,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals(0, res.getStatus());
   }
 
-  private void testException(
+  private RemoteSolrException testException(
       ResponseParser responseParser, int expectedCode, String path, String payload) {
     V2Request v2Request =
         new V2Request.Builder(path)
@@ -83,6 +83,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     RemoteSolrException ex =
         expectThrows(RemoteSolrException.class, () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
+    return ex;
   }
 
   @Test
@@ -103,9 +104,21 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     // string where an integer is required) is a client error and must be answered with a 400,
     // not a 500.
     String unparseablePayload = "{\"name\": \"unparseable-body\", \"replicationFactor\": \"abc\"}";
-    testException(new XMLResponseParser(), 400, "/collections", unparseablePayload);
-    testException(new JavaBinResponseParser(), 400, "/collections", unparseablePayload);
-    testException(new JsonMapResponseParser(), 400, "/collections", unparseablePayload);
+    for (ResponseParser parser :
+        List.of(new XMLResponseParser(), new JavaBinResponseParser(), new JsonMapResponseParser())) {
+      final var exception = testException(parser, 400, "/collections", unparseablePayload);
+      assertThat(exception.getMessage(), containsString("Invalid request body:"));
+      assertThat(exception.getMessage(), containsString("abc"));
+    }
+  }
+
+  @Test
+  public void testMalformedJsonRequestBody() {
+    for (ResponseParser parser :
+        List.of(new XMLResponseParser(), new JavaBinResponseParser(), new JsonMapResponseParser())) {
+      final var exception = testException(parser, 400, "/collections", "{\"name\":");
+      assertThat(exception.getMessage(), containsString("Invalid request body:"));
+    }
   }
 
   @Test
