@@ -98,6 +98,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testUnparseableRequestBody() {
+    // A JSON body whose values cannot be converted to the request-body field types (here a
+    // string where an integer is required) is a client error and must be answered with a 400,
+    // not a 500.
+    String unparseablePayload = "{\"name\": \"unparseable-body\", \"replicationFactor\": \"abc\"}";
+    testException(new XMLResponseParser(), 400, "/collections", unparseablePayload);
+    testException(new JavaBinResponseParser(), 400, "/collections", unparseablePayload);
+    testException(new JsonMapResponseParser(), 400, "/collections", unparseablePayload);
+  }
+
+  @Test
   public void testIntrospect() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "XXXX");

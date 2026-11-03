@@ -58,6 +58,7 @@ public class JerseyApplications {
       // Request lifecycle logic
       register(CatchAllExceptionMapper.class);
       register(NotFoundExceptionMapper.class);
+      register(JsonProcessingExceptionMapper.class);
       register(MediaTypeOverridingFilter.class);
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
