@@ -5,7 +5,7 @@
 
 The project no longer maintains a monolithic *CHANGES.txt* file directly.
 Instead, we create small YAML fragments **per bug-fix or feature**, checked into
-the `solr/changelog/unreleased/ folder`. At release time these fragments are
+the `changelog/unreleased/` folder at the root of the repository. At release time these fragments are
 organized in versioned folders and collated into a human-readable *CHANGELOG.md* file.
 
 This document walks you through the workflow, explains the Gradle helpers
@@ -26,13 +26,11 @@ the changelog.
 
 [source]
 ----
-solr/
-└── changelog/
-    ├── unreleased/         ← new fragments live here
-    |   └── SOLR-12345-fix-memory-leak.yml
-    ├── v9.8.0/            ← changes in already released versions
-    ├── v9.8.0/
-    └── v9.9.0/
+changelog/
+├── unreleased/         ← new fragments live here
+|   └── SOLR-12345-fix-memory-leak.yml
+├── v9.11.0/            ← changes in already released versions
+└── v10.0.0/
 ----
 
 == 3. The YAML format
@@ -92,7 +90,7 @@ links:
 === 3.1 Tool to draft a YAML for your change
 
 We have two gradle tasks that bootstraps a YAML file in the `changelog/unreleased/` directory.
-`writeChangeLog` will infer the JIRA id from the current branch if possible, otherwise you'll need to add the JIRA link manually.
+`writeChangelog` will infer the JIRA id from the current branch if possible, otherwise you'll need to add the JIRA link manually.
 If the change isn't worth a JIRA yet a changelog would still be nice, use `writeChangelogPr` after you've created the PR.  It will incorporate a link to the PR in the entry.
 If `writeChangelogPr` can't auto-detect the PR for your current branch (e.g. `gh` can't correlate a differently-named local branch to it), pass the PR explicitly: `./gradlew writeChangelogPr -Ppr=4677` or `-Ppr=https://github.com/apache/solr/pull/4677`.
 

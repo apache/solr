@@ -651,8 +651,10 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs, tmpDir):
   print('    run "%s"' % validateCmd)
   java.run_java(validateCmd, '%s/documentation.log' % logDir)
 
-  print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
-  java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
+  # SMOKETEST_SRC_TEST_TASK lets CI swap the full test run for something lighter
+  testTask = os.environ.get('SMOKETEST_SRC_TEST_TASK', 'test')
+  print("    run %s w/ Java %s and testArgs='%s'..." % (testTask, java.version, testArgs))
+  java.run_java('./gradlew %s %s' % (testTask, testArgs), '%s/test.log' % logDir)
   # Some integration tests need the Docker image of the binary release, and skip without it
   if subprocess.call('docker info', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
     print("    build docker image from solr-%s.tgz" % version)
