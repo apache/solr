@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -96,13 +97,22 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         final var configSetName = req.getParams().required().get(NAME);
         final var overwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
         final var cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
-        final var configSetData = ConfigSetAPIBase.ensureNonEmptyInputStream(req);
         SolrJerseyResponse uploadResponse;
-        if (req.getParams()
-            .get(ConfigSetParams.FILE_PATH, "")
-            .isEmpty()) { // Uploading a whole configset
+        final var repository = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
+        final var location = req.getParams().get(CoreAdminParams.BACKUP_LOCATION);
+        if ((repository == null) != (location == null)) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The 'repository' and 'location' parameters must be provided together.");
+        }
+        final var fromRepository = repository != null;
+        final var filePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
+        final var configSetData =
+            fromRepository ? null : ConfigSetAPIBase.ensureNonEmptyInputStream(req);
+        if (filePath.isEmpty()) { // Uploading a whole configset
           uploadResponse =
-              uploadApi.uploadConfigSet(configSetName, overwrite, cleanup, configSetData);
+              uploadApi.uploadConfigSet(
+                  configSetName, overwrite, cleanup, repository, location, configSetData);
         } else { // Uploading a single file
           // Single file uploads do not support cleanup or overwrite parameters
           if (cleanup) {
@@ -111,8 +121,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
                 "ConfigSet uploads do not allow cleanup=true when filePath is used.");
           }
           // Note: overwrite parameter is ignored for single file uploads (always overwrites)
-          final var filePath = req.getParams().get(ConfigSetParams.FILE_PATH);
-          uploadResponse = uploadApi.uploadConfigSetFile(configSetName, filePath, configSetData);
+          uploadResponse =
+              uploadApi.uploadConfigSetFile(
+                  configSetName, filePath, repository, location, configSetData);
         }
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, uploadResponse);
         break;
