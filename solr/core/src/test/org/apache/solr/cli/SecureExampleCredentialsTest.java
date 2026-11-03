@@ -51,7 +51,7 @@ public class SecureExampleCredentialsTest extends SolrTestCase {
 
   public void testIncompleteCredentials() throws Exception {
     var home = createTempDir();
-    Files.writeString(home.resolve("http-credentials.properties"), "admin.username=solr\n");
+    Files.writeString(home.resolve("secure-setup.properties"), "admin.username=solr\n");
     expectThrows(IllegalStateException.class, () -> new SecureExampleCredentials(home));
   }
 }

@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Properties;
 import org.apache.solr.SolrTestCase;
@@ -30,20 +31,22 @@ public class SecureExampleZkTest extends SolrTestCase {
   public void testCredentialsRoundTrip() throws Exception {
     var home = createTempDir();
     var secureZk = new SecureExampleZk(home);
+    var accounts = new SecureExampleCredentials(home);
     String password = " spaces : = \\ café ";
-    secureZk.create(password, "readonly");
+    accounts.createZkCredentials(password, "readonly");
+    accounts.save();
     var include = home.resolve("solr.in.sh");
     Files.writeString(include, "SOLR_OPTS='-Xmx512m'\n");
     Files.writeString(home.resolve("solr.xml"), "<solr><solrcloud></solrcloud></solr>");
     Files.writeString(home.resolve("zoo.cfg"), "tickTime=2000\nclientPort=9983\n");
-    secureZk.configure(include, 8983);
+    secureZk.configure(accounts.file(), include, 8983);
     var credentials = new VMParamsZkCredentialsInjector().getZkCredentials();
     assertEquals(password, credentials.getFirst().getPassword());
     assertEquals("readonly", credentials.get(1).getPassword());
     if (home.getFileSystem().supportedFileAttributeViews().contains("posix")) {
       assertEquals(
           PosixFilePermissions.fromString("rw-------"),
-          Files.getPosixFilePermissions(secureZk.credentialsFile()));
+          Files.getPosixFilePermissions(accounts.file()));
     }
     var server = new SolrZkServer(true, null, home.resolve("zoo_data"), home.toString(), 8983);
     server.parseConfig();
@@ -58,7 +61,7 @@ public class SecureExampleZkTest extends SolrTestCase {
     assertEquals("none", serverSettings.getProperty("ssl.clientAuth"));
     assertEquals("false", serverSettings.getProperty("client.portUnification"));
     String includeContents = Files.readString(include);
-    secureZk.configure(include, 8983);
+    secureZk.configure(accounts.file(), include, 8983);
     assertEquals(includeContents, Files.readString(include));
     assertTrue(includeContents.contains("SOLR_OPTS='-Xmx512m'"));
   }
@@ -67,19 +70,19 @@ public class SecureExampleZkTest extends SolrTestCase {
     var home = createTempDir();
     Files.createDirectory(home.resolve("zoo_data"));
     var secureZk = new SecureExampleZk(home);
-    var error =
-        expectThrows(IllegalStateException.class, () -> secureZk.create("admin", "readonly"));
+    var error = expectThrows(IllegalStateException.class, secureZk::assertFreshZkData);
     assertTrue(error.getMessage().contains("migrate its ACLs while Solr is stopped"));
-    assertFalse(Files.exists(secureZk.credentialsFile()));
   }
 
   public void testMissingCredentialsFailClosed() throws Exception {
     var home = createTempDir();
     var secureZk = new SecureExampleZk(home);
-    Files.writeString(secureZk.credentialsFile(), "zkDigestUsername=zk-admin\n");
+    Path credentialsFile = home.resolve("secure-setup.properties");
+    Files.writeString(credentialsFile, "zkDigestUsername=zk-admin\n");
     var include = home.resolve("solr.in.sh");
     Files.writeString(include, "");
-    expectThrows(IllegalStateException.class, () -> secureZk.configure(include, 8983));
+    expectThrows(
+        IllegalStateException.class, () -> secureZk.configure(credentialsFile, include, 8983));
     assertEquals("", Files.readString(include));
   }
 }

@@ -112,10 +112,9 @@ A password equal to its username is rejected by default, and the wizard asks for
 If you customize passwords, substitute them in the commands below.
 The HTTP accounts become active after you verify HTTPS in the next step.
 
-The wizard prints the paths where credentials are saved, with owner-only permissions on POSIX filesystems:
+The wizard prints the path where credentials are saved, with owner-only permissions on POSIX filesystems:
 
-* `example/secure-setup/http-credentials.properties`: HTTP account passwords.
-* `example/secure-setup/zk-credentials.properties`: ZooKeeper digest account passwords.
+* `example/secure-setup/secure-setup.properties`: HTTP and ZooKeeper digest account passwords.
 
 `zk-admin` has full access to the example's ZooKeeper data.
 `zk-readonly` can read ordinary metadata but cannot modify it or read `/security.json` and `/security/*`.
@@ -173,8 +172,8 @@ You now have the following local cluster:
 The `techproducts` collection has two shards, with one replica per shard and one shard on each node.
 It uses `sample_techproducts_configs`, just like the techproducts example.
 Both nodes share the first home's TLS files and use the same HTTP and ZooKeeper accounts.
-The script prints the paths to `http-credentials.properties` and `zk-credentials.properties` when it finishes.
-A private copy of the ZooKeeper credentials is also saved in the second node's home.
+The script prints the path to `secure-setup.properties` when it finishes.
+A private copy of this file is also saved in the second node's home.
 
 If startup fails, check `example/secure-setup/logs/solr.log` and `example/secure-setup-node2/logs/solr.log`.
 
@@ -408,8 +407,8 @@ The CLI configures the ZooKeeper TLS client internally; you do not need the incl
 The output lists the example's znodes, including `collections`, `configs`, and `security.json`.
 The TLS connection verifies the server certificate and hostname; the digest account determines access to znodes.
 The HTTP `--credentials` option authenticates Solr discovery requests; `--zk-credentials` supplies ZooKeeper digest credentials.
-For a customized ZooKeeper password, replace `SolrRocks` with the value saved in `zk-credentials.properties`.
-The HTTP and ZooKeeper properties files contain passwords in plain text; their owner-only file permissions protect them locally.
+For a customized ZooKeeper password, replace `SolrRocks` with the value saved in `secure-setup.properties`.
+This properties file contains both HTTP and ZooKeeper passwords in plain text; its owner-only file permissions protect it locally.
 HTTP passwords stored in ZooKeeper's `security.json` are salted hashes instead.
 
 The read-only account can list collection metadata:

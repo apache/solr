@@ -39,29 +39,13 @@ final class SecureExampleZk {
     this.home = home.toAbsolutePath();
   }
 
-  Path credentialsFile() {
-    return home.resolve("zk-credentials.properties");
-  }
-
-  boolean isConfigured() {
-    return Files.isRegularFile(credentialsFile());
-  }
-
-  void create(String adminPassword, String readonlyPassword) throws IOException {
+  void assertFreshZkData() {
     if (Files.exists(home.resolve("zoo_data"))) {
       throw new IllegalStateException(
           "This example has existing ZooKeeper data without saved ACL credentials. "
               + "Use a fresh Solr home for the secured example, or migrate its ACLs while Solr is stopped "
               + "as described in the ZooKeeper Access Control reference guide.");
     }
-    Properties credentials = new Properties();
-    credentials.setProperty("zkDigestUsername", "zk-admin");
-    credentials.setProperty("zkDigestPassword", adminPassword);
-    credentials.setProperty("zkDigestReadonlyUsername", "zk-readonly");
-    credentials.setProperty("zkDigestReadonlyPassword", readonlyPassword);
-    StringWriter output = new StringWriter();
-    credentials.store(output, "ZooKeeper credentials for the secure Solr example");
-    IncludeFileEditor.write(credentialsFile(), output.toString().getBytes(StandardCharsets.UTF_8));
   }
 
   private void configureServerTls(Path tls, int solrPort) throws IOException {
@@ -90,13 +74,13 @@ final class SecureExampleZk {
     IncludeFileEditor.write(config, output.toString().getBytes(StandardCharsets.UTF_8));
   }
 
-  void configure(Path includeFile, int solrPort) throws IOException {
+  void configure(Path credentialsFile, Path includeFile, int solrPort) throws IOException {
     if (solrPort > 64535) {
       throw new IllegalArgumentException(
           "The embedded ZooKeeper requires a Solr port at or below 64535.");
     }
     Properties credentials =
-        VMParamsZkCredentialsInjector.readCredentialsFile(credentialsFile().toString());
+        VMParamsZkCredentialsInjector.readCredentialsFile(credentialsFile.toString());
     for (String key :
         new String[] {
           "zkDigestUsername",
@@ -105,7 +89,7 @@ final class SecureExampleZk {
           "zkDigestReadonlyPassword"
         }) {
       if (credentials.getProperty(key, "").isEmpty()) {
-        throw new IllegalStateException("Missing " + key + " in " + credentialsFile());
+        throw new IllegalStateException("Missing " + key + " in " + credentialsFile);
       }
     }
     Path tls = home.resolve("tls");
@@ -113,7 +97,7 @@ final class SecureExampleZk {
     properties.put("zkCredentialsInjector", VMParamsZkCredentialsInjector.class.getName());
     properties.put("zkCredentialsProvider", DigestZkCredentialsProvider.class.getName());
     properties.put("zkACLProvider", DigestZkACLProvider.class.getName());
-    properties.put("zkDigestCredentialsFile", credentialsFile().toString());
+    properties.put("zkDigestCredentialsFile", credentialsFile.toString());
     properties.put("zookeeper.client.secure", "true");
     properties.put("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
     properties.put(

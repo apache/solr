@@ -519,8 +519,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         assertEquals(customPasswords, toolOutput.contains("Password for zk-admin [SolrRocks]:"));
         assertTrue(
             toolOutput.contains(
-                "HTTP account credentials are saved in "
-                    + testSolrHomeDir.resolve("http-credentials.properties")));
+                "HTTP and ZooKeeper account credentials are saved in "
+                    + testSolrHomeDir.resolve("secure-setup.properties")));
         assertFalse(toolOutput.contains("Use SOLR_INCLUDE="));
         assertTrue(toolOutput.contains("Private key: " + testSolrHomeDir.resolve("tls/key.pem")));
         assertTrue(

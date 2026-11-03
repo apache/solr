@@ -25,13 +25,16 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 
-/** Persists HTTP credentials so the secure example can restart without password prompts. */
+/**
+ * Persists HTTP and ZooKeeper credentials so the secure example can restart without password
+ * prompts.
+ */
 final class SecureExampleCredentials {
   private final Path file;
   private final Properties credentials = new Properties();
 
   SecureExampleCredentials(Path home) throws IOException {
-    file = home.toAbsolutePath().resolve("http-credentials.properties");
+    file = home.toAbsolutePath().resolve("secure-setup.properties");
     if (exists()) {
       try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
         credentials.load(reader);
@@ -79,13 +82,24 @@ final class SecureExampleCredentials {
     setPassword("admin", value.substring(colon + 1));
   }
 
+  boolean zkConfigured() {
+    return !credentials.getProperty("zkDigestPassword", "").isEmpty();
+  }
+
+  void createZkCredentials(String adminPassword, String readonlyPassword) {
+    credentials.setProperty("zkDigestUsername", "zk-admin");
+    credentials.setProperty("zkDigestPassword", adminPassword);
+    credentials.setProperty("zkDigestReadonlyUsername", "zk-readonly");
+    credentials.setProperty("zkDigestReadonlyPassword", readonlyPassword);
+  }
+
   Path file() {
     return file;
   }
 
   void save() throws IOException {
     StringWriter output = new StringWriter();
-    credentials.store(output, "HTTP credentials for the secure Solr example");
+    credentials.store(output, "Credentials for the secure Solr example");
     IncludeFileEditor.write(file, output.toString().getBytes(StandardCharsets.UTF_8));
   }
 }

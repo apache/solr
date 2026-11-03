@@ -676,7 +676,7 @@ public class RunExampleTool extends ToolBase {
     if (!existingAccounts) {
       newAccounts.addAll(List.of(accounts.adminUsername(), "index", "search"));
     }
-    if (!secureZk.isConfigured()) {
+    if (!accounts.zkConfigured()) {
       newAccounts.addAll(List.of("zk-admin", "zk-readonly"));
     }
     boolean changePasswords = false;
@@ -696,9 +696,10 @@ public class RunExampleTool extends ToolBase {
             promptPassword(input, "Password for " + username + " [SolrRocks]: ", username));
       }
     }
-    if (secureZk.isConfigured()) {
+    if (accounts.zkConfigured()) {
       echo("Reusing the example's ZooKeeper credentials and ACL configuration.");
     } else {
+      secureZk.assertFreshZkData();
       echo("Protecting ZooKeeper with separate digest accounts and ACLs.");
       String zkAdminPassword =
           changePasswords
@@ -708,12 +709,11 @@ public class RunExampleTool extends ToolBase {
           changePasswords
               ? promptPassword(input, "Password for zk-readonly [SolrRocks]: ", "zk-readonly")
               : "SolrRocks";
-      secureZk.create(zkAdminPassword, zkReadonlyPassword);
+      accounts.createZkCredentials(zkAdminPassword, zkReadonlyPassword);
     }
     if (!existingAccounts || start.credentials() == null) accounts.save();
-    echo("HTTP credentials: " + accounts.file());
-    secureZk.configure(secureSSL.includeFile(), port);
-    echo("ZooKeeper credentials: " + secureZk.credentialsFile());
+    echo("Secure example credentials: " + accounts.file());
+    secureZk.configure(accounts.file(), secureSSL.includeFile(), port);
     secureSSL.printFiles();
     secureSSL.configureClientTrust();
     urlScheme = "https";
@@ -802,15 +802,10 @@ public class RunExampleTool extends ToolBase {
             + "/solr/. Sign in as "
             + user
             + ".");
-    echo("HTTP account credentials are saved in " + accounts.file() + ".");
+    echo("HTTP and ZooKeeper account credentials are saved in " + accounts.file() + ".");
     if (secureSSL != null) {
-      echo(
-          "ZooKeeper account credentials are saved in "
-              + new SecureExampleZk(solrHomeDir).credentialsFile()
-              + ".");
       var zkCredentials =
-          VMParamsZkCredentialsInjector.readCredentialsFile(
-              new SecureExampleZk(solrHomeDir).credentialsFile().toString());
+          VMParamsZkCredentialsInjector.readCredentialsFile(accounts.file().toString());
       String zkPassword = zkCredentials.getProperty("zkDigestPassword");
       echo("List ZooKeeper data with TLS and digest authentication:");
       echo(
@@ -822,8 +817,7 @@ public class RunExampleTool extends ToolBase {
               + ("SolrRocks".equals(zkPassword) ? "SolrRocks" : "<password>")
               + "'");
       if (!"SolrRocks".equals(zkPassword))
-        echo(
-            "Use the zk-admin password from " + new SecureExampleZk(solrHomeDir).credentialsFile());
+        echo("Use the zk-admin password from " + accounts.file());
     }
   }
 
@@ -957,11 +951,10 @@ public class RunExampleTool extends ToolBase {
       if (!Files.exists(secondXml)) Files.copy(solrHomeDir.resolve("solr.xml"), secondXml);
       echo("Second node Solr home: " + secondHome.toAbsolutePath());
       if (!CLIUtils.isWindows()) {
-        Path secondCredentials = secondHome.resolve("zk-credentials.properties");
-        IncludeFileEditor.write(
-            secondCredentials,
-            Files.readAllBytes(new SecureExampleZk(firstHome).credentialsFile()));
-        echo("Second node ZooKeeper credentials: " + secondCredentials);
+        Path firstCredentials = new SecureExampleCredentials(firstHome).file();
+        Path secondCredentials = secondHome.resolve(firstCredentials.getFileName());
+        IncludeFileEditor.write(secondCredentials, Files.readAllBytes(firstCredentials));
+        echo("Second node credentials: " + secondCredentials);
       }
       String sharedZk = (String) ((Map<?, ?>) nodeStatus.get("cloud")).get("ZooKeeper");
       Map<String, Object> secondNode =
@@ -1401,7 +1394,7 @@ public class RunExampleTool extends ToolBase {
       if (zkHost != null) {
         syspropArg +=
             " -DzkDigestCredentialsFile=\""
-                + solrHomeDir.toAbsolutePath().resolve("zk-credentials.properties")
+                + solrHomeDir.toAbsolutePath().resolve("secure-setup.properties")
                 + "\"";
       }
     }

@@ -44,8 +44,7 @@ teardown() {
   refute_output --partial 'No cluster property changed.'
   refute_output --partial 'Password for index'
   refute_output --partial 'Administrator username'
-  assert_output --partial "HTTP account credentials are saved in $SOLR_HOME/http-credentials.properties.
-ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties."
+  assert_output --partial "HTTP and ZooKeeper account credentials are saved in $SOLR_HOME/secure-setup.properties."
   refute_output --partial 'Use SOLR_INCLUDE='
   assert_output --partial "Private key: $SOLR_HOME/tls/key.pem"
   assert_output --partial "Keystore password file: $SOLR_HOME/tls/keystore-password.txt"
@@ -66,7 +65,7 @@ ZooKeeper account credentials are saved in $SOLR_HOME/zk-credentials.properties.
   assert_success
   run test -f "${SOLR_HOME}-node2/logs/solr.log"
   assert_success
-  run cmp "$SOLR_HOME/zk-credentials.properties" "${SOLR_HOME}-node2/zk-credentials.properties"
+  run cmp "$SOLR_HOME/secure-setup.properties" "${SOLR_HOME}-node2/secure-setup.properties"
   assert_success
   run test ! -d "${SOLR_HOME}-node2/zoo_data"
   assert_success
