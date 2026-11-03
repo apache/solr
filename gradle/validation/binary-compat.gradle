@@ -1,0 +1,254 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Binary compatibility guard for the SolrJ client API (SOLR-18600).
+//
+// Compares the jars users compile against, the built solrj jar plus
+// the solr-api jar it always ships with, against the same pair from
+// the previous release (resolved from Maven Central like any other
+// dependency) with japicmp, and fails :solr:solrj:check when a
+// binary-incompatible change is not excused by an entry in
+// solr/solrj/binary-compat-exclusions.txt. The pair matters because
+// solrj bundles copies of solr-api classes whose home is the api jar;
+// comparing solrj alone would report bundle reshuffling between the
+// two jars as API removals.
+//
+// Properties:
+//   solrj.binaryCompat.baselineVersion  baseline release to compare
+//                                       against (default: 10.1.0, the
+//                                       previous release on this
+//                                       branch line; a guard can only
+//                                       police changes since the last
+//                                       release, so the default moves
+//                                       with each release)
+//   solrj.binaryCompat.enabled          set to false to disable the
+//                                       check, e.g. on a major-version
+//                                       line where breaks are allowed
+//   solrj.binaryCompat.candidateJar     compare the baseline against
+//                                       this solrj jar instead of the
+//                                       built one, together with the
+//                                       solr-api jar named by
+//                                       solrj.binaryCompat.candidateApiJar
+//                                       (used to validate the check
+//                                       itself against a published
+//                                       release)
+
+buildscript {
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
+
+  dependencies {
+    classpath libs.siom79.japicmp
+  }
+}
+
+import japicmp.cmp.JApiCmpArchive
+import japicmp.cmp.JarArchiveComparator
+import japicmp.cmp.JarArchiveComparatorOptions
+import japicmp.config.Options
+import japicmp.model.AccessModifier
+import japicmp.output.stdout.StdoutOutputGenerator
+
+def binaryCompatEnabled =
+    (rootProject.providers.gradleProperty("solrj.binaryCompat.enabled").orElse("true").get() != "false")
+def baselineVersion =
+    rootProject.providers.gradleProperty("solrj.binaryCompat.baselineVersion").orElse("10.1.0").get()
+def candidateJar =
+    rootProject.providers.gradleProperty("solrj.binaryCompat.candidateJar").orNull
+def candidateApiJar =
+    rootProject.providers.gradleProperty("solrj.binaryCompat.candidateApiJar").orNull
+
+if (binaryCompatEnabled) {
+  configure(project(":solr:solrj")) {
+    def exclusionsFile = file("binary-compat-exclusions.txt")
+    def reportDir = layout.buildDirectory.dir("reports/binary-compat")
+
+    def binaryCompatBaseline = configurations.create("binaryCompatBaseline") {
+      canBeConsumed = false
+      canBeResolved = true
+      description = "Published SolrJ jar of the baseline release, for binary compatibility comparison."
+    }
+    dependencies.add(binaryCompatBaseline.name,
+        "org.apache.solr:solr-solrj:${baselineVersion}")
+
+    def binaryCompatReport = tasks.register("binaryCompatReport") { t ->
+      t.group = "verification"
+      t.description = "Compares the built SolrJ jar against the ${baselineVersion} release jar with japicmp."
+      if (candidateJar == null) {
+        // Deferred lookups: this script is evaluated before the solrj
+        // project's own build script applies the java plugin, so the
+        // jar tasks only exist by execution time.
+        t.dependsOn({ tasks.named("jar") })
+        t.dependsOn({ rootProject.project(":solr:api").tasks.named("jar") })
+        t.inputs.file({ tasks.named("jar").get().archiveFile.get().asFile })
+        t.inputs.file({
+          rootProject.project(":solr:api").tasks.named("jar").get().archiveFile.get().asFile
+        })
+      } else {
+        if (candidateApiJar == null) {
+          throw new GradleException(
+              "solrj.binaryCompat.candidateApiJar is required together with solrj.binaryCompat.candidateJar.")
+        }
+        t.inputs.file(file(candidateJar))
+        t.inputs.file(file(candidateApiJar))
+      }
+      t.inputs.files(binaryCompatBaseline)
+      t.outputs.file(reportDir.get().file("binary-compat.txt"))
+      t.outputs.file(reportDir.get().file("binary-compat-changes.txt"))
+
+      t.doLast {
+        def baselineJar = binaryCompatBaseline.files
+            .find { it.name ==~ /solr-solrj-[0-9].*\.jar/ }
+        def baselineApiJar = binaryCompatBaseline.files
+            .find { it.name ==~ /solr-api-[0-9].*\.jar/ }
+        if (baselineJar == null || baselineApiJar == null) {
+          throw new GradleException(
+              "Baseline jars for ${baselineVersion} not found in the binaryCompatBaseline configuration: " +
+              binaryCompatBaseline.files.collect { it.name })
+        }
+        def newJars
+        if (candidateJar != null) {
+          newJars = [file(candidateJar), file(candidateApiJar)]
+        } else {
+          newJars = [tasks.named("jar").get().archiveFile.get().asFile,
+              rootProject.project(":solr:api").tasks.named("jar").get().archiveFile.get().asFile]
+        }
+        // The rest of each side's classpath rides along as context so
+        // supertypes outside the solrj jar itself resolve.
+        def oldClasspath = binaryCompatBaseline.files.join(File.pathSeparator)
+        def newClasspath = configurations.getByName("runtimeClasspath").files.join(File.pathSeparator)
+
+        def options = Options.newDefault()
+        options.setOldArchives([new JApiCmpArchive(baselineJar, baselineVersion),
+            new JApiCmpArchive(baselineApiJar, baselineVersion)])
+        options.setNewArchives(newJars.collect { new JApiCmpArchive(it, "current") })
+        options.setOldClassPath(java.util.Optional.of(oldClasspath))
+        options.setNewClassPath(java.util.Optional.of(newClasspath))
+        // The public and protected surface is what users compile and
+        // subclass against; package-private and private changes cannot
+        // break them.
+        options.setAccessModifier(AccessModifier.PROTECTED)
+        options.setIgnoreMissingClasses(true)
+        options.setIncludeSynthetic(false)
+
+        def comparator = new JarArchiveComparator(JarArchiveComparatorOptions.of(options))
+        def classes = comparator.compare(options.getOldArchives(), options.getNewArchives())
+
+        def outDir = reportDir.get().asFile
+        outDir.mkdirs()
+        new File(outDir, "binary-compat.txt").text =
+            new StdoutOutputGenerator(options, classes).generate()
+
+        // Machine-readable descriptors of every binary-incompatible
+        // change, one per line: <class> ; <change type> ; <member>
+        def descriptors = [] as TreeSet
+        classes.each { jApiClass ->
+          def cls = jApiClass.getFullyQualifiedName()
+          jApiClass.getCompatibilityChanges().findAll { !it.isBinaryCompatible() }.each { change ->
+            descriptors.add("${cls} ; ${change.getType().name()} ; ${cls}")
+          }
+          def members = []
+          members.addAll(jApiClass.getMethods())
+          members.addAll(jApiClass.getFields())
+          members.addAll(jApiClass.getConstructors())
+          members.each { member ->
+            member.getCompatibilityChanges().findAll { !it.isBinaryCompatible() }.each { change ->
+              descriptors.add("${cls} ; ${change.getType().name()} ; ${member.getName()}")
+            }
+          }
+        }
+        new File(outDir, "binary-compat-changes.txt").text =
+            descriptors.collect { it + "\n" }.join("")
+        logger.lifecycle("Binary compatibility report written to ${outDir} " +
+            "(${descriptors.size()} binary-incompatible change(s) against ${baselineVersion}).")
+      }
+    }
+
+    def checkBinaryCompat = tasks.register("checkBinaryCompat") { t ->
+      t.group = "verification"
+      t.description = "Fails on binary-incompatible SolrJ changes not excused in binary-compat-exclusions.txt."
+      t.dependsOn(binaryCompatReport)
+      t.inputs.file(reportDir.get().file("binary-compat-changes.txt"))
+      t.inputs.file(exclusionsFile)
+
+      t.doLast {
+        // Parse the exclusions file. One entry per line:
+        //   <class> ; <change type or *> ; <member substring or *> ; <ticket and reason>
+        def entries = []
+        exclusionsFile.eachLine("UTF-8") { line, lineNo ->
+          def trimmed = line.trim()
+          if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("/*")
+              || trimmed.startsWith("*")) {
+            return
+          }
+          def parts = trimmed.split(";", -1).collect { it.trim() }
+          if (parts.size() != 4 || parts[3].isEmpty()) {
+            throw new GradleException(
+                "Malformed entry in ${exclusionsFile} line ${lineNo}: '${line}'. Expected " +
+                "'<class> ; <change type or *> ; <member substring or *> ; <ticket and reason>'.")
+          }
+          entries.add([cls: parts[0], type: parts[1], member: parts[2], why: parts[3], used: false])
+        }
+
+        def changes = []
+        new File(reportDir.get().asFile, "binary-compat-changes.txt").eachLine("UTF-8") { line ->
+          def parts = line.split(";", -1).collect { it.trim() }
+          if (parts.size() == 3) {
+            changes.add([cls: parts[0], type: parts[1], member: parts[2]])
+          }
+        }
+
+        def uncovered = []
+        changes.each { change ->
+          def hit = entries.find { e ->
+            e.cls == change.cls &&
+                (e.type == "*" || e.type == change.type) &&
+                (e.member == "*" || change.member.contains(e.member))
+          }
+          if (hit != null) {
+            hit.used = true
+          } else {
+            uncovered.add(change)
+          }
+        }
+        entries.findAll { !it.used }.each { e ->
+          logger.warn("Binary compatibility exclusion matches no current change and may be " +
+              "stale: ${e.cls} ; ${e.type} ; ${e.member} ; ${e.why}")
+        }
+        if (!uncovered.isEmpty()) {
+          def listing = uncovered
+              .collect { "  - ${it.cls}: ${it.type} (${it.member})" }
+              .sort()
+              .join("\n")
+          throw new GradleException(
+              "Binary-incompatible changes against SolrJ ${baselineVersion}:\n${listing}\n\n" +
+              "These changes break code compiled against the previous release. Undo them, or, " +
+              "if the break is intentional, excuse each one in ${exclusionsFile} with a ticket " +
+              "reference. Full report: ${reportDir.get().asFile}/binary-compat.txt")
+        }
+        logger.lifecycle(
+            "Binary compatibility check passed against SolrJ ${baselineVersion} " +
+            "(${changes.size()} excused change(s), ${entries.size()} exclusion(s)).")
+      }
+    }
+
+    plugins.withId("java") {
+      tasks.named("check") {
+        dependsOn(checkBinaryCompat)
+      }
+    }
+  }
+}

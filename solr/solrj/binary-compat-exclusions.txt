@@ -1,0 +1,66 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Intentional binary-incompatible SolrJ changes, excused for the
+# binary compatibility check in gradle/validation/binary-compat.gradle
+# (SOLR-18600). The check compares the built jars against the previous
+# release (10.1.0 unless the solrj.binaryCompat.baselineVersion
+# property says otherwise) and fails on any binary-incompatible change
+# that no entry here covers. An entry that covers no current change
+# draws a warning, so stale entries get noticed instead of rotting
+# silently.
+#
+# One entry per line, four fields separated by ';':
+#
+#   <fully qualified class> ; <japicmp change type, or *> ;
+#       <member name substring, or *> ; <ticket and reason>
+#
+# The ticket and reason field is required: an intentional break is a
+# decision, and the entry is where the decision is recorded. Change
+# types are the japicmp names, for example CLASS_REMOVED,
+# METHOD_REMOVED, FIELD_REMOVED, CONSTRUCTOR_REMOVED,
+# METHOD_RETURN_TYPE_CHANGED or FIELD_TYPE_CHANGED.
+
+# SOLR-18600 restores the HttpSolrClientBase and
+# HttpSolrClientBuilderBase types and the 10.0.0 declared types that
+# 10.1.0 removed. Against the 10.1.0 baseline the restored descriptors
+# read as changes, because 10.1.0's narrowed shapes were the break
+# being fixed; these entries excuse exactly that restoration.
+org.apache.solr.client.solrj.impl.CloudHttp2SolrClient ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: getHttpClient returns the restored HttpSolrClientBase type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.CloudSolrClient ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: getHttpClient returns the restored HttpSolrClientBase type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.CloudSolrClient$Builder ; FIELD_TYPE_CHANGED ; * ; SOLR-18600: builder fields carry the restored base types again, as in 10.0.0
+org.apache.solr.client.solrj.impl.CloudSolrClient$Builder ; METHOD_REMOVED ; * ; SOLR-18600: builder factory methods restored with their 10.0.0 declared types
+org.apache.solr.client.solrj.impl.CloudSolrClient$Builder ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: createOrGetHttpClient returns the restored type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient$Builder ; CONSTRUCTOR_REMOVED ; * ; SOLR-18600: builder constructor restored with the 10.0.0 client type
+org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient$Builder ; FIELD_TYPE_CHANGED ; * ; SOLR-18600: client field carries the restored base type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient$Builder ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: getClient returns the restored type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.HttpClusterStateProvider ; CONSTRUCTOR_REMOVED ; * ; SOLR-18600: constructor restored with the 10.0.0 client type
+org.apache.solr.client.solrj.impl.HttpClusterStateProvider ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: accessors return the restored types again, as in 10.0.0
+org.apache.solr.client.solrj.impl.HttpJdkSolrClient ; FIELD_REMOVED_IN_SUPERCLASS ; * ; SOLR-18600: the field moved up to the restored HttpSolrClientBase, where 10.0.0 code expects it
+org.apache.solr.client.solrj.impl.HttpJdkSolrClient$Builder ; METHOD_REMOVED_IN_SUPERCLASS ; * ; SOLR-18600: the method moved up to the restored HttpSolrClientBuilderBase, where 10.0.0 code expects it
+org.apache.solr.client.solrj.impl.HttpSolrClient ; FIELD_REMOVED ; * ; SOLR-18600: baseUrl moved up to the restored HttpSolrClientBase, where 10.0.0 declares it
+org.apache.solr.client.solrj.impl.HttpSolrClient$BuilderBase ; METHOD_REMOVED ; * ; SOLR-18600: the with* builder methods moved up to the restored HttpSolrClientBuilderBase, where 10.0.0 declares them
+org.apache.solr.client.solrj.impl.LBAsyncSolrClient ; FIELD_TYPE_CHANGED ; * ; SOLR-18600: solrClient field carries the restored base type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.LBAsyncSolrClient ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: getClient returns the restored type again, as in 10.0.0
+org.apache.solr.client.solrj.impl.LBSolrClient$Builder ; CONSTRUCTOR_REMOVED ; * ; SOLR-18600: builder constructor restored with the 10.0.0 generic bound
+org.apache.solr.client.solrj.impl.LBSolrClient$Builder ; METHOD_RETURN_TYPE_CHANGED ; * ; SOLR-18600: getSolrClient returns the restored type again, as in 10.0.0
+
+# Changes other tickets landed on this line after 10.1.0.
+org.apache.solr.client.solrj.request.ApiMapping ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.solrj.request.ApiMapping$CommandMeta ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.solrj.request.ApiMapping$V2EndPoint ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.api.endpoint.ListCollectionsApi ; METHOD_REMOVED ; listCollections ; SOLR-18450: GET /api/cluster relocated under /api/collections
+org.apache.solr.client.api.endpoint.NodeLoggingApis ; METHOD_REMOVED ; modifyLocalLogLevel ; SOLR-15823: v2 logging broadcast reshaped the endpoint signature
+org.apache.solr.common.util.CommandOperation ; METHOD_REMOVED ; readCommands ; SOLR-18351: ContentStream replacement removed the stream-reading entry point
