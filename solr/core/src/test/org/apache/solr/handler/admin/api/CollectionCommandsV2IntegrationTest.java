@@ -85,8 +85,7 @@ public class CollectionCommandsV2IntegrationTest extends SolrCloudTestCase {
         response.getResponse().get("Summary"));
     assertNotNull(response.getResponse().get("successes"));
     assertEquals(
-        preferredLeaders.keySet(),
-        ((Map<?, ?>) response.getResponse().get("successes")).keySet());
+        preferredLeaders.keySet(), ((Map<?, ?>) response.getResponse().get("successes")).keySet());
     waitForState(
         "Expected every preferred replica to become leader",
         collection,
@@ -174,14 +173,13 @@ public class CollectionCommandsV2IntegrationTest extends SolrCloudTestCase {
             .getTargetCollectionName());
     cluster.getSolrClient().commit(target);
     final var documents =
-        cluster
-            .getSolrClient()
-            .query(target, new SolrQuery("*:*").setFields("id"))
-            .getResults();
+        cluster.getSolrClient().query(target, new SolrQuery("*:*").setFields("id")).getResults();
     assertEquals(2, documents.getNumFound());
     assertEquals(
         Set.of("a!1", "existing!1"),
-        documents.stream().map(document -> document.getFieldValue("id")).collect(Collectors.toSet()));
+        documents.stream()
+            .map(document -> document.getFieldValue("id"))
+            .collect(Collectors.toSet()));
   }
 
   private static V2Response postV2(String path, String payload) throws Exception {

@@ -143,8 +143,7 @@ public class MigrateDocsAPITest extends MockV2APITest {
 
   @Test
   public void testRejectsMissingBody() {
-    final var exception =
-        expectThrows(SolrException.class, () -> api.migrateDocs("source", null));
+    final var exception = expectThrows(SolrException.class, () -> api.migrateDocs("source", null));
     assertEquals(400, exception.code());
     assertEquals("Required request-body is missing", exception.getMessage());
     verifyNoInteractions(mockCommandRunner);
@@ -154,8 +153,7 @@ public class MigrateDocsAPITest extends MockV2APITest {
   public void testRejectsMissingTarget() {
     final var body = requestBody();
     body.target = null;
-    final var exception =
-        expectThrows(SolrException.class, () -> api.migrateDocs("source", body));
+    final var exception = expectThrows(SolrException.class, () -> api.migrateDocs("source", body));
     assertEquals(400, exception.code());
     assertEquals("Missing required parameter: target", exception.getMessage());
     verifyNoInteractions(mockCommandRunner);
@@ -165,8 +163,7 @@ public class MigrateDocsAPITest extends MockV2APITest {
   public void testRejectsMissingSplitKey() {
     final var body = requestBody();
     body.splitKey = null;
-    final var exception =
-        expectThrows(SolrException.class, () -> api.migrateDocs("source", body));
+    final var exception = expectThrows(SolrException.class, () -> api.migrateDocs("source", body));
     assertEquals(400, exception.code());
     assertEquals("Missing required parameter: splitKey", exception.getMessage());
     verifyNoInteractions(mockCommandRunner);
