@@ -153,20 +153,20 @@ public class SearchHandler extends RequestHandlerBase
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     super.handleRequest(req, rsp);
     CoreContainer cc = req.getCoreContainer();
-    List<SearchRequestListener> listeners = cc == null ? List.of() : cc.getSearchRequestListeners();
-    if (listeners.isEmpty()
+    if (cc == null
+        || !cc.getSearchRequestListenerManager().hasListeners()
         || !notifiesSearchRequestListeners()
         || SolrRequestInfo.isNestedRequest()
         || req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       return;
     }
-    String path = (String) req.getContext().get(PATH);
+    String path = req.getPath();
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     ResponseBuilder rb = requestInfo == null ? null : requestInfo.getResponseBuilder();
     if (path == null || !isDispatchedHandler(req) || rb == null || rb.req != req) {
       return;
     }
-    SearchRequestDispatcher.mark(req, rb);
+    SearchRequestListenerManager.mark(req, rb);
   }
 
   /** Whether requests to this handler are reported to {@link SearchRequestListener}s. */

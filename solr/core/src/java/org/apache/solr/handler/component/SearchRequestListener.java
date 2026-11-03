@@ -28,16 +28,16 @@ import org.apache.solr.response.SolrQueryResponse;
  * reported either.
  *
  * <p>{@link #capture} runs on the request thread; {@link #onRequestEnd} runs later on a single
- * delivery thread per {@link org.apache.solr.core.CoreContainer}, shared by all listeners through
- * one bounded queue. When the queue is full the search is dropped for every listener rather than
- * delaying the request, and counted in the {@code solr.search.listener.lost} metric. Size the queue
- * with {@code solr.search.listener.queue.size} (default 1000). One slow listener causes drops for
- * all of them. Queued searches are discarded at shutdown and counted the same way.
+ * delivery thread per node, shared by all listeners through one bounded queue. When the queue is
+ * full the search is dropped for every listener rather than delaying the request, and counted in
+ * the {@code solr.search.listener.lost} metric. Size the queue with {@code
+ * solr.search.listener.queue.size} (default 1000). One slow listener causes drops for all of them.
+ * Queued searches are discarded at shutdown and counted the same way.
  *
  * <p>The delivery thread has no request MDC, so log lines from {@link #onRequestEnd} carry no trace
  * id; include {@link SearchRequestInfo#traceId()} where needed.
  *
- * @see org.apache.solr.core.CoreContainer#addSearchRequestListener(SearchRequestListener)
+ * @see SearchRequestListenerManager#add(SearchRequestListener)
  * @lucene.experimental
  */
 public interface SearchRequestListener {

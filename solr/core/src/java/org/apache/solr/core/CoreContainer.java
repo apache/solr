@@ -121,8 +121,7 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.component.SearchRequestDispatcher;
-import org.apache.solr.handler.component.SearchRequestListener;
+import org.apache.solr.handler.component.SearchRequestListenerManager;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesigner;
 import org.apache.solr.jersey.InjectionFactories;
@@ -214,25 +213,12 @@ public class CoreContainer {
     return appHandlersByConfigSetId;
   }
 
-  final SearchRequestDispatcher searchRequestDispatcher = new SearchRequestDispatcher();
+  private final SearchRequestListenerManager searchRequestListenerManager =
+      new SearchRequestListenerManager();
 
-  /**
-   * Register to be notified after each search a client sends to this node.
-   *
-   * @throws IllegalStateException if this container is shut down
-   */
-  public void addSearchRequestListener(SearchRequestListener listener) {
-    searchRequestDispatcher.add(listener);
-  }
-
-  /** Remove a listener added with {@link #addSearchRequestListener}. */
-  public boolean removeSearchRequestListener(SearchRequestListener listener) {
-    return searchRequestDispatcher.remove(listener);
-  }
-
-  /** The registered listeners. Empty unless a module adds one. */
-  public List<SearchRequestListener> getSearchRequestListeners() {
-    return searchRequestDispatcher.listeners();
+  /** Where modules register to be notified after each search a client sends to this node. */
+  public SearchRequestListenerManager getSearchRequestListenerManager() {
+    return searchRequestListenerManager;
   }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
@@ -786,7 +772,7 @@ public class CoreContainer {
     solrMetricsContext.observableLongCounter(
         "solr.search.listener.lost",
         "Searches not delivered to search request listeners",
-        measurement -> measurement.record(searchRequestDispatcher.lost()));
+        measurement -> measurement.record(searchRequestListenerManager.lost()));
 
     initGpuMetricsService(); // Initialize GPU metrics service
 
@@ -1254,7 +1240,7 @@ public class CoreContainer {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
     }
 
-    searchRequestDispatcher.close();
+    searchRequestListenerManager.close();
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
     ExecutorUtil.shutdownNowAndAwaitTermination(indexFingerprintExecutor);

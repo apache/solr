@@ -17,23 +17,26 @@
 package org.apache.solr.handler.component;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.handler.component.SearchRequestDispatcher.Delivery;
+import org.apache.solr.handler.component.SearchRequestListenerManager.Delivery;
 import org.junit.After;
 import org.junit.Test;
 
-public class SearchRequestDispatcherTest extends SolrTestCase {
+public class SearchRequestListenerManagerTest extends SolrTestCase {
 
   private static final long DELIVERY_TIMEOUT_MS = 30_000;
+
+  private static final long CLOSE_WAIT_CHECK_MS =
+      SearchRequestListenerManager.CLOSE_TIMEOUT_MS / 10;
 
   private static final SearchRequestInfo INFO =
       new SearchRequestInfo(
@@ -43,7 +46,7 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
 
   private final CountDownLatch release = new CountDownLatch(1);
 
-  private SearchRequestDispatcher dispatcher;
+  private SearchRequestListenerManager manager;
 
   /** Blocks the worker until {@link #release} counts down, ignoring interrupts. */
   private final SearchRequestListener blocker =
@@ -76,42 +79,42 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
   }
 
   @After
-  public void closeDispatcher() {
+  public void closeManager() {
     release.countDown();
-    if (dispatcher != null) {
-      dispatcher.close();
+    if (manager != null) {
+      manager.close();
     }
   }
 
   private void offer(Object captured, SearchRequestListener... listeners) {
-    dispatcher.offer(INFO, Arrays.stream(listeners).map(l -> new Delivery(l, captured)).toList());
+    manager.offer(INFO, Arrays.stream(listeners).map(l -> new Delivery(l, captured)).toList());
   }
 
   private void blockWorker() throws InterruptedException {
-    dispatcher.add(blocker);
+    manager.add(blocker);
     offer("blocking", blocker);
     assertTrue(started.await(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS));
   }
 
   @Test
   public void testFullQueueDropsAndCounts() throws Exception {
-    dispatcher = new SearchRequestDispatcher(1);
+    manager = new SearchRequestListenerManager(1);
     Recorder recorder = new Recorder();
-    dispatcher.add(recorder);
+    manager.add(recorder);
     blockWorker();
     offer("event2", recorder);
     offer("event3", recorder);
     release.countDown();
     assertEquals("event2", recorder.next());
-    assertEquals(1, dispatcher.lost());
+    assertEquals(1, manager.lost());
     assertTrue(recorder.delivered.isEmpty());
   }
 
   @Test
   public void testOfferDoesNotBlockWhenFull() throws Exception {
-    dispatcher = new SearchRequestDispatcher(1);
+    manager = new SearchRequestListenerManager(1);
     Recorder recorder = new Recorder();
-    dispatcher.add(recorder);
+    manager.add(recorder);
     blockWorker();
     offer("event2", recorder);
     ExecutorService executor =
@@ -123,19 +126,19 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
       release.countDown();
       ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
-    assertEquals(1, dispatcher.lost());
+    assertEquals(1, manager.lost());
   }
 
   @Test
   public void testListenerErrorKeepsWorker() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+    manager = new SearchRequestListenerManager(10);
     SearchRequestListener failing =
         (info, captured) -> {
           throw new AssertionError("listener error");
         };
     Recorder recorder = new Recorder();
-    dispatcher.add(failing);
-    dispatcher.add(recorder);
+    manager.add(failing);
+    manager.add(recorder);
     offer("event1", failing, recorder);
     offer("event2", failing, recorder);
     assertEquals("event1", recorder.next());
@@ -147,14 +150,14 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
 
   @Test
   public void testStackOverflowInListenerKeepsWorker() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+    manager = new SearchRequestListenerManager(10);
     SearchRequestListener failing =
         (info, captured) -> {
           throw new StackOverflowError("listener error");
         };
     Recorder recorder = new Recorder();
-    dispatcher.add(failing);
-    dispatcher.add(recorder);
+    manager.add(failing);
+    manager.add(recorder);
     offer("event1", failing, recorder);
     offer("event2", failing, recorder);
     assertEquals("event1", recorder.next());
@@ -162,21 +165,22 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
   }
 
   @Test
-  public void testDuplicateAddDeliversOnce() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+  public void testDuplicateAddRegistersOnce() throws Exception {
+    manager = new SearchRequestListenerManager(10);
     Recorder recorder = new Recorder();
-    dispatcher.add(recorder);
-    dispatcher.add(recorder);
-    assertEquals(List.of(recorder), dispatcher.listeners());
+    manager.add(recorder);
+    manager.add(recorder);
+    assertTrue(manager.remove(recorder));
+    assertFalse(manager.hasListeners());
   }
 
   @Test
   public void testInterruptFromListenerKeepsWorker() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+    manager = new SearchRequestListenerManager(10);
     SearchRequestListener interrupting = (info, captured) -> Thread.currentThread().interrupt();
     Recorder recorder = new Recorder();
-    dispatcher.add(interrupting);
-    dispatcher.add(recorder);
+    manager.add(interrupting);
+    manager.add(recorder);
     offer("event1", interrupting, recorder);
     assertEquals("event1", recorder.next());
     offer("event2", interrupting, recorder);
@@ -185,31 +189,51 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
 
   @Test
   public void testCloseDuringEventCountsIt() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+    manager = new SearchRequestListenerManager(10);
     Recorder recorder = new Recorder();
-    dispatcher.add(blocker);
-    dispatcher.add(recorder);
+    manager.add(blocker);
+    manager.add(recorder);
     offer("event1", blocker, recorder);
     assertTrue(started.await(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS));
-    Thread worker = dispatcher.worker();
-    dispatcher.close();
+    Thread worker = manager.worker();
+    manager.close();
     release.countDown();
     worker.join(DELIVERY_TIMEOUT_MS);
     assertFalse(worker.isAlive());
     assertTrue(recorder.delivered.isEmpty());
-    assertEquals(1, dispatcher.lost());
+    assertEquals(1, manager.lost());
+  }
+
+  @Test
+  public void testCloseWaitsForListenerInProgress() throws Exception {
+    manager = new SearchRequestListenerManager(10);
+    blockWorker();
+    Thread worker = manager.worker();
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("close"));
+    try {
+      Future<?> closing = executor.submit(manager::close);
+      expectThrows(
+          TimeoutException.class, () -> closing.get(CLOSE_WAIT_CHECK_MS, TimeUnit.MILLISECONDS));
+      release.countDown();
+      closing.get(DELIVERY_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    } finally {
+      release.countDown();
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+    assertFalse(worker.isAlive());
   }
 
   @Test
   public void testRemovedListenerNotCalledForQueuedEvent() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+    manager = new SearchRequestListenerManager(10);
     Recorder kept = new Recorder();
     Recorder removed = new Recorder();
-    dispatcher.add(kept);
-    dispatcher.add(removed);
+    manager.add(kept);
+    manager.add(removed);
     blockWorker();
     offer("event2", kept, removed);
-    assertTrue(dispatcher.remove(removed));
+    assertTrue(manager.remove(removed));
     release.countDown();
     assertEquals("event2", kept.next());
     assertTrue(removed.delivered.isEmpty());
@@ -217,22 +241,25 @@ public class SearchRequestDispatcherTest extends SolrTestCase {
 
   @Test
   public void testCloseDiscardsAndRejectsAdd() throws Exception {
-    dispatcher = new SearchRequestDispatcher(10);
+    manager = new SearchRequestListenerManager(10);
     Recorder recorder = new Recorder();
-    dispatcher.add(recorder);
+    manager.add(recorder);
     blockWorker();
     offer("event2", recorder);
-    Thread worker = dispatcher.worker();
+    Thread worker = manager.worker();
     assertNotNull(worker);
     long start = System.nanoTime();
-    dispatcher.close();
+    manager.close();
     long closeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-    assertTrue("close took " + closeMs, closeMs < SearchRequestDispatcher.CLOSE_TIMEOUT_MS * 2);
+    assertTrue(
+        "close took " + closeMs, closeMs < SearchRequestListenerManager.CLOSE_TIMEOUT_MS * 2);
     release.countDown();
     worker.join(DELIVERY_TIMEOUT_MS);
     assertFalse(worker.isAlive());
     assertTrue(recorder.delivered.isEmpty());
-    assertEquals(1, dispatcher.lost());
-    expectThrows(IllegalStateException.class, () -> dispatcher.add(new Recorder()));
+    assertEquals(1, manager.lost());
+    offer("event3", recorder);
+    assertEquals(2, manager.lost());
+    expectThrows(IllegalStateException.class, () -> manager.add(new Recorder()));
   }
 }

@@ -17,17 +17,15 @@
 package org.apache.solr.handler.component;
 
 import java.security.Principal;
-import java.util.List;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.ThreadCpuTimer;
 
 /**
  * A completed search request, as passed to {@link SearchRequestListener}. It holds only values
  * copied from the request, so it can be kept and read on any thread.
  *
- * @param handlerPath the path the request log uses
+ * @param handlerPath the request path
  * @param collection the collection of {@code core}, even when an alias or several collections were
  *     searched; null in standalone mode
  * @param core the name of the core that coordinated the search
@@ -63,41 +61,29 @@ public record SearchRequestInfo(
 
   public static final int MAX_FAILURE_MESSAGE_CHARS = 256;
 
-  static SearchRequestInfo from(
-      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb, long qTimeMs) {
+  static SearchRequestInfo from(SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
     boolean distributed = rb.isDistributed() && rb.shards != null;
     Principal user = req.getUserPrincipal();
     Exception failure = rsp.getException();
     return new SearchRequestInfo(
-        rsp.getToLog().get("path") instanceof String path ? path : null,
+        req.getPath(),
         req.getCore().getCoreDescriptor().getCollectionName(),
         req.getCore().getName(),
         user == null ? null : user.getName(),
         MDCLoggingContext.getTraceId(),
         req.getStartTime(),
-        qTimeMs,
-        cpuTimeMs(rsp),
-        rsp.getToLog().get("hits") instanceof Number hits ? hits.longValue() : null,
+        rsp.getQTime(),
+        rsp.getCpuTimeMs(),
+        rsp.getHits(),
         distributed ? rb.shards.length : 0,
         failure == null ? null : failure.getClass().getName(),
         failure == null ? null : truncate(failure.getMessage()),
-        SolrQueryResponse.isPartialResults(rsp.getResponseHeader()));
+        rsp.isPartialResults());
   }
 
   private static String truncate(String message) {
     return message == null || message.length() <= MAX_FAILURE_MESSAGE_CHARS
         ? message
         : message.substring(0, MAX_FAILURE_MESSAGE_CHARS);
-  }
-
-  private static Long cpuTimeMs(SolrQueryResponse rsp) {
-    if (!(rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME) instanceof Long local)) {
-      return null;
-    }
-    List<Object> shardCpuTimes = rsp.getToLog().getAll(ThreadCpuTimer.CPU_TIME);
-    if (!shardCpuTimes.isEmpty() && shardCpuTimes.getLast() instanceof Long shardCpuTime) {
-      return shardCpuTime + local;
-    }
-    return local;
   }
 }

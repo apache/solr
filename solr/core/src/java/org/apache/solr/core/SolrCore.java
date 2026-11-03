@@ -3009,7 +3009,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
     CoreContainer cc = req.getCoreContainer();
     if (cc != null) {
-      cc.searchRequestDispatcher.afterResponse(req, rsp, qtime);
+      cc.getSearchRequestListenerManager().afterResponse(req, rsp);
     }
   }
 

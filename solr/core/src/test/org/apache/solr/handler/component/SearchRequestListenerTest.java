@@ -132,7 +132,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   @After
   public void removeListeners() {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      listeners.forEach(jetty.getCoreContainer()::removeSearchRequestListener);
+      listeners.forEach(jetty.getCoreContainer().getSearchRequestListenerManager()::remove);
     }
   }
 
@@ -168,7 +168,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   private void addListener(JettySolrRunner jetty, SearchRequestListener listener) {
     listeners.add(listener);
-    jetty.getCoreContainer().addSearchRequestListener(listener);
+    jetty.getCoreContainer().getSearchRequestListenerManager().add(listener);
   }
 
   private static SolrClient nodeClient() {
@@ -508,7 +508,9 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
       failed.addResponseHeader(new SimpleOrderedMap<>());
       failed.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, 5L);
       failed.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, 5L);
-      assertEquals(Long.valueOf(5), from(req, failed, distributedBuilder(req, failed)).cpuTimeMs());
+      assertEquals(
+          Long.valueOf(5),
+          SearchRequestInfo.from(req, failed, distributedBuilder(req, failed)).cpuTimeMs());
 
       SolrQueryResponse succeeded = new SolrQueryResponse();
       succeeded.addResponseHeader(new SimpleOrderedMap<>());
@@ -516,11 +518,43 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
       succeeded.addToLog(ThreadCpuTimer.CPU_TIME, 7L);
       succeeded.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, 5L);
       assertEquals(
-          Long.valueOf(12), from(req, succeeded, distributedBuilder(req, succeeded)).cpuTimeMs());
+          Long.valueOf(12),
+          SearchRequestInfo.from(req, succeeded, distributedBuilder(req, succeeded)).cpuTimeMs());
 
       SolrQueryResponse disabled = new SolrQueryResponse();
-      assertNull(from(req, disabled, distributedBuilder(req, disabled)).cpuTimeMs());
+      assertNull(
+          SearchRequestInfo.from(req, disabled, distributedBuilder(req, disabled)).cpuTimeMs());
     }
+  }
+
+  @Test
+  public void testClosedManagerSkipsCapture() throws Exception {
+    SearchRequestListenerManager manager = new SearchRequestListenerManager(10);
+    AtomicInteger captures = new AtomicInteger();
+    manager.add(
+        new SearchRequestListener() {
+          @Override
+          public Object capture(
+              SearchRequestInfo info,
+              SolrQueryRequest req,
+              SolrQueryResponse rsp,
+              ResponseBuilder rb) {
+            captures.incrementAndGet();
+            return info;
+          }
+
+          @Override
+          public void onRequestEnd(SearchRequestInfo info, Object captured) {}
+        });
+    manager.close();
+    try (SolrCore core = jettyCore(COLLECTION);
+        SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams()) {}) {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SearchRequestListenerManager.mark(req, distributedBuilder(req, rsp));
+      manager.afterResponse(req, rsp);
+    }
+    assertEquals(0, captures.get());
+    assertEquals(1, manager.lost());
   }
 
   @Test
@@ -549,11 +583,6 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     rb.isDistrib = true;
     rb.shards = new String[NUM_SHARDS];
     return rb;
-  }
-
-  private static SearchRequestInfo from(
-      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
-    return SearchRequestInfo.from(req, rsp, rb, 0);
   }
 
   private static List<String> keys(NamedList<?> header) {

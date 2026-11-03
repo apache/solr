@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -34,10 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Holds the {@link SearchRequestListener}s of a node and delivers each reported search to them. */
-public class SearchRequestDispatcher implements Closeable {
+public class SearchRequestListenerManager implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String MARKER = SearchRequestDispatcher.class.getName();
+  private static final String MARKER = SearchRequestListenerManager.class.getName();
 
   public static final String QUEUE_SIZE_PROP = "solr.search.listener.queue.size";
 
@@ -69,11 +68,11 @@ public class SearchRequestDispatcher implements Closeable {
 
   private Thread worker;
 
-  public SearchRequestDispatcher() {
+  public SearchRequestListenerManager() {
     this(EnvUtils.getPropertyAsInteger(QUEUE_SIZE_PROP, DEFAULT_QUEUE_SIZE));
   }
 
-  SearchRequestDispatcher(int queueSize) {
+  SearchRequestListenerManager(int queueSize) {
     queue = new ArrayBlockingQueue<>(Math.max(1, queueSize));
     lastWarnNanos =
         new AtomicLong(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(LOST_WARN_INTERVAL_MS));
@@ -82,11 +81,11 @@ public class SearchRequestDispatcher implements Closeable {
   /**
    * Adds a listener, starting the delivery thread on first use.
    *
-   * @throws IllegalStateException if this dispatcher is closed
+   * @throws IllegalStateException if this manager is closed
    */
   public synchronized void add(SearchRequestListener listener) {
     if (closed) {
-      throw new IllegalStateException("SearchRequestDispatcher is closed");
+      throw new IllegalStateException("SearchRequestListenerManager is closed");
     }
     listeners.addIfAbsent(listener);
     if (worker == null) {
@@ -100,8 +99,8 @@ public class SearchRequestDispatcher implements Closeable {
     return listeners.remove(listener);
   }
 
-  public List<SearchRequestListener> listeners() {
-    return Collections.unmodifiableList(listeners);
+  boolean hasListeners() {
+    return !listeners.isEmpty();
   }
 
   static void mark(SolrQueryRequest req, ResponseBuilder rb) {
@@ -112,11 +111,15 @@ public class SearchRequestDispatcher implements Closeable {
    * Reports {@code req} to the listeners if a {@link SearchHandler} marked it. Called once the
    * response header has its status and QTime.
    */
-  public void afterResponse(SolrQueryRequest req, SolrQueryResponse rsp, long qTimeMs) {
+  public void afterResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     if (!(req.getContext().remove(MARKER) instanceof Marker marker)) {
       return;
     }
-    SearchRequestInfo info = SearchRequestInfo.from(req, rsp, marker.rb(), qTimeMs);
+    if (closed) {
+      lost.increment();
+      return;
+    }
+    SearchRequestInfo info = SearchRequestInfo.from(req, rsp, marker.rb());
     List<Delivery> deliveries = null;
     for (SearchRequestListener listener : listeners) {
       Object captured;
