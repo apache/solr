@@ -225,8 +225,8 @@ limitations under the License.
       <button class="optional replicate-now primary" ng-click="execute('fetchindex')" ng-show="!settings.isReplicating"><span>Replicate now</span></button>
       <button class="optional abort-replication warn" ng-click="execute('abortfetch')" ng-show="settings.isReplicating"><span>Abort Replication</span></button>
 
-      <button class="optional disable-polling" ng-click="execute('disablepoll')" ng-show="!settings.isPollingDisabled"><span>Disable Polling</span></button>
-      <button class="optional enable-polling" ng-click="execute('enablepoll')" ng-show="settings.isPollingDisabled"><span>Enable Polling</span></button>
+      <button class="optional disable-polling" ng-click="setReplicationPolling(false)" ng-show="!settings.isPollingDisabled"><span>Disable Polling</span></button>
+      <button class="optional enable-polling" ng-click="setReplicationPolling(true)" ng-show="settings.isPollingDisabled"><span>Enable Polling</span></button>
     </div>
 
     <div class="leaderOnly" ng-show="!isFollower">

@@ -83,6 +83,7 @@ import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.FollowerDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.LeaderDetails;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
+import org.apache.solr.client.api.model.ReplicationPollingRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.client.api.model.RestoreStatusResponse.RestoreState;
 import org.apache.solr.client.api.model.RestoreStatusResponse.RestoreStatus;
@@ -331,9 +332,9 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       fetchIndex(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      disablePoll(rsp);
+      respondWithPollingEnabled(false, req, rsp);
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      enablePoll(rsp);
+      respondWithPollingEnabled(true, req, rsp);
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
       if (abortFetch()) {
         rsp.add(STATUS, OK_STATUS);
@@ -856,23 +857,28 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
-  private void disablePoll(SolrQueryResponse rsp) {
-    if (pollingIndexFetcher != null) {
-      pollDisabled.set(true);
-      log.info("inside disable poll, value of pollDisabled = {}", pollDisabled);
-      rsp.add(STATUS, OK_STATUS);
-    } else {
-      reportErrorOnResponse(rsp, "No follower configured", null);
-    }
+  /**
+   * Enables or disables polling of the leader.
+   *
+   * @return false if this core is not configured as a follower
+   */
+  public boolean setPollingEnabled(boolean enabled) {
+    if (pollingIndexFetcher == null) return false;
+    pollDisabled.set(!enabled);
+    log.info(
+        "polling {}, value of pollDisabled = {}", enabled ? "enabled" : "disabled", pollDisabled);
+    return true;
   }
 
-  private void enablePoll(SolrQueryResponse rsp) {
-    if (pollingIndexFetcher != null) {
-      pollDisabled.set(false);
-      log.info("inside enable poll, value of pollDisabled = {}", pollDisabled);
+  private void respondWithPollingEnabled(
+      boolean enabled, SolrQueryRequest req, SolrQueryResponse rsp) {
+    final ReplicationPollingRequestBody requestBody = new ReplicationPollingRequestBody();
+    requestBody.enabled = enabled;
+    try {
+      new CoreReplication(core, req, rsp).setReplicationPolling(requestBody);
       rsp.add(STATUS, OK_STATUS);
-    } else {
-      reportErrorOnResponse(rsp, "No follower configured", null);
+    } catch (SolrException e) {
+      reportErrorOnResponse(rsp, e.getMessage(), null);
     }
   }
 
