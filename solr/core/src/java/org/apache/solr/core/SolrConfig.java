@@ -983,8 +983,6 @@ public class SolrConfig implements MapWriter {
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
         LinkedHashMap<String, Object> items = new LinkedHashMap<>();
         for (PluginInfo info : infos) {
-          // TODO remove after fixing https://issues.apache.org/jira/browse/SOLR-13706
-          if (info.type.equals("searchComponent") && info.name.equals("highlight")) continue;
           items.put(info.name, info);
         }
         for (Map.Entry<String, Map<String, Object>> e :
