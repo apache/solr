@@ -577,7 +577,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         ]);
 
         var currentCollectionName = $route.current.params.core;
-        delete $scope.currentCollection;
         if ($scope.isCloudEnabled) {
           CollectionsV2.listCollections({}, function (error, cdata, response) {
             $timeout(function() {
@@ -585,6 +584,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
               AliasesV2.getAliases(function (error, adata, response) {
                 $timeout(function() {
                   if (error) { ApiErrorHandler.handle(response); return; }
+                  delete $scope.currentCollection;
                   $scope.aliases = [];
                   for (var key in adata.aliases) {
                     var props = {};
@@ -669,6 +669,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCollection = function(collection) {
+    if (!collection) {
+      return;
+    }
     if (collection.type === 'collection') {
       $location.url("/" + collection.name + "/collection-overview")
     } else if (collection.type === 'alias') {

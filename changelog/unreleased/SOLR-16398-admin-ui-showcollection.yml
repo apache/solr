@@ -1,0 +1,10 @@
+title: >-
+  The legacy Admin UI no longer calls the collection selector handler with an undefined
+  collection while the navigation menu is refreshing.
+type: fixed
+authors:
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-16398
+    url: https://issues.apache.org/jira/browse/SOLR-16398
