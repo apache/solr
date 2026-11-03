@@ -107,8 +107,8 @@ if (binaryCompatEnabled) {
       }
       t.inputs.files(binaryCompatBaseline)
       t.inputs.property("baselineVersion", baselineVersion)
-      t.inputs.property("candidateJar", candidateJar)
-      t.inputs.property("candidateApiJar", candidateApiJar)
+      t.inputs.property("candidateJar", candidateJar).optional(true)
+      t.inputs.property("candidateApiJar", candidateApiJar).optional(true)
       t.outputs.file(reportDir.get().file("binary-compat.txt"))
       t.outputs.file(reportDir.get().file("binary-compat-changes.txt"))
 
