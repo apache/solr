@@ -198,8 +198,7 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
   public void testServerJacksonFailuresRemainServerErrors() throws Exception {
     final var definitionFailure =
         expectThrows(
-            InvalidDefinitionException.class,
-            () -> readJsonBody(Runnable.class, "{}", null));
+            InvalidDefinitionException.class, () -> readJsonBody(Runnable.class, "{}", null));
     final var outputFailure =
         expectThrows(
             JsonMappingException.class,
@@ -215,7 +214,8 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
         final var context = mock(ContainerRequestContext.class);
         when(context.getProperty(SOLR_QUERY_RESPONSE)).thenReturn(new SolrQueryResponse());
         catchAll.resourceContext = mock(ResourceContext.class);
-        when(catchAll.resourceContext.getResource(ContainerRequestContext.class)).thenReturn(context);
+        when(catchAll.resourceContext.getResource(ContainerRequestContext.class))
+            .thenReturn(context);
         assertEquals(500, catchAll.toResponse(failure).getStatus());
       }
     } finally {
@@ -224,8 +224,8 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings("unchecked")
-  private Object readJsonBody(
-      Class<?> type, String json, ContainerRequestContext context) throws Exception {
+  private Object readJsonBody(Class<?> type, String json, ContainerRequestContext context)
+      throws Exception {
     final var reader = new MessageBodyReaders.CachingJsonMessageBodyReader();
     reader.serviceLocator = mock(ServiceLocator.class);
     when(reader.serviceLocator.getService(ContainerRequestContext.class)).thenReturn(context);

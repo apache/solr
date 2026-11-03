@@ -105,7 +105,8 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     // not a 500.
     String unparseablePayload = "{\"name\": \"unparseable-body\", \"replicationFactor\": \"abc\"}";
     for (ResponseParser parser :
-        List.of(new XMLResponseParser(), new JavaBinResponseParser(), new JsonMapResponseParser())) {
+        List.of(
+            new XMLResponseParser(), new JavaBinResponseParser(), new JsonMapResponseParser())) {
       final var exception = testException(parser, 400, "/collections", unparseablePayload);
       assertThat(exception.getMessage(), containsString("Invalid request body:"));
       assertThat(exception.getMessage(), containsString("abc"));
@@ -115,7 +116,8 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testMalformedJsonRequestBody() {
     for (ResponseParser parser :
-        List.of(new XMLResponseParser(), new JavaBinResponseParser(), new JsonMapResponseParser())) {
+        List.of(
+            new XMLResponseParser(), new JavaBinResponseParser(), new JsonMapResponseParser())) {
       final var exception = testException(parser, 400, "/collections", "{\"name\":");
       assertThat(exception.getMessage(), containsString("Invalid request body:"));
     }
