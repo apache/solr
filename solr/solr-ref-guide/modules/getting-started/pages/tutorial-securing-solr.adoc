@@ -493,13 +493,6 @@ Password hashes are replaced with placeholders here; the stored values contain a
       {"name": "update", "role": "index"},
       {"name": "health", "role": null},
       {"name": "metrics-read", "role": null},
-      {
-        "name": "public-monitoring",
-        "collection": null,
-        "path": ["/____v2/node/health", "/____v2/metrics"],
-        "method": "GET",
-        "role": null
-      },
       {"name": "all", "role": "admin"}
     ],
     "user-role": {
@@ -516,10 +509,7 @@ Password hashes are replaced with placeholders here; the stored values contain a
 Invalid credentials are still rejected.
 
 `authorization` maps users to roles and checks permission rules in order.
-The `health` and `metrics-read` rules have `role: null`, allowing these endpoints without credentials.
-The `public-monitoring` rule also permits anonymous GET requests to the two v2 monitoring paths during the initial routing authorization check.
-Solr internally routes `/api` requests through `/solr/____v2`, so the permission paths use the internal `/____v2` prefix.
-`collection: null` limits this rule to node-level requests.
+The `health` and `metrics-read` rules have `role: null`, allowing the `/api/node/health` and `/api/metrics` endpoints without credentials.
 These rules precede the final `all` rule, which requires the `admin` role for otherwise unmatched requests.
 Document reads require `search`, and updates require `index`, even for the administrator.
 The administrator has only `superadmin` and `admin`; `superadmin` grants security configuration changes.

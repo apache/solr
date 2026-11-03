@@ -748,15 +748,6 @@ public class RunExampleTool extends ToolBase {
         permission.put("role", List.of("admin", "search"));
       }
     }
-    Map<String, Object> publicMonitoring = new HashMap<>();
-    publicMonitoring.put("name", "public-monitoring");
-    publicMonitoring.put("collection", null);
-    publicMonitoring.put("path", List.of("/____v2/node/health", "/____v2/metrics"));
-    publicMonitoring.put("method", "GET");
-    publicMonitoring.put("role", null);
-    List<Map<String, Object>> permissions =
-        (List<Map<String, Object>>) authorization.get("permissions");
-    permissions.add(permissions.size() - 1, publicMonitoring);
     String indexingCredentials = null;
     for (String role : List.of("index", "search")) {
       String pass = accounts.password(role);
