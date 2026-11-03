@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Binary compatibility guard for the SolrJ client API (SOLR-18600).
+// Binary compatibility guard for the SolrJ client API (SOLR-18617).
 //
 // Compares the jars users compile against, the built solrj jar plus
 // the solr-api jar it always ships with, against the same pair from
@@ -76,13 +76,13 @@ if (binaryCompatEnabled) {
     def exclusionsFile = file("binary-compat-exclusions.txt")
     def reportDir = layout.buildDirectory.dir("reports/binary-compat")
 
-    def binaryCompatBaseline = configurations.create("binaryCompatBaseline") {
-      canBeConsumed = false
-      canBeResolved = true
-      description = "Published SolrJ jar of the baseline release, for binary compatibility comparison."
-    }
-    dependencies.add(binaryCompatBaseline.name,
-        "org.apache.solr:solr-solrj:${baselineVersion}")
+    // A detached configuration, deliberately: the baseline has to
+    // resolve at exactly the requested version. A named configuration
+    // falls under this project's dependency locking, whose lock state
+    // pins the baseline jars to the locked release and silently
+    // replaces any other version the property asks for.
+    def binaryCompatBaseline = configurations.detachedConfiguration(
+        dependencies.create("org.apache.solr:solr-solrj:${baselineVersion}"))
 
     def binaryCompatReport = tasks.register("binaryCompatReport") { t ->
       t.group = "verification"
@@ -106,6 +106,9 @@ if (binaryCompatEnabled) {
         t.inputs.file(file(candidateApiJar))
       }
       t.inputs.files(binaryCompatBaseline)
+      t.inputs.property("baselineVersion", baselineVersion)
+      t.inputs.property("candidateJar", candidateJar)
+      t.inputs.property("candidateApiJar", candidateApiJar)
       t.outputs.file(reportDir.get().file("binary-compat.txt"))
       t.outputs.file(reportDir.get().file("binary-compat-changes.txt"))
 
@@ -183,6 +186,7 @@ if (binaryCompatEnabled) {
       t.dependsOn(binaryCompatReport)
       t.inputs.file(reportDir.get().file("binary-compat-changes.txt"))
       t.inputs.file(exclusionsFile)
+      t.inputs.property("baselineVersion", baselineVersion)
 
       t.doLast {
         // Parse the exclusions file. One entry per line:
