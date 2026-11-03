@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
@@ -43,6 +44,7 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,6 +78,7 @@ public class SplitShardMessageMappingTest extends MockV2APITest {
     requestBody.splitByPrefix = false;
     requestBody.followAliases = true;
     requestBody.splitMethod = "rewrite";
+    requestBody.createNodeSet = "node1:8983_solr,node2:8983_solr";
     requestBody.coreProperties = Map.of("foo", "foo1", "bar", "bar1");
     requestBody.async = "some_async_id";
     requestBody.waitForFinalState = true;
@@ -86,7 +89,7 @@ public class SplitShardMessageMappingTest extends MockV2APITest {
         CollectionParams.CollectionAction.SPLITSHARD,
         "some_async_id",
         message -> {
-          assertEquals(11, message.size());
+          assertEquals(12, message.size());
           assertEquals("collName", message.get(COLLECTION_PROP));
           assertEquals("shard1", message.get(SHARD_ID_PROP));
           assertEquals(3, message.get(NUM_SUB_SHARDS));
@@ -95,6 +98,7 @@ public class SplitShardMessageMappingTest extends MockV2APITest {
           assertEquals(Boolean.FALSE, message.get(SPLIT_BY_PREFIX));
           assertEquals(Boolean.TRUE, message.get(FOLLOW_ALIASES));
           assertEquals("rewrite", message.get(SPLIT_METHOD));
+          assertEquals("node1:8983_solr,node2:8983_solr", message.get(CREATE_NODE_SET_PARAM));
           assertEquals(Boolean.TRUE, message.get(WAIT_FOR_FINAL_STATE));
           assertEquals("foo1", message.get("property.foo"));
           assertEquals("bar1", message.get("property.bar"));
@@ -267,5 +271,120 @@ public class SplitShardMessageMappingTest extends MockV2APITest {
           assertEquals("collName", message.get(COLLECTION_PROP));
           assertEquals("shard1", message.get(SHARD_ID_PROP));
         });
+  }
+
+  @Test
+  public void testCreateRequestBodyFromV1Params() {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.set(RANGES, "80000000-bfffffff,c0000000-7fffffff");
+    v1Params.set(NUM_SUB_SHARDS, "3");
+    v1Params.set(SPLIT_FUZZ, "0.1");
+    v1Params.set(TIMING, "true");
+    v1Params.set(SPLIT_BY_PREFIX, "true");
+    v1Params.set(FOLLOW_ALIASES, "true");
+    v1Params.set(SPLIT_METHOD, "rewrite");
+    v1Params.set(CREATE_NODE_SET_PARAM, "node1:8983_solr,node2:8983_solr");
+    v1Params.set(WAIT_FOR_FINAL_STATE, "true");
+    v1Params.set("property.foo", "foo1");
+    v1Params.set("async", "v1AsyncId");
+
+    final var requestBody = SplitShard.createRequestBodyFromV1Params(v1Params);
+
+    assertEquals("80000000-bfffffff,c0000000-7fffffff", requestBody.ranges);
+    assertEquals(Integer.valueOf(3), requestBody.numSubShards);
+    assertEquals("0.1", requestBody.splitFuzz);
+    assertEquals(Boolean.TRUE, requestBody.timing);
+    assertEquals(Boolean.TRUE, requestBody.splitByPrefix);
+    assertEquals(Boolean.TRUE, requestBody.followAliases);
+    assertEquals("rewrite", requestBody.splitMethod);
+    assertEquals("node1:8983_solr,node2:8983_solr", requestBody.createNodeSet);
+    assertEquals(Boolean.TRUE, requestBody.waitForFinalState);
+    assertEquals(Map.of("foo", "foo1"), requestBody.coreProperties);
+    // The v1 'async' parameter becomes the request body's 'async' field: a delegated
+    // operation returns no message map, so the v1 handler submits nothing itself and
+    // the resource's submission carries the async id.
+    assertEquals("v1AsyncId", requestBody.async);
+  }
+
+  @Test
+  public void testInvokeWithV1ParamsShardPath() throws Exception {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.set(COLLECTION_PROP, "collName");
+    v1Params.set(SHARD_ID_PROP, "shard1");
+    v1Params.set(NUM_SUB_SHARDS, "3");
+    v1Params.set(CREATE_NODE_SET_PARAM, "node1:8983_solr,node2:8983_solr");
+    v1Params.set("property.foo", "foo1");
+    v1Params.set("async", "v1AsyncId");
+    when(mockQueryRequest.getParams()).thenReturn(v1Params);
+
+    SplitShard.invokeWithV1Params(mockCoreContainer, mockQueryRequest, queryResponse);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.SPLITSHARD,
+        "v1AsyncId",
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("collName", message.get(COLLECTION_PROP));
+          assertEquals("shard1", message.get(SHARD_ID_PROP));
+          assertEquals(3, message.get(NUM_SUB_SHARDS));
+          assertEquals("node1:8983_solr,node2:8983_solr", message.get(CREATE_NODE_SET_PARAM));
+          assertEquals("foo1", message.get("property.foo"));
+        });
+  }
+
+  @Test
+  public void testInvokeWithV1ParamsSplitKeyOnly() throws Exception {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.set(COLLECTION_PROP, "collName");
+    v1Params.set(SPLIT_KEY, "someKey!");
+    when(mockQueryRequest.getParams()).thenReturn(v1Params);
+
+    SplitShard.invokeWithV1Params(mockCoreContainer, mockQueryRequest, queryResponse);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.SPLITSHARD,
+        message -> {
+          assertEquals(2, message.size());
+          assertEquals("collName", message.get(COLLECTION_PROP));
+          assertEquals("someKey!", message.get(SPLIT_KEY));
+          assertFalse(message.containsKey(SHARD_ID_PROP));
+        });
+  }
+
+  @Test
+  public void testInvokeWithV1ParamsRejectsShardAndSplitKey() {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.set(COLLECTION_PROP, "collName");
+    v1Params.set(SHARD_ID_PROP, "shard1");
+    v1Params.set(SPLIT_KEY, "someKey!");
+    when(mockQueryRequest.getParams()).thenReturn(v1Params);
+
+    final SolrException exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                SplitShard.invokeWithV1Params(mockCoreContainer, mockQueryRequest, queryResponse));
+
+    assertEquals(400, exception.code());
+    assertEquals("Only one of 'shard' or 'split.key' should be specified", exception.getMessage());
+    verifyNoInteractions(mockCommandRunner);
+  }
+
+  @Test
+  public void testInvokeWithV1ParamsRejectsNeitherShardNorSplitKey() {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.set(COLLECTION_PROP, "collName");
+    when(mockQueryRequest.getParams()).thenReturn(v1Params);
+
+    final SolrException exception =
+        expectThrows(
+            SolrException.class,
+            () ->
+                SplitShard.invokeWithV1Params(mockCoreContainer, mockQueryRequest, queryResponse));
+
+    assertEquals(400, exception.code());
+    assertEquals(
+        "At least one of shard, or split.key should be specified.", exception.getMessage());
+    verifyNoInteractions(mockCommandRunner);
   }
 }

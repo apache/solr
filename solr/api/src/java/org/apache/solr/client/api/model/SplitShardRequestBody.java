@@ -36,6 +36,8 @@ public class SplitShardRequestBody {
 
   @JsonProperty public String splitMethod;
 
+  @JsonProperty public String createNodeSet;
+
   @JsonProperty public Map<String, Object> coreProperties;
 
   @JsonProperty public String async;
