@@ -617,7 +617,10 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     fi
   fi
 
-  run_tool auth $@ --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
+  auth_args=("$@")
+  [[ " ${auth_args[*]} " == *" --auth-conf-dir "* ]] || auth_args+=(--auth-conf-dir "$SOLR_HOME")
+  [[ " ${auth_args[*]} " == *" --solr-include-file "* ]] || auth_args+=(--solr-include-file "$SOLR_INCLUDE")
+  run_tool auth "${auth_args[@]}"
   exit $?
 fi
 

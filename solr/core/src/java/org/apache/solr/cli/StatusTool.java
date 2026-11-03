@@ -293,7 +293,7 @@ public class StatusTool extends ToolBase {
       echo("Started Solr server on port " + solrPort + ". Happy searching!");
     } else {
       throw new Exception(
-          "Solr at " + solrUrl + " did not come online within " + maxWaitSecs + " seconds!");
+          "Solr at " + pidUrl + " did not come online within " + maxWaitSecs + " seconds!");
     }
   }
 
@@ -375,7 +375,7 @@ public class StatusTool extends ToolBase {
     }
     throw new TimeoutException(
         "Did not see Solr at "
-            + solrUrl
+            + pidUrl
             + " come online within "
             + TimeUnit.SECONDS.convert(maxWait, unit)
             + " seconds!");
