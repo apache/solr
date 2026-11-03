@@ -38,7 +38,9 @@ import fnmatch
 import json
 import os
 import re
+import string
 import sys
+import unicodedata
 import urllib.error
 import urllib.request
 
@@ -50,7 +52,7 @@ COMMENT_MARKER = "<!-- llm-pr-triage -->"
 
 def matches_any(path, globs):
     # fnmatch's '*' crosses '/', which is what we want for '**' style globs here.
-    return any(fnmatch.fnmatch(path, g) for g in globs or [])
+    return any(fnmatch.fnmatchcase(path, g) for g in globs or [])
 
 
 def build_diff(files, cfg):
@@ -145,30 +147,156 @@ def call_model(messages, cfg):
 
 
 def parse_verdicts(content):
-    text = re.sub(r"^```(?:json)?|```$", "", content.strip(), flags=re.M).strip()
-    start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end < start:
-        sys.exit(f"LLM reply is not JSON:\n{content[:2000]}")
-    return json.loads(text[start : end + 1])
+    def unique_keys(pairs):
+        obj = {}
+        for key, value in pairs:
+            if key in obj:
+                raise ValueError("Duplicate answer field")
+            obj[key] = value
+        return obj
+
+    text = content.strip()
+    if text.startswith("```json\n") and text.endswith("```"):
+        text = text[8:-3].strip()
+    try:
+        verdicts = json.loads(text, object_pairs_hook=unique_keys)
+    except (ValueError, TypeError):
+        return {}
+    return verdicts if isinstance(verdicts, dict) else {}
+
+
+def plain_text(value, limit=500):
+    # Character references cannot introduce Markdown/HTML syntax. Also break
+    # mentions and bare URLs, including GitHub's extended autolink syntax.
+    text = " ".join(value.split())[:limit]
+    text = "".join(c for c in text if not unicodedata.category(c).startswith("C"))
+    parts = []
+    for c in text:
+        if c in "@:#./":
+            parts.append(f"&#{ord(c)};\u200b")
+        elif c in string.punctuation:
+            parts.append(f"&#{ord(c)};")
+        else:
+            parts.append(c)
+    return "".join(parts)
+
+
+def metadata_notices(pr):
+    notices = []
+    base = pr.get("base") or {}
+    head = pr.get("head") or {}
+    if base.get("ref") and base["ref"] != "main":
+        notices.append(
+            f"⚠️ Prefer PRs against `main`. This PR targets {plain_text(base['ref'])}."
+        )
+    head_repo, base_repo = head.get("repo") or {}, base.get("repo") or {}
+    if head_repo.get("full_name") and base_repo.get("full_name"):
+        if head_repo["full_name"] != base_repo["full_name"]:
+            if (head_repo.get("owner") or {}).get("type") == "Organization":
+                notices.append("Maintainer edits are unavailable for organisation-owned forks.")
+            elif pr.get("maintainer_can_modify") is False:
+                notices.append(
+                    "Consider enabling [Allow edits from maintainers]"
+                    "(https://docs.github.com/en/pull-requests/how-tos/work-with-forks/"
+                    "allowing-changes-to-a-pull-request-branch-created-from-a-fork) "
+                    "so Solr maintainers can contribute to this branch (optional)."
+                )
+    return notices
+
+
+def evidence_included(pr, files, judgement):
+    if judgement.get("evidence_title"):
+        return re.search(judgement["evidence_title"], pr.get("title", "")) is not None
+    globs = judgement.get("evidence_files")
+    if not globs:
+        return None
+    return any(
+        f["status"] != "removed" and matches_any(f["filename"], globs) for f in files
+    )
+
+
+def format_result(pr, files, cfg, verdicts):
+    min_conf = CONFIDENCE[cfg.get("min_confidence", "medium")]
+    results, rows, mismatches, unanswered = {}, [], 0, 0
+    for j in cfg["judgements"]:
+        v = verdicts.get(j["id"])
+        valid = (
+            isinstance(v, dict)
+            and type(v.get("verdict")) is bool
+            and isinstance(v.get("confidence"), str)
+            and v["confidence"] in CONFIDENCE
+            and isinstance(v.get("reason"), str)
+            and bool(v["reason"].strip())
+        )
+        warranted = v["verdict"] if valid else None
+        conf = v["confidence"] if valid else "unknown"
+        included = evidence_included(pr, files, j)
+        mismatch = included != warranted if included is not None and valid else None
+        if not valid:
+            mark, unanswered = "❔", unanswered + 1
+        elif mismatch and CONFIDENCE[conf] >= min_conf:
+            mark, mismatches = "⚠️", mismatches + 1
+        elif mismatch:
+            mark = "❔"
+        else:
+            mark = "✅" if included is not None else ""
+        note = ""
+        if mismatch:
+            note = " **— missing**" if warranted else " **— probably not needed**"
+        reason = plain_text(v["reason"]) if valid else "No valid answer; needs human review."
+        results[j["id"]] = {"warranted": warranted, "included": included,
+                            "mismatch": mismatch, "confidence": conf, "reason": reason}
+        in_pr = "—" if included is None else ("yes" if included else "no")
+        name = f"[{j['title']}]({j['help_url']})" if j.get("help_url") else j["title"]
+        answer = "unknown" if warranted is None else ("yes" if warranted else "no")
+        rows.append(f"| {mark} {name}{note} | {answer} | {in_pr} | {conf} | {reason} |")
+
+    headline = (f"**{mismatches} possible mismatch(es)** between what this change warrants and what the PR includes."
+                if mismatches else "No clear mismatches in the answered judgements.")
+    if unanswered:
+        headline += f" **{unanswered} unanswered judgement(s) need human review.**"
+    head_sha = (pr.get("head") or {}).get("sha", "")
+    revision = f" Assessed commit `{head_sha}`." if re.fullmatch(r"[0-9a-f]{40}", head_sha) else ""
+    comment = "\n".join(
+        [
+            COMMENT_MARKER,
+            "**Automated PR triage** (LLM-generated; may be wrong)",
+            "",
+            *metadata_notices(pr),
+            "",
+            headline,
+            "",
+            "| | Warranted? | In PR? | Confidence | Why |",
+            "|---|---|---|---|---|",
+            *rows,
+            "",
+            "_⚠️ mismatch, ❔ uncertain or unanswered, ✅ agrees. Matching changelog, docs and test "
+            "files were hidden from the model; the PR description may still mention them. "
+            "File presence does not establish adequacy. One-time check when the PR is opened "
+            "or marked ready for review; not updated on later pushes._" + revision,
+        ]
+    )
+    return {"results": results, "mismatches": mismatches, "unanswered": unanswered, "comment": comment}
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--pr", required=True, help="JSON: {title, body}")
+    ap.add_argument("--pr", required=True, help="JSON pull request from GET /pulls/N")
     ap.add_argument("--files", required=True, help="JSON array from GET /pulls/N/files")
     ap.add_argument("--out", required=True)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    with open(args.config) as fh:
+    with open(args.config, encoding="utf-8") as fh:
         cfg = yaml.safe_load(fh)
-    with open(args.pr) as fh:
+    with open(args.pr, encoding="utf-8") as fh:
         pr = json.load(fh)
-    with open(args.files) as fh:
+    with open(args.files, encoding="utf-8") as fh:
         files = json.load(fh)
 
-    min_conf = CONFIDENCE[cfg.get("min_confidence", "medium")]
+    if pr.get("changed_files") is not None and pr["changed_files"] != len(files):
+        sys.exit("Incomplete changed-file list; refusing to report missing evidence.")
     judgements = cfg["judgements"]
     evidence = [g for j in judgements for g in j.get("evidence_files", [])]
     shown = [f for f in files if not matches_any(f["filename"], evidence)]
@@ -181,56 +309,9 @@ def main():
     content, usage = call_model(messages, cfg)
     verdicts = parse_verdicts(content)
 
-    results, rows, mismatches = {}, [], 0
-    for j in judgements:
-        v = verdicts.get(j["id"]) or {}
-        conf = str(v.get("confidence", "low")).lower()
-        conf = conf if conf in CONFIDENCE else "low"
-        warranted = v.get("verdict") is True
-        globs = j.get("evidence_files")
-        included = any(matches_any(f["filename"], globs) for f in files) if globs else None
-        mismatch = included is not None and included != warranted
-        if mismatch and CONFIDENCE[conf] >= min_conf:
-            mark, mismatches = "⚠️", mismatches + 1
-        elif mismatch:
-            mark = "❔"
-        else:
-            mark = "✅" if included is not None else ""
-        if not mismatch:
-            note = ""
-        elif warranted:
-            note = " **— missing**"
-        else:
-            note = " **— probably not needed**"
-        reason = str(v.get("reason", "(no answer)"))[:500].replace("|", "/").replace("\n", " ")
-        results[j["id"]] = {"warranted": warranted, "included": included,
-                            "mismatch": mismatch, "confidence": conf, "reason": reason}
-        in_pr = "—" if included is None else ("yes" if included else "no")
-        name = f"[{j['title']}]({j['help_url']})" if j.get("help_url") else j["title"]
-        rows.append(f"| {mark} {name}{note} | {'yes' if warranted else 'no'} | {in_pr} | {conf} | {reason} |")
-
-    headline = (f"**{mismatches} possible mismatch(es)** between what this change warrants and what the PR includes."
-                if mismatches else "No clear mismatches between what this change warrants and what the PR includes.")
-    comment = "\n".join(
-        [
-            COMMENT_MARKER,
-            "**Automated PR triage** (LLM-generated; may be wrong)",
-            "",
-            headline,
-            "",
-            "| | Warranted? | In PR? | Confidence | Why |",
-            "|---|---|---|---|---|",
-            *rows,
-            "",
-            "_⚠️ mismatch, ❔ low-confidence mismatch, ✅ agrees. The model judged the code change "
-            "without seeing the PR's changelog, docs or tests. One-time check when the PR is opened; "
-            "not updated on later pushes._",
-        ]
-    )
-
-    out = {"results": results, "mismatches": mismatches, "comment": comment,
-           "model": os.environ.get("LLM_MODEL"), "usage": usage}
-    with open(args.out, "w") as fh:
+    out = format_result(pr, files, cfg, verdicts)
+    out.update({"model": os.environ.get("LLM_MODEL"), "usage": usage})
+    with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=2)
     print(json.dumps(out, indent=2))
 
