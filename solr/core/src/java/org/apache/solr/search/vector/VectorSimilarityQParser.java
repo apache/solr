@@ -64,10 +64,10 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     final VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
     switch (vectorEncoding) {
       case FLOAT32:
-        return new FloatVectorSimilarityQuery(
+        return new FloatVectorSimilarityQuery.Explicit(
             fieldName, vectorBuilder.getFloatVector(), minTraverse, minReturn, getFilterQuery());
       case BYTE:
-        return new ByteVectorSimilarityQuery(
+        return new ByteVectorSimilarityQuery.Explicit(
             fieldName, vectorBuilder.getByteVector(), minTraverse, minReturn, getFilterQuery());
       default:
         throw new SolrException(

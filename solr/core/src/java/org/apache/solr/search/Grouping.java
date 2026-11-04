@@ -43,6 +43,7 @@ import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.AllGroupHeadsCollectorManager;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.GroupDocs;
@@ -52,6 +53,7 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.search.grouping.TopGroupsCollector;
 import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -113,6 +115,16 @@ public class Grouping {
    *     maxdoc that is allowed in the cache. When this threshold is met, the cache is not used in
    *     the second pass search.
    */
+  /** Returns the group heads collected by a single collector as a bitset over {@code maxDoc}. */
+  public static FixedBitSet retrieveGroupHeads(AllGroupHeadsCollector<?> collector, int maxDoc) {
+    @SuppressWarnings("unchecked")
+    AllGroupHeadsCollector<Object> typed = (AllGroupHeadsCollector<Object>) collector;
+    // The sort is only consulted when merging heads across several collectors.
+    AllGroupHeadsCollectorManager<Object> manager =
+        new AllGroupHeadsCollectorManager<>(() -> null, Sort.RELEVANCE);
+    return (FixedBitSet) manager.reduce(List.of(typed)).retrieveGroupHeads(maxDoc);
+  }
+
   public Grouping(
       SolrIndexSearcher searcher,
       QueryResult qr,
@@ -363,7 +375,7 @@ public class Grouping {
     }
 
     if (getGroupedDocSet && allGroupHeadsCollector != null) {
-      qr.setDocSet(new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(maxDoc)));
+      qr.setDocSet(new BitDocSet(retrieveGroupHeads(allGroupHeadsCollector, maxDoc)));
     } else if (getDocSet) {
       qr.setDocSet(setCollector.getDocSet());
     }

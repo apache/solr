@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
-import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding;
+import org.apache.lucene.util.quantization.QuantizedByteVectorValues.ScalarEncoding;
 import org.apache.solr.common.SolrException;
 
 public class BinaryQuantizedDenseVectorField extends DenseVectorField {
