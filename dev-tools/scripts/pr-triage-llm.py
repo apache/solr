@@ -19,6 +19,23 @@
 Asks an LLM a set of yes/no questions about a pull request (see
 .github/pr-triage/judgements.yml) and writes the verdicts as JSON.
 
+The PR triage workflow uses this to ask the ASF LLM gateway whether a change
+warrants a Jira issue, changelog entry, Reference Guide update, upgrade notes,
+or tests, and posts one advisory comment when a non-draft PR is opened or marked
+ready, with the assessed commit. It does not rerun on later pushes.
+Target-branch and optional maintainer-edit reminders use GitHub metadata directly.
+
+The config holds the questions and evidence patterns. Matching changed files are
+hidden from the model; deleted files do not count as included evidence. A Jira
+reference is detected in the title, without checking the issue's existence or
+relevance. File presence does not establish adequacy. Invalid or missing model
+answers are shown as unknown and require human review.
+
+The workflow requires repository secret ASF_LLM_API_KEY, with optional variable
+LLM_MODEL. Only the trusted workflow revision supplies executable code to the
+privileged workflow; no PR code is executed there. The separate test workflow
+runs PR code without secrets or write permissions.
+
 Inputs are files fetched by the workflow from the GitHub API; this script never
 reads PR code from a checkout. The model only answers questions by id, so a
 prompt-injected PR can at worst flip verdicts or skew the reasons it gives.
@@ -26,6 +43,15 @@ prompt-injected PR can at worst flip verdicts or skew the reasons it gives.
 Usage:
   pr-triage-llm.py --config judgements.yml --pr pr.json --files files.json --out result.json
   pr-triage-llm.py ... --dry-run     # print the prompt, don't call the model
+
+To inspect a prompt offline, supply PR metadata and changed-file JSON from the
+GitHub REST API, and install dependencies first:
+  python3 -m pip install -r dev-tools/scripts/requirements-pr-triage.txt
+  python3 dev-tools/scripts/pr-triage-llm.py --config .github/pr-triage/judgements.yml \\
+      --pr pr.json --files files.json --out result.json --dry-run
+
+Offline regression tests need no GitHub or model credentials:
+  python3 -m unittest discover -s dev-tools/scripts/tests -p test_pr_triage.py -v
 
 Environment:
   LLM_BASE_URL  OpenAI-compatible base URL, e.g. https://llm.apache.org/v1

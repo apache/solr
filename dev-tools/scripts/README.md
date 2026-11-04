@@ -1,3 +1,8 @@
+<!--
+  Keep this listing very brief: 3 sentences at most per script plus any applicable links.
+  This is not the place to document each script in detail; put that at the head of the script itself.
+-->
+
 # Developer Scripts
 
 This folder contains various useful scripts for developers, mostly related to
@@ -11,32 +16,7 @@ Python scripts require Python 3.6 or above. To install necessary python modules,
 
 ### pr-triage-llm.py
 
-The PR triage workflow asks the ASF LLM gateway whether a change warrants a Jira
-issue, changelog entry, Reference Guide update, upgrade notes, or tests. It posts
-one advisory comment when a non-draft PR is opened or marked ready, with the
-assessed commit. It does not rerun on later pushes. Target-branch and optional
-maintainer-edit reminders use GitHub metadata directly.
-
-Questions and evidence patterns are in `.github/pr-triage/judgements.yml`.
-Matching changed files are hidden from the model; deleted files do not count as
-included evidence. A Jira reference is detected in the title, without checking
-the issue's existence or relevance. File presence does not establish adequacy.
-Invalid or missing model answers are shown as unknown and require human review.
-
-The workflow requires repository secret `ASF_LLM_API_KEY`, with optional variable
-`LLM_MODEL`. Only the trusted workflow revision supplies executable code to the
-privileged workflow. No PR code is executed there. The separate test workflow
-runs PR code without secrets or write permissions.
-
-To inspect a prompt offline, supply PR metadata and changed-file JSON from the
-GitHub REST API:
-
-    python3 -m pip install -r dev-tools/scripts/requirements-pr-triage.txt
-    python3 dev-tools/scripts/pr-triage-llm.py --config .github/pr-triage/judgements.yml --pr pr.json --files files.json --out result.json --dry-run
-
-Run the offline regressions with no GitHub or model credentials:
-
-    python3 -m unittest discover -s dev-tools/scripts/tests -p test_pr_triage.py -v
+Advisory LLM-based triage comment on new PRs, run from GitHub Actions. See the script's header for details.
 
 ### smokeTestRelease.py
 
