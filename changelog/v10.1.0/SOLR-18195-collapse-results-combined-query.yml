@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Support for using {!collapse} with CombinedQueryComponent (RRF)
+type: added
+authors:
+  - name: Sonu Sharma
+    nick: ercsonusharma
+links:
+  - name: SOLR-18195
+    url: https://issues.apache.org/jira/browse/SOLR-18195

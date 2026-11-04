@@ -15,8 +15,15 @@
  limitations under the License.
 */
 
+// follower.leaderDetails comes from an internal v1 call to the leader, so its booleans are
+// always the stringified "true"/"false" form, even though the rest of this response is v2.
+// TODO: drop this once that internal leader fetch is v2-native too.
+var isTruthy = function(value) {
+    return value === true || value === 'true';
+};
+
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Ping, Constants) {
+function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, ReplicationV2, Ping, Constants, ApiErrorHandler) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
@@ -31,15 +38,24 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
   };
 
   $scope.refreshReplication = function() {
-    Replication.details({core: $routeParams.core},
-      function(data) {
-        $scope.isFollower = data.details.isFollower == "true";
-        $scope.isLeader = data.details.isLeader == "true";
+    ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
+      $timeout(function() {
+        if (error) {
+          // An auth failure isn't about replication being unconfigured, so route it through the
+          // shared login-redirect/permission-banner handling instead of this message.
+          if (response && (response.status === 401 || response.status === 403)) {
+            $scope.replicationMessage = null;
+            ApiErrorHandler.handle(response);
+          } else {
+            $scope.replicationMessage = "Replication is not configured";
+          }
+          return;
+        }
+        $scope.isFollower = isTruthy(data.details.isFollower);
+        $scope.isLeader = isTruthy(data.details.isLeader);
         $scope.replication = data.details;
-      },
-      function(error) {
-        $scope.replicationMessage = "Replication is not configured";
       });
+    });
   };
 
   $scope.refreshInfo = function() {

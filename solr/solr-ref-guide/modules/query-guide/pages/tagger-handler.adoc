@@ -215,7 +215,7 @@ Schema configuration:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/geonames/schema -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/geonames/schema' -H 'Content-type:application/json' -d '{
   "add-field-type":{
     "name":"tag",
     "class":"solr.TextField",
@@ -253,7 +253,7 @@ Configure a custom Solr Request Handler:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/geonames/config -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/geonames/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler" : {
     "name": "/tag",
     "class":"solr.TaggerRequestHandler",

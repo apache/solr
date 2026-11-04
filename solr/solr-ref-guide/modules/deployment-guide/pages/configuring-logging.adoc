@@ -84,7 +84,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/solr/admin/info/logging?set=root:WARN"
+curl 'http://localhost:8983/solr/admin/info/logging?set=root:WARN'
 ----
 ====
 
@@ -93,7 +93,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: application/json' -d '
+curl -X PUT 'http://localhost:8983/api/node/logging/levels' -H 'Content-Type: application/json' -d '
   [
     {"logger": "root", "level": "WARN"}
   ]

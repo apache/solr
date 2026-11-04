@@ -1,0 +1,8 @@
+title: Prevent partial writes when a collection referenced by a MIGRATE routing rule has been deleted
+type: fixed
+authors:
+  - name: ZhenyuLi
+    nick: JHSUYU
+links:
+  - name: SOLR-18413
+    url: https://issues.apache.org/jira/browse/SOLR-18413

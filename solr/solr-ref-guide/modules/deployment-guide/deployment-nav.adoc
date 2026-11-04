@@ -105,6 +105,7 @@
 ** xref:configuring-logging.adoc[]
 ** xref:opentelemetry.adoc[]
 ** xref:metrics-reporting.adoc[]
+** xref:monitoring-with-prometheus-and-grafana.adoc[]
 ** xref:distributed-tracing.adoc[]
 ** xref:performance-statistics-reference.adoc[]
 ** xref:jmx-with-solr.adoc[]

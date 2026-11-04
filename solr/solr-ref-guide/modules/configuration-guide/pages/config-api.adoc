@@ -34,7 +34,8 @@ All Config API endpoints are collection-specific, meaning this API can inspect o
 Use GET to retrieve and POST for executing commands.
 * `_collection_/config/overlay`: retrieve the details in the `configoverlay.json` only, removing any options defined in `solrconfig.xml` directly or implicitly through defaults.
 * `_collection_/config/params`: create parameter sets that can override or take the place of parameters defined in `solrconfig.xml`.
-See xref:request-parameters-api.adoc[] for more information about this endpoint.
+In the V2 API, use `_collection_/config/paramsets` to read them.
+See xref:request-parameters-api.adoc[] for more information about these endpoints.
 
 == Retrieving the Config
 
@@ -350,7 +351,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 
@@ -359,7 +360,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 ======
@@ -516,7 +517,7 @@ Make a call to the new request handler to check if it is registered:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/mypath?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/mypath?omitHeader=true'
 ----
 
 And you should see the following as output:
@@ -686,7 +687,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 
@@ -695,7 +696,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
+curl 'http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true'
 ----
 ====
 ======

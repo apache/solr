@@ -104,7 +104,7 @@ public class TermVectorComponent extends SearchComponent {
       // no tv.fl, parse the main fl
       ReturnFields rf = new SolrReturnFields(params.getParams(CommonParams.FL), rb.req);
 
-      if (rf.wantsAllFields()) {
+      if (rf.returnsAllFields()) {
         return null;
       }
 
