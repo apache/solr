@@ -1,0 +1,4 @@
+title: ExecutorUtil.isSolrServerThread now reflects Solr-node-originated work instead of any MDC-aware pool thread.
+type: changed
+authors:
+  - name: dsmiley
