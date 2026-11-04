@@ -22,7 +22,10 @@ import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
 import static org.hamcrest.Matchers.containsString;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.NodeApi;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -54,13 +57,24 @@ public class NodeHealthStandaloneTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWithNegativeMaxGenerationLagReturnsFailure() throws Exception {
+  public void testWithNegativeMaxGenerationLagReturnsBadRequest() {
     final var request = new NodeApi.Healthcheck();
+    request.setMaxGenerationLag(-1);
+    final var error =
+        expectThrows(
+            RemoteSolrException.class, () -> request.process(solrTestRule.getAdminClient()));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+    assertThat(error.getMessage(), containsString("Invalid value of maxGenerationLag:-1"));
+  }
+
+  @Test
+  public void testV1WithNegativeMaxGenerationLagReturnsFailure() throws Exception {
+    final var request = new HealthCheckRequest();
     request.setMaxGenerationLag(-1);
     final var response = request.process(solrTestRule.getAdminClient());
 
-    assertNotNull(response);
-    assertEquals(FAILURE, response.status);
-    assertThat(response.message, containsString("Invalid value of maxGenerationLag"));
+    assertEquals(0, response.getStatus());
+    assertEquals(FAILURE.name(), response.getNodeStatus());
+    assertEquals("Invalid value of maxGenerationLag:-1", response.getMessage());
   }
 }

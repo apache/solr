@@ -722,7 +722,9 @@ A snapshot with the name `snapshot._name_` must exist or an error will be return
 
 In a leader-follower deployment it is important to know whether followers are keeping pace with the leader.
 Solr's health-check endpoint supports a `maxGenerationLag` request parameter that lets you assert that each follower core is within a specified number of Lucene commit generations of its leader.
-When the follower is lagging more than the allowed number of generations the endpoint returns HTTP 503 (Service Unavailable), making it straightforward to integrate into load-balancer health probes or monitoring systems.
+When a follower exceeds the allowed lag, the v2 endpoint returns HTTP 503 (Service Unavailable) with the message in `error.msg`.
+A negative `maxGenerationLag` returns HTTP 400 (Bad Request) from the v2 endpoint.
+The v1 endpoint retains HTTP 200 with `status: FAILURE` and a `message` field for these conditions.
 
 The `maxGenerationLag` parameter is an integer representing the maximum acceptable number of commit generations by which a follower is allowed to trail its leader.
 A value of `0` requires the follower to be fully up to date.
@@ -730,7 +732,7 @@ If the parameter is omitted, the health check returns `OK` regardless of replica
 
 [WARNING]
 ====
-Because a follower's generation can only increase when a replication from the leader actually completes, `maxGenerationLag=0` may return `FAILURE` immediately after a follower starts or after a period of network instability even though the follower will catch up on the next poll cycle.
+Because a follower's generation can only increase when a replication from the leader actually completes, `maxGenerationLag=0` may report an unhealthy follower immediately after a follower starts or after a period of network instability even though the follower will catch up on the next poll cycle.
 Use a small positive value (for example `2`) for production monitoring unless you require strict freshness guarantees.
 ====
 
@@ -757,7 +759,7 @@ http://{followerHost}:{port}/api/node/health?maxGenerationLag={maxLag}
 ====
 ======
 
-A healthy response looks like:
+Both API versions return HTTP 200 with a healthy response like:
 
 [source,json]
 ----
@@ -767,7 +769,14 @@ A healthy response looks like:
 }
 ----
 
-When a follower is lagging too far behind, the response is HTTP 503 and the body identifies the lagging cores:
+When a follower is lagging too far behind, both APIs identify the lagging cores, but use different HTTP statuses and response fields:
+
+[tabs#health-response]
+======
+V1 API::
++
+====
+HTTP 200:
 
 [source,json]
 ----
@@ -776,6 +785,24 @@ When a follower is lagging too far behind, the response is HTTP 503 and the body
   "message": "Cores violating maxGenerationLag:2.\nCore collection1 is lagging by 5 generations"
 }
 ----
+====
+
+V2 API::
++
+====
+HTTP 503:
+
+[source,json]
+----
+{
+  "error": {
+    "code": 503,
+    "msg": "Cores violating maxGenerationLag:2.\nCore collection1 is lagging by 5 generations"
+  }
+}
+----
+====
+======
 
 == Optimizing Distributed Indexes
 

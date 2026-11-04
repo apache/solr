@@ -48,6 +48,7 @@ Confusing them is easy, since both are casually called a "healthcheck", so this 
 
 The `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
 It is designed to be cheap enough to poll frequently from a load balancer or an orchestrator like Kubernetes.
+The legacy v1 endpoint is `/solr/admin/info/health`.
 
 [IMPORTANT]
 ====
@@ -71,7 +72,7 @@ In SolrCloud mode, the endpoint returns HTTP `200 OK` only if all of the followi
 curl 'http://localhost:8983/api/node/health'
 ----
 
-Healthy node:
+Healthy node (HTTP 200 in both APIs):
 
 [source,json]
 ----
@@ -81,16 +82,51 @@ Healthy node:
 }
 ----
 
-Unhealthy node (HTTP 503):
+Unhealthy node (HTTP 503 in both APIs):
+
+[tabs#cloud-health-response]
+======
+V1 API::
++
+====
+HTTP 503:
 
 [source,json]
 ----
 {
-  "responseHeader":{"status":503,"QTime":1},
-  "status":"FAILURE",
-  "error":{"msg":"Not connected to ZK"}
+  "responseHeader": {
+    "status": 503,
+    "QTime": 1
+  },
+  "status": "FAILURE",
+  "error": {
+    "code": 503,
+    "msg": "Host Unavailable: Not connected to zk"
+  }
 }
 ----
+====
+
+V2 API::
++
+====
+HTTP 503:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 503,
+    "QTime": 1
+  },
+  "error": {
+    "code": 503,
+    "msg": "Host Unavailable: Not connected to zk"
+  }
+}
+----
+====
+======
 
 ==== Rolling Restarts: `requireHealthyCores`
 
@@ -105,14 +141,19 @@ curl 'http://localhost:8983/api/node/health?requireHealthyCores=true'
 === User-Managed (Leader-Follower) Mode
 
 In user-managed replication, the endpoint instead checks how far behind each local follower core is from its leader, in Lucene commit generations.
-Set `maxGenerationLag=<n>` to fail the healthcheck once a follower falls more than `<n>` generations behind; without it, the check simply reports `OK` once a follower has replicated at least once, even if it later falls arbitrarily far behind.
+Set `maxGenerationLag=<n>` to fail the healthcheck once a follower falls more than `<n>` generations behind; without it, generation lag is not checked.
 
 [source,bash]
 ----
 curl 'http://localhost:8983/api/node/health?maxGenerationLag=100'
 ----
 
-Healthy node (all followers within the allowed lag):
+In v2, a negative `maxGenerationLag` returns HTTP 400 (Bad Request).
+An excessive lag, or failure to check a follower's lag, returns HTTP 503 (Service Unavailable).
+These v2 errors report their message in `error.msg`.
+The v1 endpoint retains HTTP 200 with `status: FAILURE` and a `message` field for these standalone checks.
+
+Healthy node (HTTP 200 in both APIs, all followers within the allowed lag):
 
 [source,json]
 ----
@@ -122,16 +163,48 @@ Healthy node (all followers within the allowed lag):
 }
 ----
 
-Unhealthy node (a follower has fallen too far behind, HTTP 503):
+Unhealthy node (a follower has fallen too far behind):
+
+[tabs#standalone-health-response]
+======
+V1 API::
++
+====
+HTTP 200:
 
 [source,json]
 ----
 {
-  "responseHeader":{"status":503,"QTime":1},
-  "status":"FAILURE",
-  "error":{"msg":"Cores violating maxGenerationLag:100.\nCore collection1 is lagging by 137 generations"}
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "status": "FAILURE",
+  "message": "Cores violating maxGenerationLag:100.\nCore collection1 is lagging by 137 generations"
 }
 ----
+====
+
+V2 API::
++
+====
+HTTP 503:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 503,
+    "QTime": 1
+  },
+  "error": {
+    "code": 503,
+    "msg": "Cores violating maxGenerationLag:100.\nCore collection1 is lagging by 137 generations"
+  }
+}
+----
+====
+======
 
 See xref:user-managed-index-replication.adoc#monitoring-follower-replication-lag[Monitoring Follower Replication Lag] for details.
 
