@@ -86,6 +86,10 @@ reHREF = re.compile('<a href="(.*?)">(.*?)</a>')
 # Set to False to avoid re-downloading the packages...
 FORCE_CLEAN = True
 
+# Set to True via --skip-changelog to skip checks that require the changelog to be
+# prepared for this release (i.e. that 'logchange.py prepare' has been run).
+SKIP_CHANGELOG = False
+
 
 def getHREFs(urlString):
 
@@ -412,6 +416,38 @@ def testChangelogMd(dir, version):
   if 'SNAPSHOT' not in version and 'v%s' % version not in content and version not in content:
     raise RuntimeError('Version %s not found in CHANGELOG.md' % version)
 
+
+def testChangelogFolder(dir, version):
+  "Checks changelog folder structure after 'logchange release' has been run."
+  changelog_folder = os.path.join(dir, 'changelog')
+  if not os.path.exists(changelog_folder):
+    raise RuntimeError('changelog folder not found at %s' % changelog_folder)
+
+  print('    check changelog folder structure...')
+
+  unreleased_folder = os.path.join(changelog_folder, 'unreleased')
+  if not os.path.exists(unreleased_folder):
+    raise RuntimeError('changelog/unreleased folder not found')
+  unreleased_contents = [f for f in os.listdir(unreleased_folder) if not f.startswith('.')]
+  if len(unreleased_contents) > 0:
+    raise RuntimeError('changelog/unreleased folder is not empty, contains: %s' % unreleased_contents)
+
+  version_folder = 'v%s' % version
+  if not os.path.isdir(os.path.join(changelog_folder, version_folder)):
+    raise RuntimeError('changelog/%s folder not found (run logchange release first)' % version_folder)
+
+  # Prefix match so odd suffixes (e.g. v10.1.0-beta-1) are still treated as version folders
+  version_pattern = re.compile(r'^v\d+\.\d+\.\d+')
+  for entry in os.listdir(changelog_folder):
+    if not os.path.isdir(os.path.join(changelog_folder, entry)) or not version_pattern.match(entry):
+      continue
+    has_release_date = os.path.exists(os.path.join(changelog_folder, entry, 'release-date.txt'))
+    if entry == version_folder:
+      if has_release_date:
+        raise RuntimeError('changelog/%s folder should not contain release-date.txt (version not yet released)' % entry)
+    elif not has_release_date:
+      raise RuntimeError('changelog/%s folder is missing release-date.txt' % entry)
+
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
 reUnderbarNotDashTXT = re.compile(r'\s+((SOLR)_\d\d\d\d+)', re.MULTILINE)
@@ -420,8 +456,26 @@ reUnderbarNotDashTXT = re.compile(r'\s+((SOLR)_\d\d\d\d+)', re.MULTILINE)
 def checkChangesContent(s, version, name, isHTML):
   currentVersionTuple = versionToTuple(version, name)
 
-  if isHTML and 'SNAPSHOT' not in version and s.find('Release %s' % version) == -1:
+  if isHTML and not SKIP_CHANGELOG and 'SNAPSHOT' not in version and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
+
+  # Validate h2 header structure for Changes.html (requires logchange generate to have been run)
+  if isHTML and not SKIP_CHANGELOG:
+    print('    validate h2 header structure...')
+    h2_pattern = re.compile(r'<h2[^>]*>\s*<a[^>]*>(Release\s+[^<]+)</a>\s*</h2>', re.IGNORECASE | re.DOTALL)
+    headers = [h.strip() for h in h2_pattern.findall(s)]
+    if len(headers) < 2:
+      raise RuntimeError('Expected at least 2 release h2 headers in %s, found %d' % (name, len(headers)))
+
+    # The release being tested has no date yet, the previous release must have one
+    expected_first = 'Release %s' % version
+    if headers[0] != expected_first:
+      raise RuntimeError('First h2 header should be "%s", but got "%s" in %s' % (expected_first, headers[0], name))
+    if not re.match(r'^Release \S+ \[\d{4}-\d{2}-\d{2}\]$', headers[1]):
+      raise RuntimeError('Second h2 header should be "Release <version> [yyyy-mm-dd]", but got "%s" in %s' % (headers[1], name))
+
+    print('      - First h2: "%s" (no date)' % headers[0])
+    print('      - Second h2: "%s" (with date)' % headers[1])
 
   if isHTML:
     r = reUnderbarNotDashHTML
@@ -626,6 +680,9 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs, tmpDir):
   os.chdir(unpackPath)
   print("  %s" % artifact)
 
+  if not SKIP_CHANGELOG:
+    testChangelogFolder(unpackPath, version)
+
   print('    make sure no JARs/WARs in src dist...')
   lines = os.popen('find . -name \\*.jar').readlines()
   if len(lines) != 0:
@@ -668,7 +725,8 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs, tmpDir):
   java.run_java('./gradlew dev -Dversion.release=%s' % version, '%s/assemble.log' % logDir)
   testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
 
-  testChangelogMd('.', version)
+  if not SKIP_CHANGELOG:
+    testChangelogMd('.', version)
 
 
 def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
@@ -700,7 +758,8 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
   print('    test solr example w/ Java %s...' % java.version)
   testSolrExample(unpackPath, java.java_home, isSlim)
 
-  testChangelogMd('.', version)
+  if not SKIP_CHANGELOG:
+    testChangelogMd('.', version)
 
 
 def find_available_port(max_attempts=100):
@@ -1041,6 +1100,8 @@ def parse_config():
                       help='Only perform download and sha hash check steps')
   parser.add_argument('--dev-mode', action='store_true', default=False,
                       help='Enable dev mode, will not check branch compatibility')
+  parser.add_argument('--skip-changelog', action='store_true', default=False,
+                      help='Skip checks that require the changelog to be prepared for this release (logchange.py prepare), e.g. when smoke testing a build made before the RM ran it')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1091,6 +1152,9 @@ def main():
   if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
+  global SKIP_CHANGELOG
+  SKIP_CHANGELOG = c.skip_changelog
+
   global FORCE_CLEAN
   FORCE_CLEAN = not c.reuse_tmp_dir
 
@@ -1106,6 +1170,8 @@ def printReuseHint(baseURL, gitRevision, version, tmpDir, isSigned, local_keys, 
     cmd.append('--not-signed')
   if local_keys is not None:
     cmd.extend(['--local-keys', local_keys])
+  if SKIP_CHANGELOG:
+    cmd.append('--skip-changelog')
   cmd.append(baseURL)
   if testArgs:
     cmd.append(testArgs)
