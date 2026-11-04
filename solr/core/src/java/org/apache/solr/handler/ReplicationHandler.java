@@ -112,6 +112,7 @@ import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.handler.admin.api.CoreReplication;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase.FileListException;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.APIConfigProvider;
@@ -308,9 +309,22 @@ public class ReplicationHandler extends RequestHandlerBase
       getFileStream(solrParams, rsp, req);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-          rsp,
-          coreReplicationAPI.fetchFileList(Long.parseLong(solrParams.required().get(GENERATION))));
+      try {
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+            rsp,
+            coreReplicationAPI.fetchFileList(
+                Long.parseLong(solrParams.required().get(GENERATION))));
+      } catch (FileListException e) {
+        rsp.add(STATUS, ERR_STATUS);
+        rsp.add(
+            "message",
+            e.code() == SolrException.ErrorCode.CONFLICT.code
+                ? "invalid index generation"
+                : e.getMessage());
+        if (e.getCause() != null) {
+          rsp.add("exception", e.getCause());
+        }
+      }
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {

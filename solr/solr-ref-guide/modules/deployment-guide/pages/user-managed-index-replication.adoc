@@ -577,6 +577,8 @@ http://{host}:{port}/api/cores/{coreName}/replication/files?generation={generati
 ======
 +
 You can discover the generation number of the index by running the `indexversion` command.
+If the requested generation is no longer available, the v2 API returns HTTP 409 (Conflict).
+The v1 command returns HTTP 200 with `status: ERROR` and a `message` field.
 
 `filecontent`::
 Retrieve a stream of a specific file path of a core.

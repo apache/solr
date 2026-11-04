@@ -1,5 +1,7 @@
-title: Fix v2 APIs that report failures via HTTP 200 instead of a proper error status.
-type: fixed
+title: The v2 replication file-list and snapshot backup APIs no longer return HTTP 200
+  for errors. Missing index generations return HTTP 409; file-list read failures and
+  unexpected snapshot backup failures return HTTP 500. V1 responses are unchanged.
+type: changed
 authors:
   - name: Eric Pugh
 links:

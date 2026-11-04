@@ -175,6 +175,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return dfs;
   }
 
+  /** A file-list failure that the v1 handler translates into its legacy response format. */
+  public static class FileListException extends SolrException {
+    private FileListException(ErrorCode code, String message, Exception cause) {
+      super(code, message, cause);
+    }
+  }
+
   protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
     final FileListResponse filesResponse = new FileListResponse();
@@ -195,7 +202,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         }
         if (null == commit) {
           // The gen they asked for either doesn't exist or has already been deleted
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "invalid index generation");
+          throw new FileListException(
+              SolrException.ErrorCode.CONFLICT, "invalid index generation: " + generation, null);
         }
       }
       assert null != commit;
@@ -244,7 +252,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       } catch (IOException e) {
         log.error(
             "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
-        throw new SolrException(
+        throw new FileListException(
             SolrException.ErrorCode.SERVER_ERROR,
             "unable to get file names for given index generation",
             e);
@@ -648,5 +656,4 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     }
     return resolved.normalize();
   }
-
 }

@@ -1498,6 +1498,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testV2FileListShouldReportErrorsWhenTheyOccur() {
+    final var request = new ReplicationApi.FetchFileList(DEFAULT_TEST_CORENAME, -2L);
+    final var error = expectThrows(SolrException.class, () -> request.process(followerClient));
+    assertEquals(SolrException.ErrorCode.CONFLICT.code, error.code());
+    assertThat(error.getMessage(), containsString("invalid index generation: -2"));
+  }
+
+  @Test
   public void testFollowerRestartsWhenCommitExpiresBeforeFileDownload() throws Exception {
     invokeReplicationCommand(
         buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
