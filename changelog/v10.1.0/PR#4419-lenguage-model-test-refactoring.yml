@@ -1,0 +1,9 @@
+title: Refactor the tests of the language-model module to accomodate new upcoming LLM oriented features avoiding code duplication.
+type: fixed
+authors:
+  - name: Nicolò Rinaldi
+  - name: Anna Ruggero
+  - name: Alessandro benedetti
+links:
+  - name: PR#4419
+    url: https://github.com/apache/solr/pull/4419

@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 
@@ -30,9 +29,8 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .allowMultiPartPost(random().nextBoolean())
+    return solrTestRule
+        .newSolrClientBuilder()
         .withRequestWriter(new JavaBinRequestWriter())
         .withResponseParser(new JavaBinResponseParser())
         .build();

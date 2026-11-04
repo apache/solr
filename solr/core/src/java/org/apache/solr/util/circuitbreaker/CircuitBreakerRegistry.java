@@ -62,6 +62,15 @@ public class CircuitBreakerRegistry implements Closeable {
   public static final String SYSPROP_QUERY_LOADAVG = SYSPROP_PREFIX + "query.loadavg";
   public static final String SYSPROP_WARN_ONLY_SUFFIX = ".warnonly";
 
+  /**
+   * Default TTL (ms) of cached load-average / heap samples consulted by {@link
+   * LoadAverageCircuitBreaker} and {@link MemoryCircuitBreaker}. Override per-process via the
+   * {@value #SYSPROP_SAMPLE_TTL_MS} system property.
+   */
+  public static final long DEFAULT_SAMPLE_TTL_MS = 1000L;
+
+  public static final String SYSPROP_SAMPLE_TTL_MS = SYSPROP_PREFIX + "sample.ttl.ms";
+
   private static boolean globalsInitialized = false;
   private static final Map<SolrRequestType, List<CircuitBreaker>> globalCircuitBreakerMap =
       new ConcurrentHashMap<>();
@@ -119,7 +128,7 @@ public class CircuitBreakerRegistry implements Closeable {
 
   private static String buildCircuitBreakerKey(String metricType, String thresholdProp) {
     final var warnOnly = EnvUtils.getProperty(thresholdProp + SYSPROP_WARN_ONLY_SUFFIX, "false");
-    return metricType + ":" + System.getProperty(thresholdProp) + ":" + warnOnly;
+    return metricType + ":" + EnvUtils.getProperty(thresholdProp) + ":" + warnOnly;
   }
 
   private static synchronized void initGlobal(CoreContainer coreContainer) {

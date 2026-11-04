@@ -16,10 +16,7 @@
  */
 
 pluginManagement {
-  repositories {
-    mavenCentral()
-    gradlePluginPortal()
-  }
+  apply from: file("build-tools/build-infra/declare-repositories.gradle"), to: delegate
 
   includeBuild("build-tools/build-infra")
 }
@@ -27,6 +24,7 @@ pluginManagement {
 plugins {
   id 'com.gradle.develocity' version '4.2.2'
   id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.4.0'
+  id 'com.autonomousapps.build-health' version '3.16.0'
 }
 
 apply from: file('gradle/develocity.gradle')
@@ -68,10 +66,10 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 
-def disableUiModuleValue = providers.gradleProperty('disableUiModule').orNull
-gradle.ext.withUiModule = disableUiModuleValue == null || disableUiModuleValue != 'true'
-if (gradle.ext.withUiModule) {
-  include(":solr:ui")
+def disableJsClientValue = providers.gradleProperty('disableJsClient').orNull
+gradle.ext.withJsClient = disableJsClientValue == null || disableJsClientValue != 'true'
+if (gradle.ext.withJsClient) {
+  include(":solr:webapp:js-client")
 }
 
 // Configures development for joint Lucene/ Solr composite build.

@@ -191,6 +191,8 @@ public class ResponseBuilder {
     return -1;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // excluding "me" itself, by identity, from the other components
   public void addRequest(SearchComponent me, ShardRequest sreq) {
     outgoing.add(sreq);
     if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE) == 0) {
@@ -462,6 +464,7 @@ public class ResponseBuilder {
     cmd.setQuery(wrap(getQuery()))
         .setFilterList(getFilters())
         .setSort(getSortSpec().getSort())
+        .setSortSchemaFields(getSortSpec().getSchemaFields())
         .setOffset(getSortSpec().getOffset())
         .setLen(getSortSpec().getCount())
         .setFlags(getFieldFlags())

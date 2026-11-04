@@ -43,11 +43,8 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
-  testImplementation project(':solr:solrj')
   // Access to solrj test classes (e.g., HttpSolrClientTestBase)
   testImplementation project(path: ':solr:solrj', configuration: 'testArtifacts')
-  // Test classes use main classes from this module
-  testImplementation project(':solr:solrj-jetty')
 
   testImplementation libs.apache.lucene.testframework
 

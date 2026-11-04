@@ -165,7 +165,7 @@ All of the <<atomic-updates,Atomic Update operations>> mentioned above are suppo
 
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S31",
   "_root_": "P11!prod",
@@ -180,7 +180,7 @@ As with normal (multiValued) fields, the `set` keyword can be used to replace al
 
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P22!S22",
   "_root_": "P22!prod",
@@ -202,7 +202,7 @@ As with normal (multiValued) fields, the `add` keyword can be used to add additi
 
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S21",
   "_root_": "P11!prod",
@@ -221,7 +221,7 @@ As with normal (multiValued) fields, the `remove` keyword can be used to remove 
 
 [source,bash]
 ----
-curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
+curl 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S21",
   "_root_": "P11!prod",
@@ -356,7 +356,7 @@ Following are some examples using `versions=true` in queries:
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [ { "id" : "aaa" },
   { "id" : "bbb" } ]'
 ----
@@ -373,7 +373,7 @@ Because we added `versions=true` to the request, the response shows the document
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
   [{ "id" : "aaa",
      "foo_s" : "update attempt with wrong existing version" }]'
 ----
@@ -394,7 +394,7 @@ We get an error in response.
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "aaa",
    "foo_s" : "update attempt with correct existing version" }]'
 ----
@@ -409,7 +409,7 @@ Now we've sent an update with a value for `\_version_` that matches the value in
 Because we included `versions=true` to the update request, the response includes a different value for the `\_version_` field.
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "aaa", _version_ : 100,
    "foo_s" : "update attempt with wrong existing version embedded in document" }]'
 ----
@@ -430,7 +430,7 @@ This is useful when documents are sent in a batch and different `\_version_` val
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/update?&versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "aaa", _version_ : 1632740462042284032,
    "foo_s" : "update attempt with correct version embedded in document" }]'
 ----
@@ -448,7 +448,7 @@ This is useful when documents are sent in a batch and different `\_version_` val
 
 [source,bash]
 ----
-$ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_&omitHeader=true'
+curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_&omitHeader=true'
 ----
 
 [source,json]
@@ -467,7 +467,7 @@ Finally, we can issue a query that requests the `\_version_` field be included i
 
 [source,bash]
 ----
-$ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' --data-binary '
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [ { "id" : "aaa" },
   { "id" : "ccc" } ]'
 ----

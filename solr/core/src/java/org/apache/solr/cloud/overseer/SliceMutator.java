@@ -250,14 +250,14 @@ public class SliceMutator {
       map.put("routeRanges", range);
       map.put("targetCollection", targetCollection);
       map.put("expireAt", expireAt);
-      RoutingRule rule = new RoutingRule(routeKey, map);
+      RoutingRule rule = new RoutingRule(map);
       routingRules.put(routeKey, rule);
     } else {
       // add this range
       Map<String, Object> map = r.shallowCopy();
       map.put("routeRanges", map.get("routeRanges") + "," + range);
       map.put("expireAt", expireAt);
-      routingRules.put(routeKey, new RoutingRule(routeKey, map));
+      routingRules.put(routeKey, new RoutingRule(map));
     }
 
     Map<String, Object> props = slice.shallowCopy();

@@ -288,7 +288,7 @@ public class TestStressUserVersions extends TestRTGBase {
                   }
                   SolrQueryRequest sreq;
                   if (realTime) {
-                    sreq = req("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                    sreq = reqWithPath("/get", "wt", "json", "ids", Integer.toString(id));
                   } else {
                     sreq =
                         req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");

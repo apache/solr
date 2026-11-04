@@ -179,14 +179,18 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     int logHeaderSize = Integer.MAX_VALUE;
     Map<String, byte[]> contentFiles = new HashMap<>();
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
-        Path tlogFolder = Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
-        try (Stream<Path> tLogFiles = Files.list(tlogFolder)) {
-          Path lastTLogFile =
-              tlogFolder.resolve(tLogFiles.sorted().toList().getLast().getFileName());
-          byte[] tlogBytes = Files.readAllBytes(lastTLogFile);
-          contentFiles.put(lastTLogFile.toString(), tlogBytes);
-          logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
+      CoreContainer coreContainer = solrRunner.getCoreContainer();
+      for (String coreName : coreContainer.getLoadedCoreNames()) {
+        try (SolrCore solrCore = coreContainer.getCore(coreName)) {
+          if (solrCore == null) continue; // unloaded since getLoadedCoreNames
+          Path tlogFolder = Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
+          try (Stream<Path> tLogFiles = Files.list(tlogFolder)) {
+            Path lastTLogFile =
+                tlogFolder.resolve(tLogFiles.sorted().toList().getLast().getFileName());
+            byte[] tlogBytes = Files.readAllBytes(lastTLogFile);
+            contentFiles.put(lastTLogFile.toString(), tlogBytes);
+            logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
+          }
         }
       }
     }

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated ScalarQuantizedDenseVectorField compress and confidenceInterval fields and their accessors useCompression and getConfidenceInterval, since Solr 10.1 no longer used by the underlying Lucene codec; the compress, confidenceInterval and dynamicConfidenceInterval schema params are still accepted and ignored with a deprecation warning, so an existing schema that sets them keeps loading. The public four-argument constructor loses its two corresponding parameters and now takes dimension, similarityFunction, vectorEncoding and bits.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18376
+    url: https://issues.apache.org/jira/browse/SOLR-18376

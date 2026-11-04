@@ -24,7 +24,7 @@ import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.metrics.otel.instruments.AttributedLongHistogram;
 
-/** Metrics presented for each SolrCore using `crossdc.producer.` path. */
+/** Metrics presented for each SolrCore using `solr.crossdc.producer.` path. */
 public class ProducerMetrics {
 
   private final AttributedLongCounter local;
@@ -47,36 +47,36 @@ public class ProducerMetrics {
 
     var localProcessed =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.local.processed",
+            "solr.crossdc.producer.local.processed",
             "The number of local documents processed (success or error)");
     var localSubmitted =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.submitted",
+            "solr.crossdc.producer.submitted",
             "The number of documents submitted to the Kafka topic (success or error)");
     var localSubmittedAdd =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.submitted.add",
+            "solr.crossdc.producer.submitted.add",
             "The number of add requests submitted to the Kafka topic (success or error)");
     var localSubmittedDbi =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.submitted.delete_by_id",
+            "solr.crossdc.producer.submitted.delete_by_id",
             "The number of Delete-By-Id requests submitted to the Kafka topic (success or error)");
     var localSubmittedDbq =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.submitted.delete_by_query",
+            "solr.crossdc.producer.submitted.delete_by_query",
             "The number of Delete-By-Query requests submitted to the Kafka topic (success or error)");
     var localSubmittedCommit =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.submitted.commit",
+            "solr.crossdc.producer.submitted.commit",
             "The number of standalone Commit requests submitted to the Kafka topic (success or error)");
     var histogramDocSizes =
         solrMetricsContext.longHistogram(
-            "solr.core.crossdc.producer.document_size",
+            "solr.crossdc.producer.document_size",
             "Histogram of the processed document sizes processed",
             OtelUnit.BYTES);
     var tooLargeErrors =
         solrMetricsContext.longCounter(
-            "solr.core.crossdc.producer.doc_too_large_errors",
+            "solr.crossdc.producer.doc_too_large_errors",
             "The number of documents that were too large to send to the Kafka topic");
 
     this.local =

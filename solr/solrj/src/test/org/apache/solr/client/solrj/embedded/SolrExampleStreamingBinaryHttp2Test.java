@@ -79,7 +79,7 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
     QueryResponse response = client.query(query);
     assertEquals(1, response.getResults().size());
     SolrDocument parentDoc = response.getResults().get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, parentDoc.getChildDocuments().size());
 
     // test streaming
     final List<SolrDocument> docs = new ArrayList<>();
@@ -97,6 +97,6 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
 
     assertEquals(1, docs.size());
     parentDoc = docs.get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, parentDoc.getChildDocuments().size());
   }
 }

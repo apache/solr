@@ -209,7 +209,7 @@ For example, in order to choose the "dedupe" chain described in a previous secti
 .Using update.chain
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update/json?update.chain=dedupe&commit=true" -H 'Content-type: application/json' -d '
+curl 'http://localhost:8983/solr/gettingstarted/update/json?update.chain=dedupe&commit=true' -H 'Content-type: application/json' -d '
 [
   {
     "name" : "The Lightning Thief",
@@ -237,7 +237,7 @@ For example:
 [source,bash]
 ----
 
-curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks,signature&commit=true" -H 'Content-type: application/json' -d '
+curl 'http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks,signature&commit=true' -H 'Content-type: application/json' -d '
 [
   {
     "name" : "The Lightning Thief",
@@ -256,7 +256,7 @@ curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_bla
 .Executing processors configured in solrconfig.xml as pre- and post-processors
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks&post-processor=signature&commit=true" -H 'Content-type: application/json' -d '
+curl 'http://localhost:8983/solr/gettingstarted/update/json?processor=remove_blanks&post-processor=signature&commit=true' -H 'Content-type: application/json' -d '
 [
   {
     "name" : "The Lightning Thief",
@@ -426,6 +426,10 @@ The {solr-javadocs}/modules/language-models/index.html[`language-models`] module
 {solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/update/processor/factory/TextToVectorUpdateProcessorFactory.html[TextToVectorUpdateProcessorFactory]:: Update processor which vectorises a textual field in input and adds the resulting vector as the value of a new field.
 It uses external text to vectors language models to perform the vectorisation for each processed document.
 For more information: xref:query-guide:text-to-vector.adoc[Update Request Processor]
+
+{solr-javadocs}/modules/language-models/org/apache/solr/languagemodels/update/processor/factory/DocumentEnrichmentUpdateProcessorFactory.html[DocumentEnrichmentUpdateProcessorFactory]:: Update processor that takes one or more fields and a given prompt in input and returns the output of an LLM as the value of a new field.
+It uses external Large Language Model services to perform the enrichment of each processed document.
+For more information: xref:indexing-guide:document-enrichment-with-llms.adoc[Document Enrichment documentation]
 
 The {solr-javadocs}/modules/langid/index.html[`langid`] module provides::
 

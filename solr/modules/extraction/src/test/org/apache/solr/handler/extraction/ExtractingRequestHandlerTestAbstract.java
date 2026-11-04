@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -29,13 +28,11 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @Before
@@ -313,14 +310,15 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testDefaultField() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertNotNull("handler is null and it shouldn't be", handler);
 
-    try {
-      ignoreException("unknown field 'a'");
-      ignoreException("unknown field 'meta'"); // TODO: should this exception be happening?
+    // TODO: should the "unknown field 'meta'" exception be happening?
+    try (ErrorLogMuter unknownFieldA = ErrorLogMuter.regex("unknown field 'a'");
+        ErrorLogMuter unknownFieldMeta = ErrorLogMuter.regex("unknown field 'meta'")) {
       expectThrows(
           SolrException.class,
           () ->
@@ -336,8 +334,6 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
                   "commit",
                   "true" // test immediate commit
                   ));
-    } finally {
-      resetExceptionIgnores();
     }
 
     loadLocal(

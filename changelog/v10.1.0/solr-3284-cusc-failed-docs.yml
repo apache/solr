@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  ConcurrentUpdateSolrClient can now report which documents failed to reach the server.
+  Register a handler via the Builder's withErrorHandler(...) to recover the documents of a
+  failed batch, for example to route them to a retry queue or dead-letter topic.
+type: added
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-3284
+    url: https://issues.apache.org/jira/browse/SOLR-3284

@@ -1,0 +1,7 @@
+type: deprecated
+title: Deprecate PingRequestHandler (the "/admin/ping" endpoint), SolrPing, SolrPingResponse, and SolrClient.ping()/ping(String).
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18417
+    url: https://issues.apache.org/jira/browse/SOLR-18417

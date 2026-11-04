@@ -425,7 +425,7 @@ function print_usage() {
     echo ""
     echo "  -y/--no-prompt        Don't prompt for input; accept all defaults when running examples that accept user input."
     echo ""
-    echo "  --prompt-inputs <values> Don't prompt for input; comma delimited list of inputs read when running examples that accept user input."
+    echo "  --script-inputs <values> Don't prompt for input; comma delimited list of inputs read when running examples that accept user input."
     echo ""
     echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '--force' parameter."
@@ -682,11 +682,27 @@ SOLR_OPTS=(${SOLR_OPTS:-})
 SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
 SOLR_MODE="solrcloud"
+CLOUD_FLAG_SET=false
+USER_MANAGED_FLAG_SET=false
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
+        -c|--cloud|-cloud)
+            if [[ "$USER_MANAGED_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            echo "WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default."
+            CLOUD_FLAG_SET=true
+            shift
+        ;;
         --user-managed)
+            if [[ "$CLOUD_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            USER_MANAGED_FLAG_SET=true
             SOLR_MODE="user-managed"
             PASS_TO_RUN_EXAMPLE+=("--user-managed")
             shift
@@ -812,21 +828,25 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -h|--help)
-            print_usage "$SCRIPT_CMD"
+            if [[ "${SOLR_PICOCLI:-}" == "true" ]]; then
+                run_tool "$SCRIPT_CMD" --help
+            else
+                print_usage "$SCRIPT_CMD"
+            fi
             exit 0
         ;;
         -y|--no-prompt)
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
-        --prompt-inputs)
+        --script-inputs)
         if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-          print_usage "$SCRIPT_CMD" "Prompt values are required when using the $1 option!"
+          print_usage "$SCRIPT_CMD" "Session input values are required when using the $1 option!"
           exit 1
         fi
-        PASS_TO_RUN_EXAMPLE+=("--prompt-inputs" "$2")
+        PASS_TO_RUN_EXAMPLE+=("--script-inputs" "$2")
         shift 2
-        ;;        
+        ;;
         --verbose)
             verbose=true
             SOLR_LOG_LEVEL=DEBUG

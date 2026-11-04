@@ -20,7 +20,6 @@ import java.io.IOException;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -67,7 +66,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     // easily be done by grabbing the first N parts of each comp where N is the number of parts in
     // the equalitor. Because we've already validated tuple order (the comps) then we know this can
     // be done.
-    iterationComparator = createIterationComparator(eq, leftStream.getStreamSort());
+    iterationComparator = StreamEqualitor.deriveComparator(eq, leftStream.getStreamSort());
     leftStreamComparator = createSideComparator(eq, leftStream.getStreamSort());
     rightStreamComparator = createSideComparator(eq, rightStream.getStreamSort());
   }
@@ -77,58 +76,6 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     if (!isValidTupleOrder()) {
       throw new IOException(
           "Invalid JoinStream - all incoming stream comparators (sort) must be a superset of this stream's equalitor.");
-    }
-  }
-
-  private StreamComparator createIterationComparator(StreamEqualitor eq, StreamComparator comp)
-      throws IOException {
-    if (eq instanceof MultipleFieldEqualitor && comp instanceof MultipleFieldComparator) {
-      // we know the comp is at least as long as the eq because we've already validated the tuple
-      // order
-      StreamComparator[] compoundComps =
-          new StreamComparator[((MultipleFieldEqualitor) eq).getEqs().length];
-      for (int idx = 0; idx < compoundComps.length; ++idx) {
-        StreamEqualitor sourceEqualitor = ((MultipleFieldEqualitor) eq).getEqs()[idx];
-        StreamComparator sourceComparator = ((MultipleFieldComparator) comp).getComps()[idx];
-
-        if (sourceEqualitor instanceof FieldEqualitor fieldEqualitor
-            && sourceComparator instanceof FieldComparator fieldComparator) {
-          compoundComps[idx] =
-              new FieldComparator(
-                  fieldEqualitor.getLeftFieldName(),
-                  fieldEqualitor.getRightFieldName(),
-                  fieldComparator.getOrder());
-        } else {
-          throw new IOException("Failed to create an iteration comparator");
-        }
-      }
-      return new MultipleFieldComparator(compoundComps);
-    } else if (comp instanceof MultipleFieldComparator) {
-      StreamEqualitor sourceEqualitor = eq;
-      StreamComparator sourceComparator = ((MultipleFieldComparator) comp).getComps()[0];
-
-      if (sourceEqualitor instanceof FieldEqualitor fieldEqualitor
-          && sourceComparator instanceof FieldComparator fieldComparator) {
-        return new FieldComparator(
-            fieldEqualitor.getLeftFieldName(),
-            fieldEqualitor.getRightFieldName(),
-            fieldComparator.getOrder());
-      } else {
-        throw new IOException("Failed to create an iteration comparator");
-      }
-    } else {
-      StreamEqualitor sourceEqualitor = eq;
-      StreamComparator sourceComparator = comp;
-
-      if (sourceEqualitor instanceof FieldEqualitor fieldEqualitor
-          && sourceComparator instanceof FieldComparator fieldComparator) {
-        return new FieldComparator(
-            fieldEqualitor.getLeftFieldName(),
-            fieldEqualitor.getRightFieldName(),
-            fieldComparator.getOrder());
-      } else {
-        throw new IOException("Failed to create an iteration comparator");
-      }
     }
   }
 

@@ -37,6 +37,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -45,8 +46,23 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.handler.component.ShardRequest;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "postlogs",
+    description = "Indexes Solr logs in the out-of-the-box log format.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Index all logs found under a directory",
+      "  bin/solr postlogs -c gettingstarted --rootdir /var/solr/logs --solr-url"
+          + " http://localhost:8983"
+    })
 public class PostLogsTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -56,6 +72,11 @@ public class PostLogsTool extends ToolBase {
           .desc("Name of the collection.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option ROOT_DIR_OPTION =
       Option.builder()
           .longOpt("rootdir")
@@ -64,6 +85,36 @@ public class PostLogsTool extends ToolBase {
           .required()
           .desc("All files found at or below the root directory will be indexed.")
           .get();
+
+  /** Parameters for the postlogs command, independent of the command line parser. */
+  record PostLogsParams(String url, String rootDir, String credentials) {}
+
+  // --- picocli fields ---
+  // The connection group is mandatory (multiplicity "1"), mirroring the commons-cli path's
+  // manual IllegalArgumentException when no connection target is given.
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--rootdir",
+      required = true,
+      paramLabel = "DIRECTORY",
+      description = "All files found at or below the root directory will be indexed.")
+  private String rootDirOpt;
+
+  public PostLogsTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public PostLogsTool(ToolRuntime runtime) {
     super(runtime);
@@ -79,23 +130,30 @@ public class PostLogsTool extends ToolBase {
     return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(ROOT_DIR_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url;
-    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+    if (CLIUtils.hasConnectionOption(cli)) {
       url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
-      // Could be required arg, but maybe we want to support --zk-host option too?
-      throw new IllegalArgumentException("Must specify --solr-url.");
+      throw new IllegalArgumentException(
+          "Must specify a connection target via -s/--solr-connection, --solr-url, or --zk-host.");
     }
-    String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-    runCommand(url, rootDir, credentials);
+    PostLogsParams params =
+        new PostLogsParams(
+            url,
+            cli.getOptionValue(ROOT_DIR_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    runCommand(params);
+  }
+
+  void runCommand(PostLogsParams params) throws IOException {
+    runCommand(params.url(), params.rootDir(), params.credentials());
   }
 
   public void runCommand(String baseUrl, String root, String credentials) throws IOException {
@@ -625,5 +683,23 @@ public class PostLogsTool extends ToolBase {
     map.put(ShardRequest.PURPOSE_SET_TERM_STATS, "SET_TERM_STATS");
     map.put(ShardRequest.PURPOSE_GET_TERM_STATS, "GET_TERM_STATS");
     purposes = Collections.unmodifiableMap(map);
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    String url = resolveSolrUrl(credentialsOptions.credentials) + "/solr/" + nameOpt;
+    PostLogsParams params = new PostLogsParams(url, rootDirOpt, credentialsOptions.credentials);
+    runCommand(params);
+    return 0;
+  }
+
+  private String resolveSolrUrl(String credentials) throws Exception {
+    String solrUrlArg = connectionOptions.effectiveSolrUrl();
+    if (solrUrlArg != null) {
+      return CLIUtils.normalizeSolrUrl(solrUrlArg);
+    }
+    return CLIUtils.solrUrlFromConnection(
+        CloudSolrClient.CloudSolrClientConnection.parse(connectionOptions.effectiveZkHost()),
+        credentials);
   }
 }

@@ -120,7 +120,7 @@ SAMPLE_FILES=( $(ls ${DIR_WITH_SAMPLE_FILES}/*.{xml,csv,json,jsonl}) )
 for f in "${SAMPLE_FILES[@]}"
 do
   echo "POST'ing contents of $f to Schema Designer analyze endpoint ..."
-  curl -s -o /dev/null -w "%{http_code}" -XPOST \
+  curl -s -o /dev/null -w "%{http_code}" \
     "$SOLR_URL/api/schema-designer/analyze?configSet=${MY_NEW_SCHEMA}" -d @"$f"
   echo ""
 done

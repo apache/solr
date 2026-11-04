@@ -18,12 +18,13 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
@@ -33,7 +34,7 @@ import org.apache.solr.common.util.Utils;
  * This class encapsulates the config overlay json file. It is immutable and any edit operations
  * performed on this gives a new copy of the object with the changed value
  */
-public class ConfigOverlay implements MapSerializable {
+public class ConfigOverlay implements MapWriter {
   private final int version;
   private final Map<String, Object> data;
   private Map<String, Object> props;
@@ -233,10 +234,9 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put(ZNODEVER, version);
-    map.putAll(data);
-    return map;
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put(ZNODEVER, version);
+    data.forEach(ew::putNoEx);
   }
 
   @SuppressWarnings({"unchecked"})

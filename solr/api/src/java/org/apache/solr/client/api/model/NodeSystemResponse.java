@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.List;
@@ -25,21 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** Response from /node/system */
-public class NodeSystemResponse extends SolrJerseyResponse {
-
-  // TODO The typing here is kindof wonky - can I tighten 'Object' here to be NodeSystemResponse or
-  // will Jackson choke on that?
-  public Map<String, Object> remoteNodeData;
-
-  @JsonAnyGetter
-  public Map<String, Object> remoteNodeData() {
-    return remoteNodeData;
-  }
-
-  @JsonAnySetter
-  public void setRemoteNodeResponse(String field, Object value) {
-    remoteNodeData.put(field, value);
-  }
+public class NodeSystemResponse extends NodeProxyingJerseyResponse {
 
   @JsonProperty public String host;
   @JsonProperty public String node;

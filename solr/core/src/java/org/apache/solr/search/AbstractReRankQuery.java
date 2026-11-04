@@ -34,6 +34,11 @@ import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
 
 public abstract class AbstractReRankQuery extends RankQuery {
+  public static final String RERANK_CUTOFF_RESPONSE_HEADER_KEY = "reRankCutoff";
+  public static final String RERANK_CUTOFF_BY_SHARD_RESPONSE_HEADER_KEY = "reRankCutoffByShard";
+  public static final String RERANK_CUTOFF_ECHO_REQUEST_CONTEXT_KEY =
+      "solr.rerank.echoReRankCutoff";
+
   protected Query mainQuery;
   protected final int reRankDocs;
   protected final Rescorer reRankQueryRescorer;

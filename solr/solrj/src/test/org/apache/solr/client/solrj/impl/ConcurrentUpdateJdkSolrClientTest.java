@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClientTestBase {
 
   @Override
-  public HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs) {
+  public HttpSolrClient solrClient(Integer overrideIdleTimeoutMs) {
     var builder =
         new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
     if (overrideIdleTimeoutMs != null) {
@@ -35,7 +35,7 @@ public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClien
 
   @Override
   public ConcurrentUpdateBaseSolrClient concurrentClient(
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       String baseUrl,
       String defaultCollection,
       int queueSize,
@@ -59,7 +59,7 @@ public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClien
       String serverUrl,
       int queueSize,
       int threadCount,
-      HttpSolrClientBase solrClient,
+      HttpSolrClient solrClient,
       AtomicInteger successCounter,
       AtomicInteger failureCounter,
       StringBuilder errors) {
@@ -68,6 +68,21 @@ public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClien
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
         .setPollQueueTime(0, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  @Override
+  public ConcurrentUpdateBaseSolrClient errorHandlerConcurrentClient(
+      String serverUrl,
+      int queueSize,
+      int threadCount,
+      HttpSolrClient solrClient,
+      ConcurrentUpdateBaseSolrClient.UpdateErrorHandler errorHandler) {
+    return new ConcurrentUpdateJdkSolrClient.Builder(serverUrl, (HttpJdkSolrClient) solrClient)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .setPollQueueTime(0, TimeUnit.MILLISECONDS)
+        .withErrorHandler(errorHandler)
         .build();
   }
 

@@ -24,7 +24,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
@@ -60,7 +60,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends SolrTestCase {
 
     SolrClient client = solrTestRule.getSolrClient();
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
     up.setParam("collection", client.getDefaultCollection());
     up.addFile(getFile("solrj/techproducts.xml"), "application/xml");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);

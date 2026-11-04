@@ -642,6 +642,8 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // TermsEnum.EMPTY is a Lucene sentinel; identity check is intentional
   private static void collectTermStates(
       IndexReaderContext topReaderContext, TermStates[] contextArray, Term[] queryTerms)
       throws IOException {

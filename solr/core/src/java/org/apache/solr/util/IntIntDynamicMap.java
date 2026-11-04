@@ -30,6 +30,7 @@ public class IntIntDynamicMap implements DynamicMap {
   private int[] keyValues;
   private int emptyValue;
   private int threshold;
+  private int keyValuesSize;
 
   /**
    * Create map with expected max value of key. Although the map will automatically do resizing to
@@ -53,6 +54,7 @@ public class IntIntDynamicMap implements DynamicMap {
       Arrays.fill(keyValues, emptyValue);
     }
     if (hashMap != null) {
+      keyValuesSize = hashMap.size();
       hashMap.forEach((IntIntProcedure) (key, value) -> keyValues[key] = value);
       hashMap = null;
     }
@@ -74,7 +76,12 @@ public class IntIntDynamicMap implements DynamicMap {
       if (key >= keyValues.length) {
         growBuffer(key + 1);
       }
-      keyValues[key] = value;
+      if (keyValues[key] != value) {
+        if (keyValues[key] == emptyValue) {
+          keyValuesSize++;
+        }
+        keyValues[key] = value;
+      }
     } else {
       this.maxSize = Math.max(key + 1, maxSize);
       this.hashMap.put(key, value);
@@ -109,9 +116,17 @@ public class IntIntDynamicMap implements DynamicMap {
 
   public void remove(int key) {
     if (keyValues != null) {
-      if (key < keyValues.length) keyValues[key] = emptyValue;
+      if (key < keyValues.length && keyValues[key] != emptyValue) {
+        keyValues[key] = emptyValue;
+        keyValuesSize--;
+      }
     } else {
       hashMap.remove(key);
     }
+  }
+
+  @Override
+  public int size() {
+    return keyValues != null ? keyValuesSize : hashMap.size();
   }
 }

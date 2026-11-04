@@ -17,7 +17,7 @@
 //helper for formatting JSON and others
 
 solrAdminApp.controller('ParamSetsController',
-  function($scope, $location, $routeParams, ParamSet, Constants) {
+  function($scope, $location, $routeParams, $timeout, ParamSet, ParamSetsV2, Constants, ApiErrorHandler) {
 
     $scope.paramsetList = [];
 
@@ -33,6 +33,13 @@ solrAdminApp.controller('ParamSetsController',
       }
     }
 
+    // The v2 config/paramsets API needs to know up front whether ":core" is a collection name
+    // (SolrCloud) or an actual core name (standalone/user-managed) -- there's no equivalent of
+    // v1's flexible core-or-collection routing.
+    $scope.paramSetIndexType = function() {
+      return $scope.isCloudEnabled ? "collections" : "cores";
+    }
+
     $scope.selectParamset = function() {
       $location.search("paramset", $scope.name);
       $scope.getParamset($scope.name);
@@ -41,65 +48,57 @@ solrAdminApp.controller('ParamSetsController',
     $scope.getParamset = function (paramset) {
       $scope.refresh();
 
-      var params = {};
-      params.core = $routeParams.core;
-      params.wt = "json";
-      params.name = paramset;
-
-      ParamSet.get(params, callback, failure);
-
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.response = JSON.stringify(success, null, '  ');
-        var apiPayload = {
-          "set": success.response.params
-        };
-        // remove json key that is defined as "", it can't be submitted via the API.
-        var paramsetName = Object.keys(apiPayload.set)[0];
-        delete apiPayload.set[paramsetName][""]
-
-        $scope.paramsetContent = JSON.stringify(apiPayload, null, '  ');
+      // The dropdown's blank option (deselecting) fires this with an empty name; the generated
+      // client requires a real paramSetName, so just leave the content cleared in that case.
+      if (!paramset) {
+        return;
       }
 
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
+      ParamSetsV2.getParamSet($scope.paramSetIndexType(), $routeParams.core, paramset, function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); $scope.responseStatus = response; return; }
+
+          $scope.responseStatus = "success";
+          $scope.response = JSON.stringify(data, null, '  ');
+          var apiPayload = {
+            "set": data.params
+          };
+          // remove json key that is defined as "", it can't be submitted via the API.
+          var paramsetName = Object.keys(apiPayload.set)[0];
+          delete apiPayload.set[paramsetName][""]
+
+          $scope.paramsetContent = JSON.stringify(apiPayload, null, '  ');
+        });
+      });
     }
 
 
     $scope.getParamsets = function () {
       $scope.refresh();
 
-      var params = {};
-      params.core = $routeParams.core;
-      params.wt = "json";
+      ParamSetsV2.listParamSets($scope.paramSetIndexType(), $routeParams.core, function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); $scope.responseStatus = response; return; }
 
-      ParamSet.get(params, callback, failure);
-
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.response = JSON.stringify(success, null, '  ');
-        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
-      }
-
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
+          $scope.responseStatus = "success";
+          $scope.response = JSON.stringify(data, null, '  ');
+          $scope.paramsetList = data.params ? Object.keys(data.params) : [];
+        });
+      });
     }
 
-    $scope.getParamsets();
-    if ($routeParams.paramset){
-      $scope.name = $routeParams.paramset;
-      $scope.getParamset($routeParams.paramset);
-    }
+    // resetMenu() above populates $scope.isCloudEnabled asynchronously, so calling
+    // getParamsets() synchronously here would race it and fall back to indexType "cores"
+    // even in SolrCloud -- wait for isCloudEnabled to settle before the first fetch.
+    var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+      if (value === undefined) return;
+      unwatchCloudEnabled();
+      $scope.getParamsets();
+      if ($routeParams.paramset){
+        $scope.name = $routeParams.paramset;
+        $scope.getParamset($routeParams.paramset);
+      }
+    });
 
     $scope.refresh = function () {
       $scope.paramsetContent = "";
@@ -108,9 +107,17 @@ solrAdminApp.controller('ParamSetsController',
     $scope.refresh();
 
     $scope.submit = function () {
+      if (!$scope.paramsetContent || !$scope.paramsetContent.trim()) {
+        $scope.responseStatus = "error";
+        $scope.response = "Please enter a Paramset(s) JSON payload before submitting. " +
+          "(Checking \"Sample Paramset\" only shows an example -- copy it into the text area to use it.)";
+        return;
+      }
+
       var params = {};
 
       params.core = $routeParams.core;
+      params.indexType = $scope.paramSetIndexType();
       params.wt = "json";
 
       ParamSet.submit(params, $scope.paramsetContent, callback, failure);
@@ -133,8 +140,8 @@ solrAdminApp.controller('ParamSetsController',
       var params = {};
 
       params.core = $routeParams.core;
+      params.indexType = $scope.paramSetIndexType();
       params.wt = "json";
-      params.name = $scope.name;
 
       var apiPayload = {
         "delete": [$scope.name]

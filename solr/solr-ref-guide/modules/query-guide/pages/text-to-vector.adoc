@@ -292,8 +292,6 @@ http://localhost:8983/solr/techproducts/schema/text-to-vector-model-store
 
 ----
 
-Documentation Indexing time
-
 
 === Enriching documents with vectors at indexing time
 To vectorise textual fields of your documents at indexing time you need to configure an {solr-javadocs}/core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[Update Request Processor Chain] that includes at least one `TextToVectorUpdateProcessor` update request processor (you can include more than one, if you want to vectorise multiple fields):

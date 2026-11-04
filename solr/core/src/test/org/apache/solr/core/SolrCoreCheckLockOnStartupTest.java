@@ -27,6 +27,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -50,6 +51,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testSimpleLockErrorOnStartup() throws Exception {
 
     Directory directory =
@@ -57,8 +59,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     // creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
-    ignoreException("locked");
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("locked")) {
       System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
       // opening a new core on the same index
       initCore("solrconfig-basic.xml", "schema.xml");
@@ -66,7 +67,6 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
       System.clearProperty("solr.tests.lockType");
-      unIgnoreException("locked");
       indexWriter.close();
       directory.close();
       deleteCore();
@@ -74,6 +74,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testNativeLockErrorOnStartup() throws Exception {
 
     Path indexDir = initAndGetDataDir().resolve("index");
@@ -84,8 +85,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     // creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
-    ignoreException("locked");
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("locked")) {
       System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_NATIVE);
       // opening a new core on the same index
       initCore("solrconfig-basic.xml", "schema.xml");
@@ -93,7 +93,6 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
       System.clearProperty("solr.tests.lockType");
-      unIgnoreException("locked");
       indexWriter.close();
       directory.close();
       deleteCore();

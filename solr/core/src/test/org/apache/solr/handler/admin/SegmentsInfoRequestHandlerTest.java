@@ -97,7 +97,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   public void testSegmentInfos() {
     assertQ(
         "Unexpected number of segments returned",
-        req("qt", "/admin/segments"),
+        reqWithPath("/admin/segments"),
         NUM_SEGMENTS + "=count(//lst[@name='segments']/lst)");
   }
 
@@ -105,7 +105,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   public void testSegmentInfosVersion() {
     assertQ(
         "Unexpected number of segments returned",
-        req("qt", "/admin/segments"),
+        reqWithPath("/admin/segments"),
         NUM_SEGMENTS
             + "=count(//lst[@name='segments']/lst/str[@name='version'][.='"
             + Version.LATEST
@@ -129,14 +129,15 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
 
               return null;
             });
-    assertQ("Unexpected segment names returned", req("qt", "/admin/segments"), segmentNamePatterns);
+    assertQ(
+        "Unexpected segment names returned", reqWithPath("/admin/segments"), segmentNamePatterns);
   }
 
   @Test
   public void testSegmentInfosData() {
     assertQ(
         "Unexpected document counts in result",
-        req("qt", "/admin/segments"),
+        reqWithPath("/admin/segments"),
         // #Document
         (DOC_COUNT * 2) + "=sum(//lst[@name='segments']/lst/int[@name='size'])",
         // #Deletes
@@ -147,7 +148,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   public void testCoreInfo() {
     assertQ(
         "Missing core info",
-        req("qt", "/admin/segments", "coreInfo", "true"),
+        reqWithPath("/admin/segments", "coreInfo", "true"),
         "boolean(//lst[@name='info']/lst[@name='core'])");
   }
 
@@ -193,7 +194,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
             });
     assertQ(
         "Unexpected field infos returned",
-        req("qt", "/admin/segments", "fieldInfo", "true"),
+        reqWithPath("/admin/segments", "fieldInfo", "true"),
         segmentNamePatterns);
   }
 }

@@ -40,7 +40,7 @@ image::jdbc-dbvisualizer/dbvisualizer_solrjdbc_2.png[image,width=532,height=400]
 
 === Name the Driver in Driver Manager
 
-Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`.
+Provide a name for the driver, and provide the URL format: `jdbc:solr://\{zkConnectionString}/?collection=\{collectionName}`.
 Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be provided later when the connection to Solr is configured.
 The Driver Class will also be automatically added when the driver `.jar` s are added.
 

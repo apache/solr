@@ -1,0 +1,21 @@
+{"phases":[
+    {
+      "description":"phase 0",
+      "spans":[{
+          "name":"get:/admin/metrics",
+          "kind":"SERVER",
+          "db.type":"solr",
+          "http.request.method":"GET",
+          "http.response.status_code":200,
+          "http.url":"http://NORMALIZED/solr/admin/metrics",
+          "http.params":"wt=prometheus"}]},
+    {
+      "description":"phase 1",
+      "spans":[{
+          "name":"list:/admin/collections",
+          "kind":"SERVER",
+          "db.type":"solr",
+          "http.request.method":"GET",
+          "http.response.status_code":200,
+          "http.url":"http://NORMALIZED/solr/admin/collections",
+          "http.params":"action=LIST&wt=javabin"}]}]}

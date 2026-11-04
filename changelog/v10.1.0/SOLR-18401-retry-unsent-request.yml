@@ -1,0 +1,9 @@
+title: >
+  HttpJettySolrClient: detect if request wasn't sent; means retry-able.
+  CloudSolrClient & LBSolrClient will detect it.
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18401
+    url: https://issues.apache.org/jira/browse/SOLR-18401

@@ -1,0 +1,101 @@
+= SolrCloud Update Consistency Model
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This page states the consistency model of SolrCloud update requests (`/update`): what a successful response guarantees, and what it deliberately does not.
+Several of these guarantees are intentionally weaker than those of a transactional database; the trade-offs favor indexing throughput and availability.
+
+Developers interested in how these guarantees are implemented should read the companion document https://github.com/apache/solr/blob/main/dev-docs/distributed-update-internals.adoc[Distributed Update Internals] in the source repository.
+
+== Replication
+
+An update request may be sent to any node in the cluster.
+Each document is routed to the leader replica of its shard, which assigns the document a version, applies the update locally, and forwards it to the other in-sync NRT and TLOG replicas of the shard.
+PULL replicas never receive individual updates; they periodically copy index segments from the leader.
+
+A successful (HTTP 200) response guarantees that every document in the request was applied and written to the xref:configuration-guide:commits-transaction-logs.adoc#transaction-log[transaction log] on its shard leader, and that Solr attempted to replicate it to the shard's other in-sync replicas.
+
+It does *not* guarantee that any replica other than the leader applied the update.
+By design, a replica that fails to acknowledge an update does not fail the request; instead the leader marks that replica as out-of-date, and the replica must recover (catch up from the leader) before serving queries or becoming a leader.
+Clients that need to know how widely an update was replicated can inspect the achieved replication factor (`rf`) in the response header; it is informational only and is never enforced.
+See xref:solrcloud-recoveries-and-write-tolerance.adoc[] for details.
+
+== Durability
+
+Every update is written to the leader's transaction log before the response is returned, and replayed on startup if the node was stopped before a hard commit.
+With the default transaction log `syncLevel` of `flush`, this survives a JVM crash or process kill but not necessarily an operating system crash or power loss; configure `syncLevel` to `fsync` to close that gap at some cost to throughput.
+Index files themselves are durable once a hard commit completes.
+See xref:configuration-guide:commits-transaction-logs.adoc[] for configuration details.
+
+An acknowledged update that has reached only the leader can still be lost if the leader is permanently destroyed before any replica receives it.
+The durability floor of an acknowledged update is therefore one node, unless the client verifies `rf`.
+
+== Ordering
+
+Updates to the *same document* are strictly ordered.
+The shard leader serializes concurrent updates to a given document id and assigns each a monotonically increasing `\_version_`; replicas ignore any update older than the version they already have.
+The last write accepted by the leader wins.
+
+There is no ordering guarantee *across different documents*.
+Documents sent in one batch may be applied on replicas, and become searchable, in a different order than submitted — especially across shards.
+
+== Atomicity
+
+The unit of atomicity is a single document.
+A document update fully replaces the previous version of that document (xref:indexing-guide:partial-document-updates.adoc#atomic-updates[atomic updates] are read-modify-write operations performed on the leader, producing a full replacement document).
+Queries never observe a partially updated document.
+A xref:indexing-guide:indexing-nested-documents.adoc[nested document] hierarchy counts as one document for this purpose: the root and all of its descendants are indexed together as a single block, and an update to any document in the hierarchy rewrites the entire block.
+xref:indexing-guide:partial-document-updates.adoc#in-place-updates[In-place updates] are a narrow exception to full replacement — they modify eligible docValues fields without reindexing the document — but they are still atomic per document.
+
+There are no multi-document transactions.
+A batch of documents is processed as independent operations: some may succeed while others fail, and there is no rollback of the documents that succeeded.
+By default a document error fails the request at that point; the {solr-javadocs}/core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`] can be configured to instead continue past per-document failures and report them all in the response.
+Similarly, a delete-by-query spanning multiple shards is not atomic across those shards.
+The xref:indexing-guide:indexing-with-update-handlers.adoc#rollback-operations[rollback command] is not supported in SolrCloud.
+
+== Visibility
+
+An update is not searchable until a commit opens a new searcher; durability (via the transaction log and hard commits) and searchability are independent.
+Each replica opens its searcher independently, so a document may briefly be searchable on one replica but not another; applications using `autoSoftCommit` or `commitWithin` must embrace this eventual consistency, as described in xref:solrcloud-shards-indexing.adoc#ignoring-commits-from-client-applications-in-solrcloud[Ignoring Commits from Client Applications in SolrCloud].
+An application can avoid replica-to-replica visibility differences from any single user by routing that user's queries to the same replica, using stable routing with the xref:solrcloud-distributed-requests.adoc#shards-preference-parameter[`shards.preference` parameter] (e.g., `replica.base:stable:hash:sessionId`); each user then observes one replica's consistent timeline.
+
+The exception is xref:configuration-guide:realtime-get.adoc[RealTime Get], which retrieves the latest version of a document by id — including uncommitted updates — directly from the transaction log.
+
+== Optimistic Concurrency
+
+Solr supports conditional updates through the `\_version_` field: a client may require that a document already exist, not exist, or exist at an exact version, and a failed condition rejects the update with an HTTP 409 conflict.
+This is the supported way to prevent lost updates when multiple clients read, modify, and rewrite the same documents.
+See xref:indexing-guide:partial-document-updates.adoc#optimistic-concurrency[Optimistic Concurrency].
+
+Applications whose versions originate in an external system of record can instead enforce ordering with a version field of their own, via `DocBasedVersionConstraintsProcessorFactory`; see xref:indexing-guide:partial-document-updates.adoc#document-centric-versioning-constraints[Document Centric Versioning Constraints].
+
+== Failures and Retries
+
+Failures that are visible to the client include: the receiving node being unable to reach a shard leader, a shard having no elected leader, a leader change detected mid-request, version conflicts, and per-document errors such as schema violations.
+Failed requests may leave earlier documents of the same batch applied.
+
+Retrying a failed request is safe for full-document adds and deletes-by-id: reapplying the same document produces the same end state (though a retry can overwrite a newer concurrent write from another client, as with any last-write-wins system).
+Retrying is *not* inherently safe for atomic updates that are not idempotent, such as `inc`ing a counter or `add`ing a list value, because the original attempt may have been applied even though the response was lost.
+Use optimistic concurrency to make such read-modify-write cycles safe to retry.
+
+== Leader Failover
+
+When a leader fails, Solr elects a new leader from the replicas that are known to be up-to-date, and the new leader first syncs any recent updates from its peers.
+Acknowledged updates therefore survive leader failover whenever at least one up-to-date replica remains.
+
+If no up-to-date replica is available after a waiting period (`leaderVoteWait`), Solr chooses availability over consistency: a potentially stale replica becomes leader so the shard can continue accepting updates, and updates that only the old leader had may be lost.
+Solr logs a "potential data loss" warning when this happens.

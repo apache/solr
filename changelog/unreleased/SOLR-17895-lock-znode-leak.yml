@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: With the Overseer disabled, lock nodes in ZooKeeper are now removed once no longer used.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-17895
+    url: https://issues.apache.org/jira/browse/SOLR-17895

@@ -94,18 +94,14 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     coreHandlers.put("/admin/ping", new PingRequestHandler());
 
     Map<String, String> parts = new HashMap<>();
-    String fullPath = "/collections/hello/shards";
+    String fullPath = "/collections/hello";
     Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST", fullPath, parts);
     assertNotNull(api);
     assertEquals("hello", parts.get("collection"));
 
     parts = new HashMap<>();
-    api =
-        V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards", "POST", null, parts);
-    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/split", NOT_NULL));
-
-    parts = new HashMap<>();
-    api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
+    api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST", null, parts);
+    assertNotNull(api);
     assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/modify", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
@@ -278,12 +274,14 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     return rsp;
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private SolrQueryResponse invoke(
       PluginBag<SolrRequestHandler> reqHandlers,
       String path,
       String fullPath,
       CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
+    // Identity check: is reqHandlers the container's own handler bag, or a substitute?
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;
     path = path == null ? fullPath : path;
     Api api = null;

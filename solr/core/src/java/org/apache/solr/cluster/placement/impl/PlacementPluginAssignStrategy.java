@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +27,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica.ReplicaType;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
@@ -41,13 +41,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.CollectionUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PlacementPlugin plugin;
 
@@ -75,7 +71,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
       placementRequests.add(
           PlacementRequestImpl.toPlacementRequest(
               placementContext.getCluster(),
-              placementContext.getCluster().getCollection(assignRequest.collectionName),
+              getCollection(placementContext, assignRequest.collectionName),
               assignRequest));
     }
 
@@ -127,7 +123,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private Replica findReplica(
       SolrCloudManager solrCloudManager, org.apache.solr.cluster.Replica replica) {
-    DocCollection collection = null;
+    DocCollection collection;
     try {
       collection =
           solrCloudManager
@@ -176,6 +172,20 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     }
   }
 
+  /**
+   * Looks up the collection replicas are requested for. It can be missing from the cluster state
+   * this request sees, for example when it was deleted concurrently.
+   */
+  private static SolrCollection getCollection(
+      PlacementContext placementContext, String collectionName) throws IOException {
+    SolrCollection collection = placementContext.getCluster().getCollection(collectionName);
+    if (collection == null) {
+      throw new Assign.AssignmentException(
+          "Collection " + collectionName + " not found in cluster state; cannot assign replicas");
+    }
+    return collection;
+  }
+
   /** Very minimal placement logic for System collections */
   private static List<ReplicaPosition> computeSystemCollectionPositions(
       PlacementContext placementContext, Assign.AssignRequest assignRequest) throws IOException {
@@ -191,7 +201,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     }
     PlacementRequestImpl request =
         new PlacementRequestImpl(
-            placementContext.getCluster().getCollection(assignRequest.collectionName),
+            getCollection(placementContext, assignRequest.collectionName),
             new HashSet<>(assignRequest.shardNames),
             nodes,
             assignRequest.numReplicas);

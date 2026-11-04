@@ -43,7 +43,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.filestore.ClusterFileStore;
-import org.apache.solr.filestore.FileStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -59,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>See the <a
  * href="https://solr.apache.org/guide/solr/latest/getting-started/tutorial-opennlp.html">Tutorial</a>
- * for the step by step guide.
+ * for a step-by-step guide.
  *
  * <p>The <code>source</code> field(s) can be configured as either:
  *
@@ -473,8 +472,6 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
 
       {
         // Initialize the categorizer.
-        FileStore fs = req.getCoreContainer().getFileStore();
-
         var path = solrHome.resolve(ClusterFileStore.FILESTORE_DIRECTORY);
         Path modelFile = Path.of(model);
         Path vocabFile = Path.of(vocab);

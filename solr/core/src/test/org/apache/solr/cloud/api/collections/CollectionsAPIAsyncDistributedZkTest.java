@@ -30,7 +30,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -234,7 +233,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
     int j = 0;
     for (JettySolrRunner r : cluster.getJettySolrRunners()) {
-      clients[j++] = new HttpSolrClient.Builder(r.getBaseUrl().toString()).build();
+      clients[j++] = r.getSolrClient(); // no need to close
     }
     RequestStatusState state =
         CollectionAdminRequest.createCollection("testAsyncIdRaceCondition", "conf1", 1, 1)
@@ -251,51 +250,41 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     ExecutorService es =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
-    try {
-      for (int i = 0; i < numThreads; i++) {
-        es.execute(
-            new Runnable() {
+    for (int i = 0; i < numThreads; i++) {
+      es.execute(
+          () -> {
+            CollectionAdminRequest.Reload reloadCollectionRequest =
+                CollectionAdminRequest.reloadCollection("testAsyncIdRaceCondition");
+            latch.countDown();
+            try {
+              latch.await();
+            } catch (InterruptedException e) {
+              throw new RuntimeException();
+            }
 
-              @Override
-              public void run() {
-                CollectionAdminRequest.Reload reloadCollectionRequest =
-                    CollectionAdminRequest.reloadCollection("testAsyncIdRaceCondition");
-                latch.countDown();
-                try {
-                  latch.await();
-                } catch (InterruptedException e) {
-                  throw new RuntimeException();
-                }
-
-                try {
-                  if (log.isInfoEnabled()) {
-                    log.info("{} - Reloading Collection.", Thread.currentThread().getName());
-                  }
-                  reloadCollectionRequest.processAsync(
-                      "repeatedId", clients[random().nextInt(clients.length)]);
-                  numSuccess.incrementAndGet();
-                } catch (SolrServerException | RemoteSolrException e) {
-                  if (log.isInfoEnabled()) {
-                    log.info("Exception during collection reloading, we were waiting for one: ", e);
-                  }
-                  assertThat(
-                      e.getMessage(),
-                      containsString("Task with the same requestid already exists. (repeatedId)"));
-                  numFailure.incrementAndGet();
-                } catch (IOException e) {
-                  throw new RuntimeException();
-                }
+            try {
+              if (log.isInfoEnabled()) {
+                log.info("{} - Reloading Collection.", Thread.currentThread().getName());
               }
-            });
-      }
-      es.shutdown();
-      assertTrue(es.awaitTermination(10, TimeUnit.SECONDS));
-      assertEquals(1, numSuccess.get());
-      assertEquals(numThreads - 1, numFailure.get());
-    } finally {
-      for (SolrClient client : clients) {
-        client.close();
-      }
+              reloadCollectionRequest.processAsync(
+                  "repeatedId", clients[random().nextInt(clients.length)]);
+              numSuccess.incrementAndGet();
+            } catch (SolrServerException | RemoteSolrException e) {
+              if (log.isInfoEnabled()) {
+                log.info("Exception during collection reloading, we were waiting for one: ", e);
+              }
+              assertThat(
+                  e.getMessage(),
+                  containsString("Task with the same requestid already exists. (repeatedId)"));
+              numFailure.incrementAndGet();
+            } catch (IOException e) {
+              throw new RuntimeException();
+            }
+          });
     }
+    es.shutdown();
+    assertTrue(es.awaitTermination(10, TimeUnit.SECONDS));
+    assertEquals(1, numSuccess.get());
+    assertEquals(numThreads - 1, numFailure.get());
   }
 }

@@ -544,7 +544,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     processor.processDelete(deleteUpdateCommand);
     verify(requestMirroringHandler, times(1)).mirror(updateRequest);
     assertEquals("missing dbq", 1, updateRequest.getDeleteQuery().size());
-    assertEquals("dbq value", "id:test*", updateRequest.getDeleteQuery().get(0));
+    assertEquals("dbq value", "id:test*", updateRequest.getDeleteQuery().getFirst());
     // verify the metrics
     assertEquals(1, counters.get("local").get());
     assertEquals(1, counters.get("submittedDeleteByQuery").get());
@@ -575,13 +575,13 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEstimateObjectSize() {
-    assertEquals(estimate(null), 0);
-    assertEquals(estimate("abc"), 6);
-    assertEquals(estimate("abcdefgh"), 16);
+    assertEquals(0, estimate(null));
+    assertEquals(6, estimate("abc"));
+    assertEquals(16, estimate("abcdefgh"));
     List<String> keys = List.of("int", "long", "double", "float", "str");
-    assertEquals(estimate(keys), 42);
+    assertEquals(42, estimate(keys));
     List<Object> values = List.of(12, 5L, 12.0, 5.0, "duck");
-    assertEquals(estimate(values), 8);
+    assertEquals(8, estimate(values));
 
     Map<String, Object> map = new HashMap<>();
     map.put("int", 12);
@@ -590,7 +590,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     map.put("float", 5.0f);
     map.put("str", "duck");
     map.put("short", null);
-    assertEquals(estimate(map), 60);
+    assertEquals(60, estimate(map));
 
     SolrInputDocument document = new SolrInputDocument();
     for (Map.Entry<String, Object> entry : map.entrySet()) {

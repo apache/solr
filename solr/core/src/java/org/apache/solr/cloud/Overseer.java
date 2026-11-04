@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
-import com.codahale.metrics.Timer;
 import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
@@ -53,9 +52,7 @@ import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
@@ -427,7 +424,6 @@ public class Overseer implements SolrCloseable {
             "Message missing " + QUEUE_OPERATION + ":" + message);
       }
       List<ZkWriteCommand> zkWriteCommands = null;
-      final Timer.Context timerContext = stats.time(operation);
       try {
         zkWriteCommands = processMessage(clusterState, message, operation);
         stats.success(operation);
@@ -442,8 +438,6 @@ public class Overseer implements SolrCloseable {
             message,
             e);
         stats.error(operation);
-      } finally {
-        timerContext.stop();
       }
       if (zkWriteCommands != null) {
         clusterState = zkStateWriter.enqueueUpdate(clusterState, zkWriteCommands, callback);
@@ -594,7 +588,6 @@ public class Overseer implements SolrCloseable {
     }
 
     private LeaderStatus amILeader() {
-      Timer.Context timerContext = stats.time("am_i_leader");
       boolean success = true;
       String propsId = null;
       try {
@@ -623,7 +616,6 @@ public class Overseer implements SolrCloseable {
         success = false;
         log.warn("Unexpected exception", e);
       } finally {
-        timerContext.stop();
         if (success) {
           stats.success("am_i_leader");
         } else {
@@ -740,14 +732,7 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(reader.getZkClient());
     // launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
-    String stateCompressionProviderClass = config.getStateCompressorClass();
-    Compressor compressor =
-        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
-            ? new ZLibCompressor()
-            : zkController
-                .getCoreContainer()
-                .getResourceLoader()
-                .newInstance(stateCompressionProviderClass, Compressor.class);
+    Compressor compressor = zkController.getCompressor();
     updaterThread =
         new OverseerThread(
             tg,
@@ -788,9 +773,6 @@ public class Overseer implements SolrCloseable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  /** Start {@link ClusterSingleton} plugins when we become the leader. */
-
-  /** Stop {@link ClusterSingleton} plugins when we lose leadership. */
   public Stats getStats() {
     return stats;
   }
@@ -1053,9 +1035,8 @@ public class Overseer implements SolrCloseable {
       final ZkNodeProps message = ZkNodeProps.load(data);
       final String operation = message.getStr(QUEUE_OPERATION);
       log.error(
-          "Received unexpected message on Overseer cluster state updater for "
-              + operation
-              + " when distributed updates are configured"); // nowarn
+          "Received unexpected message on Overseer cluster state updater for {} when distributed updates are configured",
+          operation);
       throw new RuntimeException(
           "Message "
               + operation

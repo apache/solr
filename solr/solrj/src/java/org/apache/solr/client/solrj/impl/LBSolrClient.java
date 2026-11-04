@@ -43,6 +43,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -168,7 +169,7 @@ public abstract class LBSolrClient extends SolrClient {
     solrQuery.setDistrib(false);
   }
 
-  public static class Builder<C extends HttpSolrClientBase> {
+  public static class Builder<C extends HttpSolrClient> {
 
     private final C solrClient;
     private final Endpoint[] solrEndpoints;
@@ -618,10 +619,10 @@ public abstract class LBSolrClient extends SolrClient {
   private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClientBase that may not
+    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClient that may not
     // be pointed at the desired URL (or any URL for that matter).  We special-case that here to
     // ensure the appropriate URL is provided.
-    if (solrClient instanceof HttpSolrClientBase hasReqWithUrl) {
+    if (solrClient instanceof HttpSolrClient hasReqWithUrl) {
       return hasReqWithUrl.requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
@@ -671,7 +672,11 @@ public abstract class LBSolrClient extends SolrClient {
       if (!isNonRetryable
           && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable && isConnectException(rootCause)) {
+      } else if (isNonRetryable
+          && (isConnectException(rootCause)
+              || SolrException.hasCause(e, RequestNotSentException.class))) {
+        // Nothing of the request reached the server, so replaying it elsewhere is safe even though
+        // it isn't idempotent.
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;

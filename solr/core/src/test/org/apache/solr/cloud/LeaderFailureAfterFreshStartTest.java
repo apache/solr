@@ -135,7 +135,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
     // start the freshNode
     restartNodes(List.of(freshNode));
-    String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
+    String coreName = freshNode.jetty.getCoreContainer().getLoadedCoreNames().get(0);
     Path replicationProperties =
         Path.of(freshNode.jetty.getSolrHome(), "cores", coreName, "data", "replication.properties");
     String md5 = DigestUtils.md5Hex(Files.readAllBytes(replicationProperties));

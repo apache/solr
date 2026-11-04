@@ -18,8 +18,6 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Map;
-import java.util.stream.Stream;
 
 /** */
 public class XML {
@@ -82,43 +80,26 @@ public class XML {
     escape(str, out, attribute_escapes);
   }
 
-  public static void escapeAttributeValue(char[] chars, int start, int length, Writer out)
-      throws IOException {
-    escape(chars, start, length, out, attribute_escapes);
-  }
-
   /**
    * does NOT escape character data in val; it must already be valid XML. Attributes are always
    * escaped.
    */
-  public static final void writeUnescapedXML(Writer out, String tag, String val, Object... attrs)
+  public static void writeUnescapedXML(Writer out, String tag, String val, Object... attrs)
       throws IOException {
     writeXML(out, tag, (writer1) -> writer1.write(val), attrs);
   }
 
   /** escapes character data in val and attributes */
-  public static final void writeXML(Writer out, String tag, String val, Object... attrs)
+  public static void writeXML(Writer out, String tag, String val, Object... attrs)
       throws IOException {
     final Writable writable = val != null ? (writer1) -> XML.escapeCharData(val, writer1) : null;
     writeXML(out, tag, writable, attrs);
   }
 
-  /** escapes character data in val and attributes */
-  public static void writeXML(Writer out, String tag, String val, Map<String, String> attrs)
-      throws IOException {
-    writeXML(
-        out,
-        tag,
-        val,
-        attrs.entrySet().stream()
-            .flatMap((entry) -> Stream.of(entry.getKey(), entry.getValue()))
-            .toArray());
-  }
-
   /**
    * @lucene.internal
    */
-  public static final void writeXML(Writer out, String tag, Writable valWritable, Object... attrs)
+  public static void writeXML(Writer out, String tag, Writable valWritable, Object... attrs)
       throws IOException {
     out.write('<');
     out.write(tag);
@@ -147,21 +128,6 @@ public class XML {
   @FunctionalInterface
   public interface Writable {
     void write(Writer w) throws IOException;
-  }
-
-  private static void escape(char[] chars, int offset, int length, Writer out, String[] escapes)
-      throws IOException {
-    for (int i = offset; i < length; i++) {
-      char ch = chars[i];
-      if (ch < escapes.length) {
-        String replacement = escapes[ch];
-        if (replacement != null) {
-          out.write(replacement);
-          continue;
-        }
-      }
-      out.write(ch);
-    }
   }
 
   private static void escape(String str, Writer out, String[] escapes) throws IOException {

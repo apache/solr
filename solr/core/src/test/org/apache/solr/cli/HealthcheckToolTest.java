@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class HealthcheckToolTest extends SolrCloudTestCase {
 
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {
+    return CLITestHelper.runTool(args, clazz);
+  }
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
@@ -44,7 +49,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {"healthcheck", "-c", "bob", "-z", cluster.getZkClient().getZkServerAddress()};
-    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
+    assertEquals(0, runTool(args, HealthcheckTool.class));
   }
 
   @Test
@@ -56,7 +61,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
         ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
 
     String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
-    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
+    assertEquals(0, runTool(args, HealthcheckTool.class));
   }
 
   @Test
@@ -70,6 +75,25 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
     solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
 
     String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
-    assertEquals(0, CLITestHelper.runTool(args, HealthcheckTool.class));
+    assertEquals(0, runTool(args, HealthcheckTool.class));
+  }
+
+  @Test
+  public void testHealthcheckWithSolrConnectionParameter() throws Exception {
+    String[] connStrings = {
+      getZookeeperSolrConnection().toString(), getHttpSolrConnection().toString()
+    };
+    for (String connectionString : connStrings) {
+      String[] args =
+          new String[] {"healthcheck", "-c", "bob", "--solr-connection", connectionString};
+      assertEquals(0, runTool(args, HealthcheckTool.class));
+    }
+  }
+
+  @Test
+  public void testHealthcheckWithZookeeperParameter() throws Exception {
+    String zkHost = cluster.getZkServer().getZkAddress();
+    String[] args = new String[] {"healthcheck", "-c", "bob", "--zk-host", zkHost};
+    assertEquals(0, runTool(args, HealthcheckTool.class));
   }
 }

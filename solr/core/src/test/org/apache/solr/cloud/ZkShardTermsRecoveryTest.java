@@ -52,10 +52,18 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
             .process(cluster.getSolrClient())
             .getStatus());
+
     waitForState(
         "Timeout waiting for collection to be active after creation",
         COLLECTION,
         clusterShape(NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS));
+
+    UpdateRequest up = new UpdateRequest();
+    for (int i = 0; i < 200; i++) {
+      up.add("id", "id-" + i);
+    }
+    up.commit(cluster.getSolrClient(), COLLECTION);
+    NUM_DOCS += 200;
   }
 
   @Before
@@ -182,12 +190,11 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient = getHttpSolrClient(r)) {
-        assertEquals(
-            "Replica " + r.getName() + " not up to date",
-            numDocs,
-            replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
-      }
+      SolrClient replicaClient = cluster.getSolrClient(r);
+      assertEquals(
+          "Replica " + r.getName() + " not up to date",
+          numDocs,
+          replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
     }
   }
 

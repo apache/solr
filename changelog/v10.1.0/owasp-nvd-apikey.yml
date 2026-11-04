@@ -1,0 +1,11 @@
+title: >
+  The `./gradlew owasp` dependency vulnerability check now supports an NVD API key
+  (via `-PnvdApiKey` or `NVD_API_KEY`), and requires `--no-parallel` due to an upstream
+  Gradle plugin issue. See dev-docs/FAQ.adoc for details.
+type: other
+authors:
+  - name: Eric Pugh
+links:
+  - name: PR#4725
+    url: https://github.com/apache/solr/pull/4725
+

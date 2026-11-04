@@ -15,7 +15,7 @@ Used to validate new release candidates (RC). The script downloads an RC from a 
 or local folder, then runs a number of sanity checks on the artifacts, and then runs
 the full tests.
 
-    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--test-alt-java TEST_ALT_JAVA] [--download-only] [--dev-mode] url ...
+    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--download-only] [--dev-mode] url ...
 
     Utility to test a release.
 
@@ -31,14 +31,20 @@ the full tests.
       --revision REVISION   GIT revision number that release was built with, defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
                             Version of the release, defaults to that in URL
-      --test-alt-java TEST_ALT_JAVA
-                            Path to Java alternative home directory, to run tests with if specified
       --download-only       Only perform download and sha hash check steps
       --dev-mode            Enable dev mode, will not check branch compatibility
 
     Example usage:
     python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
 
+
+### releaseDryRun.sh
+
+Dry run of the release process for the version in `build.gradle`, without signing or
+publishing anything: prepares the changelog on a local branch, builds an RC with
+`buildAndPushRelease.py`, and smoke tests it. Used by the `Solr-Smoketest-*` Jenkins jobs.
+
+    Usage: dev-tools/scripts/releaseDryRun.sh [TMP_DIR]
 
 ### releaseWizard.py
 

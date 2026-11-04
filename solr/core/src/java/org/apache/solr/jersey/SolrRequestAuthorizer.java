@@ -49,10 +49,6 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
 
   @Context private ResourceInfo resourceInfo;
 
-  public SolrRequestAuthorizer() {
-    log.info("Creating a new SolrRequestAuthorizer");
-  }
-
   @SuppressWarnings("unchecked")
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {

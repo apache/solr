@@ -22,7 +22,6 @@ description = 'Search Results Clustering Integraton'
 dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
 

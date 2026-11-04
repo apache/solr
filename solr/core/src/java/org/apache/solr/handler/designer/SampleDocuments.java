@@ -56,7 +56,7 @@ public class SampleDocuments {
                     return id != null
                         && !ids.contains(id); // doc has ID, and it's not already in the set
                   })
-              .collect(Collectors.toList());
+              .toList();
       parsed.addAll(toAdd);
       if (maxDocsToLoad > 0 && parsed.size() > maxDocsToLoad) {
         parsed = parsed.subList(0, maxDocsToLoad);

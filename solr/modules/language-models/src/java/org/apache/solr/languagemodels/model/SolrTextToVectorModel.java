@@ -29,13 +29,13 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.LanguageModelException;
-import org.apache.solr.languagemodels.store.rest.ManagedTextToVectorModelStore;
+import org.apache.solr.languagemodels.store.rest.TextToVectorModelStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This object wraps a {@link EmbeddingModel} to encode text to vector. It's meant to be used as a
- * managed resource with the {@link ManagedTextToVectorModelStore}
+ * managed resource with the {@link TextToVectorModelStore}
  */
 public class SolrTextToVectorModel extends SolrLanguageModel implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -84,15 +84,16 @@ public class SolrTextToVectorModel extends SolrLanguageModel implements Accounta
               Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
               builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
             }
-            case MAX_SEGMENTS_PER_BATCH_PARAM, MAX_RETRIES_PARAM -> builder
-                .getClass()
-                .getMethod(paramName, Integer.class)
-                .invoke(builder, ((Long) params.get(paramName)).intValue());
+            case MAX_SEGMENTS_PER_BATCH_PARAM, MAX_RETRIES_PARAM ->
+                builder
+                    .getClass()
+                    .getMethod(paramName, Integer.class)
+                    .invoke(builder, ((Long) params.get(paramName)).intValue());
 
-              /*
-               * For primitive params if there's only one setter available, we call it.
-               * If there's choice we default to the string one
-               */
+            /*
+             * For primitive params if there's only one setter available, we call it.
+             * If there's choice we default to the string one
+             */
             default -> {
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
