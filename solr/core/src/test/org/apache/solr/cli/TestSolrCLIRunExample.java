@@ -686,7 +686,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             () -> tool.initDirs(solrServerDir.toString(), null, null, null, "techproducts"));
 
     assertEquals(
-        "Examples are not included in the slim distribution. "
+        "The default example directory does not exist or is not a directory. "
+            + "Examples are not included in the slim distribution. "
             + "Use the full Solr distribution to run examples.",
         exception.getMessage());
   }

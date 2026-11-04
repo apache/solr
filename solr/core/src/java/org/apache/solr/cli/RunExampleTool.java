@@ -576,16 +576,18 @@ public class RunExampleTool extends ToolBase {
 
     exampleDir =
         (exampleDirArg != null) ? Path.of(exampleDirArg) : serverDir.getParent().resolve("example");
-    if (!Files.isDirectory(exampleDir)) {
-      if (exampleDirArg == null) {
-        throw new IllegalArgumentException(
-            "Examples are not included in the slim distribution. "
-                + "Use the full Solr distribution to run examples.");
-      }
+    boolean exampleDirIsDirectory = Files.isDirectory(exampleDir);
+    if (!exampleDirIsDirectory && exampleDirArg != null) {
       throw new IllegalArgumentException(
           "Value of --example-dir option is invalid! "
               + exampleDir.toAbsolutePath()
               + " is not a directory!");
+    }
+    if (!exampleDirIsDirectory) {
+      throw new IllegalArgumentException(
+          "The default example directory does not exist or is not a directory. "
+              + "Examples are not included in the slim distribution. "
+              + "Use the full Solr distribution to run examples.");
     }
 
     if (solrHomeArg != null) {
