@@ -264,6 +264,25 @@ public class ShardTerms implements MapWriter {
     return new ShardTerms(newValues, version);
   }
 
+  /**
+   * Clear recovery state after the recovery attempt fails, rolling back the speculative term raise
+   * from {@link #startRecovering}: the replica keeps the term its data had actually reached before
+   * recovery began (the value saved under the recovering marker). A failed recovery never rolls
+   * back the replica's index, so that saved term understates, and never overstates, how current the
+   * replica is; keeping it lets leader election still order the failed replica against the others
+   * instead of ranking it with a brand-new empty replica.
+   */
+  public ShardTerms recoveryFailed(String coreNodeName) {
+    if (!values.containsKey(recoveringTerm(coreNodeName))) {
+      return null;
+    }
+
+    HashMap<String, Long> newValues = new HashMap<>(values);
+    long termBeforeRecovery = newValues.remove(recoveringTerm(coreNodeName));
+    newValues.put(coreNodeName, termBeforeRecovery);
+    return new ShardTerms(newValues, version);
+  }
+
   public static String recoveringTerm(String coreNodeName) {
     return coreNodeName + RECOVERING_TERM_SUFFIX;
   }

@@ -277,6 +277,11 @@ public class ZkShardTerms implements AutoCloseable {
     mutate(terms -> terms.doneRecovering(coreNodeName));
   }
 
+  /** Clear recovery state after the recovery attempt fails. */
+  public void recoveryFailed(String coreNodeName) {
+    mutate(terms -> terms.recoveryFailed(coreNodeName));
+  }
+
   public boolean isRecovering(String name) {
     return terms.get().isRecovering(name);
   }
