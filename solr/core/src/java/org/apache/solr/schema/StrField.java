@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
@@ -42,6 +40,10 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
+  }
+
+  @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     IndexableField fval = createField(field, value);
 
@@ -49,9 +51,10 @@ public class StrField extends PrimitiveFieldType {
       IndexableField docval;
       final BytesRef bytes = getBytesRef(value);
       if (field.multiValued()) {
-        docval = new SortedSetDocValuesField(field.getName(), bytes);
+        docval =
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       } else {
-        docval = new SortedDocValuesField(field.getName(), bytes);
+        docval = createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
       }
 
       // Only create a list of we have 2 values...
