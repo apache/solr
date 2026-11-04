@@ -56,11 +56,6 @@ public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<Strin
     super(sz);
   }
 
-  /** Creates an instance holding the entries of the given map, in its iteration order. */
-  public SimpleOrderedMap(Map<String, ? extends T> nameValueMap) {
-    super(nameValueMap);
-  }
-
   /**
    * Creates an instance backed by an explicitly specified list of pairwise names/values.
    *

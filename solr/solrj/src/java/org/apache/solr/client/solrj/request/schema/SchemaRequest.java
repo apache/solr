@@ -94,7 +94,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     Map<String, Object> similarityAttributes = fieldTypeDefinition.getSimilarity();
     if (similarityAttributes != null && !similarityAttributes.isEmpty()) {
-      addFieldTypeNamedList.add("similarity", new SimpleOrderedMap<>(similarityAttributes));
+      addFieldTypeNamedList.add("similarity", toSimpleOrderedMap(similarityAttributes));
     }
 
     return addFieldTypeNamedList;
@@ -108,21 +108,27 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     if (charFiltersAttributes != null) {
       List<NamedList<Object>> charFiltersList = new ArrayList<>();
       for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
-        charFiltersList.add(new SimpleOrderedMap<>(charFilterAttributes));
+        charFiltersList.add(toSimpleOrderedMap(charFilterAttributes));
       analyzerNamedList.add("charFilters", charFiltersList);
     }
     Map<String, Object> tokenizerAttributes = analyzerDefinition.getTokenizer();
     if (tokenizerAttributes != null) {
-      analyzerNamedList.add("tokenizer", new SimpleOrderedMap<>(tokenizerAttributes));
+      analyzerNamedList.add("tokenizer", toSimpleOrderedMap(tokenizerAttributes));
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
       List<NamedList<Object>> filtersList = new ArrayList<>();
       for (Map<String, Object> filterAttributes : filtersAttributes)
-        filtersList.add(new SimpleOrderedMap<>(filterAttributes));
+        filtersList.add(toSimpleOrderedMap(filterAttributes));
       analyzerNamedList.add("filters", filtersList);
     }
     return analyzerNamedList;
+  }
+
+  private static SimpleOrderedMap<Object> toSimpleOrderedMap(Map<String, Object> attributes) {
+    SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+    result.addAll(attributes);
+    return result;
   }
 
   private static NamedList<Object> createAddFieldNamedList(Map<String, Object> fieldAttributes) {
