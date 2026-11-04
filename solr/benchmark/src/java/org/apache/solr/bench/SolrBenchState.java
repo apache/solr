@@ -532,11 +532,7 @@ public class SolrBenchState {
    * @return the modifiable solr params
    */
   public static ModifiableSolrParams params(String... moreParams) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (int i = 0; i < moreParams.length; i += 2) {
-      params.add(moreParams[i], moreParams[i + 1]);
-    }
-    return params;
+    return ModifiableSolrParams.of(moreParams);
   }
 
   /**
