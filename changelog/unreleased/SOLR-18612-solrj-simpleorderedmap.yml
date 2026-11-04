@@ -1,0 +1,13 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  SolrJ: NamedLists that never carry repeated keys (Schema API request bodies, parsed JSON responses,
+  pivot facets, routed-update bookkeeping) are now created as SimpleOrderedMap. No wire format
+  changes. SimpleOrderedMap gains a constructor from a Map.
+type: changed
+authors:
+  - name: Ivan Šarić
+    nick: isaric
+links:
+  - name: SOLR-18612
+    url: https://issues.apache.org/jira/browse/SOLR-18612

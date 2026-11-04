@@ -311,7 +311,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
     }
 
-    final NamedList<Throwable> exceptions = new NamedList<>();
+    final NamedList<Throwable> exceptions = new SimpleOrderedMap<>();
     final NamedList<NamedList<?>> shardResponses =
         new NamedList<>(routes.size() + 1); // +1 for deleteQuery
 
