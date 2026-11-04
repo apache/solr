@@ -127,7 +127,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
           type,
           reverse,
           reverse,
-          missingValue,
+          null,
           missingValue,
           parentFilter,
           childFilter) {
