@@ -1,0 +1,10 @@
+title: >
+  An invalid preFetchDocs param (non-numeric or negative) now returns a 400 error instead of a 500.
+  ValueSourceAugmenter no longer throws an NPE when constructed with a null QParser, and no longer
+  reuses function values cached for an earlier result context.
+type: fixed
+authors:
+  - name: Ian Springer
+links:
+  - name: SOLR-18620
+    url: https://issues.apache.org/jira/browse/SOLR-18620
