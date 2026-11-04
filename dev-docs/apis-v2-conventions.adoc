@@ -72,11 +72,16 @@ For use within the v2 API, the four "popular" HTTP methods have the following se
 
 == Errors
 
+Successful synchronous requests normally return HTTP 200.
+Report failures using the appropriate HTTP 4xx or 5xx status; use HTTP 500 for unexpected server failures.
+Do not return HTTP 200 with an error indicated only by a response-body field such as `status: ERROR`.
+
 v2 APIs should be consistent in how they report errors.  Throwing a `SolrException` will convey
 1. The error code as the HTTP response status code, as `responseHeader.status` and as `error.code`, and
 2. The error message as `error.msg`.
 
 API calls that reference a specific resource (e.g. `specificCollName`, `specificAliasName`, `specificPropertyName` and others per the above list) that do not exist should return `SolrException.ErrorCode.NOT_FOUND` (HTTP 404).
+Use `SolrException.ErrorCode.CONFLICT` (HTTP 409) when the request conflicts with the current state, such as a replication request for an index generation that is no longer available.
 
 == Exceptional Cases - "Command" APIs
 
