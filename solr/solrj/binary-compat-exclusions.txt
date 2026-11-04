@@ -40,3 +40,10 @@
 # would fire on every run. When the baseline moves to a new release,
 # add the entries for breaks accepted since that release.
 org.apache.solr.client.api.endpoint.ListCollectionsApi ; METHOD_REMOVED ; listCollections ; SOLR-18450: GET /api/cluster relocated under /api/collections
+org.apache.solr.client.api.endpoint.NodeLoggingApis ; METHOD_REMOVED ; modifyLocalLogLevel ; SOLR-15823: v2 logging broadcast reshaped the endpoint signature
+org.apache.solr.client.solrj.impl.HttpSolrClient ; METHOD_REMOVED ; isMultipart ; SOLR-18351: ContentStream replacement changed isMultipart to take a RequestWriter.ContentWriter
+org.apache.solr.client.solrj.impl.HttpJdkSolrClient ; METHOD_REMOVED_IN_SUPERCLASS ; * ; SOLR-18351: the isMultipart signature change in the HttpSolrClient superclass
+org.apache.solr.common.util.CommandOperation ; METHOD_REMOVED ; readCommands ; SOLR-18351: ContentStream replacement removed the stream-reading entry point
+org.apache.solr.client.solrj.request.ApiMapping ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.solrj.request.ApiMapping$CommandMeta ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.solrj.request.ApiMapping$V2EndPoint ; * ; * ; PR #5242: ApiMapping removed as unused
