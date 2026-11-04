@@ -21,8 +21,6 @@ This exercise will walk you through how to start using Solr in just 5 Minutes!
 
 == Download and Launch Solr
 
-This exercise uses a bundled example data file later, so download the full package.
-
 [source,bash,subs="attributes"]
 ----
 curl -fsSL https://dlcdn.apache.org/solr/solr/{solr-full-version}/solr-{solr-full-version}.tgz -o solr-{solr-full-version}.tgz && \
@@ -31,7 +29,7 @@ cd solr-{solr-full-version} && \
 bin/solr start
 ----
 
-On Windows download and unpack the full package into a temp directory. Start with `bin\solr start`.
+On Windows download and into a temp directory. Start with `bin\solr start`.
 
 == Create a collection
 
