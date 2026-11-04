@@ -281,7 +281,6 @@ ul
   background-color: #f0f0f0;
 }
 
-#meta .api-explorer a { background-image: url( ../../img/ico/terminal.png ); }
 #meta .documentation a { background-image: url( ../../img/ico/document-text.png ); }
 #meta .issues a { background-image: url( ../../img/ico/bug.png ); }
 #meta .chat a { background-image: url( ../../img/ico/users.png ); }
@@ -393,6 +392,11 @@ ul
   display: block;
   min-height: 400px;
   width: 100%;
+}
+
+#api-explorer iframe
+{
+  height: calc(100vh - 160px);
 }
 
 #content .block

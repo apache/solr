@@ -72,7 +72,10 @@ public final class LoadAdminUiServlet extends HttpServlet {
             HttpHeaders.CONTENT_SECURITY_POLICY,
             "default-src 'none'; base-uri 'none'; connect-src "
                 + connectSrc
-                + "; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';");
+                // frame-src: the Admin UI's API Explorer loads a same-origin page in an
+                // iframe (Scalar manages its own URL hash for deep-linking, which conflicts
+                // with AngularJS's ngRoute if mounted directly into the app instead).
+                + "; form-action 'self'; font-src 'self'; frame-ancestors 'none'; frame-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';");
 
         // We have to close this to flush OutputStreamWriter buffer
         try (Writer out =

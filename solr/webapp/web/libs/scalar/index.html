@@ -22,6 +22,13 @@ limitations under the License.
   <title>Solr V2 API Explorer</title>
 </head>
 <body>
+  <!--
+    Loaded in an iframe by the Admin UI's API Explorer page, rather than mounted directly
+    into the Angular app: Scalar manages its own URL hash for deep-linking to operations,
+    which conflicts with AngularJS's ngRoute (both rewrite window.location.hash), causing an
+    infinite digest/navigation loop. A dedicated document gives Scalar its own window and
+    history, with no shared hash to contend over.
+  -->
   <div id="app"></div>
   <script src="standalone.js" charset="UTF-8"></script>
   <script src="scalar-init.js" charset="UTF-8"></script>

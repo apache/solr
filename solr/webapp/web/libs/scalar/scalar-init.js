@@ -23,5 +23,8 @@ Scalar.createApiReference("#app", {
   agent: { disabled: true },
   hideClientButton: true,
   showDeveloperTools: "never",
-  telemetry: false
+  telemetry: false,
+  // The Admin UI has no dark mode of its own; keep the explorer visually consistent with it.
+  forceDarkModeState: "light",
+  hideDarkModeToggle: true
 });
