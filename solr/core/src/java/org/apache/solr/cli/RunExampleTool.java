@@ -586,8 +586,9 @@ public class RunExampleTool extends ToolBase {
     if (!exampleDirIsDirectory) {
       throw new IllegalArgumentException(
           "The default example directory does not exist or is not a directory. "
-              + "Examples are not included in the slim distribution. "
-              + "Use the full Solr distribution to run examples.");
+              + "This is expected when using the slim Solr distribution, which does not include "
+              + "examples. Use the full Solr distribution to run examples, or check that your "
+              + "full installation is complete.");
     }
 
     if (solrHomeArg != null) {

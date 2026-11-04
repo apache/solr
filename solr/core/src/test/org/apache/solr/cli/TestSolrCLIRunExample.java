@@ -687,8 +687,31 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     assertEquals(
         "The default example directory does not exist or is not a directory. "
-            + "Examples are not included in the slim distribution. "
-            + "Use the full Solr distribution to run examples.",
+            + "This is expected when using the slim Solr distribution, which does not include "
+            + "examples. Use the full Solr distribution to run examples, or check that your "
+            + "full installation is complete.",
+        exception.getMessage());
+  }
+
+  @Test
+  public void testMissingDefaultExampleDirectoryExplainsSlimDistributionForFilms()
+      throws Exception {
+    Path solrServerDir = createTestServerDir();
+    String[] toolArgs =
+        new String[] {"--example", "films", "--server-dir", solrServerDir.toString()};
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertEquals(
+        "The default example directory does not exist or is not a directory. "
+            + "This is expected when using the slim Solr distribution, which does not include "
+            + "examples. Use the full Solr distribution to run examples, or check that your "
+            + "full installation is complete.",
         exception.getMessage());
   }
 
