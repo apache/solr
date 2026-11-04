@@ -424,6 +424,15 @@
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
 
+    <!-- DocValues Iterator Cache
+
+         If true (the default), Solr reuses DocValues iterators when
+         retrieving useDocValuesAsStored fields.  Set to false if a
+         wide fl glob over many DocValues fields uses too much heap
+         (SOLR-17539).
+    -->
+    <enableDocValuesIteratorCache>true</enableDocValuesIteratorCache>
+
     <!-- Use Filter For Sorted Query
 
          A possible optimization that attempts to use a filter to

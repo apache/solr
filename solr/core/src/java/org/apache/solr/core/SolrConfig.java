@@ -298,6 +298,7 @@ public class SolrConfig implements MapWriter {
       queryResultMaxDocsCached =
           get("query").get("queryResultMaxDocsCached").intVal(Integer.MAX_VALUE);
       enableLazyFieldLoading = get("query").get("enableLazyFieldLoading").boolVal(false);
+      enableDocValuesIteratorCache = get("query").get("enableDocValuesIteratorCache").boolVal(true);
 
       filterCacheConfig =
           CacheConfig.getConfig(this, get("query").get("filterCache"), "query/filterCache");
@@ -667,6 +668,7 @@ public class SolrConfig implements MapWriter {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
+  public final boolean enableDocValuesIteratorCache;
 
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
@@ -964,6 +966,7 @@ public class SolrConfig implements MapWriter {
               m.put("queryResultWindowSize", queryResultWindowSize);
               m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
               m.put("enableLazyFieldLoading", enableLazyFieldLoading);
+              m.put("enableDocValuesIteratorCache", enableDocValuesIteratorCache);
               m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
               m.put(MIN_PREFIX_QUERY_TERM_LENGTH, prefixQueryMinPrefixLength);
 
