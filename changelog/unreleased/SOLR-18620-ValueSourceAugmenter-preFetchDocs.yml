@@ -8,3 +8,5 @@ authors:
 links:
   - name: SOLR-18620
     url: https://issues.apache.org/jira/browse/SOLR-18620
+  - name: PR#5290
+    url: https://github.com/apache/solr/pull/5290
