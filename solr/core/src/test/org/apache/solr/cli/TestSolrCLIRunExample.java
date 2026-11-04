@@ -745,8 +745,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   private Path createTestServerDir() throws IOException {
     Path installDir = createTempDir();
     Path serverDir = Files.createDirectory(installDir.resolve("server"));
-    Path solrScript =
-        installDir.resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
+    Path solrScript = installDir.resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
     Files.createDirectories(solrScript.getParent());
     Files.createFile(solrScript);
     return serverDir;
