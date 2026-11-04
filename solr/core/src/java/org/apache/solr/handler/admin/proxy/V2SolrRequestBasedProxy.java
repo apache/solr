@@ -83,7 +83,9 @@ public abstract class V2SolrRequestBasedProxy<T> extends RemoteRequestProxy {
 
   /**
    * Proxies {@code req} (with its {@code nodes} param already set) to the other live nodes it
-   * names, merging each one's response into {@code response.remoteNodeData}.
+   * names, merging each one's response into {@code response.remoteNodeData} and copying {@link
+   * RemoteRequestProxy#getFailedNodes()} onto {@code response.failedNodes}. {@link SolrException}s
+   * are rethrown unchanged.
    *
    * @return true if {@code req} named nodes to proxy to (the caller should return {@code response}
    *     as-is); false if {@code coreContainer} is null or {@code req} has no {@code nodes} param
@@ -102,7 +104,13 @@ public abstract class V2SolrRequestBasedProxy<T> extends RemoteRequestProxy {
               response.remoteNodeData.put(nodeName, proxiedResponse);
             }
           };
-      return reqProxy.proxyRequest();
+      boolean proxied = reqProxy.proxyRequest();
+      if (proxied) {
+        response.failedNodes = reqProxy.getFailedNodes();
+      }
+      return proxied;
+    } catch (SolrException e) {
+      throw e;
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);

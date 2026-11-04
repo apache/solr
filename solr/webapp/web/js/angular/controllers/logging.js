@@ -56,13 +56,13 @@ solrAdminApp.controller('LoggingController',
           $scope.watcher = payload.watcher;
         });
       });
+      $timeout.cancel($scope.timeout);
       $scope.timeout = $timeout($scope.refresh, 10000);
-      var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
-        $timeout.cancel($scope.timeout);
-        onRouteChangeOff();
-      });
     };
-    NodeTarget.whenReady($scope.refresh);
+    $scope.$on('$destroy', function() {
+      $timeout.cancel($scope.timeout);
+    });
+    NodeTarget.whenReady($scope.refresh, $scope);
     $scope.toggleRefresh = function() {
       if(!$scope.stopped) {
         $scope.stopped = true;
@@ -108,10 +108,10 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      LoggingV2.listAllLoggersAndLevels(NodeTarget.withNodes({}), function(error, data, response) {
+      LoggingV2.listAllLoggersAndLevels({}, function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
-          var payload = NodeTarget.unwrap(data, response) || {};
+          var payload = data || {};
           $scope.logging = makeTree(payload.loggers || [], "");
           $scope.watcher = payload.watcher;
           $scope.levels = [];
@@ -165,5 +165,5 @@ solrAdminApp.controller('LoggingController',
       }
     };
 
-    NodeTarget.whenReady($scope.refresh);
+    NodeTarget.whenReady($scope.refresh, $scope);
   });

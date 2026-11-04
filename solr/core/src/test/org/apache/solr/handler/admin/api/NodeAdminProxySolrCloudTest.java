@@ -16,18 +16,23 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.servlet.NodeTargetProxyFilter.TARGET_NODE_HEADER;
+
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.LoggingApi;
 import org.apache.solr.client.solrj.request.NodeApi;
 import org.apache.solr.client.solrj.request.SystemApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Verifies that node-local admin APIs can be proxied to another live node via the {@code nodes}
- * query parameter.
+ * Verifies that node-local admin APIs can be read from another live node via {@code
+ * X-Solr-targetNode} (native response shape) and via the {@code nodes} query parameter (keyed
+ * fallback).
  */
 public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
 
@@ -56,6 +61,10 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
     return (Map<String, Object>) payload;
   }
 
+  private SolrClient receivingClient() {
+    return cluster.getJettySolrRunner(0).getSolrClient();
+  }
+
   @Test
   public void testThreadDumpProxy() throws Exception {
     final String remote = nodeName(1);
@@ -64,6 +73,8 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
 
     final var rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.failedNodes);
+    assertTrue(rsp.failedNodes.isEmpty());
     Map<String, Object> payload = remotePayload(rsp.remoteNodeData, remote);
     assertTrue(payload.containsKey("system"));
   }
@@ -76,6 +87,8 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
 
     final var rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.failedNodes);
+    assertTrue(rsp.failedNodes.isEmpty());
     Map<String, Object> payload = remotePayload(rsp.remoteNodeData, remote);
     assertTrue(payload.containsKey("system.properties"));
   }
@@ -88,6 +101,8 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
 
     final var rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.failedNodes);
+    assertTrue(rsp.failedNodes.isEmpty());
     Map<String, Object> payload = remotePayload(rsp.remoteNodeData, remote);
     assertTrue(payload.containsKey("levels"));
     assertTrue(payload.containsKey("loggers"));
@@ -102,6 +117,8 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
 
     final var rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.failedNodes);
+    assertTrue(rsp.failedNodes.isEmpty());
     Map<String, Object> payload = remotePayload(rsp.remoteNodeData, remote);
     assertTrue(payload.containsKey("history"));
   }
@@ -115,7 +132,92 @@ public class NodeAdminProxySolrCloudTest extends SolrCloudTestCase {
 
     final var rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.failedNodes);
+    assertTrue(rsp.failedNodes.isEmpty());
     Map<String, Object> payload = remotePayload(rsp.remoteNodeData, remote);
     assertTrue(payload.containsKey("status"));
+  }
+
+  @Test
+  public void testUnknownNodeIs400() {
+    final var req = new SystemApi.GetThreadDump();
+    req.setNodes("no.such.host:1234_solr");
+    var e = expectThrows(SolrException.class, () -> req.process(receivingClient()));
+    assertEquals(400, e.code());
+  }
+
+  @Test
+  public void testHeaderReturnsNativeThreadDump() throws Exception {
+    final String remote = nodeName(1);
+    final var req = new SystemApi.GetThreadDump();
+    req.addHeader(TARGET_NODE_HEADER, remote);
+
+    final var rsp = req.process(receivingClient());
+    assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.system);
+    assertTrue(rsp.remoteNodeData == null || rsp.remoteNodeData.isEmpty());
+  }
+
+  @Test
+  public void testHeaderReturnsNativeCoreStatus() throws Exception {
+    final String remote = nodeName(1);
+    final var req = new CoresApi.GetAllCoreStatus();
+    req.setIndexInfo(false);
+    req.addHeader(TARGET_NODE_HEADER, remote);
+
+    final var rsp = req.process(receivingClient());
+    assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.status);
+    assertTrue(rsp.remoteNodeData == null || rsp.remoteNodeData.isEmpty());
+  }
+
+  @Test
+  public void testHeaderReturnsNativeSystemInfo() throws Exception {
+    final String remote = nodeName(1);
+    final var req = new SystemApi.GetNodeSystemInfo();
+    req.addHeader(TARGET_NODE_HEADER, remote);
+
+    final var rsp = req.process(receivingClient());
+    assertEquals(0, rsp.responseHeader.status);
+    assertEquals(remote, rsp.node);
+    assertTrue(rsp.remoteNodeData == null || rsp.remoteNodeData.isEmpty());
+  }
+
+  @Test
+  public void testHeaderReturnsNativeNodeProperties() throws Exception {
+    final String remote = nodeName(1);
+    final var req = new NodeApi.GetNodeProperties();
+    req.addHeader(TARGET_NODE_HEADER, remote);
+
+    final var rsp = req.process(receivingClient());
+    assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.systemProperties);
+    assertTrue(rsp.remoteNodeData == null || rsp.remoteNodeData.isEmpty());
+  }
+
+  @Test
+  public void testHeaderReturnsNativeLoggingLevels() throws Exception {
+    final String remote = nodeName(1);
+    final var req = new LoggingApi.ListAllLoggersAndLevels();
+    req.addHeader(TARGET_NODE_HEADER, remote);
+
+    final var rsp = req.process(receivingClient());
+    assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.levels);
+    assertNotNull(rsp.loggers);
+    assertTrue(rsp.remoteNodeData == null || rsp.remoteNodeData.isEmpty());
+  }
+
+  @Test
+  public void testHeaderReturnsNativeLoggingMessages() throws Exception {
+    final String remote = nodeName(1);
+    final var req = new LoggingApi.FetchLocalLogMessages();
+    req.setSince(0L);
+    req.addHeader(TARGET_NODE_HEADER, remote);
+
+    final var rsp = req.process(receivingClient());
+    assertEquals(0, rsp.responseHeader.status);
+    assertNotNull(rsp.docs);
+    assertTrue(rsp.remoteNodeData == null || rsp.remoteNodeData.isEmpty());
   }
 }

@@ -114,10 +114,18 @@ solrAdminServices.factory('Metrics',
         }
       }
 
+      function isNodeScopedUrl(url) {
+        url = url || '';
+        return /\/api\/node\/(system|threads|properties|logging\/messages)(?:\?|$)/.test(url)
+            || /\/api\/cores(?:\?|$)/.test(url);
+      }
+
+      var pendingTarget = null;
+
       function withNodes(opts) {
         opts = opts || {};
         if (isRemote()) {
-          opts.nodes = state.selectedNode;
+          pendingTarget = state.selectedNode;
         }
         return opts;
       }
@@ -126,9 +134,11 @@ solrAdminServices.factory('Metrics',
         if (!isRemote()) {
           return data;
         }
-        // Proxied payload is under the node name (@JsonAnyGetter), not remoteNodeData.
         var body = (response && response.body) || data || {};
-        return body[state.selectedNode] || data;
+        if (state.selectedNode && body[state.selectedNode]) {
+          return body[state.selectedNode];
+        }
+        return data;
       }
 
       function publish() {
@@ -145,7 +155,7 @@ solrAdminServices.factory('Metrics',
         }
       }
 
-      function whenReady(fn) {
+      function whenReady(fn, scope) {
         if (state.ready) {
           fn();
           return angular.noop;
@@ -157,6 +167,9 @@ solrAdminServices.factory('Metrics',
           unwatch();
           fn();
         });
+        if (scope) {
+          scope.$on('$destroy', unwatch);
+        }
         return unwatch;
       }
 
@@ -196,6 +209,21 @@ solrAdminServices.factory('Metrics',
         publish();
         markReady();
       }
+
+      var plugins = solrApi.ApiClient.instance.plugins || [];
+      plugins.push(function(request) {
+        var target = pendingTarget;
+        pendingTarget = null;
+        if (!target) {
+          return request;
+        }
+        var method = (request.method || 'GET').toUpperCase();
+        if (method === 'GET' && isNodeScopedUrl(request.url)) {
+          request.set('X-Solr-targetNode', target);
+        }
+        return request;
+      });
+      solrApi.ApiClient.instance.plugins = plugins;
 
       return {
         state: state,

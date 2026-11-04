@@ -30,7 +30,10 @@ image::solr-admin-ui/dashboard.png[image,height=400]
 
 The left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI.
 
-The first set of links are for system-level information and configuration and provide access to xref:deployment-guide:configuring-logging.adoc#logging-screen[Logging Screen], xref:deployment-guide:collections-core-admin.adoc[], and xref:deployment-guide:jvm-settings.adoc#java-properties-screen[Java Properties Screen], among other things.
+The first set of links is split into Cluster (SolrCloud) and Node sections.
+On SolrCloud, a Node picker chooses which live node Dashboard, Logging, Java Properties, Thread Dump, and Cores show.
+Those screens are served from the node hosting the UI and routed with the `X-Solr-targetNode` header.
+Logging → Level stays cluster-wide.
 
 At the end of this information is at least one pulldown listing Solr cores configured for this instance.
 On xref:cluster-types.adoc#solrcloud-clusters[SolrCloud] nodes, an additional pulldown list shows all collections in this cluster.

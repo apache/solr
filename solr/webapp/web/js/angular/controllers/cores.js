@@ -235,6 +235,6 @@ solrAdminApp.controller('CoreAdminController',
         $scope.showSwap = false;
       };
 
-      NodeTarget.whenReady($scope.refresh);
+      NodeTarget.whenReady($scope.refresh, $scope);
     }
 );

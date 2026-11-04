@@ -604,13 +604,17 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
             $timeout(function() {
               if (error) {
                 ApiErrorHandler.handle(response);
-                NodeTarget.markReady();
-                return;
+                NodeTarget.setLiveNodes([]);
+              } else {
+                NodeTarget.setLiveNodes(nodesData.nodes || []);
               }
-              NodeTarget.setLiveNodes(nodesData.nodes || []);
               $scope.liveNodes = NodeTarget.state.liveNodes;
               $scope.selectedNode = NodeTarget.state.selectedNode;
               $scope.viewingRemoteNode = NodeTarget.isRemote();
+              if (pageType === Constants.IS_CORE_PAGE && NodeTarget.isRemote()) {
+                $location.url('/');
+                return;
+              }
               loadCoresForSelectedNode(pageType);
             });
           });
@@ -730,7 +734,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         $location.url('/');
         return;
       }
-      // reload re-runs resetMenu / core fetch for the new target
       $route.reload();
     }
   };
