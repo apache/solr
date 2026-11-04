@@ -144,6 +144,170 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals(5, commands.size());
   }
 
+  public void testCommandOperationNestedDuplicateKeys() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'name':'/x',"
+                    + "  'defaults':{"
+                    + "    'facet.field':'subject',"
+                    + "    'facet.field':'country',"
+                    + "    'rows':10"
+                    + "  }"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    assertEquals("update-requesthandler", ops.get(0).name);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaults = (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    assertEquals(asList("subject", "country"), defaults.get("facet.field"));
+    assertEquals(10, ((Number) defaults.get("rows")).intValue());
+  }
+
+  public void testCommandOperationDuplicateKeysInListForm() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'add-requesthandler':["
+                    + "  {'name':'/a',"
+                    + "   'defaults':{'fq':'x','fq':'y'}},"
+                    + "  {'name':'/b',"
+                    + "   'defaults':{'fq':'p','fq':'q'}}"
+                    + "]}"));
+
+    assertEquals(2, ops.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaultsA = (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    assertEquals(asList("x", "y"), defaultsA.get("fq"));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaultsB = (Map<String, Object>) ops.get(1).getDataMap().get("defaults");
+    assertEquals(asList("p", "q"), defaultsB.get("fq"));
+  }
+
+  public void testCommandOperationDuplicateKeysCollapseInListFormForOtherCommands()
+      throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader("{" + "'set-property':[" + "  {'a':1,'a':2}" + "]}"));
+
+    assertEquals(1, ops.size());
+    assertEquals(2, ((Number) ops.get(0).getDataMap().get("a")).intValue());
+  }
+
+  public void testCommandOperationNestedDuplicateKeysInAppends() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'name':'/x',"
+                    + "  'appends':{"
+                    + "    'facet.field':'subject',"
+                    + "    'facet.field':'country',"
+                    + "    'rows':10"
+                    + "  }"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> appends = (Map<String, Object>) ops.get(0).getDataMap().get("appends");
+    assertEquals(asList("subject", "country"), appends.get("facet.field"));
+    assertEquals(10, ((Number) appends.get("rows")).intValue());
+  }
+
+  public void testCommandOperationNestedDuplicateKeysInInvariants() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'name':'/x',"
+                    + "  'invariants':{"
+                    + "    'facet.field':'subject',"
+                    + "    'facet.field':'country',"
+                    + "    'rows':10"
+                    + "  }"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> invariants =
+        (Map<String, Object>) ops.get(0).getDataMap().get("invariants");
+    assertEquals(asList("subject", "country"), invariants.get("facet.field"));
+    assertEquals(10, ((Number) invariants.get("rows")).intValue());
+  }
+
+  public void testCommandOperationNestedArrayDefaults() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'name':'/x',"
+                    + "  'defaults':{'facet.field':['subject','country']}"
+                    + "}"
+                    + "}"));
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaults = (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    assertEquals(asList("subject", "country"), defaults.get("facet.field"));
+  }
+
+  public void testCommandOperationOtherNestedDuplicateKeysRemainLastWins() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'set-property':{"
+                    + "  'updateHandler.autoCommit.maxDocs':10,"
+                    + "  'updateHandler.autoCommit.maxDocs':20"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    assertEquals(
+        20, ((Number) ops.get(0).getDataMap().get("updateHandler.autoCommit.maxDocs")).intValue());
+  }
+
+  public void testCommandOperationOnlyAccumulatesRequestHandlerParameters() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'update-requesthandler':{"
+                    + "  'class':'first.Class',"
+                    + "  'class':'second.Class',"
+                    + "  'defaults':{'facet.field':'subject','facet.field':'country'}"
+                    + "}"
+                    + "}"));
+
+    assertEquals(1, ops.size());
+    assertEquals("second.Class", ops.get(0).getDataMap().get("class"));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> defaults = (Map<String, Object>) ops.get(0).getDataMap().get("defaults");
+    assertEquals(asList("subject", "country"), defaults.get("facet.field"));
+  }
+
+  public void testCommandOperationTopLevelRepeatsStaySeparate() throws IOException {
+    List<CommandOperation> ops =
+        CommandOperation.parse(
+            new StringReader(
+                "{"
+                    + "'add-cache':{'name':'a','class':'solr.CaffeineCache'},"
+                    + "'add-cache':{'name':'b','class':'solr.CaffeineCache'}"
+                    + "}"));
+
+    assertEquals(2, ops.size());
+    assertEquals("a", ops.get(0).getStr("name", null));
+    assertEquals("b", ops.get(1).getStr("name", null));
+  }
+
   private void assertNoggitJsonValues(Map<?, ?> m) {
     assertEquals("c", Utils.getObjectByPath(m, true, "/a/b"));
     assertEquals("v1", Utils.getObjectByPath(m, true, "/a/d[0]/k1"));

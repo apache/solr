@@ -32,6 +32,11 @@ import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
 public class CommandOperation {
+  private static final Set<String> REQUEST_HANDLER_COMMANDS =
+      Set.of("add-requesthandler", "update-requesthandler", "create-requesthandler");
+  private static final Set<String> MULTI_VALUED_REQUEST_HANDLER_PARAMS =
+      Set.of("defaults", "appends", "invariants");
+
   public final String name;
   private Object commandData; // this is most often a map
   private List<String> errors = new ArrayList<>();
@@ -245,7 +250,7 @@ public class CommandOperation {
       throws IOException {
     JSONParser parser = Utils.getJSONParser(rdr);
 
-    ObjectBuilder ob = new ObjectBuilder(parser);
+    ObjectBuilder ob = new AccumulatingObjectBuilder(parser);
 
     if (parser.lastEvent() != JSONParser.OBJECT_START) {
       throw new RuntimeException("The JSON must be an Object of the form {\"command\": {...},...");
@@ -257,20 +262,20 @@ public class CommandOperation {
         ObjectBuilder.checkEOF(parser);
         return operations;
       }
-      Object key = ob.getKey();
+      String commandName = String.valueOf(ob.getKey());
       ev = parser.nextEvent();
-      Object val = ob.getVal();
-      if (val instanceof List<?> list && !singletonCommands.contains(key)) {
+      Object val = normalizeCommandData(commandName, ob.getVal());
+      if (val instanceof List<?> list && !singletonCommands.contains(commandName)) {
         for (Object o : list) {
           if (!(o instanceof Map)) {
-            operations.add(new CommandOperation(String.valueOf(key), list));
+            operations.add(new CommandOperation(commandName, list));
             break;
           } else {
-            operations.add(new CommandOperation(String.valueOf(key), o));
+            operations.add(new CommandOperation(commandName, o));
           }
         }
       } else {
-        operations.add(new CommandOperation(String.valueOf(key), val));
+        operations.add(new CommandOperation(commandName, val));
       }
     }
   }
@@ -321,5 +326,111 @@ public class CommandOperation {
     Object o = getVal(name);
     if (o == null) return null;
     return getInt(name, null);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object normalizeCommandData(String commandName, Object commandData) {
+    if (commandData instanceof List<?> commandList) {
+      // The array-of-commands form: normalize each command object the same way as the
+      // single-object form, so the multi-valued sections accumulate there too instead
+      // of collapsing to the last value.
+      List<Object> list = (List<Object>) commandData;
+      for (int i = 0; i < list.size(); i++) {
+        list.set(i, normalizeCommandData(commandName, list.get(i)));
+      }
+      return list;
+    }
+    if (!(commandData instanceof Map<?, ?>)) {
+      return collapseDuplicateKeys(commandData);
+    }
+
+    Map<Object, Object> commandMap = (Map<Object, Object>) commandData;
+    boolean requestHandlerCommand = REQUEST_HANDLER_COMMANDS.contains(commandName);
+    for (Map.Entry<Object, Object> entry : commandMap.entrySet()) {
+      Object value = entry.getValue();
+      if (requestHandlerCommand
+          && MULTI_VALUED_REQUEST_HANDLER_PARAMS.contains(entry.getKey())
+          && value instanceof Map<?, ?>) {
+        entry.setValue(accumulateRequestHandlerParameters(value));
+      } else {
+        entry.setValue(collapseDuplicateKeys(value));
+      }
+    }
+    return commandMap;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object accumulateRequestHandlerParameters(Object value) {
+    Map<Object, Object> params = (Map<Object, Object>) value;
+    for (Map.Entry<Object, Object> entry : params.entrySet()) {
+      Object parameterValue = entry.getValue();
+      if (parameterValue instanceof DuplicateKeyList duplicateValues) {
+        entry.setValue(flattenDuplicateValues(duplicateValues));
+      } else {
+        entry.setValue(collapseDuplicateKeys(parameterValue));
+      }
+    }
+    return params;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object collapseDuplicateKeys(Object value) {
+    if (value instanceof DuplicateKeyList duplicateValues) {
+      return collapseDuplicateKeys(duplicateValues.get(duplicateValues.size() - 1));
+    }
+    if (value instanceof Map<?, ?>) {
+      Map<Object, Object> map = (Map<Object, Object>) value;
+      for (Map.Entry<Object, Object> entry : map.entrySet()) {
+        entry.setValue(collapseDuplicateKeys(entry.getValue()));
+      }
+    } else if (value instanceof List<?>) {
+      List<Object> list = (List<Object>) value;
+      for (int i = 0; i < list.size(); i++) {
+        list.set(i, collapseDuplicateKeys(list.get(i)));
+      }
+    }
+    return value;
+  }
+
+  private static List<Object> flattenDuplicateValues(DuplicateKeyList duplicateValues) {
+    List<Object> flattened = new ArrayList<>();
+    for (Object value : duplicateValues) {
+      Object normalized = collapseDuplicateKeys(value);
+      if (normalized instanceof List<?> values) {
+        flattened.addAll(values);
+      } else {
+        flattened.add(normalized);
+      }
+    }
+    return flattened;
+  }
+
+  /** Records repeated JSON members until their command-specific semantics are applied. */
+  private static final class DuplicateKeyList extends ArrayList<Object> {}
+
+  private static final class AccumulatingObjectBuilder extends ObjectBuilder {
+    AccumulatingObjectBuilder(JSONParser parser) throws IOException {
+      super(parser);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void addKeyVal(Object map, Object key, Object val) throws IOException {
+      Map<Object, Object> m = (Map<Object, Object>) map;
+      if (!m.containsKey(key)) {
+        m.put(key, val);
+        return;
+      }
+      DuplicateKeyList values;
+      Object previous = m.get(key);
+      if (previous instanceof DuplicateKeyList duplicateValues) {
+        values = duplicateValues;
+      } else {
+        values = new DuplicateKeyList();
+        values.add(previous);
+        m.put(key, values);
+      }
+      values.add(val);
+    }
   }
 }
