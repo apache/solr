@@ -673,4 +673,82 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     int code = runTool(tool, toolArgs);
     assertEquals("Execution should have failed with return code 1", 1, code);
   }
+
+  @Test
+  public void testMissingDefaultExampleDirectoryExplainsSlimDistribution() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.initDirs(solrServerDir.toString(), null, null, null, "techproducts"));
+
+    assertEquals(
+        "Examples are not included in the slim distribution. "
+            + "Use the full Solr distribution to run examples.",
+        exception.getMessage());
+  }
+
+  @Test
+  public void testExplicitMissingExampleDirectoryRemainsInvalid() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    Path missingExampleDir = solrServerDir.getParent().resolve("custom-example");
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                tool.initDirs(
+                    solrServerDir.toString(),
+                    null,
+                    missingExampleDir.toString(),
+                    null,
+                    "techproducts"));
+
+    assertTrue(
+        exception.getMessage(),
+        exception.getMessage().startsWith("Value of --example-dir option is invalid! "));
+    assertTrue(exception.getMessage().contains(missingExampleDir.toAbsolutePath().toString()));
+  }
+
+  @Test
+  public void testUnsupportedExampleWithExampleDirectoryPresent() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    Path exampleDir = Files.createDirectory(solrServerDir.getParent().resolve("example"));
+    Path solrHomeDir = createTempDir();
+    String unsupportedExample = "not-an-example";
+    String[] toolArgs =
+        new String[] {
+          "--example", unsupportedExample,
+          "--server-dir", solrServerDir.toString(),
+          "--solr-home", solrHomeDir.toString()
+        };
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertEquals(
+        "Unsupported example "
+            + unsupportedExample
+            + "! Please choose one of: cloud, schemaless, techproducts, or films",
+        exception.getMessage());
+  }
+
+  private Path createTestServerDir() throws IOException {
+    Path installDir = createTempDir();
+    Path serverDir = Files.createDirectory(installDir.resolve("server"));
+    Path solrScript =
+        installDir.resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
+    Files.createDirectories(solrScript.getParent());
+    Files.createFile(solrScript);
+    return serverDir;
+  }
 }
