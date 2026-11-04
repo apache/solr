@@ -46,7 +46,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
-    return PermissionNameProvider.Name.READ_PERM;
+    return PermissionNameProvider.Name.UPDATE_PERM;
   }
 
   @Override

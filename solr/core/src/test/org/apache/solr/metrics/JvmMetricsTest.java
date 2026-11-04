@@ -17,19 +17,23 @@
 package org.apache.solr.metrics;
 
 import com.sun.management.OperatingSystemMXBean;
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -75,7 +79,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetupJvmMetrics() throws InterruptedException {
-    PrometheusMetricReader reader =
+    FilterablePrometheusMetricReader reader =
         solrTestRule
             .getJetty()
             .getCoreContainer()
@@ -113,7 +117,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
   @Test
   @SuppressForbidden(reason = "Testing com.sun.management.OperatingSystemMXBean availability")
   public void testSystemMemoryMetrics() {
-    PrometheusMetricReader reader =
+    FilterablePrometheusMetricReader reader =
         solrTestRule
             .getJetty()
             .getCoreContainer()
@@ -136,6 +140,38 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
     assertTrue(
         "Should have jvm_system_memory_bytes metric (with state=total and state=free)",
         metricNames.contains("jvm_system_memory_bytes"));
+  }
+
+  @Test
+  public void testNoDuplicateJvmMemoryMetrics() {
+    FilterablePrometheusMetricReader reader =
+        solrTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
+    MetricSnapshots snapshots = reader.collect();
+
+    // A metric is duplicated when it's reported by more than one instrumentation scope
+    Map<String, String> scopeByMetric = new HashMap<>();
+    for (MetricSnapshot snapshot : snapshots) {
+      String metricName = snapshot.getMetadata().getPrometheusName();
+      for (DataPointSnapshot dataPoint : snapshot.getDataPoints()) {
+        String scope = dataPoint.getLabels().get("otel_scope_name");
+        if (scope == null) {
+          continue;
+        }
+        String otherScope = scopeByMetric.putIfAbsent(metricName, scope);
+        assertTrue(
+            "Metric "
+                + metricName
+                + " reported under multiple scopes with conflicting values: "
+                + otherScope
+                + " and "
+                + scope,
+            otherScope == null || otherScope.equals(scope));
+      }
+    }
   }
 
   @Test

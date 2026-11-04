@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -67,6 +68,9 @@ public class DistributedClusterStateUpdater {
    */
   private final boolean useDistributedStateUpdate;
 
+  private final int minStateByteLenForCompression;
+  private final Compressor compressor;
+
   /**
    * Builds an instance with the specified behavior regarding distribution of state updates,
    * allowing to know distributed updates are not enabled (parameter {@code
@@ -76,9 +80,16 @@ public class DistributedClusterStateUpdater {
    * @param useDistributedStateUpdate when this parameter is {@code false}, only method expected to
    *     ever be called on this instance is {@link #isDistributedStateUpdate}, and it will return
    *     {@code false}.
+   * @param minStateByteLenForCompression the minimum size of a state.json file that should be
+   *     compressed before being written to Zookeeper.
+   * @param compressor the compressor to use for compressing state.json files before writing them to
+   *     Zookeeper.
    */
-  public DistributedClusterStateUpdater(boolean useDistributedStateUpdate) {
+  public DistributedClusterStateUpdater(
+      boolean useDistributedStateUpdate, int minStateByteLenForCompression, Compressor compressor) {
     this.useDistributedStateUpdate = useDistributedStateUpdate;
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
+    this.compressor = compressor;
   }
 
   /**
@@ -93,7 +104,8 @@ public class DistributedClusterStateUpdater {
       throw new IllegalStateException(
           "Not expecting to create instances of StateChangeRecorder when not using distributed state update");
     }
-    return new StateChangeRecorder(collectionName, isCollectionCreation);
+    return new StateChangeRecorder(
+        collectionName, isCollectionCreation, minStateByteLenForCompression, compressor);
   }
 
   /** Syntactic sugar to allow a single change to the cluster state to be made in a single call. */
@@ -109,7 +121,11 @@ public class DistributedClusterStateUpdater {
     }
     String collectionName = command.getCollectionName(message);
     final StateChangeRecorder scr =
-        new StateChangeRecorder(collectionName, command.isCollectionCreation());
+        new StateChangeRecorder(
+            collectionName,
+            command.isCollectionCreation(),
+            minStateByteLenForCompression,
+            compressor);
     scr.record(command, message);
     scr.executeStateUpdates(scm, zkStateReader);
   }
@@ -119,7 +135,8 @@ public class DistributedClusterStateUpdater {
       throw new IllegalStateException(
           "Not expecting to execute executeNodeDownStateUpdate when not using distributed state update");
     }
-    CollectionNodeDownChangeCalculator.executeNodeDownStateUpdate(nodeName, zkStateReader);
+    CollectionNodeDownChangeCalculator.executeNodeDownStateUpdate(
+        nodeName, zkStateReader, minStateByteLenForCompression, compressor);
   }
 
   /**
@@ -349,16 +366,29 @@ public class DistributedClusterStateUpdater {
 
     private final ZkStateReader zkStateReader;
     private final StateChangeCalculator updater;
+    private final int minStateByteLenForCompression;
+    private final Compressor compressor;
 
-    static void applyUpdate(ZkStateReader zkStateReader, StateChangeCalculator updater)
+    static void applyUpdate(
+        ZkStateReader zkStateReader,
+        StateChangeCalculator updater,
+        int minStateByteLenForCompression,
+        Compressor compressor)
         throws KeeperException, InterruptedException {
-      ZkUpdateApplicator zua = new ZkUpdateApplicator(zkStateReader, updater);
+      ZkUpdateApplicator zua =
+          new ZkUpdateApplicator(zkStateReader, updater, minStateByteLenForCompression, compressor);
       zua.applyUpdate();
     }
 
-    private ZkUpdateApplicator(ZkStateReader zkStateReader, StateChangeCalculator updater) {
+    private ZkUpdateApplicator(
+        ZkStateReader zkStateReader,
+        StateChangeCalculator updater,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       this.zkStateReader = zkStateReader;
       this.updater = updater;
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
     }
 
     /**
@@ -546,6 +576,11 @@ public class DistributedClusterStateUpdater {
         // Collection update or creation
         DocCollection collection = updatedState.getCollection(updater.getCollectionName());
         byte[] stateJson = Utils.toJSON(Map.of(updater.getCollectionName(), collection));
+        if (minStateByteLenForCompression > -1
+            && stateJson.length > minStateByteLenForCompression) {
+          // When compressing state.json, we expect at least a 10:1 compression ratio.
+          stateJson = compressor.compressBytes(stateJson, stateJson.length / 10);
+        }
 
         if (updater.isCollectionCreation()) {
           // The state.json file does not exist yet (more precisely it is assumed not to exist)
@@ -627,7 +662,14 @@ public class DistributedClusterStateUpdater {
      */
     boolean creationCommandRecorded = false;
 
-    private StateChangeRecorder(String collectionName, boolean isCollectionCreation) {
+    final int minStateByteLenForCompression;
+    final Compressor compressor;
+
+    private StateChangeRecorder(
+        String collectionName,
+        boolean isCollectionCreation,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       if (collectionName == null) {
         final String err =
             "Internal bug. collectionName=null (isCollectionCreation=" + isCollectionCreation + ")";
@@ -637,6 +679,8 @@ public class DistributedClusterStateUpdater {
       mutations = new ArrayList<>();
       this.collectionName = collectionName;
       this.isCollectionCreation = isCollectionCreation;
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
     }
 
     /**
@@ -825,7 +869,8 @@ public class DistributedClusterStateUpdater {
 
       RecordedMutationsPlayer mutationPlayer =
           new RecordedMutationsPlayer(scm, collectionName, isCollectionCreation, mutations);
-      ZkUpdateApplicator.applyUpdate(zkStateReader, mutationPlayer);
+      ZkUpdateApplicator.applyUpdate(
+          zkStateReader, mutationPlayer, minStateByteLenForCompression, compressor);
 
       // TODO update stats here for the various commands executed successfully or not?
       // This would replace the stats about cluster state updates that the Collection API currently
@@ -859,7 +904,11 @@ public class DistributedClusterStateUpdater {
      * Entry point to mark all replicas of all collections present on a single node as being DOWN
      * (because the node is down)
      */
-    public static void executeNodeDownStateUpdate(String nodeName, ZkStateReader zkStateReader) {
+    public static void executeNodeDownStateUpdate(
+        String nodeName,
+        ZkStateReader zkStateReader,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       // This code does a version of what NodeMutator.downNode() is doing. We can't assume we have a
       // cache of the collections, so we're going to read all of them from ZK, fetch the state.json
       // for each and if it has any replicas on the failed node, do an update (conditional of
@@ -886,7 +935,8 @@ public class DistributedClusterStateUpdater {
         for (String collectionName : collectionNames) {
           CollectionNodeDownChangeCalculator collectionUpdater =
               new CollectionNodeDownChangeCalculator(collectionName, nodeName);
-          ZkUpdateApplicator.applyUpdate(zkStateReader, collectionUpdater);
+          ZkUpdateApplicator.applyUpdate(
+              zkStateReader, collectionUpdater, minStateByteLenForCompression, compressor);
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {

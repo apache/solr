@@ -1,0 +1,102 @@
+= Global Ordinals Join Query Parser
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License
+
+The `globalOrdinalsJoin` query parser allows joining documents within the same index using Lucene's global ordinals (`OrdinalMap`).
+It is backed by Lucene's `JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, searcher, scoreMode, ordinalMap)`.
+
+Global ordinals joins operate on a single shared field (`joinField`) that contains single-valued string docValues (`StrField` with `docValues="true"`).
+The query matches source documents using a "from" subquery, maps their join field ordinals across segments via global ordinals, and yields target documents matching the "to" subquery (specified by the `which` parameter).
+
+Global ordinal mappings (`OrdinalMap`) are computed and cached per `SolrIndexSearcher` across search requests.
+
+== Parameters
+
+This query parser accepts the following parameters:
+
+`joinField`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the single-valued `StrField` with `docValues="true"` used as the join key between documents.
+
+`which`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A subquery specifying the target ("to") documents to join into.
+This parameter mimics the `which` parameter from the xref:block-join-query-parser.adoc[Block Join Query Parser].
+
+`v`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _query body_
+|===
++
+The subquery specifying the source ("from") documents. If not provided as a local parameter, the body of the query is used.
+
+`score`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `None`
+|===
++
+Controls how scores from matching "from" documents are aggregated and applied to matching "to" documents.
+Acceptable values (case-insensitive) are:
+
+* `None`: (default) No scores are transferred; matching target documents have a constant score.
+* `Avg`: Average score of matching source documents.
+* `Max`: Maximum score among matching source documents.
+* `Min`: Minimum score among matching source documents.
+* `Total`: Sum of scores across matching source documents.
+
+== Examples
+
+=== Basic Global Ordinals Join
+
+Find parent documents whose children match `skill_s:java`:
+
+[source,text]
+----
+q={!globalOrdinalsJoin joinField=join_s_dv which="type_s:parent"}skill_s:java
+----
+
+=== With Score Aggregation
+
+Find parent documents whose children match `desc_t:laptop` and score parents using the maximum score of matching children:
+
+[source,text]
+----
+q={!globalOrdinalsJoin joinField=join_s_dv which="type_s:parent" score=Max}desc_t:laptop
+----
+
+=== Using the `v` Local Parameter in Filter Queries
+
+Use `globalOrdinalsJoin` inside a filter query (`fq`):
+
+[source,text]
+----
+fq={!globalOrdinalsJoin joinField=join_s_dv which="type_s:parent" v="skill_s:rust"}
+----

@@ -1,0 +1,7 @@
+title: Update ZooKeeper & Curator to v3.9.6
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4983
+  url: https://github.com/apache/solr/pull/4983

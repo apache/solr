@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -138,6 +139,8 @@ public class HttpSolrCall {
   protected String origCorename;
   // The list of SolrCloud collections if in SolrCloud (usually 1)
   protected List<String> collectionsList;
+  // The collection passed to getCoreByCollection, if that is how the core was selected
+  private String coreSelectedForCollection;
 
   protected RequestType requestType;
 
@@ -212,6 +215,24 @@ public class HttpSolrCall {
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
     return collectionsList != null ? collectionsList : List.of();
+  }
+
+  /**
+   * The collection(s) to authorize this request against. In SolrCloud, when a local core serves the
+   * request, this is the collection of that core, since that is where the request executes;
+   * requests it sends to other collections are authorized by the receiving nodes. Otherwise, this
+   * is {@link #getCollectionsList()}. Not null.
+   */
+  public List<String> getAuthorizationCollectionsList() {
+    if (core == null || !cores.isZooKeeperAware()) {
+      return getCollectionsList();
+    }
+    if (coreSelectedForCollection != null) {
+      // e.g. a coordinator's synthetic core, which serves a collection other than its own
+      return List.of(coreSelectedForCollection);
+    }
+    String collection = core.getCoreDescriptor().getCollectionName();
+    return collection != null ? List.of(collection) : getCollectionsList();
   }
 
   @SuppressForbidden(
@@ -585,7 +606,7 @@ public class HttpSolrCall {
     return coreOrColName;
   }
 
-  private boolean shouldAuthorize() {
+  protected boolean shouldAuthorize() {
     if (PublicKeyHandler.PATH.equals(path)) return false;
     // admin/info/key is the path where public key is exposed . it is always unsecured
     if (StrUtils.isNullOrEmpty(path) || "/".equals(path) || "/solr/".equals(path))
@@ -623,13 +644,14 @@ public class HttpSolrCall {
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
     String queryStr = updatedQueryParams.toQueryString();
 
-    String coreUrlAndPath = coreUrl + path;
-    log.info("Proxying request to: {}", coreUrlAndPath);
+    log.info("Proxying request to: {}{}", coreUrl, path);
     try {
+      // path is decoded, so encode it
+      URI uri = URI.create(coreUrl + new URI(null, null, path, null).getRawPath() + queryStr);
       response.reset(); // clear all headers and status
       HttpClient httpClient =
           ((HttpJettySolrClient) cores.getDefaultHttpSolrClient()).getHttpClient();
-      HttpSolrProxy.doHttpProxy(httpClient, req, response, coreUrlAndPath + queryStr);
+      HttpSolrProxy.doHttpProxy(httpClient, req, response, uri);
     } catch (Exception e) {
       // note: don't handle interruption differently; we are stopping
       sendError(
@@ -853,6 +875,7 @@ public class HttpSolrCall {
    * force update collection if it is not found in local cluster state
    */
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
+    coreSelectedForCollection = collectionName;
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection collection = resolveDocCollection(collectionName);
@@ -1016,7 +1039,8 @@ public class HttpSolrCall {
     String resource = getPath();
 
     final List<CollectionRequest> collectionRequests =
-        AuthorizationUtils.getCollectionRequests(getPath(), getCollectionsList(), getQueryParams());
+        AuthorizationUtils.getCollectionRequests(
+            getPath(), getAuthorizationCollectionsList(), getQueryParams());
 
     // Populate the request type if the request is select or update
     if (requestType == RequestType.UNKNOWN) {

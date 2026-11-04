@@ -24,8 +24,18 @@ public class Constants {
 
   public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
   public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
+
+  // "c" is accepted alongside "collections" because Solr internally forwards a v2 request to the
+  // node actually hosting a collection using the short "/c/{collection}/..." alias (see
+  // HttpSolrCall#sendRemoteProxy and V2HttpCall's "c"/"collections" handling); without it, any
+  // JAX-RS resource built on this prefix 404s with "Cannot find API for the path" whenever the
+  // request has to be proxied to another node.
   public static final String INDEX_PATH_PREFIX =
-      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
+      "/{"
+          + INDEX_TYPE_PATH_PARAMETER
+          + ":cores|collections|c}/{"
+          + INDEX_NAME_PATH_PARAMETER
+          + "}";
 
   public static final String CORE_NAME_PATH_PARAMETER = "coreName";
 

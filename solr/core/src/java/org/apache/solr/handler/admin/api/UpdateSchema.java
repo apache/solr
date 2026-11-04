@@ -16,19 +16,24 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.util.CommandOperation.ERR_MSGS;
+
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateSchemaApi;
 import org.apache.solr.client.api.model.DeleteDynamicFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldTypeOperation;
-import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SolrConfigHandler;
@@ -60,7 +65,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     requestBody.name = fieldName;
     requestBody.operationType = "upsert-field";
 
-    runWithSchemaManager(List.of(requestBody), response);
+    runWithSchemaManager(List.of(requestBody));
 
     return response;
   }
@@ -77,7 +82,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     deleteFieldOp.operationType = "delete-field";
     deleteFieldOp.name = fieldName;
 
-    runWithSchemaManager(List.of(deleteFieldOp), response);
+    runWithSchemaManager(List.of(deleteFieldOp));
 
     return response;
   }
@@ -94,7 +99,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     requestBody.name = dynamicFieldName;
     requestBody.operationType = "add-dynamic-field";
 
-    runWithSchemaManager(List.of(requestBody), response);
+    runWithSchemaManager(List.of(requestBody));
 
     return response;
   }
@@ -109,7 +114,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     final var deleteDynamicFieldOp = new DeleteDynamicFieldOperation();
     deleteDynamicFieldOp.name = dynamicFieldName;
     deleteDynamicFieldOp.operationType = "delete-dynamic-field";
-    runWithSchemaManager(List.of(deleteDynamicFieldOp), response);
+    runWithSchemaManager(List.of(deleteDynamicFieldOp));
 
     return response;
   }
@@ -125,7 +130,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     ensureRequiredParameterProvided("class", requestBody.propertyClass);
     requestBody.operationType = "add-field-type";
 
-    runWithSchemaManager(List.of(requestBody), response);
+    runWithSchemaManager(List.of(requestBody));
 
     return response;
   }
@@ -141,7 +146,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     deleteFieldTypeOp.name = fieldTypeName;
     deleteFieldTypeOp.operationType = "delete-field-type";
 
-    runWithSchemaManager(List.of(deleteFieldTypeOp), response);
+    runWithSchemaManager(List.of(deleteFieldTypeOp));
 
     return response;
   }
@@ -154,7 +159,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     ensureSchemaMutable();
     ensureRequiredRequestBodyProvided(requestBody);
 
-    runWithSchemaManager(requestBody, response);
+    runWithSchemaManager(requestBody);
 
     return response;
   }
@@ -167,13 +172,35 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     }
   }
 
-  private void runWithSchemaManager(List<SchemaChange> operations, SolrJerseyResponse response)
-      throws Exception {
+  private void runWithSchemaManager(List<SchemaChange> operations) throws Exception {
     final var schemaManager = new SchemaManager(solrQueryRequest);
     final var errorDetails = schemaManager.performOperations(operations);
     if (errorDetails != null && !errorDetails.isEmpty()) {
-      response.error = new ErrorInfo();
-      response.error.details = errorDetails;
+      // Mirrors v1's SchemaHandler, so a validation failure gets a proper error status instead of
+      // reporting a "successful" response whose body happens to carry an error. The per-operation
+      // messages are folded into the exception's own message (surfaced as error.msg) so that field
+      // is informative on its own, per this API's error-reporting convention; error.details still
+      // carries the full per-operation breakdown for consumers that want it.
+      throw new SolrErrorWrappingException(
+          SolrException.ErrorCode.BAD_REQUEST, summarizeSchemaErrors(errorDetails), errorDetails);
     }
+  }
+
+  private static String summarizeSchemaErrors(List<Map<String, Object>> errorDetails) {
+    final var messages =
+        errorDetails.stream()
+            .map(detail -> detail.get(ERR_MSGS))
+            .flatMap(
+                msgs -> {
+                  if (msgs instanceof List<?> msgList) {
+                    return msgList.stream();
+                  } else if (msgs != null) {
+                    return Stream.of(msgs);
+                  }
+                  return Stream.empty();
+                })
+            .map(String::valueOf)
+            .collect(Collectors.joining(" "));
+    return messages.isBlank() ? "error processing commands" : messages;
   }
 }

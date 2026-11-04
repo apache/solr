@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -175,6 +176,46 @@ public class MirroredSolrRequestSerializerTest extends SolrTestCase {
     assertEquals(50L, deleteParams.get(UpdateRequest.VER));
 
     assertEquals(List.of("field:value"), deserializedReq.getDeleteQuery());
+  }
+
+  @Test
+  public void testDefaultSubmitTime() {
+    // The timestamp must be comparable across JVMs (e.g. producer and consumer processes), so it
+    // has to be derived from a wall clock (System.currentTimeMillis() via TimeSource.CURRENT_TIME)
+    // rather than System.nanoTime(), which is only meaningful within a single JVM's lifetime.
+    long before = TimeSource.CURRENT_TIME.getTimeNs();
+    MirroredSolrRequest<?> mirroredRequest = new MirroredSolrRequest<>(new UpdateRequest());
+    long after = TimeSource.CURRENT_TIME.getTimeNs();
+
+    assertTrue(
+        "submitTimeNanos should be a wall-clock nanosecond timestamp, got "
+            + mirroredRequest.getSubmitTimeNanos(),
+        mirroredRequest.getSubmitTimeNanos() >= before
+            && mirroredRequest.getSubmitTimeNanos() <= after);
+  }
+
+  @Test
+  public void testSubmitTimeNanosRoundTrip() {
+    // MirroredSolrRequest(Type, int attempt, SolrRequest) omits submitTimeNanos arg and must
+    // fall back to the same wall-clock-based timestamp.
+    MirroredSolrRequestSerializer serializer = new MirroredSolrRequestSerializer();
+    UpdateRequest req = new UpdateRequest();
+    req.deleteById("1");
+
+    long before = TimeSource.CURRENT_TIME.getTimeNs();
+    MirroredSolrRequest<?> mirroredRequest =
+        new MirroredSolrRequest<>(MirroredSolrRequest.Type.UPDATE, 3, req);
+    long after = TimeSource.CURRENT_TIME.getTimeNs();
+
+    byte[] data = serializer.serialize("test", mirroredRequest);
+    MirroredSolrRequest<?> deserialized = serializer.deserialize("test", data);
+
+    assertEquals(3, deserialized.getAttempt());
+    assertEquals(mirroredRequest.getSubmitTimeNanos(), deserialized.getSubmitTimeNanos());
+    assertTrue(
+        "submitTimeNanos should be a wall-clock nanosecond timestamp, got "
+            + deserialized.getSubmitTimeNanos(),
+        deserialized.getSubmitTimeNanos() >= before && deserialized.getSubmitTimeNanos() <= after);
   }
 
   /**

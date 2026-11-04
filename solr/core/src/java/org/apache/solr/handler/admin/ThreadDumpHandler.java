@@ -20,16 +20,12 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
-import java.lang.management.LockInfo;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadEntry;
+import org.apache.solr.client.api.model.NodeThreadsResponse.ThreadInfo;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -45,122 +41,69 @@ public class ThreadDumpHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    SimpleOrderedMap<Object> system = new SimpleOrderedMap<>();
+    final var response = new NodeThreadsAPI().getThreadDump();
+    final var system = new SimpleOrderedMap<Object>();
+    final var counts = new SimpleOrderedMap<Object>();
+    counts.add("current", Math.toIntExact(response.system.threadCount.current));
+    counts.add("peak", Math.toIntExact(response.system.threadCount.peak));
+    counts.add("daemon", Math.toIntExact(response.system.threadCount.daemon));
+    system.add("threadCount", counts);
+    if (response.system.deadlocks != null) {
+      system.add("deadlocks", toNamedList(response.system.deadlocks));
+    }
+    system.add("threadDump", toNamedList(response.system.threadDump));
     rsp.add("system", system);
-
-    ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
-
-    // Thread Count
-    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-    nl.add("current", tmbean.getThreadCount());
-    nl.add("peak", tmbean.getPeakThreadCount());
-    nl.add("daemon", tmbean.getDaemonThreadCount());
-    system.add("threadCount", nl);
-
-    // Deadlocks
-    ThreadInfo[] tinfos;
-    long[] tids = tmbean.findDeadlockedThreads();
-    if (tids != null) {
-      tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
-      NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
-      for (ThreadInfo ti : tinfos) {
-        if (ti != null) {
-          lst.add("thread", getThreadInfo(ti, tmbean));
-        }
-      }
-      system.add("deadlocks", lst);
-    }
-
-    // Now show all the threads....
-
-    tinfos = tmbean.dumpAllThreads(true, true);
-    NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
-    for (ThreadInfo ti : tinfos) {
-      if (ti != null) {
-        lst.add("thread", getThreadInfo(ti, tmbean));
-      }
-    }
-    system.add("threadDump", lst);
     rsp.setHttpCaching(false);
   }
 
-  // --------------------------------------------------------------------------------
-  // --------------------------------------------------------------------------------
-
-  private static SimpleOrderedMap<Object> getThreadInfo(ThreadInfo ti, ThreadMXBean tmbean) {
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-    long tid = ti.getThreadId();
-
-    info.add(ID, tid);
-    info.add(NAME, ti.getThreadName());
-    info.add("state", ti.getThreadState().toString());
-
-    if (ti.getLockName() != null) {
-      // TODO: this is redundent with lock-waiting below .. deprecate & remove
-      // TODO: (but first needs UI change)
-      info.add("lock", ti.getLockName());
+  private static NamedList<SimpleOrderedMap<Object>> toNamedList(List<ThreadEntry> threads) {
+    final var result = new NamedList<SimpleOrderedMap<Object>>();
+    for (var entry : threads) {
+      result.add("thread", toNamedList(entry.thread));
     }
-    {
-      final LockInfo lockInfo = ti.getLockInfo();
-      if (null != lockInfo) {
-        final SimpleOrderedMap<Object> lock = new SimpleOrderedMap<>();
-        info.add("lock-waiting", lock);
-        lock.add(NAME, lockInfo.toString());
-        if (-1 == ti.getLockOwnerId() && null == ti.getLockOwnerName()) {
-          lock.add("owner", null);
-        } else {
-          final SimpleOrderedMap<Object> owner = new SimpleOrderedMap<>();
-          lock.add("owner", owner);
-          owner.add(NAME, ti.getLockOwnerName());
-          owner.add(ID, ti.getLockOwnerId());
-        }
-      }
-    }
-    {
-      final LockInfo[] synchronizers = ti.getLockedSynchronizers();
-      if (0 < synchronizers.length) {
-        final List<String> locks = new ArrayList<>(synchronizers.length);
-        info.add("synchronizers-locked", locks);
-        for (LockInfo sync : synchronizers) {
-          locks.add(sync.toString());
-        }
-      }
-    }
-    {
-      final LockInfo[] monitors = ti.getLockedMonitors();
-      if (0 < monitors.length) {
-        final List<String> locks = new ArrayList<>(monitors.length);
-        info.add("monitors-locked", locks);
-        for (LockInfo monitor : monitors) {
-          locks.add(monitor.toString());
-        }
-      }
-    }
-
-    if (ti.isSuspended()) {
-      info.add("suspended", true);
-    }
-    if (ti.isInNative()) {
-      info.add("native", true);
-    }
-
-    if (tmbean.isThreadCpuTimeSupported()) {
-      info.add("cpuTime", formatNanos(tmbean.getThreadCpuTime(tid)));
-      info.add("userTime", formatNanos(tmbean.getThreadUserTime(tid)));
-    }
-
-    // Add the stack trace
-    int i = 0;
-    String[] trace = new String[ti.getStackTrace().length];
-    for (StackTraceElement ste : ti.getStackTrace()) {
-      trace[i++] = ste.toString();
-    }
-    info.add("stackTrace", trace);
-    return info;
+    return result;
   }
 
-  private static String formatNanos(long ns) {
-    return String.format(Locale.ROOT, "%.4fms", ns / (double) 1000000);
+  private static SimpleOrderedMap<Object> toNamedList(ThreadInfo thread) {
+    final var info = new SimpleOrderedMap<Object>();
+    info.add(ID, thread.id);
+    info.add(NAME, thread.name);
+    info.add("state", thread.state);
+    if (thread.lock != null) {
+      info.add("lock", thread.lock);
+    }
+    if (thread.lockWaiting != null) {
+      final var lock = new SimpleOrderedMap<Object>();
+      lock.add(NAME, thread.lockWaiting.name);
+      SimpleOrderedMap<Object> owner = null;
+      if (thread.lockWaiting.owner != null) {
+        owner = new SimpleOrderedMap<>();
+        owner.add(NAME, thread.lockWaiting.owner.name);
+        owner.add(ID, thread.lockWaiting.owner.id);
+      }
+      lock.add("owner", owner);
+      info.add("lock-waiting", lock);
+    }
+    if (thread.synchronizersLocked != null) {
+      info.add("synchronizers-locked", thread.synchronizersLocked);
+    }
+    if (thread.monitorsLocked != null) {
+      info.add("monitors-locked", thread.monitorsLocked);
+    }
+    if (thread.suspended != null) {
+      info.add("suspended", thread.suspended);
+    }
+    if (thread.nativeThread != null) {
+      info.add("native", thread.nativeThread);
+    }
+    if (thread.cpuTime != null) {
+      info.add("cpuTime", thread.cpuTime);
+    }
+    if (thread.userTime != null) {
+      info.add("userTime", thread.userTime);
+    }
+    info.add("stackTrace", thread.stackTrace.toArray(String[]::new));
+    return info;
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -177,12 +120,12 @@ public class ThreadDumpHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new NodeThreadsAPI(this));
+    return List.of();
   }
 
   @Override
-  public Boolean registerV2() {
-    return Boolean.TRUE;
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(NodeThreadsAPI.class);
   }
 
   @Override

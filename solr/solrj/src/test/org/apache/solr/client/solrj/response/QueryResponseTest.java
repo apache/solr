@@ -16,9 +16,13 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -27,6 +31,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestRuleLimitSysouts.Limit;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -319,5 +324,40 @@ public class QueryResponseTest extends SolrTestCase {
     Object[] values = explainMap.values().toArray();
     assertTrue(values[0] instanceof SimpleOrderedMap);
     assertTrue(values[1] instanceof SimpleOrderedMap);
+  }
+
+  @Test
+  @SuppressForbidden(
+      reason = "testing a same-version Java serialization round-trip on locally generated data")
+  public void testQueryResponseSerialization() throws Exception {
+    XMLResponseParser parser = new XMLResponseParser();
+    NamedList<Object> response;
+    try (SolrResourceLoader loader = new SolrResourceLoader(Path.of("").toAbsolutePath());
+        InputStream is = loader.openResource("solrj/sampleDebugResponse.xml")) {
+      assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+        response = parser.processResponse(in);
+      }
+    }
+
+    QueryResponse qr = new QueryResponse(response);
+    // Guard against a vacuous pass: the fixture must be non-trivial for the
+    // round-trip comparison below to mean anything.
+    assertEquals(2, qr.getResults().getNumFound());
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
+      out.writeObject(qr);
+    }
+
+    QueryResponse deserialized;
+    try (ObjectInputStream ois =
+        new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+      deserialized = (QueryResponse) ois.readObject();
+    }
+
+    // QueryResponse implements no equals(), so compare the underlying response rendering
+    // instead: a single structural comparison replacing field-by-field assertions.
+    assertEquals(qr.getResponse().toString(), deserialized.getResponse().toString());
   }
 }

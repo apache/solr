@@ -1,0 +1,8 @@
+title: Make the new UI module standalone and load artifacts during development to speed up builds
+type: other
+authors:
+  - name: Christos Malliaridis
+    nick: malliaridis
+links:
+  - name: GITHUB#4650
+    url: https://github.com/apache/solr/pull/4650

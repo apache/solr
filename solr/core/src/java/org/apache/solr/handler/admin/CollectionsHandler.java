@@ -30,7 +30,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
@@ -83,13 +82,8 @@ import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
-import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -111,6 +105,11 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.ClusterPropertyApis;
+import org.apache.solr.client.api.endpoint.ListAliasesApi;
+import org.apache.solr.client.api.endpoint.ListClusterNodesApi;
+import org.apache.solr.client.api.endpoint.ListCollectionsApi;
+import org.apache.solr.client.api.endpoint.RenameCollectionApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
@@ -157,6 +156,7 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
@@ -197,7 +197,7 @@ import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollection;
-import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SplitShard;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -311,7 +311,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext =
-        new AdminCmdContext(operation.action, req.getParams().get(ASYNC), req);
+        new AdminCmdContext(
+            operation.action,
+            req.getParams().get(ASYNC),
+            (String) req.getContext().get(CALLING_LOCK_ID_HEADER));
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
@@ -530,6 +533,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
 
+    /**
+     * V2 equivalent: {@link RenameCollectionApi} ({@code POST
+     * /collections/{collectionName}/rename}).
+     */
     RENAME_OP(
         RENAME,
         (req, rsp, h) -> {
@@ -538,6 +545,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return copy(req.getParams(), map, FOLLOW_ALIASES);
         }),
 
+    /** No V2 equivalent yet. */
     REINDEXCOLLECTION_OP(
         REINDEXCOLLECTION,
         (req, rsp, h) -> {
@@ -623,58 +631,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link org.apache.solr.handler.admin.api.SplitShard} ({@code POST
+     * /collections/{collection}/shards/{shard}/split}).
+     */
     SPLITSHARD_OP(
         SPLITSHARD,
         DEFAULT_COLLECTION_OP_TIMEOUT * 5,
         (req, rsp, h) -> {
-          String name = req.getParams().required().get(COLLECTION_PROP);
-          // TODO : add support for multiple shards
-          String shard = req.getParams().get(SHARD_ID_PROP);
-          String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
-          String splitKey = req.getParams().get("split.key");
-          String numSubShards = req.getParams().get(NUM_SUB_SHARDS);
-          String fuzz = req.getParams().get(SPLIT_FUZZ);
-
-          if (splitKey == null && shard == null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "At least one of shard, or split.key should be specified.");
-          }
-          if (splitKey != null && shard != null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Only one of 'shard' or 'split.key' should be specified");
-          }
-          if (splitKey != null && rangesStr != null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Only one of 'ranges' or 'split.key' should be specified");
-          }
-          if (numSubShards != null && (splitKey != null || rangesStr != null)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "numSubShards can not be specified with split.key or ranges parameters");
-          }
-          if (fuzz != null && (splitKey != null || rangesStr != null)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "fuzz can not be specified with split.key or ranges parameters");
-          }
-
-          Map<String, Object> map =
-              copy(
-                  req.getParams(),
-                  null,
-                  COLLECTION_PROP,
-                  SHARD_ID_PROP,
-                  "split.key",
-                  CoreAdminParams.RANGES,
-                  WAIT_FOR_FINAL_STATE,
-                  TIMING,
-                  SPLIT_METHOD,
-                  NUM_SUB_SHARDS,
-                  SPLIT_FUZZ,
-                  SPLIT_BY_PREFIX,
-                  FOLLOW_ALIASES,
-                  CREATE_NODE_SET_PARAM);
-          return copyPropertiesWithPrefix(req.getParams(), map, PROPERTY_PREFIX);
+          SplitShard.invokeWithV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     DELETESHARD_OP(
         DELETESHARD,
@@ -700,6 +666,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DeleteReplica.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link MigrateDocsAPI} ({@code POST /collections/{collection}} with the {@code
+     * migrate-docs} command).
+     */
     MIGRATE_OP(
         MIGRATE,
         (req, rsp, h) -> {
@@ -766,7 +736,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link ClusterAPI#getOverseerStatus} ({@code GET /cluster/overseer}), which
+     * calls this operation.
+     */
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
+    /** No V2 equivalent yet. */
     DISTRIBUTEDAPIPROCESSING_OP(
         DISTRIBUTEDAPIPROCESSING,
         (req, rsp, h) -> {
@@ -782,13 +757,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LIST,
         (req, rsp, h) -> {
           final ListCollections listCollectionsAPI = new ListCollections(h.coreContainer, req, rsp);
-          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
+          final SolrJerseyResponse listCollectionsResponse =
+              listCollectionsAPI.listCollections(null, null, null, null, null);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
     /**
      * Handle cluster status request. Can return status per specific collection/shard or per all
      * collections.
+     */
+    /**
+     * Superseded by V2, which splits it up: {@link ListCollectionsApi} ({@code GET
+     * /collections?detailed=true}) for the collections tree, {@link ListClusterNodesApi} ({@code
+     * GET /cluster/nodes}), {@link ListAliasesApi} ({@code GET /aliases}) and {@link
+     * ClusterPropertyApis} ({@code GET /cluster/properties}).
      */
     CLUSTERSTATUS_OP(
         CLUSTERSTATUS,
@@ -838,6 +820,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           BalanceShardUnique.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link RebalanceLeadersAPI} ({@code POST /collections/{collection}} with the
+     * {@code rebalance-leaders} command).
+     */
     REBALANCELEADERS_OP(
         REBALANCELEADERS,
         (req, rsp, h) -> {
@@ -845,6 +831,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
     // XXX should this command support followAliases?
+    /**
+     * V2 equivalent: {@link ModifyCollectionAPI} ({@code POST /collections/{collection}} with the
+     * {@code modify} command).
+     */
     MODIFYCOLLECTION_OP(
         MODIFYCOLLECTION,
         (req, rsp, h) -> {
@@ -999,6 +989,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
           return null;
         }),
+    /**
+     * V2 equivalent: {@link MoveReplicaAPI} ({@code POST /collections/{collection}} with the {@code
+     * move-replica} command).
+     */
     MOVEREPLICA_OP(
         MOVEREPLICA,
         (req, rsp, h) -> {
@@ -1199,6 +1193,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         MigrateReplicas.class,
         BalanceReplicas.class,
         RestoreCollection.class,
+        SplitShard.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
@@ -1214,7 +1209,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));

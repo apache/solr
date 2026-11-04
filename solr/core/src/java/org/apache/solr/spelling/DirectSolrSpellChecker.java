@@ -183,18 +183,16 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    log.debug("getSuggestions: {}", options.tokens);
-
     SpellingResult result = new SpellingResult();
     float accuracy =
         (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
 
-    for (Token token : options.tokens) {
-      if (token.length() == 0) {
+    for (SpellCheckToken token : options.tokens) {
+      String tokenText = token.text();
+      if (tokenText.isEmpty()) {
         result.add(token, List.of());
         continue;
       }
-      String tokenText = token.toString();
       Term term = new Term(field, tokenText);
       int freq = options.reader.docFreq(term);
       int count =

@@ -1,0 +1,9 @@
+title: New solr.xml setting allowZkHosts restricts the ZooKeeper hosts that cross-collection joins and streaming expressions may connect to.
+type: changed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18224
+    url: https://issues.apache.org/jira/browse/SOLR-18224
+  - name: SOLR-18229
+    url: https://issues.apache.org/jira/browse/SOLR-18229
