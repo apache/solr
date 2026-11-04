@@ -32,7 +32,6 @@ The left-side of the screen is a menu under the Solr logo that provides the navi
 
 The first set of links is split into Cluster (SolrCloud) and Node sections.
 On SolrCloud, a Node picker chooses which live node Dashboard, Logging, Java Properties, Thread Dump, and Cores show.
-Those screens are served from the node hosting the UI and routed with the `X-Solr-targetNode` header.
 Logging → Level stays cluster-wide.
 
 At the end of this information is at least one pulldown listing Solr cores configured for this instance.

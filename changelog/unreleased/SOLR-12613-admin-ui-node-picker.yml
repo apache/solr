@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Admin UI adds a node picker so Thread Dump, Java Properties, Logging, Cores, and Dashboard can target any live SolrCloud node via X-Solr-targetNode, with the sidebar split into Cluster and Node sections.
+title: Admin UI adds a node picker so Thread Dump, Java Properties, Logging, Cores, and Dashboard can target any live SolrCloud node, with the sidebar split into Cluster and Node sections.
 type: added
 authors:
   - name: Prithvi S.
