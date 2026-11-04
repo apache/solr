@@ -516,6 +516,7 @@ solrAdminApp.config([
 solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, ClusterV2, Ping, Constants, SchemaDesigner, ApiErrorHandler, NodeTarget) {
 
   $rootScope.exceptions={};
+  var cloudLandingDone = false;
 
   $rootScope.toggleException = function() {
     $scope.showException=!$scope.showException;
@@ -534,6 +535,12 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   var loadCoresForSelectedNode = function(pageType) {
+    if (NodeTarget.needsSelection()) {
+      $scope.cores = [];
+      delete $scope.currentCore;
+      $scope.viewingRemoteNode = false;
+      return;
+    }
     CoresV2.getAllCoreStatus(NodeTarget.withNodes({indexInfo: false}), function(error, data, response) {
       $timeout(function() {
         if (error) { ApiErrorHandler.handle(response); return; }
@@ -577,6 +584,14 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
           return;
         }
         $scope.isCloudEnabled = !!(data.mode && data.mode.match(/solrcloud/i));
+        if ($scope.isCloudEnabled) {
+          if (!cloudLandingDone && $location.path() === '/' && !NodeTarget.state.selectedNode) {
+            cloudLandingDone = true;
+            $location.url('/~cloud?view=nodes');
+          } else {
+            cloudLandingDone = true;
+          }
+        }
         $scope.usersPermissions = data.security.permissions;
         $scope.isSecurityEnabled = data.security.authenticationPlugin != null;
         if (!$scope.isCloudEnabled) {
@@ -584,6 +599,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
           $scope.liveNodes = [];
           $scope.selectedNode = null;
           $scope.viewingRemoteNode = false;
+          $scope.needsNodeSelection = false;
         } else if (data.node) {
           NodeTarget.setLocalNode(data.node);
           $scope.localNode = data.node;
@@ -611,6 +627,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
               $scope.liveNodes = NodeTarget.state.liveNodes;
               $scope.selectedNode = NodeTarget.state.selectedNode;
               $scope.viewingRemoteNode = NodeTarget.isRemote();
+              $scope.needsNodeSelection = NodeTarget.needsSelection();
               if (pageType === Constants.IS_CORE_PAGE && NodeTarget.isRemote()) {
                 $location.url('/');
                 return;
@@ -687,6 +704,29 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   };
 
   // Keep long node names scrollable in the open Chosen list; #menu-wrapper steals wheel otherwise.
+  var stretchNodeResultRows = function(ul) {
+    if (!ul) {
+      return;
+    }
+    var lis = ul.querySelectorAll('li.active-result');
+    var max = ul.clientWidth;
+    var i;
+    for (i = 0; i < lis.length; i++) {
+      lis[i].style.minWidth = '';
+      if (lis[i].scrollWidth > max) {
+        max = lis[i].scrollWidth;
+      }
+    }
+    for (i = 0; i < lis.length; i++) {
+      lis[i].style.minWidth = max + 'px';
+    }
+    if (ul.scrollWidth > max) {
+      max = ul.scrollWidth;
+      for (i = 0; i < lis.length; i++) {
+        lis[i].style.minWidth = max + 'px';
+      }
+    }
+  };
   var bindNodeResultsWheel = function(el) {
     if (!el || el.getAttribute('data-node-wheel') === '1') {
       return;
@@ -720,7 +760,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   });
   angular.element(document).on('chosen:showing_dropdown', '#node_selector_select', function() {
     $timeout(function() {
-      bindNodeResultsWheel(document.querySelector('#node_selector_select_chosen .chosen-results'));
+      var results = document.querySelector('#node_selector_select_chosen .chosen-results');
+      stretchNodeResultRows(results);
+      bindNodeResultsWheel(results);
     });
   });
   $scope.$on('$destroy', function() {
@@ -728,14 +770,19 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   });
 
   $scope.onSelectedNodeChange = function() {
-    if (NodeTarget.selectNode($scope.selectedNode)) {
-      $scope.viewingRemoteNode = NodeTarget.isRemote();
-      if (NodeTarget.isRemote() && $scope.pageType === Constants.IS_CORE_PAGE) {
-        $location.url('/');
-        return;
-      }
-      $route.reload();
+    if (!$scope.selectedNode) {
+      return;
     }
+    if (!NodeTarget.selectNode($scope.selectedNode)) {
+      return;
+    }
+    $scope.viewingRemoteNode = NodeTarget.isRemote();
+    $scope.needsNodeSelection = NodeTarget.needsSelection();
+    if ($scope.isNodeScopedPage && !($scope.pageType === Constants.IS_CORE_PAGE && NodeTarget.isRemote())) {
+      $route.reload();
+      return;
+    }
+    $location.url('/');
   };
 
   $scope.showHideMenu = function() {

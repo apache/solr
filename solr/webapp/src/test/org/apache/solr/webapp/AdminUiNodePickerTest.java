@@ -34,13 +34,41 @@ public class AdminUiNodePickerTest extends AdminUiTestBase {
   public void clearPersistedNodeSelection() {
     ensureCloudCluster();
     driver.get(baseUrl + "/index.html#/");
-    waitFor(By.cssSelector("#content > *"));
+    waitFor(By.id("node-selector-item"));
     ((JavascriptExecutor) driver)
         .executeScript("sessionStorage.removeItem('adminui.selectedNode');");
   }
 
   private void selectNode(String nodeName) {
     chosenSelect("node_selector_select", nodeName);
+  }
+
+  @Test
+  public void testCloudLandingShowsNodesAndEmptyNodeSelector() {
+    driver.get(baseUrl + "/index.html#/");
+    waitFor(By.id("node-selector-item"));
+    ((JavascriptExecutor) driver)
+        .executeScript("sessionStorage.removeItem('adminui.selectedNode');");
+    driver.navigate().refresh();
+    waitFor(By.id("nodes-table"));
+    waitFor(By.id("node-selector-item"));
+    String pickerText = waitFor(By.id("node_selector_select_chosen")).getText();
+    assertTrue(
+        "empty picker should show Node Selector placeholder, got: " + pickerText,
+        pickerText.contains("Node Selector"));
+    assertFalse(
+        "node prompt stays off the cluster Nodes page",
+        driver.findElement(By.id("select-node-prompt")).isDisplayed());
+
+    click(By.cssSelector("#menu #index a"));
+    waitFor(By.id("select-node-prompt"));
+    assertTrue(driver.findElement(By.id("select-node-prompt")).isDisplayed());
+
+    String remoteNode = cluster.getJettySolrRunner(1).getNodeName();
+    selectNode(remoteNode);
+    waitForTextContains(DASHBOARD_NODE, remoteNode);
+    assertFalse(driver.findElement(By.id("select-node-prompt")).isDisplayed());
+    assertNoSevereConsoleErrors();
   }
 
   @Test

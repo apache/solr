@@ -126,15 +126,29 @@ limitations under the License.
 
 #menu-wrapper #node-selector .chosen-results
 {
+  display: grid;
+  grid-template-columns: minmax(100%, max-content);
   max-height: 220px;
   overflow-x: auto;
   overflow-y: auto;
+  margin: 0;
+  padding: 0;
   scrollbar-width: thin;
 }
 
-#menu-wrapper #node-selector .chosen-results li
+#menu-wrapper #node-selector .chosen-results li.active-result
 {
+  display: block;
   white-space: nowrap;
+  min-width: 100%;
+  box-sizing: border-box;
+  word-wrap: normal;
+}
+
+#menu-wrapper #node-selector .chosen-results li.highlighted
+{
+  background-image: none;
+  background-color: #3875d7;
 }
 
 #menu-wrapper .chosen-container-single .chosen-single div

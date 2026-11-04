@@ -162,7 +162,12 @@ limitations under the License.
       </div>
 
       <div id="content-wrapper">
-        <div ng-view id="content">
+        <div id="select-node-prompt" class="header-message"
+             ng-show="!http401 && needsNodeSelection && isNodeScopedPage" ng-cloak>
+          <h2>Select a node</h2>
+          <p>Choose a live node from the Node Selector.</p>
+        </div>
+        <div ng-view id="content" ng-hide="needsNodeSelection && isNodeScopedPage">
 
         </div>
       </div>
@@ -226,12 +231,14 @@ limitations under the License.
                   <div id="has-nodes">
                     <select id="node_selector_select"
                             aria-label="Node"
-                            placeholder-text-single="'Select node'"
+                            placeholder-text-single="'Node Selector'"
                             ng-model="$parent.selectedNode"
                             chosen
                             search-contains="true"
                             ng-change="onSelectedNodeChange()"
-                            ng-options="node for node in liveNodes"></select>
+                            ng-options="node for node in liveNodes">
+                      <option value=""></option>
+                    </select>
                   </div>
                 </div>
               </li>

@@ -19,6 +19,9 @@ solrAdminApp.controller('ThreadsController',
   function($scope, $timeout, SystemV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("threads", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
+      if (NodeTarget.needsSelection()) {
+        return;
+      }
       SystemV2.getThreadDump(NodeTarget.withNodes({}), function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }

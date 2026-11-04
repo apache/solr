@@ -28,6 +28,10 @@ solrAdminApp.controller('LoggingController',
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
     $scope.refresh = function() {
+      if (NodeTarget.needsSelection()) {
+        $timeout.cancel($scope.timeout);
+        return;
+      }
       LoggingV2.fetchLocalLogMessages(NodeTarget.withNodes({since: 0}), function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }

@@ -141,11 +141,16 @@ solrAdminServices.factory('Metrics',
         return data;
       }
 
+      function needsSelection() {
+        return state.liveNodes.length > 1 && !state.selectedNode;
+      }
+
       function publish() {
         $rootScope.localNode = state.localNode;
         $rootScope.selectedNode = state.selectedNode;
         $rootScope.liveNodes = state.liveNodes;
         $rootScope.viewingRemoteNode = isRemote();
+        $rootScope.needsNodeSelection = needsSelection();
       }
 
       function markReady() {
@@ -175,16 +180,16 @@ solrAdminServices.factory('Metrics',
 
       function setLocalNode(nodeName) {
         state.localNode = nodeName;
-        if (!state.selectedNode) {
-          state.selectedNode = nodeName;
-        }
         publish();
       }
 
       function setLiveNodes(nodes) {
         state.liveNodes = (nodes || []).slice().sort();
-        if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+        if (state.liveNodes.length <= 1) {
           state.selectedNode = state.localNode || state.liveNodes[0] || null;
+          persistSelected();
+        } else if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+          state.selectedNode = null;
           persistSelected();
         }
         publish();
@@ -228,6 +233,7 @@ solrAdminServices.factory('Metrics',
       return {
         state: state,
         isRemote: isRemote,
+        needsSelection: needsSelection,
         withNodes: withNodes,
         unwrap: unwrap,
         setLocalNode: setLocalNode,

@@ -18,6 +18,9 @@ limitations under the License.
 solrAdminApp.controller('IndexController', function($scope, $timeout, SystemV2, Constants, ApiErrorHandler, NodeTarget) {
   $scope.resetMenu("index", Constants.IS_ROOT_PAGE);
   $scope.reload = function() {
+    if (NodeTarget.needsSelection()) {
+      return;
+    }
     SystemV2.getNodeSystemInfo(NodeTarget.withNodes({}), function(error, data, response) {
       $timeout(function() {
         if (error) { ApiErrorHandler.handle(response); return; }

@@ -23,7 +23,7 @@ Solr features a Web interface that provides online access to many Solr configura
 
 === Dashboard
 
-Accessing the URL `\http://hostname:8983/solr/` will show the main dashboard, which is divided into two parts.
+Accessing the URL `\http://hostname:8983/solr/` opens the Cluster Nodes page in SolrCloud, or the Dashboard in standalone. The Dashboard is divided into two parts.
 
 .Solr Dashboard
 image::solr-admin-ui/dashboard.png[image,height=400]
@@ -31,7 +31,7 @@ image::solr-admin-ui/dashboard.png[image,height=400]
 The left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI.
 
 The first set of links is split into Cluster (SolrCloud) and Node sections.
-On SolrCloud, a Node picker chooses which live node Dashboard, Logging, Java Properties, Thread Dump, and Cores show.
+On SolrCloud, the Node Selector starts empty like the Collection Selector; pick a live node to show Dashboard, Logging, Java Properties, Thread Dump, and Cores for that node.
 Logging → Level stays cluster-wide.
 
 At the end of this information is at least one pulldown listing Solr cores configured for this instance.

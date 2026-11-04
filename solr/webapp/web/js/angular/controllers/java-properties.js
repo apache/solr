@@ -19,6 +19,9 @@ solrAdminApp.controller('JavaPropertiesController',
   function($scope, $timeout, NodeV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("java-props", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
+      if (NodeTarget.needsSelection()) {
+        return;
+      }
       NodeV2.getNodeProperties(NodeTarget.withNodes({}), function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
