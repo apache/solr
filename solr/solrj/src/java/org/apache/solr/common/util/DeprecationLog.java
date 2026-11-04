@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.logging;
+package org.apache.solr.common.util;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +42,25 @@ public class DeprecationLog {
    * @return true if logged
    */
   public static boolean log(String featureId, String message) {
-    if (alreadyLogged.putIfAbsent(featureId, message) != null) {
+    return log(featureId, () -> message);
+  }
+
+  /**
+   * Like {@link #log(String, String)}, but only builds the message if this is the first time {@code
+   * featureId} is logged. Use this when building the message isn't free and the call site runs
+   * often (e.g. on every property lookup).
+   *
+   * @return true if logged
+   */
+  public static boolean log(String featureId, Supplier<String> message) {
+    if (alreadyLogged.containsKey(featureId)) {
+      return false;
+    }
+    if (alreadyLogged.putIfAbsent(featureId, featureId) != null) {
       return false;
     }
     Logger log = LoggerFactory.getLogger(LOG_PREFIX + featureId);
-    log.warn(message);
+    log.warn(message.get());
     return true;
   }
 }
