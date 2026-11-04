@@ -26,7 +26,7 @@ public class SolrCoreInitializationException extends SolrException {
 
   public SolrCoreInitializationException(String coreName, Exception loadException) {
     super(
-        ErrorCode.SERVER_ERROR,
+        ErrorCode.SERVICE_UNAVAILABLE,
         "SolrCore '"
             + coreName
             + "' is not available due to init failure: "
