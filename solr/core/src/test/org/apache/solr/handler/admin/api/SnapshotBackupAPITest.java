@@ -21,7 +21,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -98,7 +97,6 @@ public class SnapshotBackupAPITest extends SolrTestCase {
 
   private static class FailingSnapshotBackupAPI extends SnapshotBackupAPI {
 
-    @Inject
     public FailingSnapshotBackupAPI(
         SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
       super(solrCore, replicationHandlerConfig);
@@ -130,7 +128,6 @@ public class SnapshotBackupAPITest extends SolrTestCase {
     private static final AtomicInteger numberToKeep = new AtomicInteger();
     private static final AtomicInteger numberBackupsToKeep = new AtomicInteger();
 
-    @Inject
     public TrackingSnapshotBackupAPI(
         SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
       super(solrCore, replicationHandlerConfig);
