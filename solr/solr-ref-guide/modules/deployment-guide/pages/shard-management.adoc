@@ -67,7 +67,9 @@ V2 API::
 ----
 curl 'http://localhost:8983/api/collections/techproducts/shards' -H 'Content-Type: application/json' -d '
   {
-    "shard":"shard1"
+    "split":{
+      "shard":"shard1"
+    }
   }
 '
 ----

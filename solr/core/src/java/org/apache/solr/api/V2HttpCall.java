@@ -129,9 +129,7 @@ public class V2HttpCall extends HttpSolrCall {
         assert core == null;
       }
 
-      if (pathSegments.size() > 1
-          && ("c".equals(prefix) || "collections".equals(prefix))
-          && cores.isZooKeeperAware()) {
+      if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
         String collectionStr = queryParams.get(COLLECTION_PROP, origCorename);
@@ -177,9 +175,6 @@ public class V2HttpCall extends HttpSolrCall {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
       }
-      // If not ZooKeeper-aware, a "c"/"collections"-prefixed request skips both branches above:
-      // there is no collection/alias state to resolve, so `core` stays null and the request falls
-      // through to be dispatched as an admin/Jersey API, same as when no local core matches.
 
       // We didn't find a core, so we're either an error or a Jersey 'ADMIN' api
       if (core == null) {
@@ -531,6 +526,13 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected Object _getHandler() {
     return api;
+  }
+
+  @Override
+  protected boolean shouldAuthorize() {
+    // Container-level JAX-RS resources are authorized by SolrRequestAuthorizer, which knows their
+    // permission
+    return (api != null || action == PROCESS) && super.shouldAuthorize();
   }
 
   public Map<String, String> getUrlParts() {

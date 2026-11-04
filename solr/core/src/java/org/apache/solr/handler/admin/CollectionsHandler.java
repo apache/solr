@@ -197,7 +197,7 @@ import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollection;
-import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SplitShard;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -632,13 +632,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return null;
         }),
     /**
-     * V2 equivalent: {@link SplitShardAPI} ({@code POST /collections/{collection}/shards} with the
-     * {@code split} command).
+     * V2 equivalent: {@link org.apache.solr.handler.admin.api.SplitShard} ({@code POST
+     * /collections/{collection}/shards/{shard}/split}).
      */
     SPLITSHARD_OP(
         SPLITSHARD,
+        DEFAULT_COLLECTION_OP_TIMEOUT * 5,
         (req, rsp, h) -> {
-          SplitShardAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          SplitShard.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     DELETESHARD_OP(
@@ -1192,6 +1193,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         MigrateReplicas.class,
         BalanceReplicas.class,
         RestoreCollection.class,
+        SplitShard.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
@@ -1201,7 +1203,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class,
         ClusterProperty.class,
-        SplitShardAPI.class,
         ClusterCommands.class);
   }
 

@@ -17,7 +17,6 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -25,23 +24,16 @@ import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.SplitShardRequestBody;
 import org.apache.solr.client.api.model.SplitShardResponse;
 
-/**
- * V2 API definition for splitting an existing shard into multiple pieces.
- *
- * <p>The new API (POST /api/collections/{collectionName}/shards/split) is equivalent to the v1
- * /admin/collections?action=SPLITSHARD command.
- */
-@Path("/collections/{collectionName}/shards/split")
+@Path("/collections/{collectionName}/shards/{shardName}/split")
 public interface SplitShardApi {
   @POST
   @Operation(
-      summary = "Splits a shard in an existing collection into two or more shards.",
+      summary = "Split an existing shard into two or more new shards.",
       tags = {"shards"})
   SplitShardResponse splitShard(
-      @Parameter(description = "The name of the collection containing the shard.", required = true)
-          @PathParam("collectionName")
-          String collectionName,
-      @RequestBody(description = "Additional properties for the shard split operation.")
+      @PathParam("collectionName") String collectionName,
+      @PathParam("shardName") String shardName,
+      @RequestBody(description = "Contains user provided parameters")
           SplitShardRequestBody requestBody)
       throws Exception;
 }

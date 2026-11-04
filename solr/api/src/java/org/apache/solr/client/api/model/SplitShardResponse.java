@@ -14,19 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
-/** Response body for {@link org.apache.solr.client.api.endpoint.SplitShardApi#splitShard} */
+/** Response from splitting a shard, including optional per-phase timing information. */
 public class SplitShardResponse extends SubResponseAccumulatingJerseyResponse {
 
-  @Schema(
-      description =
-          "Per-stage timing information for the split operation, present only when the "
-              + "request's 'timing' property is true.")
-  @JsonProperty
-  public Map<String, Object> timing;
+  @JsonProperty public Map<String, Object> timing;
 }

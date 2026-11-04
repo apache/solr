@@ -17,64 +17,37 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
 import java.util.Map;
 
-/**
- * Request body for splitting a shard via {@link org.apache.solr.client.api.endpoint.SplitShardApi}
- */
 public class SplitShardRequestBody {
-  @Schema(description = "The name of the shard to be split.")
-  @JsonProperty
-  public String shard;
+  @JsonProperty public String ranges;
 
-  @Schema(description = "Comma-separated hash ranges to split the shard into (e.g. 'a-b,c-d').")
-  @JsonProperty
-  public String ranges;
+  @JsonProperty public String splitKey;
 
-  @Schema(description = "A route key to be used for splitting the index.")
-  @JsonProperty
-  public String splitKey;
+  @JsonProperty public Integer numSubShards;
 
-  @Schema(description = "The number of sub-shards to create from the shard.")
-  @JsonProperty
-  public Integer numSubShards;
+  @JsonProperty public String splitFuzz;
 
-  @Schema(description = "A fuzzy factor for the split (e.g. '0.2').")
-  @JsonProperty
-  public String splitFuzz;
+  @JsonProperty public Boolean timing;
 
-  @Schema(description = "When true, timing information is included in the response.")
-  @JsonProperty
-  public Boolean timing;
+  @JsonProperty public Boolean splitByPrefix;
 
-  @Schema(description = "When true, split ranges are determined based on prefix distribution.")
-  @JsonProperty
-  public Boolean splitByPrefix;
+  @JsonProperty public Boolean followAliases;
 
-  @Schema(description = "When true, aliases are followed to find the actual collection name.")
-  @JsonProperty
-  public Boolean followAliases;
+  @JsonProperty public String splitMethod;
 
-  @Schema(description = "The method to use for splitting the index (e.g. 'rewrite' or 'link').")
-  @JsonProperty
-  public String splitMethod;
+  @JsonProperty public String createNodeSet;
 
-  @Schema(description = "The nodes to place the new sub-shard replicas on.")
-  @JsonProperty
-  public List<String> nodeSet;
+  @JsonProperty public Map<String, Object> coreProperties;
 
-  @Schema(description = "Core properties to set on the sub-shards.")
-  @JsonProperty
-  public Map<String, Object> coreProperties;
+  @JsonProperty public String async;
 
-  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+  /**
+   * @deprecated Solr is moving toward always waiting for final state, with no option to opt out;
+   *     once that happens, this parameter will have no effect and will likely be removed. See
+   *     SOLR-17712.
+   */
   @JsonProperty
-  public String async;
-
   @Deprecated(since = "9.10")
-  @Schema(description = "Deprecated. When true, waits for the final state before returning.")
-  @JsonProperty
   public Boolean waitForFinalState;
 }

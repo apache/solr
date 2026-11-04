@@ -128,6 +128,13 @@ public abstract class AdminAPIBase extends JerseyResource {
   }
 
   protected SolrResponse submitRemoteMessageAndHandleException(
+      SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
+      throws Exception {
+    return submitRemoteMessageAndHandleException(
+        response, adminCmdContext, remoteMessage, DEFAULT_COLLECTION_OP_TIMEOUT);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleException(
       SolrJerseyResponse response,
       AdminCmdContext adminCmdContext,
       ZkNodeProps remoteMessage,
@@ -143,19 +150,22 @@ public abstract class AdminAPIBase extends JerseyResource {
   }
 
   protected SolrResponse submitRemoteMessageAndHandleException(
-      SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
-      throws Exception {
-    return submitRemoteMessageAndHandleException(
-        response, adminCmdContext, remoteMessage, DEFAULT_COLLECTION_OP_TIMEOUT);
-  }
-
-  protected SolrResponse submitRemoteMessageAndHandleException(
       SolrJerseyResponse response,
       CollectionParams.CollectionAction action,
       ZkNodeProps remoteMessage)
       throws Exception {
     return submitRemoteMessageAndHandleException(
         response, new AdminCmdContext(action, null, callingLockId), remoteMessage);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleAsync(
+      AsyncJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    return submitRemoteMessageAndHandleAsync(
+        response, action, remoteMessage, asyncId, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
   protected SolrResponse submitRemoteMessageAndHandleAsync(
@@ -177,16 +187,6 @@ public abstract class AdminAPIBase extends JerseyResource {
     }
 
     return remoteResponse;
-  }
-
-  protected SolrResponse submitRemoteMessageAndHandleAsync(
-      AsyncJerseyResponse response,
-      CollectionParams.CollectionAction action,
-      ZkNodeProps remoteMessage,
-      String asyncId)
-      throws Exception {
-    return submitRemoteMessageAndHandleAsync(
-        response, action, remoteMessage, asyncId, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
   protected SolrResponse submitRemoteMessageAndHandleResponse(

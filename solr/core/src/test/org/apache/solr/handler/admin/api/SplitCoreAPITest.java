@@ -16,9 +16,13 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
+import static org.apache.solr.SolrTestCaseJ4.params;
+import static org.apache.solr.SolrTestCaseJ4.sdoc;
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
-import org.apache.solr.SolrTestCaseJ4;
+import java.util.List;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.EnvUtils;
@@ -29,7 +33,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Tests for the split core V2 endpoint via the generated SolrJ client. */
-public class SplitCoreAPITest extends SolrTestCaseJ4 {
+public class SplitCoreAPITest extends SolrTestCase {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
@@ -55,5 +59,33 @@ public class SplitCoreAPITest extends SolrTestCaseJ4 {
     assertTrue(
         "Expected error about missing targetCore or path",
         ex.getMessage().contains("path") || ex.getMessage().contains("targetCore"));
+  }
+
+  @Test
+  public void testSplitIntoTargetCores() throws Exception {
+    final String sourceCore = "split-source";
+    final var targets = List.of("split-target-1", "split-target-2");
+    for (String coreName : List.of(sourceCore, targets.get(0), targets.get(1))) {
+      solrTestRule.newCollection(coreName).withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    }
+
+    try (var client = solrTestRule.getSolrClient(sourceCore)) {
+      client.add(List.of(sdoc("id", "1"), sdoc("id", "2"), sdoc("id", "3")));
+      client.commit();
+    }
+
+    final var request = new CoresApi.SplitCore(sourceCore);
+    request.setTargetCore(targets);
+    final var response = request.process(solrTestRule.getAdminClient());
+    assertEquals(0, response.responseHeader.status);
+
+    long totalDocuments = 0;
+    for (String target : targets) {
+      try (var client = solrTestRule.getSolrClient(target)) {
+        client.commit();
+        totalDocuments += client.query(params("q", "*:*", "rows", "0")).getResults().getNumFound();
+      }
+    }
+    assertEquals(3, totalDocuments);
   }
 }
