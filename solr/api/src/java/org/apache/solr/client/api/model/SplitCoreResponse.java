@@ -18,9 +18,10 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Map;
 
 /** Response body for {@link org.apache.solr.client.api.endpoint.SplitCoreApi#splitCore} */
-public class SplitCoreResponse extends SolrJerseyResponse {
+public class SplitCoreResponse extends AsyncJerseyResponse {
 
   @Schema(
       description =
@@ -28,4 +29,8 @@ public class SplitCoreResponse extends SolrJerseyResponse {
               + "the request's 'getRanges' property is true.")
   @JsonProperty
   public String ranges;
+
+  @Schema(description = "Per-phase timing information for a completed index split.")
+  @JsonProperty
+  public Map<String, Object> timing;
 }

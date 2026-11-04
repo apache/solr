@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +46,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -102,6 +105,7 @@ public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
       return response;
     }
 
+    response.requestId = body.async;
     return handlePotentiallyAsynchronousTask(
         response,
         coreName,
@@ -109,7 +113,7 @@ public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
         "split",
         () -> {
           try {
-            doSplit(coreName, body);
+            doSplit(coreName, body, response);
             return response;
           } catch (SolrException e) {
             throw e;
@@ -123,7 +127,8 @@ public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
    * Splits the core's index, either into the directory paths in {@code body.path} or by merging
    * pieces into the cores named in {@code body.targetCore}.
    */
-  private void doSplit(String coreName, SplitCoreRequestBody body) throws Exception {
+  private void doSplit(String coreName, SplitCoreRequestBody body, SplitCoreResponse response)
+      throws Exception {
     String splitKey = body.splitKey;
     String[] newCoreNames = body.targetCore != null ? body.targetCore.toArray(new String[0]) : null;
 
@@ -169,7 +174,7 @@ public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Unsupported value of 'splitMethod': " + methodStr);
     }
-    SolrCore parentCore = coreContainer.getCore(coreName);
+    SolrCore parentCore = getCoreOrThrow(coreName);
     List<SolrCore> newCores = null;
     SolrQueryRequest splitReq = null;
 
@@ -252,6 +257,12 @@ public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
               splitKey,
               splitMethod);
       parentCore.getUpdateHandler().split(cmd);
+      if (rsp.getResponse() instanceof NamedList<?> results
+          && results.get(CommonParams.TIMING) instanceof NamedList<?> timing) {
+        final Map<String, Object> timingByPhase = new LinkedHashMap<>();
+        timing.forEach(timingByPhase::put);
+        response.timing = timingByPhase;
+      }
 
       if (coreContainer.isZooKeeperAware()) {
         log.trace("SplitCoreAPI: Create cloud descriptors for sub-shards of core");
@@ -282,16 +293,27 @@ public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
     }
   }
 
+  private SolrCore getCoreOrThrow(String coreName) {
+    final SolrCore core = coreContainer.getCore(coreName);
+    if (core == null) {
+      throw new CoreNotFoundException(coreName);
+    }
+    return core;
+  }
+
+  /** Identifies a missing source core so the v1 adapter can retain its legacy status codes. */
+  public static class CoreNotFoundException extends SolrException {
+    private CoreNotFoundException(String coreName) {
+      super(ErrorCode.NOT_FOUND, "Unknown core " + coreName);
+    }
+  }
+
   /**
    * This is called when splitByPrefix is used. The overseer called us to get recommended splits
    * taking into account actual document distribution over the hash space.
    */
   private void handleGetRanges(String coreName, SplitCoreResponse response) throws Exception {
-    SolrCore parentCore = coreContainer.getCore(coreName);
-    if (parentCore == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown core " + coreName);
-    }
-
+    SolrCore parentCore = getCoreOrThrow(coreName);
     RefCounted<SolrIndexSearcher> searcherHolder = parentCore.getRealtimeSearcher();
 
     try {

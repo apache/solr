@@ -672,8 +672,11 @@ The `SPLIT` action splits an index into two or more indexes.
 The index being split can continue to handle requests.
 The split pieces can be placed into a specified directory on the server's filesystem or it can be merged into running Solr cores.
 See the <<SPLIT Examples>> below for sample V1 and V2 requests.
+The v2 response includes per-phase split measurements in `timing` after a synchronous split, and a `requestid` acknowledgement when `async` is supplied.
+Poll `GET /api/node/commands/{requestId}` to retrieve the result of an asynchronous split.
+Synchronous requests referencing an unknown source core return HTTP 404 in v2.
 
-The `SPLIT` action supports five parameters, which are described in the table below.
+The `SPLIT` action supports the following parameters.
 
 === SPLIT Parameters
 

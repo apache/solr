@@ -20,12 +20,13 @@ package org.apache.solr.handler.admin;
 import java.util.Arrays;
 import java.util.Optional;
 import org.apache.solr.client.api.model.SplitCoreRequestBody;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
-import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.handler.admin.api.SplitCoreAPI.CoreNotFoundException;
 
 /**
  * CoreAdminOp implementation for shard splits. This request is enqueued when {@link
@@ -64,7 +65,18 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     final var splitCoreApi =
         new SplitCoreAPI(
             it.handler.coreContainer, it.handler.coreAdminAsyncTracker, it.req, it.rsp);
-    final var response = splitCoreApi.splitCore(cname, requestBody);
-    V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
+    try {
+      final var response = splitCoreApi.splitCore(cname, requestBody);
+      if (response.ranges != null) {
+        it.rsp.add("ranges", response.ranges);
+      }
+    } catch (CoreNotFoundException e) {
+      throw new SolrException(
+          Boolean.TRUE.equals(requestBody.getRanges)
+              ? SolrException.ErrorCode.BAD_REQUEST
+              : SolrException.ErrorCode.SERVER_ERROR,
+          e.getMessage(),
+          e);
+    }
   }
 }
