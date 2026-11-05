@@ -98,7 +98,7 @@ import org.slf4j.LoggerFactory;
  * <p>All this of course assuming the preferedLeader is alive and well and is assigned for any given
  * shard.
  */
-class RebalanceLeaders {
+public class RebalanceLeaders {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrQueryRequest req;
@@ -114,7 +114,7 @@ class RebalanceLeaders {
   final Map<String, String> pendingOps = new HashMap<>();
   private String collectionName;
 
-  RebalanceLeaders(
+  public RebalanceLeaders(
       SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler collectionsHandler) {
     this.req = req;
     this.rsp = rsp;
@@ -122,7 +122,7 @@ class RebalanceLeaders {
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
-  void execute() throws Exception {
+  public void execute() throws Exception {
     DocCollection dc = checkParams();
 
     int max = req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE);
