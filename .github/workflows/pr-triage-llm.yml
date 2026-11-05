@@ -104,7 +104,7 @@ jobs:
         env:
           LLM_BASE_URL: https://llm.apache.org/v1
           LLM_API_KEY: ${{ secrets.ASF_LLM_API_KEY }}
-          LLM_MODEL: ${{ vars.LLM_MODEL || 'gemma4-26b' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'qwen3.8-27b' }}
         run: |
           set -euo pipefail
           python3 dev-tools/scripts/pr-triage-llm.py \
