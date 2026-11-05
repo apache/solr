@@ -50,7 +50,10 @@ import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.ReplicationPollingRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -100,6 +103,26 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return replicationHandler.getReplicationDetails(showFollowerDetails);
+  }
+
+  protected SolrJerseyResponse doSetReplicationEnabled(ReplicationEnabledRequestBody requestBody) {
+    ensureRequiredRequestBodyProvided(requestBody);
+    ensureRequiredParameterProvided("enabled", requestBody.enabled);
+    ReplicationHandler replicationHandler =
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+    replicationHandler.setReplicationEnabled(requestBody.enabled);
+    return instantiateJerseyResponse(SolrJerseyResponse.class);
+  }
+
+  protected SolrJerseyResponse doSetReplicationPolling(ReplicationPollingRequestBody requestBody) {
+    ensureRequiredRequestBodyProvided(requestBody);
+    ensureRequiredParameterProvided("enabled", requestBody.enabled);
+    ReplicationHandler replicationHandler =
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+    if (!replicationHandler.setPollingEnabled(requestBody.enabled)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No follower configured");
+    }
+    return instantiateJerseyResponse(SolrJerseyResponse.class);
   }
 
   protected RestoreStatusResponse doFetchRestoreStatus() {

@@ -93,6 +93,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ExecutorUtil.ExecutorTerminationTimeoutException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -1312,7 +1313,17 @@ public class CoreContainer {
             // we want to close zk stuff last
             zkSys.close();
           } finally {
-            ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+            try {
+              ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+            } catch (ExecutorTerminationTimeoutException e) {
+              // A close task that outlives the pool's termination budget must not abort the
+              // rest of shutdown. The closes after this block (the plugin closes, the
+              // container handlers and the root metrics context) are the only release path
+              // for the container's metrics contexts, so skipping them leaks the whole
+              // metrics tree of this container.
+              log.warn(
+                  "The closeThreadPool did not terminate; continuing CoreContainer shutdown.", e);
+            }
           }
         }
       }

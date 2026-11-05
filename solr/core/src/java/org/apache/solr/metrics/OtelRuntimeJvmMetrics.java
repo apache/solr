@@ -24,11 +24,13 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.instrumentation.api.config.IncludeExclude;
 import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry;
 import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetryBuilder;
 import io.opentelemetry.instrumentation.runtimetelemetry.internal.Experimental;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
+import java.util.List;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -84,6 +86,10 @@ public class OtelRuntimeJvmMetrics {
     // solr.metrics.jvm.* system property instead of hardcoding true/true here.
     Experimental.setEmitExperimentalMetrics(builder, true);
     Experimental.setEmitExperimentalJfrMetrics(builder, true);
+    // Get CPU utilization from JFR instead of JMX to work around JDK bugs
+    Experimental.setJfrMetrics(
+        builder,
+        IncludeExclude.builder().setIncluded(List.of("jvm.system.cpu.utilization")).build());
     this.runtimeMetrics = builder.build();
     java.lang.management.OperatingSystemMXBean osMxBean =
         ManagementFactory.getOperatingSystemMXBean();
