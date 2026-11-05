@@ -770,8 +770,8 @@ public class SolrDocumentFetcher {
   }
 
   /**
-   * Returns the stored fields needed for the response and its transformers, given the requested
-   * return fields. A null result means all stored fields; otherwise the returned set is mutable.
+   * Returns the stored fields selected by the response and its transformers, before DocValues
+   * substitution. A null result means all stored fields; otherwise the returned set is mutable.
    */
   public Set<String> getStoredFieldsToLoad(ReturnFields returnFields) {
     final Set<String> storedFields = new HashSet<>();
@@ -809,6 +809,22 @@ public class SolrDocumentFetcher {
   }
 
   /**
+   * Returns the mutable set of stored fields to prefetch after DocValues substitution, or null for
+   * all stored fields.
+   */
+  public Set<String> getStoredFieldsToPrefetch(ReturnFields returnFields) {
+    Set<String> storedFields = getStoredFieldsToLoad(returnFields);
+    if (canSubstituteStoredFields(storedFields)) {
+      storedFields.clear();
+    }
+    return storedFields;
+  }
+
+  private boolean canSubstituteStoredFields(Set<String> storedFields) {
+    return storedFields != null && dvsCanSubstituteStored.containsAll(storedFields);
+  }
+
+  /**
    * Moved as a private class here, we consider it an impelmentation detail. It should not be
    * exposed outside of this class.
    *
@@ -831,7 +847,7 @@ public class SolrDocumentFetcher {
       this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
       this.solrReturnFields = solrReturnFields;
 
-      if (storedFields != null && dvsCanSubstituteStored.containsAll(storedFields)) {
+      if (canSubstituteStoredFields(storedFields)) {
         dvFields.addAll(storedFields);
         storedFields.clear();
       }

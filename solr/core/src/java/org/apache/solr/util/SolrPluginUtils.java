@@ -233,7 +233,7 @@ public class SolrPluginUtils {
       return;
     }
     SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-    Set<String> fieldFilter = docFetcher.getStoredFieldsToLoad(returnFields);
+    Set<String> fieldFilter = docFetcher.getStoredFieldsToPrefetch(returnFields);
     if (fieldFilter != null) {
       if (rb.doHighlights) {
         // fieldFilter is a new set owned by this call; add highlight fields
@@ -247,6 +247,10 @@ public class SolrPluginUtils {
         // fetch unique key if one exists.
         SchemaField keyField = searcher.getSchema().getUniqueKeyField();
         if (null != keyField) fieldFilter.add(keyField.getName());
+      }
+
+      if (fieldFilter.isEmpty()) {
+        return;
       }
 
       // get documents

@@ -1132,11 +1132,102 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testGlobNonStoredDocValuesPrefetch() throws Exception {
+    assertDocValuesOnlyPrefetch("*_s_dvo", "prefetch_s_dvo", "source");
+  }
+
+  @Test
+  public void testGlobSubstitutedDocValuesPrefetch() throws Exception {
+    assertDocValuesOnlyPrefetch("*_idv", "prefetch_idv", "7");
+  }
+
+  @Test
+  public void testGlobEmptyPrefetch() throws Exception {
+    assertDocValuesOnlyPrefetch("missing_*", null, null);
+  }
+
+  private void assertDocValuesOnlyPrefetch(String selection, String field, String value)
+      throws Exception {
+    assertU(
+        adoc(
+            "id", "7786",
+            "title", "keyword",
+            "prefetch_s_dvo", "source",
+            "prefetch_idv", "7",
+            "unrelated_s", "unrelated"));
+    assertU(commit());
+
+    try {
+      for (String method : new String[] {null, "original", "unified"}) {
+        ModifiableSolrParams params =
+            params("q", "title:keyword", "fq", "id:7786", "fl", selection);
+        if (method != null) {
+          params.set("hl", "true");
+          params.set("hl.method", method);
+          params.set("hl.fl", "title");
+        }
+        try (SolrQueryRequest req = req(params)) {
+          SolrDocumentFetcher fetcher = req.getSearcher().getDocFetcher();
+          assertTrue(fetcher.isLazyFieldLoadingEnabled());
+          fetcher.getDocumentCache().clear();
+          SolrQueryResponse rsp = new SolrQueryResponse();
+          h.getCore().execute(h.getCore().getRequestHandler("/select"), req, rsp);
+          assertNull(rsp.getException());
+
+          DocList docs = ((ResultContext) rsp.getResponse()).getDocList();
+          assertEquals(1, docs.size());
+          int docId = docs.iterator().nextDoc();
+          if (method == null) {
+            assertNull(
+                "Unexpected stored-document prefetch for fl=" + selection,
+                fetcher.getDocumentCache().get(docId));
+          } else {
+            Document doc = fetcher.getDocumentCache().get(docId);
+            assertNotNull(doc);
+            for (String name : new String[] {"id", "title"}) {
+              assertNotNull(doc.getField(name));
+              assertFalse(doc.getField(name) instanceof LazyDocument.LazyField);
+            }
+            assertUnloadedLazyField(doc, "unrelated_s");
+          }
+
+          String response = req.getResponseWriter().writeToString(req, rsp);
+          assertNull(
+              BaseTestHarness.validateXPath(
+                  response,
+                  "//result[@numFound='1']/doc[count(*)=" + (field == null ? 0 : 1) + "]"));
+          if (field != null) {
+            assertNull(
+                BaseTestHarness.validateXPath(
+                    response,
+                    "//result/doc/*[@name='" + field + "'][normalize-space(.)='" + value + "']"));
+          }
+          if (method == null) {
+            assertNull(
+                "Serialization loaded a stored document for fl=" + selection,
+                fetcher.getDocumentCache().get(docId));
+          } else {
+            assertNull(
+                BaseTestHarness.validateXPath(
+                    response,
+                    "//lst[@name='highlighting']/lst[@name='7786']/arr[@name='title']"
+                        + "/str[.='<em>keyword</em>']"));
+          }
+        }
+      }
+    } finally {
+      assertU(delI("7786"));
+      assertU(commit());
+    }
+  }
+
   private void assertUnloadedLazyField(Document doc, String name) {
     IndexableField field = doc.getField(name);
     assertNotNull(field);
     assertTrue(name + " should remain lazy", field instanceof LazyDocument.LazyField);
-    assertFalse(name + " was loaded", ((LazyDocument.LazyField) field).hasBeenLoaded());
+    // Wrapper state does not establish which values the shared backing document has read.
+    assertFalse(name + " was materialized", ((LazyDocument.LazyField) field).hasBeenLoaded());
   }
 
   /**
