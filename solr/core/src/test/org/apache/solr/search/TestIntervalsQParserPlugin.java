@@ -445,6 +445,89 @@ public class TestIntervalsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testIntervalsScriptFilterOnStart() throws Exception {
+    assertU(adoc("id", "500", "v_ws", "sta_a sta_b sta_c sta_d"));
+    assertU(adoc("id", "501", "v_ws", "sta_x sta_a sta_b"));
+    assertU(commit());
+
+    // "sta_a sta_b" starts at position 0 in doc 500 and at position 1 in doc 501
+    assertJJQ(
+        "{ query:{intervals:{use_field:v_ws,"
+            + "match:{query:'sta_a sta_b',ordered:true,filter:{script:{source:'interval.start == 0'}}}}},"
+            + "fields:id}",
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'500'}]}");
+  }
+
+  @Test
+  public void testIntervalsScriptFilterOnEnd() throws Exception {
+    assertU(adoc("id", "510", "v_ws", "end_a end_b end_c"));
+    assertU(adoc("id", "511", "v_ws", "end_x end_a end_b"));
+    assertU(commit());
+
+    // "end_a end_b" ends at position 1 in doc 510 and at position 2 in doc 511
+    assertJJQ(
+        "{ query:{intervals:{use_field:v_ws,"
+            + "match:{query:'end_a end_b',ordered:true,filter:{script:{source:'interval.end == 1'}}}}},"
+            + "fields:id}",
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'510'}]}");
+  }
+
+  @Test
+  public void testIntervalsScriptFilterOnGap() throws Exception {
+    assertU(adoc("id", "520", "v_ws", "gap_a gap_b gap_c"));
+    assertU(adoc("id", "521", "v_ws", "gap_a gap_x gap_y gap_c"));
+    assertU(commit());
+
+    // "gap_a gap_c" spans positions 0..2 (gap 1) in doc 520 and 0..3 (gap 2) in doc 521
+    assertJJQ(
+        "{ query:{intervals:{use_field:v_ws,"
+            + "match:{query:'gap_a gap_c',max_gaps:2,ordered:true,filter:{script:{source:'interval.gap == 1'}}}}},"
+            + "fields:id}",
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'520'}]}");
+  }
+
+  @Test
+  public void testIntervalsScriptFilterCombinesVariables() throws Exception {
+    assertU(adoc("id", "530", "v_ws", "cob_b cob_c cob_d cob_a"));
+    assertU(adoc("id", "531", "v_ws", "cob_x cob_b cob_c cob_d"));
+    assertU(commit());
+
+    // "cob_b cob_c cob_d" is [0..2] in doc 530 and [1..3] in doc 531
+    assertJJQ(
+        "{ query:{intervals:{use_field:v_ws,"
+            + "match:{query:'cob_b cob_c cob_d',ordered:true,"
+            + "filter:{script:{source:'interval.start == 0 && interval.end == 2 && interval.gap == 0'}}}}},"
+            + "fields:id}",
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'530'}]}");
+  }
+
+  @Test
+  public void testIntervalsScriptFilterInvalidScriptThrows() throws Exception {
+    assertQEx(
+        "script filter with a syntactically invalid expression should throw BAD_REQUEST",
+        "Invalid script expression",
+        req(
+            "json",
+            "{query:{intervals:{use_field:v_ws,"
+                + " match:{query:foo,filter:{script:{source:'interval.start =='}}}}},"
+                + "fields:id}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testIntervalsScriptFilterUnknownVariableThrows() throws Exception {
+    assertQEx(
+        "script filter referencing an unknown variable should throw BAD_REQUEST",
+        "Unknown variable",
+        req(
+            "json",
+            "{query:{intervals:{use_field:v_ws,"
+                + " match:{query:foo,filter:{script:{source:'interval.start + missing_var'}}}}},"
+                + "fields:id}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
   public void testIntervalsNestedAlternativeOutperformsXmlSpans() throws Exception {
     // v_ws (text_ws) is a plain whitespace-tokenized field with no stemming/synonym/word-delimiter
     // filters, so the literal terms used in the raw SpanTerm/term rules below match the indexed

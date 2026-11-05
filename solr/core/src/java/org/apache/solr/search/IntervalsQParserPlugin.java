@@ -17,10 +17,13 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.queries.intervals.IntervalQuery;
 import org.apache.lucene.queries.intervals.Intervals;
 import org.apache.lucene.queries.intervals.IntervalsSource;
@@ -434,8 +437,7 @@ public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsume
         Map.Entry<String, Object> entry = filterMap.entrySet().iterator().next();
         String op = entry.getKey();
         if ("script".equals(op)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Filter operator 'script' is not supported");
+          return parseScriptFilter(source, entry.getValue());
         }
         IntervalsSource other =
             parseRuleObject(
@@ -453,6 +455,38 @@ public class IntervalsQParserPlugin extends QParserPlugin implements JsonConsume
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST, "Unsupported filter operator: " + op);
         };
+      }
+
+      /**
+       * Parses the {@code script} filter operator, which filters intervals by evaluating a Lucene
+       * Expressions script over the pseudo-variables {@code interval.start}, {@code interval.end}
+       * and {@code interval.gap}. A non-zero result accepts the interval.
+       */
+      private IntervalsSource parseScriptFilter(IntervalsSource source, Object scriptObj) {
+        String script =
+            requireString(asStringObjectMap(scriptObj, "filter 'script'"), "source", "script");
+        Expression expression;
+        try {
+          expression = JavascriptCompiler.compile(script);
+        } catch (ParseException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid script expression '" + script + "' in filter 'script'",
+              e);
+        }
+        ScriptFilterIntervalsSource.IntervalBindings bindings =
+            new ScriptFilterIntervalsSource.IntervalBindings();
+        for (String variable : expression.variables) {
+          try {
+            bindings.getDoubleValuesSource(variable);
+          } catch (IllegalArgumentException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Unknown variable '" + variable + "' in filter script '" + script + "'",
+                e);
+          }
+        }
+        return new ScriptFilterIntervalsSource(source, expression, bindings);
       }
 
       /**
