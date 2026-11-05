@@ -7,7 +7,8 @@ comment comparing each with what the PR includes.
 
 Run by .github/workflows/pr-triage-llm.yml when a PR is opened or marked ready. If the
 model gives no usable answer, or there is nothing to judge (e.g. only docs or tests
-changed), it writes no result and exits 0.  It can also be executed by a custom skill.
+changed), it writes no result and exits 0.  It can also be executed by a custom skill, e.g.:
+https://github.com/dsmiley/solr-claude-skills/blob/main/skills/pr-judgements/SKILL.md
 
 Usage:
   pr-triage-llm.py --config judgements.json --pr pr.json --files files.json --out result.json
