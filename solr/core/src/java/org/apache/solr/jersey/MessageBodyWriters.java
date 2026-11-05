@@ -18,6 +18,7 @@
 package org.apache.solr.jersey;
 
 import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
@@ -34,8 +35,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
@@ -164,8 +167,14 @@ public class MessageBodyWriters {
         throws IOException, WebApplicationException {
       final ContainerRequestContext requestContext =
           resourceContext.getResource(ContainerRequestContext.class);
-      final SolrQueryRequest solrQueryRequest =
+      final SolrQueryRequest existingRequest =
           (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
+      // Collection-scoped requests served by a non-hosting node have no SolrQueryRequest
+      final SolrQueryRequest solrQueryRequest =
+          existingRequest != null
+              ? existingRequest
+              : new SolrQueryRequestBase(
+                  null, (SolrParams) requestContext.getProperty(SOLR_PARAMS));
       final SolrQueryResponse solrQueryResponse =
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE);
 
