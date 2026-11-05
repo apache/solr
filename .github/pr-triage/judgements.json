@@ -1,4 +1,5 @@
 {
+  "_doc": "Each judgement is a question about what the change warrants on its merits, whatever the author included; the comment compares the verdict with what the PR includes.\nJudgement keys: id, title, question, help_url (the title links there).\nWhat the PR includes: evidence_files (globs; a changed file counts unless removed) minus evidence_exclude, or evidence_title (regex on the PR title). Matching files are hidden from the model. skip_when_included: the model is not asked when the evidence is present.\nChoice questions: choices (the verdict is one of these strings); evidence_value {files, pattern} gives the values the PR provides (group 1 of pattern, matched on added lines); absent_choice is the choice meaning nothing is warranted.\nTop level: model_defaults; max_diff_chars; exclude_patches (patches listed by name only); min_confidence (below it a mismatch is a weak signal); summary_from {files, pattern}: text given to every judgement as the author's own summary (the changelog entry title).",
   "model_defaults": {
     "temperature": 0,
     "max_tokens": 2000,
@@ -12,6 +13,10 @@
     "gradle/libs.versions.toml"
   ],
   "min_confidence": "medium",
+  "summary_from": {
+    "files": ["changelog/unreleased/**"],
+    "pattern": "^\\+title:[ \\t]*(.*(?:\\n\\+[ \\t]+\\S.*)*)"
+  },
   "judgements": [
     {
       "id": "needs_jira",
@@ -23,10 +28,26 @@
     },
     {
       "id": "needs_changelog",
-      "title": "Changelog entry",
-      "help_url": "https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc",
-      "evidence_files": ["changelog/unreleased/**"],
-      "question": "Does this PR make a change that Solr users or operators would notice, and so warrants an entry in the release notes? Yes for: new features, bug fixes with user-visible symptoms, changed defaults or behavior, new/changed/removed parameters, APIs, config, metrics, CLI options, or performance changes users would notice. No for: pure refactoring, test-only changes, build/CI changes, internal cleanup, typo fixes, and documentation-only changes."
+      "title": "Changelog",
+      "help_url": "https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc#_changelog_types_reference",
+      "choices": [
+        "added",
+        "changed",
+        "fixed",
+        "deprecated",
+        "removed",
+        "dependency_update",
+        "other",
+        "(not-worthy)"
+      ],
+      "absent_choice": "(not-worthy)",
+      "evidence_value": {
+        "files": [
+          "changelog/unreleased/**"
+        ],
+        "pattern": "^\\+type:\\s*([a-z_]+)"
+      },
+      "question": "Which changelog type fits this change? Choose a type only if the change is one that Solr users or operators would notice and so warrants a release-note entry. added: a change requiring a user to take action to use it (opt-in), such as a new feature or new configuration value, typically documented in the Reference Guide. changed: an improvement that is not opt-in, modifying behavior or performance of existing requests or configuration. fixed: fixes buggy behavior with a user-visible symptom, such as a NullPointerException, data corruption, or a UI glitch. A fix to the build, tests, or developer tooling is not fixed; use other. deprecated: marks a configuration option, class, or API endpoint deprecated ahead of removal. removed: removes something previously deprecated, such as a parameter, class, or legacy module. dependency_update: a non-trivial dependency update, such as Lucene, Jetty, or Jackson. other: anything else worth a note, e.g. a large refactoring, or a build change or build fix worth a note. Answer (not-worthy) when no entry is warranted: pure refactoring, test-only changes, build/CI changes, internal cleanup, typo fixes, and documentation-only changes."
     },
     {
       "id": "needs_ref_guide",

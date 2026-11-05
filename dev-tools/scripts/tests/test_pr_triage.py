@@ -297,6 +297,78 @@ class TriageTest(unittest.TestCase):
         self.assertIsNone(result)
         model.assert_not_called()
 
+    def changelog_type(self, suggested, entry_type=None):
+        self.cfg["judgements"] = [j for j in load_config()["judgements"] if j["id"] == "needs_changelog"]
+        self.answers = {"needs_changelog": {
+            "verdict": suggested, "confidence": "high", "reason": "Because."}}
+        files = []
+        if entry_type:
+            patch = f"@@ -0,0 +1,3 @@\n+title: x\n+type: {entry_type} # added, changed, fixed\n+authors:"
+            files.append(changed_file("changelog/unreleased/x.yml", "added", patch))
+        result, model, _ = self.run_main(files)
+        return result, model
+
+    def test_changelog_type_differing_from_entry_is_highlighted(self):
+        result, model = self.changelog_type("added", "fixed")
+        row = result["results"]["needs_changelog"]
+        self.assertTrue(row["mismatch"])
+        self.assertEqual(1, result["mismatches"])
+        self.assertIn("differs from the entry", result["comment"])
+        self.assertIn("| added | fixed |", result["comment"])
+        prompt = str(model.call_args[0][0])
+        self.assertIn("exactly one of: added, changed, fixed", prompt)
+        self.assertNotIn("type: fixed", prompt)
+
+    def test_changelog_type_agreeing_with_entry(self):
+        result, _ = self.changelog_type("fixed", "fixed")
+        self.assertFalse(result["results"]["needs_changelog"]["mismatch"])
+        self.assertEqual(0, result["mismatches"])
+
+    def test_changelog_type_without_entry_is_missing(self):
+        result, _ = self.changelog_type("changed")
+        self.assertTrue(result["results"]["needs_changelog"]["mismatch"])
+        self.assertIn("| changed | no entry |", result["comment"])
+        self.assertIn("missing", result["comment"])
+
+    def test_changelog_not_worthy(self):
+        result, _ = self.changelog_type("(not-worthy)")
+        self.assertFalse(result["results"]["needs_changelog"]["mismatch"])
+        self.assertEqual(0, result["mismatches"])
+        result, _ = self.changelog_type("(not-worthy)", "other")
+        self.assertTrue(result["results"]["needs_changelog"]["mismatch"])
+        self.assertIn("probably not needed", result["comment"])
+
+    def test_changelog_type_outside_choices_is_unknown(self):
+        result, _ = self.changelog_type("bugfix", "fixed")
+        self.assertEqual(1, result["unanswered"])
+        self.assertIsNone(result["results"]["needs_changelog"]["warranted"])
+
+    def test_changelog_title_is_input_to_every_judgement(self):
+        self.cfg["summary_from"] = load_config()["summary_from"]
+        patch = ("@@ -0,0 +1,4 @@\n+title: Removed the foo handler.\n+  Use bar instead.\n"
+                 "+type: removed\n+authors:")
+        _, model, _ = self.run_main([changed_file("changelog/unreleased/x.yml", "added", patch)])
+        prompt = str(model.call_args[0][0])
+        self.assertIn("Changelog entry title: Removed the foo handler. Use bar instead.", prompt)
+        self.assertNotIn("type: removed", prompt)
+
+    def test_changelog_title_block_scalar_marker_is_dropped(self):
+        self.cfg["summary_from"] = load_config()["summary_from"]
+        patch = "@@ -0,0 +1,3 @@\n+title: >\n+  Fold this\n+  text.\n+type: fixed"
+        _, model, _ = self.run_main([changed_file("changelog/unreleased/x.yml", "added", patch)])
+        self.assertIn("Changelog entry title: Fold this text.", str(model.call_args[0][0]))
+
+    def test_changelog_title_on_following_lines(self):
+        self.cfg["summary_from"] = load_config()["summary_from"]
+        patch = "@@ -0,0 +1,4 @@\n+title:\n+  First part\n+  second part.\n+type: fixed"
+        _, model, _ = self.run_main([changed_file("changelog/unreleased/x.yml", "added", patch)])
+        self.assertIn("Changelog entry title: First part second part.", str(model.call_args[0][0]))
+
+    def test_no_changelog_title_without_entry(self):
+        self.cfg["summary_from"] = load_config()["summary_from"]
+        _, model, _ = self.run_main([])
+        self.assertNotIn("Changelog entry title:", str(model.call_args[0][0]))
+
     def test_exact_revision_is_reported(self):
         result, _, _ = self.run_main([])
         self.assertIn("Assessed commit `" + "a" * 40 + "`", result["comment"])
@@ -312,7 +384,6 @@ class TriageTest(unittest.TestCase):
     def test_configured_evidence_families(self):
         cfg = load_config()
         samples = {
-            "needs_changelog": "changelog/unreleased/fix.yml",
             "needs_ref_guide": "solr/solr-ref-guide/modules/query-guide/pages/search.adoc",
             "needs_upgrade_notes": "solr/solr-ref-guide/modules/upgrade-notes/pages/changes.adoc",
             "needs_tests": "solr/core/src/test/org/apache/solr/SearchTest.java",
