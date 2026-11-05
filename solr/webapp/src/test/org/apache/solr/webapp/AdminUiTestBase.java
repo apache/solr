@@ -160,6 +160,59 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     return Files.isReadable(bundle) ? bundle : null;
   }
 
+  /**
+   * Serves the Scalar browser bundle the API Explorer page loads (in an iframe, isolated from the
+   * Angular app - see {@code solr/webapp/web/libs/scalar/index.html}): built by {@code
+   * :solr:webapp:scalar} and its location handed to the test JVM in {@code tests.ui.scalar.bundle};
+   * it only exists inside the built webapp, not in the source tree tests serve from.
+   */
+  public static class ScalarBundleServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      resp.setContentType("text/javascript");
+      Files.copy(scalarBundlePath(), resp.getOutputStream());
+    }
+  }
+
+  /**
+   * Serves the generated OpenAPI spec the API Explorer page fetches: built by {@code :solr:api} and
+   * its location handed to the test JVM in {@code tests.ui.scalar.spec}.
+   */
+  public static class ScalarSpecServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+      resp.setContentType("application/json");
+      Files.copy(scalarSpecPath(), resp.getOutputStream());
+    }
+  }
+
+  /**
+   * The generated Scalar bundle: handed to us by the build in {@code tests.ui.scalar.bundle}, with
+   * the scalar build's output location as a fallback so tests can also run from an IDE (after a
+   * Gradle build has produced the bundle). Null when unavailable.
+   */
+  private static Path scalarBundlePath() {
+    String path = EnvUtils.getProperty("tests.ui.scalar.bundle");
+    if (path == null && ExternalPaths.SOURCE_HOME == null) {
+      return null;
+    }
+    Path bundle =
+        path != null
+            ? Path.of(path)
+            : ExternalPaths.SOURCE_HOME.resolve("webapp/scalar/build/scalarBundle/standalone.js");
+    return Files.isReadable(bundle) ? bundle : null;
+  }
+
+  /** The generated OpenAPI spec: handed to us by the build in {@code tests.ui.scalar.spec}. */
+  private static Path scalarSpecPath() {
+    String path = EnvUtils.getProperty("tests.ui.scalar.spec");
+    if (path == null) {
+      return null;
+    }
+    Path spec = Path.of(path);
+    return Files.isReadable(spec) ? spec : null;
+  }
+
   /** Ignores threads spawned by Selenium and the JDK http client it uses. */
   public static class WebDriverThreadsFilter implements ThreadFilter {
     @Override
@@ -192,6 +245,11 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
       fail(
           "No generated js-client bundle available; the Gradle build wires it via"
               + " tests.ui.jsclient.bundle (is -PdisableJsClient=true set?)");
+    }
+    if (scalarBundlePath() == null) {
+      fail(
+          "No generated Scalar bundle available; the Gradle build wires it via"
+              + " tests.ui.scalar.bundle");
     }
 
     // metrics are off by default in test clusters, but UI screens (e.g. Plugins) need them;
@@ -240,12 +298,16 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
   }
 
-  /** Configures a Jetty node to serve the Admin UI plus the js-client bundle. */
+  /** Configures a Jetty node to serve the Admin UI plus the js-client and Scalar bundles. */
   protected static void configureJettyForUi(JettyConfig.Builder jetty) {
     jetty
         .enableAdminUi(true)
         // exact-path mapping takes precedence over the static /libs/* servlet
-        .withServlet(new ServletHolder(new JsClientServlet()), "/libs/solr/index.js");
+        .withServlet(new ServletHolder(new JsClientServlet()), "/libs/solr/index.js")
+        .withServlet(new ServletHolder(new ScalarBundleServlet()), "/libs/scalar/standalone.js");
+    if (scalarSpecPath() != null) {
+      jetty.withServlet(new ServletHolder(new ScalarSpecServlet()), "/libs/scalar/spec.json");
+    }
   }
 
   @AfterClass

@@ -47,6 +47,12 @@ The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which
 A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
 ====
 
+=== API Explorer
+
+The *API Explorer* item in the Admin UI's left-hand navigation opens interactive documentation for Solr's v2 API.
+It renders the OpenAPI specification bundled with Solr and lets you browse endpoints and send requests to the running instance.
+Requests use the instance's authentication and authorization rules and can modify its data or configuration.
+
 === Login Screen
 
 If authentication has been enabled, Solr will present a login screen to unauthenticated users before allowing them further access to the Admin UI.
