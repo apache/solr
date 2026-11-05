@@ -20,7 +20,9 @@ import copy
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 import urllib.error
@@ -331,6 +333,80 @@ class TriageTest(unittest.TestCase):
     def test_response_header_says_checked_once(self):
         result, _, _ = self.run_main([])
         self.assertIn("not updated on later pushes", result["comment"])
+
+    def test_verdicts_file_replaces_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            temp = Path(directory)
+            (temp / "config.json").write_text(json.dumps(self.cfg), encoding="utf-8")
+            (temp / "v.json").write_text(json.dumps(self.answers), encoding="utf-8")
+            args = ["pr-triage-llm.py", "--config", str(temp / "config.json"),
+                    "--verdicts", str(temp / "v.json"), "--out", str(temp / "out.json"),
+                    "--from-git", "main"]
+            with mock.patch("sys.argv", args), contextlib.redirect_stdout(io.StringIO()):
+                with mock.patch.object(TRIAGE, "pr_from_git", return_value=(self.pr, [PRODUCTION])):
+                    with mock.patch.object(TRIAGE, "call_model") as model:
+                        TRIAGE.main()
+            model.assert_not_called()
+            result = json.loads((temp / "out.json").read_text(encoding="utf-8"))
+            self.assertTrue(result["results"]["needs_changelog"]["warranted"])
+
+
+class FromGitTest(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.repo = Path(self.directory.name)
+        self.git("init", "-q", "-b", "main")
+        self.write("src/Old.java", "class Old {}\n")
+        self.write("src/Gone.java", "class Gone {}\n")
+        self.commit("base")
+
+    def git(self, *args):
+        env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@e", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@e")
+        subprocess.run(["git", *args], cwd=self.repo, env=env, check=True, capture_output=True)
+
+    def write(self, name, text):
+        path = self.repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def commit(self, message):
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", message)
+
+    def triage_input(self):
+        cwd = os.getcwd()
+        os.chdir(self.repo)
+        try:
+            return TRIAGE.pr_from_git("main")
+        finally:
+            os.chdir(cwd)
+
+    def test_commits_staged_unstaged_and_untracked(self):
+        self.git("switch", "-q", "-c", "feature")
+        self.write("src/Old.java", "class Old { int x; }\n")
+        self.commit("SOLR-1: change Old\n\nBecause reasons.")
+        self.git("rm", "-q", "src/Gone.java")
+        self.write("src/Staged.java", "class Staged {}\n")
+        self.git("add", "src/Staged.java")
+        self.write("changelog/unreleased/fix.yml", "title: x\n")
+        pr, files = self.triage_input()
+        self.assertEqual("SOLR-1: change Old", pr["title"])
+        self.assertIn("Because reasons.", pr["body"])
+        self.assertEqual(
+            {"src/Old.java": "modified", "src/Gone.java": "removed",
+             "src/Staged.java": "added", "changelog/unreleased/fix.yml": "added"},
+            {f["filename"]: f["status"] for f in files})
+        old = next(f for f in files if f["filename"] == "src/Old.java")
+        self.assertTrue(old["patch"].startswith("@@"))
+        self.assertEqual(1, old["additions"])
+
+    def test_no_commits_uses_branch_name(self):
+        self.git("switch", "-q", "-c", "my-branch")
+        self.write("src/New.java", "class New {}\n")
+        pr, files = self.triage_input()
+        self.assertEqual("my-branch", pr["title"])
+        self.assertEqual(["src/New.java"], [f["filename"] for f in files])
 
 
 if __name__ == "__main__":

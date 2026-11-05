@@ -54,6 +54,12 @@ is nothing to show it (e.g. a docs-only PR), it writes no result and exits 0.
 Usage:
   pr-triage-llm.py --config judgements.json --pr pr.json --files files.json --out result.json
   pr-triage-llm.py ... --dry-run     # print the prompt, don't call the model
+  pr-triage-llm.py ... --verdicts v.json   # use answers from a file instead of the model
+
+Without a PR, --from-git BASE replaces --pr and --files: it triages the work since
+BASE (commits, staged, unstaged and untracked files); commit messages stand in for
+the PR title and description. An agent can run --dry-run, answer the prompt itself,
+and render its answers with --verdicts.
 
 To inspect a prompt offline, supply PR metadata and changed-file JSON from the
 GitHub REST API:
@@ -64,8 +70,8 @@ Offline regression tests need no GitHub or model credentials:
   python3 -m unittest discover -s dev-tools/scripts/tests -p test_pr_triage.py -v
 
 Environment:
-  LLM_BASE_URL  OpenAI-compatible base URL, e.g. https://llm.apache.org/v1
-  LLM_API_KEY   bearer token
+  LLM_BASE_URL  OpenAI-compatible base URL (default https://llm.apache.org/v1)
+  LLM_API_KEY   bearer token (or ASF_LLM_API_KEY)
   LLM_MODEL     model id
 """
 
@@ -75,16 +81,54 @@ import json
 import os
 import re
 import string
+import subprocess
 import unicodedata
 import urllib.error
 import urllib.request
 
 CONFIDENCE = {"low": 0, "medium": 1, "high": 2}
 COMMENT_MARKER = "<!-- llm-pr-triage -->"
+DEFAULT_BASE_URL = "https://llm.apache.org/v1"
 
 
 class NoAnswer(Exception):
     """The model gave no usable answer; triage is advisory, so no comment is posted."""
+
+
+def git(*args, check=True):
+    return subprocess.run(["git", *args], capture_output=True, text=True, check=check).stdout
+
+
+def pr_from_git(base):
+    """PR-shaped metadata and changed files for the work since BASE, without a PR."""
+    fork_point = git("merge-base", base, "HEAD").strip()
+    log = git("log", "--reverse", "--format=%s%n%b%n--", f"{fork_point}..HEAD").strip()
+    subjects = git("log", "--reverse", "--format=%s", f"{fork_point}..HEAD").split("\n")
+    title = subjects[0] or git("branch", "--show-current").strip()
+    files = []
+    numstat = {}
+    for line in git("diff", "--no-renames", "--numstat", fork_point).splitlines():
+        added, deleted, name = line.split("\t", 2)
+        numstat[name] = (added, deleted)
+    for line in git("diff", "--no-renames", "--name-status", fork_point).splitlines():
+        code, name = line.split("\t", 1)
+        added, deleted = numstat.get(name, ("0", "0"))
+        patch = git("diff", "--no-renames", fork_point, "--", name)
+        files.append({
+            "filename": name,
+            "status": {"A": "added", "D": "removed"}.get(code[0], "modified"),
+            "additions": int(added) if added.isdigit() else 0,
+            "deletions": int(deleted) if deleted.isdigit() else 0,
+            "patch": patch[patch.find("@@"):] if "@@" in patch else None,
+        })
+    for name in git("ls-files", "--others", "--exclude-standard").splitlines():
+        patch = git("diff", "--no-index", "--", os.devnull, name, check=False)
+        files.append({
+            "filename": name, "status": "added", "deletions": 0,
+            "additions": patch.count("\n+") if "@@" in patch else 0,
+            "patch": patch[patch.find("@@"):] if "@@" in patch else None,
+        })
+    return {"title": title, "body": log}, files
 
 
 def matches_any(path, globs):
@@ -147,7 +191,8 @@ def build_messages(pr, files, cfg, ask, hidden_count):
 
 
 def call_model(messages, cfg):
-    base = os.environ["LLM_BASE_URL"].rstrip("/")
+    base = os.environ.get("LLM_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    key = os.environ.get("LLM_API_KEY") or os.environ["ASF_LLM_API_KEY"]
     body = {
         "model": os.environ["LLM_MODEL"],
         "messages": messages,
@@ -160,7 +205,7 @@ def call_model(messages, cfg):
         base + "/chat/completions",
         data=json.dumps(body).encode(),
         headers={
-            "Authorization": "Bearer " + os.environ["LLM_API_KEY"],
+            "Authorization": "Bearer " + key,
             "Content-Type": "application/json",
         },
     )
@@ -320,18 +365,26 @@ def format_result(pr, files, cfg, verdicts):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--pr", required=True, help="JSON pull request from GET /pulls/N")
-    ap.add_argument("--files", required=True, help="JSON array from GET /pulls/N/files")
+    ap.add_argument("--pr", help="JSON pull request from GET /pulls/N")
+    ap.add_argument("--files", help="JSON array from GET /pulls/N/files")
+    ap.add_argument("--from-git", metavar="BASE",
+                    help="no PR: triage the work since BASE in the current repository")
+    ap.add_argument("--verdicts", help="JSON file of answers to use instead of calling the model")
     ap.add_argument("--out", required=True)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     with open(args.config, encoding="utf-8") as fh:
         cfg = json.load(fh)
-    with open(args.pr, encoding="utf-8") as fh:
-        pr = json.load(fh)
-    with open(args.files, encoding="utf-8") as fh:
-        files = json.load(fh)
+    if args.from_git:
+        pr, files = pr_from_git(args.from_git)
+    elif args.pr and args.files:
+        with open(args.pr, encoding="utf-8") as fh:
+            pr = json.load(fh)
+        with open(args.files, encoding="utf-8") as fh:
+            files = json.load(fh)
+    else:
+        ap.error("give --from-git BASE, or both --pr and --files")
 
     if pr.get("changed_files") is not None and pr["changed_files"] != len(files):
         print("::warning::Incomplete changed-file list; skipping triage.")
@@ -349,7 +402,11 @@ def main():
             print(f"===== {m['role']} =====\n{m['content']}")
         return
     try:
-        content, usage = call_model(messages, cfg)
+        if args.verdicts:
+            with open(args.verdicts, encoding="utf-8") as fh:
+                content, usage = fh.read(), {}
+        else:
+            content, usage = call_model(messages, cfg)
         verdicts = parse_verdicts(content)
         if not verdicts:
             raise NoAnswer("reply is not a JSON object of verdicts")
