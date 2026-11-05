@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -36,7 +35,9 @@ import org.apache.solr.client.solrj.impl.LBSolrClient.Req;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Test;
 
 /** Dispatch-count coverage for explicit-endpoint and standalone LB requests. */
@@ -132,7 +133,9 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
             }
           }) {
         client.fail(ENDPOINTS.get(0));
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor =
+            ExecutorUtil.newMDCAwareSingleThreadExecutor(
+                new SolrNamedThreadFactory("attemptLimitTest"));
         try {
           var primary = executor.submit(() -> client.request(primaryRequest, null, limit));
           assertTrue(
