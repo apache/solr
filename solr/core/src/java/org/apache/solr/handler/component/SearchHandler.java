@@ -92,6 +92,7 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
+  private static final String CPU_TIME_CONTEXT = SearchHandler.class.getName() + ".cpuTime";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -167,6 +168,26 @@ public class SearchHandler extends RequestHandlerBase
       return;
     }
     SearchRequestListenerManager.mark(req, rb);
+  }
+
+  /**
+   * Also true when {@link SearchRequestListener}s are registered at the start of the request, so
+   * they see CPU time without {@code solr.log.cputime=true}. Shard CPU is included only from nodes
+   * that measure it.
+   */
+  @Override
+  protected boolean publishCpuTime(SolrQueryRequest req) {
+    return (boolean)
+        req.getContext()
+            .computeIfAbsent(
+                CPU_TIME_CONTEXT,
+                k -> {
+                  CoreContainer cc = req.getCoreContainer();
+                  return super.publishCpuTime(req)
+                      || (notifiesSearchRequestListeners()
+                          && cc != null
+                          && cc.getSearchRequestListenerManager().hasListeners());
+                });
   }
 
   /** Whether requests to this handler are reported to {@link SearchRequestListener}s. */
@@ -715,7 +736,7 @@ public class SearchHandler extends RequestHandlerBase
           }
 
           // Compute total CpuTime used by all shards.
-          if (publishCpuTime) {
+          if (publishCpuTime(req)) {
             totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
           }
         }
@@ -732,7 +753,7 @@ public class SearchHandler extends RequestHandlerBase
       // we are done when the next stage is MAX_VALUE
     } while (nextStage != Integer.MAX_VALUE);
 
-    if (publishCpuTime) {
+    if (publishCpuTime(req)) {
       rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
     }

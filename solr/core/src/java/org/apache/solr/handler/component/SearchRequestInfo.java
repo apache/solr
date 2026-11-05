@@ -33,7 +33,8 @@ import org.apache.solr.response.SolrQueryResponse;
  * @param traceId the trace id, or null
  * @param startTimeMs when the request started, in epoch milliseconds
  * @param qTimeMs equal to the QTime in the response header
- * @param cpuTimeMs null unless {@code solr.log.cputime=true}; includes the CPU shards reported when
+ * @param cpuTimeMs null unless CPU time is measured, i.e. {@code solr.log.cputime=true} or
+ *     listeners were registered when the request started; includes the CPU shards reported when
  *     distributed, which can undercount shard work still finishing when the response is built
  * @param hits as in the request log; null when it has none, such as for distributed grouping or a
  *     search stopped by a query limit

@@ -208,7 +208,8 @@ public class SolrQueryResponse {
 
   /**
    * CPU time from the request log: this thread's plus, when distributed, the last shard total
-   * reported. Null unless {@code solr.log.cputime=true}.
+   * reported. Null unless CPU time is measured: {@code solr.log.cputime=true}, or search request
+   * listeners were registered when the request started (a listener added later can see null).
    */
   public Long getCpuTimeMs() {
     if (!(toLog.get(ThreadCpuTimer.LOCAL_CPU_TIME) instanceof Long local)) {
