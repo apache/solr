@@ -274,6 +274,29 @@ class TriageTest(unittest.TestCase):
         model.assert_not_called()
         self.assertIn("Incomplete changed-file list", output)
 
+    def test_skip_when_included_does_not_ask_the_model(self):
+        self.cfg["judgements"].append({
+            "id": "needs_jira", "title": "Jira", "question": "Jira?",
+            "evidence_title": r"\bSOLR-[1-9][0-9]*\b", "skip_when_included": True})
+        self.pr["title"] = "SOLR-123: fix"
+        result, model, _ = self.run_main([])
+        self.assertNotIn("needs_jira", str(model.call_args[0][0]))
+        self.assertEqual(0, result["unanswered"])
+        self.assertIn("Already present; not judged.", result["comment"])
+        self.pr["title"] = "fix"
+        result, model, _ = self.run_main([])
+        self.assertIn("needs_jira", str(model.call_args[0][0]))
+        self.assertEqual(1, result["unanswered"])
+
+    def test_all_satisfied_skips_the_model(self):
+        self.cfg["judgements"] = [{
+            "id": "needs_jira", "title": "Jira", "question": "Jira?",
+            "evidence_title": r"\bSOLR-[1-9][0-9]*\b", "skip_when_included": True}]
+        self.pr["title"] = "SOLR-123: fix"
+        result, model, _ = self.run_main([])
+        self.assertIsNone(result)
+        model.assert_not_called()
+
     def test_exact_revision_is_reported(self):
         result, _, _ = self.run_main([])
         self.assertIn("Assessed commit `" + "a" * 40 + "`", result["comment"])

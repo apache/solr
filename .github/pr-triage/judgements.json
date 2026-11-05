@@ -18,7 +18,8 @@
       "title": "Jira issue in title",
       "help_url": "https://github.com/apache/solr/blob/main/CONTRIBUTING.md",
       "evidence_title": "\\bSOLR-[1-9][0-9]*\\b",
-      "question": "Is this change substantial enough to warrant a Solr Jira issue under the contribution guidelines? Minor changes not worth release notes may skip Jira. Judge the change itself, ignoring any issue reference already in the title or description. This is advisory, not verification that an issue exists or that the referenced issue matches the change."
+      "skip_when_included": true,
+      "question": "Is this change substantial enough to warrant a Solr Jira issue under the contribution guidelines? A Jira issue is warranted only for a change that also warrants a changelog entry, i.e. one that Solr users or operators would notice. If it needs no release note (pure refactoring, test-only, build/CI, internal cleanup, typo fixes, documentation-only), answer no. Judge the change itself. This is advisory, not verification that an issue exists or that the referenced issue matches the change."
     },
     {
       "id": "needs_changelog",
@@ -52,7 +53,7 @@
         "**/src/wasmJsTest/**",
         "dev-tools/scripts/tests/test_*.py"
       ],
-      "question": "Does this PR change non-trivial production logic (beyond refactoring, renames, logging, or comments) such that it should come with new or changed tests? This includes developer tooling and CI scripts, not only Java server code."
+      "question": "Does this PR change non-trivial production logic (beyond refactoring, renames, logging, or comments) such that it should come with new or changed tests? Build, CI and developer tooling (workflows, Gradle build logic, scripts under dev-tools) does not need tests: answer no."
     }
   ]
 }

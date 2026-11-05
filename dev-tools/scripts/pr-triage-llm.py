@@ -14,7 +14,8 @@ The config holds the questions and evidence patterns. Each judgement is a yes/no
 question about what the change warrants on its merits, regardless of what the
 author included. The comment shows each verdict next to what the PR includes and
 flags mismatches in both directions. Judgement keys: id, title, question,
-help_url (optional; the title links there), and evidence: evidence_files (globs;
+help_url (optional; the title links there), skip_when_included (optional; if the
+evidence is present the model is not asked), and evidence: evidence_files (globs;
 a changed file counts unless removed, minus any evidence_exclude globs) or
 evidence_title (regex on the PR title). Other keys: model_defaults, max_diff_chars,
 exclude_patches (listed by name only), min_confidence (below it, a mismatch is a
@@ -297,10 +298,16 @@ def evidence_included(pr, files, judgement):
     )
 
 
-def format_result(pr, files, cfg, verdicts):
+def format_result(pr, files, cfg, verdicts, skipped=()):
     min_conf = CONFIDENCE[cfg.get("min_confidence", "medium")]
     results, rows, mismatches, unanswered = {}, [], 0, 0
     for j in cfg["judgements"]:
+        if j["id"] in skipped:
+            name = f"[{j['title']}]({j['help_url']})" if j.get("help_url") else j["title"]
+            results[j["id"]] = {"warranted": None, "included": True, "mismatch": None,
+                                "confidence": "n/a", "reason": "Already present; not judged."}
+            rows.append(f"| ✅ {name} | — | yes | — | Already present; not judged. |")
+            continue
         v = verdicts.get(j["id"])
         valid = (
             isinstance(v, dict)
@@ -397,7 +404,13 @@ def main():
         print("::notice::Only changelog, documentation or test files changed; nothing to judge.")
         return
 
-    messages = build_messages(pr, shown, cfg, judgements, len(files) - len(shown))
+    skipped = {j["id"] for j in judgements
+               if j.get("skip_when_included") and evidence_included(pr, files, j)}
+    ask = [j for j in judgements if j["id"] not in skipped]
+    if not ask:
+        print("::notice::Every judgement is already satisfied; nothing to ask.")
+        return
+    messages = build_messages(pr, shown, cfg, ask, len(files) - len(shown))
     if args.dry_run:
         for m in messages:
             print(f"===== {m['role']} =====\n{m['content']}")
@@ -415,7 +428,7 @@ def main():
         print(f"::warning::LLM triage skipped: {e}")
         return
 
-    out = format_result(pr, files, cfg, verdicts)
+    out = format_result(pr, files, cfg, verdicts, skipped)
     out.update({"model": os.environ.get("LLM_MODEL"), "usage": usage})
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=2)
