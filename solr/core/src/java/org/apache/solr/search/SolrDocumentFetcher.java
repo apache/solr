@@ -809,12 +809,13 @@ public class SolrDocumentFetcher {
   }
 
   /**
-   * Returns the mutable set of stored fields to prefetch after DocValues substitution, or null for
-   * all stored fields.
+   * Returns the mutable stored-field set for prefetch, or null for all stored fields. Pattern
+   * selections apply DocValues substitution; explicit selections retain their eager cache
+   * population.
    */
   public Set<String> getStoredFieldsToPrefetch(ReturnFields returnFields) {
     Set<String> storedFields = getStoredFieldsToLoad(returnFields);
-    if (canSubstituteStoredFields(storedFields)) {
+    if (returnFields.hasPatternMatching() && canSubstituteStoredFields(storedFields)) {
       storedFields.clear();
     }
     return storedFields;

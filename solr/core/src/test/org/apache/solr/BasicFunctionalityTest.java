@@ -1161,7 +1161,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     try {
       for (String method : new String[] {null, "original", "unified"}) {
         ModifiableSolrParams params =
-            params("q", "title:keyword", "fq", "id:7786", "fl", selection);
+            params("q", "title:keyword", "fq", "id:7786", "fl", selection, "wt", "xml");
         if (method != null) {
           params.set("hl", "true");
           params.set("hl.method", method);

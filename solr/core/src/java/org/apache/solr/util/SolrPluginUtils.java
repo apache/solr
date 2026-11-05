@@ -249,7 +249,7 @@ public class SolrPluginUtils {
         if (null != keyField) fieldFilter.add(keyField.getName());
       }
 
-      if (fieldFilter.isEmpty()) {
+      if (returnFields.hasPatternMatching() && fieldFilter.isEmpty()) {
         return;
       }
 
