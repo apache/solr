@@ -50,6 +50,12 @@ The old spellings still work and are hidden from the help and from this guide.
 They are deprecated in Solr 10.2 and are removed in Solr 11.0.
 The default command line interface is not changed.
 
+=== Security
+
+In standalone mode, authorization permissions that set `collection` to a core name were never applied, so requests to that core were matched only against the permissions that apply to all collections.
+These permissions are now enforced, with the name of the core serving the request standing in for the collection.
+A permission that was silently ignored before may now deny requests, so review the `collection` values in the permissions of `security.json` before upgrading a standalone installation.
+
 == Solr 10.1
 
 === Misc
