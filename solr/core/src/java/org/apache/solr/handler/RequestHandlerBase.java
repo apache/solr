@@ -67,7 +67,8 @@ public abstract class RequestHandlerBase
         PermissionNameProvider {
 
   public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
-  private static final String DISPATCHED_HANDLER = "dispatchedHandler";
+  private static final String DISPATCHED_HANDLER =
+      RequestHandlerBase.class.getName() + ".dispatchedHandler";
   public static final AttributeKey<String> SOURCE_ATTR = AttributeKey.stringKey("source");
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
