@@ -61,6 +61,8 @@ teardown() {
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/monitors/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 }
 
 @test "basic post with collection instead of url parameter" {
@@ -72,6 +74,8 @@ teardown() {
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/monitors_c_param/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 }
 
 @test "basic post with solr-url and collection" {
@@ -83,6 +87,8 @@ teardown() {
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/monitors_solr_url_param/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 }
 
 @test "basic post with -s (solr-connection short form) and collection" {
@@ -94,6 +100,8 @@ teardown() {
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/monitors_s_param/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 }
 
 @test "basic post WITHOUT a type specified" {
@@ -160,6 +168,8 @@ teardown() {
   refute_output --partial 'COMMITting Solr index'
   assert_output --partial 'Performing an OPTIMIZE'
   refute_output --partial 'ERROR'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/monitors2/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 
 }
 
@@ -176,8 +186,10 @@ teardown() {
   assert_output --partial '"status":0'
 
   # confirm we don't get back output without --verbose
-  run solr post --solr-url http://localhost:${SOLR_PORT} -c test_args --mode args "{'delete': {'query': '*:*'}}"
+  run -0 solr post --solr-url http://localhost:${SOLR_PORT} -c test_args --mode args "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
+  refute_output --partial 'ERROR'
+  refute_output --partial 'WARNING:'
 
   run solr post --solr-url http://localhost:${SOLR_PORT} -c test_args --mode args --type text/csv --verbose $'id,value\nROW1,0.47'
   assert_output --partial '"status":0'
@@ -209,4 +221,6 @@ capture_echo_to_solr() {
   assert_output --partial '1 files indexed.'
   assert_output --partial '<lst name="responseHeader">'
   refute_output --partial 'ERROR'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/monitors_verbose/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 }

@@ -42,10 +42,11 @@ teardown() {
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
-  run solr postlogs --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME --rootdir ${SOLR_LOGS_DIR}/solr.log
+  run -0 solr postlogs --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME --rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Sending last batch'
   assert_output --partial 'Committed'
+  refute_output --partial 'Batch sending failed:'
 
-  run curl "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*"
-  refute_output --partial '"numFound":0'
+  run -0 curl -fsS "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*[1-9][0-9]*'
 }

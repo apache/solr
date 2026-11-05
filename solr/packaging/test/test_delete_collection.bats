@@ -43,7 +43,7 @@ teardown() {
   assert collection_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME"
-  refute collection_exists "COLL_NAME"
+  assert_zk_child_absent /collections COLL_NAME
   assert config_exists "COLL_NAME"
 }
 
@@ -52,7 +52,7 @@ teardown() {
   assert collection_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME" --solr-url http://localhost:${SOLR_PORT}
-  refute collection_exists "COLL_NAME"
+  assert_zk_child_absent /collections COLL_NAME
   assert config_exists "COLL_NAME"
 }
 
@@ -61,7 +61,7 @@ teardown() {
   assert collection_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME" --solr-connection http://localhost:${SOLR_PORT}/solr
-  refute collection_exists "COLL_NAME"
+  assert_zk_child_absent /collections COLL_NAME
   assert config_exists "COLL_NAME"
 }
 
@@ -70,7 +70,7 @@ teardown() {
   assert config_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME" --delete-config
-  refute config_exists "COLL_NAME"
+  assert_zk_child_absent /configs COLL_NAME
 }
 
 @test "deletes accompanying zk config with nondefault name" {
@@ -78,7 +78,7 @@ teardown() {
   assert config_exists "NONDEFAULT_CONFIG_NAME"
 
   solr delete -c "COLL_NAME" --delete-config
-  refute config_exists "NONDEFAULT_CONFIG_NAME"
+  assert_zk_child_absent /configs NONDEFAULT_CONFIG_NAME
 }
 
 @test "delete-config option can opt to leave config in zk" {

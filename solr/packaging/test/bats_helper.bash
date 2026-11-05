@@ -97,6 +97,46 @@ collection_exists() {
   return 1
 }
 
+# A failed listing must not be mistaken for an absent child.
+assert_zk_child_absent() {
+  local parent=$1
+  local child=$2
+  local entry
+  local listing
+  if ! listing=$(solr zk ls "$parent" -z localhost:${ZK_PORT}); then
+    [[ -z "$listing" ]] || printf '%s\n' "$listing" >&2
+    return 1
+  fi
+  for entry in $listing; do
+    refute test "$entry" = "$child" || return 1
+  done
+}
+
+# Match the collection status before the nested shard and replica statuses.
+assert_healthy() {
+  run "$@"
+  assert_success || return 1
+  assert_output --regexp '\{[[:space:]]*"collection"[[:space:]]*:[[:space:]]*"[^"]+"[[:space:]]*,[[:space:]]*"status"[[:space:]]*:[[:space:]]*"healthy"'
+}
+
+assert_tls_failure() {
+  local expected=$1
+  assert_failure || return 1
+  refute_output --partial 'Server refused connection' || return 1
+  refute_output --partial 'java.net.ConnectException' || return 1
+  assert_output --regexp "$expected"
+}
+
+# JDK updates may wrap a hostname mismatch in an unsupported-algorithm diagnostic.
+client_hostname_rejection_logged() {
+  local server_log=$1
+  local log_offset=$2
+  local mismatch='No subject alternative (DNS name matching [^[:space:]]+|names matching IP address [^[:space:]]+) found'
+  local wrapped='Endpoint Identification Algorithm HTTPS is not supported on the server side'
+  tail -c "+$((log_offset + 1))" "$server_log" |
+    grep -Eq "javax\\.net\\.ssl\\.SSLHandshakeException: (\\(certificate_unknown\\) )?($mismatch|$wrapped)"
+}
+
 # Utility function to retry a command until it succeeds or times out
 wait_for() {
   local timeout="${1:-30}"     # Default 30 seconds timeout

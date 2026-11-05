@@ -32,11 +32,9 @@ teardown() {
   solr start
   solr create -c healthcheck_test -d _default
   # Local
-  run solr healthcheck -c healthcheck_test
-  refute_output --partial 'error'
+  assert_healthy solr healthcheck -c healthcheck_test
   # Remote
-  run solr healthcheck -c healthcheck_test --solr-connection http://localhost:${SOLR_PORT}/solr
-  refute_output --partial 'error'
+  assert_healthy solr healthcheck -c healthcheck_test --solr-connection http://localhost:${SOLR_PORT}/solr
 }
 
 @test "healthcheck errors on standalone solr" {

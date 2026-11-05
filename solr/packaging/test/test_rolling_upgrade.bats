@@ -125,7 +125,7 @@ teardown() {
   docker exec --user=solr solr-node1 solr create -c test-collection -n techproducts --shards 3
 
   echo "Checking collection health"
-  wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+  wait_for 30 1 assert_healthy docker exec solr-node1 solr healthcheck -c test-collection
 
   echo "Add some sample data"
   docker exec --user=solr solr-node1 solr post -c test-collection example/exampledocs/mem.xml
@@ -170,7 +170,7 @@ teardown() {
   assert_success
 
   # Final collection health check
-  wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+  wait_for 30 1 assert_healthy docker exec solr-node1 solr healthcheck -c test-collection
 
   echo "checking cluster has exactly 3 live nodes"
   run docker exec solr-node1 curl -s "http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS"

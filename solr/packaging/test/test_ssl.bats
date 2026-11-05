@@ -63,7 +63,7 @@ teardown() {
   run curl --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
-  run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run -60 curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
 }
 
 @test "use different hostname when not checking peer-name" {
@@ -114,7 +114,7 @@ teardown() {
 
   # This should fail the peername check
   run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
-  assert_output --regexp '(No subject alternative DNS name matching localhost found|Server refused connection)'
+  assert_tls_failure 'No subject alternative DNS name matching localhost found'
 
   # Restart the server enabling the SNI hostcheck
   export SOLR_SSL_CHECK_PEER_NAME=false
@@ -349,21 +349,42 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE=
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
+      server_log="${SOLR_LOGS_DIR}/solr.log"
+      server_log_offset=$(wc -c < "$server_log")
       run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
-      assert_output --regexp '(bad_certificate|java.nio.channels.ClosedChannelException|Server refused connection)'
+      # Jetty closes the HTTP/2 channel before SolrJ reports the TLS alert. Require the fresh
+      # producer-side rejection for this operation; a bare ClosedChannelException is not proof.
+      assert_tls_failure 'java\.nio\.channels\.ClosedChannelException'
+      fresh_mtls_rejection_logged() {
+        tail -c "+$((server_log_offset + 1))" "$server_log" |
+          grep -Fq 'javax.net.ssl.SSLHandshakeException: (certificate_required) Empty client certificate chain'
+      }
+      if ! wait_for 10 1 fresh_mtls_rejection_logged; then
+        echo "No fresh server-side certificate_required diagnostic found after byte ${server_log_offset}" >&2
+        return 1
+      fi
     )
   )
 
   # Turn on client hostname verification, and start a new Solr node since the property is a server setting.
-  # Test that it fails because the client cert does not use "localhost"
+  # Check the fresh server-side hostname rejection. Some JDK updates wrap the
+  # hostname mismatch in an unsupported-algorithm diagnostic.
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
   solr start -z localhost:${ZK_PORT} -p ${SOLR3_PORT}
 
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
 
-  run ! solr api --verbose --solr-url "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
-  assert_output --regexp '(certificate_unknown|java.nio.channels.ClosedChannelException|Server refused connection)'
+  (
+    hostname_server_log="${SOLR_LOGS_DIR}/solr.log"
+    hostname_log_offset=$(wc -c < "$hostname_server_log")
+    run ! solr api --verbose --solr-url "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
+    assert_tls_failure 'java\.nio\.channels\.ClosedChannelException'
+    if ! wait_for 10 1 client_hostname_rejection_logged "$hostname_server_log" "$hostname_log_offset"; then
+      echo "No fresh server-side hostname diagnostic found after byte ${hostname_log_offset}" >&2
+      return 1
+    fi
+  )
 }
 
 @test "start solr with mTLS wanted" {
@@ -492,8 +513,8 @@ teardown() {
   export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
   # TLS cannot work if a truststore and keystore are not provided (either Server or Client)
-  run solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
-  assert_output --regexp '(unable to find valid certification path to requested target|Server refused connection)'
+  run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+  assert_tls_failure 'unable to find valid certification path to requested target'
 }
 
 @test "test keystore reload" {
@@ -554,18 +575,19 @@ teardown() {
   run solr api --solr-url "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
   assert_output --partial '"numFound":0'
 
-  run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
-  run ! curl "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*"
+  run -60 curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run -60 curl "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*"
 
-  run ! curl "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*"
-  run ! curl "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
+  run -60 curl "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*"
+  run -60 curl "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
 
   export SOLR_SSL_KEY_STORE=$ssl_dir/cert2.keystore.p12
   export SOLR_SSL_KEY_STORE_PASSWORD=secret
   export SOLR_SSL_TRUST_STORE=$ssl_dir/cert2.keystore.p12
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
 
-  run ! solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_tls_failure '(unable to find valid certification path|PKIX path building failed|certificate_unknown|bad_certificate)'
 
   (
     cd "$ssl_dir"
@@ -578,9 +600,11 @@ teardown() {
   run solr healthcheck -c test --solr-url https://localhost:${SOLR_PORT}
 
   # Server 2 still uses the cert1, so this request should fail
-  run ! solr api --solr-url "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
+  run ! solr api --verbose --solr-url "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
+  assert_tls_failure '(unable to find valid certification path|PKIX path building failed|certificate_unknown|bad_certificate)'
 
-  run ! solr healthcheck -c test --solr-url https://localhost:${SOLR2_PORT}
+  run ! solr healthcheck -c test --solr-url https://localhost:${SOLR2_PORT} --verbose
+  assert_tls_failure '(unable to find valid certification path|PKIX path building failed|certificate_unknown|bad_certificate)'
 
   (
     cd "$ssl_dir"

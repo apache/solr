@@ -59,8 +59,8 @@ teardown() {
   # Test delete
   run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} --delete-config --verbose
   assert_output --partial "Deleted collection 'COLL_NAME'"
-  refute collection_exists "COLL_NAME"
-  refute config_exists "COLL_NAME"
+  assert_zk_child_absent /collections COLL_NAME
+  assert_zk_child_absent /configs COLL_NAME
   
 }
 
@@ -70,12 +70,17 @@ run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
-  run solr post -u name:password -t application/xml --solr-url http://localhost:${SOLR_PORT} --name monitors ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run -0 solr post -u name:password -t application/xml --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME ${SOLR_TIP}/example/exampledocs/monitor.xml
   assert_output --partial '1 files indexed.'
+  run -0 curl -fsS -u name:password "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*1[[:space:]]*[,}]'
 
   # Test postlogs
-  run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run -0 solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
+  refute_output --partial 'Batch sending failed:'
+  run -0 curl -fsS -u name:password "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=file_s:*&rows=0"
+  assert_output --regexp '"numFound"[[:space:]]*:[[:space:]]*[1-9][0-9]*'
   
   # Test export
   #run solr export -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --query "*:*" --output "${BATS_TEST_TMPDIR}/output"
