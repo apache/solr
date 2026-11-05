@@ -69,6 +69,7 @@ public class TestConnectionManagerReconnectStress extends SolrTestCase {
   private static class SlowDisconnectAppender extends AbstractAppender {
     final AtomicInteger delayed = new AtomicInteger();
     final AtomicInteger inFlight = new AtomicInteger();
+    final AtomicInteger processed = new AtomicInteger();
 
     SlowDisconnectAppender() {
       super("slowDisconnects", null, null, true, Property.EMPTY_ARRAY);
@@ -76,7 +77,14 @@ public class TestConnectionManagerReconnectStress extends SolrTestCase {
 
     @Override
     public void append(LogEvent event) {
-      if (!event.getMessage().getFormattedMessage().contains("state:Disconnected")) {
+      String message = event.getMessage().getFormattedMessage();
+      // Both messages follow the state update or rejection, unlike the initial warning below.
+      if (message.equals("zkClient has disconnected")
+          || message.startsWith("Ignoring stale disconnected event ")) {
+        processed.incrementAndGet();
+        return;
+      }
+      if (!message.startsWith("Watcher ") || !message.contains("state:Disconnected")) {
         return;
       }
       delayed.incrementAndGet();
@@ -156,6 +164,7 @@ public class TestConnectionManagerReconnectStress extends SolrTestCase {
       assertTrue(
           "Expected the test to delay some Disconnected callbacks",
           slowDisconnects.delayed.get() > 0);
+      assertEquals(slowDisconnects.delayed.get(), slowDisconnects.processed.get());
       assertEquals(
           "ConnectionManager stayed disconnected after ZooKeeper reconnected, in "
               + stuck
@@ -176,6 +185,7 @@ public class TestConnectionManagerReconnectStress extends SolrTestCase {
         reconnected.tryAcquire(DRAIN_SECONDS, TimeUnit.SECONDS));
     assertNotEquals(previousSession, client.getZooKeeper().getSessionId());
     awaitZooKeeperClientConnected(client);
+    awaitDelayedCallbacksDone();
   }
 
   /** Drops the connection, then waits for the client to notice and reconnect. */
@@ -184,8 +194,8 @@ public class TestConnectionManagerReconnectStress extends SolrTestCase {
     // The proxy may have had no live connection to drop, so try again if nothing was noticed.
     for (int attempt = 0; slowDisconnects.delayed.get() == disconnectsSeen; attempt++) {
       assertTrue("Could not drop the ZooKeeper connection", attempt < 10);
-      proxy.close();
-      proxy.reopen();
+      // Drop the client connection without rebinding the listener during reconnect.
+      proxy.halfClose();
       try {
         new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME)
             .waitFor(
@@ -208,6 +218,10 @@ public class TestConnectionManagerReconnectStress extends SolrTestCase {
 
   private void awaitDelayedCallbacksDone() throws Exception {
     new TimeOut(DRAIN_SECONDS, TimeUnit.SECONDS, TimeSource.NANO_TIME)
-        .waitFor("Delayed callbacks did not finish", () -> slowDisconnects.inFlight.get() == 0);
+        .waitFor(
+            "Delayed callbacks did not finish processing their state",
+            () ->
+                slowDisconnects.inFlight.get() == 0
+                    && slowDisconnects.processed.get() == slowDisconnects.delayed.get());
   }
 }
