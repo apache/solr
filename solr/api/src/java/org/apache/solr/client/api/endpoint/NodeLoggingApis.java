@@ -34,10 +34,9 @@ public interface NodeLoggingApis {
   @GET
   @Path("/levels")
   @Operation(
-      summary =
-          "List all log-levels for the target node, or for other live nodes when 'nodes' is set.",
+      summary = "List all log-levels for the target node.",
       tags = {"logging"})
-  ListLevelsResponse listAllLoggersAndLevels(@QueryParam("nodes") String nodes);
+  ListLevelsResponse listAllLoggersAndLevels();
 
   @PUT
   @Path("/levels")
@@ -54,11 +53,9 @@ public interface NodeLoggingApis {
   @GET
   @Path("/messages")
   @Operation(
-      summary =
-          "Fetch recent log messages on the targeted node, or for other live nodes when 'nodes' is set.",
+      summary = "Fetch recent log messages on the targeted node.",
       tags = {"logging"})
-  LogMessagesResponse fetchLocalLogMessages(
-      @QueryParam("since") Long boundingTimeMillis, @QueryParam("nodes") String nodes);
+  LogMessagesResponse fetchLocalLogMessages(@QueryParam("since") Long boundingTimeMillis);
 
   @PUT
   @Path("/messages/threshold")

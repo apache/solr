@@ -22,7 +22,8 @@ solrAdminApp.controller('ThreadsController',
       if (NodeTarget.needsSelection()) {
         return;
       }
-      SystemV2.getThreadDump(NodeTarget.withNodes({}), function(error, data, response) {
+      NodeTarget.withNodes();
+      SystemV2.getThreadDump(function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
           var payload = NodeTarget.unwrap(data, response);

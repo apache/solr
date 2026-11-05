@@ -22,7 +22,8 @@ solrAdminApp.controller('JavaPropertiesController',
       if (NodeTarget.needsSelection()) {
         return;
       }
-      NodeV2.getNodeProperties(NodeTarget.withNodes({}), function(error, data, response) {
+      NodeTarget.withNodes();
+      NodeV2.getNodeProperties(function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
 

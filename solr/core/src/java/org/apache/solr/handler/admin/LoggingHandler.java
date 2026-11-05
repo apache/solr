@@ -86,9 +86,9 @@ public class LoggingHandler extends RequestHandlerBase {
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "invalid timestamp: " + since);
       }
-      squashV2Response(rsp, loggingApi.fetchLocalLogMessages(time, null));
+      squashV2Response(rsp, loggingApi.fetchLocalLogMessages(time));
     } else {
-      squashV2Response(rsp, loggingApi.listAllLoggersAndLevels(null));
+      squashV2Response(rsp, loggingApi.listAllLoggersAndLevels());
     }
 
     rsp.setHttpCaching(false);

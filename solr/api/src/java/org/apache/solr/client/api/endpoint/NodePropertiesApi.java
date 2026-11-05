@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.NodePropertiesResponse;
 
 /** V2 API definition for listing JRE system properties on a Solr node. */
@@ -30,10 +29,9 @@ public interface NodePropertiesApi {
 
   @GET
   @Operation(
-      summary =
-          "List system properties for the target Solr node, or for other live nodes when 'nodes' is set.",
+      summary = "List system properties for the target Solr node.",
       tags = {"node"})
-  NodePropertiesResponse getNodeProperties(@QueryParam("nodes") String nodes);
+  NodePropertiesResponse getNodeProperties();
 
   @GET
   @Path("/{propertyName}")
