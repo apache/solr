@@ -401,6 +401,26 @@ class FromGitTest(unittest.TestCase):
         self.assertTrue(old["patch"].startswith("@@"))
         self.assertEqual(1, old["additions"])
 
+    def test_detects_the_branch_it_stemmed_from(self):
+        self.git("switch", "-q", "-c", "branch_10x")
+        self.write("src/Ten.java", "class Ten {}\n")
+        self.commit("on 10x")
+        self.git("switch", "-q", "-c", "feature")
+        self.write("src/Feature.java", "class Feature {}\n")
+        self.commit("feature work")
+        self.git("switch", "-q", "main")
+        self.write("src/Main.java", "class Main {}\n")
+        self.commit("main moves on")
+        self.git("switch", "-q", "feature")
+        cwd = os.getcwd()
+        os.chdir(self.repo)
+        try:
+            self.assertEqual("branch_10x", TRIAGE.detect_base())
+            self.git("switch", "-q", "-c", "from-main", "main")
+            self.assertEqual("main", TRIAGE.detect_base())
+        finally:
+            os.chdir(cwd)
+
     def test_no_commits_uses_branch_name(self):
         self.git("switch", "-q", "-c", "my-branch")
         self.write("src/New.java", "class New {}\n")

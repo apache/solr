@@ -56,9 +56,10 @@ Usage:
   pr-triage-llm.py ... --dry-run     # print the prompt, don't call the model
   pr-triage-llm.py ... --verdicts v.json   # use answers from a file instead of the model
 
-Without a PR, --from-git BASE replaces --pr and --files: it triages the work since
-BASE (commits, staged, unstaged and untracked files); commit messages stand in for
-the PR title and description. An agent can run --dry-run, answer the prompt itself,
+Without a PR, --from-git [BASE] replaces --pr and --files: it triages the work
+since the branch diverged from BASE (commits, staged, unstaged and untracked
+files); commit messages stand in for the PR title and description. Without BASE,
+it is the main or branch_* branch (local or remote) the current one is closest to. An agent can run --dry-run, answer the prompt itself,
 and render its answers with --verdicts.
 
 To inspect a prompt offline, supply PR metadata and changed-file JSON from the
@@ -82,6 +83,7 @@ import os
 import re
 import string
 import subprocess
+import sys
 import unicodedata
 import urllib.error
 import urllib.request
@@ -97,6 +99,18 @@ class NoAnswer(Exception):
 
 def git(*args, check=True):
     return subprocess.run(["git", *args], capture_output=True, text=True, check=check).stdout
+
+
+def detect_base():
+    """The main or branch_* branch with the fewest commits not on it, i.e. what HEAD stems from."""
+    current = git("branch", "--show-current").strip()
+    refs = git("for-each-ref", "--format=%(refname:short)", "refs/heads/", "refs/remotes/").split()
+    candidates = [r for r in refs
+                  if re.fullmatch(r"(?:[^/]+/)?(?:main|branch_[0-9_]+x?)", r) and r != current]
+    if not candidates:
+        sys.exit("No main or branch_* branch to compare with; give --from-git BASE.")
+    return min(candidates, key=lambda r: (
+        int(git("rev-list", "--count", f"{r}..HEAD").strip()), not r.endswith("main"), r))
 
 
 def pr_from_git(base):
@@ -367,8 +381,8 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--pr", help="JSON pull request from GET /pulls/N")
     ap.add_argument("--files", help="JSON array from GET /pulls/N/files")
-    ap.add_argument("--from-git", metavar="BASE",
-                    help="no PR: triage the work since BASE in the current repository")
+    ap.add_argument("--from-git", nargs="?", const="", metavar="BASE",
+                    help="no PR: triage the work since the branch diverged from BASE (default: detected)")
     ap.add_argument("--verdicts", help="JSON file of answers to use instead of calling the model")
     ap.add_argument("--out", required=True)
     ap.add_argument("--dry-run", action="store_true")
@@ -376,8 +390,10 @@ def main():
 
     with open(args.config, encoding="utf-8") as fh:
         cfg = json.load(fh)
-    if args.from_git:
-        pr, files = pr_from_git(args.from_git)
+    if args.from_git is not None:
+        base = args.from_git or detect_base()
+        print(f"Base: {base}", file=sys.stderr)
+        pr, files = pr_from_git(base)
     elif args.pr and args.files:
         with open(args.pr, encoding="utf-8") as fh:
             pr = json.load(fh)
