@@ -106,6 +106,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "qf", "text",
             "bf", "boost_d",
             "fl", "score,*",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='13']",
         "//doc[2]/str[@name='id'][.='12']",
@@ -119,12 +120,15 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "qf", "text",
             "bf", "boost_d",
             "fl", "score,*",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='13']",
         "//doc[2]/str[@name='id'][.='12']",
         "//doc[3]/str[@name='id'][.='11']",
         "//doc[4]/str[@name='id'][.='10']");
 
+    // A score tie must not let the low-boost document win by ID order. Compare its
+    // score directly with the highest-bf document, and break score ties by bf.
     assertQ(
         "pf not working",
         req(
@@ -133,8 +137,10 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf", "text^10",
             "fl", "score,*",
             "bf", "boost_d",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='10']");
+        "//doc[1]/str[@name='id'][.='10']",
+        "//doc[str[@name='id'][.='10']]/float[@name='score'][number(.) > number(//doc[str[@name='id'][.='13']]/float[@name='score'])]");
 
     assertQ(
         "pf not working",
@@ -144,8 +150,10 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf", "text^10",
             "fl", "score,*",
             "bf", "boost_d",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='10']");
+        "//doc[1]/str[@name='id'][.='10']",
+        "//doc[str[@name='id'][.='10']]/float[@name='score'][number(.) > number(//doc[str[@name='id'][.='13']]/float[@name='score'])]");
 
     assertQ(
         "pf2 not working",
@@ -155,8 +163,10 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf2", "text^10",
             "fl", "score,*",
             "bf", "boost_d",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='10']");
+        "//doc[1]/str[@name='id'][.='10']",
+        "//doc[str[@name='id'][.='10']]/float[@name='score'][number(.) > number(//doc[str[@name='id'][.='13']]/float[@name='score'])]");
 
     assertQ(
         "pf3 not working",
@@ -166,8 +176,10 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf3", "text^10",
             "fl", "score,*",
             "bf", "boost_d",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='12']");
+        "//doc[1]/str[@name='id'][.='12']",
+        "//doc[str[@name='id'][.='12']]/float[@name='score'][number(.) > number(//doc[str[@name='id'][.='13']]/float[@name='score'])]");
 
     assertQ(
         "pf3 not working",
@@ -177,8 +189,10 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf3", "text^10",
             "fl", "score,*",
             "bf", "boost_d",
+            "sort", "score desc,boost_d desc",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='12']");
+        "//doc[1]/str[@name='id'][.='12']",
+        "//doc[str[@name='id'][.='12']]/float[@name='score'][number(.) > number(//doc[str[@name='id'][.='13']]/float[@name='score'])]");
 
     assertQ(
         "ps not working for pf2",
@@ -188,8 +202,9 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf2", "text^10",
             "ps", "2",
             "fl", "score,*",
+            "debugQuery", "true",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='10']");
+        "//str[@name='parsedquery'][contains(.,'~2')]");
 
     assertQ(
         "ps not working for pf2",
@@ -199,8 +214,9 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "pf2", "text^10",
             "ps", "2",
             "fl", "score,*",
+            "debugQuery", "true",
             "defType", "edismax"),
-        "//doc[1]/str[@name='id'][.='10']");
+        "//str[@name='parsedquery'][contains(.,'~2')]");
   }
 
   @Test
