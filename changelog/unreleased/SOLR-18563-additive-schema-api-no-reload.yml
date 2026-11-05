@@ -1,0 +1,12 @@
+title: >-
+  Schema API requests that contain only add-field, add-dynamic-field and add-copy-field no longer
+  reload the core. Indexing can use the new field as soon as the command returns. In standalone
+  mode queries can use it immediately. In SolrCloud, queries see it after the next commit or soft
+  commit. Other schema commands still reload the core.
+type: changed
+authors:
+  - name: Li Enlai
+    nick: linslee75
+links:
+  - name: SOLR-18563
+    url: https://issues.apache.org/jira/browse/SOLR-18563

@@ -1,0 +1,9 @@
+title: >
+  Improved multiThreaded=true performance when a docset is needed (e.g. faceting).
+type: changed
+authors:
+  - name: Puneet Ahuja
+    nick: punAhuja
+links:
+  - name: SOLR-17841
+    url: https://issues.apache.org/jira/browse/SOLR-17841
