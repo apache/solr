@@ -44,7 +44,7 @@ For a new committer to have permissions to make commits via GitHub and to also c
 
 After adding their GitHub ID, it can take 3-4 hours for the permissions in GitHub to be updated. The committer will need to make sure they have two-factor authentication (2FA) enabled in GitHub in order for the permissions to be granted.
 
-See also https://reference.apache.org/committer/github.
+See also https://gitbox.apache.org/.
 
 == Grant Karma to new PMC Members
 
