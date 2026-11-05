@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Admin UI static files are now served with `Cache-Control: no-cache`, so after an upgrade the browser revalidates them instead of mixing in files cached from the previous Solr version. Such mixing could break the UI, for example by showing bogus "Permission failure" banners.
+title: 'Admin UI static files are now served with `Cache-Control: no-cache`, so after an upgrade the browser revalidates them instead of mixing in files cached from the previous Solr version. Such mixing could break the UI, for example by showing bogus "Permission failure" banners.'
 type: fixed
 authors:
   - name: Luke Kot-Zaniewski
