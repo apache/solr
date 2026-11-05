@@ -57,6 +57,8 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
+import org.apache.solr.client.solrj.request.NodeApi;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.ReplicationApi;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -1495,6 +1497,43 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNotNull(resp);
     assertEquals("ERROR", resp.get("status"));
     assertEquals("invalid index generation", resp.get("message"));
+  }
+
+  @Test
+  public void testV2FileListShouldReportErrorsWhenTheyOccur() {
+    final var request = new ReplicationApi.FetchFileList(DEFAULT_TEST_CORENAME, -2L);
+    final var error = expectThrows(SolrException.class, () -> request.process(followerClient));
+    assertEquals(SolrException.ErrorCode.CONFLICT.code, error.code());
+    assertThat(error.getMessage(), containsString("invalid index generation: -2"));
+  }
+
+  @Test
+  public void testHealthCheckGenerationLagChangesOnlyV2Status() throws Exception {
+    invokeReplicationCommand(
+        buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, "disablepoll");
+    index(leaderClient, "id", "1");
+    leaderClient.commit();
+    pullFromTo(leaderJetty, followerJetty);
+
+    final var v1 = new HealthCheckRequest();
+    v1.setMaxGenerationLag(0);
+    final var v2 = new NodeApi.Healthcheck();
+    v2.setMaxGenerationLag(0);
+    assertEquals("OK", v1.process(followerClient).getNodeStatus());
+    assertEquals("OK", v2.process(followerClient).status.name());
+
+    for (int i = 2; i <= 3; i++) {
+      index(leaderClient, "id", Integer.toString(i));
+      leaderClient.commit();
+    }
+
+    final var legacyResponse = v1.process(followerClient);
+    assertEquals(0, legacyResponse.getStatus());
+    assertEquals("FAILURE", legacyResponse.getNodeStatus());
+    assertThat(legacyResponse.getMessage(), containsString("Cores violating maxGenerationLag:0"));
+    final var error = expectThrows(SolrException.class, () -> v2.process(followerClient));
+    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, error.code());
+    assertThat(error.getMessage(), containsString("Cores violating maxGenerationLag:0"));
   }
 
   @Test
