@@ -121,12 +121,20 @@ class TriageTest(unittest.TestCase):
         self.assertIn("human review", result["comment"])
 
     def test_invalid_answer_fields_are_unknown(self):
-        for patch in ({"verdict": "false"}, {"verdict": 0}, {"confidence": "certain"},
+        for patch in ({"verdict": "maybe"}, {"verdict": 0}, {"confidence": "certain"},
                       {"confidence": []}, {"reason": []}, {"reason": "  "}):
             with self.subTest(patch=patch):
                 answer = dict(self.answers["needs_changelog"], **patch)
                 result, _, _ = self.run_main([], json.dumps({"needs_changelog": answer}))
                 self.assertIsNone(result["results"]["needs_changelog"]["warranted"])
+
+    def test_textual_boolean_verdicts_are_accepted(self):
+        self.cfg["judgements"] = [j for j in load_config()["judgements"] if j["id"] == "needs_tests"]
+        for text, expected in (("true", True), (" False ", False), ("Yes", True), ("no", False)):
+            with self.subTest(text=text):
+                answer = {"verdict": text, "confidence": "high", "reason": "Because."}
+                result, _, _ = self.run_main([], json.dumps({"needs_tests": answer}))
+                self.assertIs(expected, result["results"]["needs_tests"]["warranted"])
 
     def test_malformed_answer_is_unknown(self):
         for content in ('{"needs_changelog":true}', '{"needs_changelog":{}}'):

@@ -24,7 +24,7 @@
       "help_url": "https://github.com/apache/solr/blob/main/CONTRIBUTING.md",
       "evidence_title": "\\bSOLR-[1-9][0-9]*\\b",
       "skip_when_included": true,
-      "question": "Is this change substantial enough to warrant a Solr Jira issue under the contribution guidelines? A Jira issue is warranted only for a change that also warrants a changelog entry, i.e. one that Solr users or operators would notice. If it needs no release note (pure refactoring, test-only, build/CI, internal cleanup, typo fixes, documentation-only), answer no. Judge the change itself. This is advisory, not verification that an issue exists or that the referenced issue matches the change."
+      "question": "Is this change substantial enough to warrant a Solr Jira issue under the contribution guidelines? A Jira issue is warranted only for a change that also warrants a changelog entry, i.e. one that Solr users or operators would notice. If it needs no release note (pure refactoring, test-only, build/CI, internal cleanup, typo fixes, documentation-only), the verdict is false. Judge the change itself. This is advisory, not verification that an issue exists or that the referenced issue matches the change."
     },
     {
       "id": "needs_changelog",
@@ -62,7 +62,7 @@
       "title": "Upgrade notes",
       "help_url": "https://github.com/apache/solr/tree/main/solr/solr-ref-guide/modules/upgrade-notes/pages",
       "evidence_files": ["solr/solr-ref-guide/modules/upgrade-notes/**"],
-      "question": "Is this PR a backwards-incompatible change that users must act on when upgrading: a removed or renamed parameter, API, config element, class used by plugins, or a changed default that alters existing behavior? Answer no for additive changes and for changes to internal classes that plugins would not reasonably use."
+      "question": "Is this PR a backwards-incompatible change that users must act on when upgrading: a removed or renamed parameter, API, config element, class used by plugins, or a changed default that alters existing behavior? The verdict is false for additive changes and for changes to internal classes that plugins would not reasonably use."
     },
     {
       "id": "needs_tests",
@@ -74,7 +74,7 @@
         "**/src/wasmJsTest/**",
         "dev-tools/scripts/tests/test_*.py"
       ],
-      "question": "Does this PR change non-trivial production logic (beyond refactoring, renames, logging, or comments) such that it should come with new or changed tests? Build, CI and developer tooling (workflows, Gradle build logic, scripts under dev-tools) does not need tests: answer no."
+      "question": "Does this PR change non-trivial production logic (beyond refactoring, renames, logging, or comments) such that it should come with new or changed tests, whether or not the diff already includes some? Build, CI and developer tooling (workflows, Gradle build logic, scripts under dev-tools) does not need tests: the verdict is false."
     }
   ]
 }
