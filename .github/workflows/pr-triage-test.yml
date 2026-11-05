@@ -21,7 +21,6 @@ on:
       - '.github/pr-triage/**'
       - '.github/workflows/pr-triage-*.yml'
       - 'dev-tools/scripts/pr-triage-llm.py'
-      - 'dev-tools/scripts/requirements-pr-triage.txt'
       - 'dev-tools/scripts/tests/test_pr_triage.py'
 
 permissions: {}
@@ -39,6 +38,4 @@ jobs:
           persist-credentials: false
       - name: Test triage without GitHub or model credentials
         run: |
-          python3 -m venv "$RUNNER_TEMP/triage-venv"
-          "$RUNNER_TEMP/triage-venv/bin/python" -m pip install -r dev-tools/scripts/requirements-pr-triage.txt
-          "$RUNNER_TEMP/triage-venv/bin/python" -m unittest discover -s dev-tools/scripts/tests -p test_pr_triage.py -v
+python3 -m unittest discover -s dev-tools/scripts/tests -p test_pr_triage.py -v

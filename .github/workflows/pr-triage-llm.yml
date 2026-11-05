@@ -1,10 +1,11 @@
 name: PR Triage (LLM)
 
 # Once per PR, asks an LLM (via the ASF gateway, llm.apache.org) the yes/no
-# questions in .github/pr-triage/judgements.yml (does this change warrant a
+# questions in .github/pr-triage/judgements.json (does this change warrant a
 # changelog entry, docs, ...?) and posts one comment comparing each verdict with
 # what the PR actually includes, highlighting mismatches. Advisory only: it never
-# fails the PR, and it does not run again on later pushes.
+# fails the PR (no comment is posted if the model gives no usable answer), and it
+# does not run again on later pushes.
 #
 # Why pull_request_target: PRs from forks get no secrets under 'pull_request',
 # and the gateway key is a secret. pull_request_target runs this file and the
@@ -36,6 +37,7 @@ jobs:
       github.event.pull_request.user.login != 'solrbot'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true  # advisory: never put a red X on a PR
 
     permissions:
       contents: read
@@ -58,7 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           marker='<!-- llm-pr-triage -->'
-          n=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+          # The triage comment is posted seconds after open/ready, so it is on the first page.
+          n=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments?per_page=100" \
             --jq "[.[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"${marker}\")))] | length" \
             | awk '{s+=$1} END {print s+0}')
           if [ "$n" -gt 0 ]; then
@@ -74,7 +77,6 @@ jobs:
           ref: ${{ github.workflow_sha }}
           sparse-checkout: |
             dev-tools/scripts/pr-triage-llm.py
-            dev-tools/scripts/requirements-pr-triage.txt
             .github/pr-triage
           sparse-checkout-cone-mode: false
           fetch-depth: 1
@@ -96,12 +98,6 @@ jobs:
             '.head.sha == $after[0].head.sha and .base.sha == $after[0].base.sha' \
             "$RUNNER_TEMP/pr.json" > /dev/null
 
-      - name: Install triage dependencies
-        if: steps.guard.outputs.done != 'true'
-        run: |
-          python3 -m venv "$RUNNER_TEMP/triage-venv"
-          "$RUNNER_TEMP/triage-venv/bin/python" -m pip install -r dev-tools/scripts/requirements-pr-triage.txt
-
       - name: Judge
         id: judge
         if: steps.guard.outputs.done != 'true'
@@ -111,11 +107,13 @@ jobs:
           LLM_MODEL: ${{ vars.LLM_MODEL || 'gemma4-26b' }}
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/triage-venv/bin/python" dev-tools/scripts/pr-triage-llm.py \
-            --config .github/pr-triage/judgements.yml \
+          python3 dev-tools/scripts/pr-triage-llm.py \
+            --config .github/pr-triage/judgements.json \
             --pr "$RUNNER_TEMP/pr.json" \
             --files "$RUNNER_TEMP/files.json" \
             --out "$RUNNER_TEMP/result.json"
+          # No result file when the model gave no usable answer or nothing was judgeable.
+          [ -f "$RUNNER_TEMP/result.json" ] || exit 0
           echo "result=$(base64 -w0 < "$RUNNER_TEMP/result.json")" >> "$GITHUB_OUTPUT"
           {
             echo "### LLM triage (${LLM_MODEL})"
@@ -144,8 +142,4 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$RESULT" | base64 -d | jq -r '.comment' > comment.md
-          if [ -z "$(cat comment.md)" ]; then
-            echo "::notice::Nothing flagged; no comment posted"
-            exit 0
-          fi
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file comment.md

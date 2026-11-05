@@ -23,9 +23,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import urllib.error
 from unittest import mock
-
-import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 SPEC = importlib.util.spec_from_file_location(
@@ -37,6 +36,16 @@ SPEC.loader.exec_module(TRIAGE)
 
 def changed_file(name, status="modified", patch="@@ -1 +1 @@\n-old\n+new"):
     return {"filename": name, "status": status, "patch": patch, "additions": 1, "deletions": 1}
+
+
+PRODUCTION = changed_file("solr/core/src/java/Production.java")
+
+
+MODEL_ENV = {"LLM_BASE_URL": "https://example.invalid/v1", "LLM_MODEL": "test", "LLM_API_KEY": "fake"}
+
+
+def load_config():
+    return json.loads((ROOT / ".github/pr-triage/judgements.json").read_text(encoding="utf-8"))
 
 
 class TriageTest(unittest.TestCase):
@@ -62,12 +71,17 @@ class TriageTest(unittest.TestCase):
         }}
 
     def run_main(self, files, answers=None, dry_run=False):
+        # Judgeable files are needed for the model to be asked at all.
+        files = [PRODUCTION, *files]
+        return self.run_main_exact(files, answers, dry_run)
+
+    def run_main_exact(self, files, answers=None, dry_run=False):
         with tempfile.TemporaryDirectory() as directory:
             temp = Path(directory)
-            (temp / "config.yml").write_text(yaml.safe_dump(self.cfg), encoding="utf-8")
+            (temp / "config.json").write_text(json.dumps(self.cfg), encoding="utf-8")
             (temp / "pr.json").write_text(json.dumps(self.pr), encoding="utf-8")
             (temp / "files.json").write_text(json.dumps(files), encoding="utf-8")
-            args = ["pr-triage-llm.py", "--config", str(temp / "config.yml"),
+            args = ["pr-triage-llm.py", "--config", str(temp / "config.json"),
                     "--pr", str(temp / "pr.json"), "--files", str(temp / "files.json"),
                     "--out", str(temp / "result.json")]
             if dry_run:
@@ -97,7 +111,7 @@ class TriageTest(unittest.TestCase):
                 self.assertEqual(0, result["mismatches"])
 
     def test_missing_answer_is_unknown(self):
-        result, _, _ = self.run_main([], "{}")
+        result, _, _ = self.run_main([], '{"unrelated": {}}')
         row = result["results"]["needs_changelog"]
         self.assertIsNone(row["warranted"])
         self.assertIsNone(row["mismatch"])
@@ -112,12 +126,42 @@ class TriageTest(unittest.TestCase):
                 result, _, _ = self.run_main([], json.dumps({"needs_changelog": answer}))
                 self.assertIsNone(result["results"]["needs_changelog"]["warranted"])
 
-    def test_malformed_and_non_object_replies_are_unknown(self):
-        for content in ("not JSON", "[]", "null", '{"needs_changelog":true}',
-                        '{"needs_changelog":{},"needs_changelog":{}}'):
+    def test_malformed_answer_is_unknown(self):
+        for content in ('{"needs_changelog":true}', '{"needs_changelog":{}}'):
             with self.subTest(content=content):
                 result, _, _ = self.run_main([], content)
                 self.assertIsNone(result["results"]["needs_changelog"]["warranted"])
+
+    def test_unusable_reply_posts_nothing(self):
+        for content in ("not JSON", "[]", "null", "{}", '{"needs_changelog":{},"needs_changelog":{}}'):
+            with self.subTest(content=content):
+                result, _, output = self.run_main([], content)
+                self.assertIsNone(result)
+                self.assertIn("::warning::", output)
+
+    def test_unreachable_model_posts_nothing(self):
+        failures = (urllib.error.URLError("down"), TimeoutError(), ValueError("bad json"))
+        for failure in failures:
+            with self.subTest(failure=failure), mock.patch.dict("os.environ", MODEL_ENV):
+                with mock.patch.object(TRIAGE.urllib.request, "urlopen", side_effect=failure):
+                    with self.assertRaises(TRIAGE.NoAnswer):
+                        TRIAGE.call_model([], {})
+
+    def test_error_shaped_or_truncated_response_is_no_answer(self):
+        for body in ({"error": "overloaded"}, {"choices": []},
+                     {"choices": [{"message": {"content": "{"}, "finish_reason": "length"}]},
+                     {"choices": [{"message": {"content": " "}}]}):
+            with self.subTest(body=body), mock.patch.dict("os.environ", MODEL_ENV):
+                with mock.patch.object(TRIAGE.urllib.request, "urlopen", return_value=io.StringIO(json.dumps(body))):
+                    with self.assertRaises(TRIAGE.NoAnswer):
+                        TRIAGE.call_model([], {})
+
+    def test_only_evidence_files_changed_posts_nothing(self):
+        self.cfg["judgements"][0]["evidence_files"] += ["docs/**"]
+        files = [changed_file("changelog/unreleased/fix.yml"), changed_file("docs/guide.adoc")]
+        result, model, _ = self.run_main_exact(files)
+        self.assertIsNone(result)
+        model.assert_not_called()
 
     def test_comment_does_not_emit_active_model_markup(self):
         self.answers["needs_changelog"]["reason"] = (
@@ -223,15 +267,17 @@ class TriageTest(unittest.TestCase):
 
     def test_incomplete_files_refused_before_model(self):
         self.pr["changed_files"] = 3001
-        with self.assertRaisesRegex(SystemExit, "Incomplete changed-file list"):
-            self.run_main([])
+        result, model, output = self.run_main([])
+        self.assertIsNone(result)
+        model.assert_not_called()
+        self.assertIn("Incomplete changed-file list", output)
 
     def test_exact_revision_is_reported(self):
         result, _, _ = self.run_main([])
         self.assertIn("Assessed commit `" + "a" * 40 + "`", result["comment"])
 
     def test_configured_jira_evidence(self):
-        cfg = yaml.safe_load((ROOT / ".github/pr-triage/judgements.yml").read_text(encoding="utf-8"))
+        cfg = load_config()
         j = next(j for j in cfg["judgements"] if j["id"] == "needs_jira")
         for title, expected in (("SOLR-12345: fix", True), ("solr-12345: fix", False),
                                 ("SOLR-XXXXX", False), ("SOLR-0 fix", False), ("small cleanup", False)):
@@ -239,7 +285,7 @@ class TriageTest(unittest.TestCase):
                 self.assertEqual(expected, TRIAGE.evidence_included({"title": title}, [], j))
 
     def test_configured_evidence_families(self):
-        cfg = yaml.safe_load((ROOT / ".github/pr-triage/judgements.yml").read_text(encoding="utf-8"))
+        cfg = load_config()
         samples = {
             "needs_changelog": "changelog/unreleased/fix.yml",
             "needs_ref_guide": "solr/solr-ref-guide/modules/query-guide/pages/search.adoc",
@@ -253,13 +299,15 @@ class TriageTest(unittest.TestCase):
                     self.assertTrue(TRIAGE.evidence_included({}, [f], j))
                     f["status"] = "removed"
                     self.assertFalse(TRIAGE.evidence_included({}, [f], j))
+        guide = next(j for j in cfg["judgements"] if j["id"] == "needs_ref_guide")
+        self.assertFalse(TRIAGE.evidence_included({}, [changed_file(samples["needs_upgrade_notes"])], guide))
         tests = next(j for j in cfg["judgements"] if j["id"] == "needs_tests")
         for name in ("ui/shared/src/commonTest/kotlin/Test.kt", "dev-tools/scripts/tests/test_pr_triage.py"):
             self.assertTrue(TRIAGE.evidence_included({}, [changed_file(name)], tests))
 
     def test_diff_budget_prioritises_production_and_excludes_patches(self):
         java = changed_file("solr/core/src/java/Search.java", patch="JAVA")
-        test = changed_file("solr/core/src/test/SearchTest.java", patch="TEST")
+        test = changed_file("README.md", patch="TEST")
         lock = changed_file("ui/gradle.lockfile", patch="LOCK")
         binary = changed_file("image.png", patch=None)
         budget = len("--- solr/core/src/java/Search.java (modified)\nJAVA\n")
@@ -273,13 +321,16 @@ class TriageTest(unittest.TestCase):
 
     def test_model_request_is_mocked_at_http_boundary(self):
         response = io.StringIO(json.dumps({"choices": [{"message": {"content": "{}"}}]}))
-        env = {"LLM_BASE_URL": "https://example.invalid/v1", "LLM_MODEL": "test", "LLM_API_KEY": "fake"}
-        with mock.patch.dict("os.environ", env), mock.patch.object(TRIAGE.urllib.request, "urlopen", return_value=response) as http:
+        with mock.patch.dict("os.environ", MODEL_ENV), mock.patch.object(TRIAGE.urllib.request, "urlopen", return_value=response) as http:
             content, _ = TRIAGE.call_model([], {})
         self.assertEqual("{}", content)
         request = http.call_args[0][0]
         self.assertEqual("https://example.invalid/v1/chat/completions", request.full_url)
         self.assertEqual({"type": "json_object"}, json.loads(request.data)["response_format"])
+
+    def test_response_header_says_checked_once(self):
+        result, _, _ = self.run_main([])
+        self.assertIn("not updated on later pushes", result["comment"])
 
 
 if __name__ == "__main__":

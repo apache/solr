@@ -17,7 +17,7 @@
 
 """
 Asks an LLM a set of yes/no questions about a pull request (see
-.github/pr-triage/judgements.yml) and writes the verdicts as JSON.
+.github/pr-triage/judgements.json) and writes the verdicts as JSON.
 
 The PR triage workflow uses this to ask the ASF LLM gateway whether a change
 warrants a Jira issue, changelog entry, Reference Guide update, upgrade notes,
@@ -25,8 +25,16 @@ or tests, and posts one advisory comment when a non-draft PR is opened or marked
 ready, with the assessed commit. It does not rerun on later pushes.
 Target-branch and optional maintainer-edit reminders use GitHub metadata directly.
 
-The config holds the questions and evidence patterns. Matching changed files are
-hidden from the model; deleted files do not count as included evidence. A Jira
+The config holds the questions and evidence patterns. Each judgement is a yes/no
+question about what the change warrants on its merits, regardless of what the
+author included. The comment shows each verdict next to what the PR includes and
+flags mismatches in both directions. Judgement keys: id, title, question,
+help_url (optional; the title links there), and evidence: evidence_files (globs;
+a changed file counts unless removed, minus any evidence_exclude globs) or
+evidence_title (regex on the PR title). Other keys: model_defaults, max_diff_chars,
+exclude_patches (listed by name only), min_confidence (below it, a mismatch is a
+weak signal). Matching changed files are hidden from the model; deleted files do
+not count as included evidence. A Jira
 reference is detected in the title, without checking the issue's existence or
 relevance. File presence does not establish adequacy. Invalid or missing model
 answers are shown as unknown and require human review.
@@ -40,14 +48,16 @@ Inputs are files fetched by the workflow from the GitHub API; this script never
 reads PR code from a checkout. The model only answers questions by id, so a
 prompt-injected PR can at worst flip verdicts or skew the reasons it gives.
 
+This is advisory: if the model is unreachable or gives no usable answer, or there
+is nothing to show it (e.g. a docs-only PR), it writes no result and exits 0.
+
 Usage:
-  pr-triage-llm.py --config judgements.yml --pr pr.json --files files.json --out result.json
+  pr-triage-llm.py --config judgements.json --pr pr.json --files files.json --out result.json
   pr-triage-llm.py ... --dry-run     # print the prompt, don't call the model
 
 To inspect a prompt offline, supply PR metadata and changed-file JSON from the
-GitHub REST API, and install dependencies first:
-  python3 -m pip install -r dev-tools/scripts/requirements-pr-triage.txt
-  python3 dev-tools/scripts/pr-triage-llm.py --config .github/pr-triage/judgements.yml \\
+GitHub REST API:
+  python3 dev-tools/scripts/pr-triage-llm.py --config .github/pr-triage/judgements.json \\
       --pr pr.json --files files.json --out result.json --dry-run
 
 Offline regression tests need no GitHub or model credentials:
@@ -65,15 +75,16 @@ import json
 import os
 import re
 import string
-import sys
 import unicodedata
 import urllib.error
 import urllib.request
 
-import yaml
-
 CONFIDENCE = {"low": 0, "medium": 1, "high": 2}
 COMMENT_MARKER = "<!-- llm-pr-triage -->"
+
+
+class NoAnswer(Exception):
+    """The model gave no usable answer; triage is advisory, so no comment is posted."""
 
 
 def matches_any(path, globs):
@@ -85,15 +96,8 @@ def build_diff(files, cfg):
     budget = int(cfg.get("max_diff_chars", 60000))
     excluded = cfg.get("exclude_patches", [])
     parts, used, omitted = [], 0, []
-    # Production code first, then tests, then everything else; truncation hits the tail.
-    def rank(f):
-        name = f["filename"]
-        if "/src/test" in name:
-            return 1
-        if name.endswith(".java"):
-            return 0
-        return 2
-    for f in sorted(files, key=rank):
+    # Java first; truncation hits the tail.
+    for f in sorted(files, key=lambda f: not f["filename"].endswith(".java")):
         name, patch = f["filename"], f.get("patch")
         if patch is None or matches_any(name, excluded):
             omitted.append(name)
@@ -164,11 +168,16 @@ def call_model(messages, cfg):
         with urllib.request.urlopen(req, timeout=300) as resp:
             data = json.load(resp)
     except urllib.error.HTTPError as e:
-        sys.exit(f"LLM request failed: HTTP {e.code}: {e.read()[:2000].decode(errors='replace')}")
-    choice = data["choices"][0]
-    content = choice["message"].get("content") or ""
-    if not content.strip():
-        sys.exit(f"LLM returned no content (finish_reason={choice.get('finish_reason')})")
+        raise NoAnswer(f"HTTP {e.code}: {e.read()[:2000].decode(errors='replace')}")
+    except (OSError, ValueError) as e:  # URLError, timeout, invalid JSON
+        raise NoAnswer(f"request failed: {e!r}")
+    try:
+        choice = data["choices"][0]
+        content = choice["message"].get("content") or ""
+    except (KeyError, IndexError, TypeError, AttributeError):
+        raise NoAnswer(f"unexpected response: {str(data)[:500]}")
+    if choice.get("finish_reason") == "length" or not content.strip():
+        raise NoAnswer(f"truncated or empty reply (finish_reason={choice.get('finish_reason')})")
     return content, data.get("usage", {})
 
 
@@ -236,8 +245,11 @@ def evidence_included(pr, files, judgement):
     globs = judgement.get("evidence_files")
     if not globs:
         return None
+    excluded = judgement.get("evidence_exclude")
     return any(
-        f["status"] != "removed" and matches_any(f["filename"], globs) for f in files
+        f["status"] != "removed" and matches_any(f["filename"], globs)
+        and not matches_any(f["filename"], excluded)
+        for f in files
     )
 
 
@@ -286,7 +298,8 @@ def format_result(pr, files, cfg, verdicts):
     comment = "\n".join(
         [
             COMMENT_MARKER,
-            "**Automated PR triage** (LLM-generated; may be wrong)",
+            "**Automated PR triage** (LLM-generated; may be wrong). "
+            "Checked once, when the PR was opened or marked ready; not updated on later pushes.",
             "",
             *metadata_notices(pr),
             "",
@@ -298,8 +311,7 @@ def format_result(pr, files, cfg, verdicts):
             "",
             "_⚠️ mismatch, ❔ uncertain or unanswered, ✅ agrees. Matching changelog, docs and test "
             "files were hidden from the model; the PR description may still mention them. "
-            "File presence does not establish adequacy. One-time check when the PR is opened "
-            "or marked ready for review; not updated on later pushes._" + revision,
+            "File presence does not establish adequacy._" + revision,
         ]
     )
     return {"results": results, "mismatches": mismatches, "unanswered": unanswered, "comment": comment}
@@ -315,25 +327,35 @@ def main():
     args = ap.parse_args()
 
     with open(args.config, encoding="utf-8") as fh:
-        cfg = yaml.safe_load(fh)
+        cfg = json.load(fh)
     with open(args.pr, encoding="utf-8") as fh:
         pr = json.load(fh)
     with open(args.files, encoding="utf-8") as fh:
         files = json.load(fh)
 
     if pr.get("changed_files") is not None and pr["changed_files"] != len(files):
-        sys.exit("Incomplete changed-file list; refusing to report missing evidence.")
+        print("::warning::Incomplete changed-file list; skipping triage.")
+        return
     judgements = cfg["judgements"]
     evidence = [g for j in judgements for g in j.get("evidence_files", [])]
     shown = [f for f in files if not matches_any(f["filename"], evidence)]
+    if not shown:
+        print("::notice::Only changelog, documentation or test files changed; nothing to judge.")
+        return
 
     messages = build_messages(pr, shown, cfg, judgements, len(files) - len(shown))
     if args.dry_run:
         for m in messages:
             print(f"===== {m['role']} =====\n{m['content']}")
         return
-    content, usage = call_model(messages, cfg)
-    verdicts = parse_verdicts(content)
+    try:
+        content, usage = call_model(messages, cfg)
+        verdicts = parse_verdicts(content)
+        if not verdicts:
+            raise NoAnswer("reply is not a JSON object of verdicts")
+    except NoAnswer as e:
+        print(f"::warning::LLM triage skipped: {e}")
+        return
 
     out = format_result(pr, files, cfg, verdicts)
     out.update({"model": os.environ.get("LLM_MODEL"), "usage": usage})

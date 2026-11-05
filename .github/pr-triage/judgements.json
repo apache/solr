@@ -1,0 +1,58 @@
+{
+  "model_defaults": {
+    "temperature": 0,
+    "max_tokens": 2000,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": false}}
+  },
+  "max_diff_chars": 60000,
+  "exclude_patches": [
+    "**/*.lockfile",
+    "solr/licenses/**",
+    "**/*.sha1",
+    "gradle/libs.versions.toml"
+  ],
+  "min_confidence": "medium",
+  "judgements": [
+    {
+      "id": "needs_jira",
+      "title": "Jira issue in title",
+      "help_url": "https://github.com/apache/solr/blob/main/CONTRIBUTING.md",
+      "evidence_title": "\\bSOLR-[1-9][0-9]*\\b",
+      "question": "Is this change substantial enough to warrant a Solr Jira issue under the contribution guidelines? Minor changes not worth release notes may skip Jira. Judge the change itself, ignoring any issue reference already in the title or description. This is advisory, not verification that an issue exists or that the referenced issue matches the change."
+    },
+    {
+      "id": "needs_changelog",
+      "title": "Changelog entry",
+      "help_url": "https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc",
+      "evidence_files": ["changelog/unreleased/**"],
+      "question": "Does this PR make a change that Solr users or operators would notice, and so warrants an entry in the release notes? Yes for: new features, bug fixes with user-visible symptoms, changed defaults or behavior, new/changed/removed parameters, APIs, config, metrics, CLI options, or performance changes users would notice. No for: pure refactoring, test-only changes, build/CI changes, internal cleanup, typo fixes, and documentation-only changes."
+    },
+    {
+      "id": "needs_ref_guide",
+      "title": "Reference Guide update",
+      "help_url": "https://github.com/apache/solr/tree/main/solr/solr-ref-guide",
+      "evidence_files": ["solr/solr-ref-guide/**"],
+      "evidence_exclude": ["solr/solr-ref-guide/modules/upgrade-notes/**"],
+      "question": "Does this PR add, change, or remove something documented (or that ought to be documented) in the Solr Reference Guide, such as a request parameter, a solrconfig.xml or schema setting, a system property or env var, a V1/V2 API, a CLI option, a metric, or a user-facing behavior, such that the Reference Guide (solr/solr-ref-guide) should be updated? Internal changes do not count."
+    },
+    {
+      "id": "needs_upgrade_notes",
+      "title": "Upgrade notes",
+      "help_url": "https://github.com/apache/solr/tree/main/solr/solr-ref-guide/modules/upgrade-notes/pages",
+      "evidence_files": ["solr/solr-ref-guide/modules/upgrade-notes/**"],
+      "question": "Is this PR a backwards-incompatible change that users must act on when upgrading: a removed or renamed parameter, API, config element, class used by plugins, or a changed default that alters existing behavior? Answer no for additive changes and for changes to internal classes that plugins would not reasonably use."
+    },
+    {
+      "id": "needs_tests",
+      "title": "Tests",
+      "evidence_files": [
+        "**/src/test*/**",
+        "**/src/commonTest/**",
+        "**/src/jvmTest/**",
+        "**/src/wasmJsTest/**",
+        "dev-tools/scripts/tests/test_*.py"
+      ],
+      "question": "Does this PR change non-trivial production logic (beyond refactoring, renames, logging, or comments) such that it should come with new or changed tests? This includes developer tooling and CI scripts, not only Java server code."
+    }
+  ]
+}
