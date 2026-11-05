@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
@@ -34,6 +35,7 @@ import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -198,6 +200,39 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     checkNumDocs(1);
+  }
+
+  @Test
+  public void testPartialUpdateWithoutSignatureFieldsIsPassedThrough() throws Exception {
+    SignatureUpdateProcessorFactory factory = new SignatureUpdateProcessorFactory();
+    NamedList<Object> args = new NamedList<>();
+    args.add("signatureField", "signatureField");
+    args.add("overwriteDupes", true);
+    args.add("fields", "v_t,t_field");
+    args.add("signatureClass", "org.apache.solr.update.processor.Lookup3Signature");
+    factory.init(args);
+
+    AtomicReference<AddUpdateCommand> seen = new AtomicReference<>();
+    try (SolrQueryRequest r = req()) {
+      UpdateRequestProcessor proc =
+          factory.getInstance(
+              r,
+              new SolrQueryResponse(),
+              new UpdateRequestProcessor(null) {
+                @Override
+                public void processAdd(AddUpdateCommand cmd) {
+                  seen.set(cmd);
+                }
+              });
+      AddUpdateCommand cmd = new AddUpdateCommand(r);
+      cmd.solrDoc = new SolrInputDocument();
+      cmd.solrDoc.addField("id", "1a");
+      cmd.solrDoc.addField("name", Map.of("set", "changed"));
+      proc.processAdd(cmd);
+    }
+    assertNotNull(seen.get());
+    assertNull(seen.get().solrDoc.getField("signatureField"));
+    assertNull(seen.get().updateTerm);
   }
 
   /** a non-indexed signatureField is fine as long as overwriteDupes==false */
