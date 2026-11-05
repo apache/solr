@@ -36,6 +36,7 @@ import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.ReplicationPollingRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
@@ -136,4 +137,13 @@ public interface ReplicationApis {
       tags = {"replication"})
   SolrJerseyResponse setReplicationEnabled(
       @RequestBody(required = true) ReplicationEnabledRequestBody requestBody);
+
+  @PUT
+  @CoreApiParameters
+  @Path("/polling")
+  @Operation(
+      summary = "Enable or disable polling of the leader by a follower.",
+      tags = {"replication"})
+  SolrJerseyResponse setReplicationPolling(
+      @RequestBody(required = true) ReplicationPollingRequestBody requestBody);
 }
