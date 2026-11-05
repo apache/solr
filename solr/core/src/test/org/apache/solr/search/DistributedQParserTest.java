@@ -208,6 +208,88 @@ public class DistributedQParserTest extends SolrCloudTestCase {
     assertEquals(2, response.getResults().getNumFound());
   }
 
+  @Test
+  public void testIntervalsScriptFilterDistributed() throws Exception {
+    // Dedicated collection so the extra docs don't perturb the assertions of the other tests,
+    // which share the "distributed-qparser" collection.
+    String scriptCollection = "distributed-qparser-script";
+    CollectionAdminRequest.createCollection(scriptCollection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(scriptCollection, 2, 2);
+
+    new UpdateRequest()
+        // "quick brown" ordered is [0..1] in docs 1 and 6, [1..2] in doc 8
+        .add(sdoc("id", "1", "subject", "quick brown fox"))
+        .add(sdoc("id", "6", "subject", "quick brown dog"))
+        .add(sdoc("id", "8", "subject", "fox quick brown"))
+        // "quick fox" ordered is [1..2] (gap 0) in doc 5 and [0..2] (gap 1) in docs 1 and 7
+        .add(sdoc("id", "5", "subject", "brown quick fox"))
+        .add(sdoc("id", "7", "subject", "quick lazy fox"))
+        .commit(cluster.getSolrClient(), scriptCollection);
+
+    // filter on interval.start: "quick brown" matches docs 1, 6, 8; keep only start == 0
+    QueryResponse response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject, 'match': "
+                    + "{'query': 'quick brown', 'ordered': true, "
+                    + "'filter': {'script': {'source': 'interval.start == 0'}}}}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), scriptCollection);
+    assertEquals(2, response.getResults().getNumFound());
+
+    // filter on interval.end: only doc 8 has "quick brown" ending at position 2
+    response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject, 'match': "
+                    + "{'query': 'quick brown', 'ordered': true, "
+                    + "'filter': {'script': {'source': 'interval.end == 2'}}}}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), scriptCollection);
+    assertEquals(1, response.getResults().getNumFound());
+
+    // filter on interval.gap: "quick fox" matches docs 1, 5, 7; only doc 5 is adjacent (gap 0)
+    response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject, 'match': "
+                    + "{'query': 'quick fox', 'ordered': true, "
+                    + "'filter': {'script': {'source': 'interval.gap == 0'}}}}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), scriptCollection);
+    assertEquals(1, response.getResults().getNumFound());
+
+    // combined expression over all three variables: "quick brown" at exactly [0..1] is docs 1 and 6
+    response =
+        new DirectJsonQueryRequest(
+                "{"
+                    + "'query': {intervals: {use_field: subject, 'match': "
+                    + "{'query': 'quick brown', 'ordered': true, "
+                    + "'filter': {'script': {'source': "
+                    + "'interval.start == 0 && interval.end == 1 && interval.gap == 0'}}}}},"
+                    + "'fields': 'id'"
+                    + "}")
+            .process(cluster.getSolrClient(), scriptCollection);
+    assertEquals(2, response.getResults().getNumFound());
+
+    // a script referencing an unknown interval variable fails cleanly on the shards
+    expectThrows(
+        SolrException.class,
+        () ->
+            new DirectJsonQueryRequest(
+                    "{"
+                        + "'query': {intervals: {use_field: subject, 'match': "
+                        + "{'query': 'quick brown', 'ordered': true, "
+                        + "'filter': {'script': {'source': 'interval.start + missing'}}}}},"
+                        + "'fields': 'id'"
+                        + "}")
+                .process(cluster.getSolrClient(), scriptCollection));
+  }
+
   public void testIntervalsJsonQParserException() throws Exception {
     SolrException exception =
         expectThrows(

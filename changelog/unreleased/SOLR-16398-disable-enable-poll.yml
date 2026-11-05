@@ -1,0 +1,8 @@
+title: Added V2 APIs to enable and disable polling of a leader from its follower
+type: added
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-16398
+    url: https://issues.apache.org/jira/browse/SOLR-16398
