@@ -43,6 +43,8 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class ValueSourceAugmenter extends DocTransformer {
   private static final Object NULL_SENTINEL = new Object();
+  private static final String PREFETCH_DOCS_PARAM = "preFetchDocs";
+  private static final int DEFAULT_MAX_PREFETCH_SIZE = 1000;
   public final String name;
   public final QParser qparser;
   public final ValueSource valueSource;
@@ -52,8 +54,25 @@ public class ValueSourceAugmenter extends DocTransformer {
     this.name = name;
     this.qparser = qparser;
     this.valueSource = valueSource;
-    String maxPrefetchSizeRaw = qparser.getParam("preFetchDocs");
-    this.maxPrefetchSize = maxPrefetchSizeRaw != null ? Integer.parseInt(maxPrefetchSizeRaw) : 1000;
+    this.maxPrefetchSize = parseMaxPrefetchSize(qparser);
+  }
+
+  private static int parseMaxPrefetchSize(QParser qparser) {
+    String raw = qparser != null ? qparser.getParam(PREFETCH_DOCS_PARAM) : null;
+    if (raw == null) {
+      return DEFAULT_MAX_PREFETCH_SIZE;
+    }
+    try {
+      int value = Integer.parseInt(raw);
+      if (value >= 0) {
+        return value;
+      }
+    } catch (NumberFormatException e) {
+      // fall through
+    }
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        PREFETCH_DOCS_PARAM + " must be a non-negative integer: " + raw);
   }
 
   @Override
@@ -69,6 +88,7 @@ public class ValueSourceAugmenter extends DocTransformer {
       readerContexts = searcher.getIndexReader().leaves();
       fcontext = ValueSource.newContext(searcher);
       this.valueSource.createWeight(fcontext, searcher);
+      cachedValuesById = null; // drop any values cached against a previous context/searcher
       final var docList = context.getDocList();
       final int prefetchSize = docList == null ? 0 : Math.min(docList.size(), maxPrefetchSize);
       if (prefetchSize == 0) {
