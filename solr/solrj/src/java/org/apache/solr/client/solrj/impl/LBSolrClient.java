@@ -1003,8 +1003,8 @@ public abstract class LBSolrClient extends SolrClient {
    * Pick a server from list to execute request. By default, servers are picked in round-robin
    * manner, custom classes can override this method for more advance logic
    *
-   * @param aliveServerList list of currently alive servers; endpoints already failed by this request
-   *     may be omitted
+   * @param aliveServerList list of currently alive servers; endpoints already failed by this
+   *     request may be omitted
    * @param request the request will be sent to the picked server
    * @return the picked server
    */
