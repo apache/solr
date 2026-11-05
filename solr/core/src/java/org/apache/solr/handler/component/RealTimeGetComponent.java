@@ -348,8 +348,10 @@ public class RealTimeGetComponent extends SearchComponent {
 
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
         Document luceneDocument =
-            docFetcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
-        SolrDocument doc = toSolrDoc(luceneDocument, searcherInfo.getSearcher().getSchema());
+            docFetcher.doc(docid, docFetcher.getStoredFieldsToLoad(rsp.getReturnFields()));
+        SolrDocument doc =
+            toSolrDoc(
+                luceneDocument, searcherInfo.getSearcher().getSchema(), rsp.getReturnFields());
         if (reuseDvIters == null) {
           reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
         }
@@ -906,8 +908,16 @@ public class RealTimeGetComponent extends SearchComponent {
   }
 
   private static SolrDocument toSolrDoc(Document doc, IndexSchema schema) {
+    return toSolrDoc(doc, schema, null);
+  }
+
+  private static SolrDocument toSolrDoc(
+      Document doc, IndexSchema schema, ReturnFields returnFields) {
     SolrDocument out = new SolrDocument();
     for (IndexableField f : doc.getFields()) {
+      if (returnFields != null && !returnFields.loadsField(f.name())) {
+        continue;
+      }
       // Make sure multivalued fields are represented as lists
       Object existing = out.get(f.name());
       if (existing == null) {
