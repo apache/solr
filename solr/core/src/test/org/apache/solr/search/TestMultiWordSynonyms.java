@@ -100,7 +100,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(
-        "default order assumption wrong",
+        "function boosts must determine baseline scores",
         req(
             "q", "foo bar",
             "qf", "text",
@@ -111,10 +111,13 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
         "//doc[1]/str[@name='id'][.='13']",
         "//doc[2]/str[@name='id'][.='12']",
         "//doc[3]/str[@name='id'][.='11']",
-        "//doc[4]/str[@name='id'][.='10']");
+        "//doc[4]/str[@name='id'][.='10']",
+        "//doc[1]/float[@name='score'][. > ../../doc[2]/float[@name='score']]",
+        "//doc[2]/float[@name='score'][. > ../../doc[3]/float[@name='score']]",
+        "//doc[3]/float[@name='score'][. > ../../doc[4]/float[@name='score']]");
 
     assertQ(
-        "default order assumption wrong",
+        "function boosts must determine baseline scores",
         req(
             "q", "foo tropical cyclone",
             "qf", "text",
@@ -125,7 +128,10 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
         "//doc[1]/str[@name='id'][.='13']",
         "//doc[2]/str[@name='id'][.='12']",
         "//doc[3]/str[@name='id'][.='11']",
-        "//doc[4]/str[@name='id'][.='10']");
+        "//doc[4]/str[@name='id'][.='10']",
+        "//doc[1]/float[@name='score'][. > ../../doc[2]/float[@name='score']]",
+        "//doc[2]/float[@name='score'][. > ../../doc[3]/float[@name='score']]",
+        "//doc[3]/float[@name='score'][. > ../../doc[4]/float[@name='score']]");
 
     // A score tie must not let the low-boost document win by ID order. Compare its
     // score directly with the highest-bf document, and break score ties by bf.
@@ -195,6 +201,18 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
         "//doc[str[@name='id'][.='12']]/float[@name='score'][number(.) > number(//doc[str[@name='id'][.='13']]/float[@name='score'])]");
 
     assertQ(
+        "pf2 must not boost a reversed phrase without slop",
+        req(
+            "q", "bar foo",
+            "qf", "text",
+            "pf2", "text^10",
+            "ps", "0",
+            "fl", "score,*",
+            "defType", "edismax"),
+        "//result[@name='response'][@numFound='4']",
+        "//doc[str[@name='id'][.='10']]/float[@name='score'][. = //doc[str[@name='id'][.='13']]/float[@name='score']]");
+
+    assertQ(
         "ps not working for pf2",
         req(
             "q", "bar foo",
@@ -204,8 +222,14 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "fl", "score,*",
             "debugQuery", "true",
             "defType", "edismax"),
-        "//str[@name='parsedquery'][contains(.,'~2')]");
+        "//result[@name='response'][@numFound='4']",
+        "//doc[str[@name='id'][.='10']]/float[@name='score'][. > //doc[str[@name='id'][.='13']]/float[@name='score']]",
+        "//doc[1]/str[@name='id'][.='10']",
+        "//str[@name='parsedquery'][contains(.,'text:\"bar foo\"~2')]",
+        "//str[@name='parsedquery'][contains(.,'text:\"tropical cyclone foo\"~2')]");
 
+    // pf2 shingles the original words before synonym expansion. These bigrams
+    // give every document the same boost through "bar", so no first hit is required.
     assertQ(
         "ps not working for pf2",
         req(
@@ -216,7 +240,13 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
             "fl", "score,*",
             "debugQuery", "true",
             "defType", "edismax"),
-        "//str[@name='parsedquery'][contains(.,'~2')]");
+        "//result[@name='response'][@numFound='4']",
+        "//doc/str[@name='id'][.='10']",
+        "//doc/str[@name='id'][.='11']",
+        "//doc/str[@name='id'][.='12']",
+        "//doc/str[@name='id'][.='13']",
+        "//str[@name='parsedquery'][contains(.,'(text:bar text:\"tropical cyclone\"~2)^10.0')]",
+        "//str[@name='parsedquery'][contains(.,'(text:\"cyclone foo\"~2)^10.0')]");
   }
 
   @Test
