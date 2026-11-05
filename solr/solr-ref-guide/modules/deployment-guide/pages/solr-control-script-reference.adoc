@@ -34,3 +34,136 @@ xref:cli/commons-cli-reference.adoc[] describes the Apache Commons CLI implement
 Options and the output may differ from the default CLI.
 ====
 
+== Setting Java System Properties
+
+The `bin/solr` script will pass any additional parameters that begin with `-D` to the JVM, which allows you to set arbitrary Java system properties.
+
+For example, to set the auto soft-commit frequency to 3 seconds, you can do:
+
+`bin/solr start -Dsolr.autoSoftCommit.maxTime=3000`
+
+Solr will also convert any environment variable on the format `SOLR_FOO_BAR` to
+system property `solr.foo.bar`, making it possible to inject most properties
+through the environment, e.g:
+
+`SOLR_LOG_LEVEL=debug bin/solr start`
+
+The `SOLR_OPTS` environment variable is also available to set additional System Properties for Solr.
+
+In order to set custom System Properties when running any Solr utility other than `start` (e.g. `stop`, `create`, `auth`, `status`, `api`),
+the `SOLR_TOOL_OPTS` environment variable should be used.
+
+== SolrCloud Mode
+
+This is the default mode for running Solr.
+
+If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
+
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from all `bin/solr` commands.
+
+When starting Solr in SolrCloud mode, if you do not define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000.
+For example, if Solr is running on port 8983, then the embedded ZooKeeper will listen on port 9983.
+
+[IMPORTANT]
+====
+If your ZooKeeper connection string uses a chroot, such as `localhost:2181/solr`, then you need to create the /solr znode before launching SolrCloud using the `bin/solr` script.
+
+To do this use the `mkroot` command outlined below, for example: `bin/solr zk mkroot /solr -z 192.168.1.4:2181`
+====
+
+When starting in SolrCloud mode, the interactive script session will prompt you to choose a configset to use.
+
+For more information about starting Solr in SolrCloud mode, see also the section xref:getting-started:tutorial-solrcloud.adoc[].
+
+== User Managed Mode
+
+`bin/solr start --user-managed` starts Solr in User Managed mode (AKA Standalone mode).  This was the default mode up until Solr 10x.
+
+For more information about the different modes, see the section xref:getting-started:cluster-types.adoc[].
+
+
+== Running with Example Configurations
+
+`bin/solr start -e <name>`
+
+The example configurations allow you to get started quickly with a configuration that mirrors what you hope to accomplish with Solr.
+
+Each example launches Solr with a managed schema, which allows use of the xref:indexing-guide:schema-api.adoc[] to make schema edits, but does not allow manual editing of a Schema file.
+
+If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section xref:configuration-guide:schema-factory.adoc[].
+
+Unless otherwise noted in the descriptions below, the examples do not enable xref:indexing-guide:schemaless-mode.adoc[].
+
+The following examples are provided:
+
+* *cloud*: This example starts a 1-4 node SolrCloud cluster on a single machine.
+When chosen, an interactive session will start to guide you through options to select the initial configset to use, the number of nodes for your example cluster, the ports to use, and name of the collection to be created.
++
+When using this example, you can choose from any of the available configsets found in `$SOLR_TIP/server/solr/configsets`.
+
+* *techproducts*: This example starts a standalone Solr instance with a schema designed for the sample documents included in the `$SOLR_HOME/example/exampledocs` directory.
++
+The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_techproducts_configs`.
++
+The data used can be found in `$SOLR_HOME/example/exampledocs/`.
+
+* *schemaless*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
+Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
++
+The configset used can be found in `$SOLR_TIP/server/solr/configsets/_default`.
+
+* *films*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and then uses the Schema API to create some custom fields.
+Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents as well.
+It then loads some sample film data.
++
+The configset used can be found in `$SOLR_TIP/server/solr/configsets/_default`.
++
+The film data used can be found in `$SOLR_HOME/example/films/films.json`.
+
+[IMPORTANT]
+====
+The run in-foreground option (`-f`) is not compatible with the `-e` option since the script needs to perform additional tasks after starting the Solr server.
+====
+
+==== Configuration Directories and SolrCloud
+
+Before creating a collection in SolrCloud, the configuration directory used by the collection must be uploaded to ZooKeeper.
+The `create` command supports several use cases for how collections and configuration directories work.
+The main decision you need to make is whether a configuration directory in ZooKeeper should be shared across multiple collections.
+
+Let's work through a few examples to illustrate how configuration directories work in SolrCloud.
+
+First, if you don't provide the `-d` or `-n` options, then the default configuration (`$SOLR_TIP/server/solr/configsets/_default/conf`) is uploaded to ZooKeeper using the same name as the collection.
+
+For example, the following command will result in the `_default` configuration being uploaded to `/configs/contacts` in ZooKeeper: `bin/solr create -c contacts`.
+
+If you create another collection with `bin/solr create -c contacts2`, then another copy of the `_default` directory will be uploaded to ZooKeeper under `/configs/contacts2`.
+
+Any changes you make to the configuration for the contacts collection will not affect the `contacts2` collection.
+Put simply, the default behavior creates a unique copy of the configuration directory for each collection you create.
+
+You can override the name given to the configuration directory in ZooKeeper by using the `-n` option.
+For instance, the command `bin/solr create -c logs -d _default -n basic` will upload the `server/solr/configsets/_default/conf` directory to ZooKeeper as `/configs/basic`.
+
+Notice that we used the `-d` option to specify a different configuration than the default.
+Solr provides several built-in configurations under `server/solr/configsets`.
+However you can also provide the path to your own configuration directory using the `-d` option.
+For instance, the command `bin/solr create -c mycoll -d /tmp/myconfigs`, will upload `/tmp/myconfigs` into ZooKeeper under `/configs/mycoll`.
+
+To reiterate, the configuration directory is named after the collection unless you override it using the `-n` option.
+
+Other collections can share the same configuration by specifying the name of the shared configuration using the `-n` option.
+For instance, the following command will create a new collection that shares the basic configuration created previously: `bin/solr create -c logs2 -n basic`.
+
+== Data-driven Schema and Shared Configurations
+
+The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e., data-driven changes to the schema).
+Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections.
+
+You can turn off schemaless functionality for a collection with the following command, assuming the collection name is `mycollection`.
+
+[source,bash]
+$ bin/solr config -c mycollection --action set-user-property --property update.autoCreateFields --value false
+
+See also the section <<Set or Unset Configuration Properties>>.
+
