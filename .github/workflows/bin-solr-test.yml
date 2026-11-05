@@ -42,3 +42,63 @@ jobs:
         path: |
           solr/packaging/build/test-output
           solr/packaging/build/test-output-picocli
+
+  rolling-upgrade:
+    name: Run Docker rolling-upgrade test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SOLR_DOCKER_IMAGE_REPO: github-pr/solr
+      SOLR_DOCKER_IMAGE_TAG: ${{ github.event.number }}
+      SOLR_END_IMAGE: github-pr/solr:${{ github.event.number }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Select the previous major version
+      run: |
+        python3 - <<'PY' >> "$GITHUB_ENV"
+        import re
+        from pathlib import Path
+
+        version = re.search(r"String baseVersion = '(\d+)\.", Path("build.gradle").read_text())
+        print(f"SOLR_BEGIN_IMAGE=solr:{int(version.group(1)) - 1}-slim")
+        PY
+
+    - name: Build and tag the candidate image
+      run: ./gradlew :solr:docker:docker
+
+    - name: Record and pin the upgrade images
+      run: |
+        docker pull "$SOLR_BEGIN_IMAGE"
+        docker image inspect "$SOLR_BEGIN_IMAGE" "$SOLR_END_IMAGE" > rolling-upgrade-images.json
+        echo "SOLR_BEGIN_IMAGE=$(docker image inspect --format '{{index .RepoDigests 0}}' "$SOLR_BEGIN_IMAGE")" >> "$GITHUB_ENV"
+        echo "SOLR_END_IMAGE=$(docker image inspect --format '{{.Id}}' "$SOLR_END_IMAGE")" >> "$GITHUB_ENV"
+
+    - name: Test the rolling upgrade against the candidate
+      run: ./gradlew :solr:packaging:integrationTests --tests test_rolling_upgrade.bats
+
+    - name: Require an executed rolling-upgrade test
+      run: |
+        python3 - <<'PY'
+        from pathlib import Path
+        import xml.etree.ElementTree as ET
+
+        reports = Path("solr/packaging/build/test-output").glob("*.xml")
+        cases = [case for report in reports for case in ET.parse(report).iter("testcase")]
+        if len(cases) != 1 or any(case.find(result) is not None
+                                  for case in cases for result in ("skipped", "failure", "error")):
+            raise SystemExit("Expected one passing rolling-upgrade test with no skips")
+        PY
+
+    - name: Archive rolling-upgrade evidence
+      if: ${{ always() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: rolling-upgrade
+        path: |
+          rolling-upgrade-images.json
+          solr/packaging/build/test-output

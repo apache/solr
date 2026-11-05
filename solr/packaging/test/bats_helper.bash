@@ -127,6 +127,16 @@ assert_tls_failure() {
   assert_output --regexp "$expected"
 }
 
+# JDK updates may wrap a hostname mismatch in an unsupported-algorithm diagnostic.
+client_hostname_rejection_logged() {
+  local server_log=$1
+  local log_offset=$2
+  local mismatch='No subject alternative (DNS name matching [^[:space:]]+|names matching IP address [^[:space:]]+) found'
+  local wrapped='Endpoint Identification Algorithm HTTPS is not supported on the server side'
+  tail -c "+$((log_offset + 1))" "$server_log" |
+    grep -Eq "javax\\.net\\.ssl\\.SSLHandshakeException: (\\(certificate_unknown\\) )?($mismatch|$wrapped)"
+}
+
 # Utility function to retry a command until it succeeds or times out
 wait_for() {
   local timeout="${1:-30}"     # Default 30 seconds timeout

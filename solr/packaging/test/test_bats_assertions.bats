@@ -105,3 +105,38 @@ setup() {
   }
   run ! check_failure
 }
+
+@test "client hostname rejection accepts a wrapped JDK diagnostic" {
+  server_log="${BATS_TEST_TMPDIR}/solr.log"
+  echo 'javax.net.ssl.SSLHandshakeException: (certificate_unknown) Endpoint Identification Algorithm HTTPS is not supported on the server side' > "$server_log"
+  client_hostname_rejection_logged "$server_log" 0
+}
+
+@test "client hostname rejection accepts a direct IP mismatch" {
+  server_log="${BATS_TEST_TMPDIR}/solr.log"
+  echo 'javax.net.ssl.SSLHandshakeException: (certificate_unknown) No subject alternative names matching IP address 127.0.0.1 found' > "$server_log"
+  client_hostname_rejection_logged "$server_log" 0
+}
+
+@test "client hostname rejection accepts a direct DNS mismatch" {
+  server_log="${BATS_TEST_TMPDIR}/solr.log"
+  echo 'javax.net.ssl.SSLHandshakeException: No subject alternative DNS name matching localhost found.' > "$server_log"
+  client_hostname_rejection_logged "$server_log" 0
+}
+
+@test "client hostname rejection ignores earlier diagnostics" {
+  server_log="${BATS_TEST_TMPDIR}/solr.log"
+  echo 'javax.net.ssl.SSLHandshakeException: (certificate_unknown) Endpoint Identification Algorithm HTTPS is not supported on the server side' > "$server_log"
+  log_offset=$(wc -c < "$server_log")
+  echo 'javax.net.ssl.SSLHandshakeException: (protocol_version) Unsupported protocol' >> "$server_log"
+  run ! client_hostname_rejection_logged "$server_log" "$log_offset"
+}
+
+@test "unrelated TLS and connection failures are not client hostname rejections" {
+  server_log="${BATS_TEST_TMPDIR}/solr.log"
+  echo 'javax.net.ssl.SSLHandshakeException: (certificate_unknown) PKIX path building failed' > "$server_log"
+  echo 'javax.net.ssl.SSLHandshakeException: (certificate_required) Empty client certificate chain' >> "$server_log"
+  echo 'java.nio.channels.ClosedChannelException' >> "$server_log"
+  echo 'java.net.ConnectException: Connection refused' >> "$server_log"
+  run ! client_hostname_rejection_logged "$server_log" 0
+}
