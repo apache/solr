@@ -18,6 +18,8 @@
 package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,8 +29,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.FileSystemConfigSetService;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,7 +66,7 @@ public class UploadConfigSetFileAPITest extends SolrTestCase {
     InputStream fileStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    api.uploadConfigSetFile(configSetName, filePath, fileStream);
+    api.uploadConfigSetFile(configSetName, filePath, null, null, fileStream);
 
     // Verify the file was uploaded
     byte[] uploadedData = configSetService.downloadFileFromConfig(configSetName, filePath);
@@ -79,7 +83,8 @@ public class UploadConfigSetFileAPITest extends SolrTestCase {
     // Test with empty filePath
     final var ex =
         assertThrows(
-            SolrException.class, () -> api.uploadConfigSetFile(configSetName, "", fileStream));
+            SolrException.class,
+            () -> api.uploadConfigSetFile(configSetName, "", null, null, fileStream));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue("Error should mention invalid path", ex.getMessage().contains("not valid"));
   }
@@ -92,10 +97,32 @@ public class UploadConfigSetFileAPITest extends SolrTestCase {
     InputStream fileStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    api.uploadConfigSetFile(configSetName, filePath, fileStream);
+    api.uploadConfigSetFile(configSetName, filePath, null, null, fileStream);
 
     // Verify the file was uploaded with correct path
     byte[] uploadedData = configSetService.downloadFileFromConfig(configSetName, filePath);
     assertEquals(content, new String(uploadedData, StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testRepositoryLocationMustBeAllowedPath() throws Exception {
+    final Path disallowed = createTempDir("disallowed").resolve("solrconfig.xml");
+    final var repository = new LocalFileSystemRepository();
+    repository.init(new NamedList<>());
+    when(mockCoreContainer.newBackupRepository(any())).thenReturn(repository);
+    doThrow(new SolrException(SolrException.ErrorCode.FORBIDDEN, "path not allowed"))
+        .when(mockCoreContainer)
+        .assertPathAllowed(any());
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    final var e =
+        expectThrows(
+            SolrException.class,
+            () ->
+                api.uploadConfigSetFile(
+                    "newconfig", "solrconfig.xml", "local", disallowed.toString(), null));
+
+    assertEquals(SolrException.ErrorCode.FORBIDDEN.code, e.code());
+    assertFalse(configSetService.checkConfigExists("newconfig"));
   }
 }
