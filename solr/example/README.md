@@ -27,6 +27,7 @@ separate directory. To run a specific example, do:
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
+    secure       : Two-node HTTPS example with Basic Authentication and ZooKeeper ACLs
     films        : Example of starting with _default configset and defining explicit fields dynamically.
 ```
 
@@ -47,6 +48,11 @@ After starting a Solr example, direct your Web browser to:
 ```
   http://localhost:8983/solr/
 ```
+
+For `secure`, use `https://localhost:8983/solr/` and sign in as `solr` with
+the demonstration password `SolrRocks`. See the reference guide's
+[Securing Solr tutorial](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-securing-solr.html)
+for the manual setup and certificate verification commands.
 
 To add documents to the index, use bin/solr post, for example:
 

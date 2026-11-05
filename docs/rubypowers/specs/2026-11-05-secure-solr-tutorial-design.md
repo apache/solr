@@ -1,5 +1,22 @@
 # Secure Solr tutorial and example
 
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements. See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 Start point: local `main` at `82abb86bb5b`, in branch `SOLR-8442-secure-tutorial`.
 Reference exploration: `SOLR-8442` at `7957aa68e34`.
 
@@ -39,7 +56,9 @@ walkthrough. Explain each configuration file, command, and expected result.
 
 1. Start the first node with `bin/solr start` on port `8983`. Prepare a separate
    Solr home and start the second node on port `8984`, explicitly connecting it
-   to the first node's embedded ZooKeeper on port `9983`. Verify that both nodes
+   to the first node's embedded ZooKeeper on port `9983`. Configure the `/solr`
+   namespace in `solr.xml` before joining the second node; restart the first
+   node with chroot creation enabled. Verify that both nodes
    have joined the same cluster over HTTP. Explain their homes and ports, and
    stop both nodes when configuration requires a restart.
 2. Create a private working directory, a self-signed certificate covering
@@ -138,3 +157,6 @@ Report any check that cannot run with its actual error.
   them.
 - Use a new branch from main and a separate temporary worktree so the
   exploratory branch remains available and unchanged.
+- Use the existing `/solr` ZooKeeper namespace configuration: runtime validation
+  showed it is necessary for the existing ACL provider to distinguish sensitive
+  paths without changing Java code.
