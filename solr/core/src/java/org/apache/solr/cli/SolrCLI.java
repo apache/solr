@@ -210,7 +210,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
             .getCommandSpec()
             .usageMessage()
             .footer(
-                "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html");
+                "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/cli/index.html");
       }
       propagateCommandSettings(subcommand);
     }
