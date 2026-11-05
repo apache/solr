@@ -21,6 +21,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -36,6 +41,8 @@ import org.junit.Test;
 
 /** Dispatch-count coverage for explicit-endpoint and standalone LB requests. */
 public class LBSolrClientAttemptLimitTest extends SolrTestCase {
+  private static final int INTERLEAVING_TIMEOUT_SECONDS = 30;
+
   private static final List<Endpoint> ENDPOINTS =
       List.of(
           new Endpoint("http://one.invalid/solr"),
@@ -93,6 +100,80 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
       assertFalse(failure instanceof AttemptLimitExceededException);
       assertEquals(ENDPOINTS, client.attempted);
       assertSame(client.failures.get(ENDPOINTS.get(2)), failure.getCause());
+    }
+  }
+
+  @Test
+  public void testStandaloneInterleavedRequestDoesNotHideHealthyEndpoint() throws Exception {
+    for (Integer limit : new Integer[] {3, 2, null}) {
+      QueryRequest primaryRequest = new QueryRequest();
+      List<Endpoint> primaryAttempts = new ArrayList<>();
+      CountDownLatch firstAttemptStarted = new CountDownLatch(1);
+      CountDownLatch allowFailure = new CountDownLatch(1);
+      try (RecordingClient client =
+          new RecordingClient(ENDPOINTS.subList(0, 2)) {
+            @Override
+            protected void beforeResponse(Endpoint endpoint, SolrRequest<?> request)
+                throws SolrServerException {
+              if (request == primaryRequest) {
+                primaryAttempts.add(endpoint);
+                if (primaryAttempts.size() == 1) {
+                  firstAttemptStarted.countDown();
+                  try {
+                    assertTrue(
+                        "Secondary request did not release the primary attempt",
+                        allowFailure.await(INTERLEAVING_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new SolrServerException(e);
+                  }
+                }
+              }
+            }
+          }) {
+        client.fail(ENDPOINTS.get(0));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+          var primary = executor.submit(() -> client.request(primaryRequest, null, limit));
+          assertTrue(
+              "Primary request did not reach the first endpoint",
+              firstAttemptStarted.await(INTERLEAVING_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+          assertNotNull(client.request(new QueryRequest(), null));
+          allowFailure.countDown();
+          try {
+            assertNotNull(primary.get(INTERLEAVING_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+          } catch (ExecutionException failure) {
+            throw new AssertionError("Primary request failed after " + primaryAttempts, failure);
+          }
+          assertEquals(ENDPOINTS.subList(0, 2), primaryAttempts);
+        } finally {
+          allowFailure.countDown();
+          executor.shutdownNow();
+          assertTrue(executor.awaitTermination(INTERLEAVING_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testStandaloneRetryUsesCustomPickerWithUntriedEndpoints() throws Exception {
+    List<Endpoint> selections = new ArrayList<>();
+    try (RecordingClient client =
+        new RecordingClient(ENDPOINTS.subList(0, 2)) {
+          @Override
+          protected EndpointWrapper pickServer(EndpointWrapper[] servers, SolrRequest<?> request) {
+            selections.add(servers[0].getEndpoint());
+            return servers[0];
+          }
+        }) {
+      client.fail(ENDPOINTS.get(0));
+      try {
+        assertNotNull(client.request(new QueryRequest(), null, 3));
+      } catch (SolrServerException failure) {
+        throw new AssertionError("Request failed after " + client.attempted, failure);
+      }
+      assertEquals(ENDPOINTS.subList(0, 2), client.attempted);
+      assertEquals(ENDPOINTS.get(1), selections.get(selections.size() - 1));
     }
   }
 
@@ -225,7 +306,11 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
     private final Map<Endpoint, SolrServerException> failures = new HashMap<>();
 
     private RecordingClient() {
-      super(ENDPOINTS);
+      this(ENDPOINTS);
+    }
+
+    private RecordingClient(List<Endpoint> endpoints) {
+      super(endpoints);
     }
 
     private void fail(Endpoint endpoint) {
@@ -236,6 +321,9 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
     private void markZombie(Endpoint endpoint) {
       makeServerAZombie(new EndpointWrapper(endpoint));
     }
+
+    protected void beforeResponse(Endpoint endpoint, SolrRequest<?> request)
+        throws SolrServerException {}
 
     @Override
     protected synchronized void makeServerAZombie(EndpointWrapper wrapper) {
@@ -251,6 +339,7 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
         public NamedList<Object> request(SolrRequest<?> request, String collection)
             throws SolrServerException {
           attempted.add(endpoint);
+          beforeResponse(endpoint, request);
           SolrServerException failure = failures.get(endpoint);
           if (failure != null) {
             throw failure;

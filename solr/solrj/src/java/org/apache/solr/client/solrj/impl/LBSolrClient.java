@@ -907,6 +907,14 @@ public abstract class LBSolrClient extends SolrClient {
       }
 
       EndpointWrapper wrapper = pickServer(serverList, request);
+      if (justFailed != null && justFailed.containsKey(wrapper.getEndpoint().toString())) {
+        final var failedServers = justFailed;
+        serverList =
+            Arrays.stream(serverList)
+                .filter(server -> !failedServers.containsKey(server.getEndpoint().toString()))
+                .toArray(EndpointWrapper[]::new);
+        wrapper = pickServer(serverList, request);
+      }
       final var endpoint = wrapper.getEndpoint();
       attempts.recordAttempt(ex);
       try {
@@ -995,7 +1003,8 @@ public abstract class LBSolrClient extends SolrClient {
    * Pick a server from list to execute request. By default, servers are picked in round-robin
    * manner, custom classes can override this method for more advance logic
    *
-   * @param aliveServerList list of currently alive servers
+   * @param aliveServerList list of currently alive servers; endpoints already failed by this request
+   *     may be omitted
    * @param request the request will be sent to the picked server
    * @return the picked server
    */
