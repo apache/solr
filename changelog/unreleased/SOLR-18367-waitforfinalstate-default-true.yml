@@ -10,6 +10,7 @@ title: >
 type: changed
 authors:
   - name: Serhiy Bzhezytskyy
+  - name: Abhishek Umarjikar
 links:
   - name: SOLR-18367
     url: https://issues.apache.org/jira/browse/SOLR-18367
