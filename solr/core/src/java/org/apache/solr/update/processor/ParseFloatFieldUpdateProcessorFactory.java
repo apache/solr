@@ -90,7 +90,7 @@ public class ParseFloatFieldUpdateProcessorFactory extends ParseNumericFieldUpda
     @Override
     protected Object mutateValue(Object srcVal) {
       if (srcVal instanceof CharSequence) {
-        String stringVal = srcVal.toString();
+        String stringVal = normalizeExponent(srcVal.toString());
         ParsePosition pos = new ParsePosition(0);
         Number number = numberFormat.get().parse(stringVal, pos);
         if (pos.getIndex() != stringVal.length()) {
