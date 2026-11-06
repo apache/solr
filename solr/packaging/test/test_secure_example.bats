@@ -30,12 +30,25 @@ teardown() {
   solr stop --all >/dev/null 2>&1 || true
 }
 
-@test "secure example starts two HTTPS nodes with authentication and ZooKeeper ACLs" {
+@test "secure example resets two HTTPS nodes with authentication and ZooKeeper ACLs" {
+  mkdir -p "$SOLR_HOME/node1"
+  printf 'left over\n' > "$SOLR_HOME/node1/incomplete-file"
   run env SOLR_ULIMIT_CHECKS=true solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
   assert_success
   assert_output --partial 'Two-node secure example is ready'
+  assert_output --partial "http://localhost:$SOLR_PORT/api/node/health"
+  assert_output --partial "http://localhost:$SOLR2_PORT/api/node/health"
+  refute_output --partial 'forcefully killing it now'
   refute_output --partial 'set SOLR_ULIMIT_CHECKS to false'
-  assert_output --partial 'shards.info=true'
+  assert_output --partial 'Check status: SOLR_INCLUDE='
+
+  run ls -a "$SOLR_HOME"
+  assert_success
+  refute_output --partial '.secure-example'
+  run ls -a "$SOLR_HOME/node1"
+  assert_success
+  refute_output --partial 'incomplete-file'
+
 
   run cat "$SOLR_INCLUDE"
   assert_output ''
@@ -114,13 +127,27 @@ teardown() {
 
   run cp "$SOLR_HOME/tls/solr-ssl.keystore.p12" "$BATS_TEST_TMPDIR/original.p12"
   assert_success
-  run solr stop --all
+  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user index:SolrRocks -H 'Content-Type: application/json' --data-binary '[{"id":"previous-run"}]' \
+    "https://localhost:$SOLR_PORT/solr/techproducts/update?commit=true"
   assert_success
+
+  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user search:SolrRocks "https://localhost:$SOLR_PORT/solr/techproducts/select?q=*:*&rows=0"
+  assert_success
+  assert_output --partial '"numFound":32'
+  printf 'left over\n' > "$SOLR_HOME/leftover-file.txt"
+  rm "$SOLR_HOME/tls/cert.pem"
   run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
   assert_success
-  assert_output --partial 'Reusing the secure example'
-  run cmp "$SOLR_HOME/tls/solr-ssl.keystore.p12" "$BATS_TEST_TMPDIR/original.p12"
+  assert_output --partial 'Resetting the secure example'
+  refute_output --partial 'forcefully killing it now'
+  run ls -a "$SOLR_HOME"
   assert_success
+  refute_output --partial 'leftover-file.txt'
+
+  run cmp "$SOLR_HOME/tls/solr-ssl.keystore.p12" "$BATS_TEST_TMPDIR/original.p12"
+  assert_failure
   run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
     --user search:SolrRocks "https://localhost:$SOLR2_PORT/solr/techproducts/select?q=*:*&rows=0"
   assert_success
@@ -166,16 +193,11 @@ teardown() {
   assert_output --partial "https://127.0.0.1:$SOLR2_PORT/"
 }
 
-@test "secure example rejects unsupported options and incomplete homes" {
+@test "secure example rejects unsupported options" {
   run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" --host other-host
   assert_failure
   assert_output --partial 'host'
   run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" --user-managed
   assert_failure
   assert_output --partial 'requires its own embedded ZooKeeper'
-  mkdir -p "$SOLR_HOME/node1"
-  touch "$SOLR_HOME/node1/unrelated-file"
-  run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
-  assert_failure
-  assert_output --partial 'incomplete or unrelated'
 }

@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This exercise starts two SolrCloud nodes, enables HTTPS, assigns separate administration, indexing, and search accounts, and protects ZooKeeper data with access control lists (ACLs).
+This exercise starts a two node Solr cluster, enables HTTPS, assigns separate administration, indexing, and search accounts, and protects ZooKeeper data with access control lists (ACLs).
 You will verify HTTPS for both client requests and requests between Solr nodes.
 Each step uses the tools included in the Solr distribution, JDK `keytool`, OpenSSL, and `curl`.
 
@@ -37,24 +37,27 @@ Then start the first node with the ordinary `bin/solr start` command:
 [source,bash]
 ----
 umask 077  # Makes new files and directories accessible only to your user
-export SECURE_WORK="$PWD/example/secure"
-mkdir -p "$SECURE_WORK/node1/solr" "$SECURE_WORK/node2/solr" "$SECURE_WORK/tls"
+export TUTORIAL_HOME="$PWD/tutorial/secure"
+mkdir -p "$TUTORIAL_HOME/node1/solr" "$TUTORIAL_HOME/node2/solr" "$TUTORIAL_HOME/tls"
 for node in node1 node2; do
-  cp server/solr/solr.xml "$SECURE_WORK/$node/solr/"
-  cp server/solr/zoo.cfg "$SECURE_WORK/$node/solr/"
+  cp server/solr/solr.xml "$TUTORIAL_HOME/$node/solr/"
+  cp server/solr/zoo.cfg "$TUTORIAL_HOME/$node/solr/"
 done
-cat > "$SECURE_WORK/tls/solr.in.sh" <<EOF
+cat > "$TUTORIAL_HOME/tls/solr.in.sh" <<EOF
 SOLR_ULIMIT_CHECKS=false
 SOLR_HOST_BIND=127.0.0.1
 SOLR_HOST_ADVERTISE=127.0.0.1
-SOLR_PID_DIR="$SECURE_WORK"
-SOLR_OPTS="-Dsolr.security.allow.paths=$SECURE_WORK"
+SOLR_PID_DIR="$TUTORIAL_HOME"
+SOLR_OPTS="-Dsolr.security.allow.paths=$TUTORIAL_HOME"
 EOF
-export SOLR_INCLUDE="$SECURE_WORK/tls/solr.in.sh"
-bin/solr start --solr-home "$SECURE_WORK/node1/solr"
+export SOLR_INCLUDE="$TUTORIAL_HOME/tls/solr.in.sh"
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
+  bin/solr start --solr-home "$TUTORIAL_HOME/node1/solr"
 ----
 
 `SOLR_ULIMIT_CHECKS=false` suppresses resource-limit warnings for this local exercise.
+
+`SOLR_LOGS_DIR` gives each node its own log directory.
 
 The first SolrCloud node listens on `localhost:8983` and starts embedded ZooKeeper on `localhost:9983`.
 The embedded ZooKeeper is suitable for this exercise; production clusters should use an external ensemble.
@@ -64,10 +67,15 @@ Check that it responds over HTTP, then start the second node:
 [source,bash]
 ----
 curl --fail 'http://localhost:8983/api/node/health'
-bin/solr start -p 8984 --solr-home "$SECURE_WORK/node2/solr" -z localhost:9983
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+curl --fail 'http://localhost:8984/api/node/health'
 curl --fail --silent --show-error \
   'http://localhost:8983/api/cluster/nodes'
 ----
+
+Wait for each health request to succeed before proceeding; repeat the corresponding `curl` command if the node is still initializing.
+A listening TCP port alone does not mean Solr has finished starting.
 
 Both nodes use ZooKeeper's root namespace.
 The first node runs embedded ZooKeeper; the second joins it with `-z localhost:9983`.
@@ -77,7 +85,7 @@ The response's `nodes` array must contain two nodes, with ports 8983 and 8984.
 If only one node appears, repeat the `curl` command after the second node finishes initializing; continue when both are present.
 Both nodes share the first node's ZooKeeper, rather than forming separate clusters.
 The working directory holds both nodes' data, certificates, and a private configuration file.
-Node logs are under `example/secure/node1/logs` and `example/secure/node2/logs`.
+Node logs are under `tutorial/secure/node1/logs` and `tutorial/secure/node2/logs`.
 
 == Create a Certificate and PKCS12 Stores
 
@@ -89,16 +97,16 @@ The subject alternative names cover both names used in this exercise:
 keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 \
   -validity 365 -dname 'CN=localhost' \
   -ext 'SAN=DNS:localhost,IP:127.0.0.1' \
-  -storetype PKCS12 -keystore "$SECURE_WORK/tls/solr-ssl.keystore.p12" \
+  -storetype PKCS12 -keystore "$TUTORIAL_HOME/tls/solr-ssl.keystore.p12" \
   -storepass SolrRocks -keypass SolrRocks
 keytool -exportcert -alias solr-ssl -rfc \
-  -keystore "$SECURE_WORK/tls/solr-ssl.keystore.p12" -storetype PKCS12 \
-  -storepass SolrRocks -file "$SECURE_WORK/tls/cert.pem"
+  -keystore "$TUTORIAL_HOME/tls/solr-ssl.keystore.p12" -storetype PKCS12 \
+  -storepass SolrRocks -file "$TUTORIAL_HOME/tls/cert.pem"
 keytool -importcert -noprompt -alias solr-ssl \
-  -file "$SECURE_WORK/tls/cert.pem" \
-  -keystore "$SECURE_WORK/tls/solr-ssl.truststore.p12" -storetype PKCS12 \
+  -file "$TUTORIAL_HOME/tls/cert.pem" \
+  -keystore "$TUTORIAL_HOME/tls/solr-ssl.truststore.p12" -storetype PKCS12 \
   -storepass SolrRocks
-openssl x509 -in "$SECURE_WORK/tls/cert.pem" -noout -subject -dates -text
+openssl x509 -in "$TUTORIAL_HOME/tls/cert.pem" -noout -subject -dates -text
 ----
 
 The keystore contains the private key and certificate presented by each server.
@@ -113,27 +121,27 @@ The unquoted heredoc expands the absolute working-directory path now; escaped do
 
 [source,bash]
 ----
-cat > "$SECURE_WORK/tls/solr.in.sh" <<EOF
+cat > "$TUTORIAL_HOME/tls/solr.in.sh" <<EOF
 SOLR_ULIMIT_CHECKS=false
 SOLR_HOST_BIND=127.0.0.1
 SOLR_HOST_ADVERTISE=127.0.0.1
-SOLR_PID_DIR="$SECURE_WORK"
-SOLR_OPTS="-Dsolr.security.allow.paths=$SECURE_WORK"
+SOLR_PID_DIR="$TUTORIAL_HOME"
+SOLR_OPTS="-Dsolr.security.allow.paths=$TUTORIAL_HOME"
 SOLR_SSL_ENABLED=true
-SOLR_SSL_KEY_STORE="$SECURE_WORK/tls/solr-ssl.keystore.p12"
+SOLR_SSL_KEY_STORE="$TUTORIAL_HOME/tls/solr-ssl.keystore.p12"
 SOLR_SSL_KEY_STORE_PASSWORD=SolrRocks
 SOLR_SSL_KEY_STORE_TYPE=PKCS12
-SOLR_SSL_TRUST_STORE="$SECURE_WORK/tls/solr-ssl.truststore.p12"
+SOLR_SSL_TRUST_STORE="$TUTORIAL_HOME/tls/solr-ssl.truststore.p12"
 SOLR_SSL_TRUST_STORE_PASSWORD=SolrRocks
 SOLR_SSL_TRUST_STORE_TYPE=PKCS12
-SOLR_SSL_CLIENT_TRUST_STORE="\${SOLR_SSL_CLIENT_TRUST_STORE:-$SECURE_WORK/tls/solr-ssl.truststore.p12}"
+SOLR_SSL_CLIENT_TRUST_STORE="\${SOLR_SSL_CLIENT_TRUST_STORE:-$TUTORIAL_HOME/tls/solr-ssl.truststore.p12}"
 SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=SolrRocks
 SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12
 SOLR_SSL_NEED_CLIENT_AUTH=false
 SOLR_SSL_WANT_CLIENT_AUTH=false
 SOLR_SSL_CHECK_PEER_NAME=true
 EOF
-chmod 600 "$SECURE_WORK/tls/solr.in.sh"
+chmod 600 "$TUTORIAL_HOME/tls/solr.in.sh"
 ----
 
 The server's truststore and the outbound client's truststore are explicit.
@@ -149,18 +157,20 @@ Then stop the second node before stopping the first node and its embedded ZooKee
 bin/solr cluster --property urlScheme --value https -z localhost:9983
 bin/solr stop -p 8984
 bin/solr stop -p 8983
-export SOLR_INCLUDE="$SECURE_WORK/tls/solr.in.sh"
-bin/solr start -p 8983 --solr-home "$SECURE_WORK/node1/solr"
-bin/solr start -p 8984 --solr-home "$SECURE_WORK/node2/solr" -z localhost:9983
+export SOLR_INCLUDE="$TUTORIAL_HOME/tls/solr.in.sh"
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
+  bin/solr start -p 8983 --solr-home "$TUTORIAL_HOME/node1/solr"
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
 ----
 
 Verify each node with the trusted PEM certificate:
 
 [source,bash]
 ----
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" \
   'https://localhost:8983/api/node/health'
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" \
   'https://127.0.0.1:8984/api/node/health'
 ----
 
@@ -184,9 +194,9 @@ It writes authentication settings into the private include file and creates `bas
 
 [source,bash]
 ----
-SOLR_HOME="$SECURE_WORK/tls" bin/solr auth enable --type basicAuth \
+SOLR_HOME="$TUTORIAL_HOME/tls" bin/solr auth enable --type basicAuth \
   --credentials admin:SolrRocks --block-unknown true -z localhost:9983
-chmod 600 "$SECURE_WORK/tls/basicAuth.conf" "$SOLR_INCLUDE"
+chmod 600 "$TUTORIAL_HOME/tls/basicAuth.conf" "$SOLR_INCLUDE"
 ----
 
 The security configuration is shared through ZooKeeper, so both nodes enforce it.
@@ -196,15 +206,15 @@ Use the authentication API to set passwords for the indexing and search accounts
 
 [source,bash]
 ----
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   -H 'Content-Type: application/json' \
   --data '{"set-user":{"index":"SolrRocks","search":"SolrRocks"}}' \
   https://localhost:8983/api/cluster/security/authentication
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   -H 'Content-Type: application/json' \
   --data '{"set-user-role":{"admin":["superadmin","admin"],"index":["index","search"],"search":["search"]}}' \
   https://localhost:8983/api/cluster/security/authorization
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   https://localhost:8983/api/cluster/security/authorization
 ----
 
@@ -214,7 +224,7 @@ Allow both `admin` and `search` to inspect collection state:
 
 [source,bash]
 ----
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   -H 'Content-Type: application/json' \
   --data '{"update-permission":{"index":9,"role":["admin","search"]}}' \
   https://localhost:8983/api/cluster/security/authorization
@@ -241,23 +251,25 @@ Create separate digest credentials for ZooKeeper administration and read-only in
 
 [source,bash]
 ----
-cat > "$SECURE_WORK/tls/zk-credentials.properties" <<'EOF'
+cat > "$TUTORIAL_HOME/tls/zk-credentials.properties" <<'EOF'
 zkDigestUsername=zk-admin
 zkDigestPassword=SolrRocks
 zkDigestReadonlyUsername=zk-readonly
 zkDigestReadonlyPassword=SolrRocks
 EOF
-chmod 600 "$SECURE_WORK/tls/zk-credentials.properties"
+chmod 600 "$TUTORIAL_HOME/tls/zk-credentials.properties"
 printf '\n' >> "$SOLR_INCLUDE"
 cat >> "$SOLR_INCLUDE" <<EOF
-SOLR_ZK_CREDS_AND_ACLS="-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider -DzkDigestCredentialsFile=$SECURE_WORK/tls/zk-credentials.properties"
+SOLR_ZK_CREDS_AND_ACLS="-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider -DzkDigestCredentialsFile=$TUTORIAL_HOME/tls/zk-credentials.properties"
 SOLR_OPTS="\$SOLR_OPTS \$SOLR_ZK_CREDS_AND_ACLS"
 EOF
 tail -n 2 "$SOLR_INCLUDE"
 bin/solr stop -p 8984
 bin/solr stop -p 8983
-bin/solr start -p 8983 --solr-home "$SECURE_WORK/node1/solr"
-bin/solr start -p 8984 --solr-home "$SECURE_WORK/node2/solr" -z localhost:9983
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
+  bin/solr start -p 8983 --solr-home "$TUTORIAL_HOME/node1/solr"
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
 bin/solr zk updateacls / -z localhost:9983
 ADMIN_ZK_OPTS='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider -DzkDigestUsername=zk-admin -DzkDigestPassword=SolrRocks'
 SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$ADMIN_ZK_OPTS" \
@@ -288,11 +300,11 @@ This authenticates the client as that user without supplying the administrator s
 READONLY_ZK_OPTS='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=SolrRocks'
 SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
   bin/solr zk ls /collections -z localhost:9983
-printf 'read-only probe\n' > "$SECURE_WORK/readonly-probe.txt"
+printf 'read-only probe\n' > "$TUTORIAL_HOME/readonly-probe.txt"
 SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
-  bin/solr zk cp "$SECURE_WORK/readonly-probe.txt" zk:/readonly-probe -z localhost:9983
+  bin/solr zk cp "$TUTORIAL_HOME/readonly-probe.txt" zk:/readonly-probe -z localhost:9983
 SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
-  bin/solr zk cp zk:/security.json "$SECURE_WORK/forbidden-security.json" -z localhost:9983
+  bin/solr zk cp zk:/security.json "$TUTORIAL_HOME/forbidden-security.json" -z localhost:9983
 SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= \
   bin/solr zk ls / -z localhost:9983
 ----
@@ -310,7 +322,7 @@ Create a collection with two shards and one replica per shard, using the techpro
 bin/solr create -c techproducts --shards 2 --replication-factor 1 \
   -d sample_techproducts_configs --credentials admin:SolrRocks \
   -s https://localhost:8983
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   'https://localhost:8983/api/collections?detailed=true&collection=techproducts'
 bin/solr post -c techproducts --credentials index:SolrRocks \
   -s https://localhost:8983 example/exampledocs/*.xml
@@ -323,13 +335,13 @@ Query through both nodes as `search`, asking Solr to include shard details:
 
 [source,bash]
 ----
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   'https://localhost:8983/api/collections/techproducts/select?q=*:*&rows=0&shards.info=true'
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   'https://localhost:8984/api/collections/techproducts/select?q=*:*&rows=0&shards.info=true'
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   'https://localhost:8983/api/collections/techproducts/select?q=*:*&rows=0&distrib=false'
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   'https://localhost:8984/api/collections/techproducts/select?q=*:*&rows=0&distrib=false'
 ----
 
@@ -344,17 +356,17 @@ The first three requests should return HTTP 403; the last two should return HTTP
 
 [source,bash]
 ----
-curl --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   -H 'Content-Type: application/json' --data '[{"id":"forbidden"}]' \
   -w '\nHTTP %{http_code}\n' https://localhost:8983/api/collections/techproducts/update
-curl --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   -w '\nHTTP %{http_code}\n' 'https://localhost:8983/api/collections/techproducts/select?q=*:*'
-curl --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   -H 'Content-Type: application/json' --data '[{"id":"forbidden-admin"}]' \
   -w '\nHTTP %{http_code}\n' https://localhost:8983/api/collections/techproducts/update
-curl --cacert "$SECURE_WORK/tls/cert.pem" -w '\nHTTP %{http_code}\n' \
+curl --cacert "$TUTORIAL_HOME/tls/cert.pem" -w '\nHTTP %{http_code}\n' \
   'https://localhost:8983/api/collections/techproducts/select?q=*:*'
-curl --cacert "$SECURE_WORK/tls/cert.pem" -w '\nHTTP %{http_code}\n' \
+curl --cacert "$TUTORIAL_HOME/tls/cert.pem" -w '\nHTTP %{http_code}\n' \
   'https://localhost:8984/api/collections/techproducts/select?q=*:*'
 ----
 
@@ -368,20 +380,21 @@ Keep the normal server keystore and truststore unchanged:
 ----
 keytool -genkeypair -alias unrelated -keyalg RSA -keysize 2048 \
   -validity 1 -dname 'CN=unrelated' -storetype PKCS12 \
-  -keystore "$SECURE_WORK/tls/unrelated-keystore.p12" \
+  -keystore "$TUTORIAL_HOME/tls/unrelated-keystore.p12" \
   -storepass SolrRocks -keypass SolrRocks
 keytool -exportcert -alias unrelated -rfc -storetype PKCS12 \
-  -keystore "$SECURE_WORK/tls/unrelated-keystore.p12" -storepass SolrRocks \
-  -file "$SECURE_WORK/tls/unrelated-cert.pem"
+  -keystore "$TUTORIAL_HOME/tls/unrelated-keystore.p12" -storepass SolrRocks \
+  -file "$TUTORIAL_HOME/tls/unrelated-cert.pem"
 keytool -importcert -noprompt -alias unrelated -storetype PKCS12 \
-  -file "$SECURE_WORK/tls/unrelated-cert.pem" \
-  -keystore "$SECURE_WORK/tls/untrusted-truststore.p12" -storepass SolrRocks
+  -file "$TUTORIAL_HOME/tls/unrelated-cert.pem" \
+  -keystore "$TUTORIAL_HOME/tls/untrusted-truststore.p12" -storepass SolrRocks
 bin/solr stop -p 8984
-SOLR_SSL_CLIENT_TRUST_STORE="$SECURE_WORK/tls/untrusted-truststore.p12" \
-  bin/solr start -p 8984 --solr-home "$SECURE_WORK/node2/solr" -z localhost:9983
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+SOLR_SSL_CLIENT_TRUST_STORE="$TUTORIAL_HOME/tls/untrusted-truststore.p12" \
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   'https://localhost:8983/api/node/health'
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   'https://localhost:8984/api/node/health'
 ----
 
@@ -390,9 +403,9 @@ Inspect collection state and confirm a local query succeeds:
 
 [source,bash]
 ----
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u admin:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   'https://localhost:8983/api/collections?detailed=true&collection=techproducts'
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   'https://localhost:8984/api/collections/techproducts/select?q=*:*&rows=0&distrib=false'
 ----
 
@@ -401,28 +414,29 @@ Then issue the distributed query:
 
 [source,bash]
 ----
-curl --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   -w '\nHTTP %{http_code}\n' \
   'https://localhost:8984/api/collections/techproducts/select?q=*:*&rows=0&shards.info=true&shards.tolerant=false'
 ----
 
 Both external HTTPS checks still succeed with the original certificate.
 The distributed query through node 2 must fail when its outbound client cannot verify node 1's certificate.
-Inspect `example/secure/node2/logs/solr-8984-console.log` or `example/secure/node2/logs/solr.log` for the certificate trust error, such as `SSLHandshakeException` or `PKIX path building failed`.
+Inspect `tutorial/secure/node2/logs/solr-8984-console.log` or `tutorial/secure/node2/logs/solr.log` for the certificate trust error, such as `SSLHandshakeException` or `PKIX path building failed`.
 
 Restore node 2's normal outbound trust by starting it without the temporary override, then repeat the same query:
 
 [source,bash]
 ----
 bin/solr stop -p 8984
-bin/solr start -p 8984 --solr-home "$SECURE_WORK/node2/solr" -z localhost:9983
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
 ----
 
 Repeat the collection-state and local-query checks above until node 2's replica is `active`, then run:
 
 [source,bash]
 ----
-curl --fail --cacert "$SECURE_WORK/tls/cert.pem" -u search:SolrRocks \
+curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u search:SolrRocks \
   'https://localhost:8984/api/collections/techproducts/select?q=*:*&rows=0&shards.info=true&shards.tolerant=false'
 ----
 
@@ -439,16 +453,18 @@ bin/solr stop -p 8983
 ----
 
 The homes retain indexed data.
-Node 1 also retains embedded ZooKeeper data, including the security configuration and ACLs, under `example/secure/node1/solr/zoo_data`.
-The private files under `example/secure/tls` retain the key, certificate, passwords, and launch settings.
+Node 1 also retains embedded ZooKeeper data, including the security configuration and ACLs, under `tutorial/secure/node1/solr/zoo_data`.
+The private files under `tutorial/secure/tls` retain the key, certificate, passwords, and launch settings.
 To restart in a new shell, return to this Solr installation directory and run:
 
 [source,bash]
 ----
-export SECURE_WORK="$PWD/example/secure"
-export SOLR_INCLUDE="$SECURE_WORK/tls/solr.in.sh"
-bin/solr start -p 8983 --solr-home "$SECURE_WORK/node1/solr"
-bin/solr start -p 8984 --solr-home "$SECURE_WORK/node2/solr" -z localhost:9983
+export TUTORIAL_HOME="$PWD/tutorial/secure"
+export SOLR_INCLUDE="$TUTORIAL_HOME/tls/solr.in.sh"
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
+  bin/solr start -p 8983 --solr-home "$TUTORIAL_HOME/node1/solr"
+SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
 ----
 
 The certificate expires after 365 days.
@@ -460,14 +476,20 @@ This preserves the current exercise and avoids deleting unrelated data.
 
 == Shortcut: Start the Secure Example
 
-After completing the manual exercise, you can create the same kind of demonstration cluster in a fresh installation with:
+After completing the manual exercise, you can create the same kind of demonstration cluster in a fresh installation.
+Clear the manual tutorial's include file setting so the shortcut starts with its own configuration:
 
 [source,bash]
 ----
+unset SOLR_INCLUDE
 bin/solr start -e secure
 ----
 
-Stop the manual cluster first if using the same ports.
+The shortcut uses `example/secure`, independently of the tutorial's `tutorial/secure` directory.
+Stop the manual tutorial nodes first if you use the same ports.
+Each invocation stops the nodes recorded in this example's PID directory and replaces its generated certificates, accounts, and collection data.
+All contents of the example home are deleted; only pass a dedicated, disposable directory to `--solr-home`.
+Stop any other cluster first if it uses the same ports.
 The example creates isolated homes in `example/secure/node1/solr` and `example/secure/node2/solr`, plus certificates and configuration in `example/secure/tls`.
 Each node writes its logs beside its home, in `node1/logs` or `node2/logs`.
 Its include file is `example/secure/tls/solr.in.sh`.
@@ -484,5 +506,6 @@ bin/solr start -e secure --no-prompt -p 8993 \
 ----
 
 The second node uses the next port; embedded ZooKeeper uses the first port plus 1000.
-Re-running the example with the same directory reuses its certificate, accounts, and collection data.
+Re-running the example creates a fresh cluster.
+To retain this exercise's configuration and indexed data, use the manual stop/start commands above.
 The example supports `--no-prompt`, `-p`, `--solr-home`, `-m`, and `--force`; other startup overrides are not supported.

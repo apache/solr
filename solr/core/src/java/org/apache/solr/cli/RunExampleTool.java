@@ -651,7 +651,6 @@ public class RunExampleTool extends ToolBase {
             + serverDir.getParent().toAbsolutePath().normalize());
     Path tls = home.resolve("tls");
     Path include = tls.resolve("solr.in.sh");
-    Path marker = home.resolve(".secure-example");
     String zkHost = "localhost:" + (port + 1000);
     Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
     environment.put("SOLR_INCLUDE", include.toString());
@@ -660,294 +659,303 @@ public class RunExampleTool extends ToolBase {
     environment.put("SOLR_HOME", tls.toString());
     environment.remove("SOLR_ZK_CREDS_AND_ACLS");
     environment.remove("ZK_HOST");
-    if (Files.exists(marker)) {
-      if (!Files.readString(marker).trim().equals(Integer.toString(port))) {
-        throw new IllegalArgumentException(
-            "Restart with the same port used to create this example.");
+    echo("This example uses 'SolrRocks' for its keystore and demonstration accounts.");
+    echo("ZooKeeper is protected by digest ACLs; its transport remains plaintext on loopback.");
+    if (!params.noPrompt()) {
+      prompt(
+          new Scanner(userInput, StandardCharsets.UTF_8),
+          "Press Enter to delete and recreate "
+              + secureExampleDisplayArgument(home.toString())
+              + ", or Ctrl-C to cancel: ",
+          "");
+    }
+    resetSecureExampleHome(home, environment);
+    Files.setPosixFilePermissions(home, PosixFilePermissions.fromString("rwx------"));
+    Files.createDirectories(tls);
+    Files.setPosixFilePermissions(tls, PosixFilePermissions.fromString("rwx------"));
+    for (String node : List.of("node1", "node2")) {
+      Path nodeHome = Files.createDirectories(home.resolve(node).resolve("solr"));
+      for (String file : List.of("solr.xml", "zoo.cfg")) {
+        Files.copy(serverDir.resolve("solr").resolve(file), nodeHome.resolve(file));
       }
-      for (String file :
-          List.of(
-              "tls/solr.in.sh",
-              "tls/cert.pem",
-              "tls/solr-ssl.keystore.p12",
-              "tls/solr-ssl.truststore.p12",
-              "tls/basicAuth.conf",
-              "tls/zk-credentials.properties",
-              "node1/solr/solr.xml",
-              "node1/solr/zoo.cfg",
-              "node2/solr/solr.xml",
-              "node2/solr/zoo.cfg")) {
-        if (!Files.isRegularFile(home.resolve(file))) {
-          throw new IllegalArgumentException("The example is incomplete: missing " + file);
-        }
-      }
-      echo("Reusing the secure example certificates, credentials, and data.");
+    }
+    writeSecureExampleFile(
+        include,
+        String.format(
+            Locale.ROOT,
+            """
+            SOLR_ULIMIT_CHECKS=false
+            SOLR_HOST_BIND=127.0.0.1
+            SOLR_HOST_ADVERTISE=127.0.0.1
+            SOLR_PID_DIR=%s
+            SOLR_OPTS=%s
+            """,
+            secureExampleShellQuote(home.toString()),
+            secureExampleShellQuote("-Dsolr.security.allow.paths=" + home)));
+    boolean ready = false;
+    try {
+      echo("\n");
+      echo("1. Start both nodes and configure the shared SolrCloud URL scheme to https.");
       startSecureNodes(params, home, environment, zkHost);
-    } else {
-      try (var files = Files.list(home)) {
-        if (files.findAny().isPresent()) {
-          throw new IllegalArgumentException(
-              "The example directory contains incomplete or unrelated data. Choose an empty --solr-home.");
-        }
-      }
-      echo("This example uses 'SolrRocks' for its keystore and demonstration accounts.");
-      echo("ZooKeeper is protected by digest ACLs; its transport remains plaintext on loopback.");
-      if (!params.noPrompt()) {
-        prompt(
-            new Scanner(userInput, StandardCharsets.UTF_8),
-            "Press Enter to configure two local Solr nodes, or Ctrl-C to cancel: ",
-            "");
-      }
-      Files.setPosixFilePermissions(home, PosixFilePermissions.fromString("rwx------"));
-      Files.createDirectories(tls);
-      Files.setPosixFilePermissions(tls, PosixFilePermissions.fromString("rwx------"));
-      for (String node : List.of("node1", "node2")) {
-        Path nodeHome = Files.createDirectories(home.resolve(node).resolve("solr"));
-        for (String file : List.of("solr.xml", "zoo.cfg")) {
-          Files.copy(serverDir.resolve("solr").resolve(file), nodeHome.resolve(file));
-        }
-      }
-      writeSecureExampleFile(
-          include,
-          "SOLR_ULIMIT_CHECKS=false\nSOLR_HOST_BIND=127.0.0.1\nSOLR_HOST_ADVERTISE=127.0.0.1\n"
-              + "SOLR_PID_DIR="
-              + secureExampleShellQuote(home.toString())
-              + "\n"
-              + "SOLR_OPTS="
-              + secureExampleShellQuote("-Dsolr.security.allow.paths=" + home)
-              + "\n");
-      boolean ready = false;
-      try {
-        echo("1. Start both nodes and configure the shared SolrCloud URL scheme to https.");
-        startSecureNodes(params, home, environment, zkHost);
-        runSecureCommand(
-            environment,
-            script,
-            "cluster",
-            "--property",
-            "urlScheme",
-            "--value",
-            "https",
-            "-z",
-            zkHost);
-        stopSecureNodes(port, environment);
-
-        echo("\n");
-        echo("2. Generate a self-signed certificate and PKCS12 key and trust stores.");
-        String keytool = Path.of(EnvUtils.getProperty("java.home"), "bin", "keytool").toString();
-        runSecureCommand(
-            environment,
-            keytool,
-            "-genkeypair",
-            "-alias",
-            "solr-ssl",
-            "-keyalg",
-            "RSA",
-            "-keysize",
-            "2048",
-            "-validity",
-            "365",
-            "-dname",
-            "CN=localhost",
-            "-ext",
-            "SAN=DNS:localhost,IP:127.0.0.1",
-            "-storetype",
-            "PKCS12",
-            "-keystore",
-            tls.resolve("solr-ssl.keystore.p12").toString(),
-            "-storepass",
-            "SolrRocks",
-            "-keypass",
-            "SolrRocks");
-        runSecureCommand(
-            environment,
-            keytool,
-            "-exportcert",
-            "-rfc",
-            "-alias",
-            "solr-ssl",
-            "-keystore",
-            tls.resolve("solr-ssl.keystore.p12").toString(),
-            "-storetype",
-            "PKCS12",
-            "-storepass",
-            "SolrRocks",
-            "-file",
-            tls.resolve("cert.pem").toString());
-        runSecureCommand(
-            environment,
-            keytool,
-            "-importcert",
-            "-noprompt",
-            "-alias",
-            "solr-ssl",
-            "-file",
-            tls.resolve("cert.pem").toString(),
-            "-storetype",
-            "PKCS12",
-            "-keystore",
-            tls.resolve("solr-ssl.truststore.p12").toString(),
-            "-storepass",
-            "SolrRocks");
-        runSecureCommand(
-            environment,
-            "openssl",
-            "x509",
-            "-in",
-            tls.resolve("cert.pem").toString(),
-            "-noout",
-            "-subject",
-            "-dates");
-        Files.writeString(
-            include,
-            "SOLR_SSL_ENABLED=true\n"
-                + "SOLR_SSL_KEY_STORE="
-                + secureExampleShellQuote(tls.resolve("solr-ssl.keystore.p12").toString())
-                + "\n"
-                + "SOLR_SSL_KEY_STORE_TYPE=PKCS12\nSOLR_SSL_KEY_STORE_PASSWORD=SolrRocks\n"
-                + "SOLR_SSL_TRUST_STORE="
-                + secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString())
-                + "\n"
-                + "SOLR_SSL_TRUST_STORE_TYPE=PKCS12\nSOLR_SSL_TRUST_STORE_PASSWORD=SolrRocks\n"
-                + "SOLR_SSL_CLIENT_TRUST_STORE=${SOLR_SSL_CLIENT_TRUST_STORE:-"
-                + secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString())
-                + "}\n"
-                + "SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12\nSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=SolrRocks\n"
-                + "SOLR_SSL_NEED_CLIENT_AUTH=false\nSOLR_SSL_WANT_CLIENT_AUTH=false\nSOLR_SSL_CHECK_PEER_NAME=true\n",
-            StandardOpenOption.APPEND);
-        for (String file : List.of("solr-ssl.keystore.p12", "solr-ssl.truststore.p12")) {
-          Files.setPosixFilePermissions(
-              tls.resolve(file), PosixFilePermissions.fromString("rw-------"));
-        }
-
-        echo("\n");
-        echo("3. Restart both nodes with HTTPS and verify the certificate.");
-        startSecureNodes(params, home, environment, zkHost);
-        for (int nodePort : List.of(port, port + 1)) {
-          waitForSecureExample(
-              environment,
-              tls,
-              "admin:SolrRocks",
-              "https://localhost:" + nodePort + "/api/node/health");
-        }
-        echo("\n");
-        echo("\n");
-        echo(
-            "4. Enable Basic Authentication and configure administrator, indexing, and search accounts.");
-        runSecureCommand(
-            environment,
-            script,
-            "auth",
-            "enable",
-            "--type",
-            "basicAuth",
-            "--credentials",
-            "admin:SolrRocks",
-            "--block-unknown",
-            "true",
-            "-z",
-            zkHost);
+      for (int nodePort : List.of(port, port + 1)) {
         waitForSecureExample(
-            environment, tls, "admin:SolrRocks", "https://localhost:" + port + "/api/node/health");
-        secureExampleRequest(
+            environment, tls, null, "http://localhost:" + nodePort + "/api/node/health");
+      }
+      runSecureCommand(
+          environment,
+          script,
+          "cluster",
+          "--property",
+          "urlScheme",
+          "--value",
+          "https",
+          "-z",
+          zkHost);
+      stopSecureNodes(port, environment);
+
+      echo("\n");
+      echo("2. Generate a self-signed certificate and PKCS12 key and trust stores.");
+      String keytool = Path.of(EnvUtils.getProperty("java.home"), "bin", "keytool").toString();
+      runSecureCommand(
+          environment,
+          keytool,
+          "-genkeypair",
+          "-alias",
+          "solr-ssl",
+          "-keyalg",
+          "RSA",
+          "-keysize",
+          "2048",
+          "-validity",
+          "365",
+          "-dname",
+          "CN=localhost",
+          "-ext",
+          "SAN=DNS:localhost,IP:127.0.0.1",
+          "-storetype",
+          "PKCS12",
+          "-keystore",
+          tls.resolve("solr-ssl.keystore.p12").toString(),
+          "-storepass",
+          "SolrRocks",
+          "-keypass",
+          "SolrRocks");
+      runSecureCommand(
+          environment,
+          keytool,
+          "-exportcert",
+          "-rfc",
+          "-alias",
+          "solr-ssl",
+          "-keystore",
+          tls.resolve("solr-ssl.keystore.p12").toString(),
+          "-storetype",
+          "PKCS12",
+          "-storepass",
+          "SolrRocks",
+          "-file",
+          tls.resolve("cert.pem").toString());
+      runSecureCommand(
+          environment,
+          keytool,
+          "-importcert",
+          "-noprompt",
+          "-alias",
+          "solr-ssl",
+          "-file",
+          tls.resolve("cert.pem").toString(),
+          "-storetype",
+          "PKCS12",
+          "-keystore",
+          tls.resolve("solr-ssl.truststore.p12").toString(),
+          "-storepass",
+          "SolrRocks");
+      runSecureCommand(
+          environment,
+          "openssl",
+          "x509",
+          "-in",
+          tls.resolve("cert.pem").toString(),
+          "-noout",
+          "-subject",
+          "-dates");
+      Files.writeString(
+          include,
+          String.format(
+              Locale.ROOT,
+              """
+              SOLR_SSL_ENABLED=true
+              SOLR_SSL_KEY_STORE=%s
+              SOLR_SSL_KEY_STORE_TYPE=PKCS12
+              SOLR_SSL_KEY_STORE_PASSWORD=SolrRocks
+              SOLR_SSL_TRUST_STORE=%s
+              SOLR_SSL_TRUST_STORE_TYPE=PKCS12
+              SOLR_SSL_TRUST_STORE_PASSWORD=SolrRocks
+              SOLR_SSL_CLIENT_TRUST_STORE=${SOLR_SSL_CLIENT_TRUST_STORE:-%s}
+              SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12
+              SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=SolrRocks
+              SOLR_SSL_NEED_CLIENT_AUTH=false
+              SOLR_SSL_WANT_CLIENT_AUTH=false
+              SOLR_SSL_CHECK_PEER_NAME=true
+              """,
+              secureExampleShellQuote(tls.resolve("solr-ssl.keystore.p12").toString()),
+              secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString()),
+              secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString())),
+          StandardOpenOption.APPEND);
+      for (String file : List.of("solr-ssl.keystore.p12", "solr-ssl.truststore.p12")) {
+        Files.setPosixFilePermissions(
+            tls.resolve(file), PosixFilePermissions.fromString("rw-------"));
+      }
+
+      echo("\n");
+      echo("3. Restart both nodes with HTTPS and verify the certificate.");
+      startSecureNodes(params, home, environment, zkHost);
+      for (int nodePort : List.of(port, port + 1)) {
+        waitForSecureExample(
             environment,
             tls,
-            port,
-            "/api/cluster/security/authentication",
-            "{\"set-user\":{\"index\":\"SolrRocks\",\"search\":\"SolrRocks\"}}");
-        secureExampleRequest(
-            environment,
-            tls,
-            port,
-            "/api/cluster/security/authorization",
-            "{\"update-permission\":{\"index\":9,\"role\":[\"admin\",\"search\"]},\"set-user-role\":{\"admin\":[\"superadmin\",\"admin\"],\"index\":[\"index\",\"search\"],\"search\":[\"search\"]}}");
-
-        echo("\n");
-        echo("\n");
-        echo(
-            "5. Configure ZooKeeper digest accounts and migrate existing znodes to restricted ACLs.");
-        Path credentials = tls.resolve("zk-credentials.properties");
-        writeSecureExampleFile(
-            credentials,
-            "zkDigestUsername=zk-admin\nzkDigestPassword=SolrRocks\nzkDigestReadonlyUsername=zk-readonly\nzkDigestReadonlyPassword=SolrRocks\n");
-        String zkOptions =
-            "-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector "
-                + "-DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider "
-                + "-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ";
-        String zkSettings =
-            "\nSOLR_ZK_CREDS_AND_ACLS="
-                + secureExampleShellQuote(zkOptions + "-DzkDigestCredentialsFile=" + credentials)
-                + "\n"
-                + "SOLR_OPTS=\"$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS\"\n";
-        Files.writeString(include, zkSettings, StandardOpenOption.APPEND);
-        echo(
-            "Added ZooKeeper settings to "
-                + secureExampleDisplayArgument(include.toString())
-                + ":");
-        echo(zkSettings.strip());
-        stopSecureNodes(port, environment);
-        startSecureNodes(params, home, environment, zkHost);
-        for (int nodePort : List.of(port, port + 1)) {
-          waitForSecureExample(
-              environment,
-              tls,
-              "admin:SolrRocks",
-              "https://localhost:" + nodePort + "/api/node/health");
-        }
-        runSecureCommand(environment, script, "zk", "updateacls", "/", "-z", zkHost);
-        Map<String, String> adminEnvironment = new HashMap<>(environment);
-        adminEnvironment.put("SOLR_INCLUDE", "/dev/null");
-        adminEnvironment.put(
-            "SOLR_ZK_CREDS_AND_ACLS",
-            zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=SolrRocks");
-        runSecureCommand(
-            adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
-
-        echo("\n");
-        echo("6. Create one shard per node and index the techproducts documents over HTTPS.");
-        runSecureCommand(
-            environment,
-            script,
-            "create",
-            "-c",
-            "techproducts",
-            "--shards",
-            "2",
-            "--replication-factor",
-            "1",
-            "--conf-dir",
-            serverDir
-                .resolve("solr/configsets/sample_techproducts_configs/conf")
-                .toAbsolutePath()
-                .toString(),
-            "--solr-url",
-            "https://localhost:" + port,
-            "--credentials",
-            "admin:SolrRocks");
-        runSecureCommand(
-            environment,
-            script,
-            "post",
-            "-c",
-            "techproducts",
-            "--credentials",
-            "index:SolrRocks",
-            "--solr-url",
-            "https://localhost:" + port,
-            exampleDir.resolve("exampledocs/*.xml").toAbsolutePath().toString());
-        ready = true;
-      } finally {
-        if (!ready) {
-          echo(
-              "Setup failed. See "
-                  + home
-                  + "/node{1,2}/logs/solr.log. Use an empty home to try again.");
-          for (int nodePort : List.of(port + 1, port)) {
-            try {
-              runSecureCommand(environment, script, "stop", "-p", Integer.toString(nodePort));
-            } catch (Exception ignored) {
-              // Preserve the setup failure if cleanup also fails.
+            "admin:SolrRocks",
+            "https://localhost:" + nodePort + "/api/node/health");
+      }
+      echo("\n");
+      echo("\n");
+      echo(
+          "4. Enable Basic Authentication and configure administrator, indexing, and search accounts.");
+      runSecureCommand(
+          environment,
+          script,
+          "auth",
+          "enable",
+          "--type",
+          "basicAuth",
+          "--credentials",
+          "admin:SolrRocks",
+          "--block-unknown",
+          "true",
+          "-z",
+          zkHost);
+      waitForSecureExample(
+          environment, tls, "admin:SolrRocks", "https://localhost:" + port + "/api/node/health");
+      secureExampleRequest(
+          environment,
+          tls,
+          port,
+          "/api/cluster/security/authentication",
+          """
+          {
+            "set-user": {
+              "index": "SolrRocks",
+              "search": "SolrRocks"
             }
+          }
+          """);
+      secureExampleRequest(
+          environment,
+          tls,
+          port,
+          "/api/cluster/security/authorization",
+          """
+          {
+            "update-permission": {"index": 9, "role": ["admin", "search"]},
+            "set-user-role": {
+              "admin": ["superadmin", "admin"],
+              "index": ["index", "search"],
+              "search": ["search"]
+            }
+          }
+          """);
+
+      echo("\n");
+      echo("\n");
+      echo(
+          "5. Configure ZooKeeper digest accounts and migrate existing znodes to restricted ACLs.");
+      Path credentials = tls.resolve("zk-credentials.properties");
+      writeSecureExampleFile(
+          credentials,
+          """
+          zkDigestUsername=zk-admin
+          zkDigestPassword=SolrRocks
+          zkDigestReadonlyUsername=zk-readonly
+          zkDigestReadonlyPassword=SolrRocks
+          """);
+      String zkOptions =
+          "-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector "
+              + "-DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider "
+              + "-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ";
+      String zkSettings =
+          String.format(
+              Locale.ROOT,
+              """
+
+              SOLR_ZK_CREDS_AND_ACLS=%s
+              SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+              """,
+              secureExampleShellQuote(zkOptions + "-DzkDigestCredentialsFile=" + credentials));
+      Files.writeString(include, zkSettings, StandardOpenOption.APPEND);
+      echo("Added ZooKeeper settings to " + secureExampleDisplayArgument(include.toString()) + ":");
+      echo(zkSettings.strip());
+      stopSecureNodes(port, environment);
+      startSecureNodes(params, home, environment, zkHost);
+      for (int nodePort : List.of(port, port + 1)) {
+        waitForSecureExample(
+            environment,
+            tls,
+            "admin:SolrRocks",
+            "https://localhost:" + nodePort + "/api/node/health");
+      }
+      runSecureCommand(environment, script, "zk", "updateacls", "/", "-z", zkHost);
+      Map<String, String> adminEnvironment = new HashMap<>(environment);
+      adminEnvironment.put("SOLR_INCLUDE", "/dev/null");
+      adminEnvironment.put(
+          "SOLR_ZK_CREDS_AND_ACLS",
+          zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=SolrRocks");
+      runSecureCommand(
+          adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
+
+      echo("\n");
+      echo("6. Create one shard per node and index the techproducts documents over HTTPS.");
+      runSecureCommand(
+          environment,
+          script,
+          "create",
+          "-c",
+          "techproducts",
+          "--shards",
+          "2",
+          "--replication-factor",
+          "1",
+          "--conf-dir",
+          serverDir
+              .resolve("solr/configsets/sample_techproducts_configs/conf")
+              .toAbsolutePath()
+              .toString(),
+          "--solr-url",
+          "https://localhost:" + port,
+          "--credentials",
+          "admin:SolrRocks");
+      runSecureCommand(
+          environment,
+          script,
+          "post",
+          "-c",
+          "techproducts",
+          "--credentials",
+          "index:SolrRocks",
+          "--solr-url",
+          "https://localhost:" + port,
+          exampleDir.resolve("exampledocs/*.xml").toAbsolutePath().toString());
+      ready = true;
+    } finally {
+      if (!ready) {
+        echo(
+            "Setup failed. See "
+                + home
+                + "/node{1,2}/logs/solr.log. Run the secure example again to reset it and retry.");
+        for (int nodePort : List.of(port + 1, port)) {
+          try {
+            runSecureCommand(environment, script, "stop", "-p", Integer.toString(nodePort));
+          } catch (Exception ignored) {
+            // Preserve the setup failure if cleanup also fails.
           }
         }
       }
@@ -961,7 +969,6 @@ public class RunExampleTool extends ToolBase {
               + nodePort
               + "/api/collections/techproducts/select?q=*:*&rows=0&shards.tolerant=false");
     }
-    writeSecureExampleFile(marker, port + "\n");
     echo("\n\n");
     echo(
         "Two-node secure example is ready: https://localhost:"
@@ -986,6 +993,16 @@ public class RunExampleTool extends ToolBase {
     echo("\n");
     echo(
         "See the Securing Solr tutorial for the individual commands and inter-node trust exercise.");
+  }
+
+  private void resetSecureExampleHome(Path home, Map<String, String> environment)
+      throws IOException {
+    echo("Resetting the secure example in " + secureExampleDisplayArgument(home.toString()));
+    Map<String, String> stopEnvironment = new HashMap<>(environment);
+    stopEnvironment.put("SOLR_INCLUDE", "/dev/null");
+    runSecureCommand(stopEnvironment, script, "stop", "--all");
+    PathUtils.deleteDirectory(home);
+    Files.createDirectories(home);
   }
 
   private void startSecureNodes(
@@ -1051,22 +1068,18 @@ public class RunExampleTool extends ToolBase {
 
   private void waitForSecureExample(
       Map<String, String> environment, Path tls, String credentials, String url) throws Exception {
+    List<String> command = new ArrayList<>(List.of("curl", "--silent", "--show-error", "--fail"));
+    if (url.startsWith("https://")) {
+      command.addAll(List.of("--cacert", tls.resolve("cert.pem").toString()));
+    }
+    if (credentials != null) command.addAll(List.of("--user", credentials));
+    command.add(url);
     new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME)
         .waitFor(
             "Timed out waiting for " + url,
             () -> {
               try {
-                runSecureCommand(
-                    environment,
-                    "curl",
-                    "--silent",
-                    "--show-error",
-                    "--fail",
-                    "--cacert",
-                    tls.resolve("cert.pem").toString(),
-                    "--user",
-                    credentials,
-                    url);
+                runSecureCommand(environment, command.toArray(String[]::new));
                 return true;
               } catch (ExecuteException e) {
                 return false;
