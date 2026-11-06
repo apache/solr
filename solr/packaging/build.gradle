@@ -102,10 +102,6 @@ distributions {
         into 'lib'
       })
 
-      from(configurations.example, {
-        into "example"
-      })
-
       from(configurations.server, {
         into "server"
       })
@@ -135,6 +131,10 @@ distributions {
     contents {
       // Build on-top of the slim distribution
       with(distributions.slim.getContents())
+
+      from(configurations.example, {
+        into "example"
+      })
 
       from(configurations.modules, {
         into "modules"
